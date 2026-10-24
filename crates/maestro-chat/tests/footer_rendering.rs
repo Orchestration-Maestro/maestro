@@ -417,7 +417,7 @@ fn footer_public_type_uses_the_default_execution() {
     assert_eq!(footer.render(80).len(), 2, "a path row and a stats row");
 }
 
-/// One metadata read and one totals walk per frame.
+/// One metadata read per frame, counted at each metadata getter.
 #[test]
 fn footer_reads_metadata_once_per_frame() {
     for count in [0_usize, 1, 4] {

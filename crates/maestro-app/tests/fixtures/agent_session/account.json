@@ -3,15 +3,13 @@
     "loaded": {
       "ok": {}
     },
-    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}",
-    "file_bytes": 40
+    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}"
   },
   "malformed_file": {
     "loaded": {
       "ok": {}
     },
-    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}",
-    "file_bytes": 40
+    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}"
   },
   "object_root": {
     "loaded": {
@@ -29,35 +27,15 @@
     "file_bytes": 133
   },
   "array_root": {
-    "loaded": {
-      "ok": [
-        {
-          "type": "oauth"
-        }
-      ]
-    },
-    "file_text": "[\n  {\n    \"type\": \"oauth\"\n  }\n]",
-    "file_bytes": 31
+    "file_text": "[\n  {\n    \"type\": \"oauth\"\n  }\n]"
   },
   "scalar_number_root": {
-    "loaded": {
-      "ok": 5
-    },
-    "file_text": "5",
-    "file_bytes": 1
+    "file_text": "5"
   },
   "scalar_string_root": {
-    "loaded": {
-      "ok": "text"
-    },
-    "file_text": "\"text\"",
-    "file_bytes": 6
+    "file_text": "\"text\""
   },
   "null_root": {
-    "loaded": {
-      "ok": null
-    },
-    "file_text": "null",
-    "file_bytes": 4
+    "file_text": "null"
   }
 }

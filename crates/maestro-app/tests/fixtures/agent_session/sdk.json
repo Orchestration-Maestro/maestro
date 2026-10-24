@@ -182,22 +182,6 @@
         "model_change",
         "thinking_level_change",
         "custom"
-      ],
-      "factory_calls": [
-        {
-          "cwd": "$ROOT/new-session-setup",
-          "session_file": "<SESSION_FILE_4>",
-          "session_start_event": null
-        },
-        {
-          "cwd": "$ROOT/new-session-setup",
-          "session_file": "<SESSION_FILE_5>",
-          "session_start_event": {
-            "type": "session_start",
-            "reason": "new",
-            "previousSessionFile": "<SESSION_FILE_6>"
-          }
-        }
       ]
     }
   },

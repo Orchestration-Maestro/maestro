@@ -44,7 +44,7 @@ impl maestro_credentials::ConfigValueOperations for ForbiddenCommands {
     }
 }
 
-/// Credential commands no controlled catalog test requests.
+/// Credential commands that fail every key command with no output.
 #[must_use]
 pub fn values() -> ConfigValues {
     SharedHandle::new(NoCommands)
