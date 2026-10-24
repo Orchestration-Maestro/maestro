@@ -27,6 +27,7 @@ steps.
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
+| `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 
 ### Building an example
 
@@ -52,6 +53,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- protected_paths_
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -77,7 +80,23 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
-<<<<<<< HEAD
+
+### What the protected-paths hook does
+
+`tool_call` inspects only the `write` and `edit` tools and reads their `path`
+argument without normalizing it. A path containing `.env`, `.git/` or
+`node_modules/` is blocked with `Path "<path>" is protected`; when the host has
+UI, the hook first warns `Blocked write to protected path: <path>` with warning
+severity. Every other tool and path is left alone and returns no verdict.
+Matching is a case-sensitive literal substring test: it does not resolve dot
+segments, fold case, or look at the filesystem. The three patterns are this
+example's own policy, not a built-in restriction; loading the component into an
+application is opt-in.
+
+The example needs a component-enabled host to load. The controlled run needs no
+provider, credentials or installation: it delivers every recorded tool call to
+the built component and to the in-process adapter.
+
 ### Building with-deps
 
 The [`with-deps/main.rs`](with-deps/main.rs) example parses a duration string
