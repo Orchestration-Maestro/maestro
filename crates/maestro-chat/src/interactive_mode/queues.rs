@@ -275,14 +275,6 @@ impl InteractiveMode {
         }
         shown.map(|()| queued.len())
     }
-
-    /// Hands the failure of a key action to the terminal host, which reports it.
-    pub(super) fn report(&self, result: Result<(), Box<dyn Error>>) {
-        if result.is_err() {
-            let runtime = &self.tool_environment.runtime;
-            runtime.spawn_local(Box::pin(std::future::ready(result)));
-        }
-    }
 }
 
 /// Appends each kept message's text to the queue of its delivery, in order.

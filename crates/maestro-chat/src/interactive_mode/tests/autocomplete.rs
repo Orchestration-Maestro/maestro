@@ -758,14 +758,11 @@ fn interactive_initialization_prepares_search_tools_before_first_completion() {
     isolated_case(
         test,
         "managed",
-        (
-            &[
-                ("PATH", "probes"),
-                ("MAESTRO_OFFLINE", "1"),
-                ("MAESTRO_TEST_TOOL_PATH", &tool_path),
-            ],
-            &[],
-        ),
+        &[
+            ("PATH", "probes"),
+            ("MAESTRO_OFFLINE", "1"),
+            ("MAESTRO_TEST_TOOL_PATH", &tool_path),
+        ],
         |directory| {
             let managed = directory.join("bin");
             std::fs::create_dir(&managed).unwrap();
@@ -802,14 +799,11 @@ fn interactive_initialization_starts_both_search_programs_before_either_finishes
     isolated_case(
         test,
         "child",
-        (
-            &[
-                ("PATH", "probes"),
-                ("MAESTRO_OFFLINE", "1"),
-                ("MAESTRO_TEST_TOOL_PATH", &tool_path),
-            ],
-            &[],
-        ),
+        &[
+            ("PATH", "probes"),
+            ("MAESTRO_OFFLINE", "1"),
+            ("MAESTRO_TEST_TOOL_PATH", &tool_path),
+        ],
         |directory| {
             let probes = directory.join("probes");
             std::fs::create_dir(&probes).unwrap();
@@ -839,14 +833,11 @@ fn file_completion_consumes_the_search_owner_fd_path() {
     isolated_case(
         test,
         "child",
-        (
-            &[
-                ("PATH", "probes"),
-                ("MAESTRO_OFFLINE", "1"),
-                ("MAESTRO_TEST_TOOL_PATH", &tool_path),
-            ],
-            &[],
-        ),
+        &[
+            ("PATH", "probes"),
+            ("MAESTRO_OFFLINE", "1"),
+            ("MAESTRO_TEST_TOOL_PATH", &tool_path),
+        ],
         |directory| {
             let (input, expected) = case(test, "fd-route");
             let query = input.query.unwrap();

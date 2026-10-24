@@ -163,7 +163,11 @@ struct Resources {
 
 impl ForwardingLoader {
     /// A loader over `inner` answering `resources`, then the dark and light palettes.
-    fn new(inner: Rc<dyn ResourceLoader<Local>>, resources: Resources) -> Self {
+    fn new(
+        inner: Rc<dyn ResourceLoader<Local>>,
+        resources: Resources,
+        inline: Option<Rc<LoadExtensionsResult<Local>>>,
+    ) -> Self {
         let Resources {
             context,
             skills,
