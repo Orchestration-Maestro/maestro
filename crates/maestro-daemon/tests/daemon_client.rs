@@ -44,12 +44,14 @@ fn selected_request(
     };
     let cleanup = DaemonClient::for_target(ConnectionTarget::SocketPath(unused.into()));
     let cleaned = cleanup.request_value(&request);
-    selected
+    let selected_request = selected
         .join()
         .map_err(|_| std::io::Error::other("selected peer panicked"))??;
-    default
+    let default_request = default
         .join()
         .map_err(|_| std::io::Error::other("default peer panicked"))??;
+    assert_eq!(selected_request, "{\"id\":\"target\",\"type\":\"ping\"}\n");
+    assert_eq!(default_request, "{\"id\":\"target\",\"type\":\"ping\"}\n");
     cleaned?;
     assert_eq!(response["endpoint"], "selected");
     Ok(())
@@ -85,14 +87,14 @@ fn explicit_client_socket_paths_keep_native_spelling() {
 fn reply(
     listener: UnixListener,
     response: &'static [u8],
-) -> std::thread::JoinHandle<std::io::Result<()>> {
+) -> std::thread::JoinHandle<std::io::Result<String>> {
     std::thread::spawn(move || {
         let (mut stream, _) = listener.accept()?;
         let mut line = String::new();
         BufReader::new(&mut stream).read_line(&mut line)?;
-        assert_eq!(line, "{\"id\":\"target\",\"type\":\"ping\"}\n");
         stream.write_all(response)?;
-        stream.flush()
+        stream.flush()?;
+        Ok(line)
     })
 }
 
@@ -114,7 +116,10 @@ fn raw_client_failures_keep_native_causes() {
         let peer = reply(UnixListener::bind(&path).unwrap(), response);
         let client = DaemonClient::for_target(ConnectionTarget::SocketPath(path));
         let error = client.request_value(&request).unwrap_err();
-        peer.join().unwrap().unwrap();
+        assert_eq!(
+            peer.join().unwrap().unwrap(),
+            "{\"id\":\"target\",\"type\":\"ping\"}\n"
+        );
         if name == "json" {
             let ApiClientError::Json(cause) = &error else {
                 panic!("JSON failure required");
@@ -144,13 +149,7 @@ fn client_request_keeps_large_metadata_sequence() {
     let root = Scratch::new().unwrap();
     let path = root.path().join("sequence.sock");
     let listener = UnixListener::bind(&path).unwrap();
-    let peer = std::thread::spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
-        let mut line = String::new();
-        BufReader::new(&mut stream).read_line(&mut line).unwrap();
-        stream.write_all(b"{\"success\":true}\n").unwrap();
-        serde_json::from_str::<serde_json::Value>(&line).unwrap()
-    });
+    let peer = reply(listener, b"{\"success\":true}\n");
     let request = Request {
         id: Some("sequence".into()),
         command: RpcCommand::WorkspaceReportMetadata(
@@ -165,7 +164,7 @@ fn client_request_keeps_large_metadata_sequence() {
     };
     let client = DaemonClient::for_target(ConnectionTarget::SocketPath(path));
     let response = client.request_value(&request).unwrap();
-    let received = peer.join().unwrap();
+    let received: serde_json::Value = serde_json::from_str(&peer.join().unwrap().unwrap()).unwrap();
     assert_eq!(response["success"], true);
     assert_eq!(received["seq"], 9_007_199_254_740_993_u64);
 }
