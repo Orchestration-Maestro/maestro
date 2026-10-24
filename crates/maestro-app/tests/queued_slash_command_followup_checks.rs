@@ -4,22 +4,17 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::agent_session_queue_checks::Held;
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, Transcript, command_extension, corpus, on_task_set,
-    transcribed, waiting_tool,
+    Harness, HarnessOptions, Scripted, Transcript, command_extension, expected, input_sources,
+    on_task_set, transcribed, waiting_tool,
 };
 use indexmap::IndexMap;
 use maestro_app::AgentSessionEvent;
 use maestro_extensions::{ExtensionAPI, ExtensionFactory};
 use maestro_models::{Local, UserContent};
 use maestro_session::messages::{SendUserMessageOptions, UserMessageDelivery};
-use serde_json::{Value, json};
+use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;
-
-/// The recorded operation case `name`.
-fn expected(name: &str) -> Value {
-    corpus("prompt_queue")[name].clone()
-}
 
 /// The extension that keeps its own API alive and registers `testcmd`, which records the
 /// arguments it receives.
@@ -72,17 +67,6 @@ fn follow_up_queued(h: &Harness, text: &'static str) -> Rc<Notify> {
         }
     })));
     queued
-}
-
-/// The input sources the session's handlers saw.
-fn input_sources(transcript: &Transcript) -> Vec<Value> {
-    transcript
-        .extension
-        .borrow()
-        .iter()
-        .filter(|event| event["type"] == "input")
-        .map(|event| event["source"].clone())
-        .collect()
 }
 
 #[test]

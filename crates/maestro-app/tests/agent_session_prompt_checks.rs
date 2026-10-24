@@ -3,8 +3,9 @@
 //! refusals, compared with the recorded operation cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, HarnessOptions, Scripted, answer, command_extension, corpus, delivery_requests,
-    delivery_view, harness, observed_preflight, on_task_set, start_prompt, template, waiting_tool,
+    Auth, HarnessOptions, Scripted, answer, command_extension, delivery_requests, delivery_view,
+    expected, harness, observed_preflight, on_task_set, start_prompt, substituting, template,
+    waiting_tool,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentToolRecord, AgentToolResult, SharedAgentTool};
@@ -14,36 +15,9 @@ use maestro_models::{
 };
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
 use maestro_session::messages::SendUserMessageOptions;
-use serde_json::{Value, json};
+use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
-
-/// The recorded operation case `name`.
-fn expected(name: &str) -> Value {
-    corpus("prompt_queue")[name].clone()
-}
-
-/// `value` with every spelling in `paths` replaced by its second member.
-fn substituting(value: Value, paths: &[(&str, &str)]) -> Value {
-    match value {
-        Value::String(text) => json!(
-            paths
-                .iter()
-                .fold(text, |text, (from, to)| text.replace(from, to))
-        ),
-        Value::Array(items) => items
-            .into_iter()
-            .map(|item| substituting(item, paths))
-            .collect(),
-        Value::Object(fields) => Value::Object(
-            fields
-                .into_iter()
-                .map(|(key, item)| (key, substituting(item, paths)))
-                .collect(),
-        ),
-        other => other,
-    }
-}
 
 /// Executable tools that record `name:value` and answer with it.
 fn echoing_tools(

@@ -3,9 +3,9 @@
 //! with the recorded operation cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, command_extension, corpus, delivery_requests, delivery_view,
-    get_message_text, harness, observed_preflight, on_task_set, session_run_ended, start_prompt,
-    waiting_tool,
+    Harness, HarnessOptions, Scripted, command_extension, delivery_requests, delivery_view,
+    expected, get_message_text, harness, input_sources, observed_preflight, on_task_set,
+    session_run_ended, start_prompt, waiting_tool,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentEvent, QueueMode, SharedAgentTool};
@@ -21,11 +21,6 @@ use std::{
     rc::{Rc, Weak},
 };
 use tokio::sync::Notify;
-
-/// The recorded operation case `name`.
-fn expected(name: &str) -> Value {
-    corpus("prompt_queue")[name].clone()
-}
 
 /// The tools holding a run: the waiting tool alone.
 fn waiting_tools(
@@ -162,14 +157,7 @@ fn extension_steering_precedes_the_next_request() {
             .unwrap();
         queued.notified().await;
         let mut observed = held.finish().await;
-        let sources: Vec<Value> = t
-            .extension
-            .borrow()
-            .iter()
-            .filter(|event| event["type"] == "input")
-            .map(|event| event["source"].clone())
-            .collect();
-        observed["sources"] = json!(sources);
+        observed["sources"] = json!(input_sources(&t));
         assert_eq!(observed, expected);
     });
 }

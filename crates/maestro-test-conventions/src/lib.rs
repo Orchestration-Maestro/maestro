@@ -4,6 +4,8 @@ use std::path::Path;
 
 /// Declaration ownership and extension interface checks.
 mod boundaries;
+/// Case observation helper ownership checks.
+mod case_helpers;
 /// Exact test-selection ownership.
 mod child_tests;
 /// Rust comment content checks.
@@ -46,6 +48,12 @@ mod time_limits;
 /// runnable target and unconditional out-of-line declarations of top-level test
 /// files.
 ///
+/// The crate holding `tests/support/session_harness.rs` keeps its recorded-case
+/// corpus lookup, JSON substitution walk, extension input-source selection and
+/// session run-end observer in that harness; a copy of one beside it is rejected.
+/// Fragment matches read the whole-file token stream, so macro arguments, closures
+/// and impl methods count.
+///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Legal included fragments are counted without
 /// requiring a full-module parse; macros are not expanded.
@@ -76,6 +84,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     child_tests::check(&members)?;
     integration_tests::check(&members)?;
     boundaries::check(&members)?;
+    case_helpers::check(&members)?;
     comments::check(&members)?;
     repetition::check(&members)?;
     quality::check(root, &members)?;

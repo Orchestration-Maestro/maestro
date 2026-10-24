@@ -160,7 +160,11 @@
       {
         "role": "user",
         "text": "describe",
-        "images": [
+        "content": [
+          {
+            "type": "text",
+            "text": "describe"
+          },
           {
             "type": "image",
             "mimeType": "image/png",
@@ -181,7 +185,11 @@
         {
           "role": "user",
           "text": "describe",
-          "images": [
+          "content": [
+            {
+              "type": "text",
+              "text": "describe"
+            },
             {
               "type": "image",
               "mimeType": "image/png",

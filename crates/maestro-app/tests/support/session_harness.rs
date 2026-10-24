@@ -61,6 +61,11 @@ pub fn case(file: &str, name: &str) -> Value {
         .clone()
 }
 
+/// The recorded prompt and queue case `name`.
+pub fn expected(name: &str) -> Value {
+    corpus("prompt_queue")[name].clone()
+}
+
 /// How the scripted provider's credentials are configured.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Auth {
@@ -827,7 +832,8 @@ pub fn get_assistant_texts(harness: &Harness) -> Vec<String> {
 }
 
 /// The message fields the prompt and queue checks compare: the role and text, a custom
-/// message's own fields, a tool result's error flag and any image parts.
+/// message's own fields, a tool result's error flag and, for a message with images, its
+/// content blocks in order.
 pub fn delivery_message_view(record: &Value) -> Value {
     let mut view = json!({"role": record["role"], "text": get_message_text(record)});
     if record["role"] == "custom" {
@@ -838,14 +844,10 @@ pub fn delivery_message_view(record: &Value) -> Value {
     if record["role"] == "toolResult" {
         view["isError"] = record["isError"].clone();
     }
-    if let Some(content) = record["content"].as_array() {
-        let images: Vec<&Value> = content
-            .iter()
-            .filter(|part| part["type"] == "image")
-            .collect();
-        if !images.is_empty() {
-            view["images"] = json!(images);
-        }
+    if let Some(content) = record["content"].as_array()
+        && content.iter().any(|part| part["type"] == "image")
+    {
+        view["content"] = json!(content);
     }
     view
 }
@@ -1047,6 +1049,14 @@ pub fn of_kinds(values: &[Value], kinds: &[&str]) -> Vec<Value> {
         .iter()
         .filter(|value| kinds.iter().any(|kind| value["type"] == *kind))
         .cloned()
+        .collect()
+}
+
+/// The input sources the session's handlers saw, in order.
+pub fn input_sources(transcript: &Transcript) -> Vec<Value> {
+    of_kinds(&transcript.extension.borrow(), &["input"])
+        .iter()
+        .map(|event| event["source"].clone())
         .collect()
 }
 
@@ -1309,23 +1319,32 @@ pub fn hold_first_answer(
     notifiers
 }
 
-/// `value` with the scratch root spelled `$ROOT`, as the recorded cases spell it.
-pub fn with_placeholders(value: Value, h: &Harness) -> Value {
-    let root = h.scratch.path().display().to_string();
+/// `value` with every `(from, to)` spelling replaced, in order, in its strings.
+pub fn substituting(value: Value, paths: &[(&str, &str)]) -> Value {
     match value {
-        Value::String(text) => json!(text.replace(&root, "$ROOT")),
+        Value::String(text) => json!(
+            paths
+                .iter()
+                .fold(text, |text, (from, to)| text.replace(from, to))
+        ),
         Value::Array(items) => items
             .into_iter()
-            .map(|item| with_placeholders(item, h))
+            .map(|item| substituting(item, paths))
             .collect(),
         Value::Object(fields) => Value::Object(
             fields
                 .into_iter()
-                .map(|(key, item)| (key, with_placeholders(item, h)))
+                .map(|(key, item)| (key, substituting(item, paths)))
                 .collect(),
         ),
         other => other,
     }
+}
+
+/// `value` with the scratch root spelled `$ROOT`, as the recorded cases spell it.
+pub fn with_placeholders(value: Value, h: &Harness) -> Value {
+    let root = h.scratch.path().display().to_string();
+    substituting(value, &[(&root, "$ROOT")])
 }
 
 /// The agent run and message events, as the session's listeners would see them.

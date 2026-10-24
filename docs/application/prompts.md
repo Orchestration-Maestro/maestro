@@ -104,10 +104,12 @@ record when given, and a truncated result keeps the path of its full output.
 
 ## Qualified delivery
 
-The behaviour above is checked through the real session by
+Prompt and message delivery, skill and template expansion, and queueing are checked
+through the real session by
 [`agent_session_prompt_checks`](../../crates/maestro-app/tests/agent_session_prompt_checks.rs),
 [`agent_session_queue_checks`](../../crates/maestro-app/tests/agent_session_queue_checks.rs)
 and
 [`queued_slash_command_followup_checks`](../../crates/maestro-app/tests/queued_slash_command_followup_checks.rs).
-Each case compares the whole recorded operation: the history and queue mirrors, the
-actual provider requests and the errors.
+Each case compares the fields its recorded operation holds: the session history and
+queue mirrors, and, for a case that makes one, the received provider requests, the
+tool results a run produced or the error it reported.
