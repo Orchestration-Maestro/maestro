@@ -114,6 +114,40 @@ the `markdown-block` and `thinking-block` elements; see
 [native Markdown and code](transcript.md#native-markdown-and-code) and
 [page content](frontend.md#page-content).
 
+## Native download and preview/source controls
+
+[`download_button`](../../crates/maestro-web/src/components/download_button/dom.rs)
+mounts a native button that saves the caller's original bytes through the one
+scoped Blob/anchor owner. `DownloadButtonProps::new` selects a small ghost button
+with a small glyph and the `text/plain` MIME type; callers then set the tooltip,
+the visible label, the button size, the emphasis, the glyph extent and forced
+Base64 decoding. An absent tooltip uses the localized `Download` text and an
+explicitly empty one stays empty; `show_text` adds the localized label
+independently. Localization is read only where it is used, so a control with an
+explicit tooltip and no visible label builds even when the language cannot be
+read. The button is a plain action, so it never submits a surrounding
+form. Text content qualifies for decoding only at four or more characters, a
+multiple of four, with the complete Base64 alphabet and at most two terminal
+`=`; a failed decode saves the original text. Byte content keeps the caller's
+native array, so a later write or a subview is read when the control activates.
+The mounted root owns the activation listener and releases it on drop.
+
+[`PreviewCodeToggle`](../../crates/maestro-web/src/components/preview_code_toggle.rs)
+keeps one `ViewMode` in shared owned state. `mode` reads it and `set_mode` writes
+it silently; `DomContent::mount` and `update` publish a native group with two icon
+buttons, and `render` keeps the retained canvas pair for callers that still draw
+on the canvas. A real user change updates the mode, then dispatches one bubbling
+`mode-change` event whose detail is `preview` or `code`; selecting the current
+mode reports nothing, and a listener that selects again keeps its own choice. The
+buttons keep their native form behavior, so neither sets `type`. Registering the
+`preview-code-toggle` element gives page authors the same group with an
+unreflected `mode` property that reads and writes that enum and repaints the
+mounted buttons. An update refreshes the buttons' localized titles and hands the
+group to the controller it publishes, so later clicks reach that controller while
+the buttons keep their native nodes and focus. Disconnecting
+removes the group's handlers, and reconnecting restores them once with the
+selection intact.
+
 ## Tool content
 
 [Tool renderers](tool-renderers.md) provide named dispatch, retained tool headers,
