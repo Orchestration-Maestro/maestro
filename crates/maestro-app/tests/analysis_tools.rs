@@ -2,9 +2,9 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::analysis_fixtures::Run;
-#[cfg(unix)]
-use crate::analysis_fixtures::{open_pipe, read_pipe};
-use crate::analysis_fixtures::{page_data, root, run_tools, scratch, with_controlled_viewer};
+use crate::analysis_fixtures::{
+    opened, page_data, root, run_tools, scratch, with_controlled_viewer,
+};
 use serde_json::Value;
 
 /// The shared identity pack the page takes its colors from.
@@ -637,7 +637,6 @@ fn tool_report_page_matches_the_committed_fixture() {
     });
 }
 
-#[cfg(unix)]
 #[test]
 fn tool_report_opens_the_page_with_the_recorded_arguments() {
     with_controlled_viewer(
@@ -646,16 +645,21 @@ fn tool_report_opens_the_page_with_the_recorded_arguments() {
             let sessions = format!("{base}/sessions");
             write(&sessions, &[("a.jsonl", String::new())]);
             let output = format!("{base}/report.html");
-            let pipe = open_pipe(base);
+            // Help writes no page, so it hands nothing to the opener.
+            run_tools(&["--help"]).expect("help is printed");
+            assert!(
+                opened().is_empty(),
+                "a report that wrote no page opens none"
+            );
             let run = run_tools(&["--sessions-dir", &sessions, "--output", &output])
                 .expect("the report reads its directory");
             assert!(run.succeeded(), "{run:?}");
             assert_eq!(run.stdout, format!("Wrote {output}\n"));
-            // The viewer is started detached, so its record ends the wait, not a clock.
+            // The opener receives the page path, and no viewer process starts.
             assert_eq!(
-                read_pipe(&pipe),
-                format!("{output}\n"),
-                "the viewer receives the page path"
+                opened(),
+                [output],
+                "the opener receives the written page path"
             );
         },
     );

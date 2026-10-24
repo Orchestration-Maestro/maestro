@@ -106,83 +106,42 @@ pub fn expected(template: &str, base: &str) -> String {
     template.replace("{BASE}", base)
 }
 
-/// Run one report test with a controlled page viewer on `PATH` and an isolated home.
+/// Run one report test with an isolated home and no platform viewer.
 ///
-/// Every report test that opens its page runs here, so no test starts the
-/// platform's real viewer. The viewer records the arguments it receives, and a
-/// test that waits for them reads [`OPEN_RECORD`] as a pipe, so its wait ends
-/// with the viewer instead of on a clock.
+/// Every report test that opens its page runs here. The report's opener is the
+/// recorded fake [`run_tools`] installs, so no test starts a real browser, and a
+/// test reads the path through [`opened`].
 pub fn with_controlled_viewer(test: &str, body: impl FnOnce(&str)) {
     with_controlled_viewer_and(test, &[], body);
 }
 
 /// Run one report test as [`with_controlled_viewer`] does, with `variables` added.
 pub fn with_controlled_viewer_and(test: &str, variables: &[(&str, &str)], body: impl FnOnce(&str)) {
-    let mut selected = vec![("PATH", "$BASE/bin:/usr/bin:/bin")];
+    let mut selected = vec![("PATH", "/usr/bin:/bin")];
     selected.extend_from_slice(variables);
-    with_environment(test, &selected, |base| {
-        write_viewer(base);
-        body(base);
-    });
+    with_environment(test, &selected, body);
 }
 
-/// The name of the record the controlled viewer writes.
-pub const OPEN_RECORD: &str = "open.txt";
+/// The paths the report opener received in this test process, in order.
+static OPENED: std::sync::OnceLock<std::sync::Mutex<Vec<String>>> = std::sync::OnceLock::new();
 
-/// The pipe a test reads to wait for the controlled viewer; absent means no wait.
-pub const OPEN_PIPE: &str = "open.fifo";
-
-/// Write the controlled page viewer of this platform beneath `base`.
-///
-/// The viewer appends its arguments to [`OPEN_RECORD`], and writes them into
-/// [`OPEN_PIPE`] when the test made one, which blocks until the test reads it.
-fn write_viewer(base: &str) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let program = if cfg!(target_os = "macos") {
-            "open"
-        } else {
-            "xdg-open"
-        };
-        let directory = format!("{base}/bin");
-        std::fs::create_dir_all(&directory).expect("the viewer directory is creatable");
-        let viewer = format!("{directory}/{program}");
-        let record = format!("{base}/{OPEN_RECORD}");
-        let pipe = format!("{base}/{OPEN_PIPE}");
-        std::fs::write(
-            &viewer,
-            format!(
-                "#!/bin/sh\nprintf '%s\\n' \"$@\" >> {record}\nif [ -p {pipe} ]; then printf '%s\\n' \"$@\" > {pipe}; fi\n"
-            ),
-        )
-        .expect("the viewer is writable");
-        let mut permissions = std::fs::metadata(&viewer)
-            .expect("the viewer is readable")
-            .permissions();
-        permissions.set_mode(0o755);
-        std::fs::set_permissions(&viewer, permissions).expect("the viewer is executable");
-    }
-    #[cfg(not(unix))]
-    let _ = base;
+/// The paths the report opener received in this test process, in order.
+#[must_use]
+pub fn opened() -> Vec<String> {
+    OPENED
+        .get_or_init(|| std::sync::Mutex::new(Vec::new()))
+        .lock()
+        .expect("the opener record is readable")
+        .clone()
 }
 
-/// Create the pipe the controlled viewer writes into, before the page is opened.
-#[cfg(unix)]
-pub fn open_pipe(base: &str) -> String {
-    let pipe = format!("{base}/{OPEN_PIPE}");
-    let created = std::process::Command::new("mkfifo")
-        .arg(&pipe)
-        .status()
-        .expect("the pipe command runs");
-    assert!(created.success(), "the pipe is creatable");
-    pipe
-}
-
-/// Block until the controlled viewer writes into `pipe`, and return its arguments.
-#[cfg(unix)]
-pub fn read_pipe(pipe: &str) -> String {
-    std::fs::read_to_string(pipe).expect("the controlled viewer answers")
+/// Record one path the report handed to the opener.
+fn record(path: &str) {
+    OPENED
+        .get_or_init(|| std::sync::Mutex::new(Vec::new()))
+        .lock()
+        .expect("the opener record is writable")
+        .push(path.to_owned());
 }
 
 /// Run the tool report with the fixture clock.
@@ -191,7 +150,13 @@ pub fn read_pipe(pipe: &str) -> String {
 /// Returns the report's own rejection.
 pub fn run_tools(values: &[&str]) -> std::io::Result<Run> {
     let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-    let outcome = tool_stats::main(&arguments(values), &clock, &mut stdout, &mut stderr)?;
+    let outcome = tool_stats::main_with_opener(
+        &arguments(values),
+        &clock,
+        &record,
+        &mut stdout,
+        &mut stderr,
+    )?;
     Ok(Run {
         code: outcome,
         stdout: String::from_utf8(stdout).expect("report output is UTF-8"),

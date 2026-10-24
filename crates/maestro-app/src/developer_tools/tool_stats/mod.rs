@@ -70,6 +70,24 @@ pub fn main(
     stdout: &mut dyn Write,
     stderr: &mut dyn Write,
 ) -> io::Result<ExitCode> {
+    main_with_opener(args, now, &platform_opener, stdout, stderr)
+}
+
+/// Write the report and hand its path to `opener`.
+///
+/// The opener is supplied so a caller observes the path without starting a
+/// platform viewer.
+///
+/// # Errors
+/// Returns the native directory, read or write failure unchanged, and rejects a
+/// recorded null entry the way the report's field reads do.
+pub fn main_with_opener(
+    args: &[String],
+    now: &dyn Fn() -> chrono::DateTime<chrono::Local>,
+    opener: &dyn Fn(&str),
+    stdout: &mut dyn Write,
+    stderr: &mut dyn Write,
+) -> io::Result<ExitCode> {
     let _ = stderr;
     let Some(options) = parse_options(args, stdout)? else {
         return Ok(ExitCode::SUCCESS);
@@ -414,7 +432,7 @@ fn bucket_labels() -> Vec<String> {
 }
 
 /// Open the written report with the platform's own viewer.
-fn opener(path: &str) {
+fn platform_opener(path: &str) {
     let (program, arguments) = match std::env::consts::OS {
         "macos" => ("open", vec![path.to_owned()]),
         "windows" => (
