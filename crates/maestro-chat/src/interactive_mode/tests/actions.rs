@@ -292,9 +292,11 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
 }
 
 /// A Wayland paste helper that lists the planned types and prints the planned image.
+#[cfg(target_os = "linux")]
 const WL_PASTE: &str = "#!/bin/sh\nif [ \"$1\" = --list-types ]; then /bin/cat \"${0%/*}/types\"; else /bin/cat \"${0%/*}/image\"; fi\n";
 
 /// Runs the installed image paste and the host work it hands over.
+#[cfg(target_os = "linux")]
 fn paste(world: &World) {
     let on_paste = world.mode.editor.on_paste_image().unwrap();
     on_paste();
@@ -302,6 +304,7 @@ fn paste(world: &World) {
 }
 
 /// One clipboard image type.
+#[cfg(target_os = "linux")]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Paste {
@@ -313,6 +316,7 @@ struct Paste {
 }
 
 /// The pasted file and the editor text around its path.
+#[cfg(target_os = "linux")]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Pasted {
@@ -372,6 +376,7 @@ fn clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor() {
 }
 
 /// An empty clipboard.
+#[cfg(target_os = "linux")]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NoImage {
@@ -380,6 +385,7 @@ struct NoImage {
 }
 
 /// The editor text.
+#[cfg(target_os = "linux")]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Text {
