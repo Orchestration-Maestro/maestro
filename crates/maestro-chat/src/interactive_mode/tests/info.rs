@@ -13,28 +13,9 @@ use std::{collections::BTreeMap, io, panic::AssertUnwindSafe, path::Path, rc::Rc
 /// Every recorded command case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_info.json");
 
-/// One recorded case, decoded into its witness's own records.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: Value,
-    /// The recorded observation.
-    expected: Value,
-}
-
-/// The recorded operations and observations of `test`.
+/// The recorded operations of `test`, with observations typed later by operation.
 pub(super) fn cases<I: DeserializeOwned>(test: &str) -> Vec<(I, Value)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| (serde_json::from_value(case.input).unwrap(), case.expected))
-        .collect();
-    assert!(!cases.is_empty());
-    cases
+    super::cases::<I, Value>(FIXTURES, test)
 }
 
 /// Decodes one recorded observation strictly.
