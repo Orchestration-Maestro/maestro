@@ -413,7 +413,7 @@ In the interactive mode, Shift+Ctrl+D writes a debug capture to
 `~/.maestro/agent/maestro-debug.log`, or to `maestro-debug.log` in the directory
 `MAESTRO_CODING_AGENT_DIR` names. The capture holds the terminal size, every
 rendered line with its visible width and escaped ANSI sequences, and the session's
-messages as JSON lines. Typed `/debug` text does not reach it yet. See
+messages as JSON lines. Submitting `/debug` writes the same capture. See
 [debug capture](chat/commands.md#debug-capture). The interactive owner supplies this
 behavior; development commands do not create a replacement logger.
 

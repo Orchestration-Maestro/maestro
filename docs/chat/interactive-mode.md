@@ -150,9 +150,10 @@ editor, with the key bound to `tui.input.submit` (Enter by default). Submitted
 text loses its outer whitespace under the shared whitespace policy: Unicode white
 space other than U+0085, plus U+FEFF. U+0085, U+200B, inner spaces and line breaks
 stay. Submission ignores text that is empty after trimming: no input receives it
-and the history does not record it. While the session compacts or a response
-streams, submitted text is queued instead (see Queued input) and no input receives
-it.
+and the history does not record it. The session commands in
+[Interactive commands](commands.md) are handled before this step. While the session
+compacts or a response streams, submitted text is queued instead (see Queued
+input) and no input receives it.
 
 Only one input waits at a time. The future starts waiting when it is first
 polled, not when it is created, and it does not borrow the mode. When it waits,

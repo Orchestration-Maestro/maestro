@@ -49,9 +49,7 @@ impl InteractiveMode {
     /// so the terminal host reports it.
     fn debug_from_key(&self) {
         if let Err(error) = self.handle_debug_command() {
-            self.tool_environment
-                .runtime
-                .spawn_local(Box::pin(async move { Err(error) }));
+            self.report(Err(error));
         }
     }
 }

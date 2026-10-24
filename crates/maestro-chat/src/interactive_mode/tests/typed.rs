@@ -1,9 +1,10 @@
 //! Typed input through the editor's installed submission and the single waiting input.
 use super::{World, cases as recorded_cases, isolated, started};
+use crate::components::session_selector::list::tests::session_picker::manual_runtime::FileEffect;
 use crate::{CustomEditor, InteractiveMode};
-use maestro_tui::KeybindingKeys;
 use maestro_tui::tui::InputHandler;
-use serde::Deserialize;
+use maestro_tui::{Component, KeybindingKeys};
+use serde::{Deserialize, de::DeserializeOwned};
 use std::{
     cell::RefCell,
     future::Future,
@@ -482,5 +483,87 @@ fn typed_input_obeys_the_live_submit_binding() {
                 _ => panic!("a binding case and its observation disagree"),
             }
         }
+    });
+}
+
+/// Submits `text` with a waiting input and checks that a command consumed it: the input
+/// keeps waiting, the editor is empty and the history records nothing.
+fn consumed(world: &World, text: &str) {
+    let mut waiter = waiting(&world.mode);
+    world.mode.editor.set_text(text);
+    submit(world, text);
+    assert_eq!(poll(&mut waiter), None);
+    assert_eq!(world.mode.editor.get_text(), "");
+    assert!(recalled(&world.mode.editor).is_empty());
+}
+
+/// Submits `text` with a waiting input and checks that it arrives as ordinary input.
+fn ordinary(world: &World, text: &str) {
+    let mut waiter = waiting(&world.mode);
+    submit(world, text);
+    assert_eq!(poll(&mut waiter).as_deref(), Some(text.trim()));
+    assert_eq!(recalled(&world.mode.editor)[0], text.trim());
+}
+
+/// The transcript rendered wide enough to keep each notice on one row.
+fn transcript(world: &World) -> String {
+    world.mode.chat_container.render(200).join("\n")
+}
+
+#[test]
+fn name_submission_consumes_command_before_prompt() {
+    isolated(
+        "name_submission_consumes_command_before_prompt",
+        |directory| {
+            let world = started(directory);
+            consumed(&world, "/name");
+            assert!(transcript(&world).contains("Warning: Usage: /name <name>"));
+            consumed(&world, "  /name Demo  ");
+            assert!(transcript(&world).contains("Session name set: Demo"));
+            let name = world.host.session().session_name().unwrap();
+            assert_eq!(name.as_deref(), Some("Demo"));
+            let notices = world.mode.chat_container.children().borrow().len();
+            ordinary(&world, "/names");
+            ordinary(&world, "rename /name it");
+            assert_eq!(world.mode.chat_container.children().borrow().len(), notices);
+        },
+    );
+}
+
+#[test]
+fn session_submission_reports_without_prompt() {
+    isolated("session_submission_reports_without_prompt", |directory| {
+        let world = started(directory);
+        consumed(&world, "/session");
+        assert!(transcript(&world).contains("Session Info"));
+        let notices = world.mode.chat_container.children().borrow().len();
+        ordinary(&world, "/session extra");
+        assert_eq!(world.mode.chat_container.children().borrow().len(), notices);
+    });
+}
+
+#[test]
+fn debug_submission_records_then_clears_editor() {
+    isolated("debug_submission_records_then_clears_editor", |directory| {
+        let world = started(directory);
+        consumed(&world, "/debug");
+        let files = world.runtime.files();
+        let [FileEffect::Write(_, log)] = files.as_slice() else {
+            panic!("one log write");
+        };
+        assert!(log.contains("/debug"));
+        assert!(transcript(&world).contains("Debug log written"));
+        world
+            .runtime
+            .set_write_error(Some(std::io::ErrorKind::PermissionDenied));
+        let notices = world.mode.chat_container.children().borrow().len();
+        let mut waiter = waiting(&world.mode);
+        world.mode.editor.set_text("/debug");
+        submit(&world, "/debug");
+        assert_eq!(poll(&mut waiter), None);
+        assert_eq!(world.mode.editor.get_text(), "/debug");
+        assert_eq!(world.mode.chat_container.children().borrow().len(), notices);
+        assert_eq!(world.runtime.drain_futures().len(), 1);
+        ordinary(&world, "/debug now");
     });
 }
