@@ -186,13 +186,16 @@ fn transcript_expansion_reaches_active_header_and_expandable_rows() {
             } = input;
             assert_eq!((op.as_str(), custom), ("expand", false));
             let world = recorded(directory, Setup::default());
-            let header = Rc::new(ExpandableText::new(
-                "HEADER_SHORT".into(),
-                "HEADER_FULL".into(),
-                false,
-                0,
-                0,
-            ));
+            let header = Rc::new(
+                ExpandableText::new(
+                    Box::new(|| Ok("HEADER_SHORT".to_owned())),
+                    Box::new(|| Ok("HEADER_FULL".to_owned())),
+                    false,
+                    0,
+                    0,
+                )
+                .unwrap(),
+            );
             world.mode.built_in_header.replace(Some(header.clone()));
             let chat = &world.mode.chat_container;
             chat.add_child(Rc::new(Spacer::new(1)));
