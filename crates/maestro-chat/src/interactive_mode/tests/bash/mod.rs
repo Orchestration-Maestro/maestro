@@ -1193,7 +1193,7 @@ fn pending_area(
         .map(|command| {
             Rc::new(BashExecutionComponent::new(
                 command.to_owned(),
-                world.mode.ui.clone(),
+                (*world.mode.ui).clone(),
                 world.themes.theme(),
                 false,
             ))

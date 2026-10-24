@@ -115,10 +115,39 @@ to the session's extension bindings. The bindings carry the originating event
 capability, so the host only calls the bound handles it receives; it never
 obtains an event bus.
 
-This section covers the operations that exist today: editor access, theme
-queries and selection, the terminal title, tool expansion, status text and widgets.
-Extension dialogs, notifications, terminal input listeners, custom headers,
-footers and editors keep their own owners and their published components.
+This section covers the operations that exist today: dialogs, editor access,
+theme queries and selection, the terminal title, tool expansion, status text and
+widgets. Notifications, terminal input listeners and custom headers, footers and
+editors keep their own owners and their published components.
+
+## Dialogs
+
+`select`, `input` and `editor` show the selector, the text input or the
+multiline editor described above in place of the editor before they return.
+Focus moves to the dialog and the mode requests a frame. Answering, cancelling,
+a countdown expiring or the signal aborting settles the dialog once. The
+countdown stops, the mode's current editor returns with focus, the mode requests
+a frame and the result becomes available. A cancelled, expired or aborted dialog
+answers `None`. The multiline editor takes neither a countdown nor a signal and
+answers with the text its editor submits.
+
+`confirm` shows the selector with the title and message on two lines and the
+options `Yes` and `No`, in that order. Only `Yes` answers true; `No`,
+cancelling, expiry and abort answer false.
+
+An already-aborted signal answers at once: the mode shows nothing, keeps focus
+and requests no frame. A countdown starts only when the timeout is greater than
+zero. Aborting after the dialog settled does nothing. The shown dialog holds its
+own settlement, so dropping the returned future leaves it working: a later key
+still settles it and restores the editor. Settled dialogs keep neither the mode
+nor its terminal alive.
+
+`prompt_for_missing_session_cwd` asks whether to continue when a session's
+stored directory no longer exists. The title is `Session cwd not found`,
+followed by the session's own prompt text from
+`format_missing_session_cwd_prompt`. `Yes` returns the offered directory
+unchanged, even when it is empty, without checking it; `No` or cancelling
+returns `None`.
 
 ## Editor access
 

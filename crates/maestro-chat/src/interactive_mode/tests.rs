@@ -568,6 +568,9 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
     let mut text = text.replace("<version>", VERSION);
     for (marker, role) in [
         ("@accent@", ThemeColor::Accent),
+        ("@border@", ThemeColor::Border),
+        ("@borderMuted@", ThemeColor::BorderMuted),
+        ("@text@", ThemeColor::Text),
         ("@dim@", ThemeColor::Dim),
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),

@@ -136,10 +136,10 @@ frame; the editor's history is kept.
 
 The mode implements the extension UI port. A host retains it with
 `ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
-lists the operations it answers today, which are editor access, theme queries and
-selection, the terminal title, tool expansion, status text and keyed widgets above
-or below the editor. Dialogs, notifications and terminal input listeners keep
-their own published owners.
+lists the operations it answers today, which are dialogs, editor access, theme
+queries and selection, the terminal title, tool expansion, status text and keyed
+widgets above or below the editor. Notifications and terminal input listeners
+keep their own published owners.
 
 ## Typed input
 
