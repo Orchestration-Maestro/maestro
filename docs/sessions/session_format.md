@@ -53,8 +53,10 @@ Message entries hold one `message` object whose `role` selects its shape.
 Content blocks: `{"type":"text","text":…}`; `{"type":"image","data":<base64>,"mimeType":…}`;
 `{"type":"thinking","thinking":…}`; `{"type":"toolCall","id":…,"name":…,"arguments":{…}}`.
 `stopReason` is one of `stop`, `length`, `toolUse`, `error` or `aborted`. `usage`
-holds `input`, `output`, `cacheRead`, `cacheWrite`, `totalTokens` and a `cost`
-object with `input`, `output`, `cacheRead`, `cacheWrite` and `total`.
+holds `input`, `output`, `cacheRead`, `cacheWrite`, an optional `totalTokens` and a
+`cost` object with `input`, `output`, `cacheRead`, `cacheWrite` and `total`. A
+saved history may omit `totalTokens`; the message then still loads, and that
+member stays absent until something reports it.
 Typed message records live in the
 [message projection](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/messages.md)
 owner; stored messages stay raw until a consumer decodes the members it needs.

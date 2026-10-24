@@ -905,7 +905,7 @@ fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
         let infinite =
             usage_of(r#"{"prompt_tokens":1e400,"prompt_tokens_details":{"cached_tokens":1e400}}"#)
                 .await?;
-        assert!(infinite.input.is_nan() && infinite.total_tokens.is_nan());
+        assert!(infinite.input.is_nan() && infinite.total_tokens.present().unwrap().is_nan());
         assert_eq!(infinite.cache_read.to_bits(), f64::INFINITY.to_bits());
         assert_eq!(infinite.output.to_bits(), 0.0_f64.to_bits());
 
@@ -915,7 +915,10 @@ fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
 
         let negative = usage_of(r#"{"completion_tokens":-1e400}"#).await?;
         assert_eq!(negative.output.to_bits(), f64::NEG_INFINITY.to_bits());
-        assert_eq!(negative.total_tokens.to_bits(), f64::NEG_INFINITY.to_bits());
+        assert_eq!(
+            negative.total_tokens.present().unwrap().to_bits(),
+            f64::NEG_INFINITY.to_bits()
+        );
         assert_eq!(negative.input.to_bits(), 0.0_f64.to_bits());
 
         let signed_zero = usage_of(r#"{"prompt_tokens":-0,"completion_tokens":-0}"#).await?;
@@ -931,7 +934,7 @@ fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
             counted.output,
             counted.cache_read,
             counted.cache_write,
-            counted.total_tokens,
+            counted.total_tokens.present().copied().unwrap(),
         ];
         assert_eq!(
             figures.map(f64::to_bits),
