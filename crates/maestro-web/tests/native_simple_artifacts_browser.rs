@@ -114,11 +114,7 @@ async fn saved(
     let root = artifact.get_header_buttons(view).unwrap();
     let control = button(&root);
     body().append_child(&root.node).unwrap();
-    fixture.begin("success");
-    control.click();
-    wasm_bindgen_futures::JsFuture::from(fixture.finish(bytes, mime, name, true))
-        .await
-        .unwrap();
+    fixture.saved(&control, bytes, mime, name).await;
     body().remove_child(&root.node).unwrap();
 }
 /// Every recorded media type and payload reaches the header's byte download.
@@ -188,16 +184,9 @@ pub async fn generic_artifact_dom_roots_release_their_own_resources(
     let control = button(&second_root);
     body().append_child(&second_root.node).unwrap();
     drop(first_root);
-    fixture.begin("success");
-    control.click();
-    wasm_bindgen_futures::JsFuture::from(fixture.finish(
-        &[102, 111],
-        "application/octet-stream",
-        "b.bin",
-        true,
-    ))
-    .await
-    .unwrap();
+    fixture
+        .saved(&control, &[102, 111], "application/octet-stream", "b.bin")
+        .await;
     body().remove_child(&second_root.node).unwrap();
     assert_host_silent(&host);
 }
