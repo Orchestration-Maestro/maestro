@@ -10,9 +10,8 @@ use maestro_app::{
     AgentSession, BashOperations, BashResult, DiagnosticErrorInfo, Presence, TruncationResult,
     UserBashEvent, UserBashEventResult,
 };
-use maestro_tui::Component;
 use maestro_tui::EditorComponent;
-use std::{cell::RefCell, error::Error, rc::Rc, sync::Arc};
+use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc, sync::Arc};
 
 /// The callable operations an extension supplies for one shell command.
 type ShellOperations = Arc<dyn BashOperations>;
@@ -40,9 +39,9 @@ pub(super) fn selected_shell_command(text: &str) -> Option<(&str, bool)> {
     (!command.is_empty()).then_some((command, exclude_from_context))
 }
 
-/// Whether `child`, which the container holds as a component, is `row`.
-fn same_row(row: &Rc<BashExecutionComponent>, child: &Rc<dyn Component>) -> bool {
-    std::ptr::addr_eq(Rc::as_ptr(row).cast::<()>(), Rc::as_ptr(child).cast::<()>())
+/// The address of the component `handle` holds, so two handles to one component share it.
+fn component_address<T: ?Sized>(handle: &Rc<T>) -> usize {
+    Rc::as_ptr(handle).cast::<()>() as usize
 }
 
 /// Completes `component` from `result`, keeping only the truncation flag its row reads.
@@ -66,18 +65,6 @@ fn complete_bash_component(component: &BashExecutionComponent, result: &BashResu
         truncation,
         result.full_output_path.clone(),
     );
-}
-
-/// Appends `result`'s output to `row` once, then completes it.
-fn show_shell_result(
-    row: &BashExecutionComponent,
-    result: &BashResult,
-) -> Result<(), Box<dyn Error>> {
-    if !result.output.is_empty() {
-        row.append_output(&result.output)?;
-    }
-    complete_bash_component(row, result);
-    Ok(())
 }
 
 impl InteractiveMode {
@@ -107,6 +94,9 @@ impl InteractiveMode {
             excluded: exclude_from_context,
         };
         let row = self.attach_shell_row(selected.command, selected.excluded);
+        // The reference reads the current session after the hook, so a replacement during
+        // interception records into the session that is current now.
+        let session = self.runtime_host.session();
         let outcome = self
             .settle_shell_command(&session, selected, &row, answer)
             .await;
@@ -128,7 +118,11 @@ impl InteractiveMode {
             None => (Presence::Missing, None),
         };
         if let Presence::Present(result) = result {
-            show_shell_result(row, &result)?;
+            // An intercepted result never streams, so its whole output is shown here.
+            if !result.output.is_empty() {
+                row.append_output(&result.output)?;
+            }
+            complete_bash_component(row, &result);
             return session
                 .record_bash_result(selected.command, &result, Some(selected.excluded))
                 .map_err(|error| -> Box<dyn Error> { Box::new(error) });
@@ -138,7 +132,12 @@ impl InteractiveMode {
             operations,
         };
         match execute_bash_command(self, selected.command, Rc::clone(row), options).await {
-            Ok(result) => show_shell_result(row, &result),
+            // Execution streamed every chunk into the row already; joining them again would
+            // paint the output twice before completion.
+            Ok(result) => {
+                complete_bash_component(row, &result);
+                Ok(())
+            }
             Err(error) => {
                 row.set_complete(None, false, None, None);
                 self.show_error(&format!("Bash command failed: {error}"))
@@ -187,10 +186,11 @@ impl InteractiveMode {
         if pending.is_empty() {
             return;
         }
+        let identities: HashSet<usize> = pending.iter().map(component_address).collect();
         let mut kept = Vec::new();
         let mut moved = Vec::new();
         for child in self.pending_messages_container.children().borrow().iter() {
-            if pending.iter().any(|row| same_row(row, child)) {
+            if identities.contains(&component_address(child)) {
                 moved.push(Rc::clone(child));
             } else {
                 kept.push(Rc::clone(child));

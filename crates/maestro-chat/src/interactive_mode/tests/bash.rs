@@ -555,6 +555,7 @@ fn shell_hooks_preserve_selected_arguments_and_read_current_session_after_await(
         |directory| {
             hook_reads_the_selected_arguments(directory);
             hook_cannot_rewrite_the_selection(directory);
+            replaced_session_during_interception_records_there(directory);
         },
     );
 }
@@ -609,6 +610,93 @@ fn hook_cannot_rewrite_the_selection(directory: &Path) {
     assert!(
         rows.iter().any(|row| row.contains("$ echo kept")),
         "{rows:?}"
+    );
+}
+
+/// An extension answering `user_bash` through `answer` once `resume` is notified, reporting
+/// `reached` first and recording each event in `seen`.
+fn awaiting_interception(
+    seen: &Seen,
+    reached: Rc<tokio::sync::Notify>,
+    resume: Rc<tokio::sync::Notify>,
+    answer: Answer,
+) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+    let seen = Rc::clone(seen);
+    Rc::new(move |api| {
+        let answer = Rc::clone(&answer);
+        let seen = Rc::clone(&seen);
+        let reached = Rc::clone(&reached);
+        let resume = Rc::clone(&resume);
+        api.on::<maestro_app::UserBashEvent, _>(
+            "user_bash".to_owned(),
+            Rc::new(move |event: &mut maestro_app::UserBashEvent, _| {
+                seen.borrow_mut().push(event.clone());
+                let produced = answer(&mut *event).map(|answer| answer.typed());
+                let reached = Rc::clone(&reached);
+                let resume = Rc::clone(&resume);
+                Box::pin(async move {
+                    reached.notify_one();
+                    resume.notified().await;
+                    Ok(produced)
+                })
+            }),
+        )
+        .unwrap();
+        Box::pin(std::future::ready(Ok(())))
+    })
+}
+
+/// A replacement during a pending hook records the answer into the session current after it.
+fn replaced_session_during_interception_records_there(directory: &Path) {
+    let script = scripted(directory, "shell", "printf 'not run\\n'");
+    let reached = Rc::new(tokio::sync::Notify::new());
+    let resume = Rc::new(tokio::sync::Notify::new());
+    let seen: Seen = Rc::default();
+    let extension = awaiting_interception(
+        &seen,
+        Rc::clone(&reached),
+        Rc::clone(&resume),
+        whole("hook output", Some(0.0)),
+    );
+    let world = Setup {
+        configure: Box::new(move |settings: &mut SettingsManager| {
+            settings.set_shell_path(Some(script));
+        }),
+        extension: Some(extension),
+        replacing: true,
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().unwrap();
+    world.runtime.settle().unwrap();
+    let retired = world.host.session();
+    let errors = on_tasks(async {
+        let ((), errors) = driving(&world, async {
+            submit(&world, "!echo kept");
+            reached.notified().await;
+            let replaced = world
+                .host
+                .new_session(maestro_app::NewSessionCommandOptions::default())
+                .await
+                .expect("the replacement session starts");
+            assert!(!replaced.cancelled);
+            assert!(!Rc::ptr_eq(&retired, &world.host.session()));
+            resume.notify_one();
+            until_command_settles(&world).await;
+        })
+        .await;
+        errors
+    });
+    assert!(errors.is_empty(), "{errors:?}");
+    assert_eq!(seen.borrow().len(), 1);
+    assert_eq!(
+        recorded(&world).len(),
+        1,
+        "the session current after the hook records the answer"
+    );
+    assert!(
+        recorded_in(&retired).is_empty(),
+        "the retired session records nothing"
     );
 }
 
@@ -887,4 +975,263 @@ fn intercepted_shell_recording_failure_releases_active_row() {
             assert!(!rows.contains("Error: "), "no extra notice: {rows}");
         },
     );
+}
+
+#[test]
+fn native_shell_output_paints_chunks_once() {
+    isolated("native_shell_output_paints_chunks_once", |directory| {
+        let script = scripted(directory, "shell", "printf 'chunk\\n'");
+        let world = shelling(directory, &script);
+        let errors = on_tasks(async {
+            let ((), errors) = driving(&world, async {
+                submit(&world, "!true");
+                until_complete(&world, 1).await;
+            })
+            .await;
+            errors
+        });
+        assert!(errors.is_empty(), "{errors:?}");
+        let rows = transcript(&world);
+        assert_eq!(
+            rows.iter().filter(|row| row.contains("chunk")).count(),
+            1,
+            "the streamed output is painted once: {rows:?}"
+        );
+        let records = recorded(&world);
+        assert_eq!(records.len(), 1, "{records:?}");
+        assert_eq!(records[0]["output"], "chunk\n");
+    });
+}
+
+#[test]
+fn overlapping_shell_rows_release_only_their_own_claim() {
+    isolated(
+        "overlapping_shell_rows_release_only_their_own_claim",
+        |directory| {
+            let script = scripted(
+                directory,
+                "shell",
+                ": > \"$2-started\"\nwhile [ ! -e \"$2-release\" ]; do :; done\nprintf '%s output\\n' \"$2\"",
+            );
+            let world = shelling(directory, &script);
+            let errors = on_tasks(async {
+                let ((), errors) = driving(&world, async {
+                    let older = start_command(&world, "older");
+                    until_exists(&directory.join("older-started")).await;
+                    let newer = start_command(&world, "newer");
+                    until_exists(&directory.join("newer-started")).await;
+                    let newer_row = active(&world).expect("the newer row produces output");
+                    std::fs::write(directory.join("older-release"), "").unwrap();
+                    older.await.unwrap().unwrap();
+                    assert!(
+                        active(&world).is_some_and(|row| Rc::ptr_eq(&row, &newer_row)),
+                        "the older row's release leaves the newer row's claim"
+                    );
+                    std::fs::write(directory.join("newer-release"), "").unwrap();
+                    newer.await.unwrap().unwrap();
+                    assert!(active(&world).is_none(), "the last row gives up its claim");
+                })
+                .await;
+                errors
+            });
+            assert!(errors.is_empty(), "{errors:?}");
+            let rows = transcript(&world).join("\n");
+            assert!(rows.contains("older output"), "{rows}");
+            assert!(rows.contains("newer output"), "{rows}");
+        },
+    );
+}
+
+/// Starts the mode's own shell operation for `command`, as a submission does.
+fn start_command(
+    world: &World,
+    command: &'static str,
+) -> tokio::task::JoinHandle<Result<(), Box<dyn Error>>> {
+    let mode = Rc::clone(&world.mode);
+    tokio::task::spawn_local(async move { mode.handle_bash_command(command, false).await })
+}
+
+#[test]
+fn shell_channel_drains_before_completion_and_closes_with_owner() {
+    isolated(
+        "shell_channel_drains_before_completion_and_closes_with_owner",
+        |directory| {
+            let started = directory.join("drain-started");
+            let release = directory.join("drain-release");
+            let script = scripted(
+                directory,
+                "shell",
+                &format!(
+                    "printf 'first\\n'\n: > {}\nwhile [ ! -e {} ]; do :; done\nprintf 'second\\n'",
+                    started.display(),
+                    release.display()
+                ),
+            );
+            let world = shelling(directory, &script);
+            let errors = on_tasks(async {
+                let ((), errors) = driving(&world, async {
+                    submit(&world, "!drain");
+                    until_exists(&started).await;
+                    let row = active(&world).expect("the row produces output");
+                    let painted = maestro_tui::Component::render(&*row, 80).join("\n");
+                    assert!(
+                        painted.contains("first"),
+                        "the admitted chunk reaches the row: {painted}"
+                    );
+                    assert!(
+                        !painted.contains("second"),
+                        "the command still runs: {painted}"
+                    );
+                    assert!(
+                        painted.contains("Running..."),
+                        "the row is not complete: {painted}"
+                    );
+                    std::fs::write(&release, "").unwrap();
+                    until_complete(&world, 1).await;
+                })
+                .await;
+                errors
+            });
+            assert!(errors.is_empty(), "{errors:?}");
+            let rows = transcript(&world);
+            let first = rows.iter().position(|row| row.contains("first"));
+            let second = rows.iter().position(|row| row.contains("second"));
+            assert!(first < second, "the chunks keep their order: {rows:?}");
+            assert_eq!(
+                rows.iter().filter(|row| row.contains("first")).count(),
+                1,
+                "the first chunk is painted once: {rows:?}"
+            );
+            assert_eq!(recorded(&world).len(), 1);
+            assert_eq!(recorded(&world)[0]["output"], "first\nsecond\n");
+        },
+    );
+}
+
+#[test]
+fn cancelled_shell_settles_its_row_and_records_the_cancellation() {
+    isolated(
+        "cancelled_shell_settles_its_row_and_records_the_cancellation",
+        |directory| {
+            let started = directory.join("cancel-started");
+            let script = scripted(
+                directory,
+                "shell",
+                &format!(": > {}\nwhile :; do :; done", started.display()),
+            );
+            let world = shelling(directory, &script);
+            let errors = on_tasks(async {
+                let ((), errors) = driving(&world, async {
+                    submit(&world, "!cancel");
+                    until_exists(&started).await;
+                    world.host.session().abort_bash();
+                    until_complete(&world, 1).await;
+                })
+                .await;
+                errors
+            });
+            assert!(errors.is_empty(), "{errors:?}");
+            let rows = transcript(&world).join("\n");
+            assert!(rows.contains("(cancelled)"), "{rows}");
+            let records = recorded(&world);
+            assert_eq!(records.len(), 1, "{records:?}");
+            assert_eq!(records[0]["cancelled"], true);
+        },
+    );
+}
+
+#[test]
+fn pending_shell_flush_uses_linear_identity_membership() {
+    isolated(
+        "pending_shell_flush_uses_linear_identity_membership",
+        |directory| {
+            let world = Setup::default().build(directory);
+            world.mode.init().unwrap();
+            world.runtime.settle().unwrap();
+            let (rows, neighbours) = pending_area(&world);
+            world.mode.flush_pending_bash_components();
+            assert_pending_flush(&world, &rows, &neighbours);
+            world.mode.flush_pending_bash_components();
+            assert_eq!(world.mode.chat_container.children().borrow().len(), 3);
+            assert_eq!(
+                world
+                    .mode
+                    .pending_messages_container
+                    .children()
+                    .borrow()
+                    .len(),
+                2
+            );
+        },
+    );
+}
+
+/// Fills the pending area with text neighbours around equal-looking shell rows, recording
+/// the row handles in another order than the container holds them.
+fn pending_area(
+    world: &World,
+) -> (
+    Vec<Rc<BashExecutionComponent>>,
+    Vec<Rc<dyn maestro_tui::Component>>,
+) {
+    let rows: Vec<_> = std::iter::repeat_n("!echo same", 3)
+        .map(|command| {
+            Rc::new(BashExecutionComponent::new(
+                command.to_owned(),
+                world.mode.ui.clone(),
+                world.themes.theme(),
+                false,
+            ))
+        })
+        .collect();
+    let neighbours: Vec<Rc<dyn maestro_tui::Component>> = ["before", "between"]
+        .iter()
+        .map(|text| {
+            let text = Rc::new(maestro_tui::Text::new((*text).to_owned(), 0, 0, None));
+            text as Rc<dyn maestro_tui::Component>
+        })
+        .collect();
+    world
+        .mode
+        .pending_messages_container
+        .set_children(Rc::new(RefCell::new(vec![
+            Rc::clone(&neighbours[0]),
+            rows[0].clone(),
+            Rc::clone(&neighbours[1]),
+            rows[1].clone(),
+            rows[2].clone(),
+        ])));
+    *world.mode.pending_shells.borrow_mut() = vec![
+        Rc::clone(&rows[2]),
+        Rc::clone(&rows[0]),
+        Rc::clone(&rows[1]),
+    ];
+    (rows, neighbours)
+}
+
+/// Asserts the neighbours kept their order and every row moved once under its identity.
+fn assert_pending_flush(
+    world: &World,
+    rows: &[Rc<BashExecutionComponent>],
+    neighbours: &[Rc<dyn maestro_tui::Component>],
+) {
+    let kept = world.mode.pending_messages_container.children();
+    let kept: Vec<_> = kept.borrow().iter().map(Rc::clone).collect();
+    assert_eq!(kept.len(), neighbours.len());
+    for (position, neighbour) in neighbours.iter().enumerate() {
+        assert!(
+            Rc::ptr_eq(&kept[position], neighbour),
+            "neighbour {position} stays"
+        );
+    }
+    let moved = world.mode.chat_container.children();
+    let moved: Vec<_> = moved.borrow().iter().map(Rc::clone).collect();
+    assert_eq!(moved.len(), rows.len());
+    for (position, row) in rows.iter().enumerate() {
+        let expected = Rc::clone(row) as Rc<dyn maestro_tui::Component>;
+        assert!(
+            Rc::ptr_eq(&moved[position], &expected),
+            "row {position} moves once under its own identity"
+        );
+    }
 }
