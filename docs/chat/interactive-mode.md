@@ -3,12 +3,11 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, the export command, session replay, the session events,
-compaction and retry progress, the expansion and thinking shortcuts, thinking and
-model cycling, the editor border, external editing and image paste. The prompt
-loop, streaming messages, startup messages, installed custom headers, the terminal
-title and the other integrations are still to come; the mode prompts the session
-only for input queued during a response or a compaction.
+input, queued input, the export command, the prompt loop, session replay, the
+session events, compaction and retry progress, the expansion and thinking
+shortcuts, thinking and model cycling, the editor border, external editing and
+image paste. Streaming messages, installed custom headers, the terminal title
+and the other integrations are still to come.
 
 ## Construction
 
@@ -168,6 +167,40 @@ waiting input and enters no history. Near spellings are prompt text, so
 `/exporter notes.jsonl` and `/export` followed by a tab reach the input. See
 [interactive commands](commands.md).
 
+## Running the prompt loop
+
+`run` initializes the mode, shows the startup notices, sends the startup prompts and
+then keeps sending typed prompts. It never finishes on its own. It returns only an
+initialization failure or a failure to show a notice.
+
+The startup notices come in this order, before any prompt:
+
+- a warning `Migrated credentials to auth.json: ` followed by
+  `migrated_providers` joined with `", "`, when the list is not empty. Names keep
+  their order, duplicates and empty names;
+- an error `models.json error: ` followed by the current session's catalog load
+  error, when there is one;
+- `model_fallback_message` as a warning, when it is not empty. Text made only of
+  white space is still shown.
+
+The first prompt is `initial_message`, sent unless it is absent or empty. Startup
+text is never trimmed. `initial_images` go with that first prompt only, and they are
+not sent when there is no first prompt. Absent and empty image lists stay distinct
+for the session's input handlers. `initial_messages` follow in order, each sent once,
+empty and repeated text included. Then the loop waits for typed input with
+`get_user_input` and sends each submission.
+
+Every prompt goes to the runtime's session at the time it is sent, so after the
+runtime replaces its session, the next typed prompt reaches the new one. When the
+session refuses a prompt, such as one sent without credentials, the mode shows the
+session's message once as an error and goes on to the next prompt. An answer that
+fails after the prompt was accepted stays a session event; the mode adds no notice
+for it.
+
+Still to come: rendering the session's events in the transcript, queued input,
+commands, rebinding the presentation to a replaced session, shutdown, update
+notices and the startup check of subscription-based credentials.
+
 ## Session replay
 
 `render_initial_messages` rebuilds the transcript from the session's current
@@ -213,9 +246,10 @@ While the session compacts, a registered command (`/name`, with the name ending 
 first space) still runs at once. The mode keeps any other text in the order it was
 typed, as steering from Enter or as a follow-up from the follow-up key, records it
 in the history, clears it from the editor, shows it in the pending rows and confirms
-it with the status line `Queued message for after compaction`. The mode does not
-yet send the kept messages when the compaction ends; until it does, they stay in
-the pending rows, and the dequeue key restores them.
+it with the status line `Queued message for after compaction`. When the compaction
+ends, the mode delivers what it kept (see
+[Compaction and retry progress](#compaction-and-retry-progress)); until then the
+messages stay in the pending rows, and the dequeue key restores them.
 
 Queued messages, including those kept during a compaction, appear above the
 editor. Each steering message gets a dim `Steering: <text>` row and each follow-up
@@ -305,11 +339,18 @@ retry's own row is removed there, a retry end that arrives afterwards removes
 nothing. When the response ends, the terminal's progress is turned off again, and
 both ends read the setting as their event arrives.
 
-Input queued during a compaction is not delivered yet. The mode keeps it in
-order until an owner captures it at the end of a compaction, refreshes the pending
-rows, and delivers it through the session's prompt, steering and follow-up
-operations; that delivery, its failure recovery and the retry choice the compaction
-end carries are the remaining part of this work.
+When a compaction ends, the mode captures the input it kept before the session
+does anything with it, shows the pending rows without it, and delivers it on the
+terminal host. A retried compaction queues each message the way its own kind asks:
+a registered command still runs as a prompt, and other text joins the steering or
+follow-up queue. Otherwise the first message that is not a registered command starts
+the next turn, the commands selected before it prompt first, and the rest of the
+batch follows behind that turn in order. Selected commands still prompt if an earlier
+command removes their registration; a batch containing only commands prompts them all.
+A tail message is not sent once the first prompt has failed. A phase that fails clears the session's queues, restores the
+captured batch ahead of any input admitted since, and shows one notice reading
+`Failed to send queued message<s>: <error>`; a second failure changes nothing. A
+compaction that ends with nothing captured delivers nothing.
 
 ## Status lines
 

@@ -331,7 +331,10 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
         .collect();
     prompts.push(templates(listing.templates));
     let world = Setup {
-        options: InteractiveModeOptions { verbose },
+        options: InteractiveModeOptions {
+            verbose,
+            ..InteractiveModeOptions::default()
+        },
         configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
         cwd: listing.cwd,
         context: context_files(listing.context),

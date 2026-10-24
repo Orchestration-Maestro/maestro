@@ -11,7 +11,7 @@ use serde_json::{Map, Value};
 use super::{
     collections,
     prepare::{self, Patterns},
-    references::{self, Context, Location},
+    references::{self, Context, Location, Root},
     scalars,
 };
 
@@ -250,7 +250,7 @@ struct Frame<'a> {
 
 impl<'a> Frame<'a> {
     /// Prepare an evaluation frame for one schema application.
-    fn new(job: Job<'a>, root: &Location<'a>, patterns: &Patterns<'_>) -> Self {
+    fn new(job: Job<'a>, root: &Root<'_, 'a>, patterns: &Patterns<'_>) -> Self {
         Self {
             instructions: instructions(&job, root, patterns).into(),
             context: job.context,
@@ -276,11 +276,21 @@ impl<'a> Frame<'a> {
 
 /// Return ordered failures while evaluating schemas without recursive frames, or the first
 /// pattern error found while preparing the schema.
-pub(super) fn check(schema: &Value, value: &Value) -> Result<Vec<String>, regress::Error> {
-    let root = Location::root(schema);
+///
+/// A `$ref` naming one of the supplied definitions applies that definition; plain checking
+/// supplies none.
+pub(super) fn check<'a>(
+    schema: &'a Value,
+    definitions: &[&'a Map<String, Value>],
+    value: &'a Value,
+) -> Result<Vec<String>, regress::Error> {
+    let root = Root {
+        location: Location::root(schema),
+        definitions,
+    };
     let patterns = prepare::prepare(&root)?;
     let job = Job {
-        context: Context::root(root.clone()),
+        context: Context::root(root.location.clone()),
         value: Instance::Json(value),
         path: String::new(),
     };
@@ -324,7 +334,7 @@ pub(super) fn check(schema: &Value, value: &Value) -> Result<Vec<String>, regres
 /// Schedule keyword assertions in their diagnostic order.
 fn instructions<'a>(
     job: &Job<'a>,
-    root: &Location<'a>,
+    root: &Root<'_, 'a>,
     patterns: &Patterns<'_>,
 ) -> Vec<Instruction<'a>> {
     let schema = job.schema();

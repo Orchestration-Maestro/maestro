@@ -258,7 +258,9 @@ the native-only `maestro-extensions` to `maestro-credentials`, for extension tes
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
 the native `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges
-for its standard-stream child tests,
+for its standard-stream child tests, the native-only, non-optional `maestro-chat`
+to `maestro-models` edge for interactive-mode tests that drive a real session
+through the scripted provider,
 and the native, non-optional dev-dependencies
 of the twenty-three declared callers on `maestro-test-process`, the owner of
 checked child tests (see
@@ -531,9 +533,16 @@ When such a crate has top-level integration-test sources, the check requires
 `autotests = false` and exactly one test target: the runnable `integration`
 target at `tests/integration.rs`.
 
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`,
+which keeps the supplied JSON Schema value beside the kinds its author declared for
+individual nodes. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
+re-exports it, and the model argument-validation owner is its only converter.
+Serialization writes the supplied JSON alone; provider payloads and saved JSON never
+carry the declared kinds.
+
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+Native callers use the default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
 belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
 listeners, extension error delivery and terminal input listeners reuse it. For
 shared `Rc` callbacks it also owns subscribing, which returns the removal

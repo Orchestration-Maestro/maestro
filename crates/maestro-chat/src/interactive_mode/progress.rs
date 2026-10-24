@@ -44,6 +44,8 @@ pub(super) struct CompactionOutcome<'a> {
     pub(super) aborted: bool,
     /// The failure message of a failed compaction.
     pub(super) error_message: Option<&'a str>,
+    /// Whether the failed prompt is retried, which queues the captured input behind it.
+    pub(super) will_retry: bool,
 }
 
 /// What a retry start reports.
@@ -89,10 +91,11 @@ impl InteractiveMode {
     }
 
     /// Shows what the compaction ended with, restores the interrupt callback and the
-    /// terminal's progress, and removes the loader.
+    /// terminal's progress, removes the loader and delivers the input it captured.
     ///
     /// # Errors
-    /// Returns the failure of the transcript, the theme or the terminal's progress.
+    /// Returns the failure of the transcript, the theme, the terminal's progress or the
+    /// pending rows.
     pub(super) fn end_compaction(
         self: &Rc<Self>,
         outcome: &CompactionOutcome<'_>,
@@ -101,6 +104,7 @@ impl InteractiveMode {
         self.restore_compaction_interrupt();
         self.stop_compaction_loader();
         self.show_compaction_outcome(outcome)?;
+        self.flush_compaction_queue(outcome.will_retry)?;
         self.ui.request_render(false);
         Ok(())
     }

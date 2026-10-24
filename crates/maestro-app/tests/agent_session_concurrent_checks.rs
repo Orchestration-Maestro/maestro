@@ -150,7 +150,8 @@ fn dummy_tools(failing: Option<&'static str>) -> IndexMap<String, SharedAgentToo
             name: "dummy".into(),
             description: "Dummy tool".into(),
             parameters: json!({"type": "object", "properties": {"q": {"type": "string"}},
-                "required": ["q"]}),
+                "required": ["q"]})
+            .into(),
         },
         description: None,
         label: "dummy".into(),
