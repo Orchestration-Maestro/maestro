@@ -27,6 +27,10 @@ impl Extension for WorkingMessage {
 struct Corpus {
     /// Every session-start reason and a repeated callback.
     requests: Vec<Row>,
+    /// A refused working-text request and the callback after it.
+    message_rejection: Vec<Row>,
+    /// A refused indicator request and the callback after it.
+    indicator_rejection: Vec<Row>,
 }
 
 /// One case: its name and the callback invocations it covers.
@@ -82,6 +86,16 @@ enum Outcome {
 /// The recorded cases.
 fn corpus() -> Corpus {
     serde_json::from_str(include_str!("working_message_expected.json")).unwrap()
+}
+
+impl Corpus {
+    /// Every case, in the order the recording holds them.
+    fn all(&self) -> impl Iterator<Item = &Row> {
+        self.requests
+            .iter()
+            .chain(&self.message_rejection)
+            .chain(&self.indicator_rejection)
+    }
 }
 
 /// The host state one recorded step supplies.
@@ -165,4 +179,59 @@ fn working_message_registers_only_session_start() -> Result<(), String> {
 #[test]
 fn working_message_requests_keep_style_and_order() -> Result<(), String> {
     controlled_cases(&corpus().requests)
+}
+
+/// A refused working-text request stops the callback, and the registration then recovers.
+#[test]
+fn working_message_stops_after_message_rejection() -> Result<(), String> {
+    controlled_cases(&corpus().message_rejection)
+}
+
+/// A refused indicator request returns after the text request, and the registration recovers.
+#[test]
+fn working_message_returns_indicator_rejection() -> Result<(), String> {
+    controlled_cases(&corpus().indicator_rejection)
+}
+
+/// The built single-copy example runs every recorded case through its registration.
+#[test]
+fn working_message_component_matches_startup_requests() -> Result<(), String> {
+    let path = super::build::example_component("working_message_test")?;
+    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
+    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
+        .map_err(|error| error.to_string())?;
+    let key = harness
+        .callback("event session_start")
+        .map_err(|error| error.to_string())?;
+    for row in corpus().all() {
+        for step in &row.steps {
+            harness.observed().ui.control(&control(step));
+            let mark = harness.store.data().observed.transcript.len();
+            let capabilities = super::host_family::guest::Capabilities {
+                ctx: harness
+                    .ordinary("/controlled")
+                    .map_err(|error| error.to_string())?,
+                signal: None,
+            };
+            let exports = harness.exports.clone();
+            let event = step.event.to_string();
+            let run = super::block_on(harness.store.run_concurrent(async |accessor| {
+                exports
+                    .call_invoke_event(accessor, super::host::borrow(key), event, capabilities)
+                    .await
+            }))
+            .map_err(|error| error.to_string())?;
+            let outcome = run.map_err(|error| error.to_string())??;
+            let lines = harness.store.data().observed.transcript[mark..].to_vec();
+            assert_step(
+                &row.name,
+                step,
+                &Answer::of(super::host_family::delivery(outcome))?,
+                &lines,
+            );
+        }
+    }
+    super::block_on(harness.release(key)).map_err(|error| error.to_string())?;
+    assert_eq!(harness.observed().live, 0);
+    Ok(())
 }
