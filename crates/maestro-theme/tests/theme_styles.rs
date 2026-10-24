@@ -49,6 +49,8 @@ fn decorate(style: &str, text: &str, enabled: bool) -> String {
         "underline" => Theme::underline(text, enabled),
         "inverse" => Theme::inverse(text, enabled),
         "strikethrough" => Theme::strikethrough(text, enabled),
+        "green" => Theme::green(text, enabled),
+        "dim" => Theme::dim(text, enabled),
         other => panic!("unknown style {other}"),
     }
 }
@@ -84,6 +86,24 @@ fn decorations_keep_empty_and_disabled_text() {
         "\x1b[38;5;1mx\x1b[39m"
     );
     assert_eq!(Theme::bold("x", true), "\x1b[1mx\x1b[22m");
+}
+
+#[test]
+fn package_decorations_keep_dim_and_green_boundaries() {
+    let cases = records(
+        include_str!("fixtures/package_decorations.json"),
+        &["enabled", "expected", "style", "text"],
+    );
+    for case in &cases {
+        let style = case["style"].as_str().unwrap();
+        let enabled = case["enabled"].as_bool().unwrap();
+        assert_eq!(
+            decorate(style, case["text"].as_str().unwrap(), enabled),
+            case["expected"].as_str().unwrap(),
+            "{case}"
+        );
+    }
+    assert_eq!(cases.len(), 24);
 }
 
 #[test]
