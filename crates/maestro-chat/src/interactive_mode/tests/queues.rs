@@ -2,23 +2,30 @@
 //! and the queue key actions over the mode's real session and editor.
 use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions};
 use super::typed::recalled;
-use super::{World, isolated, painted, recorded, started};
+use super::{Setup, World, isolated, painted, recorded, started};
 use crate::InteractiveMode;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{
-    AgentSessionEvent, AssistantMessage, AssistantMessageEventStream, Cancellation, PromptOptions,
-    StopReason, Usage, is_whitespace_scalar,
+    AgentSessionEvent, AssistantMessage, AssistantMessageEventStream, Cancellation,
+    DiagnosticErrorInfo, ExtensionFactory, InputEvent, InputEventResult, Local, PromptOptions,
+    RegisteredCommand, StopReason, Usage, is_whitespace_scalar,
 };
+use maestro_tui::editor_component::TextCallback;
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{Component, EditorComponent, KeybindingKeys, Spacer, Text};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
+    collections::HashMap,
     path::Path,
     rc::Rc,
     sync::{Arc, RwLock},
 };
+
+/// What a world heard, in order: queue operations, inputs the controlled extension saw,
+/// runs of its command and submissions.
+type Heard = Rc<RefCell<Vec<Value>>>;
 
 /// Every recorded queue case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_queues.json");
@@ -29,7 +36,7 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
 }
 
 /// A recorded delivery.
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq)]
 #[serde(rename_all = "camelCase")]
 enum Mode {
     /// Steering.
@@ -51,7 +58,7 @@ impl Mode {
 /// A recorded message kept during compaction.
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-struct Local {
+struct Kept {
     /// The kept text.
     text: String,
     /// Its delivery.
@@ -70,7 +77,7 @@ struct Queues {
     follow_up: Vec<String>,
     /// Messages kept during compaction.
     #[serde(default)]
-    local: Vec<Local>,
+    local: Vec<Kept>,
 }
 
 /// Queued texts grouped by delivery.
@@ -90,14 +97,14 @@ struct Observed {
     /// The session queue operations the action performed, in order.
     calls: Vec<Value>,
     /// The messages still kept during compaction.
-    local: Vec<Local>,
+    local: Vec<Kept>,
     /// Every queued text.
     session: Snapshot,
     /// The editor text.
     text: String,
     /// The editor history, oldest first.
     history: Vec<String>,
-    /// Failures handed to the terminal host.
+    /// The error notices the transcript shows.
     errors: Vec<String>,
     /// How many times the running turn was stopped.
     aborts: usize,
@@ -105,6 +112,10 @@ struct Observed {
     pending: Vec<String>,
     /// The transcript rows at width 80.
     chat: Vec<String>,
+    /// The failures handed to the terminal host, which no recorded case observes beside a
+    /// rejected prompt's own failure.
+    #[serde(skip)]
+    failures: Vec<String>,
 }
 
 impl Observed {
@@ -140,9 +151,15 @@ fn counted(mut expected: Value) -> (Option<usize>, Value) {
 
 /// The session queue operations a world performs from now on: an emptied queue as
 /// `["clear"]`, any other change with its contents.
-fn queue_operations(world: &World) -> Rc<RefCell<Vec<Value>>> {
-    let calls = Rc::new(RefCell::new(Vec::new()));
-    let recorded = Rc::clone(&calls);
+fn queue_operations(world: &World) -> Heard {
+    let calls = Heard::default();
+    record_queue(world, &calls);
+    calls
+}
+
+/// Appends each session queue operation of `world` to `calls` from now on.
+fn record_queue(world: &World, calls: &Heard) {
+    let recorded = Rc::clone(calls);
     drop(
         world
             .mode
@@ -164,7 +181,6 @@ fn queue_operations(world: &World) -> Rc<RefCell<Vec<Value>>> {
                 }
             })),
     );
-    calls
 }
 
 /// Queues the case's starting texts in the session and keeps its compaction messages.
@@ -192,13 +208,13 @@ fn seed(world: &World, queues: Queues) {
 }
 
 /// What `world` holds now, given the queue operations since seeding and the stopped turns.
-fn observe(world: &World, calls: &Rc<RefCell<Vec<Value>>>, aborts: usize) -> Observed {
+fn observe(world: &World, calls: &Heard, aborts: usize) -> Observed {
     let mode = &world.mode;
     let local = mode
         .compaction_queued_messages
         .borrow()
         .iter()
-        .map(|message| Local {
+        .map(|message| Kept {
             text: message.text.clone(),
             mode: match message.mode {
                 UserMessageDelivery::Steer => Mode::Steer,
@@ -211,18 +227,13 @@ fn observe(world: &World, calls: &Rc<RefCell<Vec<Value>>>, aborts: usize) -> Obs
     let mut history = recalled(&mode.editor);
     history.reverse();
     mode.editor.set_text(&text);
-    let errors = world
-        .runtime
-        .take_futures()
-        .into_iter()
-        .filter_map(|mut future| {
-            let polled = std::pin::Pin::new(&mut future)
-                .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()));
-            match polled {
-                std::task::Poll::Ready(Err(error)) => Some(error.to_string()),
-                std::task::Poll::Ready(Ok(())) => None,
-                std::task::Poll::Pending => panic!("a key action left work running"),
-            }
+    let failures = settled(world);
+    let chat = mode.chat_container.render(80);
+    let errors = chat
+        .iter()
+        .filter_map(|row| {
+            row.split_once("Error: ")
+                .map(|(_, notice)| notice.trim_end().to_owned())
         })
         .collect();
     Observed {
@@ -237,8 +248,32 @@ fn observe(world: &World, calls: &Rc<RefCell<Vec<Value>>>, aborts: usize) -> Obs
         errors,
         aborts,
         pending: mode.pending_messages_container.render(80),
-        chat: mode.chat_container.render(80),
+        chat,
+        failures,
     }
+}
+
+/// Completes the work the mode handed to the terminal host and returns the failures it
+/// reported; every handed piece finishes in one step here, as no prompt waits.
+fn settled(world: &World) -> Vec<String> {
+    world
+        .runtime
+        .take_futures()
+        .into_iter()
+        .filter_map(|mut future| {
+            let polled = std::pin::Pin::new(&mut future)
+                .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()));
+            match polled {
+                std::task::Poll::Ready(Err(error)) => Some(
+                    error
+                        .downcast_ref::<DiagnosticErrorInfo>()
+                        .map_or_else(|| error.to_string(), |error| error.message.clone()),
+                ),
+                std::task::Poll::Ready(Ok(())) => None,
+                std::task::Poll::Pending => panic!("handed work is still waiting"),
+            }
+        })
+        .collect()
 }
 
 /// The response the controlled provider holds open, and the cancellation of its turn.
@@ -273,10 +308,9 @@ fn answer() -> Arc<RwLock<AssistantMessage>> {
     }))
 }
 
-/// Runs `body` on a started mode whose session streams a response the controlled provider
-/// holds open; then ends that response and waits for the prompt to settle.
-fn streaming<T>(directory: &Path, body: impl FnOnce(&World, &Held) -> T) -> T {
-    let world = started(directory);
+/// Runs `body` on the started `world` while its session streams a response the controlled
+/// provider holds open; then ends that response and waits for the prompt to settle.
+fn streaming<T>(world: &World, body: impl FnOnce(&World, &Held) -> T) -> T {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
@@ -307,7 +341,7 @@ fn streaming<T>(directory: &Path, body: impl FnOnce(&World, &Held) -> T) -> T {
         });
         let held = receiver.await.unwrap();
         assert!(session.is_streaming());
-        let result = body(&world, &held);
+        let result = body(world, &held);
         held.stream.end(Some(answer()));
         run.await.unwrap().unwrap();
         result
@@ -320,11 +354,11 @@ fn mixed() -> Queues {
         steering: vec!["s".into(), "s".into()],
         follow_up: vec!["f".into()],
         local: vec![
-            Local {
+            Kept {
                 text: "lf".into(),
                 mode: Mode::FollowUp,
             },
-            Local {
+            Kept {
                 text: "ls".into(),
                 mode: Mode::Steer,
             },
@@ -348,7 +382,7 @@ enum SnapshotOp {
         /// Session follow-up texts.
         follow_up: Vec<String>,
         /// Messages kept during compaction.
-        local: Vec<Local>,
+        local: Vec<Kept>,
     },
 }
 
@@ -430,7 +464,7 @@ enum PendingOp {
         follow_up: Vec<String>,
         /// Messages kept during compaction.
         #[serde(default)]
-        local: Vec<Local>,
+        local: Vec<Kept>,
         /// The render width.
         width: usize,
     },
@@ -539,7 +573,7 @@ enum RestoreOp {
         /// Session follow-up texts.
         follow_up: Vec<String>,
         /// Messages kept during compaction.
-        local: Vec<Local>,
+        local: Vec<Kept>,
         /// The draft.
         text: String,
         /// Whether the turn stops.
@@ -617,7 +651,7 @@ fn dequeue_restores_grouped_text_and_preserves_nonblank_draft() {
     const TEST: &str = "dequeue_restores_grouped_text_and_preserves_nonblank_draft";
     isolated(TEST, |directory| {
         for (input, expected) in cases::<RestoreOp, Value>(TEST) {
-            streaming(directory, |world, held| {
+            streaming(&started(directory), |world, held| {
                 restore_case(world, held, input, expected);
             });
         }
@@ -641,7 +675,7 @@ fn empty_restore_preserves_editor_and_stream_escape_still_aborts() {
     isolated(TEST, |directory| {
         for (EmptyOp::RestoreEmpty { abort }, expected) in cases::<EmptyOp, Value>(TEST) {
             let (count, expected) = counted(expected);
-            streaming(directory, |world, held| {
+            streaming(&started(directory), |world, held| {
                 world.mode.editor.set_text("kept");
                 world
                     .mode
@@ -663,7 +697,7 @@ fn empty_restore_preserves_editor_and_stream_escape_still_aborts() {
                 );
             });
         }
-        streaming(directory, |world, held| {
+        streaming(&started(directory), |world, held| {
             world.mode.editor.set_text("kept");
             world.mode.editor.handle_input("\x1b");
             assert_eq!(world.mode.editor.get_text(), "kept");
@@ -683,7 +717,7 @@ enum DequeueOp {
     /// The dequeue action over compaction messages.
     Dequeue {
         /// The kept messages.
-        local: Vec<Local>,
+        local: Vec<Kept>,
     },
 }
 
@@ -853,7 +887,7 @@ enum EscapeOp {
 
 /// Presses the interrupt key over every queue and the draft `draft`, recording whether the
 /// turn was already stopped each time the editor text changed.
-fn escape(world: &World, held: Option<&Held>) -> (Rc<RefCell<Vec<Value>>>, Vec<bool>) {
+fn escape(world: &World, held: Option<&Held>) -> (Heard, Vec<bool>) {
     seed(world, mixed());
     world.mode.editor.set_text("draft");
     let calls = queue_operations(world);
@@ -879,7 +913,7 @@ fn escape_case(directory: &Path, streams: bool, expected: Value) {
         assert_eq!(observed, Observed::expected(&world, expected));
         return;
     }
-    streaming(directory, |world, held| {
+    streaming(&started(directory), |world, held| {
         let (calls, stopped) = escape(world, Some(held));
         assert_eq!(
             stopped,
@@ -899,4 +933,605 @@ fn stream_escape_restores_before_aborting() {
             escape_case(directory, streaming, expected);
         }
     });
+}
+
+/// A started mode whose session loads the controlled extension and the command `cmd`: the
+/// extension's input handler records `["input", text]` and, when `refuse` is set, fails
+/// on `selected`; the command records `["command", arguments]`. Queue operations are
+/// recorded in the same log.
+fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
+    let heard = Heard::default();
+    let inputs = Rc::clone(&heard);
+    let factory: ExtensionFactory<Local> = Rc::new(move |api| {
+        let inputs = Rc::clone(&inputs);
+        let registered = api.on::<InputEvent, InputEventResult>(
+            "input".into(),
+            Rc::new(move |event, _| {
+                inputs.borrow_mut().push(json!(["input", event.text]));
+                let result = if refuse && event.text == "selected" {
+                    Err("refused input".into())
+                } else {
+                    Ok(None)
+                };
+                Box::pin(std::future::ready(result))
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    });
+    let world = Setup {
+        extension: Some(factory),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().unwrap();
+    world.runtime.settle().unwrap();
+    let session = world.mode.runtime_host.session();
+    let extension = Rc::clone(&session.resource_loader().get_extensions().extensions[0]);
+    let source_info = Arc::clone(&extension.read().unwrap().source_info);
+    let runs = Rc::clone(&heard);
+    let command = RegisteredCommand::<Local> {
+        name: "cmd".into(),
+        source_info,
+        description: None,
+        get_argument_completions: None,
+        handler: Rc::new(move |arguments, _| {
+            runs.borrow_mut().push(json!(["command", arguments]));
+            Box::pin(std::future::ready(Ok(())))
+        }),
+    };
+    let command = Rc::new(RwLock::new(command));
+    extension
+        .write()
+        .unwrap()
+        .commands
+        .insert("cmd".into(), command);
+    if refuse {
+        let rejection = DiagnosticErrorInfo::new(None, "controlled rejection");
+        drop(
+            session
+                .extension_runner()
+                .on_error(Rc::new(move |_| Err(Box::new(rejection.clone())))),
+        );
+    }
+    record_queue(&world, &heard);
+    (world, heard)
+}
+
+/// Runs `action` from the start notification of a compaction of `world`'s session, while
+/// the session compacts, then lets the compaction end.
+fn during_compaction(world: &World, action: impl Fn(&Rc<InteractiveMode>) + 'static) {
+    let session = world.mode.runtime_host.session();
+    let mode = Rc::downgrade(&world.mode);
+    let compacting = Rc::clone(&session);
+    let unsubscribe = session.subscribe(Rc::new(move |event| {
+        if let AgentSessionEvent::CompactionStart { .. } = event {
+            assert!(compacting.is_compacting());
+            action(&mode.upgrade().unwrap());
+        }
+    }));
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("unknown", "key");
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let tasks = tokio::task::LocalSet::new();
+    let ended = tasks.block_on(&runtime, session.compact(None));
+    assert_eq!(
+        ended.unwrap_err().message,
+        "Nothing to compact (session too small)"
+    );
+    unsubscribe();
+}
+
+/// Types `plain` and pastes `expanded` so the editor's text differs from its expanded
+/// text: a paste of more than ten lines is shown as a marker.
+fn paste(world: &World, expanded: &str) {
+    let editor = &world.mode.editor;
+    editor.set_text("");
+    let pasted = format!("{expanded}{}", "\n".repeat(11));
+    editor.handle_input(&format!("\x1b[200~{pasted}\x1b[201~"));
+    assert_ne!(
+        editor.get_text(),
+        EditorComponent::get_expanded_text(&**editor).unwrap()
+    );
+}
+
+/// Replaces the editor's submission with one that records `["submit", text]`, or removes it.
+fn record_submission(world: &World, heard: &Heard, installed: bool) {
+    let submitted = Rc::clone(heard);
+    let submission: Option<TextCallback> = installed.then(|| -> TextCallback {
+        Rc::new(move |text: &str| submitted.borrow_mut().push(json!(["submit", text])))
+    });
+    world.mode.editor.set_on_submit(submission);
+}
+
+/// The pending rows recorded for a single queued message, by its delivery and text.
+type SingleRows = HashMap<(Mode, String), Vec<String>>;
+
+/// The pending rows every recorded case of `test` shows for exactly one queued message.
+fn single_rows(test: &str) -> SingleRows {
+    cases::<Value, Value>(test)
+        .into_iter()
+        .filter_map(|(_, expected)| {
+            let snapshot: Snapshot =
+                serde_json::from_value(expected.get("session")?.clone()).ok()?;
+            let pending: Vec<String> = serde_json::from_value(expected["pending"].clone()).ok()?;
+            let single = match (snapshot.steering.as_slice(), snapshot.follow_up.as_slice()) {
+                ([queued], []) => (Mode::Steer, queued.clone()),
+                ([], [queued]) => (Mode::FollowUp, queued.clone()),
+                _ => return None,
+            };
+            Some((single, pending))
+        })
+        .collect()
+}
+
+/// The recorded observation with each recorded prompt replaced by what the session does
+/// with it: a registered command runs with its arguments; other text reaches the input
+/// handler and, unless refused, joins the queue the prompt names, which the pending rows
+/// then show as the recorded rows of that single message.
+fn session_effects(mut expected: Value, refused: bool, rows: &SingleRows) -> Value {
+    let mut calls = Vec::new();
+    for call in expected["calls"].as_array().unwrap().clone() {
+        let [name, text, options] = call.as_array().unwrap().as_slice() else {
+            calls.push(call);
+            continue;
+        };
+        assert_eq!(name, "prompt");
+        let text = text.as_str().unwrap();
+        let (command, arguments) = text
+            .strip_prefix('/')
+            .map_or(("", ""), |rest| rest.split_once(' ').unwrap_or((rest, "")));
+        if command == "cmd" {
+            calls.push(json!(["command", arguments]));
+            continue;
+        }
+        calls.push(json!(["input", text]));
+        if refused {
+            continue;
+        }
+        let mode: Mode = serde_json::from_value(options["streamingBehavior"].clone()).unwrap();
+        let queue = match mode {
+            Mode::Steer => "steering",
+            Mode::FollowUp => "followUp",
+        };
+        expected["session"][queue]
+            .as_array_mut()
+            .unwrap()
+            .push(json!(text));
+        let session = &expected["session"];
+        calls.push(json!(["update", session["steering"], session["followUp"]]));
+        expected["pending"] = json!(rows[&(mode, text.to_owned())]);
+    }
+    expected["calls"] = json!(calls);
+    expected
+}
+
+/// The recorded enqueues.
+#[derive(Deserialize)]
+#[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
+enum EnqueueOp {
+    /// One message kept during compaction over the draft `draft`.
+    Enqueue {
+        /// Its delivery.
+        mode: Mode,
+    },
+}
+
+#[test]
+fn compaction_enqueue_keeps_text_mode_history_and_status() {
+    const TEST: &str = "compaction_enqueue_keeps_text_mode_history_and_status";
+    isolated(TEST, |directory| {
+        for (EnqueueOp::Enqueue { mode }, expected) in cases::<EnqueueOp, Value>(TEST) {
+            let world = started(directory);
+            world.mode.editor.set_text("draft");
+            let calls = queue_operations(&world);
+            let queued = world
+                .mode
+                .queue_compaction_message(" queued ".into(), mode.delivery());
+            queued.unwrap();
+            let observed = observe(&world, &calls, 0);
+            assert_eq!(observed, Observed::expected(&world, expected));
+        }
+    });
+}
+
+/// The recorded command checks.
+#[derive(Deserialize)]
+#[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
+enum DetectionOp {
+    /// Whether one text names a registered command.
+    ExtensionDetection {
+        /// The text.
+        text: String,
+    },
+}
+
+/// A recorded check result.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Detected {
+    /// Whether the text names a registered command.
+    result: bool,
+}
+
+#[test]
+fn extension_command_detection_uses_slash_and_first_ascii_space() {
+    const TEST: &str = "extension_command_detection_uses_slash_and_first_ascii_space";
+    isolated(TEST, |directory| {
+        let (world, _) = controlled(directory, false);
+        for (DetectionOp::ExtensionDetection { text }, expected) in
+            cases::<DetectionOp, Detected>(TEST)
+        {
+            assert_eq!(
+                world.mode.is_extension_command(&text),
+                expected.result,
+                "{text:?}"
+            );
+        }
+    });
+}
+
+/// Where a recorded input arrives.
+#[derive(Clone, Copy, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+enum State {
+    /// No response streams and nothing compacts.
+    Idle,
+    /// A response streams.
+    Stream,
+    /// The session compacts.
+    Compact,
+}
+
+/// The recorded follow-up inputs.
+#[derive(Deserialize)]
+#[serde(
+    tag = "op",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+enum FollowOp {
+    /// The follow-up key over one text, in one state.
+    Follow {
+        /// Where it arrives.
+        state: State,
+        /// The editor text.
+        text: String,
+        /// The expanded editor text, the same text here.
+        expanded: String,
+    },
+    /// The follow-up key with no response streaming, over a text whose expansion may
+    /// differ, with or without a submission installed.
+    FollowFallback {
+        /// The editor text.
+        text: String,
+        /// The expanded editor text, when it differs.
+        expanded: Option<String>,
+        /// Whether no submission is installed.
+        #[serde(default)]
+        no_submit: bool,
+    },
+}
+
+/// Presses the follow-up key in a world the case's state selects and checks what is left.
+fn follow_case(directory: &Path, input: FollowOp, expected: Value, rows: &SingleRows) {
+    let (world, heard) = controlled(directory, false);
+    let expected = session_effects(expected, false, rows);
+    let (state, text, installed) = match input {
+        FollowOp::Follow {
+            state,
+            text,
+            expanded,
+        } => {
+            assert_eq!(text, expanded, "the editor expands nothing in these cases");
+            (state, text, true)
+        }
+        FollowOp::FollowFallback {
+            text,
+            expanded,
+            no_submit,
+        } => {
+            let shown = expanded.unwrap_or_else(|| text.clone());
+            (State::Idle, shown, !no_submit)
+        }
+    };
+    record_submission(&world, &heard, installed);
+    let press = move |mode: &Rc<InteractiveMode>| {
+        mode.editor.set_text(&text);
+        mode.handle_follow_up().unwrap();
+    };
+    // A streaming case is observed while the response still streams, before its end
+    // delivers the queued message.
+    let observed = match state {
+        State::Idle => {
+            press(&world.mode);
+            observe(&world, &heard, 0)
+        }
+        State::Stream => streaming(&world, |world, _| {
+            heard.borrow_mut().clear();
+            press(&world.mode);
+            observe(world, &heard, 0)
+        }),
+        State::Compact => {
+            during_compaction(&world, press);
+            observe(&world, &heard, 0)
+        }
+    };
+    assert_eq!(observed, Observed::expected(&world, expected));
+}
+
+#[test]
+fn follow_up_routes_expanded_input_through_idle_stream_and_compaction() {
+    const TEST: &str = "follow_up_routes_expanded_input_through_idle_stream_and_compaction";
+    isolated(TEST, |directory| {
+        let rows = single_rows(TEST);
+        for (input, expected) in cases::<FollowOp, Value>(TEST) {
+            follow_case(directory, input, expected, &rows);
+        }
+        let (world, heard) = controlled(directory, false);
+        record_submission(&world, &heard, true);
+        paste(&world, " pasted ");
+        world.mode.handle_follow_up().unwrap();
+        assert_eq!(*heard.borrow(), [json!(["submit", "pasted"])]);
+    });
+}
+
+/// The recorded Enter presses.
+#[derive(Deserialize)]
+#[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
+enum SubmitOp {
+    /// Enter over one text while a response streams, during a compaction or not.
+    Submit {
+        /// Whether the session compacts.
+        compacting: bool,
+        /// Whether a response streams.
+        streaming: bool,
+        /// The submitted text.
+        text: String,
+    },
+}
+
+/// Submits `text` through the editor's installed submission while a response streams or
+/// the session compacts, and checks what is left.
+fn submit_case(directory: &Path, input: SubmitOp, expected: Value, rows: &SingleRows) {
+    let SubmitOp::Submit {
+        compacting,
+        streaming: streams,
+        text,
+    } = input;
+    assert!(
+        streams,
+        "every recorded Enter arrives while a response streams"
+    );
+    let (world, heard) = controlled(directory, false);
+    let expected = session_effects(expected, false, rows);
+    let waiter = world.mode.get_user_input();
+    let mut waiter = std::pin::pin!(waiter);
+    assert_eq!(super::typed::poll(&mut waiter), None);
+    let press = move |mode: &Rc<InteractiveMode>| {
+        mode.editor.on_submit().unwrap()(&text);
+    };
+    let observed = if compacting {
+        // A compaction first stops the response, so the compaction branch runs alone.
+        during_compaction(&world, press);
+        observe(&world, &heard, 0)
+    } else {
+        // Observed while the response still streams, before its end delivers the message.
+        streaming(&world, |world, _| {
+            heard.borrow_mut().clear();
+            press(&world.mode);
+            observe(world, &heard, 0)
+        })
+    };
+    let still_waiting = super::typed::poll(&mut waiter).is_none();
+    assert!(still_waiting, "the typed input still waits");
+    assert_eq!(observed, Observed::expected(&world, expected));
+}
+
+#[test]
+fn enter_steers_during_streaming_and_prioritizes_compaction() {
+    const TEST: &str = "enter_steers_during_streaming_and_prioritizes_compaction";
+    isolated(TEST, |directory| {
+        let rows = single_rows(TEST);
+        for (input, expected) in cases::<SubmitOp, Value>(TEST) {
+            submit_case(directory, input, expected, &rows);
+        }
+    });
+}
+
+/// The recorded prompt rejections.
+#[derive(Deserialize)]
+#[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
+enum RejectionOp {
+    /// A streaming prompt the session refuses, sent by the follow-up key or Enter.
+    PromptRejection {
+        /// The action sending it.
+        operation: Operation,
+    },
+}
+
+/// The action sending a refused prompt.
+#[derive(Clone, Copy, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+enum Operation {
+    /// The follow-up key over a pasted ` selected `.
+    Follow,
+    /// Enter over `selected`.
+    Submit,
+}
+
+/// Sends `selected` while a response streams and the session refuses it, then checks
+/// that the failure reaches the terminal host with the history and editor already
+/// updated and no pending rows refreshed.
+fn rejection_case(directory: &Path, operation: Operation, expected: Value) {
+    let (world, heard) = controlled(directory, true);
+    let mut expected = expected;
+    let error = expected
+        .as_object_mut()
+        .unwrap()
+        .shift_remove("error")
+        .unwrap();
+    let mut expected = Observed::expected(&world, session_effects(expected, true, &HashMap::new()));
+    expected.failures = vec![error.as_str().unwrap().to_owned()];
+    streaming(&world, |world, _| {
+        heard.borrow_mut().clear();
+        match operation {
+            Operation::Follow => {
+                paste(world, " selected ");
+                world.mode.handle_follow_up().unwrap();
+            }
+            Operation::Submit => {
+                world.mode.editor.set_text("raw");
+                world.mode.editor.on_submit().unwrap()("selected");
+            }
+        }
+    });
+    assert_eq!(observe(&world, &heard, 0), expected);
+}
+
+/// Types `/cmd arg` and an ordinary text with the follow-up key from a compaction's start
+/// notification, checking before the notification returns that the command already ran
+/// and the text is already kept.
+fn compaction_admission(directory: &Path) {
+    let (world, heard) = controlled(directory, false);
+    let log = Rc::clone(&heard);
+    during_compaction(&world, move |mode| {
+        mode.editor.set_text("/cmd arg");
+        mode.handle_follow_up().unwrap();
+        assert_eq!(*log.borrow(), [json!(["command", "arg"])]);
+        assert_eq!(mode.editor.get_text(), "");
+        mode.editor.set_text(" kept ");
+        mode.handle_follow_up().unwrap();
+        let kept = mode.compaction_queued_messages.borrow();
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].text, "kept");
+        assert!(matches!(kept[0].mode, UserMessageDelivery::FollowUp));
+    });
+    assert_eq!(settled(&world), Vec::<String>::new());
+}
+
+#[test]
+fn queue_actions_use_real_session_compaction_and_prompt_routes() {
+    const TEST: &str = "queue_actions_use_real_session_compaction_and_prompt_routes";
+    isolated(TEST, |directory| {
+        for (RejectionOp::PromptRejection { operation }, expected) in
+            cases::<RejectionOp, Value>(TEST)
+        {
+            rejection_case(directory, operation, expected);
+        }
+        compaction_admission(directory);
+    });
+}
+
+/// Binds `action` to `keys`, or back to its default.
+fn bind(action: &str, keys: Option<&str>) {
+    let keys = keys.map(|key| KeybindingKeys::Single(key.to_owned()));
+    maestro_tui::get_keybindings().set_user_bindings(vec![(action.to_owned(), keys)]);
+}
+
+/// The dequeue key moved to Ctrl+Q and back: only the bound key restores.
+fn dequeue_binding(directory: &Path) {
+    let world = started(directory);
+    let restore = |key: &str, restored: bool| {
+        seed(
+            &world,
+            Queues {
+                steering: vec!["queued".into()],
+                ..Queues::default()
+            },
+        );
+        world.mode.editor.set_text("");
+        world.terminal.send_input(key);
+        assert_eq!(
+            world.mode.editor.get_text() == "queued",
+            restored,
+            "{key:?}"
+        );
+        world.mode.clear_all_queues();
+    };
+    bind("app.message.dequeue", Some("ctrl+q"));
+    restore("\x1b[1;3A", false);
+    restore("\x1bq", false);
+    restore("\x11", true);
+    bind("app.message.dequeue", None);
+    restore("\x11", false);
+    restore("\x1b[1;3A", true);
+}
+
+/// The follow-up key moved to Alt+X and back, with no response streaming: only the bound
+/// key forwards the text to the submission.
+fn follow_up_binding(directory: &Path) {
+    let (world, heard) = controlled(directory, false);
+    record_submission(&world, &heard, true);
+    let forward = |key: &str, forwarded: bool| {
+        heard.borrow_mut().clear();
+        world.mode.editor.set_text("typed");
+        world.terminal.send_input(key);
+        let expected = if forwarded {
+            vec![json!(["submit", "typed"])]
+        } else {
+            Vec::new()
+        };
+        assert_eq!(*heard.borrow(), expected, "{key:?}");
+    };
+    bind("app.message.followUp", Some("alt+x"));
+    forward("\x1b\r", false);
+    forward("\x18", false);
+    forward("\x1bx", true);
+    bind("app.message.followUp", None);
+    forward("\x1bx", false);
+    forward("\x1b\r", true);
+}
+
+/// The interrupt key moved to Alt+Z while a response streams with nothing queued: only
+/// the bound key stops the response.
+fn interrupt_binding(directory: &Path) {
+    let world = started(directory);
+    streaming(&world, |world, held| {
+        bind("app.interrupt", Some("alt+z"));
+        world.mode.editor.handle_input("\x1b");
+        world.mode.editor.handle_input("\x1a");
+        assert_eq!(held.aborts(), 0);
+        world.mode.editor.handle_input("\x1bz");
+        assert_eq!(held.aborts(), 1);
+        bind("app.interrupt", None);
+    });
+}
+
+#[test]
+fn queued_actions_follow_live_bindings() {
+    isolated("queued_actions_follow_live_bindings", |directory| {
+        dequeue_binding(directory);
+        follow_up_binding(directory);
+        interrupt_binding(directory);
+    });
+}
+
+#[test]
+fn queue_callbacks_release_the_mode_after_active_work_settles() {
+    isolated(
+        "queue_callbacks_release_the_mode_after_active_work_settles",
+        |directory| {
+            let world = started(directory);
+            let (weak, handed) = streaming(&world, |world, _| {
+                world.mode.editor.set_text("later");
+                world.terminal.send_input("\x1b\r");
+                (Rc::downgrade(&world.mode), world.runtime.take_futures())
+            });
+            let World { mode, .. } = world;
+            drop(mode);
+            assert!(weak.upgrade().is_some(), "the handed prompt keeps the mode");
+            for mut future in handed {
+                let polled = std::pin::Pin::new(&mut future)
+                    .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()));
+                assert!(matches!(polled, std::task::Poll::Ready(Ok(()))));
+            }
+            assert!(weak.upgrade().is_none(), "settled work releases the mode");
+        },
+    );
 }

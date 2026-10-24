@@ -1,7 +1,8 @@
-//! Queued steering and follow-up input: the pending rows above the editor, restoring the
-//! queued text to the editor and the queue key actions.
+//! Queued steering and follow-up input: routing input typed during a response or a
+//! compaction, the pending rows above the editor, restoring the queued text to the editor
+//! and the queue key actions.
 use super::InteractiveMode;
-use maestro_app::agent_session::QueueTexts;
+use maestro_app::agent_session::{PromptOptions, QueueTexts};
 use maestro_app::is_whitespace_scalar;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_theme::ThemeColor;
@@ -28,8 +29,9 @@ pub(super) struct RestoreQueuedMessagesOptions<'a> {
 
 impl InteractiveMode {
     /// Installs the queue actions on the editor without keeping the mode alive: the
-    /// interrupt key restores the queued text and stops a streaming response, and the
-    /// dequeue key restores the queued text.
+    /// interrupt key restores the queued text and stops a streaming response, the
+    /// follow-up key sends the editor's text as a follow-up, and the dequeue key restores
+    /// the queued text.
     pub(super) fn setup_queue_key_handlers(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_escape(Some(Rc::new(move || {
@@ -45,6 +47,15 @@ impl InteractiveMode {
         })));
         let mode = Rc::downgrade(self);
         self.editor.on_action(
+            "app.message.followUp".to_owned(),
+            Rc::new(move || {
+                if let Some(mode) = mode.upgrade() {
+                    mode.report(mode.handle_follow_up());
+                }
+            }),
+        );
+        let mode = Rc::downgrade(self);
+        self.editor.on_action(
             "app.message.dequeue".to_owned(),
             Rc::new(move || {
                 if let Some(mode) = mode.upgrade() {
@@ -52,6 +63,108 @@ impl InteractiveMode {
                 }
             }),
         );
+    }
+
+    /// Sends the editor's text, expanded when the editor expands it and trimmed, as a
+    /// follow-up: it is queued during a compaction or a response, and otherwise the editor
+    /// is emptied and the text goes to the installed submission. Blank text is ignored.
+    ///
+    /// # Errors
+    /// Returns the failure of the published theme's dim colour.
+    pub(super) fn handle_follow_up(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+        let text = EditorComponent::get_expanded_text(&*self.editor)
+            .unwrap_or_else(|| self.editor.get_text());
+        let text = text.trim_matches(is_whitespace_scalar);
+        if text.is_empty() || self.submit_queued_input(text, UserMessageDelivery::FollowUp)? {
+            return Ok(());
+        }
+        if let Some(submit) = self.editor.on_submit() {
+            self.editor.set_text("");
+            submit(text);
+        }
+        Ok(())
+    }
+
+    /// Queues `text` for `mode` when the session compacts or streams, returning whether
+    /// it did. During a compaction a registered command runs at once and other text is
+    /// kept until the compaction ends; while a response streams, the text is prompted for
+    /// `mode` and the pending rows are refreshed once it is queued.
+    ///
+    /// # Errors
+    /// Returns the failure of the published theme's dim colour.
+    pub(super) fn submit_queued_input(
+        self: &Rc<Self>,
+        text: &str,
+        mode: UserMessageDelivery,
+    ) -> Result<bool, Box<dyn Error>> {
+        let session = self.runtime_host.session();
+        if session.is_compacting() {
+            if !self.is_extension_command(text) {
+                self.queue_compaction_message(text.to_owned(), mode)?;
+                return Ok(true);
+            }
+            self.start_prompt(text, None);
+        } else if session.is_streaming() {
+            self.start_prompt(text, Some(mode));
+        } else {
+            return Ok(false);
+        }
+        Ok(true)
+    }
+
+    /// Records `text` in the history, empties the editor and starts the session prompt
+    /// now. The terminal host awaits it and reports its failure; with a streaming delivery
+    /// the pending rows are refreshed and a frame requested once it succeeds. Until then
+    /// the prompt keeps the mode alive.
+    fn start_prompt(self: &Rc<Self>, text: &str, streaming_behavior: Option<UserMessageDelivery>) {
+        self.editor.add_to_history(text);
+        self.editor.set_text("");
+        let refresh = streaming_behavior.is_some();
+        let options = PromptOptions {
+            streaming_behavior,
+            ..PromptOptions::default()
+        };
+        let prompt = self.runtime_host.session().prompt(text, options);
+        let mode = Rc::clone(self);
+        self.tool_environment
+            .runtime
+            .spawn_local(Box::pin(async move {
+                prompt.await?;
+                if refresh {
+                    mode.update_pending_messages_display()?;
+                    mode.ui.request_render(false);
+                }
+                Ok(())
+            }));
+    }
+
+    /// Keeps `text` for `mode` until the compaction ends, records it in the history,
+    /// empties the editor, refreshes the pending rows and says so on the status line.
+    ///
+    /// # Errors
+    /// Returns the failure of the published theme's dim colour.
+    pub(super) fn queue_compaction_message(
+        &self,
+        text: String,
+        mode: UserMessageDelivery,
+    ) -> Result<(), Box<dyn Error>> {
+        self.editor.add_to_history(&text);
+        self.compaction_queued_messages
+            .borrow_mut()
+            .push(CompactionQueuedMessage { text, mode });
+        self.editor.set_text("");
+        self.update_pending_messages_display()?;
+        self.show_status("Queued message for after compaction")
+    }
+
+    /// Whether `text` starts with `/` and names a registered command, up to its first space.
+    pub(super) fn is_extension_command(&self, text: &str) -> bool {
+        let Some(command) = text.strip_prefix('/') else {
+            return false;
+        };
+        let name = command.split_once(' ').map_or(command, |(name, _)| name);
+        let runner = self.runtime_host.session().extension_runner();
+        runner.get_command(name).is_some()
     }
 
     /// Restores every queued message to the editor and says how many were restored.
@@ -164,7 +277,7 @@ impl InteractiveMode {
     }
 
     /// Hands the failure of a key action to the terminal host, which reports it.
-    fn report(&self, result: Result<(), Box<dyn Error>>) {
+    pub(super) fn report(&self, result: Result<(), Box<dyn Error>>) {
         if result.is_err() {
             let runtime = &self.tool_environment.runtime;
             runtime.spawn_local(Box::pin(std::future::ready(result)));

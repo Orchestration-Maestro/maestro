@@ -2,10 +2,11 @@
 
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
-the startup help, the transcript notices, typed input, queued input, session replay
-and the expansion and thinking shortcuts. The prompt loop, streaming messages, installed
-custom headers, the terminal title and the other integrations are still to come;
-the mode reads submitted text but does not yet prompt the session.
+the startup help, the transcript notices, typed input, queued input, session
+replay and the expansion and thinking shortcuts. The prompt loop, streaming
+messages, installed custom headers, the terminal title and the other integrations
+are still to come; the mode prompts the session only for input queued during a
+response or a compaction.
 
 ## Construction
 
@@ -60,7 +61,9 @@ editor, with the key bound to `tui.input.submit` (Enter by default). Submitted
 text loses its outer whitespace under the shared whitespace policy: Unicode white
 space other than U+0085, plus U+FEFF. U+0085, U+200B, inner spaces and line breaks
 stay. Submission ignores text that is empty after trimming: no input receives it
-and the history does not record it.
+and the history does not record it. While the session compacts or a response
+streams, submitted text is queued instead (see Queued input) and no input receives
+it.
 
 Only one input waits at a time. The future starts waiting when it is first
 polled, not when it is created, and it does not borrow the mode. When it waits,
@@ -102,9 +105,29 @@ without either effect, so the history is not filled twice.
 
 ## Queued input
 
-Messages queued for the running response appear above the editor. Each steering
-message gets a dim `Steering: <text>` row and each follow-up message a dim
-`Follow-up: <text>` row, cut to one line. A last row names the keys bound to
+While a response streams, Enter queues the trimmed text as steering and the key
+bound to `app.message.followUp` (Alt+Enter by default) queues it as a follow-up.
+Both record the text in the history and empty the editor, then send it to the
+session as a prompt with that delivery, so registered commands still run at once and
+templates still expand. The prompt starts at once; once it is queued, the pending
+rows are refreshed. When the session refuses it, the editor stays empty, the history
+keeps the text, the rows are not refreshed and the failure goes to the terminal
+runtime's error route. With no response streaming and no compaction, the follow-up
+key empties the editor and submits the text as Enter does; without an installed
+submission it does nothing. The follow-up key reads the editor's expanded text, so a
+large paste is sent in full.
+
+While the session compacts, a registered command (`/name`, with the name ending at the
+first space) still runs at once. Any other text is kept by the mode in the order it
+was typed, as steering from Enter or as a follow-up from the follow-up key, recorded
+in the history, cleared from the editor, shown in the pending rows and confirmed by
+the status line `Queued message for after compaction`. Sending the kept messages
+when the compaction ends is not delivered yet; until then they stay in the pending
+rows, and the dequeue key restores them.
+
+Queued messages, including those kept during a compaction, appear above the
+editor. Each steering message gets a dim `Steering: <text>` row and each follow-up
+message a dim `Follow-up: <text>` row, cut to one line. A last row names the keys bound to
 `app.message.dequeue` (Alt+Up by default) with `to edit all queued messages`. The
 keys are read when the rows are built, each part capitalized, as in `Ctrl+Alt+Q`.
 With nothing queued, the rows are removed.
