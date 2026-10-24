@@ -149,8 +149,7 @@ fn buttons(
 /// Show `selected` on the buttons of `group`.
 fn paint(group: &HtmlElement, selected: ViewMode) {
     for ((mode, ..), button) in buttons(group) {
-        // The group's own children only fail to carry a class name if the DOM is no longer ours.
-        let _ = button.set_class_name(&classes(mode, selected));
+        button.set_class_name(&classes(mode, selected));
     }
 }
 /// Refresh the localized button titles of `group` from `view`.

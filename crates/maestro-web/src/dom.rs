@@ -183,14 +183,6 @@ fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected
     }
     Reflected { _accessors: kept }
 }
-/// The element behind `root` while it exists and is connected.
-#[cfg(target_arch = "wasm32")]
-pub(crate) fn connected(root: &js_sys::WeakRef) -> Option<web_sys::HtmlElement> {
-    use wasm_bindgen::JsCast as _;
-    root.deref()
-        .and_then(|root| root.dyn_into::<web_sys::HtmlElement>().ok())
-        .filter(|root| root.is_connected())
-}
 /// Install the built-in elements' stylesheet once per document, with the selected pack's properties.
 /// # Errors
 /// Returns a presentation, highlighting or native failure.

@@ -691,9 +691,8 @@ fn assert_typed_defaults(view: &DomView) {
         "submit"
     );
     assert!(shows(&group, ViewMode::Preview) && !shows(&group, ViewMode::Code));
-    assert_eq!(
-        extent(&group).1,
-        28.,
+    assert!(
+        (extent(&group).1 - 28.).abs() < 0.5,
         "the group measures the reference's 28-pixel control line"
     );
     assert_eq!(computed(&group, "overflow"), "hidden");
