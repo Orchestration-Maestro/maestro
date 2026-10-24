@@ -543,6 +543,43 @@ fn catalog_pattern_edge_is_scoped() {
 }
 
 #[test]
+fn listener_leaf_edges_are_scoped() {
+    for from in [
+        "maestro-models",
+        "maestro-tui",
+        "maestro-agent",
+        "maestro-app",
+        "maestro-extensions",
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[from, "maestro-listeners"]);
+        check_permitted_declarations(&workspace, from, &["maestro-listeners"]);
+    }
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-session", "maestro-listeners"]);
+    workspace.member(
+        "maestro-session",
+        "maestro-session",
+        "[dependencies]\nlisteners = { package = \"maestro-listeners\", path = \"../maestro-listeners\" }",
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("forbidden production dependency: maestro-session -> maestro-listeners".into())
+    );
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-listeners", "maestro-text"]);
+    workspace.member(
+        "maestro-listeners",
+        "maestro-listeners",
+        "[dependencies]\ntext = { package = \"maestro-text\", path = \"../maestro-text\" }",
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("maestro-listeners must not depend on workspace crate maestro-text".into())
+    );
+}
+
+#[test]
 fn process_capture_consumers_may_declare_the_owner() {
     for from in [
         "maestro-app",

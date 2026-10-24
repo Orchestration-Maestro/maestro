@@ -6,7 +6,7 @@ use super::{Setup, World, complete, isolated, start};
 use crate::SettingsSelectorComponent;
 use maestro_app::presentation_data::footer_data_provider::FooterOperations;
 use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting, strip_ansi};
-use maestro_theme::{ThemeDirectories, ThemeState};
+use maestro_theme::ThemeDirectories;
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition};
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{Component, SettingsList, TerminalCapabilities};
@@ -16,16 +16,16 @@ use std::rc::Rc;
 /// The shipped themes every panel inventory reads.
 const SHIPPED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../maestro-theme/assets/theme");
 
-/// A registry over the shipped themes and the custom directory of `directory`.
-fn registry(directory: &Path) -> Rc<ThemeState> {
+/// The theme directories over the shipped themes and the custom directory of `directory`.
+fn registry(directory: &Path) -> ThemeDirectories {
     let custom = directory.join("themes");
     if !custom.exists() {
         std::fs::create_dir(&custom).unwrap();
     }
-    Rc::new(ThemeState::new(ThemeDirectories {
+    ThemeDirectories {
         themes_dir: SHIPPED.to_owned(),
         custom_themes_dir: custom.to_str().unwrap().to_owned(),
-    }))
+    }
 }
 
 /// A started mode whose panel reads a real theme inventory.
@@ -34,7 +34,7 @@ fn settings_world(
     configure: impl FnOnce(&mut SettingsManager) + 'static,
 ) -> World {
     let world = Setup {
-        theme_state: Some(registry(directory)),
+        directories: Some(registry(directory)),
         configure: Box::new(configure),
         ..Setup::default()
     }
@@ -224,12 +224,16 @@ fn settings_command_uses_trimmed_exact_token_and_clears_editor() {
             let world = started_settings(directory);
             for text in ["/settings", " /settings\t", "\u{feff}/settings "] {
                 world.mode.editor.set_text(text);
-                submit(&world, text);
+                submit(&world.mode, text);
                 assert!(panel(&world).is_some(), "{text:?} opens the panel");
-                assert_eq!(world.mode.editor.get_text(), "", "text is cleared");
                 press(&open_list(&world), "\x1b");
                 assert!(panel(&world).is_none(), "the panel closes between cases");
             }
+            world.mode.editor.set_text("/settings");
+            world.mode.editor.handle_input("\r");
+            assert!(panel(&world).is_some(), "the key route opens the panel");
+            assert_eq!(world.mode.editor.get_text(), "", "text is cleared");
+            press(&open_list(&world), "\x1b");
             for text in [
                 "/settings all",
                 "/settingsall",
@@ -238,7 +242,7 @@ fn settings_command_uses_trimmed_exact_token_and_clears_editor() {
                 "\u{200b}/settings",
             ] {
                 world.mode.editor.set_text(text);
-                submit(&world, text);
+                submit(&world.mode, text);
                 assert!(panel(&world).is_none(), "{text:?} does not open the panel");
                 assert_eq!(world.mode.editor.get_text(), text, "text stays");
             }
@@ -558,11 +562,11 @@ fn settings_command_does_not_consume_waiter_or_history() {
             let world = started_settings(directory);
             let mut waiter = Box::pin(world.mode.get_user_input());
             assert_eq!(poll(&mut waiter), None);
-            submit(&world, "/settings");
+            submit(&world.mode, "/settings");
             assert!(panel(&world).is_some());
             assert_eq!(poll(&mut waiter), None, "the waiter is untouched");
             assert!(recalled(&world.mode.editor).is_empty(), "no history entry");
-            submit(&world, "ordinary");
+            submit(&world.mode, "ordinary");
             assert_eq!(
                 poll(&mut waiter),
                 Some("ordinary".to_owned()),
@@ -733,7 +737,7 @@ fn settings_skill_commands_refresh_registered_autocomplete() {
         "settings_skill_commands_refresh_registered_autocomplete",
         |directory| {
             let world = Setup {
-                theme_state: Some(registry(directory)),
+                directories: Some(registry(directory)),
                 skills: vec![skill("helper")],
                 ..Setup::default()
             }
@@ -1156,7 +1160,7 @@ fn settings_theme_selection_keeps_supplied_watcher_for_custom_refresh() {
             custom_theme(directory, "watched", &document);
             let watched = Rc::new(super::Watched::default());
             let world = Setup {
-                theme_state: Some(registry(directory)),
+                directories: Some(registry(directory)),
                 configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
                 operations: Some(Rc::clone(&watched) as Rc<dyn FooterOperations>),
                 ..Setup::default()

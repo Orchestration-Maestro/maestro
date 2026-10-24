@@ -14,6 +14,7 @@ mod queues;
 mod session;
 mod settings;
 mod transcript;
+mod transfer;
 mod typed;
 
 use crate::{InteractiveMode, InteractiveModeOptions};
@@ -58,7 +59,7 @@ use std::{
 };
 
 /// Every recorded presentation case.
-const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
+pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
@@ -359,8 +360,6 @@ pub(super) struct World {
 /// Builds the inputs of one mode, letting `configure` change settings and the theme
 /// selected while the loader's themes are read.
 pub(super) struct Setup {
-    /// A supplied theme registry for inventory and custom-file observations.
-    pub(super) theme_state: Option<Rc<ThemeState>>,
     /// Supplied native effects, when a test drives their local task set.
     pub(super) operations: Option<Rc<dyn FooterOperations>>,
     /// The mode options.
@@ -381,6 +380,8 @@ pub(super) struct Setup {
     pub(super) extension: Option<ExtensionFactory<Local>>,
     /// Creates replacement sessions, when supplied; replacing otherwise fails.
     pub(super) create: Option<CreateAgentSessionRuntimeFactory>,
+    /// The directories the theme registry reads, when it records themes on disk.
+    pub(super) directories: Option<maestro_theme::ThemeDirectories>,
     /// The loaded themes the loader answers before the dark and light palettes.
     pub(super) themes: Vec<Rc<Theme>>,
     /// The loaded extensions by path and provenance; the default loader's when these,
@@ -397,7 +398,6 @@ pub(super) struct Setup {
 impl Default for Setup {
     fn default() -> Self {
         Self {
-            theme_state: None,
             operations: None,
             options: InteractiveModeOptions::default(),
             configure: Box::new(|_| {}),
@@ -406,6 +406,7 @@ impl Default for Setup {
             context: Vec::new(),
             skills: Vec::new(),
             prompts: Vec::new(),
+            directories: None,
             extension: None,
             create: None,
             themes: Vec::new(),
@@ -477,9 +478,10 @@ impl Setup {
         let host = Rc::new(AgentSessionRuntime::new(result, create));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = self
-            .theme_state
-            .unwrap_or_else(|| Rc::new(published::unpublished()));
+        let themes = Rc::new(match self.directories {
+            Some(directories) => ThemeState::new(directories),
+            None => published::unpublished(),
+        });
         let local = Rc::new(tokio::task::LocalSet::new());
         let operations = self
             .operations
@@ -555,16 +557,16 @@ pub(super) fn painted(theme: &Theme, rows: &[String]) -> Vec<String> {
     rows.iter().map(|row| roles(theme, row)).collect()
 }
 
-/// One recorded case of this module's witnesses.
+/// One recorded case, read before its witness gives the input and observation their types.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Case {
+pub(super) struct Case {
     /// The witness the case belongs to.
     test: String,
     /// The recorded operation.
-    input: Input,
+    input: serde_json::Value,
     /// The recorded observation.
-    expected: Expected,
+    expected: serde_json::Value,
 }
 
 /// The recorded operations.
@@ -653,21 +655,12 @@ pub(super) enum Expected {
     },
 }
 
-/// One recorded case, read before its witness gives the input and observation their types.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Recorded {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: serde_json::Value,
-    /// The recorded observation.
-    expected: serde_json::Value,
-}
-
-/// The cases of `test` recorded in `fixtures`, typed by that witness.
-fn recorded<I: DeserializeOwned, E: DeserializeOwned>(fixtures: &str, test: &str) -> Vec<(I, E)> {
-    let all: Vec<Recorded> = serde_json::from_str(fixtures).unwrap();
+/// The recorded cases of `test` in `fixtures`, typed by that witness.
+pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
+    fixtures: &str,
+    test: &str,
+) -> Vec<(I, E)> {
+    let all: Vec<Case> = serde_json::from_str(fixtures).unwrap();
     let cases: Vec<_> = all
         .into_iter()
         .filter(|case| case.test == test)
@@ -682,26 +675,15 @@ fn recorded<I: DeserializeOwned, E: DeserializeOwned>(fixtures: &str, test: &str
     cases
 }
 
-/// The recorded cases of `test`.
-pub(super) fn cases(test: &str) -> Vec<(Input, Expected)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| (case.input, case.expected))
-        .collect();
-    assert!(!cases.is_empty());
-    cases
-}
-
 #[test]
 fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
     isolated(
         "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
         |directory| {
-            for (input, expected) in
-                cases("startup_header_keeps_quiet_verbose_and_configured_hints_distinct")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
+            ) {
                 let (
                     Input::Header {
                         quiet,
@@ -742,8 +724,10 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
     isolated(
         "startup_notices_keep_labels_styles_padding_and_redraw",
         |directory| {
-            for (input, expected) in cases("startup_notices_keep_labels_styles_padding_and_redraw")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_notices_keep_labels_styles_padding_and_redraw",
+            ) {
                 let (Input::Notice { kind, text, width }, Expected::Notice { lines, renders }) =
                     (input, expected)
                 else {
@@ -774,9 +758,12 @@ fn clear_editor_changes_text_and_requests_a_frame() {
         "clear_editor_changes_text_and_requests_a_frame",
         |directory| {
             let [(Input::Clear, Expected::Clear { text, renders })] =
-                <[_; 1]>::try_from(cases("clear_editor_changes_text_and_requests_a_frame"))
-                    .ok()
-                    .unwrap()
+                <[_; 1]>::try_from(cases::<Input, Expected>(
+                    FIXTURES,
+                    "clear_editor_changes_text_and_requests_a_frame",
+                ))
+                .ok()
+                .unwrap()
             else {
                 panic!("one clear case");
             };
@@ -1149,14 +1136,13 @@ fn watching(directory: &Path, watched: &Rc<Watched>) -> World {
     std::fs::create_dir_all(&custom).unwrap();
     // The watcher only needs the entry's file; the registered theme answers the load.
     std::fs::write(custom.join("watched.json"), "{}").unwrap();
-    let registry = Rc::new(ThemeState::new(maestro_theme::ThemeDirectories {
-        themes_dir: String::new(),
-        custom_themes_dir: custom.to_str().unwrap().to_owned(),
-    }));
     Setup {
         configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
         themes: vec![published::named(1, Some("watched"))],
-        theme_state: Some(registry),
+        directories: Some(maestro_theme::ThemeDirectories {
+            themes_dir: String::new(),
+            custom_themes_dir: custom.to_str().unwrap().to_owned(),
+        }),
         operations: Some(Rc::clone(watched) as Rc<dyn FooterOperations>),
         ..Setup::default()
     }

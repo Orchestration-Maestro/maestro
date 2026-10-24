@@ -1511,7 +1511,7 @@ struct Submission {
 /// holding it, and runs the work it hands over; typed text would have its tabs widened.
 fn submit_held(world: &World, text: &str) {
     world.mode.editor.set_text(text);
-    submit(world, text);
+    submit(&world.mode, text);
     assert!(world.runtime.drain_futures().is_empty());
 }
 

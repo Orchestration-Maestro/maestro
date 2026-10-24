@@ -31,5 +31,3 @@ macro_rules! platform_store_accessor {
     };
 }
 pub(crate) use platform_store_accessor;
-
-pub mod listeners;

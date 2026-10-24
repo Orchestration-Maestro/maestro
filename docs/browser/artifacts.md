@@ -27,6 +27,12 @@ the body. MIME selection uses the last literal dot-delimited segment with Unicod
 lowercase, not path normalization or a MIME database. The native byte operation
 preserves the literal name and selected bytes.
 
+The header's download control and the preview/source selection are also
+component-owned native controls: `components::download_button::dom::download_button`
+and `DomContent for PreviewCodeToggle` publish them as page content. Artifact
+bodies, the panel and the Chat integration still use their retained canvas
+owners until their own deliveries mount those controls.
+
 `GenericArtifact` is also available through its module for direct construction.
 Its initial filename and content are empty. Caller-supplied packs and localization
 apply on each draw; there is no global theme or new runtime.

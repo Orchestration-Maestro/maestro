@@ -14,7 +14,7 @@ pub mod thinking_block;
 /// Sandbox runtime messaging.
 pub mod sandbox;
 
-pub(crate) mod download_button;
+pub mod download_button;
 /// Retained sandbox loading and document preparation.
 pub mod sandboxed_iframe;
 

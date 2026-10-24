@@ -38,7 +38,8 @@ use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_extensions::{
     ExtensionExecution, ExtensionRunner, ReplacedSessionContext, SessionStartEvent,
 };
-use maestro_models::{DiagnosticErrorInfo, Local, Model, records::listeners::Listeners};
+use maestro_listeners::Listeners;
+use maestro_models::{DiagnosticErrorInfo, Local, Model};
 use maestro_session::{
     Presence, SessionManager, messages::CustomAgentMessages,
     session_manager::ReadonlySessionManager,

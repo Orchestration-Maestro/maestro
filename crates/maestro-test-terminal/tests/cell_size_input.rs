@@ -575,3 +575,273 @@ fn missing_input_capability_ignores_input() {
         "a component without input requests no frame"
     );
 }
+
+/// One recorded corpus row: the callbacks it registers and the delivery it observes.
+#[derive(Deserialize)]
+struct CorpusCase {
+    /// The scenario name the registration table dispatches on.
+    name: String,
+    /// Chunks the terminal delivers in order.
+    inputs: Vec<String>,
+    /// What every visited callback received, in order.
+    seen: Vec<(String, String)>,
+    /// What the focused component received, in order.
+    delivered: Vec<String>,
+}
+
+/// Corpus rows a terminal cannot drive: a listener that delivers input again re-enters
+/// the frame writer's input callback while it runs, which Rust's mutable callback cannot
+/// do. The live walk keeps its own witness for this row.
+const REENTRANT_ROWS: &[&str] = &["nested_dispatch"];
+
+/// The recorded listener corpus, without the rows a terminal cannot drive.
+fn listener_corpus() -> Vec<CorpusCase> {
+    let rows = parse::<CorpusRows>(include_str!("fixtures/listener_order.json")).rows;
+    assert!(
+        rows.iter()
+            .any(|row| REENTRANT_ROWS.contains(&row.name.as_str())),
+        "the recorded corpus no longer holds the re-entrant row"
+    );
+    rows.into_iter()
+        .filter(|row| !REENTRANT_ROWS.contains(&row.name.as_str()))
+        .collect()
+}
+
+/// The recorded listener corpus file.
+#[derive(Default, Deserialize)]
+struct CorpusRows {
+    /// One entry per scenario.
+    rows: Vec<CorpusCase>,
+}
+
+/// A listener for `label` that records each text and answers with `answer`.
+fn listener(
+    label: &'static str,
+    seen: &Seen,
+    answer: impl Fn(&str) -> InputListenerResult + 'static,
+) -> InputListener {
+    let seen = Rc::clone(seen);
+    Rc::new(move |data: &str| {
+        seen.borrow_mut().push((label, data.to_owned()));
+        answer(data)
+    })
+}
+
+/// Register one recording listener per label.
+fn passing(tui: &TUI, seen: &Seen, labels: &[&'static str]) {
+    for label in labels {
+        drop(tui.add_input_listener(listener(label, seen, |_| InputListenerResult::Pass)));
+    }
+}
+
+/// Register one callback twice, then remove it twice through the handle at `which`.
+fn duplicate(tui: &TUI, seen: &Seen, which: usize) {
+    let shared = listener("only", seen, |_| InputListenerResult::Pass);
+    let removers = [
+        tui.add_input_listener(Rc::clone(&shared)),
+        tui.add_input_listener(shared),
+    ];
+    removers[which]();
+    removers[which]();
+}
+
+/// Register the identity and action rows of the corpus.
+fn register_identity(name: &str, rig: &Rig, seen: &Seen) -> bool {
+    let tui = &rig.tui;
+    match name {
+        "no_listeners" => {}
+        "registration_order" => passing(tui, seen, &["z", "a"]),
+        "distinct_identity" => passing(tui, seen, &["same", "same"]),
+        "duplicate_unsubscribe_0" => duplicate(tui, seen, 0),
+        "duplicate_unsubscribe_1" => duplicate(tui, seen, 1),
+        "duplicate_keeps_position" => {
+            let z = listener("z", seen, |_| InputListenerResult::Pass);
+            drop(tui.add_input_listener(Rc::clone(&z)));
+            passing(tui, seen, &["a"]);
+            drop(tui.add_input_listener(z));
+        }
+        "direct_remove_absent" => {
+            let absent = listener("absent", seen, |_| InputListenerResult::Pass);
+            tui.remove_input_listener(&absent);
+            passing(tui, seen, &["kept"]);
+        }
+        "old_handle_removes_readded" => {
+            let same = listener("same", seen, |_| InputListenerResult::Pass);
+            let old = tui.add_input_listener(Rc::clone(&same));
+            tui.remove_input_listener(&same);
+            drop(tui.add_input_listener(Rc::clone(&same)));
+            old();
+        }
+        "dropped_handle_keeps_registration" => passing(tui, seen, &["kept"]),
+        _ => return false,
+    }
+    true
+}
+
+/// Register the rows where a callback changes the registrations while it runs.
+fn register_live(name: &str, rig: &Rig, seen: &Seen) -> bool {
+    let tui = &rig.tui;
+    match name {
+        "live_add" => {
+            let b = listener("b", seen, |_| InputListenerResult::Pass);
+            let writer = tui.clone();
+            drop(tui.add_input_listener(listener("a", seen, move |_| {
+                drop(writer.add_input_listener(Rc::clone(&b)));
+                InputListenerResult::Pass
+            })));
+        }
+        "live_remove" => {
+            let b = listener("b", seen, |_| InputListenerResult::Pass);
+            let writer = tui.clone();
+            let removed = Rc::clone(&b);
+            drop(tui.add_input_listener(listener("a", seen, move |_| {
+                writer.remove_input_listener(&removed);
+                InputListenerResult::Pass
+            })));
+            drop(tui.add_input_listener(b));
+        }
+        "remove_self" => {
+            passing(tui, seen, &["z"]);
+            let disposer: Disposer = Rc::default();
+            let holder = Rc::clone(&disposer);
+            let acting = listener("a", seen, move |_| {
+                if let Some(dispose) = holder.borrow().as_ref() {
+                    dispose();
+                }
+                InputListenerResult::Pass
+            });
+            *disposer.borrow_mut() = Some(tui.add_input_listener(acting));
+            passing(tui, seen, &["b"]);
+        }
+        _ => return false,
+    }
+    true
+}
+
+/// Register the rows where a callback re-registers an identity.
+fn register_readd(name: &str, rig: &Rig, seen: &Seen) -> bool {
+    let tui = &rig.tui;
+    match name {
+        "readd_moves_to_tail" => {
+            let b = listener("b", seen, |_| InputListenerResult::Pass);
+            let writer = tui.clone();
+            let moved = Rc::clone(&b);
+            drop(tui.add_input_listener(listener("a", seen, move |_| {
+                writer.remove_input_listener(&moved);
+                drop(writer.add_input_listener(Rc::clone(&moved)));
+                InputListenerResult::Pass
+            })));
+            drop(tui.add_input_listener(b));
+            passing(tui, seen, &["c"]);
+        }
+        "self_readd_once" => {
+            let holder: Rc<RefCell<Option<InputListener>>> = Rc::default();
+            let own = Rc::clone(&holder);
+            let writer = tui.clone();
+            let repeated = Rc::new(Cell::new(false));
+            let acting = listener("a", seen, move |_| {
+                if repeated.replace(true) {
+                    return InputListenerResult::Pass;
+                }
+                if let Some(this) = own.borrow_mut().take() {
+                    writer.remove_input_listener(&this);
+                    drop(writer.add_input_listener(Rc::clone(&this)));
+                }
+                InputListenerResult::Pass
+            });
+            *holder.borrow_mut() = Some(Rc::clone(&acting));
+            drop(tui.add_input_listener(acting));
+            passing(tui, seen, &["b"]);
+        }
+        "nested_dispatch" => {
+            let terminal = rig.terminal.clone();
+            let active = Rc::new(Cell::new(false));
+            drop(tui.add_input_listener(listener("a", seen, move |_| {
+                if !active.replace(true) {
+                    terminal.send_input("nested");
+                }
+                InputListenerResult::Pass
+            })));
+            passing(tui, seen, &["b"]);
+        }
+        _ => return false,
+    }
+    true
+}
+
+/// Register the rows where a callback answers with a result.
+fn register_answers(name: &str, rig: &Rig, seen: &Seen) -> bool {
+    let tui = &rig.tui;
+    match name {
+        "consume_short_circuits" => {
+            drop(tui.add_input_listener(listener("a", seen, |_| InputListenerResult::Consume)));
+            passing(tui, seen, &["b"]);
+        }
+        "empty_final_stops" => {
+            drop(tui.add_input_listener(listener("a", seen, |_| {
+                InputListenerResult::Replace(String::new())
+            })));
+            passing(tui, seen, &["b"]);
+        }
+        "empty_then_rewrite" => {
+            drop(tui.add_input_listener(listener("a", seen, |_| {
+                InputListenerResult::Replace(String::new())
+            })));
+            drop(tui.add_input_listener(listener("b", seen, |_| {
+                InputListenerResult::Replace("recovered".to_owned())
+            })));
+        }
+        "replace_preserves_bytes" => {
+            drop(tui.add_input_listener(listener("a", seen, |_| {
+                InputListenerResult::Replace("é\t\x1b[31mλ".to_owned())
+            })));
+            passing(tui, seen, &["b"]);
+        }
+        _ => return false,
+    }
+    true
+}
+
+#[test]
+fn listener_corpus_preserves_focus_delivery() {
+    let _input = crate::input_support::globals();
+    for case in listener_corpus() {
+        let rig = Rig::new();
+        let seen: Seen = Rc::default();
+        let registered = register_identity(&case.name, &rig, &seen)
+            || register_live(&case.name, &rig, &seen)
+            || register_readd(&case.name, &rig, &seen)
+            || register_answers(&case.name, &rig, &seen);
+        assert!(registered, "{}", case.name);
+        for data in &case.inputs {
+            rig.terminal.send_input(data);
+        }
+        let visited: Vec<(String, String)> = seen
+            .borrow()
+            .iter()
+            .map(|(label, data)| ((*label).to_owned(), data.clone()))
+            .collect();
+        assert_eq!(visited, case.seen, "{}", case.name);
+        assert_eq!(*rig.probe.inputs.borrow(), case.delivered, "{}", case.name);
+    }
+}
+
+#[test]
+fn duplicate_input_unsubscribers_remove_the_current_registration() {
+    let _input = crate::input_support::globals();
+    for which in [0, 1] {
+        let rig = Rig::new();
+        let seen: Seen = Rc::default();
+        let shared = listener("only", &seen, |_| InputListenerResult::Pass);
+        let removers = [
+            rig.tui.add_input_listener(Rc::clone(&shared)),
+            rig.tui.add_input_listener(shared),
+        ];
+        rig.terminal.send_input("first");
+        removers[which]();
+        removers[which]();
+        rig.terminal.send_input("second");
+        assert_eq!(*seen.borrow(), [("only", "first".to_owned())], "{which}");
+        assert_eq!(*rig.probe.inputs.borrow(), ["first", "second"], "{which}");
+    }
+}
