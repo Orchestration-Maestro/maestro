@@ -1,5 +1,6 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
+mod bash;
 mod events;
 mod extension_ui;
 #[allow(
@@ -374,6 +375,10 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// Starts each replacement with fresh services instead of reusing the current ones.
+    pub(super) replacing: bool,
+    /// Creates the session history under a file in this directory when supplied.
+    pub(super) session_history: Option<std::path::PathBuf>,
     /// The directories the theme registry reads, when it records themes on disk.
     pub(super) directories: Option<maestro_theme::ThemeDirectories>,
     /// The loaded themes the loader answers before the dark and light palettes.
@@ -403,6 +408,8 @@ impl Default for Setup {
             prompts: Vec::new(),
             directories: None,
             extension: None,
+            replacing: false,
+            session_history: None,
             themes: Vec::new(),
             extensions: Vec::new(),
             errors: Vec::new(),
@@ -455,32 +462,31 @@ impl Setup {
             diagnostics: self.diagnostics,
         };
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
-        let result = session::session(&cwd, None, move |inner| {
-            let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
-            *created.borrow_mut() = Some(Rc::clone(&loader));
-            loader
-        });
+        let history = self
+            .session_history
+            .as_ref()
+            .map(|d| d.to_str().unwrap().to_owned());
+        let result = session::session_over(
+            &cwd,
+            None,
+            move |inner| {
+                let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
+                *created.borrow_mut() = Some(Rc::clone(&loader));
+                loader
+            },
+            history.as_deref(),
+        );
         let settings = Rc::clone(result.session.settings_manager());
-        settings.borrow_mut().set_theme("dark".to_owned());
-        (self.configure)(&mut settings.borrow_mut());
-        if let Some(name) = self.select {
-            *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
-        }
+        prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
         let services = Rc::clone(&result.services);
         let host = Rc::new(AgentSessionRuntime::new(
             result,
-            Rc::new(move |options| {
-                let replacement = session::over(&options.cwd, &services);
-                Box::pin(async { Ok(replacement) })
-            }),
+            create(services, self.replacing),
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(match self.directories {
-            Some(directories) => ThemeState::new(directories),
-            None => published::unpublished(),
-        });
+        let themes = registry(self.directories);
         let local = Rc::new(tokio::task::LocalSet::new());
         let mode = InteractiveMode::new(
             Rc::clone(&host),
@@ -500,6 +506,43 @@ impl Setup {
             loader,
         }
     }
+}
+
+/// Applies the settings the caller changes and the theme name read while it answers.
+fn prepare_settings(
+    settings: Rc<RefCell<SettingsManager>>,
+    configure: Box<dyn FnOnce(&mut SettingsManager)>,
+    select: Option<String>,
+    loader: &Rc<RefCell<Option<Rc<ForwardingLoader>>>>,
+) {
+    settings.borrow_mut().set_theme("dark".to_owned());
+    (configure)(&mut settings.borrow_mut());
+    if let Some(name) = select {
+        *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
+    }
+}
+
+/// The theme registry the mode selects from, unpublished without supplied directories.
+fn registry(directories: Option<maestro_theme::ThemeDirectories>) -> Rc<ThemeState> {
+    Rc::new(match directories {
+        Some(directories) => ThemeState::new(directories),
+        None => published::unpublished(),
+    })
+}
+
+/// The replacement factory, reusing `services` unless fresh services are selected.
+fn create(
+    services: Rc<maestro_app::AgentSessionServices<Local>>,
+    fresh: bool,
+) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    Rc::new(move |options| {
+        let replacement = if fresh {
+            session::session(&options.cwd, None, |inner| inner)
+        } else {
+            session::over(&options.cwd, &services)
+        };
+        Box::pin(async { Ok(replacement) })
+    })
 }
 
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
