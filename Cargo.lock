@@ -3804,6 +3804,7 @@ dependencies = [
  "maestro-export",
  "maestro-extensions",
  "maestro-json",
+ "maestro-listing",
  "maestro-markdown",
  "maestro-models",
  "maestro-packages",

@@ -1,4 +1,5 @@
 //! Native presentation witnesses through the interactive mode's own interface.
+mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod transcript;
