@@ -37,8 +37,9 @@ pub async fn select_config(
         .theme
         .init_theme(theme.as_deref(), Some(Rc::clone(&presentation.watcher)))
         .map_err(io::Error::other)?;
+    let (running, settled) = Running::new(Some(Rc::clone(&presentation.theme)));
     let ui = (presentation.host.create_ui)()?;
-    let (running, settled) = Running::new(ui.clone(), Some(Rc::clone(&presentation.theme)));
+    running.attach(ui.clone());
     let callbacks = ConfigSelectorCallbacks {
         on_close: settlement(&running, ()),
         on_exit: exit_notification(&running, Rc::clone(&presentation.host.exit)),

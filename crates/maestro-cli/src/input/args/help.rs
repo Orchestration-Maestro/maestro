@@ -20,45 +20,30 @@ const LABEL_COLUMN: usize = 30;
 /// The code-unit column the agent- and session-directory labels are padded to.
 const ENV_COLUMN: usize = 32;
 
-/// One retained flag registration as the help renders it.
-struct FlagLabel {
-    /// Authored flag name.
-    name: String,
-    /// Whether the declaration takes a value.
-    takes_value: bool,
-    /// Supplied description or the registration-owner fallback.
-    description: String,
-}
-
-/// Copy the parts of one flag registration the help renders.
-fn flag_label(flag: &ExtensionFlag) -> FlagLabel {
-    FlagLabel {
-        name: flag.name.clone(),
-        takes_value: flag.r#type == FlagType::String,
-        description: flag
-            .description
-            .clone()
-            .unwrap_or_else(|| format!("Registered by {}", flag.extension_path)),
+/// Render one retained registration as its label and description.
+fn flag_row(flag: &ExtensionFlag) -> String {
+    let value = if flag.r#type == FlagType::String {
+        " <value>"
+    } else {
+        ""
+    };
+    let label = pad_column(&format!("  --{}{value}", flag.name), LABEL_COLUMN);
+    match flag.description.as_deref() {
+        Some(description) => format!("{label}{description}"),
+        None => format!("{label}Registered by {}", flag.extension_path),
     }
 }
 
 /// Read every retained registration while building the flag section.
 fn flag_section(flags: &[Arc<RwLock<ExtensionFlag>>], styles_enabled: bool) -> String {
-    let labels: Vec<FlagLabel> = flags
+    let rows: Vec<String> = flags
         .iter()
-        .filter_map(|flag| flag.read().ok().map(|flag| flag_label(&flag)))
+        .filter_map(|flag| flag.read().ok())
+        .map(|flag| flag_row(&flag))
         .collect();
-    if labels.is_empty() {
+    if rows.is_empty() {
         return String::new();
     }
-    let rows: Vec<String> = labels
-        .into_iter()
-        .map(|label| {
-            let value = if label.takes_value { " <value>" } else { "" };
-            let text = pad_column(&format!("  --{}{value}", label.name), LABEL_COLUMN);
-            format!("{text}{}", label.description)
-        })
-        .collect();
     format!(
         "\n{}\n{}\n",
         Theme::bold("Extension CLI Flags:", styles_enabled),

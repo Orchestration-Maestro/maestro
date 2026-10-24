@@ -46,34 +46,51 @@ impl SelectorHost {
 /// One running presentation: its frame writer, theme watch and single settlement.
 ///
 /// Notifications keep a weak handle, so a settled or dropped presentation owns no
-/// callback cycle.
+/// callback cycle. Dropping the owner stops whatever it already started, so a
+/// cancelled presentation, a failed presentation and a settled one share one cleanup.
 pub(crate) struct Running<T> {
-    /// The writer the presented component was added to.
-    ui: TUI,
+    /// The writer the presented component was added to, once it is created.
+    ui: RefCell<Option<TUI>>,
     /// The theme state whose watch close and exit stop.
     theme: Option<Rc<ThemeState>>,
     /// Whether the caller's settlement already ran.
     settled: Cell<bool>,
+    /// Whether the started effects were already stopped.
+    stopped: Cell<bool>,
     /// Delivers the caller's result once.
     outcome: RefCell<Option<oneshot::Sender<T>>>,
 }
 
 impl<T> Running<T> {
-    /// Retain `ui` for one presentation and return the result receiver.
-    pub(crate) fn new(ui: TUI, theme: Option<Rc<ThemeState>>) -> (Rc<Self>, oneshot::Receiver<T>) {
+    /// Retain the theme this presentation owns and return the result receiver.
+    pub(crate) fn new(theme: Option<Rc<ThemeState>>) -> (Rc<Self>, oneshot::Receiver<T>) {
         let (sender, receiver) = oneshot::channel();
         let running = Rc::new(Self {
-            ui,
+            ui: RefCell::default(),
             theme,
             settled: Cell::new(false),
+            stopped: Cell::new(false),
             outcome: RefCell::new(Some(sender)),
         });
         (running, receiver)
     }
 
+    /// Retain the frame writer once the presentation has created it.
+    pub(crate) fn attach(&self, ui: TUI) {
+        let previous = self.ui.replace(Some(ui));
+        drop(previous);
+    }
+
     /// Stop the frame writer, then the theme watch, as the reference does.
+    ///
+    /// Stopping twice stops nothing the second time.
     pub(crate) fn stop(&self) {
-        let _ = self.ui.stop();
+        if self.stopped.replace(true) {
+            return;
+        }
+        if let Some(ui) = self.ui.borrow().as_ref() {
+            let _ = ui.stop();
+        }
         if let Some(theme) = &self.theme {
             theme.stop_theme_watcher();
         }
@@ -88,6 +105,12 @@ impl<T> Running<T> {
         if let Some(sender) = self.outcome.borrow_mut().take() {
             let _ = sender.send(value);
         }
+    }
+}
+
+impl<T> Drop for Running<T> {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 

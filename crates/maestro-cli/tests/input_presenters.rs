@@ -15,9 +15,12 @@ use maestro_test_terminal::recording_terminal::RecordingTerminal;
 use maestro_theme::{
     ThemeDirectories, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
-use maestro_tui::tui::ComponentHandle;
-use maestro_tui::{Component, Container, FocusFlag, Focusable, TUI, TerminalImage};
-use std::cell::RefCell;
+use maestro_tui::tui::{ComponentHandle, InputHandler};
+use maestro_tui::{
+    Component, Container, FocusFlag, Focusable, Input, TUI, TerminalImage, get_keybindings,
+    set_keybindings,
+};
+use std::cell::{Cell, RefCell};
 use std::io;
 use std::path::Path;
 use std::rc::Rc;
@@ -612,4 +615,142 @@ fn session_loaders_keep_scope_progress_and_keybinding_identity() {
         "progress reaches the caller"
     );
     assert_eq!(*called.borrow(), 1, "the current-scope loader ran once");
+}
+
+#[test]
+fn a_dropped_presentation_stops_the_writer_and_closes_the_watch() {
+    let scratch = scratch_custom_theme();
+    let harness = Harness::new();
+    let log = Rc::new(RefCell::new(Vec::new()));
+    let watched = Rc::new(RefCell::new(Vec::new()));
+    let captured: Rc<RefCell<Option<ConfigSelectorCallbacks>>> = Rc::default();
+    let (record, view_log) = (Rc::clone(&captured), Rc::clone(&log));
+    let presenter: ConfigSelectorFactory = Rc::new(move |_options, callbacks| {
+        *record.borrow_mut() = Some(callbacks);
+        Ok(view(&view_log))
+    });
+    let mut manager = SettingsManager::in_memory(Settings::default());
+    manager.set_theme("custom".to_owned());
+    let presentation = ConfigPresentation {
+        host: harness.host(Rc::new(|_code: i32| ())),
+        theme: theme(scratch.path()),
+        watcher: Rc::new(RecordingWatch {
+            log: Rc::clone(&watched),
+        }),
+        presenter,
+    };
+    let mut select = Box::pin(select_config(
+        options(Rc::new(RefCell::new(manager))),
+        presentation,
+    ));
+    let waker = Waker::noop();
+    let mut context = Context::from_waker(waker);
+    let first = select.as_mut().poll(&mut context);
+    assert!(
+        first.is_pending(),
+        "the presentation awaits its close: {first:?}"
+    );
+    harness.frames();
+    drop(select);
+    assert_eq!(
+        harness.terminal.events(),
+        vec!["start", "stop"],
+        "dropping the presentation stops the writer it started"
+    );
+    assert_eq!(
+        watched.borrow().as_slice(),
+        ["watch", "watch-stop"],
+        "dropping the presentation closes the theme watch it started"
+    );
+}
+
+#[test]
+fn a_failed_presentation_closes_the_watch_it_started() {
+    let scratch = scratch_custom_theme();
+    let harness = Harness::new();
+    let watched = Rc::new(RefCell::new(Vec::new()));
+    let presenter: ConfigSelectorFactory =
+        Rc::new(|_options, _callbacks| Err(io::Error::other("no presented view")));
+    let mut manager = SettingsManager::in_memory(Settings::default());
+    manager.set_theme("custom".to_owned());
+    let state = theme(scratch.path());
+    let retained = Rc::clone(&state);
+    let presentation = ConfigPresentation {
+        host: harness.host(Rc::new(|_code: i32| ())),
+        theme: state,
+        watcher: Rc::new(RecordingWatch {
+            log: Rc::clone(&watched),
+        }),
+        presenter,
+    };
+    let mut select = Box::pin(select_config(
+        options(Rc::new(RefCell::new(manager))),
+        presentation,
+    ));
+    let waker = Waker::noop();
+    let mut context = Context::from_waker(waker);
+    assert!(
+        matches!(select.as_mut().poll(&mut context), Poll::Ready(Err(_))),
+        "a refused presentation reports its failure"
+    );
+    assert_eq!(
+        watched.borrow().as_slice(),
+        ["watch", "watch-stop"],
+        "a failed presentation closes the theme watch it already started"
+    );
+    drop(retained);
+}
+
+/// Cancel keys this test drives through the real input component.
+const CONFIGURED_CANCEL: &str = "\u{18}";
+
+/// The default cancel key the configured file replaces.
+const DEFAULT_CANCEL: &str = "\u{1b}";
+
+#[test]
+fn the_configured_cancel_key_reaches_input_handling() {
+    let scratch = Scratch::new().unwrap();
+    std::fs::write(
+        scratch.path().join("keybindings.json"),
+        "{\n  \"tui.select.cancel\": \"ctrl+x\"\n}\n",
+    )
+    .unwrap();
+    let manager = KeybindingsManager::create(Some(scratch.path().to_str().unwrap()))
+        .expect("readable keybindings root");
+    let previous = get_keybindings();
+    let harness = Harness::new();
+    let log = Rc::new(RefCell::new(Vec::new()));
+    let (captured, presentation) = recording_session_presentation(&harness, &log, manager);
+    let mut select = Box::pin(select_session(loaders(), loaders(), presentation));
+    let waker = Waker::noop();
+    let mut context = Context::from_waker(waker);
+    assert!(select.as_mut().poll(&mut context).is_pending());
+    harness.frames();
+    let cancelled = Rc::new(Cell::new(0_usize));
+    let counted = Rc::clone(&cancelled);
+    let input = Input::new();
+    input.set_on_escape(Some(Rc::new(move || {
+        counted.set(counted.get() + 1);
+    })));
+    input.handle_input(CONFIGURED_CANCEL);
+    assert_eq!(
+        cancelled.get(),
+        1,
+        "the configured cancel key reaches the input handler"
+    );
+    input.handle_input(DEFAULT_CANCEL);
+    assert_eq!(
+        cancelled.get(),
+        1,
+        "the replaced default no longer cancels once configured"
+    );
+    let callbacks = captured.borrow_mut().take().expect("presented request");
+    assert!(
+        callbacks
+            .keybindings
+            .matches(CONFIGURED_CANCEL, "tui.select.cancel"),
+        "the presented request carries the configured manager"
+    );
+    drop(select);
+    set_keybindings(previous);
 }

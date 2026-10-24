@@ -87,7 +87,7 @@ const VALUE_OPTIONS: &[ValueOption] = &[
 /// Report whether `level` names an accepted reasoning level.
 #[must_use]
 pub fn is_valid_thinking_level(level: &str) -> bool {
-    VALID_THINKING_LEVELS.contains(&level)
+    thinking_level(level).is_some()
 }
 
 /// Parse one reasoning level through the application's shared level owner.

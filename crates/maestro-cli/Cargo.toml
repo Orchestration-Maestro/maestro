@@ -12,8 +12,8 @@ maestro-tui = { path = "../maestro-tui" }
 maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
 maestro-theme = { path = "../maestro-theme" }
 indexmap = "=2.14.2"
+ryu-js.workspace = true
 serde.workspace = true
-serde_json.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -28,6 +28,7 @@ path = "tests/integration.rs"
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 maestro-test-terminal.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

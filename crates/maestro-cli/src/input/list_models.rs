@@ -76,7 +76,7 @@ pub fn list_models(
         .iter()
         .filter_map(|handle| handle.read().ok().map(|model| row(&model)))
         .collect();
-    let mut rows = search(rows, options.search_pattern);
+    let mut rows = search(&rows, options.search_pattern);
     if rows.is_empty() {
         let pattern = options.search_pattern.unwrap_or_default();
         writeln!(output, "No models matching \"{pattern}\"")?;
@@ -88,16 +88,13 @@ pub fn list_models(
 }
 
 /// Apply the authored search pattern, keeping every row for an absent or empty one.
-fn search(rows: Vec<Row>, pattern: Option<&str>) -> Vec<Row> {
+fn search<'a>(rows: &'a [Row], pattern: Option<&str>) -> Vec<&'a Row> {
     let Some(pattern) = pattern.filter(|pattern| !pattern.is_empty()) else {
-        return rows;
+        return rows.iter().collect();
     };
-    fuzzy_filter(&rows, pattern, |row| {
+    fuzzy_filter(rows, pattern, |row| {
         format!("{} {}", row.provider, row.model)
     })
-    .into_iter()
-    .cloned()
-    .collect()
 }
 
 /// Copy the columns the table prints from one descriptor.
@@ -133,7 +130,7 @@ fn format_token_count(count: f64) -> String {
             let text = if scaled.fract() == 0.0 {
                 format!("{scaled}")
             } else {
-                fixed_one(scaled)
+                ryu_js::Buffer::new().format_to_fixed(scaled, 1).to_owned()
             };
             return format!("{text}{suffix}");
         }
@@ -143,29 +140,6 @@ fn format_token_count(count: f64) -> String {
     } else {
         format!("{count}")
     }
-}
-
-/// Format one decimal place, rounding the exact binary value as the source does.
-fn fixed_one(value: f64) -> String {
-    let text = format!("{value:.20}");
-    let (whole, fraction) = text.split_once('.').unwrap_or((text.as_str(), ""));
-    let mut tenths = fraction
-        .as_bytes()
-        .first()
-        .map_or(0, |digit| u64::from(*digit - b'0'));
-    if fraction
-        .as_bytes()
-        .get(1)
-        .is_some_and(|digit| *digit >= b'5')
-    {
-        tenths += 1;
-    }
-    let mut whole: u64 = whole.parse().unwrap_or_default();
-    if tenths == 10 {
-        tenths = 0;
-        whole += 1;
-    }
-    format!("{whole}.{tenths}")
 }
 
 /// The printed cells of one row, in column order.
@@ -181,7 +155,7 @@ fn cells(row: &Row) -> [&str; 6] {
 }
 
 /// Print the header and every row with their measured columns.
-fn write_table(rows: &[Row], output: &mut dyn Write) -> io::Result<()> {
+fn write_table(rows: &[&Row], output: &mut dyn Write) -> io::Result<()> {
     let mut widths = COLUMNS.map(|header| header.encode_utf16().count());
     for row in rows {
         for (width, cell) in widths.iter_mut().zip(cells(row)) {
