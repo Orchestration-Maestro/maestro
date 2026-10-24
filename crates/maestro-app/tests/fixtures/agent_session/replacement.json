@@ -1,0 +1,67 @@
+{
+  "names": [
+    {
+      "input": "hello world",
+      "name": "hello world",
+      "event": {
+        "type": "session_info_changed",
+        "name": "hello world"
+      }
+    },
+    {
+      "input": "  padded  ",
+      "name": "padded",
+      "event": {
+        "type": "session_info_changed",
+        "name": "padded"
+      }
+    },
+    {
+      "input": "\ufeffname\ufeff",
+      "name": "name",
+      "event": {
+        "type": "session_info_changed",
+        "name": "name"
+      }
+    },
+    {
+      "input": "\u0085name\u0085",
+      "name": "\u0085name\u0085",
+      "event": {
+        "type": "session_info_changed",
+        "name": "\u0085name\u0085"
+      }
+    },
+    {
+      "input": "   ",
+      "name": null,
+      "event": {
+        "type": "session_info_changed"
+      }
+    },
+    {
+      "input": "",
+      "name": null,
+      "event": {
+        "type": "session_info_changed"
+      }
+    }
+  ],
+  "cost": {
+    "retained": [
+      0.123
+    ],
+    "messageEnd": [
+      0.123
+    ],
+    "history": [
+      0.123
+    ],
+    "turnEnd": [
+      0.123
+    ],
+    "agentEnd": [
+      0.123
+    ]
+  }
+}

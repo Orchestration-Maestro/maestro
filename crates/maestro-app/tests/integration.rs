@@ -94,6 +94,7 @@ mod legacy_workbooks;
 mod lm_studio_discovery;
 #[cfg(not(target_arch = "wasm32"))]
 mod lm_studio_support;
+mod message_end_cost_override_checks;
 #[path = "docx_support/metadata.rs"]
 mod metadata;
 mod model_selector_exports;
@@ -150,6 +151,7 @@ mod session_facade;
 mod session_harness_checks;
 mod session_messages;
 mod session_model_selection;
+mod session_name_event_checks;
 mod session_prompt_preflight;
 mod session_queues;
 mod session_runtime;
