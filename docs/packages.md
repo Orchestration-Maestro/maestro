@@ -45,6 +45,11 @@ Installation does not consult the offline setting. [Available-update
 checks](package-updates.md) consult it without acquiring contents. Configured
 execution selects registrations before applying the offline return.
 
+`DefaultPackageManager::with_offline` supplies the caller's startup selection.
+`Some(true)` suppresses that remote work, `Some(false)` permits it, and `None` keeps
+reading `MAESTRO_OFFLINE` whenever an operation consults offline mode. The flag
+accepts `1`, or `true` and `yes` in any ASCII letter case, and is never trimmed.
+
 ## Progress
 
 `set_progress_callback` replaces or clears the callback; each emission reads the

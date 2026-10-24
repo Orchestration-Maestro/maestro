@@ -32,6 +32,8 @@ steps.
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
+| `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
+| `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 
 ### Building an example
 
@@ -67,6 +69,10 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- working_message_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- system_prompt_status
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -121,6 +127,16 @@ text as it is. When the host rejects a request the command ends with the host's
 message, and the label the example retains stays the one the command chose.
 Loading the component into an application is opt-in and needs a host that enables
 the component runtime.
+
+### What the system prompt status example does
+
+On `agent_start` the example reads the prompt the host supplies at that moment
+and sets the `system-prompt` status to `System: N chars`. `N` counts UTF-16 code
+units, so whitespace, a byte order mark and combining sequences count as the
+string stores them; nothing is trimmed, rebuilt or cached. `session_shutdown`
+removes the status under the same key, including when no start came before it.
+A host rejection is returned to the host unchanged. Loading the component into
+an application is opt-in.
 
 ### Building with-deps
 
@@ -193,5 +209,18 @@ supplied prompt followed by this example's own pirate instructions; while it is
 off, the handler returns no override and leaves the event as it arrived. The
 state belongs to the factory instance, so two loaded copies toggle apart, and a
 host that refuses the notification still keeps the switch it made first. Loading
+the component into an application is opt-in and needs that application's
+component runtime.
+
+### What the working message example does
+
+`session_start` requests the custom working text and a one-frame coloured
+indicator through the context it receives, then returns no event result. Every
+session-start reason sends the same two requests in that order, and a refusal
+the host returns ends the callback with the host's own message.
+
+The controlled run asserts the requests the guest sends. It does not show that
+an interactive host keeps the text across agent turns or loader recreation;
+that behaviour belongs to the host's own working-loader operations. Installing
 the component into an application is opt-in and needs that application's
 component runtime.

@@ -618,6 +618,22 @@ the supplied `systemPrompt` only while the boolean is set and otherwise returns
 no override. A refused notification leaves the flip in place. Loading it into an
 application is opt-in, and `examples/extensions/README.md` gives the build and
 controlled-run commands.
+
+### A system prompt status header
+
+[`examples/extensions/system_prompt_header.rs`](../../examples/extensions/system_prompt_header.rs)
+registers `agent_start` to read the prompt the host supplies at that moment and
+set the `system-prompt` status to `System: N chars`, where `N` counts UTF-16 code
+units of that prompt. Whitespace, a byte order mark and combining sequences keep
+the width the string stores, and nothing is trimmed, rebuilt or cached.
+`session_shutdown` removes the status under the same key, including when no start
+came first, so the handler keeps no state between invocations.
+
+A host rejection from the getter or the status request reaches the host
+unchanged, and no fallback status is written. Loading the component into an
+application is opt-in, and `examples/extensions/README.md` gives the build and
+controlled-run commands.
+
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses
@@ -722,6 +738,21 @@ notifying writes nothing when the label write itself fails.
 It is opt-in like the other shipped extensions: its crate's tests run the built
 component in a controlled host with a supplied wall clock, and
 `examples/extensions/README.md` holds the build and controlled-run commands.
+
+### A custom working message on session start
+
+[`examples/extensions/working_message_test.rs`](../../examples/extensions/working_message_test.rs)
+registers one `session_start` handler. It acquires the context's UI and sends
+`set_working_message` with the authored text, then `set_working_indicator` with
+one authored frame and no interval, and returns no event result. Both requests
+keep every authored byte, including the colour and reset sequences. A refusal the
+host returns ends the callback with the host's message, so a refused working-text
+request leaves the indicator unsent.
+
+The controlled run asserts the ordered requests the guest sends; it does not show
+that an interactive host keeps them across agent turns or loader recreation, which
+belongs to the host's own working-loader operations. Loading the component into an
+application is opt-in and needs that application's component runtime.
 
 ### A user-request summary handler
 

@@ -54,6 +54,7 @@ mod read_rendering;
 mod read_support;
 mod search_tool_lookup;
 mod shell_tree_cleanup;
+mod startup_environment;
 mod streamed_output;
 mod support;
 mod tool_definition_contract;

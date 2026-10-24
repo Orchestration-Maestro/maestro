@@ -40,10 +40,10 @@ justfile, Clippy or mise settings, the hook configuration, the workspace
 inventory, CI files, root documentation or assets, or the conventions crate. The
 hook runs the full conventions suite when a staged path is under
 `crates/maestro-test-conventions/`, and the browser smoke check only when the
-selection compiles the browser entry. Unformatted code is fixed, never rejected. It also rejects
-merge-conflict markers and invalid TOML or YAML. Commit messages need a
-conventional header and every line must be at most 80 columns. `just check` and
-shared CI stay the full workspace checks.
+selection compiles the browser entry. Unformatted code is fixed, never rejected.
+It also rejects merge-conflict markers, invalid TOML or YAML, and a secret in the
+staged change. Commit messages need a conventional header and every line must be
+at most 80 columns. `just check` and shared CI stay the full workspace checks.
 
 The conventions check requires `workspace.dependencies.serde_json` to name
 `serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,

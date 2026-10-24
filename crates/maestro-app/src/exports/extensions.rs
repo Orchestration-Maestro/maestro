@@ -1,16 +1,26 @@
 //! Existing extensions owners exposed at the application root.
 
+pub use maestro_extensions::types::{
+    ExtensionUIContextPort, ExtensionUIFuture, NotificationType, ThemeSelection, ThemeSetResult,
+};
+
 pub use maestro_extensions::{
-    AutocompleteProviderFactory, CompactOptions, ContextUsage, ExtensionActions,
-    ExtensionCommandContext, ExtensionCommandContextActions, ExtensionContext,
-    ExtensionContextActions, ExtensionError, ExtensionRuntime, ExtensionUIContext,
-    ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer,
-    ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo, UIHostCall,
-    WidgetPlacement, WorkingIndicatorOptions, create_extension_runtime,
+    AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
+    EventError, ExtensionActions, ExtensionCommandContext, ExtensionCommandContextActions,
+    ExtensionContext, ExtensionContextActions, ExtensionError, ExtensionRuntime,
+    ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions,
+    MessageRenderer, ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo,
+    UIHostCall, WidgetPlacement, WorkingIndicatorOptions, create_extension_runtime,
 };
 
 pub use maestro_extensions::types::events::*;
+
+/// What a session-changing command reports back: whether it was cancelled.
+pub use maestro_extensions::types::SessionChangeResult;
+
 pub use maestro_extensions::types::{ExtensionFlag, FlagType};
+/// The option records of the session-changing command operations.
+pub use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 pub use maestro_extensions::{
     Extension, ExtensionAPI, ExtensionExecution, ExtensionFactory, ExtensionHandler,
     ExtensionRunner, RegisteredTool, RegisteredToolInput, load_extension_from_factory,

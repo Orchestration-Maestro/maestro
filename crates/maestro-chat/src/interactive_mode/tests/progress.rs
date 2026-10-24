@@ -6,12 +6,13 @@ use super::queues::{Kept, Mode, answer};
 use super::session;
 use super::{CommandHandler, Setup, World, cases, isolated, painted, started};
 use maestro_app::agent_session::CompactionReason;
-use maestro_app::messages::UserMessageDelivery;
+use maestro_app::messages::{CustomAgentMessages, UserMessageDelivery};
 use maestro_app::{
-    AgentSession, AgentSessionEvent, AssistantMessageEventStream, CompactionResult,
-    DiagnosticErrorInfo, Extension, ExtensionBindings, ExtensionCommandContext,
+    AgentSession, AgentSessionEvent, AssistantMessageEventStream, CommandContextOperations,
+    CompactionResult, DiagnosticErrorInfo, Extension, ExtensionBindings, ExtensionCommandContext,
     ExtensionCommandContextActions, ExtensionFactory, InputEvent, InputEventResult, Local,
-    RegisteredCommand, ResourceLoader, Skill, SourceInfo, SourceOrigin, SourceScope,
+    RegisteredCommand, ResourceLoader, SessionChangeResult, Skill, SourceInfo, SourceOrigin,
+    SourceScope,
 };
 use maestro_tui::Component;
 use maestro_tui::tui::InputHandler;
@@ -529,6 +530,21 @@ fn start_retry(world: &World, attempt: u32, max_attempts: f64, delay_ms: f64) {
         .unwrap();
 }
 
+/// Delivers one agent event as the session publishes it.
+fn agent_event(world: &World, event: maestro_app::AgentEvent<CustomAgentMessages>) {
+    world
+        .mode
+        .handle_event(&AgentSessionEvent::Agent(Arc::new(RwLock::new(event))))
+        .unwrap();
+}
+
+/// A completed response that admitted no message.
+fn agent_end() -> maestro_app::AgentEvent<CustomAgentMessages> {
+    maestro_app::AgentEvent::AgentEnd {
+        messages: Vec::new(),
+    }
+}
+
 /// Ends the running retry.
 fn end_retry(world: &World, success: bool, attempt: u32, final_error: Option<&str>) {
     world
@@ -695,6 +711,33 @@ fn retry_completion_disposes_progress_and_selects_failure_text() {
     });
 }
 
+#[test]
+fn response_progress_pairs_each_start_with_an_end() {
+    isolated(
+        "response_progress_pairs_each_start_with_an_end",
+        |directory| {
+            let world = started(directory);
+            draft(&world);
+            set_progress_setting(&world, true);
+            let effects = tap(&world);
+            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            assert_eq!(progress(&effects), [true]);
+            agent_event(&world, agent_end());
+            assert_eq!(progress(&effects), [true, false]);
+            // A retried response pairs its own start with its own end.
+            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            agent_event(&world, agent_end());
+            assert_eq!(progress(&effects), [true, false, true, false]);
+            // The setting alone decides whether the terminal is written at all.
+            set_progress_setting(&world, false);
+            let silent = tap(&world);
+            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            agent_event(&world, agent_end());
+            assert_eq!(progress(&silent), Vec::<bool>::new());
+        },
+    );
+}
+
 /// The replacement of one retry by a response and a later retry.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
@@ -730,9 +773,7 @@ fn progress_replacement_stops_old_countdown_and_restores_escape() {
         let _ = world.runtime.advance_to(Duration::from_millis(first_tick));
         expected.changed.assert_animated(&world, &effects);
         // A response starts: the retry's countdown and row go before the working row does.
-        let started_event =
-            AgentSessionEvent::Agent(Arc::new(RwLock::new(maestro_app::AgentEvent::AgentStart)));
-        world.mode.handle_event(&started_event).unwrap();
+        agent_event(&world, maestro_app::AgentEvent::AgentStart);
         assert_eq!(timers(&world), Vec::<u64>::new());
         assert!(world.mode.status_container.render(100).is_empty());
         start_retry(&world, 2, 4.0, 1000.0);
@@ -1177,16 +1218,25 @@ fn refuse_on(session: &Rc<AgentSession>, captured: &Captured) {
     })));
 }
 
-/// The command context a command uses to start a new session on the mode's runtime.
+/// The command context a command uses to start a new session on the mode's runtime; the
+/// other session operations report no change.
 fn session_actions(world: &World) -> ExtensionCommandContextActions {
     let runtime = Rc::clone(&world.host);
-    ExtensionCommandContextActions {
+    ExtensionCommandContextActions::new(CommandContextOperations {
+        wait_for_idle: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
         new_session: Rc::new(move |options| {
             let runtime = Rc::clone(&runtime);
             Box::pin(async move { Ok(runtime.new_session(options.unwrap_or_default()).await?) })
         }),
-        ..ExtensionCommandContextActions::default()
-    }
+        fork: Rc::new(|_, _| Box::pin(std::future::ready(Ok(SessionChangeResult::default())))),
+        navigate_tree: Rc::new(|_, _| {
+            Box::pin(std::future::ready(Ok(SessionChangeResult::default())))
+        }),
+        switch_session: Rc::new(|_, _| {
+            Box::pin(std::future::ready(Ok(SessionChangeResult::default())))
+        }),
+        reload: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+    })
 }
 
 /// The inline extension whose input handler records every prompt and refuses the case's text,

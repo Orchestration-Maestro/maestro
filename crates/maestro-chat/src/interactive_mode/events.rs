@@ -2,9 +2,9 @@
 
 use super::InteractiveMode;
 use super::progress::{CompactionOutcome, RetryEnd, RetryStart};
-use maestro_app::AgentSessionEvent;
 use maestro_app::ReadonlySessionManager;
 use maestro_app::configuration::config::APP_TITLE;
+use maestro_app::{AgentEvent, AgentSessionEvent};
 use maestro_tui::Component;
 use std::{error::Error, rc::Rc, sync::PoisonError};
 
@@ -81,12 +81,17 @@ impl InteractiveMode {
                 final_error: final_error.as_deref(),
             })?,
             AgentSessionEvent::Agent(event) => {
-                let started = matches!(
-                    &*event.read().unwrap_or_else(PoisonError::into_inner),
-                    maestro_app::AgentEvent::AgentStart
-                );
+                let (started, ended) = {
+                    let event = event.read().unwrap_or_else(PoisonError::into_inner);
+                    (
+                        matches!(&*event, AgentEvent::AgentStart),
+                        matches!(&*event, AgentEvent::AgentEnd { .. }),
+                    )
+                };
                 if started {
                     self.start_agent_progress()?;
+                } else if ended {
+                    self.end_agent_progress()?;
                 }
             }
             AgentSessionEvent::QueueUpdate { .. } => {}

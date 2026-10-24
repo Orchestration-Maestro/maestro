@@ -5,10 +5,10 @@ current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
 input, queued input, the export command, session replay, the session events,
 compaction and retry progress, the expansion and thinking shortcuts, thinking and
-model cycling, the editor border, external editing and image paste. The prompt loop, streaming messages, startup
-messages, installed custom headers, the terminal title and the other integrations
-are still to come; the mode prompts the session only for input queued during a
-response or a compaction.
+model cycling, the editor border, external editing and image paste. The prompt
+loop, streaming messages, startup messages, installed custom headers, the terminal
+title and the other integrations are still to come; the mode prompts the session
+only for input queued during a response or a compaction.
 
 ## Construction
 
@@ -127,9 +127,18 @@ later repaints only its heading in the current theme.
 
 `show_error` and `show_warning` append an empty row and a padded notice, labelled
 `Error:` or `Warning:` in the theme's error or warning colour, to the transcript.
-Each requests one frame. The supplied text is kept as given, including line
+Each requests one frame and returns the published theme's error, so the caller
+keeps the original failure type. The supplied text is kept as given, including line
 breaks and its own styling. `clear_editor` empties the editor and requests a
 frame; the editor's history is kept.
+
+## Extension UI host
+
+The mode implements the extension UI port. A host retains it with
+`ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
+lists the operations it answers today, which are editor access, theme queries and
+selection, the terminal title and tool expansion. Dialogs, notifications,
+terminal input listeners and custom widgets keep their own published owners.
 
 ## Typed input
 
@@ -283,18 +292,19 @@ the loader and empties its row. It then shows what the compaction ended with:
 
 `auto_retry_start` shows `Retrying (<attempt>/<limit>) in <seconds>s... (escape to
 cancel)` in the status container, where the same key aborts the retry. The
-seconds are the wait rounded up; the existing countdown timer then reports each
-whole second left, and the label is rebuilt on every tick so it reads the keys bound
-then. The attempt limit keeps its numeric spelling, so a fractional limit reads
-`2.5`. `auto_retry_end` stops the countdown and the loader, empties their row,
-restores the interrupt callback, and shows `Retry failed after <attempt> attempts:
-<error>` only when the retries are exhausted, with `Unknown error` for an absent or
-empty failure.
+seconds are the wait rounded up, which the existing countdown timer writes on its
+first report; it then reports each whole second left, and the label is rebuilt on
+every tick so it reads the keys bound then. The attempt limit keeps its numeric
+spelling, so a fractional limit reads `2.5`. `auto_retry_end` stops the countdown
+and the loader, empties their row, restores the interrupt callback, and shows
+`Retry failed after <attempt> attempts: <error>` only when the retries are
+exhausted, with `Unknown error` for an absent or empty failure.
 
 A started response clears the retry row and its countdown before the working
 presentation resumes, and turns the terminal's progress on. Because the
 retry's own row is removed there, a retry end that arrives afterwards removes
-nothing.
+nothing. When the response ends, the terminal's progress is turned off again, and
+both ends read the setting as their event arrives.
 
 When a compaction ends, the mode captures the input it kept before the session
 does anything with it, shows the pending rows without it, and delivers it on the

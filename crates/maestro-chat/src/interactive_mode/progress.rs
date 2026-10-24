@@ -83,7 +83,7 @@ impl InteractiveMode {
         self.editor
             .set_on_escape(Some(Rc::new(move || host.session().abort_compaction())));
         self.status_container.clear();
-        let loader = self.progress_loader(compaction_label(reason), ThemeColor::Accent);
+        let loader = self.progress_loader(Some(compaction_label(reason)), ThemeColor::Accent);
         self.status_container.add_child(Rc::new(loader.clone()));
         self.progress.compaction_loader.replace(Some(loader));
         self.ui.request_render(false);
@@ -117,7 +117,7 @@ impl InteractiveMode {
     ) -> Result<(), Box<dyn Error>> {
         if outcome.aborted {
             return if outcome.reason == CompactionReason::Manual {
-                self.show_error("Compaction cancelled")
+                Ok(self.show_error("Compaction cancelled")?)
             } else {
                 self.show_status("Auto-compaction cancelled")
             };
@@ -130,9 +130,9 @@ impl InteractiveMode {
             return Ok(());
         };
         if outcome.reason == CompactionReason::Manual {
-            self.show_error(message)
+            Ok(self.show_error(message)?)
         } else {
-            self.notice(&ThemeColor::Error, message)
+            Ok(self.notice(&ThemeColor::Error, message)?)
         }
     }
 
@@ -175,10 +175,8 @@ impl InteractiveMode {
         }
         let attempt = retry.attempt;
         let limit = retry.max_attempts;
-        let loader = self.progress_loader(
-            retry_label(attempt, limit, ceiling_seconds(retry.delay_ms)),
-            ThemeColor::Warning,
-        );
+        // The countdown's own first tick writes the opening label before the row is shown.
+        let loader = self.progress_loader(None, ThemeColor::Warning);
         let message = loader.clone();
         let on_tick = Rc::new(move |seconds: f64| {
             message.set_message(retry_label(attempt, limit, seconds));
@@ -242,6 +240,15 @@ impl InteractiveMode {
         Ok(())
     }
 
+    /// Clears the terminal's progress when the response ends, so the terminal stops
+    /// showing work it is no longer doing.
+    ///
+    /// # Errors
+    /// Returns the failure of the terminal's progress.
+    pub(super) fn end_agent_progress(&self) -> Result<(), Box<dyn Error>> {
+        self.set_terminal_progress(false)
+    }
+
     /// Restores the callback the compaction replaced, or the editor's ordinary action when
     /// it had none.
     fn restore_compaction_interrupt(&self) {
@@ -266,14 +273,15 @@ impl InteractiveMode {
         }
     }
 
-    /// Builds a loader in the status container's own colours and sizes.
-    fn progress_loader(&self, message: String, spinner: ThemeColor) -> Loader {
+    /// Builds a loader in the status container's own colours and sizes; an absent message
+    /// is the loader's own, which a countdown replaces on its first tick.
+    fn progress_loader(&self, message: Option<String>, spinner: ThemeColor) -> Loader {
         let theme = self.themes.theme();
         Loader::new(
             self.ui.clone(),
             colored(theme.clone(), spinner),
             colored(theme, ThemeColor::Muted),
-            Some(message),
+            message,
             None,
         )
     }
@@ -318,9 +326,4 @@ fn retry_label(attempt: u32, limit: f64, seconds: f64) -> String {
         ryu_js::Buffer::new().format_finite(seconds),
         maestro_app::key_text("app.interrupt")
     )
-}
-
-/// The whole seconds of `delay_ms`, rounded up as the label counts them down.
-fn ceiling_seconds(delay_ms: f64) -> f64 {
-    (delay_ms / 1000.0).ceil()
 }

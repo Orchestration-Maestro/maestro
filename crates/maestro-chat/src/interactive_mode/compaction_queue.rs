@@ -217,6 +217,7 @@ impl InteractiveMode {
         self.show_error(&format!(
             "Failed to send queued message{plural}: {}",
             error.message
-        ))
+        ))?;
+        Ok(())
     }
 }
