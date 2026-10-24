@@ -18,6 +18,7 @@ use std::{
 };
 
 mod actions;
+mod authentication;
 mod models;
 mod replay;
 mod resources;

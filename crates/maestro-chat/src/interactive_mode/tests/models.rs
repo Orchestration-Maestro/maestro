@@ -53,21 +53,32 @@ fn model_input(id: &str) -> ProviderModelInput {
 
 /// Registers `provider` with `ids` as its models, authenticated by a configured key, and
 /// returns the catalog's descriptors in order.
-fn register(world: &World, provider: &str, ids: &[&str]) -> Vec<Arc<RwLock<Model>>> {
+pub(super) fn register(world: &World, provider: &str, ids: &[&str]) -> Vec<Arc<RwLock<Model>>> {
+    register_configured(world, provider, ids, |config| {
+        config.api_key = Some("fixture".into());
+    })
+}
+
+/// Registers `provider` with `ids` as its models after `configure` changes its record, and
+/// returns the catalog's descriptors in order.
+pub(super) fn register_configured(
+    world: &World,
+    provider: &str,
+    ids: &[&str],
+    configure: impl FnOnce(&mut ProviderConfigInput),
+) -> Vec<Arc<RwLock<Model>>> {
     let session = world.host.session();
     let models = ids.iter().map(|id| model_input(id)).collect();
+    let mut config = ProviderConfigInput {
+        base_url: Some("https://example.invalid".into()),
+        api: Some("openai-completions".into()),
+        models: Some(models),
+        ..ProviderConfigInput::default()
+    };
+    configure(&mut config);
     session
         .model_registry()
-        .register_provider(
-            provider,
-            SharedHandle::new(RwLock::new(ProviderConfigInput {
-                base_url: Some("https://example.invalid".into()),
-                api_key: Some("fixture".into()),
-                api: Some("openai-completions".into()),
-                models: Some(models),
-                ..ProviderConfigInput::default()
-            })),
-        )
+        .register_provider(provider, SharedHandle::new(RwLock::new(config)))
         .unwrap();
     ids.iter()
         .map(|id| session.model_registry().find(provider, id).unwrap())
@@ -75,30 +86,30 @@ fn register(world: &World, provider: &str, ids: &[&str]) -> Vec<Arc<RwLock<Model
 }
 
 /// The current session model's `provider/id`.
-fn current(world: &World) -> String {
+pub(super) fn current(world: &World) -> String {
     let model = world.host.session().model();
     let model = model.read().unwrap();
     format!("{}/{}", model.provider, model.id)
 }
 
 /// The components the editor container holds.
-fn shown(world: &World) -> Vec<Rc<dyn Component>> {
+pub(super) fn shown(world: &World) -> Vec<Rc<dyn Component>> {
     world.mode.editor_container.children().borrow().clone()
 }
 
 /// Whether the editor container holds only `component`.
-fn shows_only(world: &World, component: &Rc<dyn Component>) -> bool {
+pub(super) fn shows_only(world: &World, component: &Rc<dyn Component>) -> bool {
     let shown = shown(world);
     shown.len() == 1 && std::ptr::addr_eq(Rc::as_ptr(&shown[0]), Rc::as_ptr(component))
 }
 
 /// The editor as a shown component.
-fn editor(world: &World) -> Rc<dyn Component> {
+pub(super) fn editor(world: &World) -> Rc<dyn Component> {
     world.mode.editor.clone()
 }
 
 /// Whether typed text reaches the editor, which then holds exactly that text.
-fn editor_focused(world: &World) -> bool {
+pub(super) fn editor_focused(world: &World) -> bool {
     world.mode.editor.set_text("");
     world.terminal.send_input("x");
     let focused = world.mode.editor.get_text() == "x";
@@ -1075,7 +1086,7 @@ fn refused() -> OAuthError {
 }
 
 /// Makes every later catalog refresh fail.
-fn refuse_refresh(world: &World) {
+pub(super) fn refuse_refresh(world: &World) {
     let session = world.host.session();
     let registry = session.model_registry();
     registry
@@ -1102,7 +1113,7 @@ fn refuse_refresh(world: &World) {
 }
 
 /// Makes reading the catalog's available models fail.
-fn refuse_availability(world: &World) {
+pub(super) fn refuse_availability(world: &World) {
     let session = world.host.session();
     let auth = session.model_registry().auth_storage();
     auth.set_fallback_resolver(|_| Err(DiagnosticErrorInfo::error("availability refused").into()));
@@ -1118,7 +1129,7 @@ fn catalog(world: &World) -> Vec<Arc<RwLock<Model>>> {
 }
 
 /// Makes the recorded `provider/id` references the session scope, without levels.
-fn scope(world: &World, references: &[(String, Option<ThinkingLevel>)]) {
+pub(super) fn scope(world: &World, references: &[(String, Option<ThinkingLevel>)]) {
     let session = world.host.session();
     let registry = session.model_registry();
     let scope = references
@@ -1509,7 +1520,7 @@ struct Submission {
 
 /// Submits `text` exactly through the editor's installed submission, with the editor
 /// holding it, and runs the work it hands over; typed text would have its tabs widened.
-fn submit_held(world: &World, text: &str) {
+pub(super) fn submit_held(world: &World, text: &str) {
     world.mode.editor.set_text(text);
     submit(world, text);
     assert!(world.runtime.drain_futures().is_empty());
@@ -1594,7 +1605,7 @@ fn model_commands_leave_waiter_and_history_untouched() {
 }
 
 /// A mode whose session can be replaced by a fresh memory session.
-fn replaceable(directory: &Path) -> World {
+pub(super) fn replaceable(directory: &Path) -> World {
     let world = Setup {
         create: Some(Rc::new(|options| {
             Box::pin(async move { Ok(super::session::session(&options.cwd, None, |inner| inner)) })
@@ -1613,7 +1624,7 @@ fn defaults<T: Default>() -> T {
 }
 
 /// Replaces the runtime's session with a fresh one.
-fn replace_session(world: &World) {
+pub(super) fn replace_session(world: &World) {
     let host = Rc::clone(&world.host);
     world.runtime.handle().spawn_local(Box::pin(async move {
         host.new_session(defaults()).await?;

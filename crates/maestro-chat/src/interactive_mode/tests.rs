@@ -1,5 +1,6 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
+mod authentication;
 mod models;
 #[allow(
     dead_code,
@@ -23,10 +24,11 @@ use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, CreateAgentSessionRuntimeFactory, DefaultEventBus,
-    DiagnosticErrorInfo, ExtensionFactory, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, ResourceExtensionPaths,
-    ResourceLoader, SettingsManager, Skill, create_extension_runtime, load_extension_from_factory,
+    AgentSessionRuntime, AuthStorage, AuthStorageData, ContextFile,
+    CreateAgentSessionRuntimeFactory, DefaultEventBus, DiagnosticErrorInfo, ExtensionFactory,
+    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
+    PromptTemplate, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill,
+    create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -35,7 +37,10 @@ use maestro_tui::{
     EditorComponent, autocomplete,
 };
 use serde::Deserialize;
-use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
+use std::{
+    cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc,
+    sync::Arc,
+};
 
 /// Every recorded presentation case.
 const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
@@ -243,6 +248,8 @@ pub(super) struct Setup {
     pub(super) extension: Option<ExtensionFactory<Local>>,
     /// Creates replacement sessions, when supplied; replacing otherwise fails.
     pub(super) create: Option<CreateAgentSessionRuntimeFactory>,
+    /// The stored credentials the session is built over, in memory when absent.
+    pub(super) auth: Option<Arc<AuthStorage>>,
 }
 
 impl Default for Setup {
@@ -257,6 +264,7 @@ impl Default for Setup {
             prompts: Vec::new(),
             extension: None,
             create: None,
+            auth: None,
         }
     }
 }
@@ -294,7 +302,10 @@ impl Setup {
         let created = Rc::clone(&loader);
         let resources = (self.context, self.skills, self.prompts);
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
-        let result = session::session(&cwd, None, move |inner| {
+        let auth = self
+            .auth
+            .unwrap_or_else(|| Arc::new(AuthStorage::in_memory(AuthStorageData::new())));
+        let result = session::session_with_auth(&cwd, auth, move |inner| {
             let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
             *created.borrow_mut() = Some(Rc::clone(&loader));
             loader
@@ -335,7 +346,17 @@ impl Setup {
 
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
 fn started(directory: &Path) -> World {
-    let world = Setup::default().build(directory);
+    started_with(directory, None)
+}
+
+/// Builds a mode over `auth`, or over an empty in-memory store, and initializes it,
+/// settling the first frame.
+pub(super) fn started_with(directory: &Path, auth: Option<Arc<AuthStorage>>) -> World {
+    let world = Setup {
+        auth,
+        ..Setup::default()
+    }
+    .build(directory);
     world.mode.init().unwrap();
     world.runtime.settle().unwrap();
     world

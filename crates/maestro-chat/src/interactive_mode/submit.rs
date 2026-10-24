@@ -28,9 +28,9 @@ impl InteractiveMode {
     }
 
     /// Installs submission on the editor without keeping the mode alive: trimmed nonempty
-    /// text that is `/scoped-models` or a `/model` command clears the editor and runs the
-    /// command; other text goes to the waiting input, if any, then into the editor's
-    /// history.
+    /// text that is `/scoped-models`, `/logout` or a `/model` command runs the command and
+    /// clears the editor; other text goes to the waiting input, if any, then into the
+    /// editor's history.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_submit(Some(Rc::new(move |text| {
@@ -41,6 +41,11 @@ impl InteractiveMode {
             if text == "/scoped-models" {
                 mode.editor.set_text("");
                 mode.report(mode.show_models_selector());
+                return;
+            }
+            if text == "/logout" {
+                mode.report(mode.show_logout_selector());
+                mode.editor.set_text("");
                 return;
             }
             if text == "/model" || text.starts_with("/model ") {
