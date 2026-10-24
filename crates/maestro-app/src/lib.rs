@@ -11,6 +11,8 @@ pub mod utils;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod agent_session;
 #[cfg(not(target_arch = "wasm32"))]
+pub mod developer_tools;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod model_account;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod output_guard;

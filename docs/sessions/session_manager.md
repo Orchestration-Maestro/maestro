@@ -160,6 +160,9 @@ Native `create` and `continue_recent` use the supplied directory or encode the
 stored cwd beneath the caller's resolved agent root. `open` resolves its explicit
 filename lexically and reads it once; cwd override wins over stored cwd, with a
 runtime fallback for missing/null cwd. Explicit directory spellings are retained.
+A session directory is a `SessionDir`, which only the session crate builds, so a
+caller receives the name instead of spelling one, and each report that reads one
+takes that record and asks for its text only where it lists the directory.
 
 A fresh history publishes at its first assistant message. Loaded and recovered
 histories stay published: subsequent appends write one record. Append errors leave

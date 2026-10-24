@@ -256,3 +256,4 @@ _browser-watch command pack mode *args:
 # Build and execute the retained sandbox exports with supplied browser tools.
 browser-test:
     node crates/maestro-web/tests/sandbox_loading_support/run.cjs
+    node crates/maestro-app/tests/browser/analysis_page.cjs
