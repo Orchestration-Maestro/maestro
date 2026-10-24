@@ -380,6 +380,21 @@ fn bulk_removal_has_linear_work() {
     }
 }
 
+/// The values of a walk that restarts a traversal for every registration, the way a
+/// caller without a cursor rescanning the collection for each listener would.
+fn rescan(listeners: &mut Listeners<Rc<usize>>) -> Vec<usize> {
+    let mut seen = Vec::new();
+    for index in 0..listeners.identities.len() {
+        let mut cursor = listeners.cursor();
+        let mut value = None;
+        for _ in 0..=index {
+            value = listeners.next_from(&mut cursor).map(|listener| **listener);
+        }
+        seen.extend(value);
+    }
+    seen
+}
+
 #[test]
 fn ordered_walk_has_linear_work() {
     for count in [128, 256, 512] {
@@ -392,8 +407,55 @@ fn ordered_walk_has_linear_work() {
         let counted = visits();
         assert_eq!(seen.len(), count);
         assert!(counted <= count + 1, "{count}: {counted}");
-        assert!(count + 1 < count * count / 2);
+        reset_visits();
+        assert_eq!(rescan(&mut listeners), seen);
+        let rescanned = visits();
+        assert!(rescanned > count + 1, "{count}: {rescanned}");
     }
+}
+
+#[test]
+fn remover_after_registry_drop_does_nothing() {
+    let registry = shared();
+    let value = Rc::new(8);
+    let remover = subscribe(&registry, &value);
+    drop(registry);
+    remover();
+    assert_eq!(Rc::strong_count(&value), 1);
+}
+
+#[test]
+fn cursor_keeps_no_capture_of_a_removed_callback() {
+    let mut listeners: Listeners<Rc<usize>> = Listeners::default();
+    let value = Rc::new(2);
+    let weak = Rc::downgrade(&value);
+    listeners.add(Rc::clone(&value));
+    let cursor = listeners.cursor();
+    drop(listeners.remove(Rc::as_ptr(&value)));
+    drop(value);
+    assert!(weak.upgrade().is_none());
+    drop(cursor);
+}
+
+#[test]
+fn abandoned_traversal_compacts_retired_slots() {
+    let mut listeners: Listeners<Rc<usize>> = Listeners::default();
+    let values: Vec<_> = (0..2).map(Rc::new).collect();
+    for value in &values {
+        listeners.add(Rc::clone(value));
+    }
+    let cursor = listeners.cursor();
+    drop(listeners.remove(Rc::as_ptr(&values[0])));
+    assert_eq!(listeners.entries.len(), 2);
+    drop(cursor);
+    assert_eq!(
+        listeners.entries.len(),
+        2,
+        "reclaiming waits for the next operation"
+    );
+    listeners.add(Rc::new(9));
+    assert_eq!(listeners.entries.len(), 2);
+    assert_eq!(walk_owned(&mut listeners), [1, 9]);
 }
 
 #[test]

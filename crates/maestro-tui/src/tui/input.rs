@@ -205,7 +205,7 @@ impl TUI {
             }
         });
         if !visited {
-            return Some(data.to_owned());
+            return Some(current);
         }
         (outcome.is_ok() && !current.is_empty()).then_some(current)
     }
