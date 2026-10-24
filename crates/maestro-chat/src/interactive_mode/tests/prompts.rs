@@ -628,7 +628,7 @@ fn build(directory: &Path, startup: &mut Startup) -> Scripted {
         std::fs::write(&catalog, &startup.catalog_error).unwrap();
     }
     let options = &mut startup.options;
-    let scripted = Scripted::new(
+    Scripted::new(
         directory,
         InteractiveModeOptions {
             migrated_providers: std::mem::take(&mut options.migrated_providers),
@@ -638,11 +638,7 @@ fn build(directory: &Path, startup: &mut Startup) -> Scripted {
             initial_messages: std::mem::take(&mut options.initial_messages),
             ..InteractiveModeOptions::default()
         },
-    );
-    if written {
-        std::fs::remove_file(&catalog).unwrap();
-    }
-    scripted
+    )
 }
 
 /// Runs the loop through `startup`, then compares every notice, admission and failed answer
@@ -686,7 +682,8 @@ async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>
 fn replay(test: &str) {
     isolated(test, |directory| {
         for (startup, expected) in cases::<Startup, Vec<Step>>(FIXTURES, test) {
-            on_local(replay_case(directory, startup, expected));
+            let case = maestro_test_directory::Scratch::new_in(directory).unwrap();
+            on_local(replay_case(case.path(), startup, expected));
         }
     });
 }
