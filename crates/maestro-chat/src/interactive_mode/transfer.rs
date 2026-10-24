@@ -25,7 +25,7 @@ impl InteractiveMode {
         };
         match exported {
             Ok(path) => self.show_status(&format!("Session exported to: {path}")),
-            Err(error) => self.show_error(&format!("Failed to export session: {error}")),
+            Err(error) => Ok(self.show_error(&format!("Failed to export session: {error}"))?),
         }
     }
 

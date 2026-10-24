@@ -113,7 +113,7 @@ impl InteractiveMode {
     ) -> Result<(), Box<dyn Error>> {
         if outcome.aborted {
             return if outcome.reason == CompactionReason::Manual {
-                self.show_error("Compaction cancelled")
+                Ok(self.show_error("Compaction cancelled")?)
             } else {
                 self.show_status("Auto-compaction cancelled")
             };
@@ -126,9 +126,9 @@ impl InteractiveMode {
             return Ok(());
         };
         if outcome.reason == CompactionReason::Manual {
-            self.show_error(message)
+            Ok(self.show_error(message)?)
         } else {
-            self.notice(&ThemeColor::Error, message)
+            Ok(self.notice(&ThemeColor::Error, message)?)
         }
     }
 
