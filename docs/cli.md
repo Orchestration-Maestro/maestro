@@ -90,9 +90,10 @@ from the stored setting, in that order.
 
 `sessions` resolves a session argument to a file, searching the current project
 before every project, and selects the operation the arguments name: an unsaved,
-forked, opened, resumed, continued or new session. A fork or session argument
-of another project is returned for confirmation instead of being forked
-silently, and a missing session keeps the argument its message quotes.
+forked, opened, resumed, continued or new session. An explicit fork copies the
+matched session into the current project without asking, wherever it was found;
+a session argument of another project is returned for confirmation instead of
+being opened in place. A missing session keeps the argument its message quotes.
 
 `options` selects the model from the authored pattern before the scoped
 default, the effort from the explicit level before the model shorthand and the

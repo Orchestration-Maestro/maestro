@@ -1,12 +1,18 @@
 //! Model, effort, tool and resource-path selections of a created session.
 
 use crate::support::startup;
-use maestro_app::{ModelRegistry, NoTools, ScopedModel, ThinkingLevel};
+use maestro_app::{Model, ModelRegistry, NoTools, ScopedModel, ThinkingLevel};
 use maestro_cli::startup::main::options::{
     BuiltSessionOptions, SessionOptionInputs, build_session_options, resolve_cli_paths,
 };
 use serde_json::json;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
+
+/// Write attempts the saved-descriptor probe makes before it gives up.
+const PROBES: usize = 1_000_000;
+
+/// Uninterrupted failed write attempts that mean a guard stayed held.
+const LOCKED_RUN: usize = 1_000;
 
 /// A scoped model over the catalog's descriptor, with its authored effort.
 fn scoped(
@@ -286,6 +292,81 @@ fn cli_resource_paths_keep_startup_directory() {
         Some(Vec::new()),
         "an authored empty list stays an empty list"
     );
+}
+
+#[test]
+fn saved_scope_default_releases_the_descriptor_before_the_traversal() {
+    let catalog = startup::registry(&[("alpha", &["one"]), ("beta", &["one"])]);
+    let compare = startup::comparator();
+    let settings = startup::settings(&[
+        ("defaultProvider", json!("alpha")),
+        ("defaultModel", json!("one")),
+    ]);
+    let saved = catalog.find("alpha", "one").expect("the saved descriptor");
+    let blocking = catalog
+        .find("beta", "one")
+        .expect("the scope's first descriptor");
+    let scope = [
+        ScopedModel {
+            model: Arc::clone(&blocking),
+            thinking_level: None,
+        },
+        ScopedModel {
+            model: Arc::clone(&saved),
+            thinking_level: None,
+        },
+    ];
+
+    let (ready_tx, ready) = std::sync::mpsc::channel();
+    let prober = {
+        let (saved, blocking) = (Arc::clone(&saved), Arc::clone(&blocking));
+        std::thread::spawn(move || {
+            let first = blocking.write().expect("the scope's first descriptor");
+            ready_tx.send(()).expect("a waiting selection");
+            let locked = locked_while_traversing(&saved);
+            drop(first);
+            locked
+        })
+    };
+    ready.recv().expect("a held first scope descriptor");
+
+    let fixture = Fixture {
+        catalog: &catalog,
+        settings: &settings,
+        compare: &compare,
+    };
+    let built = fixture.build(&[], &scope, false);
+    let locked_during_traversal = prober.join().expect("the probing thread");
+
+    assert_eq!(
+        provider(&built).as_deref(),
+        Some("alpha"),
+        "a saved default behind the first entry still wins"
+    );
+    assert!(
+        !locked_during_traversal,
+        "the saved descriptor stays writable while the scope is traversed"
+    );
+}
+
+/// Whether the saved descriptor stays read-locked for a long run of attempts.
+///
+/// A traversal that keeps the saved descriptor's guard held across the scope produces
+/// such a run; one that reads it and releases it never does. The iteration bound keeps
+/// the probe finite when nothing holds the guard.
+fn locked_while_traversing(saved: &Arc<RwLock<Model>>) -> bool {
+    let mut streak = 0;
+    for _ in 0..PROBES {
+        if saved.try_write().is_ok() {
+            streak = 0;
+        } else {
+            streak += 1;
+            if streak == LOCKED_RUN {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 #[test]

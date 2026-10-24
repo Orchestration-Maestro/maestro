@@ -6,9 +6,9 @@ use maestro_app::{
 };
 use maestro_cli::input::args::{Args, Diagnostic, DiagnosticType, Mode};
 use maestro_cli::startup::main::bootstrap::{
-    AppMode, collect_settings_diagnostics, print_output_mode, reject_conflicting_fork_flags,
-    report_diagnostics, report_parser_diagnostics, resolve_app_mode, resolve_session_dir,
-    takes_over_stdout,
+    AppMode, collect_settings_diagnostics, report_diagnostics, report_parser_diagnostics,
+    resolve_app_mode, resolve_session_dir, takes_over_stdout, to_print_output_mode,
+    validate_fork_flags,
 };
 use maestro_test_directory::Scratch;
 use maestro_theme::Theme;
@@ -56,7 +56,7 @@ fn mode_selection_reads_stdin_not_stdout() {
             "takeover for {selected:?}"
         );
         assert_eq!(
-            print_output_mode(selected),
+            to_print_output_mode(selected),
             if selected == AppMode::Json {
                 Mode::Json
             } else {
@@ -200,7 +200,7 @@ fn fork_conflicts_preserve_flag_order() {
         let parsed = startup::args(&tokens);
         let mut stderr = Vec::new();
         assert_eq!(
-            reject_conflicting_fork_flags(&parsed, &mut stderr, false).unwrap(),
+            validate_fork_flags(&parsed, &mut stderr, false).unwrap(),
             FAILURE,
             "{tokens:?}"
         );
@@ -224,7 +224,7 @@ fn fork_conflicts_preserve_flag_order() {
         let parsed = startup::args(&tokens);
         let mut stderr = Vec::new();
         assert_eq!(
-            reject_conflicting_fork_flags(&parsed, &mut stderr, false).unwrap(),
+            validate_fork_flags(&parsed, &mut stderr, false).unwrap(),
             None,
             "{tokens:?}"
         );

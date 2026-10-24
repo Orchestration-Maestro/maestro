@@ -126,6 +126,65 @@ fn path(value: &std::path::Path) -> &str {
     value.to_str().expect("authored path")
 }
 
+/// Set a stored history's modification time to a whole epoch second.
+fn set_modified(path: &str, seconds: u64) {
+    std::fs::File::options()
+        .write(true)
+        .open(path)
+        .expect("an open history")
+        .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds))
+        .expect("a set modification time");
+}
+
+#[test]
+fn explicit_foreign_fork_copies_in_without_confirming() {
+    let scratch = Scratch::new().unwrap();
+    let agent_dir = scratch.path().join("agent");
+    let cwd = scratch.path().join("project");
+    std::fs::create_dir_all(&cwd).unwrap();
+    let local_dir = scratch.path().join("local");
+    let other = scratch.path().join("agent/sessions/other-project");
+    let global = startup::stored_history(&other, "global-one", "global-456", "/other/project");
+    let here = (path(&cwd), path(&agent_dir), path(&local_dir));
+
+    assert_eq!(
+        select(&["--fork", "global"], here).unwrap(),
+        SessionSelection::Selected(SessionOperation::Fork {
+            path: global.clone(),
+        }),
+        "an explicit foreign fork copies the session in without asking"
+    );
+    let forked = open_selected_session(
+        &SessionOperation::Fork {
+            path: global.clone(),
+        },
+        here.0,
+        Some(here.2),
+        here.1,
+    )
+    .unwrap();
+    let forked_path = forked
+        .get_session_file()
+        .expect("a forked filename")
+        .to_owned();
+    assert_ne!(
+        forked_path, global,
+        "a foreign fork copies into this project"
+    );
+    assert_eq!(
+        header(&forked_path)["parentSession"].as_str(),
+        Some(global.as_str())
+    );
+    assert_eq!(
+        select(&["--session", "global"], here).unwrap(),
+        SessionSelection::ConfirmFork {
+            path: global,
+            cwd: "/other/project".to_owned(),
+        },
+        "only an explicit session confirms a foreign match"
+    );
+}
+
 #[test]
 fn session_operation_precedence_is_explicit() {
     let scratch = Scratch::new().unwrap();
@@ -135,8 +194,8 @@ fn session_operation_precedence_is_explicit() {
     let session_dir = scratch.path().join("sessions");
     let first = startup::stored_history(&session_dir, "first", "first-1", path(&cwd));
     let second = startup::stored_history(&session_dir, "second", "second-2", path(&cwd));
-    std::thread::sleep(std::time::Duration::from_millis(10));
-    std::fs::write(&second, std::fs::read_to_string(&second).unwrap()).unwrap();
+    set_modified(&first, 1_000_000);
+    set_modified(&second, 2_000_000);
     let here = (path(&cwd), path(&agent_dir), path(&session_dir));
 
     let cases: Vec<(Vec<&str>, SessionSelection)> = vec![

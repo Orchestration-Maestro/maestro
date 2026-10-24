@@ -49,14 +49,26 @@ fn first_match(sessions: Vec<SessionInfo>, session_arg: &str) -> Option<SessionI
         .find(|session| matches_prefix(session, session_arg))
 }
 
-/// Select `operation` for a local match, confirm a foreign one, and report a miss.
-fn matched(
-    resolved: ResolvedSession,
-    operation: impl FnOnce(String) -> SessionOperation,
-) -> SessionSelection {
+/// Select the fork of every resolved session, including one of another project.
+///
+/// An explicit fork copies the matched session into the current project without asking,
+/// so a foreign match keeps its path and directory for reporting only.
+fn fork_selection(resolved: ResolvedSession) -> SessionSelection {
+    match resolved {
+        ResolvedSession::Path(path)
+        | ResolvedSession::Local(path)
+        | ResolvedSession::Global { path, .. } => {
+            SessionSelection::Selected(SessionOperation::Fork { path })
+        }
+        ResolvedSession::NotFound(argument) => SessionSelection::NotFound(argument),
+    }
+}
+
+/// Select opening a resolved session, confirming a foreign one before copying it in.
+fn open_selection(resolved: ResolvedSession) -> SessionSelection {
     match resolved {
         ResolvedSession::Path(path) | ResolvedSession::Local(path) => {
-            SessionSelection::Selected(operation(path))
+            SessionSelection::Selected(SessionOperation::Open { path })
         }
         ResolvedSession::Global { path, cwd } => SessionSelection::ConfirmFork { path, cwd },
         ResolvedSession::NotFound(argument) => SessionSelection::NotFound(argument),
@@ -141,7 +153,7 @@ async fn forked(
     agent_dir: &str,
 ) -> io::Result<SessionSelection> {
     let resolved = resolve_session_path(argument, cwd, session_dir, agent_dir).await?;
-    Ok(matched(resolved, |path| SessionOperation::Fork { path }))
+    Ok(fork_selection(resolved))
 }
 
 /// Select opening the session `argument` names.
@@ -152,14 +164,15 @@ async fn opened(
     agent_dir: &str,
 ) -> io::Result<SessionSelection> {
     let resolved = resolve_session_path(argument, cwd, session_dir, agent_dir).await?;
-    Ok(matched(resolved, |path| SessionOperation::Open { path }))
+    Ok(open_selection(resolved))
 }
 
 /// Select the session operation, resolving a fork or session argument first.
 ///
 /// An unsaved session and a continue request never look a session up. A fork request
 /// takes precedence over a session request, which takes precedence over resume and
-/// continue.
+/// continue. A fork of another project's session copies it in without confirmation;
+/// only a session request confirms before copying it in.
 ///
 /// # Errors
 /// Returns the listing failure of `resolve_session_path`.

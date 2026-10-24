@@ -54,7 +54,7 @@ pub fn takes_over_stdout(app_mode: AppMode) -> bool {
 
 /// The output mode of a run that answers one prompt.
 #[must_use]
-pub fn print_output_mode(app_mode: AppMode) -> Mode {
+pub fn to_print_output_mode(app_mode: AppMode) -> Mode {
     if app_mode == AppMode::Json {
         Mode::Json
     } else {
@@ -108,6 +108,17 @@ pub fn report_diagnostics(
     Ok(())
 }
 
+/// The runtime form of a parser diagnostic.
+fn runtime_diagnostic(diagnostic: &Diagnostic) -> AgentSessionRuntimeDiagnostic {
+    AgentSessionRuntimeDiagnostic {
+        r#type: match diagnostic.r#type {
+            DiagnosticType::Error => AgentSessionRuntimeDiagnosticType::Error,
+            DiagnosticType::Warning => AgentSessionRuntimeDiagnosticType::Warning,
+        },
+        message: diagnostic.message.clone(),
+    }
+}
+
 /// Write the parser diagnostics, returning the status that ends startup when one is an error.
 ///
 /// # Errors
@@ -117,19 +128,14 @@ pub fn report_parser_diagnostics(
     stderr: &mut dyn Write,
     styles_enabled: bool,
 ) -> io::Result<Option<i32>> {
-    let mut failed = false;
-    for diagnostic in diagnostics {
-        let line = match diagnostic.r#type {
-            DiagnosticType::Error => {
-                failed = true;
-                Theme::red(&format!("Error: {}", diagnostic.message), styles_enabled)
-            }
-            DiagnosticType::Warning => {
-                Theme::yellow(&format!("Warning: {}", diagnostic.message), styles_enabled)
-            }
-        };
-        writeln!(stderr, "{line}")?;
-    }
+    let failed = diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.r#type == DiagnosticType::Error);
+    let reported = diagnostics
+        .iter()
+        .map(runtime_diagnostic)
+        .collect::<Vec<_>>();
+    report_diagnostics(&reported, stderr, styles_enabled)?;
     Ok(failed.then_some(FAILURE))
 }
 
@@ -157,7 +163,7 @@ fn fork_conflicts(parsed: &Args) -> Vec<&'static str> {
 ///
 /// # Errors
 /// Returns the write failure of `stderr`.
-pub fn reject_conflicting_fork_flags(
+pub fn validate_fork_flags(
     parsed: &Args,
     stderr: &mut dyn Write,
     styles_enabled: bool,

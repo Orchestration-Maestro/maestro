@@ -3,7 +3,7 @@
 use crate::input::args::Args;
 use maestro_app::{
     AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, Model, ModelRegistry,
-    NoTools, ResolveCliModelOptions, ScopedModel, SettingsManager, ThinkingLevel, models_are_equal,
+    NoTools, ResolveCliModelOptions, ScopedModel, SettingsManager, ThinkingLevel,
     resolve_cli_model,
 };
 use std::cmp::Ordering;
@@ -65,7 +65,12 @@ fn read(model: &RwLock<Model>) -> std::sync::RwLockReadGuard<'_, Model> {
     model.read().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// The saved default model when the scope holds it.
+/// The saved default model of the scope, when the catalog holds it.
+///
+/// The catalog finds the saved descriptor by its exact provider and identifier, so the
+/// lookup only proves it exists and the scope comparison reads the scoped descriptors
+/// alone. No read guard survives into the traversal, whose entry may share the saved
+/// descriptor's lock.
 fn saved_scope_model<'a>(
     scoped_models: &'a [ScopedModel],
     registry: &ModelRegistry,
@@ -73,11 +78,10 @@ fn saved_scope_model<'a>(
 ) -> Option<&'a ScopedModel> {
     let provider = settings.get_default_provider()?;
     let model_id = settings.get_default_model()?;
-    let saved = registry.find(&provider, &model_id)?;
-    let saved = read(&saved);
+    registry.find(&provider, &model_id)?;
     scoped_models.iter().find(|scoped| {
         let model = read(&scoped.model);
-        models_are_equal(Some(&model), Some(&saved))
+        model.provider == provider && model.id == model_id
     })
 }
 

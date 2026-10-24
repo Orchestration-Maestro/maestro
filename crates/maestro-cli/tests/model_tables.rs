@@ -2,8 +2,8 @@
 
 use crate::support;
 use maestro_app::{
-    AuthStorage, AuthStorageData, ConfigValueOperations, ModelCost, ModelFileOperations,
-    ModelInput, ModelRegistry, ProviderModelInput,
+    AuthStorage, AuthStorageData, ModelCost, ModelFileOperations, ModelInput, ModelRegistry,
+    ProviderModelInput,
 };
 use maestro_cli::input::list_models::{ListModelsOptions, list_models};
 use maestro_theme::Collator;
@@ -24,15 +24,6 @@ impl ModelFileOperations for RecordedFile {
 
     fn read_to_string(&self, _: &str) -> std::io::Result<String> {
         self.document.clone().map_err(std::io::Error::other)
-    }
-}
-
-/// Configuration commands these cases never run.
-struct NoCommands;
-
-impl ConfigValueOperations for NoCommands {
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        None
     }
 }
 
@@ -109,7 +100,7 @@ fn register(registry: &ModelRegistry, case: &support::Recorded) {
 /// Build the registry one case observes: its models and its recorded load failure.
 fn registry(case: &support::Recorded) -> ModelRegistry {
     let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::new()));
-    let commands = Arc::new(NoCommands);
+    let commands = Arc::new(support::startup::NoCommands);
     let registry = match field(case, "error").and_then(serde_json::Value::as_str) {
         Some(message) => ModelRegistry::with_operations(
             auth,
