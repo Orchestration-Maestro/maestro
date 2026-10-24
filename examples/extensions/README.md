@@ -33,6 +33,7 @@ steps.
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
+| `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
 
 ### Building an example
 
@@ -124,6 +125,16 @@ text as it is. When the host rejects a request the command ends with the host's
 message, and the label the example retains stays the one the command chose.
 Loading the component into an application is opt-in and needs a host that enables
 the component runtime.
+
+### What the system prompt status example does
+
+On `agent_start` the example reads the prompt the host supplies at that moment
+and sets the `system-prompt` status to `System: N chars`. `N` counts UTF-16 code
+units, so whitespace, a byte order mark and combining sequences count as the
+string stores them; nothing is trimmed, rebuilt or cached. `session_shutdown`
+removes the status under the same key, including when no start came before it.
+A host rejection is returned to the host unchanged. Loading the component into
+an application is opt-in.
 
 ### Building with-deps
 
