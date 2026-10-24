@@ -525,6 +525,8 @@ ownership to the caller. Its storage is a flat ordered list plus an identity
 index; retired slots are reclaimed while no traversal runs, so one removal costs
 expected constant work and clearing every registration costs work proportional to
 their number. Traversal bookkeeping is per walk and never retains callbacks.
+Callers that need emission-time membership use an owned snapshot of the registered
+handles.
 
 Implement these owners only after this amendment lands, through
 [filesystem-watch ownership](https://github.com/Orchestration-Maestro/maestro/issues/493)
@@ -616,6 +618,9 @@ rendering environment; the adapter's normal dependency stays `maestro-app` alone
 `maestro-chat` to `maestro-models`, declared as a non-optional native development
 dependency, lets interactive-mode tests drive a real session through the scripted
 provider; it permits no normal or build dependency on models.
+`maestro-cli` to `maestro-listeners`, declared as a non-optional native development
+dependency, supplies retained registration snapshots for the controlled print adapter.
+It permits no normal or build dependency on the listener leaf.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.

@@ -88,8 +88,9 @@ tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
 child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
-tests that drive a real session through the scripted provider, and the native development
-edges from the twenty-three declared callers to the
+tests that drive a real session through the scripted provider, the native-only
+`maestro-cli` to `maestro-listeners` development edge for the controlled print
+adapter, and the native development edges from the twenty-three declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
