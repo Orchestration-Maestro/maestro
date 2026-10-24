@@ -254,7 +254,8 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
             "type": "object",
             "properties": {"text": {"type": "string"}},
             "required": ["text"]
-        }),
+        })
+        .into(),
     };
     let text = |text: String| UserBlock::Text(TextContent::new(text));
     let mut tool = AgentTool::typed(
@@ -413,7 +414,7 @@ fn flaky_tool(runs: &Arc<Mutex<u32>>) -> maestro_agent::SharedAgentTool {
     let definition = Tool {
         name: "flaky".into(),
         description: "Fail on demand".into(),
-        parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+        parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}).into(),
     };
     let tool = AgentTool::typed(
         definition,

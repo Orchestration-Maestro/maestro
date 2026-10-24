@@ -37,7 +37,8 @@ fn echoing_tools(
                     parameters: json!({
                         "type": "object",
                         "properties": {"text": {"type": "string"}, "value": {"type": "string"}},
-                    }),
+                    })
+                    .into(),
                 },
                 description: None,
                 label: name.clone(),

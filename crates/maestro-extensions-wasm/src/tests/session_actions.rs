@@ -51,14 +51,6 @@ async fn control(driver: &mut impl Driver, value: Value) -> Result<(), String> {
         )
         .await
 }
-/// Inventory schema values cross the established opaque-text boundary.
-fn wire_tools(value: &Value) -> Value {
-    let mut value = value.clone();
-    for tool in value.as_array_mut().unwrap() {
-        tool["parameters"] = json!(tool["parameters"].to_string());
-    }
-    value
-}
 /// Decode only the authored opaque details field for semantic corpus comparison.
 fn custom_args(mut args: Value) -> Value {
     if let Some(details) = args[0]["value"].get_mut("details")
@@ -177,11 +169,7 @@ async fn live_reads(driver: &mut impl Driver) -> Result<(), String> {
     for case in corpus()?.into_iter().filter(|c| c.group == "liveReads") {
         let method = case.input["method"].as_str().unwrap();
         for (field, expected) in [("first", "before"), ("second", "after")] {
-            let reply = if method == "getAllTools" {
-                wire_tools(&case.input[field])
-            } else {
-                case.input[field].clone()
-            };
+            let reply = case.input[field].clone();
             control(driver, json!({"value":reply})).await?;
             let expected = if method == "getSessionName" {
                 json!({"present":true,"value":case.expected[expected]})
@@ -673,7 +661,7 @@ fn ordinary_expected(case: &Case) -> Result<(&'static str, Value, Value), String
         ),
         "toolInventory" => (
             "getAllTools",
-            wire_tools(&case.input["value"]),
+            case.input["value"].clone(),
             json!({"ok":case.expected["value"]}),
         ),
         "commandInventory" => (

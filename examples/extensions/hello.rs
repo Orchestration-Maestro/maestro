@@ -31,7 +31,7 @@ fn hello_tool() -> ToolDefinition {
             parameters: json!({"type":"object","required":["name"],"properties":{
                 "name":{"type":"string","description":"Name to greet"}
             }})
-            .to_string(),
+            .into(),
             prompt_snippet: Presence::Missing,
             prompt_guidelines: Presence::Missing,
             render_shell: Presence::Missing,
