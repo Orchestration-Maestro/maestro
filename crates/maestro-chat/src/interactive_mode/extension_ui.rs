@@ -8,8 +8,8 @@ use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOp
 use maestro_tui::tui::InputHandler;
 use std::rc::Rc;
 
-mod widgets;
 mod dialogs;
+mod widgets;
 
 impl ExtensionUIContextPort for InteractiveMode {
     /// Shows a selector in place of the editor until it is answered, cancelled, timed
