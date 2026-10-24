@@ -66,6 +66,7 @@ mod docx_tables;
 mod docx_values;
 mod docx_xml;
 mod extension_context_exports;
+mod extension_ui;
 mod extension_ui_exports;
 #[path = "docx_support/font_resources.rs"]
 mod font_resources;
