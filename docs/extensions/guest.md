@@ -578,6 +578,25 @@ the built component in a controlled host and compare every recorded duration
 text; `examples/extensions/README.md` gives the build and controlled-run
 commands.
 
+### A runtime reload command
+
+[`examples/extensions/reload_runtime.rs`](../../examples/extensions/reload_runtime.rs)
+registers a `reload-runtime` command whose handler is its awaited
+`ExtensionCommandContext::reload` request, so the command ends when the host
+finishes reloading. The same factory registers a `reload_runtime` tool that
+queues `/reload-runtime` as a follow-up user message and then answers
+`Queued /reload-runtime as a follow-up command.` with present empty details.
+
+The tool does not reload on its own. Tools run with an `ExtensionContext`, which
+has no reload method, so the queued follow-up is how a model-triggered tool
+reaches a command-only operation. The rustdoc example on the ordinary context
+rejects that call at compile time.
+
+The example is opt-in like the greeting tool: its crate's tests run the built
+component in a controlled host, and `examples/extensions/README.md` holds the
+build and controlled-run commands. Reloading a running application is not part
+of that controlled run.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes

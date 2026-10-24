@@ -10,7 +10,7 @@ use serde_json::Value;
 use super::controlled::Controlled;
 use super::host::Harness;
 use super::host_family::guest::{ToolCapabilities, ToolInvocation};
-use crate::component_adapter::Exports;
+use crate::component_adapter::{Exports, release};
 use crate::loader::Extension;
 
 /// Starts a shipped factory on a fresh controlled host.
@@ -31,27 +31,54 @@ pub async fn registered<E: Extension>(
     Ok((host, key, exports))
 }
 
-/// Decodes the SDK's opaque details document before comparing a caller-visible result.
-pub fn result_value(encoded: &str) -> Value {
-    let mut value: Value = serde_json::from_str(encoded).unwrap();
-    value["details"] = serde_json::from_str(value["details"].as_str().unwrap()).unwrap();
+/// Parses `text` and decodes the JSON document it carries at `member`.
+pub fn decoded(text: &str, member: &str) -> Value {
+    let mut value: Value = serde_json::from_str(text).unwrap();
+    value[member] = serde_json::from_str(value[member].as_str().unwrap()).unwrap();
     value
 }
 
-/// Runs the built component's command callback and returns its outcome.
+/// Decodes the SDK's opaque details document before comparing a caller-visible result.
+pub fn result_value(encoded: &str) -> Value {
+    decoded(encoded, "details")
+}
+
+/// Releases every registration in the order the host received it, asserting the host admitted
+/// exactly `expected` and kept nothing lent.
+pub fn release_all(host: &Controlled, expected: &[impl AsRef<str>]) {
+    let expected: Vec<&str> = expected.iter().map(AsRef::as_ref).collect();
+    let mut names = Vec::new();
+    loop {
+        let next = host.observe().next_to_release();
+        let Some((name, key)) = next else { break };
+        release(key);
+        names.push(name);
+    }
+    assert_eq!(names, expected, "the registrations the host received");
+    assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
+}
+
+/// Runs the built component's command callback and returns its outcome; `held` keeps the
+/// operation it awaits pending until the test saw it and released it.
 pub fn invoke_command_on_component(
     harness: &mut Harness,
     key: u32,
     args: &str,
+    held: bool,
 ) -> Result<(), String> {
     let ctx = harness
         .command_context("/work")
         .map_err(|error| error.to_string())?;
     let exports = harness.exports.clone();
+    let (pending, entered, open) = super::observed::gate();
+    if held {
+        harness.observed().hold_next_idle(pending);
+    }
     super::block_on(harness.store.run_concurrent(async |accessor| {
-        exports
-            .call_invoke_command(accessor, super::host::borrow(key), args.to_owned(), ctx)
-            .await
+        let call =
+            exports.call_invoke_command(accessor, super::host::borrow(key), args.to_owned(), ctx);
+        let release = super::host::release_held(accessor, held.then_some((entered, open)));
+        super::join::alongside(call, release).await
     }))
     .map_err(|error| error.to_string())?
     .map_err(|error| error.to_string())??;

@@ -10,6 +10,8 @@ mod child_tests;
 mod comments;
 /// Exact production function-body ownership.
 mod duplicates;
+/// Shared-helper ownership in the extension example tests.
+mod example_helpers;
 /// Binding manifest lint exceptions and generated extension source checks.
 mod generated;
 /// Workspace membership and dependency graph checks.
@@ -67,6 +69,12 @@ mod time_limits;
 /// generated catalog/binding sources are excluded. Macros are not expanded and
 /// unparsed fragments add no candidates; no suppression or baseline is supported.
 ///
+/// The shipped extension example tests decode a document member and release every
+/// registration through the example support module, whose release also asserts the
+/// names the caller expects and that nothing stays lent. A per-example test that
+/// writes the decode or the release walk inline is reported with its file and
+/// line, wherever the copy sits.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -80,5 +88,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     repetition::check(&members)?;
     quality::check(root, &members)?;
     time_limits::check(&members)?;
-    duplicates::check(&members)
+    duplicates::check(&members)?;
+    example_helpers::check(&members)
 }

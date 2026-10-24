@@ -1,9 +1,10 @@
 //! The shipped greeting factory exercised through registration and invocation.
 use serde_json::{Value, json};
 
-use super::controlled::Controlled;
-use super::example_support::{invoke_tool_on_component, registered, result_value};
-use crate::component_adapter::{ToolCapabilities, release};
+use super::example_support::{
+    decoded, invoke_tool_on_component, registered, release_all, result_value,
+};
+use crate::component_adapter::ToolCapabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/hello.rs"]
@@ -26,25 +27,16 @@ fn corpus() -> Value {
 /// Assert the metadata and schema received by the actual host against a recorded document.
 pub(super) fn assert_metadata(metadata: &[String], expected: &Value) {
     assert_eq!(metadata.len(), 1);
-    let mut actual: Value = serde_json::from_str(&metadata[0]).unwrap();
-    actual["parameters"] = serde_json::from_str(actual["parameters"].as_str().unwrap()).unwrap();
-    assert_eq!(actual, *expected);
+    assert_eq!(decoded(&metadata[0], "parameters"), *expected);
 }
-
-/// Releases the tool callback and asserts the host registered nothing else.
-pub(super) fn released(host: &Controlled, key: u32) {
-    release(key);
-    assert_eq!(host.observed().live, 0);
-}
-
 /// Register once and assert the declared required string without optional metadata.
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, _exports) = registered::<Hello>("tool hello").await?;
+        let (host, ..) = registered::<Hello>("tool hello").await?;
         assert_metadata(&host.observed().tools, &corpus()["metadata"]);
         assert!(host.observed().callback("prepare hello").is_err());
-        released(&host, key);
+        release_all(&host, &["tool hello"]);
         Ok(())
     })
 }
@@ -71,7 +63,7 @@ fn hello_preserves_supplied_names() -> Result<(), String> {
                 .await?;
             assert_eq!(result_value(&actual), row["result"]);
         }
-        released(&host, key);
+        release_all(&host, &["tool hello"]);
         Ok(())
     })
 }
@@ -99,7 +91,7 @@ fn hello_ignores_unused_invocation_handles() -> Result<(), String> {
             .await?;
         assert_eq!(result_value(&actual), corpus()["rows"][0]["result"]);
         assert!(host.observed().updates.is_empty());
-        released(&host, key);
+        release_all(&host, &["tool hello"]);
         Ok(())
     })
 }

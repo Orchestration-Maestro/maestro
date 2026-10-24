@@ -285,6 +285,13 @@ expanded, but authored invocation tokens inside functions are compared.
 Unparsed fragments produce no candidates; compound configurations are not
 evaluated. There is no baseline, allowlist or suppression attribute.
 
+The shipped extension example tests share their document decoding and
+registration release in `src/tests/example_support.rs`. That release also asserts
+the names the caller expects the host to have admitted and that nothing stays
+lent. A per-example test beside it that writes the decode or the release walk
+inline is rejected with its file and line, wherever the copy sits: a bare call, a
+macro argument, a closure or a method.
+
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
 Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
