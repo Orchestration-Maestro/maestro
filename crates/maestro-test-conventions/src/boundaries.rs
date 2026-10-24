@@ -345,7 +345,10 @@ fn input_presenter_record(name: &str) -> bool {
     )
 }
 
-/// Reject shared records whose schema operand defaults to ordinary JSON.
+/// Reject a retained schema operand whose default is ordinary JSON.
+///
+/// The tool record names its schema type directly, so only a declaration that keeps the
+/// parameter generic can still widen it: this reads the type it actually defaults to.
 fn check_parameter_schema_defaults(
     member: &Member,
     source: &Source,
@@ -355,16 +358,10 @@ fn check_parameter_schema_defaults(
         return Ok(());
     }
     for (name, line, head) in &records.struct_heads {
-        if !matches!(name.as_str(), "Tool" | "ToolInfo") {
+        if name != "ToolInfo" || !declares_type_parameters(head) {
             continue;
         }
-        if !declares_type_parameters(head) {
-            continue;
-        }
-        if !identifiers(head)
-            .iter()
-            .any(|ident| ident == "ParameterSchema")
-        {
+        if !defaults_to_parameter_schema(head) {
             return Err(format!(
                 "{}:{line}: {name} must default its schema operand to ParameterSchema",
                 source.path.display()
@@ -381,20 +378,27 @@ fn declares_type_parameters(head: &TokenStream) -> bool {
         .any(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '<'))
 }
 
-/// Every identifier spelled inside a token stream, nested groups included.
-fn identifiers(tokens: &TokenStream) -> Vec<String> {
-    let mut names = Vec::new();
-    let mut pending = vec![tokens.clone()];
-    while let Some(stream) = pending.pop() {
-        for token in stream {
-            match token {
-                TokenTree::Ident(ident) => names.push(ident.unraw().to_string()),
-                TokenTree::Group(group) => pending.push(group.stream()),
-                _ => {}
-            }
-        }
-    }
-    names
+/// Whether the last type parameter of a declaration head defaults to `ParameterSchema`.
+///
+/// Only the operand after the default marker counts, and a nested generic does not name the
+/// record itself.
+fn defaults_to_parameter_schema(head: &TokenStream) -> bool {
+    let tokens: Vec<TokenTree> = head.clone().into_iter().collect();
+    let Some(marker) = tokens
+        .iter()
+        .rposition(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '='))
+    else {
+        return false;
+    };
+    let operand = &tokens[marker + 1..];
+    let operand = operand
+        .iter()
+        .take_while(|token| !matches!(token, TokenTree::Punct(punct) if punct.as_char() == '>'))
+        .collect::<Vec<_>>();
+    !operand
+        .iter()
+        .any(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '<'))
+        && matches!(operand.last(), Some(TokenTree::Ident(ident)) if ident == "ParameterSchema")
 }
 
 /// Shared schema declarations whose specialization aliases remain owner-local.
