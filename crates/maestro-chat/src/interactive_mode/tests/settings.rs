@@ -2,6 +2,7 @@
 use super::typed::{poll, recalled, submit};
 use super::{Setup, World, complete, isolated, start};
 use crate::SettingsSelectorComponent;
+use maestro_app::presentation_data::footer_data_provider::FooterOperations;
 use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting};
 use maestro_theme::{ThemeDirectories, ThemeState};
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition};
@@ -1191,6 +1192,52 @@ fn settings_theme_preview_commit_and_failure_keep_distinct_effects() {
             assert!(rows.contains("Failed to load theme \"broken\""), "{rows}");
             assert!(rows.contains("Fell back to dark theme."));
             drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn settings_theme_selection_keeps_supplied_watcher_for_custom_refresh() {
+    isolated(
+        "settings_theme_selection_keeps_supplied_watcher_for_custom_refresh",
+        |directory| {
+            let document = std::fs::read_to_string(format!("{SHIPPED}/dark.json"))
+                .unwrap()
+                .replace("\"dark\"", "\"watched\"");
+            custom_theme(directory, "watched", &document);
+            let watched = Rc::new(super::Watched::default());
+            let world = Setup {
+                theme_state: Some(registry(directory)),
+                configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
+                operations: Some(Rc::clone(&watched) as Rc<dyn FooterOperations>),
+                ..Setup::default()
+            }
+            .build(directory);
+            start(&world);
+            world.runtime.settle().unwrap();
+            assert_eq!(published(&world).as_deref(), Some("watched"));
+            assert_eq!(
+                watched.open.borrow().len(),
+                1,
+                "the selected custom theme is watched through the supplied effects"
+            );
+            assert!(!watched.open.borrow()[0].get(), "the watch stays open");
+            let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
+            (callbacks.on_theme_change)("watched");
+            world.runtime.settle().unwrap();
+            assert_eq!(
+                watched.open.borrow().len(),
+                2,
+                "the selection kept the supplied effects for the next refresh"
+            );
+            assert!(watched.open.borrow()[0].get(), "the previous watch closed");
+            assert!(!watched.open.borrow()[1].get());
+            (watched.listeners.borrow()[1])(Some("watched.json".to_owned()));
+            assert_eq!(
+                watched.scheduled.get(),
+                1,
+                "a custom theme change schedules its reload through the supplied effects"
+            );
         },
     );
 }

@@ -88,9 +88,7 @@ pub(super) fn isolated_case(
     }
     let scratch = child::Scratch::new();
     let root = scratch.0.path();
-    for name in ["bin", "tmp"] {
-        std::fs::create_dir(root.join(name)).unwrap();
-    }
+    std::fs::create_dir(root.join("tmp")).unwrap();
     let path = format!(
         "{}:{}",
         root.join("bin").display(),
@@ -1061,6 +1059,10 @@ fn startup_callback_registration_does_not_retain_the_mode() {
 struct Watched {
     /// Whether each theme watch is still open, in creation order.
     open: RefCell<Vec<Rc<Cell<bool>>>>,
+    /// The listener of each theme watch, in creation order.
+    listeners: RefCell<Vec<WatchListener>>,
+    /// How many debounced reloads the watches scheduled.
+    scheduled: Cell<usize>,
 }
 
 /// One open theme watch.
@@ -1068,6 +1070,9 @@ struct Handle {
     /// Set once the watch closes.
     closed: Rc<Cell<bool>>,
 }
+
+/// The listener of one open theme watch.
+type WatchListener = Rc<dyn Fn(Option<String>)>;
 
 impl ThemeWatcher for Handle {
     fn close(&mut self) -> io::Result<()> {
@@ -1093,11 +1098,12 @@ impl ThemeWatchOperations for Watched {
     fn watch(
         &self,
         _path: &str,
-        _listener: Rc<dyn Fn(Option<String>)>,
+        listener: WatchListener,
         _on_error: Rc<dyn Fn()>,
     ) -> io::Result<Box<dyn ThemeWatcher>> {
         let closed = Rc::new(Cell::new(false));
         self.open.borrow_mut().push(Rc::clone(&closed));
+        self.listeners.borrow_mut().push(listener);
         Ok(Box::new(Handle { closed }))
     }
 
@@ -1106,6 +1112,7 @@ impl ThemeWatchOperations for Watched {
         _delay: Duration,
         _callback: Box<dyn FnOnce()>,
     ) -> Box<dyn ThemeReloadTimer> {
+        self.scheduled.set(self.scheduled.get() + 1);
         Box::new(Pending)
     }
 }
