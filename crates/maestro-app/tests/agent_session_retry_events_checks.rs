@@ -165,6 +165,14 @@ fn recorded_echo_tool(runs: Rc<RefCell<Vec<String>>>) -> ToolDefinitionHandle {
     sdk_definition(definition)
 }
 
+/// The retry events among the session's delivered events.
+fn retry_events(events: &[Value]) -> Vec<&Value> {
+    events
+        .iter()
+        .filter(|event| event["type"] == "auto_retry_start" || event["type"] == "auto_retry_end")
+        .collect()
+}
+
 /// The scripted call of the echo tool with `text`.
 fn echo_call(text: &str) -> Scripted {
     Scripted {
@@ -339,15 +347,7 @@ fn disabled_retry_makes_one_attempt() {
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
-        assert_eq!(
-            events
-                .borrow()
-                .iter()
-                .filter(|event| event["type"] == "auto_retry_start"
-                    || event["type"] == "auto_retry_end")
-                .count(),
-            0
-        );
+        assert!(retry_events(&events.borrow()).is_empty());
     });
 }
 
@@ -364,15 +364,7 @@ fn ordinary_provider_error_does_not_retry() {
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
-        assert_eq!(
-            events
-                .borrow()
-                .iter()
-                .filter(|event| event["type"] == "auto_retry_start"
-                    || event["type"] == "auto_retry_end")
-                .count(),
-            0
-        );
+        assert!(retry_events(&events.borrow()).is_empty());
     });
 }
 
