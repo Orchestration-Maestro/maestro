@@ -346,8 +346,8 @@ fn command_actions_forward_to_the_current_session_and_runtime() {
         };
         let runtime = Rc::new(runtime);
         let actions = runtime.command_context_actions();
-        (actions.wait_for_idle)().await.unwrap();
-        (actions.reload)().await.unwrap();
+        (actions.operations().wait_for_idle)().await.unwrap();
+        (actions.operations().reload)().await.unwrap();
         let leaf = runtime
             .session()
             .session_manager()
@@ -355,12 +355,14 @@ fn command_actions_forward_to_the_current_session_and_runtime() {
             .get_leaf_id()
             .map(str::to_owned)
             .unwrap();
-        let navigated = (actions.navigate_tree)(leaf, None).await.unwrap();
+        let navigated = (actions.operations().navigate_tree)(leaf, None)
+            .await
+            .unwrap();
         assert!(!navigated.cancelled);
-        let forked = (actions.fork)(user_entry, None).await.unwrap();
+        let forked = (actions.operations().fork)(user_entry, None).await.unwrap();
         assert!(!forked.cancelled);
         let created_at = recorded.factory_calls.borrow().len();
-        let created = (actions.new_session)(None).await.unwrap();
+        let created = (actions.operations().new_session)(None).await.unwrap();
         assert!(!created.cancelled);
         assert_eq!(recorded.factory_calls.borrow().len(), created_at + 1);
         let cwd = runtime
@@ -370,7 +372,7 @@ fn command_actions_forward_to_the_current_session_and_runtime() {
             .get_cwd()
             .to_owned();
         let target = stored_file(&h, &cwd);
-        let switched = (actions.switch_session)(target.clone(), None)
+        let switched = (actions.operations().switch_session)(target.clone(), None)
             .await
             .unwrap();
         assert!(!switched.cancelled);
@@ -392,9 +394,14 @@ fn command_actions_project_cancelled_session_changes() {
         let target = stored_file(&h, &cwd);
         let runtime = Rc::new(runtime);
         let actions = runtime.command_context_actions();
-        assert!((actions.new_session)(None).await.unwrap().cancelled);
         assert!(
-            (actions.switch_session)(target, None)
+            (actions.operations().new_session)(None)
+                .await
+                .unwrap()
+                .cancelled
+        );
+        assert!(
+            (actions.operations().switch_session)(target, None)
                 .await
                 .unwrap()
                 .cancelled
@@ -413,7 +420,7 @@ fn held_command_actions_report_the_ended_runtime() {
         let runtime = Rc::new(runtime);
         let actions = runtime.command_context_actions();
         drop(runtime);
-        let error = (actions.wait_for_idle)()
+        let error = (actions.operations().wait_for_idle)()
             .await
             .expect_err("the runtime has ended");
         assert_eq!(error.to_string(), "the session runtime has ended");

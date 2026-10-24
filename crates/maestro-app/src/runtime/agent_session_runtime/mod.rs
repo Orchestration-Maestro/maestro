@@ -10,8 +10,9 @@ use crate::agent_session::{AgentSession, thrown};
 use maestro_extensions::runner::emit_session_shutdown_event;
 use maestro_extensions::types::{SessionChangeResult, WithSession};
 use maestro_extensions::{
-    EventError, ExtensionCommandContextActions, LoadExtensionsResult, SessionBeforeSwitchEvent,
-    SessionBeforeSwitchReason, SessionShutdownEvent, SessionShutdownReason, SessionStartEvent,
+    CommandContextOperations, EventError, ExtensionCommandContextActions, LoadExtensionsResult,
+    SessionBeforeSwitchEvent, SessionBeforeSwitchReason, SessionShutdownEvent,
+    SessionShutdownReason, SessionStartEvent,
 };
 use maestro_models::{DiagnosticErrorInfo, Execution, Local};
 use maestro_session::{
@@ -221,7 +222,7 @@ impl AgentSessionRuntime {
             runtime.clone(),
             runtime,
         );
-        ExtensionCommandContextActions {
+        ExtensionCommandContextActions::new(CommandContextOperations {
             wait_for_idle: Rc::new(move || {
                 let runtime = current(&idle);
                 Box::pin(async move {
@@ -270,7 +271,7 @@ impl AgentSessionRuntime {
                 let runtime = current(&reload);
                 Box::pin(async move { Ok(runtime?.session().reload().await?) })
             }),
-        }
+        })
     }
 
     /// Tells the extensions about a coming switch; whether one cancelled it.

@@ -75,14 +75,15 @@ fn native_context_exports_share_the_extension_records() {
 #[test]
 fn native_command_context_exports_share_the_extension_records() {
     let runner = runner();
-    let actions = maestro_app::ExtensionCommandContextActions {
-        new_session: Rc::new(|_| {
-            Box::pin(async {
-                Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
-            })
-        }),
-        ..Default::default()
-    };
+    let actions =
+        maestro_app::ExtensionCommandContextActions::new(maestro_app::CommandContextOperations {
+            new_session: Rc::new(|_| {
+                Box::pin(async {
+                    Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
+                })
+            }),
+            ..crate::command_operations::silent()
+        });
     runner.bind_command_context(Some(actions));
     let ctx: maestro_app::ExtensionCommandContext = runner.create_command_context();
     crate::support::run(async {

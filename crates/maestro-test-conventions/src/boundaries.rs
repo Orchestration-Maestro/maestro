@@ -12,9 +12,6 @@ use wit::{ScanContext, WitInputs};
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
-/// Single-owner rule for the command-context operations bound to a session.
-mod command_contexts;
-
 /// Single-owner rule for the lines a protocol server writes.
 mod rpc_writers;
 
@@ -55,7 +52,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
-    command_contexts::check(members)?;
     rpc_writers::check(members)?;
     inline_polls::check(members)?;
     wit.finish()
