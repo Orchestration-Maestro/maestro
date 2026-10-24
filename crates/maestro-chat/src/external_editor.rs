@@ -22,8 +22,9 @@ pub(crate) fn external_command(runtime: &dyn TuiRuntime) -> Option<String> {
 }
 
 /// Writes the file, stops the terminal and runs the editor on it; a zero exit replaces
-/// the editor's text with the file's, less one final line feed. The file is removed and
-/// the terminal restarted with a full redraw after every reached outcome.
+/// the editor's text with the file's, less one final line feed. After every reached
+/// outcome the created file's removal is attempted, a failed removal ignored, and the
+/// terminal restarted with a full redraw.
 ///
 /// # Errors
 /// Returns the file creation, terminal, read or process-bridge failure; a nonzero exit,

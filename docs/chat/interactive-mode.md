@@ -165,8 +165,10 @@ terminal runtime, which keeps the mode until it completes. It then shows
 ` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
 the footer and editor border, then checks the
 [subscription billing notice](commands.md#subscription-billing-notice). With no
-other candidate it shows `Only one model in scope` or `Only one model available`; a
-session error is shown as an error notice and changes nothing.
+other candidate it shows `Only one model in scope` or `Only one model available`. A
+session error is shown as an error notice instead of the switch message. A failed
+credential lookup leaves the selection as it was; a recording or listener failure
+happens after the new model is selected, so that model stays selected.
 
 `/model`, `/scoped-models` and the model-select key are described in
 [interactive commands](commands.md).
@@ -198,8 +200,9 @@ rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md`
 the temporary directory. The mode then stops the terminal and runs the editor on
 the inherited terminal. A zero exit replaces the editor text with the file's text
 less one final line feed; a nonzero exit, a signal or a failed launch keep the text.
-The file is removed, and the terminal restarted with a full redraw, after every
-outcome. Other failures are handed to the terminal's runtime host.
+After every outcome the mode tries to remove the file it created, ignoring a failed
+removal, and restarts the terminal with a full redraw. Other failures are handed
+to the terminal's runtime host.
 
 ## Image paste
 
