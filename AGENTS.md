@@ -98,6 +98,9 @@ Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 prefix modules, nested groups, grouped `self` renames, a glob that names one,
 imported aliases, every segment of a qualified path and method calls. Comments,
 string literals and test scopes are exempt.
+Conventions reject a second or foreign `UIHostCall` declaration: the bound
+extension UI callback handle is declared once, at
+`maestro-extensions/src/types/ui/callbacks.rs`.
 
 ## Documentation
 

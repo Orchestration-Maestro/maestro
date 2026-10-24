@@ -1492,3 +1492,28 @@ fn input_presenter_records_reject_duplicate_owners() {
         assert_single_owner(name, "maestro-app", &["maestro-chat", "maestro-cli"]);
     }
 }
+
+#[test]
+fn ui_host_calls_have_one_native_declaration_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-extensions"]);
+    for body in [
+        "pub struct UIHostCall;",
+        "fn f() { check!(pub struct UIHostCall;); }",
+        "fn f() { let make = || { struct UIHostCall; }; }",
+        "struct Item; impl Item { fn make() { struct UIHostCall; } }",
+        "fn f() { let _ = api.ui_callback(callback); struct UIHostCall; }",
+    ] {
+        source(&workspace, "maestro-chat", "src/bypass.rs", body);
+        let outcome = check_workspace(workspace.root.path());
+        assert!(outcome.is_err(), "accepted bypass: {body}");
+        assert!(outcome.unwrap_err().contains("UIHostCall"));
+    }
+    source(
+        &workspace,
+        "maestro-chat",
+        "src/bypass.rs",
+        "fn f() { let call = api.ui_callback(callback); call.call(args); }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}

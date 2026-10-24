@@ -324,7 +324,11 @@ Under `crates/*/src`, files carrying `#![cfg(test)]` must be named `tests.rs` or
 Duplicate assertions are a review judgement.
 
 Conventions reject a second or foreign declaration of `MessageRendererCall`:
-`maestro-extensions` declares it exactly once in `src/types/renderers.rs`. Chat
+`maestro-extensions` declares it exactly once in `src/types/renderers.rs`.
+Likewise `UIHostCall`, the handle that keeps an extension UI callback with its
+originating facade, is declared exactly once, at
+`maestro-extensions/src/types/ui/callbacks.rs`; a handle in any other crate or
+file is a second owner. Chat
 production syntax may not name the raw extension machinery: `MessageRenderer`,
 `CallbackEmitter`, `EventBus`, `get_message_renderer` or `invoke_callback`.
 Import declarations, imported aliases, every segment of a qualified path and

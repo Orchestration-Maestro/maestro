@@ -56,7 +56,8 @@ pub use types::{
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler,
     MessageRenderOptions, MessageRenderer, MessageRendererCall, NavigateTreeHandler,
     NewSessionHandler, RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
-    SwitchSessionHandler, TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
+    SwitchSessionHandler, TerminalInputHandler, UIHostCall, WidgetPlacement,
+    WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
 pub mod runner;
