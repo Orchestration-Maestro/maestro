@@ -393,36 +393,31 @@ fn producer_case(world: &World, messages: Vec<Value>, stats: StatsRecord) {
 #[test]
 fn session_info_keeps_counts_cache_cost_and_file_branches() {
     let test = "session_info_keeps_counts_cache_cost_and_file_branches";
-    isolated_case(
-        test,
-        "child",
-        (&[("LC_ALL", "en_US.UTF-8")], &[]),
-        |directory| {
-            let world = started(directory);
-            let theme = world.themes.theme().get().unwrap();
-            for (input, observed) in cases(test) {
-                let SessionExpected {
-                    stats,
-                    text,
-                    frames,
-                    children,
-                } = expected(observed);
-                world.mode.chat_container.clear();
-                match input {
-                    SessionInput::Session { name, stats } => {
-                        let info = session_info(&theme, &stats.into(), name.as_deref()).unwrap();
-                        assert_eq!(info, text);
-                        world.mode.add_text(info, 0);
-                    }
-                    SessionInput::SessionProducer { messages } => {
-                        producer_case(&world, messages, stats.unwrap());
-                    }
-                    SessionInput::Locale { .. } => panic!("a statistics case"),
+    isolated_case(test, "child", &[("LC_ALL", "en_US.UTF-8")], |directory| {
+        let world = started(directory);
+        let theme = world.themes.theme().get().unwrap();
+        for (input, observed) in cases(test) {
+            let SessionExpected {
+                stats,
+                text,
+                frames,
+                children,
+            } = expected(observed);
+            world.mode.chat_container.clear();
+            match input {
+                SessionInput::Session { name, stats } => {
+                    let info = session_info(&theme, &stats.into(), name.as_deref()).unwrap();
+                    assert_eq!(info, text);
+                    world.mode.add_text(info, 0);
                 }
-                assert_transcript(&world, &[text], &frames, children);
+                SessionInput::SessionProducer { messages } => {
+                    producer_case(&world, messages, stats.unwrap());
+                }
+                SessionInput::Locale { .. } => panic!("a statistics case"),
             }
-        },
-    );
+            assert_transcript(&world, &[text], &frames, children);
+        }
+    });
 }
 
 /// Checks the information texts recorded for the `selected` locale.
@@ -451,7 +446,7 @@ fn session_info_uses_selected_locale_and_fixed_cost() {
         isolated_case(
             "session_info_uses_selected_locale_and_fixed_cost",
             selected,
-            (&[("LC_ALL", selected)], &[]),
+            &[("LC_ALL", selected)],
             |directory| locale_texts(directory, selected),
         );
     }
