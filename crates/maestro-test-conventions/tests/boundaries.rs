@@ -1492,3 +1492,111 @@ fn input_presenter_records_reject_duplicate_owners() {
         assert_single_owner(name, "maestro-app", &["maestro-chat", "maestro-cli"]);
     }
 }
+
+/// One source that must be rejected: file name, contents and the diagnostic it carries.
+type TerminationBypass = (&'static str, &'static str, &'static str);
+
+/// A frontend subscribing to termination signals itself, in one spelling each.
+const TERMINATION_BYPASSES: &[TerminationBypass] = &[
+    (
+        "direct.rs",
+        "//! Direct.\nuse maestro_app::register_signals;\n/// Item.\npub fn start(callback: usize) {\n    let _ = register_signals(callback);\n}\n",
+        "termination subscription is maestro-process's",
+    ),
+    (
+        "qualified.rs",
+        "//! Qualified.\n/// Item.\npub fn start(callback: usize) {\n    maestro_app::register_signals(callback);\n}\n",
+        "termination subscription is maestro-process's",
+    ),
+    (
+        "renamed.rs",
+        "//! Renamed.\nuse maestro_app::{register_signals as subscribe, TerminationSignal};\n/// Item.\npub fn start(callback: usize) -> usize {\n    let started = subscribe(callback);\n    let _ = started;\n    let _ = &TerminationSignal::Terminate;\n    0\n}\n",
+        "termination subscription is maestro-process's",
+    ),
+    (
+        "discarded.rs",
+        "//! Discarded.\nuse maestro_app::register_signals;\n/// Item.\npub fn start(callback: usize) -> usize {\n    drop(register_signals(callback));\n    0\n}\n",
+        "termination subscription is maestro-process's",
+    ),
+    (
+        "macro.rs",
+        "//! Macro.\nuse maestro_app::register_signals;\n/// Item.\npub fn start(callback: usize) -> usize {\n    assert!(register_signals(callback).is_ok());\n    0\n}\n",
+        "termination subscription is maestro-process's",
+    ),
+    (
+        "closure.rs",
+        "//! Closure.\nuse maestro_app::register_signals;\n/// Item.\npub fn start(callback: usize) -> usize {\n    let subscribe = |value| register_signals(value);\n    drop(subscribe(callback));\n    0\n}\n",
+        "termination subscription is maestro-process's",
+    ),
+    (
+        "method.rs",
+        "//! Method.\nuse maestro_app::register_signals;\n/// Item.\npub struct Holder;\nimpl Holder {\n    /// Subscribe.\n    pub fn start(&self, callback: usize) -> usize {\n        let started = register_signals(callback);\n        let _ = started;\n        0\n    }\n}\n",
+        "termination subscription is maestro-process's",
+    ),
+    (
+        "facility.rs",
+        "//! Facility.\nuse signal_hook::flag;\n/// Item.\npub fn prepare() {\n    let _ = &flag;\n}\n",
+        "raw signal_hook belongs to maestro-process",
+    ),
+    (
+        "kind.rs",
+        "//! Kind.\n/// Item.\npub fn watch() -> std::io::Result<()> {\n    let _kind = tokio::signal::unix::SignalKind::terminate();\n    Ok(())\n}\n",
+        "native termination delivery belongs to maestro-process",
+    ),
+];
+
+/// Frontend sources that must be accepted: file name and contents.
+const TERMINATION_ACCEPTED: &[(&str, &str)] = &[
+    (
+        "delegation.rs",
+        "//! Delegation.\nuse maestro_app::register_signals;\n/// Item.\npub fn start(callback: usize) -> std::io::Result<Box<dyn Fn()>> {\n    register_signals(callback)\n}\n",
+    ),
+    (
+        "resize.rs",
+        "//! Resize.\nuse tokio::signal::unix::{SignalKind, signal};\n/// Item.\npub fn watch() -> std::io::Result<()> {\n    let _resize = signal(SignalKind::window_change())?;\n    Ok(())\n}\n",
+    ),
+    (
+        "decoy.rs",
+        "//! Decoy.\n/// Item.\npub const NOTE: &str = \"register_signals signal_hook SignalKind::terminate\";\n// register_signals in an ordinary comment.\n",
+    ),
+    (
+        "tests.rs",
+        "//! Test scope.\nuse maestro_app::register_signals;\n/// Helper.\npub fn start(callback: usize) {\n    let _ = register_signals(callback);\n}\n",
+    ),
+];
+
+#[test]
+fn termination_subscription_owner_rejects_frontend_receivers() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat"]);
+    let mut accepted = Vec::new();
+    for (file, contents, expected) in TERMINATION_BYPASSES {
+        let path = source(&workspace, "maestro-chat", &format!("src/{file}"), contents);
+        match check_workspace(workspace.root.path()) {
+            Ok(()) => accepted.push(*file),
+            Err(error) => {
+                assert!(
+                    error.contains(expected),
+                    "{file}: expected {expected:?} in {error:?}"
+                );
+                assert!(
+                    error.contains(&path.display().to_string()),
+                    "{file}: {error}"
+                );
+            }
+        }
+        std::fs::remove_file(path).unwrap();
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{file}");
+    }
+    assert!(accepted.is_empty(), "accepted bypasses: {accepted:?}");
+    for (file, contents) in TERMINATION_ACCEPTED {
+        let path = source(&workspace, "maestro-chat", &format!("src/{file}"), contents);
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Ok(()),
+            "{file}: {}",
+            std::fs::read_to_string(&path).unwrap()
+        );
+        std::fs::remove_file(path).unwrap();
+    }
+}

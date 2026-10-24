@@ -292,7 +292,11 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-extensions", "maestro-credentials"),
     ("maestro-rpc", "maestro-theme"),
     ("maestro-rpc", "maestro-tui-crossterm"),
+    ("maestro-chat", "maestro-tui-crossterm"),
 ];
+
+/// The interactive frontend's witness of the native adapter: native and non-optional only.
+pub(crate) const NATIVE_WITNESS: (&str, &str) = ("maestro-chat", "maestro-tui-crossterm");
 
 /// Foundation utility that native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";

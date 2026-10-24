@@ -18,6 +18,9 @@ mod rpc_writers;
 /// Single-owner rule for work polled once before a task facility takes it.
 mod inline_polls;
 
+/// Imports of one use tree, shared by the single-owner rules.
+mod imports;
+
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members

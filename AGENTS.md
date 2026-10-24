@@ -176,7 +176,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   credentials, detection, the application, the daemon, the toolkit and the terminal adapter may depend on it, on native targets. It owns native child-process
   lifecycles; the callers keep cancellation, termination and settlement policy and
   all output handling. Its retained-front byte queue is shared by pane-process input
-  and native terminal output; callers own readiness and lifecycle policy. Synchronous capture follows the timeout handling in
+  and native terminal output; callers own readiness and lifecycle policy. It also owns
+  native termination-signal delivery, their idempotent removal and the prepared
+  default action, while each native mode keeps its own exit policy. Synchronous capture follows the timeout handling in
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
 - `maestro-listing` is a declared core leaf below layer 0 with no workspace
   dependencies, including the path utility. It lists one directory's entries sorted

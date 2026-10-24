@@ -201,6 +201,16 @@ fn check_native_declaration(
             "{owner}: {member} must be a native, non-optional development dependency"
         ));
     }
+    // A development declaration cannot be optional, so Cargo itself refuses that variant.
+    if (owner, member) == (policy::NATIVE_WITNESS.0, Some(policy::NATIVE_WITNESS.1))
+        && *kind == Kind::Development
+        && !native_declared(dependency, kind, &Kind::Development)
+    {
+        return Err(format!(
+            "{owner}: {} is admitted only as a native, non-optional development dependency",
+            policy::NATIVE_WITNESS.1
+        ));
+    }
     if owner == "maestro-detection"
         && member == Some("maestro-text")
         && *kind == Kind::Development

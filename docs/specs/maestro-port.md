@@ -515,7 +515,11 @@ truncation, artifact files, presentation, result mapping and user-facing errors 
 with their feature owners. The process leaf also owns the retained-front byte queue
 shared by pane-process input and native terminal output: ordered admission, partial
 write advancement and failure cleanup. Callers choose the write chunk bound and
-keep descriptor readiness, lifecycle and error-reporting policy.
+keep descriptor readiness, lifecycle and error-reporting policy. It owns native
+termination-signal delivery as well: which signals a host delivers, their
+subscription and idempotent removal, and the prepared default action a repeated
+signal takes. A native mode supplies only the callback and keeps its own exit
+policy; no frontend subscribes to native signals itself.
 The shared launch contract includes synchronous capture
 with optional raw stdin, an optional caller-supplied timeout and an optional
 combined captured-byte bound, inherited standard
@@ -585,6 +589,10 @@ dependency, supplies terminal newline normalization for checked-child tests.
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
 development dependencies, let the standard-stream child tests build the real export
 rendering environment; the adapter's normal dependency stays `maestro-app` alone.
+`maestro-chat` to `maestro-tui-crossterm`, declared for native targets only and
+without optionality, lets the interactive mode's composed witness drive a real
+native terminal; it permits no normal or build dependency on the adapter and does
+not make the interactive frontend a terminal owner.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
