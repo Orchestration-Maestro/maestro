@@ -28,6 +28,7 @@ inserts at its own place instead of appending at the end of each list.
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `model_status.rs` | A `model_select` handler that names the selected model and sets the `model` status. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
@@ -78,6 +79,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib with_deps_component_uses_its_parsing_dependency
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- working_message_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
 ```
 
 No provider, paid service or extension installation is required. Loading a

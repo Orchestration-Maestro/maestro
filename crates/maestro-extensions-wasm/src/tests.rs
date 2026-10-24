@@ -52,6 +52,7 @@ mod hidden_thinking_label_example;
 pub(crate) mod host;
 mod host_family;
 mod join;
+mod model_status_example;
 mod observed;
 mod parameter_schemas;
 mod pirate_example;
