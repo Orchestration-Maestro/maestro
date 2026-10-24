@@ -15,6 +15,8 @@ use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Spacer;
 use std::{collections::HashMap, error::Error, io, rc::Rc};
 
+mod labels;
+mod listing;
 #[cfg(test)]
 #[cfg(unix)]
 mod tests;
@@ -226,6 +228,26 @@ fn format_scope_groups(
     Ok(lines.join("\n"))
 }
 
+/// Lists resources grouped by scope and package, each plain path with the home prefix
+/// abbreviated and each package path relative to its package.
+///
+/// # Errors
+/// Returns the failure of a path display or of the theme's colours.
+fn format_resource_groups(
+    items: &[ResourceItem<'_>],
+    theme: &Theme,
+    collator: &Collator,
+    home: &HomeLookup<'_>,
+) -> Result<String, Box<dyn Error>> {
+    format_scope_groups(
+        &build_scope_groups(items),
+        theme,
+        collator,
+        |item| Ok(format_display_path(item.path, home)?),
+        |item| get_short_path(item.path, item.source_info, home),
+    )
+}
+
 /// Joins the trimmed nonempty labels as one dimmed row, sorted by locale when a
 /// collator is supplied and in their supplied order otherwise.
 ///
@@ -286,9 +308,11 @@ impl InteractiveMode {
         let skills = loader.get_skills();
         // The loader's own prompt read precedes the session's, whose templates are listed.
         drop(loader.get_prompts());
+        let themes = loader.get_themes();
         self.show_context_resources(&loader.get_agents_files(), &theme, home)?;
         self.show_skills(&skills.skills, &theme, &collator, home)?;
-        self.show_prompts(&session.prompt_templates().prompts, &theme, &collator, home)
+        self.show_prompts(&session.prompt_templates().prompts, &theme, &collator, home)?;
+        self.show_themes(&themes.themes, &theme, &collator, home)
     }
 
     /// Appends a spacer and the context section: compact paths in discovery order, or
@@ -352,13 +376,7 @@ impl InteractiveMode {
                 source_info: Some(&skill.source_info),
             })
             .collect();
-        let expanded = format_scope_groups(
-            &build_scope_groups(&items),
-            theme,
-            collator,
-            |item| Ok(format_display_path(item.path, home)?),
-            |item| get_short_path(item.path, item.source_info, home),
-        )?;
+        let expanded = format_resource_groups(&items, theme, collator, home)?;
         let names = skills.iter().map(|skill| skill.name.as_str());
         let compact = format_compact_list(names, theme, Some(collator))?;
         self.add_loaded_section("Skills", compact, expanded)
