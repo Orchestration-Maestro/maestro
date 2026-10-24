@@ -80,6 +80,10 @@ impl Documentation {
 
     /// Compare physical lines, excluding parser-selected code block ranges.
     fn check(&self, source: &Source) -> Result<(), String> {
+        // Every other token closes a block, so most blocks reach here empty.
+        if self.lines.is_empty() {
+            return Ok(());
+        }
         let document = parse_with_options(self.markdown.clone(), MarkedOptions::Documentation);
         let mut code = Vec::new();
         code_ranges(&document.nodes, &mut code);
