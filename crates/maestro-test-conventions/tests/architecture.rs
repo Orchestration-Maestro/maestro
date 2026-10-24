@@ -2194,9 +2194,9 @@ const NATIVE_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-depend
 
 /// Callers the specification lets declare the test-process owner, in its order.
 fn owner_callers() -> Vec<&'static str> {
-    std::iter::once("maestro-agent")
+    std::iter::once("maestro")
         .chain(specification_names(
-            "from `maestro-agent`",
+            "from `maestro`",
             "; a\ncaller declares it only",
         ))
         .collect()
@@ -2501,6 +2501,7 @@ const TRACING_CALLERS: &[&str] = &[
 
 /// Independently declared native directory consumers.
 const DIRECTORY_CALLERS: &[&str] = &[
+    "maestro",
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
@@ -2510,6 +2511,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-detection",
     "maestro-export",
     "maestro-extensions",
+    "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-listing",
     "maestro-lock",
@@ -2722,9 +2724,9 @@ fn support_edges_keep_cycle_checks(owner: &str, caller: &str) {
 #[test]
 fn directory_support_inventory_matches_contract() {
     assert_eq!(DIRECTORY_CALLERS, support::policy::TEST_DIRECTORY_CALLERS);
-    let documented = std::iter::once("maestro-app")
+    let documented = std::iter::once("maestro")
         .chain(specification_names(
-            "`cfg(not(target_arch = \"wasm32\"))` from `maestro-app`,\n",
+            "`cfg(not(target_arch = \"wasm32\"))` from `maestro`,",
             "; a caller\ndeclares it only",
         ))
         .collect::<Vec<_>>();

@@ -50,8 +50,9 @@ pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String
     )
 }
 /// Loads `paths` in order through `module_loader`, with one shared runtime and one bus
-/// identity per path. A failed path is recorded with its supplied spelling and loading
-/// continues.
+/// identity per path. The module loader receives a lexically normalized absolute path;
+/// the extension record keeps the selected spelling. A failed path is recorded with
+/// its supplied spelling and loading continues.
 ///
 /// # Errors
 /// Returns the home-directory or working-directory error when a path cannot be resolved.
@@ -68,7 +69,8 @@ pub async fn load_extensions<E: ExtensionExecution>(
     };
     for path in paths {
         let resolved_path = resolve_path(&path, cwd)?;
-        let loaded = match module_loader(&resolved_path).await {
+        let module_path = resolve(&[&resolved_path])?;
+        let loaded = match module_loader(&module_path).await {
             Ok(Some(factory)) => {
                 let extension = create_extension::<E>(path.clone(), resolved_path);
                 let api = ExtensionAPI::new(
