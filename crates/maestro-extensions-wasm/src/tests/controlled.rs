@@ -855,7 +855,7 @@ impl Imports for Controlled {
         message: &str,
         kind: Option<crate::NotificationType>,
     ) -> ExtensionResult<()> {
-        let seen = kind.map(|kind| format!("{kind:?}"));
+        let seen = kind.map(super::ui_host::variant);
         ui_call(
             &self.observed,
             resource.key,
@@ -923,7 +923,7 @@ impl Imports for Controlled {
         options: Option<crate::ExtensionWidgetOptions>,
     ) -> ExtensionResult<()> {
         let options = options.map(|options| super::ui_host::WidgetOptions {
-            placement: options.placement.map(|p| format!("{p:?}")),
+            placement: options.placement.map(super::ui_host::variant),
         });
         ui_call(
             &self.observed,

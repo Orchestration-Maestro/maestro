@@ -29,6 +29,7 @@ pub(crate) mod action_host;
 mod agent_events;
 mod application_messages;
 mod author;
+mod basic_ui;
 mod build;
 mod bus_callbacks;
 pub(crate) mod bus_host;
@@ -350,6 +351,8 @@ struct Contract {
     setup_signatures: Vec<Signature>,
     /// Native-async replacement operations.
     replacement_signatures: Vec<Signature>,
+    /// Retained UI requests.
+    ui_signatures: Vec<Signature>,
 }
 
 /// Reads the contract of the built component.
@@ -398,6 +401,7 @@ fn contract() -> Result<Contract, String> {
         .map(|(interface, name)| signature(&engine, interface, name, &resources(&engine, &host)))
         .collect::<Result<_, _>>()?,
         replacement_signatures: replacement_signatures(&engine, &host)?,
+        ui_signatures: ui_signatures(&engine, &host)?,
         action_signatures: action_signatures(&engine, &host, &guest)?,
         registration_signatures: registration_signatures(&engine, &host, &guest)?,
         renderer_signatures: renderer_signatures(&engine, &host, &guest)?,
@@ -548,6 +552,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_action_contract(&contract);
     assert_setup_contract(&contract);
     assert_replacement_contract(&contract);
+    assert_ui_contract(&contract);
     assert_eq!(
         names(&contract.imports, true),
         [
@@ -567,6 +572,77 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     );
     assert_interface_contract(&contract);
     Ok(())
+}
+
+/// Reads the retained UI request signatures of the built component.
+fn ui_signatures(
+    engine: &wasmtime::Engine,
+    host: &ComponentInstance,
+) -> Result<Vec<Signature>, String> {
+    let resources = resources(engine, host);
+    [
+        "notify",
+        "set-status",
+        "set-working-message",
+        "set-working-visible",
+        "set-working-indicator",
+        "set-hidden-thinking-label",
+        "set-widget",
+        "set-title",
+    ]
+    .into_iter()
+    .map(|name| {
+        signature(
+            engine,
+            host,
+            &format!("[method]extension-ui-context.{name}"),
+            &resources,
+        )
+    })
+    .collect()
+}
+
+/// The retained UI resource is borrowed while its requests stay synchronous and typed.
+fn assert_ui_contract(contract: &Contract) {
+    let unit = vec!["result<_, string>".to_owned()];
+    let self_ = "self: borrow<extension-ui-context>".to_owned();
+    let params = [
+        vec![
+            self_.clone(),
+            "message: string".to_owned(),
+            "kind: option<enum {info, warning, error}>".to_owned(),
+        ],
+        vec![
+            self_.clone(),
+            "key: string".to_owned(),
+            "text: option<string>".to_owned(),
+        ],
+        vec![self_.clone(), "message: option<string>".to_owned()],
+        vec![self_.clone(), "visible: bool".to_owned()],
+        vec![
+            self_.clone(),
+            "options: option<record {frames: option<list<string>>, interval-ms: option<f64>}>"
+                .to_owned(),
+        ],
+        vec![self_.clone(), "label: option<string>".to_owned()],
+        vec![
+            self_.clone(),
+            "key: string".to_owned(),
+            "content: option<list<string>>".to_owned(),
+            "options: option<record {placement: option<enum {above-editor, below-editor}>}>"
+                .to_owned(),
+        ],
+        vec![self_, "title: string".to_owned()],
+    ];
+    for (index, ((actual, results), expected)) in
+        contract.ui_signatures.iter().zip(params).enumerate()
+    {
+        assert_eq!(actual, &expected, "retained UI request {index} parameters");
+        assert_eq!(
+            results, &unit,
+            "retained UI request {index} stays synchronous"
+        );
+    }
 }
 
 /// Reads canonical registration input/output types from the built component.

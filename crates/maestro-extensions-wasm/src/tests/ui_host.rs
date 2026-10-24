@@ -76,6 +76,12 @@ pub struct IndicatorOptions {
     pub interval_ms: Option<f64>,
 }
 
+/// Literal name of a generated variant value, without its type path.
+pub fn variant<T: std::fmt::Debug>(value: T) -> String {
+    let debug = format!("{value:?}");
+    debug.rsplit("::").next().unwrap_or_default().to_owned()
+}
+
 /// Operands of one notification request.
 pub fn notify(message: &str, kind: Option<&str>) -> Value {
     json!([message, kind])
@@ -122,6 +128,33 @@ pub fn title(title: &str) -> Value {
     json!([title])
 }
 
+/// One UI request the host recorded.
+pub struct Receipt {
+    /// Identity of the acquisition the request was made on.
+    pub key: usize,
+    /// Method the host reached.
+    pub method: String,
+    /// Operands the host received.
+    pub operands: Value,
+}
+
+/// The UI requests recorded in `lines`, in time order.
+pub fn receipts(lines: &[String]) -> Vec<Receipt> {
+    lines
+        .iter()
+        .filter_map(|line| line.strip_prefix("ui "))
+        .filter_map(|rest| {
+            let (key, rest) = rest.split_once(' ')?;
+            let (method, operands) = rest.split_once(' ')?;
+            Some(Receipt {
+                key: key.parse().ok()?,
+                method: method.to_owned(),
+                operands: serde_json::from_str(operands).ok()?,
+            })
+        })
+        .collect()
+}
+
 impl State {
     /// Records one retained UI request made through `this`.
     fn ui_call(
@@ -142,7 +175,7 @@ impl host::HostExtensionUiContext for State {
         message: String,
         kind: Option<host::NotificationType>,
     ) -> wasmtime::Result<Result<(), String>> {
-        let seen = kind.map(|kind| format!("{kind:?}"));
+        let seen = kind.map(variant);
         self.ui_call(&this, "notify", &notify(&message, seen.as_deref()))
     }
 
@@ -207,7 +240,7 @@ impl host::HostExtensionUiContext for State {
         options: Option<host::ExtensionWidgetOptions>,
     ) -> wasmtime::Result<Result<(), String>> {
         let options = options.map(|options| WidgetOptions {
-            placement: options.placement.map(|placement| format!("{placement:?}")),
+            placement: options.placement.map(variant),
         });
         self.ui_call(
             &this,
