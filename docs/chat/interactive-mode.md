@@ -2,8 +2,9 @@
 
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
-the startup help, the transcript notices and typed input. The prompt loop,
-startup messages, the terminal title and the other integrations are still to come;
+the startup help, the transcript notices, typed input, session replay and the
+expansion and thinking shortcuts. The prompt loop, streaming messages, installed
+custom headers, the terminal title and the other integrations are still to come;
 the mode reads submitted text but does not yet prompt the session.
 
 ## Construction
@@ -29,10 +30,12 @@ fallback theme is returned.
 
 `init` runs once; later calls change nothing. It builds the header, then adds the
 header, transcript, pending-messages, status, upper widget, editor and lower widget
-containers and the footer, in that order. It focuses the editor, installs editor
-submission and starts the terminal. A terminal start failure is returned and leaves the mode uninitialized.
-After a successful start, a theme change invalidates the presentation and requests a
-frame, and a branch change requests a frame. Neither callback keeps the mode alive.
+containers and the footer, in that order. It focuses the editor, binds the
+transcript shortcuts, installs editor submission and starts the terminal. A
+terminal start failure is returned and leaves the mode uninitialized. After a
+successful start it replays the session (see below). A theme change then
+invalidates the presentation, recolours the editor border and requests a frame,
+and a branch change requests a frame. Neither callback keeps the mode alive.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help. Without it,
 the `quietStartup` setting leaves the header empty. Otherwise the header shows the
@@ -68,3 +71,49 @@ The waiting input receives the text before the editor's history records it, so
 code that runs when the input completes can already wait for the next one. Every
 accepted submission enters the history, whether or not an input was waiting.
 Submission does not keep the mode alive.
+
+## Session replay
+
+`render_initial_messages` rebuilds the transcript from the session's current
+context. Each message is shown by its existing component:
+
+- user text, with its text blocks joined without a separator; a skill block shows
+  as a collapsible skill row followed by any text after it as a separate user row;
+- assistant content, with thinking shown or replaced by its label;
+- one row per tool call, completed by its result when the result follows;
+- shell runs, displayed custom messages (through an extension's renderer when one is
+  registered for the custom type), branch summaries and compaction summaries.
+
+Hidden custom messages add nothing and never reach a renderer. Tool results add no
+row of their own. A call of an aborted message shows `Operation aborted`, or
+`Aborted after 1 retry attempt` / `Aborted after N retry attempts` while the
+session is retrying; a call of a failed message shows the error text, or `Error`.
+Calls without a result stay registered by call id so a later completion can find
+them; completed calls are not kept. Tool rows use the configured image visibility
+and width, the session's registered renderers for the tool's name and the built-in
+renderers of a built-in name. Stored tool arguments and result details keep their
+JSON value, so a scalar or array argument is shown as stored.
+
+The initial replay also recolours the editor border, adds each user text to the
+editor history and, when the session was compacted, shows `Session compacted 1
+time` or `Session compacted N times`. A rebuild after the thinking shortcut replays
+without either effect, so the history is not filled twice.
+
+## Status lines
+
+A status is a dim line in the transcript. When the previous status line is still
+the last row, a new status replaces its text; otherwise it starts a new line.
+
+## Shortcuts
+
+The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of
+every expandable transcript row: tool rows, shell runs, summaries, skill rows and
+custom messages. The walk uses the transcript's rows as they are when it starts, so
+a row a renderer appends during the walk is reached, and a row it removes is not.
+
+The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
+replays the transcript and shows `Thinking blocks: hidden` or `Thinking blocks:
+visible`. A shortcut's failure goes to the terminal runtime's error route.
+
+The editor border follows the session's thinking level, or the shell colour while
+the editor holds a shell command.
