@@ -196,8 +196,9 @@ request is kept and queued after the current frame. `stop` cancels the pending f
 including the immediate one a forced request queued, and forgets any request, so
 `start` after a `stop` draws again, and requests made while stopped are dropped.
 `render_pending_frame` draws the frame a pending request asked for and consumes that
-request without queueing another, and it draws nothing while the writer is stopped. A
-caller that stops the writer next still shows its last change.
+request without queueing another, and it draws nothing while the writer is stopped.
+Backed-up output does not defer that frame: a caller that stops the writer next still
+shows its last change, and the stop drains the bytes it wrote.
 
 The terminal's resize callback makes this same ordinary request and holds the writer only
 weakly, so it never keeps a dropped writer alive.

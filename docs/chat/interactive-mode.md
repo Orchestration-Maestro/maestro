@@ -247,7 +247,8 @@ stops the terminal, so no theme reload or further frame repaints once the notice
 drawn. It then ends the process with status 1. A failure while appending or drawing
 the notice, or while stopping the terminal, is ignored, because the process is ending
 either way. The notice is drawn before the terminal stops, because a stop cancels a
-queued frame.
+queued frame and the final frame is not deferred while the terminal's output is backed
+up.
 
 ## Shortcuts
 

@@ -349,6 +349,31 @@ fn a_pending_frame_is_drawn_on_request_and_nothing_after_a_stop() {
     );
 }
 
+#[test]
+fn a_pending_frame_is_drawn_while_output_is_backed_up() {
+    let (tui, terminal, runtime) = writer(None);
+    let probe = Probe::shared(&["first"]);
+    tui.add_child(probe.clone());
+    succeeds(tui.start());
+    succeeds(runtime.settle());
+    let drawn = probe.renders.get();
+    terminal.clear_writes();
+    terminal.set_pending_output_bytes(262_145);
+    probe.set_lines(&["notice".to_owned()]);
+    tui.request_render(false);
+    let due = runtime.next_deadline().expect("a frame is due");
+    runtime.advance_to(due).into_iter().for_each(Result::unwrap);
+    assert_eq!(probe.renders.get(), drawn, "an ordinary frame is deferred");
+    assert!(terminal.writes().is_empty());
+    succeeds(tui.render_pending_frame());
+    assert_eq!(probe.renders.get(), drawn + 1, "the final frame is drawn");
+    assert!(
+        terminal.writes().concat().contains("notice"),
+        "the final frame reaches the terminal: {:?}",
+        terminal.writes()
+    );
+}
+
 /// Which walk over the children a component edits the list during.
 #[derive(Clone, Copy, Debug)]
 enum Walk {

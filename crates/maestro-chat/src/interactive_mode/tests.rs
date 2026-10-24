@@ -1121,44 +1121,50 @@ fn fatal_runtime_error_writes_its_notice_before_stopping_the_terminal() {
     isolated(
         "fatal_runtime_error_writes_its_notice_before_stopping_the_terminal",
         |directory| {
-            let watched = Rc::new(Watched::default());
-            let world = watching(directory, &watched);
-            start(&world);
-            world.runtime.settle().unwrap();
-            assert_eq!(watched.open.borrow().len(), 1);
-            assert!(!watched.open.borrow()[0].get());
-            world.terminal.clear_writes();
-            world
-                .mode
-                .report_fatal_runtime_error("Failed to create session", &io::Error::other("boom"));
-            let theme = world.themes.theme().get().unwrap();
-            let notice = theme
-                .fg(&ThemeColor::Error, "Error: Failed to create session: boom")
-                .unwrap();
-            let rows = world.mode.chat_container.render(100);
-            assert!(
-                rows.iter().any(|row| row.contains(&notice)),
-                "the failure notice: {rows:?}"
-            );
-            let writes = world.terminal.writes();
-            let notice_index = writes
-                .iter()
-                .position(|write| {
-                    strip_ansi(write)
-                        .unwrap()
-                        .contains("Error: Failed to create session: boom")
-                })
-                .unwrap_or_else(|| panic!("the failure notice reached the terminal: {writes:?}"));
-            let restore_index = writes
-                .iter()
-                .position(|write| write.contains("\x1b[?25h"))
-                .expect("the cursor is shown");
-            assert!(
-                notice_index < restore_index,
-                "the notice precedes the restore: {writes:?}"
-            );
-            assert!(watched.open.borrow()[0].get(), "the theme watch closes");
-            assert_eq!(world.terminal.events(), ["start", "stop"]);
+            for pending in [0, 262_144, 262_145] {
+                let watched = Rc::new(Watched::default());
+                let world = watching(directory, &watched);
+                start(&world);
+                world.runtime.settle().unwrap();
+                assert_eq!(watched.open.borrow().len(), 1);
+                assert!(!watched.open.borrow()[0].get());
+                world.terminal.set_pending_output_bytes(pending);
+                world.terminal.clear_writes();
+                world.mode.report_fatal_runtime_error(
+                    "Failed to create session",
+                    &io::Error::other("boom"),
+                );
+                let theme = world.themes.theme().get().unwrap();
+                let notice = theme
+                    .fg(&ThemeColor::Error, "Error: Failed to create session: boom")
+                    .unwrap();
+                let rows = world.mode.chat_container.render(100);
+                assert!(
+                    rows.iter().any(|row| row.contains(&notice)),
+                    "the failure notice: {rows:?}"
+                );
+                let writes = world.terminal.writes();
+                let notice_index = writes
+                    .iter()
+                    .position(|write| {
+                        strip_ansi(write)
+                            .unwrap()
+                            .contains("Error: Failed to create session: boom")
+                    })
+                    .unwrap_or_else(|| {
+                        panic!("the failure notice reached the terminal at {pending}: {writes:?}")
+                    });
+                let restore_index = writes
+                    .iter()
+                    .position(|write| write.contains("\x1b[?25h"))
+                    .expect("the cursor is shown");
+                assert!(
+                    notice_index < restore_index,
+                    "the notice precedes the restore at {pending}: {writes:?}"
+                );
+                assert!(watched.open.borrow()[0].get(), "the theme watch closes");
+                assert_eq!(world.terminal.events(), ["start", "stop"]);
+            }
         },
     );
 }
