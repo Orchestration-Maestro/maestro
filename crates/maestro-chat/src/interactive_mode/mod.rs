@@ -1,5 +1,5 @@
-//! The interactive terminal mode: its retained containers, startup help, notices and
-//! typed input.
+//! The interactive terminal mode: its retained containers, startup help, loaded
+//! resources, notices and typed input.
 
 use crate::{CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
@@ -16,6 +16,7 @@ use std::{
     rc::Rc,
 };
 
+mod resources;
 mod startup;
 mod submit;
 
@@ -64,6 +65,8 @@ pub struct InteractiveMode {
     is_initialized: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Whether tool output, and with it the startup text, is expanded.
+    tool_output_expanded: Cell<bool>,
 }
 
 impl InteractiveMode {
@@ -118,15 +121,17 @@ impl InteractiveMode {
             footer_data_provider,
             is_initialized: Cell::new(false),
             on_input_callback: Rc::default(),
+            tool_output_expanded: Cell::new(false),
         }))
     }
 
     /// Builds the header, adds every container in order, focuses the editor, installs
-    /// editor submission and starts the terminal, once; theme and branch changes then
-    /// request fresh frames.
+    /// editor submission, starts the terminal and lists the loaded resources, once;
+    /// theme and branch changes then request fresh frames.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours or of the terminal start.
+    /// Returns the failure of the header's theme colours, of the terminal start or of
+    /// the resource listing.
     pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -161,7 +166,7 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        Ok(())
+        self.show_loaded_resources(false)
     }
 }
 

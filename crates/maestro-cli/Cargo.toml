@@ -30,7 +30,6 @@ path = "tests/integration.rs"
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 maestro-test-terminal.workspace = true
-serde_json.workspace = true
 
 [lints]
 workspace = true

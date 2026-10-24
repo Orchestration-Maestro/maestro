@@ -64,3 +64,11 @@ See [selectors](chat/selectors.md) for the widgets.
 presents the result as its final text or as session event records. See [print
 mode](print.md) for the options, the exact output and the cleanup and error
 boundary.
+
+## Account commands
+
+`model_login::cli` presents the standalone `help`, `list` and `login` commands
+over an ordered provider snapshot, a live resolver and a console the caller
+supplies. It keeps its own argument grammar and writes the caller-relative
+account file, not the session credential store. See
+[standalone account commands](model_login.md).

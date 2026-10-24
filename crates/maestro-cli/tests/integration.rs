@@ -6,6 +6,7 @@ mod initial_inputs;
 mod input_arguments;
 mod input_help;
 mod input_presenters;
+mod model_account_checks;
 mod model_tables;
 mod print_output;
 mod support;
