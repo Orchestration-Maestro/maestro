@@ -264,6 +264,421 @@
     }
   },
   {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": null
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Current model does not support thinking\u001b[39m                                                            "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "off"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: off\u001b[39m                                                                                "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "minimal"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: minimal\u001b[39m                                                                            "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "low"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: low\u001b[39m                                                                                "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "medium"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: medium\u001b[39m                                                                             "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "high"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: high\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "xhigh"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: xhigh\u001b[39m                                                                              "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_distinguishes_scope_and_available_exhaustion",
+    "input": {
+      "op": "model-none",
+      "scoped": false,
+      "direction": "forward"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Only one model available\u001b[39m                                                                           "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_distinguishes_scope_and_available_exhaustion",
+    "input": {
+      "op": "model-none",
+      "scoped": false,
+      "direction": "backward"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Only one model available\u001b[39m                                                                           "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_distinguishes_scope_and_available_exhaustion",
+    "input": {
+      "op": "model-none",
+      "scoped": true,
+      "direction": "forward"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Only one model in scope\u001b[39m                                                                            "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_distinguishes_scope_and_available_exhaustion",
+    "input": {
+      "op": "model-none",
+      "scoped": true,
+      "direction": "backward"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Only one model in scope\u001b[39m                                                                            "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": false,
+      "level": "off",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": false,
+      "level": "off",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": false,
+      "level": "high",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": false,
+      "level": "high",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": true,
+      "level": "off",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": true,
+      "level": "off",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": true,
+      "level": "high",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id (thinking: high)\u001b[39m                                                              "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": true,
+      "level": "high",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model (thinking: high)\u001b[39m                                                         "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": false,
+      "level": "off",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": false,
+      "level": "off",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": false,
+      "level": "high",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": false,
+      "level": "high",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": true,
+      "level": "off",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": true,
+      "level": "off",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": true,
+      "level": "high",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id (thinking: high)\u001b[39m                                                              "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": true,
+      "level": "high",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model (thinking: high)\u001b[39m                                                         "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_renders_failures_without_success_effects",
+    "input": {
+      "op": "model-error"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @error@Error: cycle refused\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
     "test": "external_edit_without_configuration_warns_without_native_work",
     "input": {
       "op": "external-missing"

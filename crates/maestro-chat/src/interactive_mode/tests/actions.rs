@@ -2,14 +2,15 @@
 //! native editor, clipboard helper and temporary files of an isolated child.
 use super::{World, dark, isolated, light, native, painted, roles, started};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
-use maestro_app::ThinkingLevel;
 use maestro_app::utils::clipboard_image::ClipboardImage;
+use maestro_app::{DiagnosticErrorInfo, Model, ScopedModel, ThinkingLevel};
 use maestro_tui::{Component, tui::InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
 use std::{
     io,
     path::{Path, PathBuf},
     rc::Rc,
+    sync::{Arc, RwLock},
 };
 
 /// Every recorded editor-action case.
@@ -17,9 +18,6 @@ const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_actions
 
 /// The width every editor frame is rendered at.
 const WIDTH: usize = 80;
-
-/// The width the transcript notices were recorded at.
-const NOTICE_WIDTH: usize = 100;
 
 /// The recorded cases of `test`, typed by that witness.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
@@ -183,7 +181,6 @@ fn external_edit_without_configuration_warns_without_native_work() {
             )
             .swap_remove(0);
             assert_eq!(input.op, "external-missing");
-            let theme = |world: &World| world.themes.theme().get().unwrap();
             for configured in [None, Some("")] {
                 let world = started(directory);
                 if let Some(value) = configured {
@@ -193,10 +190,8 @@ fn external_edit_without_configuration_warns_without_native_work() {
                 world.mode.editor.set_text("kept");
                 world.terminal.clear_writes();
                 run_action(&world, "app.editor.external");
-                assert_eq!(
-                    world.mode.chat_container.render(NOTICE_WIDTH),
-                    painted(&theme(&world), &expected.lines)
-                );
+                let (rows, expected_rows) = notices(&world, &expected.lines);
+                assert_eq!(rows, expected_rows);
                 assert_eq!(world.mode.editor.get_text(), "kept");
                 assert_eq!(world.terminal.events(), ["start"]);
                 assert_eq!(temporary_names(), Vec::<String>::new());
@@ -503,6 +498,320 @@ fn temporary_files_preserve_existing_entries_and_private_bytes() {
             let mode = std::fs::metadata(&pasted).unwrap().permissions().mode();
             assert_eq!(mode & 0o7777, 0o600);
             assert_eq!(std::fs::read(pasted).unwrap(), image().bytes);
+        },
+    );
+}
+
+/// Transcript rows rendered at the width the recorded notice rows were padded to.
+fn notices(world: &World, expected: &[String]) -> (Vec<String>, Vec<String>) {
+    let theme = world.themes.theme().get().unwrap();
+    let expected = painted(&theme, expected);
+    let width = maestro_tui::visible_width(&expected[expected.len() - 1]);
+    (world.mode.chat_container.render(width), expected)
+}
+
+/// Lets the session's model reason at every level, the highest included.
+fn reasoning_everywhere(world: &World) {
+    let model = world.host.session().model();
+    let mut model = model.write().unwrap();
+    model.reasoning = true;
+    model.thinking_level_map = Some(serde_json::from_str(r#"{"xhigh": "xhigh"}"#).unwrap());
+}
+
+/// One thinking cycle, from the level before `level` in the model's order.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ThinkingCycle {
+    /// Always `thinking`.
+    op: String,
+    /// The selected level, absent when the model cannot reason.
+    level: Option<ThinkingLevel>,
+}
+
+#[test]
+fn thinking_cycle_refreshes_only_after_a_supported_selection() {
+    isolated(
+        "thinking_cycle_refreshes_only_after_a_supported_selection",
+        |directory| {
+            for (input, expected) in cases::<ThinkingCycle, Lines>(
+                "thinking_cycle_refreshes_only_after_a_supported_selection",
+            ) {
+                assert_eq!(input.op, "thinking");
+                let world = started(directory);
+                if let Some(level) = &input.level {
+                    reasoning_everywhere(&world);
+                    let levels = world.host.session().get_available_thinking_levels();
+                    let index = levels.iter().position(|known| known == level).unwrap();
+                    select_level(
+                        &world,
+                        levels[(index + levels.len() - 1) % levels.len()].clone(),
+                    );
+                }
+                world.mode.editor.set_border_color(Rc::new(str::to_owned));
+                let footer = world.mode.footer.render(WIDTH);
+                run_action(&world, "app.thinking.cycle");
+                let (rows, expected_rows) = notices(&world, &expected.lines);
+                assert_eq!(rows, expected_rows);
+                let session = world.host.session();
+                if let Some(level) = input.level {
+                    let role = format!("@{}@━\x1b[39m", thinking_role(&level));
+                    assert_eq!(session.thinking_level(), level);
+                    assert_eq!(rendered_border(&world), border_row(&world, &role));
+                } else {
+                    assert_eq!(session.thinking_level(), ThinkingLevel::Off);
+                    assert_eq!(rendered_border(&world), "─".repeat(WIDTH));
+                    assert_eq!(world.mode.footer.render(WIDTH), footer);
+                }
+            }
+        },
+    );
+}
+
+/// The theme role of a thinking level's border.
+fn thinking_role(level: &ThinkingLevel) -> String {
+    let name = serde_json::to_value(level).unwrap();
+    let name = name.as_str().unwrap();
+    format!("thinking{}{}", name[..1].to_uppercase(), &name[1..])
+}
+
+/// A model cycle with no other candidate.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NoCandidate {
+    /// Always `model-none`.
+    op: String,
+    /// Whether the session has scoped models.
+    scoped: bool,
+    /// The cycle direction.
+    direction: Direction,
+}
+
+/// A recorded cycle direction.
+#[derive(Clone, Copy, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum Direction {
+    /// The next model.
+    Forward,
+    /// The previous model.
+    Backward,
+}
+
+impl Direction {
+    /// The action bound to cycling this way.
+    fn action(self) -> &'static str {
+        match self {
+            Self::Forward => "app.model.cycleForward",
+            Self::Backward => "app.model.cycleBackward",
+        }
+    }
+}
+
+/// Runs the model cycle bound for `direction` and the host work it hands over.
+fn cycle(world: &World, direction: Direction) {
+    run_action(world, direction.action());
+    assert!(world.runtime.drain_futures().is_empty());
+}
+
+/// The provider the cycled models belong to, authenticated by a runtime key.
+const PROVIDER: &str = "anthropic";
+
+/// A model of the authenticated provider, copied from the session's own descriptor.
+fn model(world: &World, id: &str, name: &str, reasoning: bool) -> Arc<RwLock<Model>> {
+    let mut model = world.host.session().model().read().unwrap().clone();
+    model.provider = PROVIDER.into();
+    model.id = id.into();
+    model.name = name.into();
+    model.reasoning = reasoning;
+    Arc::new(RwLock::new(model))
+}
+
+/// Makes `models` the session's scoped models, authenticated, with the first selected.
+fn scope(world: &World, models: Vec<ScopedModel>) {
+    let session = world.host.session();
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key(PROVIDER, "fixture");
+    write_model(world, Arc::clone(&models[0].model));
+    session.set_scoped_models(models);
+}
+
+/// Selects `model` as the session's agent model.
+fn write_model(world: &World, model: Arc<RwLock<Model>>) {
+    world.host.session().agent().state().write().unwrap().model = model;
+}
+
+#[test]
+fn model_cycle_distinguishes_scope_and_available_exhaustion() {
+    isolated(
+        "model_cycle_distinguishes_scope_and_available_exhaustion",
+        |directory| {
+            for (input, expected) in cases::<NoCandidate, Lines>(
+                "model_cycle_distinguishes_scope_and_available_exhaustion",
+            ) {
+                assert_eq!(input.op, "model-none");
+                let world = started(directory);
+                if input.scoped {
+                    let only = model(&world, "only", "Only", false);
+                    scope(
+                        &world,
+                        vec![ScopedModel {
+                            model: only,
+                            thinking_level: None,
+                        }],
+                    );
+                }
+                let selected = world.host.session().model();
+                cycle(&world, input.direction);
+                let (rows, expected_rows) = notices(&world, &expected.lines);
+                assert_eq!(rows, expected_rows);
+                assert!(Arc::ptr_eq(&world.host.session().model(), &selected));
+            }
+        },
+    );
+}
+
+/// A model cycle onto a model with a name, reasoning and explicit level.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Selection {
+    /// Always `model-selected`.
+    op: String,
+    /// The cycle direction.
+    direction: Direction,
+    /// Whether the selected model reasons.
+    reasoning: bool,
+    /// The level scoped with the selected model.
+    level: ThinkingLevel,
+    /// The selected model's display name.
+    name: String,
+}
+
+#[test]
+fn model_cycle_uses_the_selected_name_thinking_and_direction() {
+    isolated(
+        "model_cycle_uses_the_selected_name_thinking_and_direction",
+        |directory| {
+            for (input, expected) in cases::<Selection, Lines>(
+                "model_cycle_uses_the_selected_name_thinking_and_direction",
+            ) {
+                assert_eq!(input.op, "model-selected");
+                let world = started(directory);
+                let current = model(&world, "current-id", "Current", false);
+                let [next, previous] =
+                    [(); 2].map(|()| model(&world, "model-id", &input.name, input.reasoning));
+                let scoped = |model: &Arc<RwLock<Model>>| ScopedModel {
+                    model: Arc::clone(model),
+                    thinking_level: Some(input.level.clone()),
+                };
+                scope(
+                    &world,
+                    vec![scoped(&current), scoped(&next), scoped(&previous)],
+                );
+                world.mode.editor.set_border_color(Rc::new(str::to_owned));
+                cycle(&world, input.direction);
+                let (rows, expected_rows) = notices(&world, &expected.lines);
+                assert_eq!(rows, expected_rows);
+                let session = world.host.session();
+                let selected = match input.direction {
+                    Direction::Forward => &next,
+                    Direction::Backward => &previous,
+                };
+                assert!(Arc::ptr_eq(&session.model(), selected));
+                let level = session.thinking_level();
+                let role = format!("@{}@━\x1b[39m", thinking_role(&level));
+                assert_eq!(rendered_border(&world), border_row(&world, &role));
+                assert!(
+                    world
+                        .mode
+                        .footer
+                        .render(WIDTH)
+                        .concat()
+                        .contains("model-id")
+                );
+            }
+        },
+    );
+}
+
+/// A refused model cycle.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Refusal {
+    /// Always `model-error`.
+    op: String,
+}
+
+#[test]
+fn model_cycle_renders_failures_without_success_effects() {
+    isolated(
+        "model_cycle_renders_failures_without_success_effects",
+        |directory| {
+            let (input, expected) =
+                cases::<Refusal, Lines>("model_cycle_renders_failures_without_success_effects")
+                    .swap_remove(0);
+            assert_eq!(input.op, "model-error");
+            let world = started(directory);
+            world.mode.editor.set_border_color(Rc::new(str::to_owned));
+            let selected = world.host.session().model();
+            let footer = world.mode.footer.render(WIDTH);
+            world
+                .mode
+                .show_model_cycle_result(Err(DiagnosticErrorInfo::error("cycle refused")))
+                .unwrap();
+            let (rows, expected_rows) = notices(&world, &expected.lines);
+            assert_eq!(rows, expected_rows);
+            assert!(Arc::ptr_eq(&world.host.session().model(), &selected));
+            assert_eq!(rendered_border(&world), "─".repeat(WIDTH));
+            assert_eq!(world.mode.footer.render(WIDTH), footer);
+        },
+    );
+}
+
+/// The status a thinking cycle shows when the model cannot reason.
+const NO_THINKING: &str = "Current model does not support thinking";
+
+/// Whether the transcript shows `text`.
+fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
+    chat.render(WIDTH).concat().contains(text)
+}
+
+#[test]
+fn editor_actions_respect_remapped_keys_and_release_mode() {
+    isolated(
+        "editor_actions_respect_remapped_keys_and_release_mode",
+        |directory| {
+            let world = started(directory);
+            world.mode.editor.handle_input("\x1b[Z");
+            assert!(shows(&world.mode.chat_container, NO_THINKING));
+            std::fs::write(
+                directory.join("keybindings.json"),
+                r#"{"app.thinking.cycle": "ctrl+y", "app.model.cycleForward": "ctrl+u"}"#,
+            )
+            .unwrap();
+            let World { mode, runtime, .. } = started(directory);
+            let editor = Rc::clone(&mode.editor);
+            let chat = Rc::clone(&mode.chat_container);
+            for obsolete in ["\x1b[Z", "\x10"] {
+                editor.handle_input(obsolete);
+            }
+            assert_eq!(runtime.futures(), 0);
+            assert!(!shows(&chat, NO_THINKING));
+            editor.handle_input("\x19");
+            assert!(shows(&chat, NO_THINKING));
+            editor.handle_input("\x15");
+            assert_eq!(runtime.futures(), 1);
+            assert!(!shows(&chat, "Only one model available"));
+            let weak = Rc::downgrade(&mode);
+            drop(mode);
+            assert!(weak.upgrade().is_some());
+            assert!(runtime.drain_futures().is_empty());
+            assert!(shows(&chat, "Only one model available"));
+            assert!(weak.upgrade().is_none());
+            editor.handle_input("\x19");
+            editor.handle_input("\x15");
+            assert_eq!(runtime.futures(), 0);
         },
     );
 }

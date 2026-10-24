@@ -3,8 +3,8 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the transcript notices, typed input, session replay, the
-expansion and thinking shortcuts, the editor border, external editing and image
-paste. The prompt loop, streaming messages, installed
+expansion and thinking shortcuts, thinking and model cycling, the editor border,
+external editing and image paste. The prompt loop, streaming messages, installed
 custom headers, the terminal title and the other integrations are still to come;
 the mode reads submitted text but does not yet prompt the session.
 
@@ -115,6 +115,24 @@ a row a renderer appends during the walk is reached, and a row it removes is not
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
 replays the transcript and shows `Thinking blocks: hidden` or `Thinking blocks:
 visible`. A shortcut's failure goes to the terminal runtime's error route.
+
+## Thinking and model cycling
+
+The thinking cycle key (`app.thinking.cycle`, Shift+Tab by default) selects the
+session's next thinking level. It shows `Thinking level: <level>` as a status line
+and refreshes the footer and editor border; when the model cannot reason it shows
+`Current model does not support thinking` and changes nothing else. A recording
+failure goes to the terminal runtime's error route.
+
+The model cycle keys (`app.model.cycleForward` and `app.model.cycleBackward`,
+Ctrl+P and Shift+Ctrl+P by default) select the next or previous scoped model, or
+the next or previous available model when none are scoped. The cycle runs on the
+terminal runtime, which keeps the mode until it completes. It then shows
+`Switched to <name>`, using the model id when the name is empty and adding
+` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
+the footer and editor border. With no other candidate it shows
+`Only one model in scope` or `Only one model available`; a session error is shown as
+an error notice and changes nothing.
 
 ## Editor border
 
