@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
-use super::{Listeners, reset_visits, visits};
+use super::{Admission, Listeners, reset_visits, visits};
 
 /// A shared collection of identity payloads, as its runtime callers hold it.
 type Shared = Rc<RefCell<Listeners<Rc<usize>>>>;
@@ -275,6 +275,51 @@ fn removers_follow_identity_and_release_outside_borrows() {
     drop(removed);
     drop(probe);
     assert_eq!(released.get(), Some(true));
+}
+
+/// A capture whose release unsubscribes another registration.
+struct Unsubscribing(Option<Box<dyn Fn()>>);
+
+impl Drop for Unsubscribing {
+    fn drop(&mut self) {
+        if let Some(unsubscribe) = &self.0 {
+            unsubscribe();
+        }
+    }
+}
+
+#[test]
+fn removal_releases_a_capture_that_unsubscribes_another() {
+    for admission in [Admission::Identity, Admission::Every] {
+        let registry = Rc::new(RefCell::new(Listeners::new(admission)));
+        let other = Rc::new(Unsubscribing(None));
+        let released = Rc::downgrade(&other);
+        let unsubscribe_other = Listeners::subscribe(&registry, other);
+        let capture = Rc::new(Unsubscribing(Some(Box::new(unsubscribe_other))));
+        Listeners::subscribe(&registry, capture)();
+        assert!(
+            released.upgrade().is_none(),
+            "the other registration is released"
+        );
+        assert!(registry.borrow().identities.is_empty());
+    }
+}
+
+#[test]
+fn every_registration_admission_removes_each_registration_once() {
+    let registry: Shared = Rc::new(RefCell::new(Listeners::new(Admission::Every)));
+    let value = Rc::new(3);
+    let removers: Vec<_> = (0..4).map(|_| subscribe(&registry, &value)).collect();
+    assert_eq!(walk(&registry), [3, 3, 3, 3]);
+    assert_eq!(registry.borrow_mut().remove(Rc::as_ptr(&value)), None);
+    for remover in &removers[..3] {
+        remover();
+        remover();
+    }
+    assert_eq!(walk(&registry), [3]);
+    removers[3]();
+    assert_eq!(walk(&registry), Vec::<usize>::new());
+    assert!(registry.borrow().entries.is_empty());
 }
 
 #[test]

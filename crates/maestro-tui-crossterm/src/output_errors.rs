@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::io;
 use std::rc::Rc;
 
-use maestro_listeners::Listeners;
+use maestro_listeners::{Admission, Listeners};
 use maestro_tui::terminal::OutputErrorHandler;
 
 /// The producer of a native failure.
@@ -20,15 +20,22 @@ pub(crate) enum FailureSource {
 }
 
 /// The callbacks registered for native output failures.
-#[derive(Default)]
 pub(crate) struct OutputErrors {
-    /// The live callbacks.
+    /// The live callbacks, each registration kept as its own entry.
     callbacks: Rc<RefCell<Listeners<OutputErrorHandler>>>,
 }
 
+impl Default for OutputErrors {
+    fn default() -> Self {
+        Self {
+            callbacks: Rc::new(RefCell::new(Listeners::new(Admission::Every))),
+        }
+    }
+}
+
 impl OutputErrors {
-    /// Registers `handler`; the returned operation removes it and does nothing when
-    /// repeated.
+    /// Registers `handler`; the returned operation removes that registration and does
+    /// nothing when repeated.
     pub(crate) fn register(self: &Rc<Self>, handler: OutputErrorHandler) -> Box<dyn Fn()> {
         Box::new(Listeners::subscribe(&self.callbacks, handler))
     }
@@ -49,3 +56,6 @@ impl OutputErrors {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
