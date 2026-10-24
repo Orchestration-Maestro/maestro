@@ -20,9 +20,10 @@ end, the assistant message's start, its stream updates and its end, then
 assistant message's end and the next turn, the tool execution's start and end,
 the tool-result message's start and end, and one `turn_end`.
 
-Adjacent stream updates arrive as one group per response. The group carries the
-start, delta and end of every content block the response streams, so a response
-with thinking, text and a tool call streams each of them in turn.
+Adjacent stream updates arrive as one group per response. A response that runs to
+completion carries the start, delta and end of each content block it streams, so
+thinking, text and a tool call each stream in turn. A cancelled response stops
+where it was cancelled and can omit the end of the block it was streaming.
 
 Extension handlers hear a message's start and end before the session's own
 listeners hear them, for both the user message and the assistant response.
@@ -34,5 +35,6 @@ keeps the partial assistant message it streamed: it stays the last live message
 and the last stored entry, stopped as aborted.
 
 A lost connection is an application retry like any other transient failure: the
-retry start carries the provider's own error text, one retry then succeeds, and
-the recovery text is retained. No transport setup retry is involved.
+retry start carries the provider's own error text. A retry that succeeds keeps
+the recovery text; a retry that keeps failing ends with the error of its last
+attempt once the retry budget is spent. No transport setup retry is involved.

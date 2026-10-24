@@ -168,6 +168,7 @@ pub struct Harness {
 
 impl Drop for Harness {
     fn drop(&mut self) {
+        self.session.dispose();
         self.faux.unregister();
     }
 }
@@ -1622,6 +1623,19 @@ pub fn agent_ended(h: &Harness) -> Rc<tokio::sync::Notify> {
         Box::pin(std::future::ready(Ok(())))
     })));
     ended
+}
+
+/// The retry observations among the delivered events, in the order they arrived:
+/// `start:<attempt>` when a retry opens and `end:<success>` when it settles.
+pub fn retry_order(events: &[Value]) -> Vec<String> {
+    events
+        .iter()
+        .filter_map(|event| match event["type"].as_str() {
+            Some("auto_retry_start") => Some(format!("start:{}", event["attempt"])),
+            Some("auto_retry_end") => Some(format!("end:{}", event["success"])),
+            _ => None,
+        })
+        .collect()
 }
 
 /// Starts `operation` with one poll and drops it unfinished, as a caller that stops

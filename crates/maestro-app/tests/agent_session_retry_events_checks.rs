@@ -4,8 +4,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     HarnessOptions, Scripted, agent_ended, agent_event_type, answer, corpus, delivered_events,
-    get_assistant_texts, get_message_text, harness, on_paused_task_set, on_task_set,
-    sdk_definition, session_run_ended, start_prompt, tool_definition,
+    get_assistant_texts, get_message_text, harness, on_paused_task_set, on_task_set, retry_order,
+    script_responses, sdk_definition, session_run_ended, start_prompt, tool_definition,
 };
 use maestro_agent::{AgentEvent, AgentMessage, CustomAgentMessages};
 use maestro_app::agent_session::ToolDefinitionHandle;
@@ -13,13 +13,12 @@ use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
     ExtensionFactory, MessageEndEvent, MessageEndEventResult, MessageStartEvent, NativeAgentMessage,
 };
-use maestro_models::{AssistantMessageEvent, Cancellation, ErrorReason, Local, StopReason};
+use maestro_models::{AssistantMessageEvent, Local};
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
-    sync::{Arc, RwLock},
 };
 use tokio::sync::Notify;
 
@@ -165,14 +164,6 @@ fn recorded_echo_tool(runs: Rc<RefCell<Vec<String>>>) -> ToolDefinitionHandle {
     sdk_definition(definition)
 }
 
-/// The retry events among the session's delivered events.
-fn retry_events(events: &[Value]) -> Vec<&Value> {
-    events
-        .iter()
-        .filter(|event| event["type"] == "auto_retry_start" || event["type"] == "auto_retry_end")
-        .collect()
-}
-
 /// The scripted call of the echo tool with `text`.
 fn echo_call(text: &str) -> Scripted {
     Scripted {
@@ -214,62 +205,6 @@ fn first_response_updates(
     updates
 }
 
-/// The stream of `text` in chunks that reports the request's cancellation and then ends
-/// aborted with the text streamed so far.
-fn aborting_stream(text: &str) -> maestro_agent::StreamFn<Local> {
-    let streamed = Rc::new(text.to_owned());
-    Rc::new(move |_, _, options, _| {
-        let stream = maestro_models::AssistantMessageEventStream::new();
-        let mut options = options;
-        let signal = options
-            .common
-            .signal
-            .take()
-            .expect("the agent cancels through the request");
-        stream.push(AssistantMessageEvent::Start {
-            partial: snapshot(""),
-        });
-        tokio::task::spawn_local(until_aborted(stream.clone(), signal, Rc::clone(&streamed)));
-        Box::pin(std::future::ready(Ok(stream)))
-    })
-}
-
-/// The partial answer showing `text`, stopped normally.
-fn snapshot(text: &str) -> Arc<RwLock<maestro_models::AssistantMessage>> {
-    Arc::new(RwLock::new(answer(text, None, None)))
-}
-
-/// Streams `text` in chunks until the request is cancelled, then reports the aborted answer
-/// it had streamed.
-async fn until_aborted(
-    stream: maestro_models::AssistantMessageEventStream,
-    signal: Cancellation,
-    text: Rc<String>,
-) {
-    stream.push(AssistantMessageEvent::TextStart {
-        content_index: 0,
-        partial: snapshot(""),
-    });
-    let mut shown = String::new();
-    for chunk in text.chars().collect::<Vec<_>>().chunks(4) {
-        if signal.is_aborted() {
-            break;
-        }
-        let delta: String = chunk.iter().collect();
-        shown.push_str(&delta);
-        stream.push(AssistantMessageEvent::TextDelta {
-            content_index: 0,
-            delta,
-            partial: snapshot(&shown),
-        });
-        tokio::task::yield_now().await;
-    }
-    stream.push(AssistantMessageEvent::Error {
-        reason: ErrorReason::Aborted,
-        error: Arc::new(RwLock::new(answer(&shown, Some(StopReason::Aborted), None))),
-    });
-}
-
 #[test]
 fn multiple_failures_recover_on_last_response() {
     on_paused_task_set(|_| async {
@@ -285,19 +220,12 @@ fn multiple_failures_recover_on_last_response() {
         let events = delivered_events(&h.session);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         let events = events.borrow();
-        let attempts: Vec<Value> = events
-            .iter()
-            .filter(|event| event["type"] == "auto_retry_start")
-            .map(|start| json!([start["attempt"], start["delayMs"]]))
-            .collect();
+        assert_eq!(retry_order(&events), ["start:1", "start:2", "end:true"]);
         let ends: Vec<&Value> = events
             .iter()
             .filter(|event| event["type"] == "auto_retry_end")
             .collect();
         assert_eq!(h.requests.0.borrow().len(), 3);
-        assert_eq!(attempts, vec![json!([1, 1]), json!([2, 2])]);
-        assert_eq!(ends.len(), 1);
-        assert_eq!(ends[0]["success"], json!(true));
         assert_eq!(ends[0]["attempt"], json!(2));
         assert_eq!(get_assistant_texts(&h), ["success"]);
         assert!(!h.session.is_retrying());
@@ -347,7 +275,7 @@ fn disabled_retry_makes_one_attempt() {
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
-        assert!(retry_events(&events.borrow()).is_empty());
+        assert!(retry_order(&events.borrow()).is_empty());
     });
 }
 
@@ -364,7 +292,7 @@ fn ordinary_provider_error_does_not_retry() {
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
-        assert!(retry_events(&events.borrow()).is_empty());
+        assert!(retry_order(&events.borrow()).is_empty());
     });
 }
 
@@ -558,7 +486,8 @@ fn error_response_finishes_with_agent_end() {
 fn abort_finishes_and_stores_partial_assistant() {
     on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
-        *h.session.agent().stream_fn.write().unwrap() = Some(aborting_stream(&"x".repeat(20_000)));
+        let streamed = "x".repeat(20_000);
+        script_responses(&h, vec![answer(&streamed, None, None)]);
         let events = delivered_events(&h.session);
         let updated = Rc::new(Notify::new());
         let notify = Rc::clone(&updated);
@@ -582,7 +511,14 @@ fn abort_finishes_and_stores_partial_assistant() {
         let live = live.read().unwrap();
         let last = serde_json::to_value(live.last().unwrap()).unwrap();
         assert_eq!(last["role"], json!("assistant"));
+        // The provider reports its own cancellation, so a broken route cannot pass as an abort.
+        assert_eq!(last["errorMessage"], json!("Request was aborted"));
         assert_eq!(last["stopReason"], json!("aborted"));
+        let partial = get_message_text(&last);
+        assert!(
+            streamed.starts_with(&partial),
+            "it stops inside the response"
+        );
         let manager = h.session.session_manager().borrow();
         let stored = manager
             .get_entries()

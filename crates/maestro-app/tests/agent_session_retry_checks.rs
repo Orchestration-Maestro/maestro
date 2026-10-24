@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Harness, HarnessOptions, Scripted, delivered_events, echo_tools, get_assistant_texts,
-    get_message_text, harness, on_task_set, start_prompt,
+    get_message_text, harness, on_task_set, retry_order, start_prompt,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -29,20 +29,18 @@ fn retry_budget_ends_with_failure() {
         let events = delivered_events(&h.session);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         let events = events.borrow();
-        let attempts: Vec<Value> = events
+        assert_eq!(retry_order(&events), ["start:1", "start:2", "end:false"]);
+        let starts: Vec<&Value> = events
             .iter()
             .filter(|event| event["type"] == "auto_retry_start")
-            .map(|start| json!([start["attempt"], start["delayMs"]]))
             .collect();
         let ends: Vec<&Value> = events
             .iter()
             .filter(|event| event["type"] == "auto_retry_end")
             .collect();
         assert_eq!(h.requests.0.borrow().len(), 3);
-        assert_eq!(attempts, vec![json!([1, 1]), json!([2, 2])]);
-        assert_eq!(ends.len(), 1);
-        assert_eq!(ends[0]["success"], json!(false));
-        assert_eq!(ends[0]["attempt"], json!(2));
+        assert_eq!(starts[0]["delayMs"], json!(1));
+        assert_eq!(starts[1]["delayMs"], json!(2));
         assert_eq!(ends[0]["finalError"], json!("overloaded_error"));
         assert!(!h.session.is_retrying());
         assert!(!h.session.is_streaming());
@@ -63,22 +61,16 @@ fn provider_network_error_recovers() {
         let events = delivered_events(&h.session);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         let events = events.borrow();
+        assert_eq!(retry_order(&events), ["start:1", "end:true"]);
         let starts: Vec<&Value> = events
             .iter()
             .filter(|event| event["type"] == "auto_retry_start")
             .collect();
-        let ends: Vec<&Value> = events
-            .iter()
-            .filter(|event| event["type"] == "auto_retry_end")
-            .collect();
         assert_eq!(h.requests.0.borrow().len(), 2);
-        assert_eq!(starts.len(), 1);
         assert_eq!(
             starts[0]["errorMessage"],
             json!("Provider finish_reason: network_error")
         );
-        assert_eq!(ends.len(), 1);
-        assert_eq!(ends[0]["success"], json!(true));
         assert_eq!(get_assistant_texts(&h), ["Recovered after retry"]);
     });
 }
