@@ -1310,10 +1310,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "npm:",
-        "scope": "project"
-      }
+      "source": "npm:"
     },
     "expected": {
       "value": "npm:"
@@ -1323,10 +1320,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "npm:@scope/name@2.0.0",
-        "scope": "project"
-      }
+      "source": "npm:@scope/name@2.0.0"
     },
     "expected": {
       "value": "@scope/name@2.0.0"
@@ -1336,10 +1330,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "git:github.com/u/repo@branch",
-        "scope": "project"
-      }
+      "source": "git:github.com/u/repo@branch"
     },
     "expected": {
       "value": "u/repo"
@@ -1349,10 +1340,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "git:gitlab.com/team/repo.git",
-        "scope": "project"
-      }
+      "source": "git:gitlab.com/team/repo.git"
     },
     "expected": {
       "value": "team/repo"
@@ -1362,10 +1350,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "git:https://example.com/u/repo.git@v1",
-        "scope": "project"
-      }
+      "source": "git:https://example.com/u/repo.git@v1"
     },
     "expected": {
       "value": "u/repo"
@@ -1375,10 +1360,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "git:git@example.com:u/repo.git",
-        "scope": "project"
-      }
+      "source": "git:git@example.com:u/repo.git"
     },
     "expected": {
       "value": "u/repo"
@@ -1388,10 +1370,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "git:invalid",
-        "scope": "project"
-      }
+      "source": "git:invalid"
     },
     "expected": {
       "value": "git:invalid"
@@ -1401,10 +1380,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "git://example.com/u/repo",
-        "scope": "project"
-      }
+      "source": "git://example.com/u/repo"
     },
     "expected": {
       "value": "u/repo"
@@ -1414,10 +1390,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "local",
-        "scope": "project"
-      }
+      "source": "local"
     },
     "expected": {
       "value": "local"
@@ -1427,10 +1400,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "cli",
-        "scope": "project"
-      }
+      "source": "cli"
     },
     "expected": {
       "value": "cli"
@@ -1440,10 +1410,7 @@
     "test": "extension_labels_keep_package_source_forms",
     "input": {
       "op": "package-source",
-      "sourceInfo": {
-        "source": "",
-        "scope": "project"
-      }
+      "source": ""
     },
     "expected": {
       "value": ""

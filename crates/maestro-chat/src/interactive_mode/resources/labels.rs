@@ -63,9 +63,6 @@ fn get_compact_extension_label(
 ) -> Result<String, Box<dyn Error>> {
     let source = item.source_info.map_or("", |info| info.source.as_str());
     let source_label = get_compact_package_source_label(source);
-    if source_label.is_empty() {
-        return get_compact_path_label(item, home);
-    }
     let short = get_short_path(item.path, item.source_info, home)?.replace('\\', "/");
     let package_path = short.strip_prefix("extensions/").unwrap_or(&short);
     let parsed = maestro_path::posix::parse(package_path);
