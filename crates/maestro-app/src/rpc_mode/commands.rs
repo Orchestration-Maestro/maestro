@@ -4,7 +4,9 @@ use super::connection::Connection;
 use super::write_record;
 use crate::agent_session::{AgentSession, BashRunOptions, CycleDirection, PromptOptions};
 use crate::rpc_types::{
-    RpcData, RpcResponse, RpcSessionCommand, RpcSessionState, workspace, workspace_schema,
+    RpcAvailableModels, RpcCancelled, RpcCommandList, RpcData, RpcExportPath, RpcForkMessages,
+    RpcForkResult, RpcLastAssistantText, RpcMessages, RpcResponse, RpcSessionCommand,
+    RpcSessionState, RpcThinkingLevel, workspace, workspace_schema,
 };
 use crate::utils::lock::read;
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
@@ -120,15 +122,17 @@ impl Connection {
             Command::GetState => RpcData::State(self.state()?),
             Command::CycleModel => (session.cycle_model(CycleDirection::Forward).await?)
                 .map_or(RpcData::Null, RpcData::ModelCycle),
-            Command::GetAvailableModels => RpcData::Models {
+            Command::GetAvailableModels => RpcData::Models(RpcAvailableModels {
                 models: session.model_registry().get_available()?,
-            },
+            }),
             Command::SetThinkingLevel { level } => {
                 session.set_thinking_level(level)?;
                 RpcData::Empty
             }
             Command::CycleThinkingLevel => (session.cycle_thinking_level()?)
-                .map_or(RpcData::Null, |level| RpcData::ThinkingLevel { level }),
+                .map_or(RpcData::Null, |level| {
+                    RpcData::ThinkingLevel(RpcThinkingLevel { level })
+                }),
             Command::Compact {
                 custom_instructions,
             } => RpcData::Compact(session.compact(custom_instructions.as_deref()).await?),
@@ -194,7 +198,7 @@ impl Connection {
             &*self.options.export_operations,
             Rc::clone(&self.options.render_environment),
         )?;
-        Ok(RpcData::Path { path })
+        Ok(RpcData::Path(RpcExportPath { path }))
     }
 
     /// Resumes the session file at `session_path`.
@@ -204,18 +208,18 @@ impl Connection {
             .runtime
             .switch_session(session_path, None, options)
             .await?;
-        Ok(RpcData::Cancelled {
+        Ok(RpcData::Cancelled(RpcCancelled {
             cancelled: result.cancelled,
-        })
+        }))
     }
 
     /// Forks the session before or at `entry_id`.
     async fn fork(&self, entry_id: &str) -> Result<RpcData, Failure> {
         let result = self.runtime.fork(entry_id, ForkOptions::default()).await?;
-        Ok(RpcData::Fork {
+        Ok(RpcData::Fork(RpcForkResult {
             text: result.selected_text,
             cancelled: result.cancelled,
-        })
+        }))
     }
 
     /// Starts a new session, recording a nonempty `parent_session` as its parent.
@@ -225,9 +229,9 @@ impl Connection {
             ..NewSessionCommandOptions::default()
         };
         let result = self.runtime.new_session(options).await?;
-        Ok(RpcData::Cancelled {
+        Ok(RpcData::Cancelled(RpcCancelled {
             cancelled: result.cancelled,
-        })
+        }))
     }
 
     /// The session state.
@@ -282,9 +286,9 @@ impl Connection {
             ..ForkOptions::default()
         };
         let result = self.runtime.fork(&leaf, options).await?;
-        Ok(Answer::Data(RpcData::Cancelled {
+        Ok(Answer::Data(RpcData::Cancelled(RpcCancelled {
             cancelled: result.cancelled,
-        }))
+        })))
     }
 }
 
@@ -310,24 +314,24 @@ fn read_or_apply(session: &AgentSession, command: &RpcSessionCommand) -> RpcData
         Command::AbortRetry => session.abort_retry(),
         Command::AbortBash => session.abort_bash(),
         Command::GetForkMessages => {
-            return RpcData::ForkMessages {
+            return RpcData::ForkMessages(RpcForkMessages {
                 messages: session.get_user_messages_for_forking(),
-            };
+            });
         }
         Command::GetLastAssistantText => {
-            return RpcData::LastAssistantText {
+            return RpcData::LastAssistantText(RpcLastAssistantText {
                 text: session.get_last_assistant_text(),
-            };
+            });
         }
         Command::GetMessages => {
-            return RpcData::Messages {
+            return RpcData::Messages(RpcMessages {
                 messages: session.messages(),
-            };
+            });
         }
         Command::GetCommands => {
-            return RpcData::Commands {
+            return RpcData::Commands(RpcCommandList {
                 commands: session.get_commands(),
-            };
+            });
         }
         _ => {}
     }
