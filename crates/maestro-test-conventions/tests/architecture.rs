@@ -1601,7 +1601,7 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
         for &(to, _) in support::policy::POLICY {
             let utility_edge = to == "maestro-path" && !excluded.contains(&from);
             let support_edge = support::policy::test_support_callers(to).is_some();
-            let approved = dev && support::policy::DEVELOPMENT.contains(&(from, to));
+            let approved = dev && support::policy::permitted_development(from, to);
             if from == to
                 || support_edge
                 || approved
@@ -2437,6 +2437,31 @@ fn detection_text_test_edge_is_native() {
         "[dev-dependencies]\nmaestro-text = { path = \"../maestro-text\" }",
     );
     assert_eq!(check_workspace(workspace.root.path()), Err("maestro-detection: maestro-text test support must be a native, non-optional development dependency".into()));
+}
+
+#[test]
+fn chat_models_test_edge_is_native() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-models"]);
+    let production = "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n";
+    let rejected = "maestro-chat: maestro-models test support must be a native, non-optional development dependency";
+    for declarations in [
+        "[dev-dependencies]\nmaestro-models = { path = \"../maestro-models\" }",
+        "[target.'cfg(target_arch = \"wasm32\")'.dev-dependencies]\nmaestro-models = { path = \"../maestro-models\" }",
+    ] {
+        workspace.member(
+            "maestro-chat",
+            "maestro-chat",
+            &format!("{production}{declarations}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err(rejected.into()),
+            "{declarations}"
+        );
+    }
+    workspace.member("maestro-chat", "maestro-chat", &format!("{production}[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\nmaestro-models = {{ path = \"../maestro-models\" }}"));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]

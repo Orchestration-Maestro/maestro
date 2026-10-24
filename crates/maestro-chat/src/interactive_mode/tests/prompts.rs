@@ -3,7 +3,8 @@
 use super::{Setup, World, isolated, typed::recorded};
 use crate::{InteractiveMode, InteractiveModeOptions};
 use maestro_app::{
-    AgentMessage, AgentSession, AgentSessionEvent, ImageContent, PromptOptions, StopReason,
+    AgentMessage, AgentSession, AgentSessionEvent, ExtensionFactory, ExtensionHandler,
+    ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions, StopReason,
     UserBlock, UserContent,
 };
 use maestro_models::{
@@ -69,13 +70,37 @@ struct Scripted {
     provider: FauxProviderRegistration,
     /// Makes the next credential lookup find no key, so the session refuses that prompt.
     refuse: Arc<AtomicBool>,
+    /// What the application input hook saw of each prompt.
+    hook: HookLog,
+}
+
+/// The text and image presence the application input hook saw of each prompt, in order.
+type HookLog = Rc<RefCell<Vec<(String, Presence<Vec<ImageContent>>)>>>;
+
+/// A factory whose extension records every prompt the application hands on.
+fn input_hook(seen: &HookLog) -> ExtensionFactory<Local> {
+    let seen = Rc::clone(seen);
+    Rc::new(move |api| {
+        let seen = Rc::clone(&seen);
+        let handler: ExtensionHandler<InputEvent, InputEventResult, Local> =
+            Rc::new(move |event, _| {
+                seen.borrow_mut()
+                    .push((event.text.clone(), event.images.clone()));
+                Box::pin(async { Ok(None) })
+            });
+        api.on::<InputEvent, InputEventResult>("input".into(), handler)
+            .unwrap();
+        Box::pin(async { Ok(()) })
+    })
 }
 
 impl Scripted {
     /// Builds a mode with `options` in `directory`; its key comes from the fallback resolver.
     fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
+        let hook: HookLog = Rc::default();
         let world = Setup {
             options,
+            extension: Some(input_hook(&hook)),
             ..Setup::default()
         }
         .build(directory);
@@ -93,6 +118,7 @@ impl Scripted {
             world,
             provider,
             refuse,
+            hook,
         };
         scripted.adopt(&scripted.world.host.session());
         scripted
@@ -352,6 +378,30 @@ struct Startup {
 }
 
 impl Startup {
+    /// Every prompt the mode sends, in order, with the image presence the input hook sees.
+    fn sent_images(&self) -> Vec<(String, Presence<Vec<ImageContent>>)> {
+        let first = self
+            .options
+            .initial_message
+            .iter()
+            .filter(|text| !text.is_empty())
+            .map(|text| {
+                let images = self
+                    .options
+                    .initial_images
+                    .clone()
+                    .map_or(Presence::Missing, Presence::Present);
+                (text.clone(), images)
+            });
+        let rest = self
+            .options
+            .initial_messages
+            .iter()
+            .chain(&self.typed)
+            .map(|text| (text.clone(), Presence::Missing));
+        first.chain(rest).collect()
+    }
+
     /// The admissions before the refused prompt, if one is refused.
     fn refuse_after(&self) -> Option<usize> {
         let first = self
@@ -544,8 +594,11 @@ fn build(directory: &Path, startup: &mut Startup) -> Scripted {
 /// with `expected`.
 async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>) {
     let refuse_after = startup.refuse_after();
+    let images = startup.sent_images();
     let scripted = build(directory, &mut startup);
     let refusal = scripted.refusal().await;
+    // The refusal probe is not part of the recorded run.
+    scripted.hook.borrow_mut().clear();
     script(&scripted.provider, &expected);
     let recorder = Recorder::new(&scripted, refuse_after);
     let sessions = drive(&scripted, &recorder, &startup).await;
@@ -561,6 +614,7 @@ async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>
         .filter_map(|step| expectation.observed(step))
         .collect();
     assert_eq!(recorder.observed(&sessions), wanted);
+    assert_eq!(*scripted.hook.borrow(), images);
     let admissions = wanted
         .iter()
         .filter(|step| matches!(step, Observed::Prompt { .. }));
@@ -677,10 +731,7 @@ async fn traverse(directory: &Path, texts: &[String], rescan: bool) -> (usize, u
     scripted.provider.set_responses(answers);
     let reads = Cell::new(0);
     let calls = Cell::new(0);
-    let mut items = texts.iter().enumerate().map(|(index, text)| {
-        reads.set(reads.get() + if rescan { index + 1 } else { 1 });
-        (text.as_str(), None)
-    });
+    let mut items = from_prompts(texts, rescan, &reads);
     let counted = std::iter::from_fn(|| {
         calls.set(calls.get() + 1);
         items.next()
@@ -694,6 +745,29 @@ async fn traverse(directory: &Path, texts: &[String], rescan: bool) -> (usize, u
         .collect();
     scripted.finish();
     (reads.get(), calls.get(), admitted)
+}
+
+/// The startup prompts as the loop reads them, counting every read of a prompt: one per
+/// prompt, or the whole prefix before each one when `rescan` is set.
+fn from_prompts<'a>(
+    texts: &'a [String],
+    rescan: bool,
+    reads: &'a Cell<usize>,
+) -> impl Iterator<Item = (&'a str, Option<&'a [ImageContent]>)> {
+    let mut next = 0;
+    std::iter::from_fn(move || {
+        let text = texts.get(next)?;
+        let read = if rescan {
+            &texts[..=next]
+        } else {
+            &texts[next..=next]
+        };
+        for _ in read {
+            reads.set(reads.get() + 1);
+        }
+        next += 1;
+        Some((text.as_str(), None))
+    })
 }
 
 #[test]

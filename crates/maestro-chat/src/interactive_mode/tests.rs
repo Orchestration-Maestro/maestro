@@ -110,8 +110,8 @@ pub(super) fn isolated_case(
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
-/// successive prompt templates and context files, and changing the configured theme
-/// while its themes are read.
+/// successive prompt templates, context files and loaded extensions, and changing the
+/// configured theme while its themes are read.
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
