@@ -550,6 +550,16 @@ fn shared(content: &Value, stop: &str, error: Option<&str>) -> SharedAssistantMe
     shared
 }
 
+/// Starts an assistant stream in `world` showing `content`.
+fn start(world: &World, content: &Value) {
+    dispatch(
+        world,
+        AgentEvent::MessageStart {
+            message: AgentMessage::Assistant(shared(content, "stop", None)),
+        },
+    );
+}
+
 /// An assistant update showing `message`.
 fn update(message: &SharedAssistantMessage) -> AgentEvent<CustomAgentMessages> {
     AgentEvent::MessageUpdate {
@@ -742,12 +752,7 @@ fn events_updates_reuse_assistant_and_tool_rows() {
 /// Streams one assistant message into `world` whose update holds one call `z`, then ends it
 /// with `stop` and `error`, returning the ended message.
 fn end_streamed(world: &World, stop: &str, error: Option<&str>) -> SharedAssistantMessage {
-    dispatch(
-        world,
-        AgentEvent::MessageStart {
-            message: AgentMessage::Assistant(shared(&json!([]), "stop", None)),
-        },
-    );
+    start(world, &json!([]));
     let content = json!([call("z", "unknown_tool")]);
     dispatch(world, update(&shared(&content, "toolUse", None)));
     let ended = shared(&content, stop, error);
@@ -1077,12 +1082,7 @@ fn events_agent_end_clears_transient_rows_before_shutdown() {
             }
             if streaming {
                 let unfinished = json!([{"type": "text", "text": "UNFINISHED"}]);
-                dispatch(
-                    &world,
-                    AgentEvent::MessageStart {
-                        message: AgentMessage::Assistant(shared(&unfinished, "stop", None)),
-                    },
-                );
+                start(&world, &unfinished);
             }
             stale(&world, "stale");
             let effects = tap(&world);
@@ -1118,12 +1118,7 @@ fn completed_rows_stay(directory: &Path) {
     replay(&world, vec![assistant(&content, "toolUse", None)]);
     let completed = world.mode.chat_container.render(100);
     let unfinished = json!([{"type": "text", "text": "UNFINISHED"}]);
-    dispatch(
-        &world,
-        AgentEvent::MessageStart {
-            message: AgentMessage::Assistant(shared(&unfinished, "stop", None)),
-        },
-    );
+    start(&world, &unfinished);
     dispatch(
         &world,
         AgentEvent::AgentEnd {
@@ -1235,12 +1230,7 @@ fn events_message_end_completes_arguments_only_without_failure() {
                     ..Setup::default()
                 };
                 let world = streamed(directory, false, setup);
-                dispatch(
-                    &world,
-                    AgentEvent::MessageStart {
-                        message: AgentMessage::Assistant(shared(&json!([]), "stop", None)),
-                    },
-                );
+                start(&world, &json!([]));
                 let content = json!([call("z", "phased")]);
                 dispatch(&world, update(&shared(&content, "toolUse", None)));
                 assert_eq!(phases.borrow().last(), Some(&false));
@@ -1412,12 +1402,7 @@ fn events_incremental_frames_keep_one_writer() {
         let world = streamed(directory, false, Setup::default());
         let redraws = world.mode.ui.full_redraws();
         let text = |text: &str| json!([{"type": "text", "text": text}]);
-        dispatch(
-            &world,
-            AgentEvent::MessageStart {
-                message: AgentMessage::Assistant(shared(&text("one"), "stop", None)),
-            },
-        );
+        start(&world, &text("one"));
         world.runtime.settle().unwrap();
         world.terminal.clear_writes();
         dispatch(&world, update(&shared(&text("one\n\ntwo"), "stop", None)));
@@ -1447,12 +1432,7 @@ fn events_stream_work_is_linear() {
                 ..Setup::default()
             };
             let world = streamed(directory, false, setup);
-            dispatch(
-                &world,
-                AgentEvent::MessageStart {
-                    message: AgentMessage::Assistant(shared(&json!([]), "stop", None)),
-                },
-            );
+            start(&world, &json!([]));
             let ids: Vec<String> = (0..calls).map(|id: usize| id.to_string()).collect();
             let content: Vec<Value> = ids.iter().map(|id| call(id, "counted")).collect();
             let message = shared(&Value::Array(content), "toolUse", None);
@@ -1572,12 +1552,7 @@ fn events_thinking_toggle_and_label_keep_streaming_tail() {
             let world = streamed(directory, false, setup);
             let content = json!([{"type": "thinking", "thinking": "REASON"},
                 {"type": "text", "text": "ANSWER"}]);
-            dispatch(
-                &world,
-                AgentEvent::MessageStart {
-                    message: AgentMessage::Assistant(shared(&content, "stop", None)),
-                },
-            );
+            start(&world, &content);
             port(&world.mode).set_hidden_thinking_label(label).unwrap();
             world.terminal.send_input("\x14");
             shown(&world, &expected);
@@ -1605,11 +1580,6 @@ fn label_reaches_replayed_and_later_rows(directory: &Path) {
         chat.matches("LABEL").count()
     };
     assert_eq!(labels(&world), 1);
-    dispatch(
-        &world,
-        AgentEvent::MessageStart {
-            message: AgentMessage::Assistant(shared(&content, "stop", None)),
-        },
-    );
+    start(&world, &content);
     assert_eq!(labels(&world), 2);
 }
