@@ -107,8 +107,8 @@ pub(crate) enum SummaryBlock<'a> {
     Text(&'a str),
     /// Reasoning text.
     Thinking(&'a str),
-    /// Named tool and its argument object.
-    Tool(&'a str, &'a serde_json::Map<String, Value>),
+    /// Named tool and its complete argument value.
+    Tool(&'a str, &'a Value),
 }
 /// A selected model message for the shared writer.
 pub(crate) enum SummaryMessage<'a> {
@@ -132,7 +132,10 @@ fn assistant_parts(
             SummaryBlock::Text(block) => text.push(*block),
             SummaryBlock::Thinking(block) => thinking.push(*block),
             SummaryBlock::Tool(name, arguments) => {
-                let args = maestro_json::canonical_entries(*arguments)
+                // Only object members have names to pair; any other root names none.
+                let members = arguments.as_object().map(maestro_json::canonical_entries);
+                let args = members
+                    .unwrap_or_default()
                     .into_iter()
                     .map(|(key, value)| Ok(format!("{key}={}", maestro_json::compact_json(value)?)))
                     .collect::<Result<Vec<_>, serde_json::Error>>()?;

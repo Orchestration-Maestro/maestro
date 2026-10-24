@@ -295,7 +295,7 @@ impl<'a> Reducer<'a> {
     }
 
     /// Replace the arguments of a tool call with those the text received so far spells.
-    fn append_arguments(&self, position: usize, fragment: String, arguments: JsonObject) {
+    fn append_arguments(&self, position: usize, fragment: String, arguments: Value) {
         self.update(|message| {
             if let Some(AssistantContent::ToolCall(call)) = message.content.get_mut(position) {
                 call.arguments = arguments;
@@ -374,18 +374,15 @@ fn thinking(text: String, signature: Option<String>, redacted: Option<bool>) -> 
     })
 }
 
-/// Build the tool call a block opens: its initial arguments are those it carries when they
-/// are an object that fits the conversion bound, otherwise none.
+/// Build the tool call a block opens: its initial arguments are those it carries, or an empty
+/// object when it carries none or carries null.
 fn tool_call(call: ToolUse, name: String) -> AssistantContent {
     let arguments = call
         .input
         .as_deref()
         .and_then(|raw: &RawValue| json_value(raw).ok())
-        .and_then(|value| match value {
-            Value::Object(arguments) => Some(arguments),
-            _ => None,
-        })
-        .unwrap_or_default();
+        .filter(|value| !value.is_null())
+        .unwrap_or_else(|| JsonObject::new().into());
     AssistantContent::ToolCall(ToolCall {
         id: call.id.unwrap_or_default(),
         name,

@@ -118,7 +118,7 @@ enum Block {
         /// Tool name.
         name: String,
         /// Arguments.
-        input: JsonObject,
+        input: Value,
     },
     /// A tool result.
     ToolResult {

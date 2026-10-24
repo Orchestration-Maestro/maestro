@@ -9,9 +9,8 @@ use crate::arguments::json_parse::whitespace;
 use crate::projection::IMAGE_PLACEHOLDER;
 use crate::projection::normalize_tool_call_id;
 use crate::{
-    AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, ImageContent, JsonObject,
-    Message, Model, ModelInput, StopReason, Tool, ToolResultMessage, UserBlock, UserContent,
-    transform_messages,
+    AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, ImageContent, Message, Model,
+    ModelInput, StopReason, Tool, ToolResultMessage, UserBlock, UserContent, transform_messages,
 };
 
 pub(super) mod api_client;
@@ -158,7 +157,7 @@ pub struct FunctionCall {
     /// Tool name.
     pub name: String,
     /// Arguments, in their supplied order.
-    pub args: JsonObject,
+    pub args: Value,
     /// Call identifier, present for model families that require one.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,

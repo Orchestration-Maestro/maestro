@@ -220,7 +220,7 @@ impl Events {
                     message.content.push(AssistantContent::ToolCall(ToolCall {
                         id,
                         name: tool.function.0.name,
-                        arguments: crate::JsonObject::new(),
+                        arguments: crate::JsonObject::new().into(),
                         thought_signature: None,
                     }));
                     content_index

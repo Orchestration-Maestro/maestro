@@ -1484,10 +1484,7 @@ fn assert_argument_call(message: &AssistantMessage, expected: &Value) -> TestRes
         return Err("expected one tool call".into());
     };
     assert_eq!((call.id.as_str(), call.name.as_str()), ("call", "lookup"));
-    assert_eq!(
-        &call.arguments,
-        expected.as_object().ok_or("expected object")?
-    );
+    assert_eq!(&call.arguments, expected);
     Ok(())
 }
 
@@ -1524,10 +1521,7 @@ async fn projected_call(ending: &str) -> TestResult {
             AssistantMessageEvent::ToolcallEnd {
                 partial, tool_call, ..
             } => {
-                assert_eq!(
-                    &tool_call.arguments,
-                    expected.as_object().ok_or("expected object")?
-                );
+                assert_eq!(&tool_call.arguments, &expected);
                 assert_argument_call(&*partial.read().map_err(|e| e.to_string())?, &expected)?;
                 ended = true;
             }
@@ -1595,7 +1589,7 @@ async fn bounded_call(depth: usize, complete: bool) -> TestResult {
     while let Some(event) = stream.next().await {
         match event {
             AssistantMessageEvent::ToolcallEnd { tool_call, .. } => {
-                assert_bounded_call(&Value::Object(tool_call.arguments), depth)?;
+                assert_bounded_call(&tool_call.arguments, depth)?;
                 ended = true;
             }
             AssistantMessageEvent::Done { .. } => done = true,

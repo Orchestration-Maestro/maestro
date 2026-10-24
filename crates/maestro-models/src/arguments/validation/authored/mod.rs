@@ -29,13 +29,40 @@ pub(super) fn validates(schema: &Value, value: &Value) -> bool {
 }
 
 /// Convert one argument candidate through the kinds its schema author declared.
+///
+/// A replacement of the root itself is discarded before the plain pass observes the value, so
+/// only edits made inside the supplied containers survive: a supplied object keeps its
+/// converted members, and a supplied sequence keeps the converted elements that are objects.
 pub(super) fn convert(value: &mut Value, schema: &Value, kinds: &HashMap<String, SchemaKind>) {
+    let mut converted = value.clone();
     Context {
         schema,
         kinds,
         bindings: Vec::new(),
     }
-    .convert_at(value, "");
+    .convert_at(&mut converted, "");
+    let root = kinds.get("");
+    match (&*value, &converted) {
+        // An alternative converts a copy of every branch, so none of its edits reach the value.
+        _ if root == Some(&SchemaKind::Union) => {}
+        (Value::Object(_), Value::Object(_)) => *value = converted,
+        // Positional conversion assigns each element in place; an item conversion returns a
+        // mapped copy that the plain pass replaces.
+        (Value::Array(_), Value::Array(_)) if root == Some(&SchemaKind::Tuple) => {
+            *value = converted;
+        }
+        (Value::Array(_), Value::Array(converted_items)) => {
+            let Value::Array(items) = value else {
+                return;
+            };
+            for (item, converted_item) in items.iter_mut().zip(converted_items) {
+                if item.is_object() && converted_item.is_object() {
+                    item.clone_from(converted_item);
+                }
+            }
+        }
+        _ => {}
+    }
 }
 
 /// One conversion walk: the supplied schema, its authored kinds and the visible definitions.

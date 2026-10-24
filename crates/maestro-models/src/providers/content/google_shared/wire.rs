@@ -100,15 +100,18 @@ pub(super) fn call(raw: &RawValue) -> Result<Call<'_>, DiagnosticErrorInfo> {
     })
 }
 
-/// Materialize call arguments; missing or null arguments are an empty object.
-pub(super) fn arguments(raw: Option<&RawValue>) -> Result<JsonObject, DiagnosticErrorInfo> {
+/// Materialize call arguments of any root kind; missing or null arguments are an empty
+/// object.
+pub(super) fn arguments(raw: Option<&RawValue>) -> Result<Value, DiagnosticErrorInfo> {
     let Some(raw) = raw else {
-        return Ok(JsonObject::new());
+        return Ok(JsonObject::new().into());
     };
-    match json_value(object(raw)?).map_err(|error| native(&error))? {
-        Value::Object(members) => Ok(members),
-        _ => Ok(JsonObject::new()),
-    }
+    let value = json_value(raw).map_err(|error| native(&error))?;
+    Ok(if value.is_null() {
+        JsonObject::new().into()
+    } else {
+        value
+    })
 }
 
 /// Read a usage report; the cost is left for the model's rates to fill.

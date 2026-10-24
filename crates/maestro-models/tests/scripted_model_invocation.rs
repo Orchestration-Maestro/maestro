@@ -32,7 +32,7 @@ mod tests {
                 AssistantContent::Thinking(faux_thinking("plan")),
                 AssistantContent::ToolCall(faux_tool_call(
                     "lookup",
-                    JsonObject::new(),
+                    JsonObject::new().into(),
                     FauxToolCallOptions::default(),
                 )),
                 AssistantContent::Text(faux_text("answer")),
@@ -46,7 +46,7 @@ mod tests {
             matches!(&message.content[0], AssistantContent::Thinking(value) if value.thinking == "plan")
         );
         assert!(
-            matches!(&message.content[1], AssistantContent::ToolCall(value) if value.name == "lookup" && value.arguments.is_empty())
+            matches!(&message.content[1], AssistantContent::ToolCall(value) if value.name == "lookup" && value.arguments.as_object().is_some_and(serde_json::Map::is_empty))
         );
         assert!(
             matches!(&message.content[2], AssistantContent::Text(value) if value.text == "answer")
@@ -191,7 +191,11 @@ mod tests {
         assert_recorded_zero_usage(&message.usage);
         let text = faux_text("text");
         let thinking = faux_thinking("thinking");
-        let tool = faux_tool_call("tool", JsonObject::new(), FauxToolCallOptions::default());
+        let tool = faux_tool_call(
+            "tool",
+            JsonObject::new().into(),
+            FauxToolCallOptions::default(),
+        );
         for content in [
             FauxAssistantContent::from(String::from("text")),
             FauxAssistantContent::from(text.clone()),
@@ -314,7 +318,11 @@ mod tests {
             std::num::FpCategory::Zero,
             "clock uses integral milliseconds"
         );
-        let tool = faux_tool_call("t", JsonObject::new(), FauxToolCallOptions::default());
+        let tool = faux_tool_call(
+            "t",
+            JsonObject::new().into(),
+            FauxToolCallOptions::default(),
+        );
         for (id, prefix) in [(&first.api, "faux"), (&tool.id, "tool")] {
             let parts: Vec<_> = id.split(':').collect();
             assert_eq!(parts.len(), 3);
@@ -332,7 +340,7 @@ mod tests {
         assert_eq!(
             faux_tool_call(
                 "t",
-                JsonObject::new(),
+                JsonObject::new().into(),
                 FauxToolCallOptions {
                     id: Some(String::new())
                 }
@@ -716,7 +724,12 @@ mod tests {
         match &message.content[0] {
             AssistantContent::Text(value) => assert_eq!(value.text, "abcd"),
             AssistantContent::Thinking(value) => assert_eq!(value.thinking, "abcd"),
-            AssistantContent::ToolCall(value) => assert!(value.arguments.is_empty()),
+            AssistantContent::ToolCall(value) => assert!(
+                value
+                    .arguments
+                    .as_object()
+                    .is_some_and(serde_json::Map::is_empty)
+            ),
         }
         registration.unregister();
     }
@@ -809,7 +822,7 @@ mod tests {
             .map(|id| {
                 AssistantContent::ToolCall(faux_tool_call(
                     id,
-                    JsonObject::new(),
+                    JsonObject::new().into(),
                     FauxToolCallOptions {
                         id: Some(id.into()),
                     },
@@ -1030,7 +1043,7 @@ mod tests {
                     AssistantContent::Thinking(faux_thinking("")),
                     AssistantContent::ToolCall(faux_tool_call(
                         "t",
-                        JsonObject::new(),
+                        JsonObject::new().into(),
                         FauxToolCallOptions::default(),
                     )),
                 ],
@@ -1650,7 +1663,11 @@ mod tests {
         let expected = r#"{"10":-0.0,"2":1e+20,"a":[true,null,"line\n\"😀",{"nested":false}]}"#;
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
             faux_assistant_message(
-                faux_tool_call("t", arguments.clone(), FauxToolCallOptions::default()),
+                faux_tool_call(
+                    "t",
+                    arguments.clone().into(),
+                    FauxToolCallOptions::default(),
+                ),
                 FauxAssistantMessageOptions::default(),
             ),
         ))]);
@@ -1664,7 +1681,7 @@ mod tests {
             .collect();
         assert_eq!(serialized, expected);
         assert!(
-            matches!(observed.iter().find(|event|matches!(event,AssistantMessageEvent::ToolcallEnd{..})),Some(AssistantMessageEvent::ToolcallEnd{tool_call,..}) if tool_call.arguments==arguments)
+            matches!(observed.iter().find(|event|matches!(event,AssistantMessageEvent::ToolcallEnd{..})),Some(AssistantMessageEvent::ToolcallEnd{tool_call,..}) if tool_call.arguments==serde_json::Value::Object(arguments.clone()))
         );
         registration.unregister();
     }

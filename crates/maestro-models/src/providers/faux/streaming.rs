@@ -262,7 +262,7 @@ fn empty_block(block: &AssistantContent) -> AssistantContent {
         AssistantContent::ToolCall(value) => AssistantContent::ToolCall(ToolCall {
             id: value.id.clone(),
             name: value.name.clone(),
-            arguments: JsonObject::new(),
+            arguments: JsonObject::new().into(),
             thought_signature: None,
         }),
     }
