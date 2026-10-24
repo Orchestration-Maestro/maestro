@@ -118,11 +118,23 @@ fn table_rows(index: &str) -> Vec<String> {
 
 /// The test filters one index page's controlled-run commands name, in authored order.
 fn run_filters(index: &str) -> Vec<String> {
-    index
-        .lines()
+    let document = maestro_markdown::parse(index.to_owned());
+    descendants(document.nodes.iter(), nodes::children)
+        .filter_map(|node| match &node.kind {
+            Kind::CodeBlock(code, _) => Some(code.as_str()),
+            _ => None,
+        })
+        .flat_map(str::lines)
         .filter_map(|line| line.split_once("--lib "))
         .map(|(_, filter)| filter.trim().trim_start_matches("-- ").to_owned())
         .collect()
+}
+
+/// A flag mentioned in prose is not a controlled run, so only code blocks supply commands.
+#[test]
+fn run_filters_reads_only_commands_the_page_blocks_hold() {
+    let index = "Pass `--lib -- filter` to narrow a run.\n\n```sh\ncargo nextest run --lib -- bookmark_\n```\n";
+    assert_eq!(run_filters(index), ["bookmark_"]);
 }
 
 /// The first code span among one table row's cells.

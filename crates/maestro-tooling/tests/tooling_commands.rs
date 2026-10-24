@@ -1267,19 +1267,24 @@ fn shipped_example_lists_stay_in_name_order() {
     );
 }
 
+/// Example names come from the TOML the manifest holds, so either quote style declares one.
+#[test]
+fn example_targets_reads_both_quote_styles() {
+    let manifest = "[[example]]\nname = 'hello'\n\n[[example]]\nname = \"pirate\"\n";
+    assert_eq!(example_targets(manifest), ["hello", "pirate"]);
+}
+
 /// The `[[example]]` target names one manifest declares, in authored order.
-fn example_targets(manifest: &str) -> Vec<&str> {
-    let mut targets = Vec::new();
-    let mut in_example = false;
-    for line in manifest.lines() {
-        let line = line.trim();
-        if line.starts_with('[') {
-            in_example = line == "[[example]]";
-        } else if in_example && let Some(name) = line.strip_prefix("name = \"") {
-            targets.push(name.trim_end_matches('"'));
-        }
-    }
+fn example_targets(manifest: &str) -> Vec<String> {
+    let manifest: toml::Table = manifest.parse().unwrap();
+    let Some(targets) = manifest.get("example").and_then(toml::Value::as_array) else {
+        return Vec::new();
+    };
     targets
+        .iter()
+        .filter_map(|target| target.get("name").and_then(toml::Value::as_str))
+        .map(str::to_owned)
+        .collect()
 }
 
 /// Write the package-level inputs the standalone layout copies.
