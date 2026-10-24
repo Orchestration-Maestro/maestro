@@ -4,8 +4,8 @@ use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::example_support::{
-    Command, assert_registered_command, decoded, invoke_command_on_component,
-    invoke_tool_on_component, release_all, result_value, start,
+    Command, assert_registered_command, invoke_command_on_component, invoke_tool_on_component,
+    registered_metadata, release_all, result_value, start,
 };
 use super::host::Harness;
 use super::host_family::guest::ToolCapabilities as ComponentCapabilities;
@@ -257,9 +257,9 @@ fn assert_metadata(observed: &super::observed::Observed, expected: &Metadata) {
     assert_eq!(tool_metadata(&observed.tools[0]), expected.tool);
 }
 
-/// The registered metadata with its schema decoded from the guest's parameter text.
+/// The registered metadata without the transport's declared-kinds member.
 fn tool_metadata(registered: &str) -> Tool {
-    serde_json::from_value(decoded(registered, "parameters")).expect("the registered tool metadata")
+    serde_json::from_value(registered_metadata(registered)).expect("the registered tool metadata")
 }
 
 /// The registration order the corpus records, in the host's own names.

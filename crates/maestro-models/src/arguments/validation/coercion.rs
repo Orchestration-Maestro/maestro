@@ -130,9 +130,7 @@ fn primitive(value: &Value, kind: Kind<'_>) -> Option<Value> {
         },
         (Kind::String, Value::Null) => Some(Value::String(String::new())),
         (Kind::String, Value::Bool(boolean)) => Some(Value::String(boolean.to_string())),
-        (Kind::String, Value::Number(number)) => Some(Value::String(
-            ryu_js::Buffer::new().format(number.as_f64()?).to_owned(),
-        )),
+        (Kind::String, Value::Number(number)) => number_text(number).map(Value::String),
         (Kind::Null, Value::String(text)) if text.is_empty() => Some(Value::Null),
         (Kind::Null, Value::Bool(false)) => Some(Value::Null),
         (Kind::Null, Value::Number(number)) if number.as_f64() == Some(0.0) => Some(Value::Null),
@@ -159,11 +157,39 @@ fn object(value: &mut Value, schema: &Value) {
     let Some(object) = value.as_object_mut() else {
         return;
     };
+    members(schema, object, coerce);
+}
+
+/// Convert homogeneous or positional items without extending the array.
+fn array(value: &mut Value, schema: &Value) {
+    let Some(values) = value.as_array_mut() else {
+        return;
+    };
+    match schema.get("items") {
+        Some(Value::Array(_)) => {
+            positions(schema, values, coerce);
+        }
+        Some(Value::Object(_)) => {
+            sequence(schema, values, coerce);
+        }
+        _ => {}
+    }
+}
+
+/// Visit every present declared member, then every schema-valued additional member.
+///
+/// A declared member is visited once, by its exact name; an additional member only when no
+/// declared member names it and the declaration supplies a schema for it.
+pub(super) fn members<'a>(
+    schema: &'a Value,
+    object: &mut serde_json::Map<String, Value>,
+    mut visit: impl FnMut(&mut Value, &'a Value),
+) {
     let properties = schema.get("properties").and_then(Value::as_object);
     if let Some(properties) = properties {
         for (key, child) in super::diagnostics::entries(properties) {
             if let Some(member) = object.get_mut(key) {
-                coerce(member, child);
+                visit(member, child);
             }
         }
     }
@@ -173,34 +199,48 @@ fn object(value: &mut Value, schema: &Value) {
     {
         for (key, member) in object {
             if !properties.is_some_and(|properties| properties.contains_key(key)) {
-                coerce(member, additional);
+                visit(member, additional);
             }
         }
     }
 }
 
-/// Convert homogeneous or legacy tuple items without extending the array.
-fn array(value: &mut Value, schema: &Value) {
-    let (Some(items), Some(values)) = (schema.get("items"), value.as_array_mut()) else {
+/// Visit the sequence positions the declared positional item nodes cover.
+pub(super) fn positions<'a>(
+    schema: &'a Value,
+    values: &mut [Value],
+    mut visit: impl FnMut(&mut Value, &'a Value),
+) {
+    let Some(schemas) = schema.get("items").and_then(Value::as_array) else {
         return;
     };
-    match items {
-        Value::Array(schemas) => {
-            for (member, child) in values.iter_mut().zip(schemas) {
-                coerce(member, child);
-            }
-        }
-        Value::Object(_) => {
-            for member in values {
-                coerce(member, items);
-            }
-        }
-        _ => {}
+    for (member, child) in values.iter_mut().zip(schemas) {
+        visit(member, child);
     }
+}
+
+/// Visit every sequence member through the single declared item node.
+pub(super) fn sequence<'a>(
+    schema: &'a Value,
+    values: &mut [Value],
+    mut visit: impl FnMut(&mut Value, &'a Value),
+) {
+    let Some(items) = schema.get("items").filter(|items| items.is_object()) else {
+        return;
+    };
+    for member in values {
+        visit(member, items);
+    }
+}
+
+/// Spell a JSON number with the scalar spelling callers compare against.
+pub(super) fn number_text(number: &serde_json::Number) -> Option<String> {
+    let number = number.as_f64()?;
+    Some(ryu_js::Buffer::new().format(number).to_owned())
 }
 
 /// Parse nonblank decimal or unsigned radix text through native numeric primitives.
-fn parse_number(text: &str) -> Option<f64> {
+pub(super) fn parse_number(text: &str) -> Option<f64> {
     let text = text.trim_matches(super::super::json_parse::whitespace);
     if text.is_empty() {
         return None;
@@ -230,7 +270,7 @@ fn union(value: &mut Value, schemas: &[Value]) {
         let mut candidate = value.clone();
         coerce(&mut candidate, child);
         if child.is_object()
-            && super::check::check(child, &candidate).is_ok_and(|errors| errors.is_empty())
+            && super::check::check(child, &[], &candidate).is_ok_and(|errors| errors.is_empty())
         {
             *value = candidate;
             break;

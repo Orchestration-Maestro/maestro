@@ -66,6 +66,13 @@ pub fn decoded(text: &str, member: &str) -> Value {
     value
 }
 
+/// Parses one registration record without the transport's declared-kinds member.
+pub fn registered_metadata(text: &str) -> Value {
+    let mut value: Value = serde_json::from_str(text).unwrap();
+    value.as_object_mut().unwrap().shift_remove("schemaKinds");
+    value
+}
+
 /// Decodes the SDK's opaque details document before comparing a caller-visible result.
 pub fn result_value(encoded: &str) -> Value {
     decoded(encoded, "details")

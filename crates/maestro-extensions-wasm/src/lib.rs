@@ -48,6 +48,7 @@ pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
 pub use maestro_request::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo,
 };
+pub use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};
 pub use maestro_request::skills::Skill;
 pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 pub use maestro_request::types::{

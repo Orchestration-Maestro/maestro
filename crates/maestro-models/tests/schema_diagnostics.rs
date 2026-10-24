@@ -22,7 +22,7 @@ fn schema_check_does_not_coerce_values() {
     let tool = Tool {
         name: "counter".into(),
         description: String::new(),
-        parameters: schema,
+        parameters: schema.into(),
     };
     let call = ToolCall {
         id: "call".into(),

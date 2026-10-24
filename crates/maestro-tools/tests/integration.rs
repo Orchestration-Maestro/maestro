@@ -5,6 +5,7 @@ mod agent_shell_native;
 mod agent_shell_progress;
 #[cfg(not(target_arch = "wasm32"))]
 mod agent_shell_support;
+mod authored_schemas;
 mod cancellable_delay;
 mod command_execution;
 mod diff_rendering;
