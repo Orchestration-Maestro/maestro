@@ -332,10 +332,10 @@ assert_eq!(history.borrow().get_cwd(), "/work");
 
 Commands receive `ExtensionCommandContext`, the base context plus six operations:
 `wait_for_idle`, `new_session`, `fork`, `navigate_tree`, `switch_session` and `reload`.
-They travel as `CommandContextOperations`, which a runtime owns and which
-`ExtensionCommandContextActions::new` wraps for a runner to bind. The value a session
-binds is the one its application runtime builds, so a caller asks the runtime instead
-of supplying a second policy. `bind_command_context(Some(actions))` replaces these
+The six are `CommandContextOperations`, which a runtime owns;
+`ExtensionCommandContextActions::new` wraps them for a runner to bind. A session binds
+the value its application runtime builds, so a caller asks the runtime instead of
+supplying a second policy. `bind_command_context(Some(actions))` replaces these
 independently of `bind_core`; `None` restores no-op waits and reloads and uncancelled
 session-change results. Defaults never run supplied setup or continuation callbacks.
 
