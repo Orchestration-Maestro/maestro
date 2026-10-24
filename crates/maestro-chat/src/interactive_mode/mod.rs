@@ -238,10 +238,12 @@ impl InteractiveMode {
         self.render_initial_messages()
     }
 
-    /// Reports a fatal runtime failure as its transcript notice, closes the theme watch
-    /// and stops the terminal, so nothing repaints while the process ends.
+    /// Reports a fatal runtime failure as its transcript notice, draws that frame before
+    /// the stop that would cancel it, closes the theme watch and stops the terminal, so
+    /// nothing repaints while the process ends.
     fn report_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) {
         let _ = self.show_error(&format!("{prefix}: {error}"));
+        let _ = self.ui.render_pending_frame();
         self.themes.stop_theme_watcher();
         let _ = self.ui.stop();
     }

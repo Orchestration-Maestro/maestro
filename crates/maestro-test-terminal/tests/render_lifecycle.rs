@@ -314,6 +314,41 @@ fn render_requests_coalesce_cancel_and_survive_reentry() {
     assert_invalidation_while_rendering_reaches_later_siblings_in_the_same_frame();
 }
 
+#[test]
+fn a_pending_frame_is_drawn_on_request_and_nothing_after_a_stop() {
+    let (tui, terminal, runtime) = writer(None);
+    let probe = Probe::shared(&["first"]);
+    tui.add_child(probe.clone());
+    succeeds(tui.start());
+    succeeds(runtime.settle());
+    terminal.clear_writes();
+    probe.set_lines(&["notice".to_owned()]);
+    tui.request_render(false);
+    succeeds(tui.render_pending_frame());
+    assert!(
+        terminal.writes().concat().contains("notice"),
+        "the requested frame is drawn now: {:?}",
+        terminal.writes()
+    );
+    succeeds(runtime.settle());
+    assert_eq!(
+        terminal.writes().concat().matches("notice").count(),
+        1,
+        "the request is consumed: {:?}",
+        terminal.writes()
+    );
+    tui.request_render(false);
+    succeeds(tui.stop());
+    terminal.clear_writes();
+    succeeds(tui.render_pending_frame());
+    succeeds(runtime.settle());
+    assert!(
+        terminal.writes().is_empty(),
+        "a stopped writer draws nothing: {:?}",
+        terminal.writes()
+    );
+}
+
 /// Which walk over the children a component edits the list during.
 #[derive(Clone, Copy, Debug)]
 enum Walk {
