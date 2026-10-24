@@ -19,6 +19,7 @@ use std::{
 };
 
 mod actions;
+mod events;
 mod key_display;
 mod models;
 mod queues;
@@ -97,6 +98,8 @@ pub struct InteractiveMode {
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The session subscription that delivers agent and session events.
+    unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
 }
 
 impl InteractiveMode {
@@ -171,6 +174,7 @@ impl InteractiveMode {
             on_input_callback: Rc::default(),
             anthropic_subscription_warning_shown: Cell::new(false),
             compaction_queued_messages: RefCell::default(),
+            unsubscribe: RefCell::default(),
         }))
     }
 
@@ -207,6 +211,8 @@ impl InteractiveMode {
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
+        self.subscribe_to_agent();
+        self.update_terminal_title()?;
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {

@@ -2,7 +2,9 @@
 
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
-pub use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages, StreamFn};
+pub use maestro_agent::{
+    AgentEvent, AgentMessage, CustomAgentMessages, NoCustomMessages, StreamFn,
+};
 
 pub use maestro_models::{
     AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Cancellation,

@@ -1,5 +1,6 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
+mod events;
 mod models;
 #[allow(
     dead_code,

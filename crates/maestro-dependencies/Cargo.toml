@@ -301,7 +301,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
-tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread"] }
+tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }

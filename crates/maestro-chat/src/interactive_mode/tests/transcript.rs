@@ -411,7 +411,7 @@ fn frames(world: &World) -> usize {
 }
 
 /// The editor history, oldest first, recalled through the editor's own browsing.
-fn history(world: &World) -> Vec<String> {
+pub(super) fn history(world: &World) -> Vec<String> {
     let editor = &world.mode.editor;
     let draft = editor.get_text();
     let mut recalled = Vec::new();
