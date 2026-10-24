@@ -28,14 +28,14 @@ use maestro_web::{
 };
 use serde_json::{Value, json};
 use std::{
-    cell::{Cell, RefCell},
+    cell::Cell,
     rc::Rc,
     sync::{
         Arc,
         atomic::{AtomicU32, Ordering},
     },
 };
-use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
+use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement, Node};
 
 /// Content counting its mounts and updates.
@@ -595,20 +595,6 @@ pub fn page_code_block_decodes_encoded_code(import_module: &js_sys::Function) {
     assert_eq!(copy.get_attribute("text").as_deref(), Some(original));
 }
 
-/// Stub the clipboard and collect each written text.
-fn recorded_clipboard() -> (Rc<RefCell<Vec<String>>>, impl Sized) {
-    let copies = Rc::new(RefCell::new(Vec::new()));
-    let recorded = Rc::clone(&copies);
-    let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(move |text: String| {
-        recorded.borrow_mut().push(text);
-        js_sys::Promise::resolve(&JsValue::UNDEFINED)
-    });
-    let navigator = web_sys::window().unwrap().navigator();
-    let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
-    js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
-    (copies, write)
-}
-
 /// Built-in elements follow their properties and observed attributes after connecting.
 #[wasm_bindgen]
 pub async fn built_in_elements_follow_property_and_attribute_changes(
@@ -626,7 +612,9 @@ pub async fn built_in_elements_follow_property_and_attribute_changes(
         text(&block.query_selector("span").unwrap().unwrap()),
         "rust"
     );
-    let (copies, _write) = recorded_clipboard();
+    let clipboard = crate::contributions_support::Recorded::install(
+        crate::contributions_support::Clipboard::Accept,
+    );
     let control = view.document.create_element("copy-button").unwrap();
     body().append_child(&control).unwrap();
     let title = |control: &Element| {
@@ -651,7 +639,7 @@ pub async fn built_in_elements_follow_property_and_attribute_changes(
         .unchecked_into::<HtmlElement>()
         .click();
     crate::contributions_support::until(&page, &control, || text(&control) == "Copied!").await;
-    assert_eq!(*copies.borrow(), ["property text"]);
+    assert_eq!(clipboard.texts(), ["property text"]);
 }
 
 /// Running animations on an element.

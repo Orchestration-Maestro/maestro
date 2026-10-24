@@ -1,7 +1,8 @@
 //! Console output mounted as native page content and followed through its own scroller.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    call, container, document, host, page_module, text, until, view,
+    Clipboard, Recorded, call, container, document, frames, host, page_module, selection, text,
+    until, view,
 };
 use maestro_web::{
     ConsoleBlock, I18n,
@@ -9,8 +10,8 @@ use maestro_web::{
     dom::{DomView, MountedContent},
 };
 use serde::Deserialize;
-use std::{cell::RefCell, rc::Rc};
-use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
+use std::rc::Rc;
+use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
 /// Console cases recorded from the reference component.
@@ -183,57 +184,6 @@ impl Drop for Placed {
         }
     }
 }
-/// Recorded clipboard writes.
-type Writes = Rc<RefCell<Vec<String>>>;
-/// Deferred settlements of the recorded writes.
-type Settlements = Rc<RefCell<Vec<js_sys::Function>>>;
-
-/// Stub the clipboard, recording each written text and deferring its settlement.
-fn pending_clipboard() -> (Writes, Settlements, impl Sized) {
-    let writes: Writes = Rc::default();
-    let settlements: Settlements = Rc::default();
-    let (recorded, deferred) = (Rc::clone(&writes), Rc::clone(&settlements));
-    let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(move |text: String| {
-        recorded.borrow_mut().push(text);
-        js_sys::Promise::new(&mut |resolve, _reject| {
-            deferred.borrow_mut().push(resolve);
-        })
-    });
-    install_clipboard(&write);
-    (writes, settlements, write)
-}
-/// Stub the clipboard with a write the page refuses.
-fn refusing_clipboard() -> impl Sized {
-    let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(|_: String| {
-        js_sys::Promise::reject(&JsValue::from_str("refused"))
-    });
-    install_clipboard(&write);
-    write
-}
-/// Stub the clipboard with a write that always succeeds.
-fn accepting_clipboard() -> (Writes, impl Sized) {
-    let writes: Writes = Rc::default();
-    let recorded = Rc::clone(&writes);
-    let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(move |text: String| {
-        recorded.borrow_mut().push(text);
-        js_sys::Promise::resolve(&JsValue::UNDEFINED)
-    });
-    install_clipboard(&write);
-    (writes, write)
-}
-/// Replace the page's clipboard write, which every control created afterwards reaches.
-fn install_clipboard(write: &Closure<dyn Fn(String) -> js_sys::Promise>) {
-    let navigator = web_sys::window().unwrap().navigator();
-    let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
-    js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
-}
-/// Settle the oldest deferred clipboard write.
-fn settle(settlements: &Settlements) {
-    let next = settlements.borrow_mut().pop();
-    if let Some(resolve) = next {
-        resolve.call0(&JsValue::UNDEFINED).unwrap();
-    }
-}
 /// Wait for `element` to show the success feedback.
 async fn copied(page: &JsValue, element: &Element) {
     until(page, element, || !text(element).is_empty()).await;
@@ -241,18 +191,6 @@ async fn copied(page: &JsValue, element: &Element) {
 /// Wait for `element` to return to its idle control.
 async fn restored(page: &JsValue, element: &Element) {
     until(page, element, || text(element).is_empty()).await;
-}
-/// Wait for `count` animation frames.
-async fn frames(page: &JsValue, count: u32) {
-    call(page, "frames", &js_sys::Array::of1(&JsValue::from(count))).await;
-}
-/// The selection inside `root`.
-async fn selection(page: &JsValue, root: &Element) -> (String, bool) {
-    let pair = js_sys::Array::from(&call(page, "selection", &js_sys::Array::of1(root)).await);
-    (
-        pair.get(0).as_string().unwrap(),
-        pair.get(1).as_bool().unwrap(),
-    )
 }
 
 /// The mounted console shows its header, copy title and literal output, scrolled to the end.
@@ -291,11 +229,11 @@ fn assert_updated(mounted: &mut Placed, root: &Element, update: &Update) {
     );
 }
 /// An activation copies the current output once and follows it to the body's end.
-async fn assert_copy_follows(page: &JsValue, root: &Element, writes: &Writes, content: &str) {
+async fn assert_copy_follows(page: &JsValue, root: &Element, clipboard: &Recorded, content: &str) {
     let control = copy_control(root);
     copy_button(root).click();
     copied(page, &control).await;
-    assert_eq!(writes.borrow().as_slice(), [content]);
+    assert_eq!(clipboard.texts(), [content]);
     let (_, scroll) = parts(root);
     assert_eq!(
         scroll.scroll_top(),
@@ -338,7 +276,7 @@ pub async fn console_dom_literal_scroll_and_variant(import_module: js_sys::Funct
     let view = view();
     let _host = host(&view, &import_module);
     let cases = fixture().console;
-    let (writes, _write) = accepting_clipboard();
+    let clipboard = Recorded::install(Clipboard::Accept);
     let initial = console(&cases.mount.content, ConsoleVariant::Default);
     let mut mounted = Placed::show(Rc::clone(&view), &initial);
     let root = mounted.root();
@@ -348,7 +286,7 @@ pub async fn console_dom_literal_scroll_and_variant(import_module: js_sys::Funct
     let changed = console(&cases.update.content, variant(&cases.update.variant));
     mounted.update(&changed);
     assert_updated(&mut mounted, &root, &cases.update);
-    assert_copy_follows(&page, &root, &writes, &cases.update.content).await;
+    assert_copy_follows(&page, &root, &clipboard, &cases.update.content).await;
     let (_, scroll) = parts(&root);
     scroll.set_scroll_top(0);
     mounted.update(&changed);
@@ -364,16 +302,18 @@ pub async fn console_dom_literal_scroll_and_variant(import_module: js_sys::Funct
 
 /// Success feedback reads the current text, restores at the console's own duration and
 /// returns to the idle control.
-async fn assert_success_feedback(page: &JsValue, root: &Element, writes: &Writes, cases: &Fixture) {
+async fn assert_success_feedback(
+    page: &JsValue,
+    root: &Element,
+    clipboard: &Recorded,
+    cases: &Fixture,
+) {
     let control = copy_control(root);
     let idle = control.inner_html();
     let clicked = js_sys::Date::now();
     copy_button(root).click();
     copied(page, &control).await;
-    assert_eq!(
-        writes.borrow().as_slice(),
-        [cases.console.update.content.as_str()]
-    );
+    assert_eq!(clipboard.texts(), [cases.console.update.content.as_str()]);
     assert_eq!(text(&control), cases.console.copy.feedback);
     assert_ne!(control.inner_html(), idle);
     assert!(control.query_selector("svg").unwrap().is_some());
@@ -419,17 +359,17 @@ pub async fn console_dom_copy_feedback_uses_current_text_and_locale(
     let view = view();
     let _host = host(&view, &import_module);
     let cases = fixture();
-    let (writes, _write) = accepting_clipboard();
+    let clipboard = Recorded::install(Clipboard::Accept);
     let block = console(&cases.console.update.content, ConsoleVariant::Error);
     let mut mounted = Placed::show(Rc::clone(&view), &block);
     let root = mounted.root();
-    assert_success_feedback(&page, &root, &writes, &cases).await;
+    assert_success_feedback(&page, &root, &clipboard, &cases).await;
     copy_button(&root).click();
     copied(&page, &copy_control(&root)).await;
-    assert_eq!(writes.borrow().len(), 2);
+    assert_eq!(clipboard.texts().len(), 2);
     assert_german_feedback(&page, &mut mounted, german(&view), &block, &cases.console).await;
-    assert_eq!(writes.borrow().len(), 3);
-    let _refused = refusing_clipboard();
+    assert_eq!(clipboard.texts().len(), 3);
+    let _refused = Recorded::install(Clipboard::Refuse);
     let refused = Placed::show(
         german(&view),
         &console(&cases.console.german.content, ConsoleVariant::Default),
@@ -445,7 +385,7 @@ pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: 
     let view = view();
     let _host = host(&view, &import_module);
     let cases = fixture().console;
-    let (writes, settlements, _write) = pending_clipboard();
+    let clipboard = Recorded::install(Clipboard::Defer);
     let (left, right) = (
         Placed::show(
             Rc::clone(&view),
@@ -459,34 +399,34 @@ pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: 
     let (left_root, right_root) = (left.root(), right.root());
     let (left_copy, right_copy) = (copy_control(&left_root), copy_control(&right_root));
     copy_button(&left_root).click();
-    assert_eq!(writes.borrow().as_slice(), [cases.update.content.as_str()]);
-    settle(&settlements);
+    assert_eq!(clipboard.texts(), [cases.update.content.as_str()]);
+    clipboard.settle();
     copied(&page, &left_copy).await;
     assert!(text(&right_copy).is_empty(), "instances shared feedback");
     copy_button(&right_root).click();
-    settle(&settlements);
+    clipboard.settle();
     copied(&page, &right_copy).await;
     assert_eq!(
-        writes.borrow().as_slice(),
+        clipboard.texts(),
         [cases.update.content.as_str(), cases.german.content.as_str()]
     );
     let detached = left.detach();
     container().append_child(&detached).unwrap();
     copy_button(&left_root).click();
     assert_eq!(
-        writes.borrow().len(),
+        clipboard.texts().len(),
         3,
         "reattachment installed a second subscription"
     );
-    settle(&settlements);
+    clipboard.settle();
     copied(&page, &left_copy).await;
     drop(right);
     copy_button(&left_root).click();
     assert_eq!(
-        writes.borrow().len(),
+        clipboard.texts().len(),
         4,
         "a released instance held the survivor"
     );
-    settle(&settlements);
+    clipboard.settle();
     copied(&page, &left_copy).await;
 }
