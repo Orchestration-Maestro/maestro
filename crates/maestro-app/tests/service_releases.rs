@@ -89,6 +89,8 @@ async fn release_request_keeps_endpoint_headers_and_version_run() {
         let options = VersionCheckOptions {
             timeout_ms: case.input["timeout"].as_u64(),
             fetch: Some(transport.fetch.clone()),
+            offline: None,
+            skip_version_check: None,
         };
         let result = get_latest_maestro_release("1.2.3", ORIGIN, &options).await;
         if case.output["branch"] == "error" {
@@ -338,6 +340,8 @@ async fn release_deadline_covers_headers_and_body_run() {
     let options = VersionCheckOptions {
         timeout_ms: Some(0),
         fetch: Some(t.fetch.clone()),
+        offline: None,
+        skip_version_check: None,
     };
     assert_eq!(
         get_latest_maestro_version("1.2.3", ORIGIN, &options)
@@ -377,7 +381,7 @@ async fn default_release_transport_reaches_the_controlled_server_run() {
     let settings =
         maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
     maestro_app::configuration::telemetry::report_install_telemetry(
-        "1.2.3", &settings, &origin, None,
+        "1.2.3", &settings, &origin, None, None,
     )
     .await;
     let observed = peer.join().unwrap();
@@ -414,6 +418,8 @@ async fn deadline(timeout: Option<u64>, mode: &str) {
     let options = VersionCheckOptions {
         timeout_ms: timeout,
         fetch: Some(t.fetch.clone()),
+        offline: None,
+        skip_version_check: None,
     };
     let mut work = std::pin::pin!(get_latest_maestro_release("1.2.3", ORIGIN, &options));
     let mut context = std::task::Context::from_waker(std::task::Waker::noop());

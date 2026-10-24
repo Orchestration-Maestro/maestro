@@ -154,13 +154,13 @@ Serialization writes the supplied JSON alone.
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use the default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session listeners,
-extension error delivery and terminal input listeners reuse it. For shared `Rc`
-callbacks it also owns subscribing, which returns the removal operation, and the live
-walk in registration order. What each listener receives and when it runs remain with
-the caller. The collection returns removed ownership for release outside guards, and it
-reclaims retired registrations while no traversal runs, so one removal and a complete
-clear both stay cheap.
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
+listeners, extension error delivery and terminal input listeners reuse it. For
+shared `Rc` callbacks it also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 - **Registered tool:** A retained typed definition with shared provenance in the
   extension's ordered owner. Callback ownership follows the facade; invocation is
@@ -172,10 +172,11 @@ clear both stay cheap.
 ### Interfaces
 
 - **Footer metadata:** A cached Git branch, extension status texts and a supplied available-provider count, owned by `maestro-app` and rendered by frontends. Its read-only contract and live status view belong to `maestro-extensions`, whose footer factories receive them.
-- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy.
+- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy. Its skill-block parser of an expanded prompt belongs to the application and is available to browser builds, so transcripts and the offline viewer read one implementation.
 - **CLI:** The command-line frontend for argument parsing, startup and print/JSON operations.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
+- **RPC client:** The typed embedding client in `maestro-app` that launches Maestro in RPC mode as a child process and sends it the session commands; it owns the child's I/O, stderr, request correlation and its own deadlines.
 - **Web:** The browser frontend, including the offline exported session viewer.
 - **Brand pack:** One JSON file of palette, mode role aliases, fonts, type, spacing, mark paths, glyphs and terminal aliases; [the brand library](docs/brand.md) owns its pure admission and projection, while [the theme library](docs/theme.md#brand-pack) owns native pack/template loading and terminal theme documents. Callback pages consume the same brand owner with embedded assets.
 - **Theme:** The shared presentation library for style resolution and caller-specific code highlighting. A *prepared instance* is an immutable set of color prefixes; the *live theme* is the shared slot that publishes the current instance and may be replaced while callers still hold earlier instances. Component color callbacks read the live theme when called (strikethrough and unselected settings labels do not); border callbacks keep the instance they were created from and the settings cursor keeps the color it had at creation. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns watch/timer effects to `maestro-watch::fs_watch`, leaving theme reload policy here.
@@ -264,7 +265,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Daemon state:** The daemon-owned record of workspace topology, terminal metadata, focus, notifications and pending persistence. Live process handles stay in the application runtime registry.
 - **Daemon loop:** The application loop that drains internal observations, consumes scheduled work, selects the next deadline and completes shutdown.
 - **Named daemon:** An independent workspace daemon with its own sockets and snapshot, chosen by name.
-- **Daemon protocol:** Maestro's single versioned RPC contract shared by stdio, daemon sockets and SDK clients. `maestro-protocol` owns command, response, event, UI and binary-channel records and JSON Schema; `maestro-json::jsonl` owns JSONL framing. Live screen frames are binary within that contract. See [daemon protocol](docs/daemon-protocol.md).
+- **Daemon protocol:** Maestro's single versioned RPC contract shared by stdio, daemon sockets and SDK clients. `maestro-protocol` owns the generic envelopes, the workspace and binary-channel records and JSON Schema; `maestro-app::rpc_types` owns the session command, response, event and dialog records; `maestro-json::jsonl` owns JSONL framing. Live screen frames are binary within that contract. See [daemon protocol](docs/daemon-protocol.md).
 - **Workspace:** A named project space in the daemon holding ordered tabs; not the Cargo workspace.
 - **Tab:** An ordered split layout of panes within a workspace.
 - **Pane:** One leaf of a tab's layout, showing one pane terminal.
@@ -305,6 +306,11 @@ From `docs/specs/tool-additions.md`.
   run alone. Only the callers its [contract](docs/specs/maestro-port.md#test-directory-owner)
   declares may use it, through native development edges.
 
+- **Test fixtures:** The dedicated, unpublished, portable `maestro-test-fixtures`
+  leaf for shared fixture records, header lookup, wire-literal round trips and
+  single-color theme construction. Its eight callers use development edges only;
+  it has no product or utility dependency. See the
+  [contract](docs/specs/maestro-port.md#test-fixture-owner).
 - **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`
   leaf that runs a test action under a scoped tracing subscriber that sees
   every callsite, whichever thread reaches the callsite first. Only daemon,

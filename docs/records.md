@@ -369,15 +369,15 @@ the [tree guide](tree.md). Branch extraction and forking are described in
 [the extraction guide](sessions/session_manager.md#branch-extraction-and-forking).
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use the default parameter-schema owner through models; guest authoring
+Native callers use its default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session listeners,
-extension error delivery and terminal input listeners reuse it. For shared `Rc`
-callbacks it also owns subscribing, which returns the removal operation, and the live
-walk in registration order. What each listener receives and when it runs remain with
-the caller. The collection returns removed ownership for release outside guards, and it
-reclaims retired registrations while no traversal runs, so one removal and a complete
-clear both stay cheap.
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
+listeners, extension error delivery and terminal input listeners reuse it. For
+shared `Rc` callbacks it also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 
 ## Extension event records

@@ -5,7 +5,7 @@ use super::help::usage;
 use super::parse::{PackageCommand, PackageCommandOptions};
 use maestro_app::{
     APP_NAME, ConfiguredPackage, InstalledSourceScope, PackageManager, ProgressEvent,
-    ProgressEventType, Settings, SettingsManager, SettingsScope,
+    ProgressEventType, Settings, SettingsManager,
 };
 use maestro_theme::Theme;
 use std::{cell::RefCell, io, io::Write, rc::Rc};
@@ -76,10 +76,7 @@ pub(super) fn warn(
 ) -> io::Result<()> {
     let errors = settings.borrow_mut().drain_errors();
     for error in errors {
-        let scope = match error.scope {
-            SettingsScope::Global => "global",
-            SettingsScope::Project => "project",
-        };
+        let scope = error.scope.label();
         let stack = error
             .error
             .source()

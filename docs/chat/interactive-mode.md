@@ -3,10 +3,11 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, session replay and the expansion and thinking shortcuts. The
-prompt loop, streaming messages, startup messages, installed custom headers, the
-terminal title and the other integrations are still to come; the mode prompts the
-session only for input queued during a response or a compaction.
+input, queued input, the export command, the prompt loop, session replay, the
+session events, the expansion and thinking shortcuts, thinking and model
+cycling, the editor border, external editing and image paste. Streaming messages,
+installed custom headers, the terminal title and the other integrations are
+still to come.
 
 ## Construction
 
@@ -32,11 +33,12 @@ fallback theme is returned.
 `init` runs once; later calls change nothing. It builds the header, then adds the
 header, transcript, pending-messages, status, upper widget, editor and lower widget
 containers and the footer, in that order. It focuses the editor, binds the
-transcript shortcuts and the queue keys, installs editor submission and starts the
-terminal. A terminal start failure is returned and leaves the mode uninitialized.
-After a successful start, a theme change invalidates the presentation, recolours the
-editor border and requests a frame, and a branch change requests a frame. Neither
-callback keeps the mode alive. Last, it lists the loaded resources in the
+transcript shortcuts, the queue keys and editor actions, installs editor submission
+and starts the terminal. A terminal start failure is returned and leaves the mode
+uninitialized. Once started, it subscribes to the session events and sets the window
+title. A theme change then invalidates the presentation, recolours the editor border
+and requests a frame, and a branch change requests a frame. Neither callback keeps
+the mode alive. Last, it lists the loaded resources and their diagnostics in the
 transcript and then replays the session (see below).
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
@@ -50,9 +52,11 @@ Header text keeps the colours of the theme in effect when it was built.
 ## Loaded resources
 
 The listing appends one section per kind of loaded resource that has entries, in
-the order `[Context]`, `[Skills]`, `[Prompts]`. Each section is its heading over its
-entries, followed by an empty row; `[Context]` also gets an empty row above it.
-With `quietStartup` set and verbose off, nothing is listed.
+the order `[Context]`, `[Skills]`, `[Prompts]`, `[Extensions]`, `[Themes]`. Each
+section is its heading over its entries, followed by an empty row; `[Context]` also
+gets an empty row above it.
+With `quietStartup` set and verbose off, startup lists no sections but still shows
+the resource diagnostics described below.
 
 `[Context]` lists the context files the session's resource loader discovered, in
 discovery order. The compact form puts them on one row, separated by commas: a file
@@ -73,6 +77,47 @@ package root, or else by its path inside the npm or Git package directory. Promp
 show their `/name`; when several templates share a file, the last one's name is
 shown.
 
+`[Extensions]` lists the loaded extensions. The compact form is one row of sorted
+labels. A package extension is labelled by its package: an npm source without
+`npm:`, or a Git source by its repository path. An index file below the package's
+`extensions` folder adds its folder after a colon (`workers:subagents`), and any
+other file adds its path. Other extensions are labelled by the shortest end of
+their path that no other such extension shares: `index.ts` and `index.js` files
+show their folder, and parent folders are added only as needed, so
+`/a/tools/index.ts` and `/b/tools/index.ts` become `a/tools` and `b/tools`. Two
+extensions at the same path keep the same full label. Package labels never make
+other labels longer. The expanded form groups the extensions by scope and package,
+showing each path without a final `/index.ts` or `/index.js`.
+
+`[Themes]` lists the loaded themes that came from a file; themes without a file,
+such as the shipped ones, are left out. The compact form is one row of theme names,
+sorted like skill names. A theme without a name shows the last segment of its path
+instead, and an empty name is left off that row. The expanded form groups the
+theme files by scope and package, as for skills.
+
+After the sections come the resource diagnostics, as plain text that does not
+expand: `[Skill conflicts]`, `[Prompt conflicts]`, `[Extension issues]` and
+`[Theme conflicts]`, each heading in the warning colour and followed by an empty
+row, and each left out when it has nothing to show. Name collisions come first,
+grouped by name in the order first seen: `"name" collision:`, the kept file after
+`✓`, then each skipped file after `✗` with `(skipped)`. Other diagnostics follow
+in order, in the error colour for errors and the warning colour otherwise: a
+diagnostic with a path shows the path on one row and its message indented below
+it, and one without a path shows only the message. `[Extension issues]` lists the
+extensions that failed to load, the command and shortcut problems the extensions
+reported, and each extension command named like a built-in command, which is
+either skipped in completion or reachable under its numbered name:
+
+```text
+Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.
+```
+
+A path in a diagnostic is shown after the source of the listed resource at that
+path, or else at its nearest parent: `user`, `project` or `path (temp)` for local
+files, `path` for command-line files, and a package source with its scope, such as
+`npm:tools (project) extensions/index.ts`. A path with no known source is shown with
+only its home directory abbreviated.
+
 Sections start expanded in verbose mode or when tool output is expanded, and compact
 otherwise. Each section keeps the text it was built with. Expanding or collapsing it
 later repaints only its heading in the current theme.
@@ -81,9 +126,18 @@ later repaints only its heading in the current theme.
 
 `show_error` and `show_warning` append an empty row and a padded notice, labelled
 `Error:` or `Warning:` in the theme's error or warning colour, to the transcript.
-Each requests one frame. The supplied text is kept as given, including line
+Each requests one frame and returns the published theme's error, so the caller
+keeps the original failure type. The supplied text is kept as given, including line
 breaks and its own styling. `clear_editor` empties the editor and requests a
 frame; the editor's history is kept.
+
+## Extension UI host
+
+The mode implements the extension UI port. A host retains it with
+`ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
+lists the operations it answers today, which are editor access, theme queries and
+selection, the terminal title and tool expansion. Dialogs, notifications,
+terminal input listeners and custom widgets keep their own published owners.
 
 ## Typed input
 
@@ -104,8 +158,48 @@ polled, and the replaced future stays pending.
 
 The waiting input receives the text before the editor's history records it, so
 code that runs when the input completes can already wait for the next one. Every
-accepted submission enters the history, whether or not an input was waiting.
-Submission does not keep the mode alive.
+submission delivered as prompt text enters the history, whether or not an input
+was waiting. Submission does not keep the mode alive.
+
+Submission offers the text to the mode's commands first. Text recognized as
+`/export` runs that command instead: it reports on the transcript, completes no
+waiting input and enters no history. Near spellings are prompt text, so
+`/exporter notes.jsonl` and `/export` followed by a tab reach the input. See
+[interactive commands](commands.md).
+
+## Running the prompt loop
+
+`run` initializes the mode, shows the startup notices, sends the startup prompts and
+then keeps sending typed prompts. It never finishes on its own. It returns only an
+initialization failure or a failure to show a notice.
+
+The startup notices come in this order, before any prompt:
+
+- a warning `Migrated credentials to auth.json: ` followed by
+  `migrated_providers` joined with `", "`, when the list is not empty. Names keep
+  their order, duplicates and empty names;
+- an error `models.json error: ` followed by the current session's catalog load
+  error, when there is one;
+- `model_fallback_message` as a warning, when it is not empty. Text made only of
+  white space is still shown.
+
+The first prompt is `initial_message`, sent unless it is absent or empty. Startup
+text is never trimmed. `initial_images` go with that first prompt only, and they are
+not sent when there is no first prompt. Absent and empty image lists stay distinct
+for the session's input handlers. `initial_messages` follow in order, each sent once,
+empty and repeated text included. Then the loop waits for typed input with
+`get_user_input` and sends each submission.
+
+Every prompt goes to the runtime's session at the time it is sent, so after the
+runtime replaces its session, the next typed prompt reaches the new one. When the
+session refuses a prompt, such as one sent without credentials, the mode shows the
+session's message once as an error and goes on to the next prompt. An answer that
+fails after the prompt was accepted stays a session event; the mode adds no notice
+for it.
+
+Still to come: rendering the session's events in the transcript, queued input,
+commands, rebinding the presentation to a replaced session, shutdown, update
+notices and the startup check of subscription-based credentials.
 
 ## Session replay
 
@@ -174,6 +268,32 @@ While a response streams, the interrupt key (Escape by default) restores the que
 messages the same way and then stops the response, even when nothing was queued. When
 no response streams, the key does nothing. The queue keys do not keep the mode alive,
 and a failure in them goes to the terminal runtime's error route.
+## Session events
+
+One listener carries the session's events into the mode. It is the session's own
+subscription, so the removal operation the session returns is kept for the
+lifecycle that ends it. Delivery is synchronous and borrowed: the mode handles
+each event before the producer returns, keeps no reference to itself through the
+listener, and enqueues no copy of the event. A failure goes to the terminal
+runtime's error route.
+
+An event that arrives before the presentation has started starts it first. Every
+event then invalidates the footer, which the footer does not cache. The events
+that carry session metadata read the session's live state rather than the values
+the event carries:
+
+- a changed session name writes the window title;
+- a changed thinking level recolours the editor border for the shell colour or
+  the new level, as the shortcut section describes.
+
+The window title is `Maestro - <name> - <directory>` when the session has a name
+and `Maestro - <directory>` when it has none. The directory is the last segment of
+the session's working directory as authored text, so it needs no filesystem read
+and keeps the separators of the platform the build targets. The name is the one
+the session stores: the newest name record wins, an empty record clears it, and
+the name loses its outer whitespace under the shared whitespace policy. A name
+record that holds anything but text or null is an invalid-data failure, which
+takes the event's error route and leaves the current title in place.
 
 ## Status lines
 
@@ -191,5 +311,69 @@ The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock
 replays the transcript and shows `Thinking blocks: hidden` or `Thinking blocks:
 visible`. A shortcut's failure goes to the terminal runtime's error route.
 
-The editor border follows the session's thinking level, or the shell colour while
-the editor holds a shell command.
+## Thinking and model cycling
+
+The thinking cycle key (`app.thinking.cycle`, Shift+Tab by default) selects the
+session's next thinking level. It shows `Thinking level: <level>` as a status line
+and refreshes the footer and editor border; when the model cannot reason it shows
+`Current model does not support thinking` and changes nothing else. A recording
+failure goes to the terminal runtime's error route.
+
+The model cycle keys (`app.model.cycleForward` and `app.model.cycleBackward`,
+Ctrl+P and Shift+Ctrl+P by default) select the next or previous scoped model, or
+the next or previous available model when none are scoped. The cycle runs on the
+terminal runtime, which keeps the mode until it completes. It then shows
+`Switched to <name>`, using the model id when the name is empty and adding
+` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
+the footer and editor border. With no other candidate it shows
+`Only one model in scope` or `Only one model available`. A session error is shown
+as an error notice instead of the switch message. A failed credential lookup leaves
+the selection as it was; a recording or listener failure happens after the new
+model is selected, so that model stays selected.
+
+## Editor border
+
+The editor border shows the input mode. Text whose first character after leading
+whitespace is `!` is a shell command, and the border takes the theme's `bashMode`
+colour. Leading whitespace follows the same policy as submitted text, so U+FEFF and
+a no-break space are skipped while U+0085 and U+200B are not. Otherwise the border
+takes the colour of the session's thinking level, `thinkingOff` through
+`thinkingXhigh`. The border is repainted and a frame requested only when an edit
+switches between the two modes. A failure to read the theme is handed to the
+terminal's runtime host, which reports it.
+
+## External editing
+
+The key bound to `app.editor.external` (Ctrl+G by default) edits the editor text in
+an external editor. The mode reads the runtime's `VISUAL`, then `EDITOR`, each time
+the key is pressed; an empty value counts as unset, and neither value is trimmed.
+With no editor configured, the transcript shows the warning
+`No editor configured. Set $VISUAL or $EDITOR environment variable.` and nothing
+else happens. On Unix the command splits on ASCII spaces only, and the file path is
+its last argument; Windows runs it through the configured command interpreter, as
+the extension editor dialog does.
+
+The text written is the expanded text, so a collapsed paste is written in full
+rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md` in
+the temporary directory. The mode then stops the terminal and runs the editor on
+the inherited terminal. A zero exit replaces the editor text with the file's text
+less one final line feed; a nonzero exit, a signal or a failed launch keep the text.
+After every outcome the mode tries to remove the file it created, ignoring a failed
+removal, and restarts the terminal with a full redraw. Other failures are handed
+to the terminal's runtime host.
+
+## Image paste
+
+Pasting an image (`app.clipboard.pasteImage`: Ctrl+V by default, Alt+V on Windows)
+reads the clipboard through the application's
+image reader. An image is written to `maestro-clipboard-{UUID}.{extension}` in the
+temporary directory, with the extension of its type or `png`, and the file path is
+inserted at the cursor. The file stays for the prompt that uses it. No image, a
+failed read and a failed write all leave the editor as it was, without a message.
+
+Both actions create their temporary file exclusively, readable only by its owner on
+Unix: an existing file or symbolic link of the same name is left untouched, and the
+edit stops with an error before the editor runs. Neither action keeps the mode
+alive; a clipboard read in progress keeps the mode until it completes.
+
+Suspending to the background is not part of the mode yet.

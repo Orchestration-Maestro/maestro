@@ -106,11 +106,23 @@ authored nodes first, as the builder declared them, and then runs the same
 primitive conversion over the plain schema. A schema supplied as ordinary JSON carries
 no declared kinds, so only the primitive conversion applies: `null` for a required
 string member stays `""` there, while the same member of an authored schema becomes
-`"null"`. The authored pass keeps only the edits it makes inside the supplied
-containers: a replaced root is discarded, an alternative converts copies of its
-branches, positional conversion assigns elements in place, and item conversion
-returns a mapped copy that the plain pass observes unchanged. Schema text never
+`"null"`. The authored pass keeps in-place container edits but discards a returned
+root replacement. Tuple conversion assigns positions in place; array conversion
+returns a mapped copy while retaining nested container edits. Schema text never
 implies author intent; rebuilding it needs the builder.
+A cyclic node's definitions are visible only while its reference converts, so a
+sibling member sees the enclosing definitions again. A reference names the innermost
+definition visible at the point where conversion reaches it. Union alternatives are
+checked against those same definitions, and a composed alternative keeps the constraints
+and optional members its author declared.
+
+Two authored nodes are compared by what each kind accepts. An alternative set never
+stands in for a sequence or an intersection of the same members, so its alternatives keep
+their own conversions. A member an object leaves optional never satisfies a member the
+compared object requires. Each object reads its required names once when its members are
+projected, so construction work grows with the member count rather than with its square.
+An authored kind is looked up by the identity of the schema node it describes, resolved
+once from the pointer the builder recorded.
 
 Checking converts declared primitive values before evaluating the original schema.
 Objects and arrays are traversed only when their type is explicitly declared.
@@ -136,8 +148,10 @@ without crossing a nested `$id`. Following a reference keeps the caller's live
 anchors, enters the target's enclosing resources that are not yet entered, then
 enters the target. The outermost binding of a name wins, a sibling property
 never sees bindings added for another, and a pointer fragment never takes a
-dynamic binding. Array pointer segments use exact unsigned index names: `0` and
-`1` resolve, while `+0`, `+1` and `01` do not.
+dynamic binding. A pointer fragment resolves at the resource root first; when
+that root does not hold it, the child subtrees answer in declaration order and
+the last one that declares the pointer wins. Array pointer segments use exact
+unsigned index names: `0` and `1` resolve, while `+0`, `+1` and `01` do not.
 Known string formats are asserted, unknown format names remain annotations, and
 string lengths count extended grapheme clusters.
 

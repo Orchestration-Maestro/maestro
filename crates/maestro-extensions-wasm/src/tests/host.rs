@@ -1,11 +1,14 @@
 //! A test-only native host: it instantiates the built author component and implements the
 //! imports the component calls.
 use std::path::Path;
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 
 use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Component, HasData, Linker, Resource, ResourceTable};
 use wasmtime::{Engine, Store};
+use wasmtime_wasi::clocks::HostWallClock;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use super::observed::{Observed, Session, pause};
@@ -37,10 +40,53 @@ pub struct Replaced(
     pub(super) Option<super::reader_host::Reader>,
 );
 
+/// The wall clock of the component's WASI context, set by the test and counting its reads.
+#[derive(Clone, Default)]
+pub struct Clock(Arc<ClockFace>);
+
+/// State shared by every clone of one supplied clock.
+#[derive(Default)]
+struct ClockFace {
+    /// Milliseconds since the Unix epoch the clock reports.
+    millis: AtomicU64,
+    /// Wall-clock reads since the last reset.
+    reads: AtomicUsize,
+}
+
+impl Clock {
+    /// Supplies the instant every later read reports.
+    pub fn set(&self, millis: u64) {
+        self.0.millis.store(millis, Ordering::SeqCst);
+    }
+
+    /// Counts reads from zero from now on.
+    pub fn reset_reads(&self) {
+        self.0.reads.store(0, Ordering::SeqCst);
+    }
+
+    /// The wall-clock reads since the last reset.
+    pub fn reads(&self) -> usize {
+        self.0.reads.load(Ordering::SeqCst)
+    }
+}
+
+impl HostWallClock for Clock {
+    fn resolution(&self) -> Duration {
+        Duration::from_millis(1)
+    }
+
+    fn now(&self) -> Duration {
+        self.0.reads.fetch_add(1, Ordering::SeqCst);
+        Duration::from_millis(self.0.millis.load(Ordering::SeqCst))
+    }
+}
+
 /// Host state shared by every import.
 pub struct State {
     /// WASI state the component's standard library needs.
     wasi: WasiCtx,
+    /// The wall clock the standard library reads, when the test supplies one.
+    clock: Option<Clock>,
     /// Host-side resources by handle.
     pub table: ResourceTable,
     /// What the host observed.
@@ -59,10 +105,20 @@ impl WasiView for State {
 }
 
 impl State {
-    /// A state with no registrations.
+    /// A state with no registrations, reading the host's own wall clock.
     fn new() -> Self {
+        Self::with_clock(None)
+    }
+
+    /// A state with no registrations whose standard library reads `clock`.
+    fn with_clock(clock: Option<Clock>) -> Self {
+        let mut builder = WasiCtxBuilder::new();
+        if let Some(clock) = &clock {
+            builder.wall_clock(clock.clone());
+        }
         Self {
-            wasi: WasiCtxBuilder::new().build(),
+            wasi: builder.build(),
+            clock,
             table: ResourceTable::new(),
             observed: Observed::default(),
             guest: None,
@@ -830,6 +886,45 @@ pub fn borrow(rep: u32) -> Resource<Identity> {
     Resource::new_borrow(rep)
 }
 
+/// Delivers a compaction result or failure to `handler`, lending a fresh emitter for it.
+pub async fn notify_compaction(
+    harness: &mut Harness,
+    handler: u32,
+    payload: &str,
+    complete: bool,
+) -> Result<(), String> {
+    let emitter = harness
+        .store
+        .data_mut()
+        .table
+        .push(super::bus_host::Emitter { key: 0 })
+        .map_err(|error| error.to_string())?;
+    let function = if complete {
+        harness.exports.func_invoke_compaction_complete()
+    } else {
+        harness.exports.func_invoke_compaction_error()
+    };
+    let result = function
+        .call_async(
+            &mut harness.store,
+            (
+                borrow(handler),
+                payload,
+                Resource::new_borrow(emitter.rep()),
+            ),
+        )
+        .await
+        .map_err(|error| error.to_string())?
+        .0;
+    harness
+        .store
+        .data_mut()
+        .table
+        .delete(emitter)
+        .map_err(|error| error.to_string())?;
+    result
+}
+
 /// The instantiated component and the table keys of what it registered.
 pub struct Harness {
     /// The store holding the host state and the instance.
@@ -865,12 +960,41 @@ impl Harness {
         Self::from_compiled(engine, component).await
     }
 
+    /// Instantiates one registered example and runs its factory.
+    ///
+    /// # Errors
+    /// Returns the build, compilation or instantiation failure as text.
+    pub fn example(name: &str) -> Result<Self, String> {
+        let path = super::build::example_component(name)?;
+        let (engine, component) =
+            super::build::compile(&path).map_err(|error| error.to_string())?;
+        super::block_on(Self::from_compiled(&engine, &component)).map_err(|error| error.to_string())
+    }
+
     /// Instantiates a supplied compiled component and runs its factory.
     pub async fn from_compiled(engine: &Engine, component: &Component) -> wasmtime::Result<Self> {
+        Self::start_on(engine, component, State::new()).await
+    }
+
+    /// Instantiates a supplied compiled component whose standard library reads `clock`.
+    pub async fn from_compiled_with_clock(
+        engine: &Engine,
+        component: &Component,
+        clock: Clock,
+    ) -> wasmtime::Result<Self> {
+        Self::start_on(engine, component, State::with_clock(Some(clock))).await
+    }
+
+    /// Instantiates a component on `state` and runs its factory.
+    async fn start_on(
+        engine: &Engine,
+        component: &Component,
+        state: State,
+    ) -> wasmtime::Result<Self> {
         let mut linker = Linker::new(engine);
         wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
         Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
-        let mut store = Store::new(engine, State::new());
+        let mut store = Store::new(engine, state);
         let extension = Extension::instantiate_async(&mut store, component, &linker).await?;
         let exports = extension.maestro_extension_guest().clone();
         store.data_mut().guest = Some(exports.clone());
@@ -895,6 +1019,11 @@ impl Harness {
     /// What the host observed.
     pub fn observed(&mut self) -> &mut Observed {
         &mut self.store.data_mut().observed
+    }
+
+    /// The wall clock the component's standard library reads, when the test supplied one.
+    pub fn clock(&self) -> Option<Clock> {
+        self.store.data().clock.clone()
     }
 
     /// A fresh ordinary context in `cwd`.

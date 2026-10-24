@@ -9,6 +9,7 @@ mod formats;
 mod prepare;
 mod references;
 mod scalars;
+mod schema;
 
 use crate::{DiagnosticErrorInfo, Tool, ToolCall};
 use serde_json::Value;
@@ -34,8 +35,6 @@ pub fn validate_tool_call(
 /// The invocation and declaration are never modified. Only declared primitive conversions
 /// apply; missing properties are not inserted and unknown properties are not removed.
 /// References resolve offline against the original schema, without resource retrieval.
-/// Any JSON root kind is returned; a converted root that fails the schema is an error like
-/// any other invalid argument.
 ///
 /// # Errors
 /// Returns at most eight distinct corrective messages in evaluation order,
@@ -50,7 +49,8 @@ pub fn validate_tool_arguments(
     let mut candidate = tool_call.arguments.clone();
     authored::convert(&mut candidate, schema, tool.parameters.conversions());
     coercion::coerce(&mut candidate, schema);
-    let errors = check::check(schema, &candidate).map_err(|error| diagnostic(error.to_string()))?;
+    let errors =
+        check::check(schema, &[], &candidate).map_err(|error| diagnostic(error.to_string()))?;
     if errors.is_empty() {
         return Ok(candidate);
     }
@@ -67,7 +67,7 @@ pub fn validate_tool_arguments(
 /// # Errors
 /// Returns the existing diagnostic when schema preparation fails.
 pub fn validate_schema(schema: &Value, value: &Value) -> Result<Vec<String>, DiagnosticErrorInfo> {
-    check::check(schema, value).map_err(|error| diagnostic(error.to_string()))
+    check::check(schema, &[], value).map_err(|error| diagnostic(error.to_string()))
 }
 
 /// Wrap a corrective message in the existing error record.

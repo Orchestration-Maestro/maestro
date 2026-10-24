@@ -6,8 +6,14 @@ license.workspace = true
 repository.workspace = true
 description = "Author-side contract for native-async extension components."
 
+# Keep these targets in name order, so a new example inserts at its own place.
 [[example]]
 name = "author_component"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "bookmark"
+path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -21,8 +27,8 @@ path = "../../examples/extensions/hidden_thinking_label.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "shutdown_command"
-path = "../../examples/extensions/shutdown_command.rs"
+name = "pirate"
+path = "../../examples/extensions/pirate.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -31,8 +37,8 @@ path = "../../examples/extensions/prompt_customizer.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "with_deps"
-path = "../../examples/extensions/with-deps/main.rs"
+name = "protected_paths"
+path = "../../examples/extensions/protected_paths.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -41,13 +47,33 @@ path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "protected_paths"
-path = "../../examples/extensions/protected_paths.rs"
+name = "send_user_message"
+path = "../../examples/extensions/send_user_message.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "pirate"
-path = "../../examples/extensions/pirate.rs"
+name = "shutdown_command"
+path = "../../examples/extensions/shutdown_command.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "system_prompt_header"
+path = "../../examples/extensions/system_prompt_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "trigger_compact"
+path = "../../examples/extensions/trigger_compact.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "with_deps"
+path = "../../examples/extensions/with-deps/main.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "working_message_test"
+path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
 
 [dependencies]

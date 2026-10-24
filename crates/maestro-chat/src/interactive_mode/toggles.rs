@@ -6,7 +6,8 @@ use crate::{
     BashExecutionComponent, BranchSummaryMessageComponent, CompactionSummaryMessageComponent,
     CustomMessageComponent, SkillInvocationMessageComponent, ToolExecutionComponent,
 };
-use maestro_app::Local;
+use maestro_app::agent_session::CycleDirection;
+use maestro_app::{EventError, Local};
 use maestro_theme::ThemeError;
 use maestro_tui::{Component, EditorComponent};
 use std::{any::Any, error::Error, rc::Rc};
@@ -15,13 +16,19 @@ use std::{any::Any, error::Error, rc::Rc};
 type Operation = fn(&InteractiveMode) -> Result<(), Box<dyn Error>>;
 
 impl InteractiveMode {
-    /// Binds the transcript shortcuts on the editor.
+    /// Binds the transcript shortcuts and editor actions on the editor, in the order the
+    /// editor consults them, then installs its change and image-paste callbacks.
     pub(super) fn setup_key_handlers(self: &Rc<Self>) {
+        self.on_action("app.thinking.cycle", Self::cycle_thinking_level);
+        self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
+        self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
         self.on_action("app.tools.expand", Self::toggle_tool_output_expansion);
         self.on_action(
             "app.thinking.toggle",
             Self::toggle_thinking_block_visibility,
         );
+        self.on_action("app.editor.external", Self::open_external_editor);
+        self.setup_editor_callbacks();
     }
 
     /// Binds `action` to `operation` without retaining the mode; a failure goes to the
@@ -44,6 +51,7 @@ impl InteractiveMode {
     /// Returns the failure of a tool row's native formatting or of a text rendering.
     fn toggle_tool_output_expansion(&self) -> Result<(), Box<dyn Error>> {
         self.set_tools_expanded(!self.tool_output_expanded.get())
+            .map_err(|error| -> Box<dyn Error> { error })
     }
 
     /// Applies `expanded` to the startup help and every expandable chat row, walking
@@ -51,7 +59,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of a tool row's native formatting or of a text rendering.
-    pub(super) fn set_tools_expanded(&self, expanded: bool) -> Result<(), Box<dyn Error>> {
+    pub(super) fn set_tools_expanded(&self, expanded: bool) -> Result<(), EventError> {
         self.tool_output_expanded.set(expanded);
         let header = self.built_in_header.borrow().clone();
         if let Some(header) = header {
@@ -107,7 +115,7 @@ impl InteractiveMode {
 ///
 /// # Errors
 /// Returns the failure of a tool row's native formatting or of a text rendering.
-fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), Box<dyn Error>> {
+fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), EventError> {
     let child: &dyn Any = child;
     if let Some(row) = child.downcast_ref::<ToolExecutionComponent>() {
         row.set_expanded(expanded)?;

@@ -102,13 +102,17 @@ pub struct LatestMaestroRelease {
     pub package_name: Option<String>,
 }
 
-/// Per-operation deadline and replaceable HTTP transport.
+/// Per-operation deadline, replaceable HTTP transport and startup selections.
 #[derive(Default)]
 pub struct VersionCheckOptions {
     /// Whole-operation deadline in milliseconds; absent means 10,000.
     pub timeout_ms: Option<u64>,
     /// Transport override; absent selects the shared default client.
     pub fetch: Option<Fetch>,
+    /// A caller's offline selection, or `MAESTRO_OFFLINE` when absent.
+    pub offline: Option<bool>,
+    /// A caller's version-skip selection, or `MAESTRO_SKIP_VERSION_CHECK` when absent.
+    pub skip_version_check: Option<bool>,
 }
 
 /// Fetch trimmed release fields; disabled origins or flags return no release.
@@ -120,9 +124,12 @@ pub async fn get_latest_maestro_release(
     service_origin: &str,
     options: &VersionCheckOptions,
 ) -> io::Result<Option<LatestMaestroRelease>> {
-    if ["MAESTRO_SKIP_VERSION_CHECK", "MAESTRO_OFFLINE"]
-        .iter()
-        .any(|key| std::env::var(key).is_ok_and(|v| !v.is_empty()))
+    if options
+        .skip_version_check
+        .unwrap_or_else(|| super::flag_is_set("MAESTRO_SKIP_VERSION_CHECK"))
+        || options
+            .offline
+            .unwrap_or_else(|| super::flag_is_set("MAESTRO_OFFLINE"))
     {
         return Ok(None);
     }

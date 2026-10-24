@@ -46,7 +46,7 @@ stable_deref_trait = { version = "1.2.1", default-features = false, features = [
 syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 time = { version = "0.3.55", features = ["formatting"] }
 tinystr = { version = "0.8.4", default-features = false, features = ["alloc", "zerovec"] }
-tokio = { version = "1.53.3", default-features = false, features = ["macros", "test-util"] }
+tokio = { version = "1.53.3", default-features = false, features = ["io-std", "macros", "signal", "test-util"] }
 tracing-core = { version = "0.1.36" }
 unicode-width = { version = "0.2.2" }
 writeable = { version = "0.6.4", default-features = false, features = ["alloc"] }
@@ -85,7 +85,6 @@ futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
@@ -102,7 +101,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
-tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
+tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
@@ -115,6 +114,8 @@ bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 phf = { version = "0.14.0", features = ["macros"] }
+regex-automata = { version = "0.4.18", default-features = false, features = ["dfa", "hybrid", "meta", "nfa", "perf", "std", "unicode"] }
+regex-syntax = { version = "0.8.11" }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
@@ -136,7 +137,6 @@ futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
@@ -153,7 +153,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
-tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
+tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
@@ -166,6 +166,8 @@ bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 phf = { version = "0.14.0", features = ["macros"] }
+regex-automata = { version = "0.4.18", default-features = false, features = ["dfa", "hybrid", "meta", "nfa", "perf", "std", "unicode"] }
+regex-syntax = { version = "0.8.11" }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
@@ -188,7 +190,6 @@ futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
@@ -203,7 +204,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
-tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
+tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
@@ -217,6 +218,8 @@ bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 phf = { version = "0.14.0", features = ["macros"] }
+regex-automata = { version = "0.4.18", default-features = false, features = ["dfa", "hybrid", "meta", "nfa", "perf", "std", "unicode"] }
+regex-syntax = { version = "0.8.11" }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
@@ -239,7 +242,6 @@ futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
@@ -254,7 +256,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
-tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
+tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
@@ -268,6 +270,8 @@ bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 phf = { version = "0.14.0", features = ["macros"] }
+regex-automata = { version = "0.4.18", default-features = false, features = ["dfa", "hybrid", "meta", "nfa", "perf", "std", "unicode"] }
+regex-syntax = { version = "0.8.11" }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
@@ -297,7 +301,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
-tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread"] }
+tokio = { version = "1.53.3", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
@@ -310,6 +314,8 @@ winnow = { version = "1.0.4" }
 fastrand = { version = "2.5.0" }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 phf = { version = "0.14.0", features = ["macros"] }
+regex-automata = { version = "0.4.18", default-features = false, features = ["dfa", "hybrid", "meta", "nfa", "perf", "std", "unicode"] }
+regex-syntax = { version = "0.8.11" }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }

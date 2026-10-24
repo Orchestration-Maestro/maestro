@@ -342,10 +342,7 @@ async fn started() -> Result<(Controlled, u32, u32, Exports<Controlled>), String
 
 /// The built component of the shipped example.
 fn component_harness() -> Result<super::host::Harness, String> {
-    let path = super::build::example_component("shutdown_command")?;
-    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
-    super::block_on(super::host::Harness::from_compiled(&engine, &component))
-        .map_err(|error| error.to_string())
+    super::host::Harness::example("shutdown_command")
 }
 
 /// Runs the built component's quit command and asserts one shutdown request.

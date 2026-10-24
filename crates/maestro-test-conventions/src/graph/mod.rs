@@ -9,8 +9,8 @@ pub(crate) mod metadata;
 /// Scoped crate ownership and direct-dependency rules.
 mod policy;
 use metadata::{canonical, check_kind, members};
+use policy::{TEST_FIXTURES, UTILITY, rule, test_support_callers, uses_utility};
 pub(crate) use policy::{TEST_TRACING, UNIFIER};
-use policy::{UTILITY, rule, test_support_callers, uses_utility};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -194,19 +194,22 @@ fn check_native_declaration(
             "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"
         ));
     }
-    if let Some(member) = member.filter(|name| test_support_callers(name).is_some())
+    if let Some(member) =
+        member.filter(|name| *name != TEST_FIXTURES && test_support_callers(name).is_some())
         && !native_declared(dependency, kind, &Kind::Development)
     {
         return Err(format!(
             "{owner}: {member} must be a native, non-optional development dependency"
         ));
     }
-    if owner == "maestro-detection"
-        && member == Some("maestro-text")
-        && *kind == Kind::Development
+    if *kind == Kind::Development
+        && let Some(member) =
+            member.filter(|member| policy::NATIVE_DEVELOPMENT.contains(&(owner, member)))
         && !native_declared(dependency, kind, &Kind::Development)
     {
-        return Err("maestro-detection: maestro-text test support must be a native, non-optional development dependency".into());
+        return Err(format!(
+            "{owner}: {member} test support must be a native, non-optional development dependency"
+        ));
     }
     Ok(())
 }
@@ -270,8 +273,15 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
             Ok(())
         } else {
             Err(format!(
-                "{} is reachable only as a native development dependency of its declared callers: {} -> {}",
-                edge.to, edge.from, edge.to
+                "{} is reachable only as a {}development dependency of its declared callers: {} -> {}",
+                edge.to,
+                if edge.to == TEST_FIXTURES {
+                    ""
+                } else {
+                    "native "
+                },
+                edge.from,
+                edge.to
             ))
         };
     }
@@ -291,7 +301,7 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
         ));
     }
     if edge.kind == Kind::Development {
-        if policy::DEVELOPMENT.contains(&(edge.from.as_str(), edge.to.as_str())) {
+        if policy::permitted_development(&edge.from, &edge.to) {
             return Ok(());
         }
         return Err(format!(

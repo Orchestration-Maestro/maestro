@@ -157,11 +157,39 @@ fn object(value: &mut Value, schema: &Value) {
     let Some(object) = value.as_object_mut() else {
         return;
     };
+    members(schema, object, coerce);
+}
+
+/// Convert homogeneous or positional items without extending the array.
+fn array(value: &mut Value, schema: &Value) {
+    let Some(values) = value.as_array_mut() else {
+        return;
+    };
+    match schema.get("items") {
+        Some(Value::Array(_)) => {
+            positions(schema, values, coerce);
+        }
+        Some(Value::Object(_)) => {
+            sequence(schema, values, coerce);
+        }
+        _ => {}
+    }
+}
+
+/// Visit every present declared member, then every schema-valued additional member.
+///
+/// A declared member is visited once, by its exact name; an additional member only when no
+/// declared member names it and the declaration supplies a schema for it.
+pub(super) fn members<'a>(
+    schema: &'a Value,
+    object: &mut serde_json::Map<String, Value>,
+    mut visit: impl FnMut(&mut Value, &'a Value),
+) {
     let properties = schema.get("properties").and_then(Value::as_object);
     if let Some(properties) = properties {
         for (key, child) in super::diagnostics::entries(properties) {
             if let Some(member) = object.get_mut(key) {
-                coerce(member, child);
+                visit(member, child);
             }
         }
     }
@@ -171,29 +199,37 @@ fn object(value: &mut Value, schema: &Value) {
     {
         for (key, member) in object {
             if !properties.is_some_and(|properties| properties.contains_key(key)) {
-                coerce(member, additional);
+                visit(member, additional);
             }
         }
     }
 }
 
-/// Convert homogeneous or legacy tuple items without extending the array.
-fn array(value: &mut Value, schema: &Value) {
-    let (Some(items), Some(values)) = (schema.get("items"), value.as_array_mut()) else {
+/// Visit the sequence positions the declared positional item nodes cover.
+pub(super) fn positions<'a>(
+    schema: &'a Value,
+    values: &mut [Value],
+    mut visit: impl FnMut(&mut Value, &'a Value),
+) {
+    let Some(schemas) = schema.get("items").and_then(Value::as_array) else {
         return;
     };
-    match items {
-        Value::Array(schemas) => {
-            for (member, child) in values.iter_mut().zip(schemas) {
-                coerce(member, child);
-            }
-        }
-        Value::Object(_) => {
-            for member in values {
-                coerce(member, items);
-            }
-        }
-        _ => {}
+    for (member, child) in values.iter_mut().zip(schemas) {
+        visit(member, child);
+    }
+}
+
+/// Visit every sequence member through the single declared item node.
+pub(super) fn sequence<'a>(
+    schema: &'a Value,
+    values: &mut [Value],
+    mut visit: impl FnMut(&mut Value, &'a Value),
+) {
+    let Some(items) = schema.get("items").filter(|items| items.is_object()) else {
+        return;
+    };
+    for member in values {
+        visit(member, items);
     }
 }
 
@@ -234,7 +270,7 @@ fn union(value: &mut Value, schemas: &[Value]) {
         let mut candidate = value.clone();
         coerce(&mut candidate, child);
         if child.is_object()
-            && super::check::check(child, &candidate).is_ok_and(|errors| errors.is_empty())
+            && super::check::check(child, &[], &candidate).is_ok_and(|errors| errors.is_empty())
         {
             *value = candidate;
             break;

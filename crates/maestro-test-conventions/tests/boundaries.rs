@@ -219,21 +219,10 @@ fn parameter_schema_records_have_one_owner() {
         "maestro-request",
         "src/lib.rs",
         "pub struct ParameterSchema { }\npub enum SchemaKind { String }\n\
-         pub struct Tool<TParameters = ParameterSchema> { parameters: TParameters }",
+         pub struct Tool { parameters: ParameterSchema }\n\
+         pub struct ToolInfo<P = ParameterSchema> { parameters: P }",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    source(
-        &workspace,
-        "maestro-request",
-        "src/lib.rs",
-        "pub struct ParameterSchema { }\npub enum SchemaKind { String }\n\
-         pub struct Tool<TParameters = serde_json::Value> { parameters: TParameters }",
-    );
-    let error = check_workspace(workspace.root.path()).unwrap_err();
-    assert!(
-        error.contains("Tool must default its schema operand to ParameterSchema"),
-        "{error}"
-    );
     source(
         &workspace,
         "maestro-request",

@@ -4,15 +4,14 @@ use crate::{
         attachment_content::ClipboardMode, event_subscription::EventSubscription, timer::Timer,
     },
     components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    dom::{DomView, Property, Reflected},
+    dom::{DomView, Link, Property, Reflected, connected, live},
     utils::i18n::I18n,
 };
-use js_sys::WeakRef;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
 };
-use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
+use wasm_bindgen::{JsValue, closure::Closure};
 use web_sys::HtmlElement;
 
 /// Element tag of the copy control.
@@ -35,7 +34,7 @@ const PROPERTIES: &[Property] = &[
 /// One mounted copy control; `text`, `title` and `show-text` are its attributes.
 struct CopyElement {
     /// Element owning this state.
-    root: WeakRef,
+    root: Link,
     /// Page operands.
     view: Rc<DomView>,
     /// Labels' localization.
@@ -49,7 +48,7 @@ struct CopyElement {
 }
 impl custom_element::CustomElement for CopyElement {
     fn attribute_changed_callback(&mut self, _: &str, _: JsValue, _: JsValue) {
-        if let Some(root) = crate::dom::connected(&self.root) {
+        if let Some(root) = connected(&self.root) {
             let copied = self.feedback.borrow().is_some();
             // Lifecycle callbacks have no error channel; a failed render keeps the previous control.
             let _ = render(&root, &self.view, &self.i18n.borrow(), copied);
@@ -76,13 +75,9 @@ impl custom_element::CustomElement for CopyElement {
         drop(restoring);
     }
 }
-/// The element, while it exists.
-fn live(root: &WeakRef) -> Option<HtmlElement> {
-    root.deref().and_then(|root| root.dyn_into().ok())
-}
 /// Copy the `text` attribute, then show success until the restoring timer fires.
 fn copy(
-    root: &WeakRef,
+    root: &Link,
     (view, i18n): (&Rc<DomView>, &Localization),
     feedback: &Weak<RefCell<Option<Timer>>>,
 ) {
@@ -163,7 +158,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let observed = vec!["title".into(), "show-text".into()];
     crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
         CopyElement {
-            root: WeakRef::new(&root),
+            root: js_sys::WeakRef::new(&root),
             view: Rc::clone(&view),
             i18n: CREATING
                 .take()

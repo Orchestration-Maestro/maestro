@@ -24,12 +24,14 @@ serde.workspace = true
 maestro-dependencies.workspace = true
 maestro-path = { path = "../maestro-path" }
 tokio = { version = "=1.53.3", default-features = false, features = ["process"] }
+uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }
 
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-models = { path = "../maestro-models" }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 

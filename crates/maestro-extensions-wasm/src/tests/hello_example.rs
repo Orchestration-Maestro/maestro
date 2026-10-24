@@ -100,10 +100,7 @@ fn hello_ignores_unused_invocation_handles() -> Result<(), String> {
 /// The built single-copy example registers and executes across the component interface.
 #[test]
 fn hello_component_greets_through_the_host() -> Result<(), String> {
-    let path = super::build::example_component("hello")?;
-    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
-    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
-        .map_err(|error| error.to_string())?;
+    let mut harness = super::host::Harness::example("hello")?;
     assert_metadata(&harness.observed().tools, &corpus()["metadata"]);
     let key = harness.callback("tool hello").map_err(|e| e.to_string())?;
     for row in corpus()["rows"].as_array().unwrap() {

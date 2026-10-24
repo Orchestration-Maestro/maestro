@@ -2,7 +2,9 @@
 
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
-pub use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages, StreamFn};
+pub use maestro_agent::{
+    AgentEvent, AgentMessage, CustomAgentMessages, NoCustomMessages, StreamFn,
+};
 
 pub use maestro_models::{
     AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Cancellation,
@@ -21,8 +23,9 @@ pub use maestro_models::{Local, Threaded};
 pub use maestro_models::Transport;
 
 pub use maestro_catalog::{
-    CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ProviderConfigInput,
-    ProviderModelInput, ScopedModel, model_id_comparator,
+    CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ModelResolverOutput,
+    ProviderConfigInput, ProviderModelInput, ResolveCliModelOptions, ResolveCliModelResult,
+    ScopedModel, model_id_comparator, resolve_cli_model, resolve_model_scope,
 };
 
 pub use maestro_models::models_are_equal;

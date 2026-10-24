@@ -144,6 +144,8 @@ fn planned(
     let options = VersionCheckOptions {
         timeout_ms: None,
         fetch: Some(transport.fetch.clone()),
+        offline: None,
+        skip_version_check: None,
     };
     let plan = run_io(get_self_update_plan(force, origin, &options));
     (plan.package_name, plan.should_run, transport.count())

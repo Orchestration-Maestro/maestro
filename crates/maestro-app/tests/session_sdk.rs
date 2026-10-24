@@ -66,6 +66,7 @@ fn options(h: &Harness, settings: Value) -> CreateAgentSessionOptions {
         settings_manager: Some(Rc::new(RefCell::new(SettingsManager::in_memory(settings)))),
         session_start_event: None,
         theme: maestro_theme::LiveTheme::default(),
+        offline: None,
     }
 }
 

@@ -258,15 +258,29 @@ pub enum Message {
     ToolResult(ToolResultMessage),
 }
 /// Describe a model-facing tool and its parameter schema.
+///
+/// The schema is the shared parameter-schema record, so a caller cannot pass ordinary JSON
+/// where a schema with authored nodes belongs.
+///
+/// ```compile_fail
+/// use maestro_request::types::Tool;
+/// let tool = Tool {
+///     name: "echo".to_owned(),
+///     description: String::new(),
+///     parameters: serde_json::json!({"type": "string"}),
+/// };
+/// # let _ = tool;
+/// ```
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Tool<TParameters = crate::parameter_schema::ParameterSchema> {
+pub struct Tool {
     /// Name.
     pub name: String,
     /// Description.
     pub description: String,
     /// Parameters.
-    pub parameters: TParameters,
+    pub parameters: crate::parameter_schema::ParameterSchema,
 }
 /// Supply conversation messages with optional system prompt and tools.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

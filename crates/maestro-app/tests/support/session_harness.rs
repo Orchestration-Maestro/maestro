@@ -777,6 +777,12 @@ pub fn on_paused_task_set<F: std::future::Future>(
     runtime.block_on(local.run_until(body(Rc::clone(&local))))
 }
 
+/// Returns once every task of an [`on_paused_task_set`] runtime waits: the paused clock
+/// moves only then.
+pub async fn until_idle() {
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+}
+
 /// The text of a message record: plain content, joined text blocks, or its summary.
 pub fn message_text(record: &Value) -> Value {
     match &record["content"] {
@@ -1986,4 +1992,22 @@ pub fn echo_tools(
         execution_mode: None,
     };
     IndexMap::from([("echo".to_owned(), Rc::new(RwLock::new(tool)))])
+}
+
+/// The extension whose input handler answers every input with `answer`.
+pub fn input_extension(
+    answer: impl Fn(&InputEvent) -> Result<Option<InputEventResult>, &'static str> + 'static,
+) -> ExtensionFactory<Local> {
+    let answer = Rc::new(answer);
+    Rc::new(move |api| {
+        let answer = Rc::clone(&answer);
+        let registered = api.on::<InputEvent, InputEventResult>(
+            "input".into(),
+            Rc::new(move |event, _| {
+                let result = answer(event).map_err(Into::into);
+                Box::pin(std::future::ready(result))
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
 }

@@ -41,6 +41,9 @@ mod clipboard_platform;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/clipboard_status.rs"]
 mod clipboard_status;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/command_operations.rs"]
+mod command_operations;
 mod configuration_paths;
 mod context_discovery;
 #[cfg(unix)]
@@ -67,6 +70,7 @@ mod docx_tables;
 mod docx_values;
 mod docx_xml;
 mod extension_context_exports;
+mod extension_ui;
 mod extension_ui_exports;
 #[path = "docx_support/font_resources.rs"]
 mod font_resources;
@@ -112,11 +116,23 @@ mod resource_extension_loading;
 #[path = "support/resource_fixtures.rs"]
 mod resource_fixtures;
 mod resource_loading;
+#[cfg(unix)]
+#[path = "../examples/rpc_client_demo/interactive.rs"]
+mod rpc_client_demo;
+mod rpc_client_events;
+mod rpc_client_lifecycle;
+mod rpc_client_transport;
+#[cfg(unix)]
+#[path = "support/rpc_peer.rs"]
+mod rpc_peer;
 mod runtime_agent;
 mod sandbox_runtime_providers;
 mod sdk_root_exports;
 mod self_update_native;
 mod self_update_selection;
+mod server_commands;
+mod server_events;
+mod server_lifetime;
 #[cfg(unix)]
 #[path = "support/service_observations.rs"]
 mod service_observations;
@@ -155,6 +171,7 @@ mod ssf_values;
 mod ssf_writers;
 mod startup_completion;
 mod startup_conversions;
+mod startup_environment;
 mod startup_timings;
 mod system_prompt_assembly;
 /// Strict recorded observations shared by several test modules.
@@ -171,10 +188,16 @@ mod support {
     #[cfg(not(target_arch = "wasm32"))]
     pub mod document_extraction;
     #[cfg(not(target_arch = "wasm32"))]
+    pub mod export_fixtures;
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod javascript_execution;
     pub mod no_commands;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod pdf;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod rpc_connection;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod runtime_fixtures;
     pub mod session_harness;
     #[cfg(not(target_arch = "wasm32"))]
     mod shared_operands;
@@ -187,5 +210,6 @@ mod tree_interface;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/watching.rs"]
 mod watching;
+mod wire_records;
 mod workbook_fixture;
 mod workbooks;

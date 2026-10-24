@@ -12,6 +12,9 @@ use wit::{ScanContext, WitInputs};
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
+/// Single-owner rule for work polled once before a task facility takes it.
+mod inline_polls;
+
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
@@ -34,7 +37,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             }
             check_declarations(member, source, &records, &mut declarations)?;
             check_session_setup(member, source, &records)?;
-            check_parameter_schema_defaults(member, source, &records)?;
             let context = ScanContext {
                 owner: &member.name,
                 directory: &member.directory,
@@ -47,11 +49,15 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
+    inline_polls::check(members)?;
     wit.finish()
 }
 
 /// Rust declaration keywords whose following identifiers are inspected.
 const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type", "mod"];
+
+/// Shared protocol functions whose declarations have one owner.
+const OWNED_FUNCTIONS: &[&str] = &["serialize_json_line", "serialize_rpc_response"];
 
 /// Session configuration record that only the shared interactive test setup constructs.
 const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
@@ -109,12 +115,14 @@ impl Records {
     /// Record a recognized declaration with its unescaped name.
     fn declaration(&mut self, keyword: &proc_macro2::Ident, following: &[TokenTree]) {
         let kind = keyword.to_string();
-        if !DECLARATION_KINDS.contains(&kind.as_str()) {
-            return;
-        }
         let Some(TokenTree::Ident(name)) = following.first() else {
             return;
         };
+        let owned_function =
+            kind == "fn" && OWNED_FUNCTIONS.contains(&name.unraw().to_string().as_str());
+        if !DECLARATION_KINDS.contains(&kind.as_str()) && !owned_function {
+            return;
+        }
         if kind == "union" && !union_body(following.get(1)) {
             return;
         }
@@ -258,6 +266,7 @@ fn check_declarations(
     declarations: &mut BTreeSet<String>,
 ) -> Result<(), String> {
     for (name, kind, line) in &records.declarations {
+        foreign_rpc_record(member, source, name, *line)?;
         let Some(owner) = declaration_owner(name, kind) else {
             continue;
         };
@@ -298,6 +307,26 @@ fn check_declarations(
     Ok(())
 }
 
+/// Rejects a protocol record declared outside the application and the protocol crate.
+fn foreign_rpc_record(
+    member: &Member,
+    source: &Source,
+    name: &str,
+    line: usize,
+) -> Result<(), String> {
+    let record = name
+        .strip_prefix("Rpc")
+        .is_some_and(|rest| rest.starts_with(char::is_uppercase));
+    if record && !["maestro-app", "maestro-protocol"].contains(&member.name.as_str()) {
+        return Err(format!(
+            "{}:{line}: {name} declaration belongs to maestro-app or maestro-protocol, not {}",
+            source.path.display(),
+            member.name
+        ));
+    }
+    Ok(())
+}
+
 /// The crate that owns one declaration, for the names the workspace scopes.
 fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     let owner = if selector(name) {
@@ -330,6 +359,10 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-test-terminal"
     } else if input_presenter_record(name) {
         "maestro-app"
+    } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {
+        "maestro-json"
+    } else if name == "serialize_rpc_response" {
+        "maestro-protocol"
     } else {
         return None;
     };
@@ -349,58 +382,6 @@ fn input_presenter_record(name: &str) -> bool {
             | "SessionsFuture"
             | "SessionsLoader"
     )
-}
-
-/// Reject shared records whose schema operand defaults to ordinary JSON.
-fn check_parameter_schema_defaults(
-    member: &Member,
-    source: &Source,
-    records: &Records,
-) -> Result<(), String> {
-    if member.name != "maestro-request" {
-        return Ok(());
-    }
-    for (name, line, head) in &records.struct_heads {
-        if !matches!(name.as_str(), "Tool" | "ToolInfo") {
-            continue;
-        }
-        if !declares_type_parameters(head) {
-            continue;
-        }
-        if !identifiers(head)
-            .iter()
-            .any(|ident| ident == "ParameterSchema")
-        {
-            return Err(format!(
-                "{}:{line}: {name} must default its schema operand to ParameterSchema",
-                source.path.display()
-            ));
-        }
-    }
-    Ok(())
-}
-
-/// Whether a declaration head declares type parameters.
-fn declares_type_parameters(head: &TokenStream) -> bool {
-    head.clone()
-        .into_iter()
-        .any(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '<'))
-}
-
-/// Every identifier spelled inside a token stream, nested groups included.
-fn identifiers(tokens: &TokenStream) -> Vec<String> {
-    let mut names = Vec::new();
-    let mut pending = vec![tokens.clone()];
-    while let Some(stream) = pending.pop() {
-        for token in stream {
-            match token {
-                TokenTree::Ident(ident) => names.push(ident.unraw().to_string()),
-                TokenTree::Group(group) => pending.push(group.stream()),
-                _ => {}
-            }
-        }
-    }
-    names
 }
 
 /// Shared schema declarations whose specialization aliases remain owner-local.

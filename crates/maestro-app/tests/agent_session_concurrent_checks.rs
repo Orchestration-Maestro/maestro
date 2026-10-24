@@ -800,6 +800,7 @@ fn empty_resource_roots_keep_the_session_isolated() {
                 settings_manager: Some(Rc::new(RefCell::new(settings))),
                 session_start_event: None,
                 theme: maestro_theme::LiveTheme::default(),
+                offline: None,
             })
             .await
             .unwrap();
