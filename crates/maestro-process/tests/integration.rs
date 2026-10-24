@@ -4,6 +4,7 @@
 mod capture_lifecycle;
 mod child_status_checks;
 mod helper_launches;
+mod interactive_pipes;
 mod pty_children;
 mod streamed_capture;
 mod synchronous_capture;

@@ -86,11 +86,11 @@ impl InteractiveMode {
     /// Returns the failure of showing the notice.
     pub(super) async fn handle_copy_command(&self) -> CommandResult {
         let Some(text) = self.runtime_host.session().get_last_assistant_text() else {
-            return self.show_error("No agent messages to copy yet.");
+            return Ok(self.show_error("No agent messages to copy yet.")?);
         };
         match maestro_app::copy_to_clipboard(&text).await {
             Ok(()) => self.show_status("Copied last agent message to clipboard"),
-            Err(error) => self.show_error(&error.to_string()),
+            Err(error) => Ok(self.show_error(&error.to_string())?),
         }
     }
 
@@ -101,11 +101,13 @@ impl InteractiveMode {
     pub(super) async fn handle_share_command(self: &Rc<Self>) -> CommandResult {
         match Self::check_github_cli() {
             Ok(()) => (),
-            Err(notice) => return self.show_error(notice),
+            Err(notice) => return Ok(self.show_error(notice)?),
         }
         let artifact = match self.export_share() {
             Ok(artifact) => Rc::new(artifact),
-            Err(error) => return self.show_error(&format!("Failed to export session: {error}")),
+            Err(error) => {
+                return Ok(self.show_error(&format!("Failed to export session: {error}"))?);
+            }
         };
         let loader = self.show_share_loader(Rc::clone(&artifact))?;
         let shared = Self::create_gist(&artifact, &loader).await;
@@ -117,7 +119,7 @@ impl InteractiveMode {
         artifact.remove();
         match shared {
             Ok(output) => self.show_share_result(&output, SERVICE_ORIGIN),
-            Err(error) => self.show_error(&format!("Failed to create gist: {error}")),
+            Err(error) => Ok(self.show_error(&format!("Failed to create gist: {error}"))?),
         }
     }
 
@@ -246,12 +248,12 @@ impl InteractiveMode {
             } else {
                 error
             };
-            return self.show_error(&format!("Failed to create gist: {error}"));
+            return Ok(self.show_error(&format!("Failed to create gist: {error}"))?);
         }
         let gist = stdout.trim_matches(is_whitespace_scalar);
         let id = gist.rsplit('/').next().filter(|id| !id.is_empty());
         let Some(id) = id else {
-            return self.show_error("Failed to parse gist ID from gh output");
+            return Ok(self.show_error("Failed to parse gist ID from gh output")?);
         };
         let message = get_share_viewer_url(id, service_origin).map_or_else(
             || format!("Gist: {gist}"),

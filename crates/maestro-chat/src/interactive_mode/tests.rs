@@ -1,6 +1,7 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
 mod events;
+mod extension_ui;
 #[allow(
     dead_code,
     unused_imports,
@@ -24,7 +25,9 @@ use crate::components::session_selector::list::tests::session_picker::{
 };
 use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
-use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
+use maestro_app::presentation_data::footer_data_provider::{
+    FooterOperations, NativeFooterOperations,
+};
 use maestro_app::{
     AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, Extension,
     ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
@@ -385,6 +388,8 @@ pub(super) struct Setup {
     pub(super) commands: Vec<(String, String)>,
     /// The diagnostics beside the skills, prompt templates and themes.
     pub(super) diagnostics: LoadedDiagnostics,
+    /// The watch, timer and Git effects the mode uses; the native ones when absent.
+    pub(super) watcher: Option<Rc<dyn FooterOperations>>,
 }
 
 impl Default for Setup {
@@ -404,6 +409,7 @@ impl Default for Setup {
             errors: Vec::new(),
             commands: Vec::new(),
             diagnostics: LoadedDiagnostics::default(),
+            watcher: None,
         }
     }
 }
@@ -478,7 +484,8 @@ impl Setup {
             self.options,
             (terminal.handle(), runtime.handle()),
             Rc::clone(&themes),
-            Rc::new(NativeFooterOperations::new(local)),
+            self.watcher
+                .unwrap_or_else(|| Rc::new(NativeFooterOperations::new(local))),
         )
         .unwrap();
         World {

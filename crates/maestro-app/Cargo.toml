@@ -74,7 +74,7 @@ maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 futures-util = { workspace = true, features = ["async-await"] }
-tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "net", "io-util"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "net", "io-util", "io-std", "signal"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "=0.3.106"
@@ -115,3 +115,7 @@ test = true
 name = "transcript_report"
 path = "examples/transcript_report.rs"
 test = true
+
+[[example]]
+name = "rpc_client_demo"
+path = "examples/rpc_client_demo/main.rs"

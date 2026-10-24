@@ -27,6 +27,8 @@ mod resources;
 mod share;
 mod startup;
 mod submit;
+
+mod extension_ui;
 mod toggles;
 mod transcript;
 mod transfer;
@@ -75,6 +77,8 @@ pub struct InteractiveMode {
     footer: Rc<FooterComponent>,
     /// The footer metadata and its branch watch.
     footer_data_provider: FooterDataProvider,
+    /// The supplied watch, timer and Git process effects, reused for named theme watching.
+    operations: Rc<dyn FooterOperations>,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
     /// The expandable startup help, absent when startup is quiet.
@@ -114,15 +118,7 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
-        let tool_environment = Rc::new(ToolRenderEnvironment {
-            runtime: terminal.1.clone(),
-            readme_path: maestro_app::configuration::config::get_readme_path()?,
-            live_theme: themes.theme(),
-            highlighter: Rc::new(
-                SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
-            ),
-            terminal_image: TerminalImage::default(),
-        });
+        let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
@@ -143,7 +139,7 @@ impl InteractiveMode {
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let settings = session.settings_manager();
         let selected_theme = settings.borrow().get_theme();
-        themes.init_theme(selected_theme.as_deref(), Some(operations))?;
+        themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
         let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
@@ -160,6 +156,7 @@ impl InteractiveMode {
             editor,
             footer,
             footer_data_provider,
+            operations,
             is_initialized: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
@@ -228,6 +225,25 @@ impl InteractiveMode {
         })?;
         self.render_initial_messages()
     }
+}
+
+/// The runtime, theme, highlighter and image support shared by the transcript rows.
+///
+/// # Errors
+/// Returns the failure of the documentation path or of the highlighter.
+fn tool_environment(
+    runtime: Rc<dyn TuiRuntime>,
+    live_theme: LiveTheme,
+) -> Result<Rc<ToolRenderEnvironment>, Box<dyn Error>> {
+    Ok(Rc::new(ToolRenderEnvironment {
+        runtime,
+        readme_path: maestro_app::configuration::config::get_readme_path()?,
+        live_theme,
+        highlighter: Rc::new(
+            SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
+        ),
+        terminal_image: TerminalImage::default(),
+    }))
 }
 
 /// Builds the frame writer with the configured hardware-cursor and clear-on-shrink policies,

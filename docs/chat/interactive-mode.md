@@ -127,9 +127,18 @@ later repaints only its heading in the current theme.
 
 `show_error` and `show_warning` append an empty row and a padded notice, labelled
 `Error:` or `Warning:` in the theme's error or warning colour, to the transcript.
-Each requests one frame. The supplied text is kept as given, including line
+Each requests one frame and returns the published theme's error, so the caller
+keeps the original failure type. The supplied text is kept as given, including line
 breaks and its own styling. `clear_editor` empties the editor and requests a
 frame; the editor's history is kept.
+
+## Extension UI host
+
+The mode implements the extension UI port. A host retains it with
+`ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
+lists the operations it answers today, which are editor access, theme queries and
+selection, the terminal title and tool expansion. Dialogs, notifications,
+terminal input listeners and custom widgets keep their own published owners.
 
 ## Typed input
 
