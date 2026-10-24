@@ -1,10 +1,10 @@
 //! Records and the base context handed to extension callbacks.
-use crate::{EventError, runner::ContextBinding};
+use crate::{EventError, execution::ContextBinding};
 use maestro_models::{Cancellation, Model};
 use maestro_models::{Execution, Local, UserContent};
 use maestro_session::{
     SessionManager,
-    messages::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions},
+    message_records::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions},
     session_manager::{ForkPosition, NavigateTreeOptions},
 };
 use std::{cell::RefCell, future::ready, ops::Deref};

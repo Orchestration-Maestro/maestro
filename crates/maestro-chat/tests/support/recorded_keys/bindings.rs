@@ -1,5 +1,5 @@
 //! Recorded scalar/list overrides and active-manager configuration.
-use maestro_app::presentation_data::keybindings::KEYBINDINGS;
+use maestro_app::presentation_data::bindings::KEYBINDINGS;
 use maestro_tui::{
     KeybindingKeys, KeybindingsConfig, KeybindingsManager, TUI_KEYBINDINGS, get_keybindings,
     set_keybindings,

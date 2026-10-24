@@ -4,31 +4,31 @@
 pub mod byte_queue;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod child_process;
+pub mod children;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use child_process::{
+pub use children::{
     OutputMode, SpawnSyncError, SpawnSyncOptions, exit_signal_name, spawn, spawn_sync,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod shell;
+pub mod commands;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use shell::{Launch, LaunchContext, windows_shell_launch};
+pub use commands::{Launch, LaunchContext, windows_shell_launch};
 
-pub mod foreground;
+pub mod jobs;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod termination;
+pub mod signals;
 
 #[cfg(unix)]
-pub use termination::DefaultSignalActions;
+pub use signals::DefaultSignalActions;
 #[cfg(not(target_arch = "wasm32"))]
-pub use termination::TerminationSignal;
+pub use signals::TerminationSignal;
 
 #[cfg(target_os = "linux")]
-pub mod pty;
+pub mod terminal;
 
 #[cfg(unix)]
 #[cfg(test)]

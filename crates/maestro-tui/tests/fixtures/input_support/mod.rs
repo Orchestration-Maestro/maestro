@@ -45,7 +45,7 @@ impl Drop for Globals {
 }
 
 use maestro_tui::{
-    Component, Focusable, Input, KeybindingKeys, KeybindingsConfig, tui::InputHandler,
+    Component, Focusable, Input, KeybindingKeys, KeybindingsConfig, interface::InputHandler,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};

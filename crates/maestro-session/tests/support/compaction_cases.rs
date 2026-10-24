@@ -39,7 +39,7 @@ pub fn group(name: &str) {
         match &case.output {
             Output::Value { value } => {
                 let actual = actual.unwrap().unwrap();
-                super::value::assert_value(&actual, value, &case.id);
+                super::value::assert_equal(&actual, value, &case.id);
                 assert_order(&actual, value, &case.id);
             }
             Output::Absent {} => assert!(actual.unwrap().is_none(), "{}", case.id),

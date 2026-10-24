@@ -1,7 +1,7 @@
 //! Calendar days and local midnights as the reports read them.
 
 use chrono::{DateTime, Datelike, Days, Local, NaiveDate, TimeZone};
-use maestro_session::messages::local_timestamp_millis;
+use maestro_session::message_records::local_timestamp_millis;
 
 /// The calendar day an instant falls on, written as `YYYY-MM-DD`.
 ///

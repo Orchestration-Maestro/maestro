@@ -7,9 +7,9 @@ use crate::{
         transition::{Transition, TransitionStyle},
     },
     components::{
-        code_block::{CodeBlock, CodeBlockView},
         console_block::ConsoleVariant,
         native_text::{NativeText, TextKind},
+        source::{CodeBlock, CodeBlockView},
     },
     tools::{
         renderer_registry::ToolHeaderState,
@@ -174,7 +174,7 @@ struct Retained {
     /// Current selected template, including header-only branches.
     phase: Option<Phase>,
     /// Shared nested-caption activation and exclusion.
-    actions: Rc<crate::tools::renderer_registry::header::InlineActions>,
+    actions: Rc<crate::tools::renderer_registry::heading::InlineActions>,
     /// Optional non-disclosure error root.
     error: Option<NativeText>,
 }
@@ -219,7 +219,7 @@ impl CollapsibleCard {
         let caption = self
             .caption
             .header(view.i18n, Rc::clone(&retained.actions))?;
-        let header = crate::tools::renderer_registry::header::render_inline_header(
+        let header = crate::tools::renderer_registry::heading::render_inline_header(
             self.state,
             glyph,
             caption,

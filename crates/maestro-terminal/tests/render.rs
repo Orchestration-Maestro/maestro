@@ -2,7 +2,7 @@
 
 use maestro_terminal::{
     Terminal,
-    render::{Dirty, RenderState},
+    painting::{Dirty, RenderState},
     terminal::ScrollViewport,
 };
 
@@ -250,7 +250,7 @@ fn snapshot_resolves_terminal_default_colors() {
     let mut t = terminal("");
     let mut state = RenderState::default();
     state.update(&mut t);
-    let empty = maestro_terminal::render::Colors::default();
+    let empty = maestro_terminal::painting::Colors::default();
     assert_eq!(state.colors, empty);
     feed(&mut t, "\x1b]12;#FF0000\x07");
     state.update(&mut t);

@@ -8,7 +8,9 @@ use maestro_models::SharedHandle;
 use maestro_models::UserContent;
 use maestro_session::{
     Presence,
-    messages::{MessageDelivery, SendMessageOptions, SendUserMessageOptions, UserMessageDelivery},
+    message_records::{
+        MessageDelivery, SendMessageOptions, SendUserMessageOptions, UserMessageDelivery,
+    },
 };
 use serde_json::{Value, json};
 use std::{cell::Cell, collections::VecDeque};

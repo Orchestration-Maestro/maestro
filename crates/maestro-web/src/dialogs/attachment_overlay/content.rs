@@ -7,7 +7,7 @@ use crate::{
         AttachmentContent, AttachmentSurface, FileType, ImageFit, TextView,
     },
 };
-use maestro_app::browser::utils::attachment_utils::AttachmentType;
+use maestro_app::browser::utils::attachments::AttachmentType;
 use maestro_theme::BrandPresentation;
 use std::rc::Rc;
 /// Select the first matching document presentation.

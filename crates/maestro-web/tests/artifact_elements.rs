@@ -2,7 +2,7 @@
 #![cfg(test)]
 use crate::artifact_support;
 use crate::session_header_support;
-use maestro_web::tools::artifacts::create_artifact_element;
+use maestro_web::tools::documents::create_artifact_element;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -19,7 +19,7 @@ fn generic_factory_never_replaces_recognized_views() {
     }
 }
 use artifact_support::{Decoded, Frame, corpus};
-use maestro_web::{ArtifactElement, tools::artifacts::generic_artifact::GenericArtifact};
+use maestro_web::{ArtifactElement, tools::documents::generic_artifact::GenericArtifact};
 use session_header_support::{Failure, Host};
 /// The SDK root trait admits the concrete view through both drawing operations.
 #[test]
@@ -108,7 +108,7 @@ fn generic_download_rejects_invalid_payload_without_saving() {
         let mut view = create_artifact_element("a.zip", &case.input.content, host.clone()).unwrap();
         assert!(matches!(
             frame.click(view.as_mut()),
-            Err(maestro_web::tools::artifacts::ArtifactUiError::Presentation(_))
+            Err(maestro_web::tools::documents::ArtifactUiError::Presentation(_))
         ));
         assert!(host.downloads.borrow().is_empty());
         frame.draw(view.as_mut(), false, vec![]).unwrap();
@@ -126,7 +126,7 @@ fn generic_download_failure_keeps_the_native_body() {
     host.fail_download.set(true);
     assert!(matches!(
         frame.click(view.as_mut()),
-        Err(maestro_web::tools::artifacts::ArtifactUiError::Host(_))
+        Err(maestro_web::tools::documents::ArtifactUiError::Host(_))
     ));
     assert_eq!(view.content(), "AAEC//79");
     host.fail_download.set(false);
@@ -219,7 +219,7 @@ fn generic_styles_follow_supplied_brand_roles() {
 #[test]
 fn local_artifact_tool_updates_the_real_generic_view() {
     use artifact_support::presentation::{Presentation, ready};
-    use maestro_app::browser::tools::artifacts::LocalArtifactsPanel;
+    use maestro_app::browser::tools::documents::LocalArtifactsPanel;
     use serde_json::json;
     let host = Rc::new(Host::default());
     let presentation = Rc::new(Presentation {

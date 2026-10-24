@@ -939,8 +939,8 @@ macro_rules! replay {
                 });
                 let config = stop_config(&original, &trace, mode, stop);
                 let requested = requests.clone();
-                let options: maestro_agent::agent_loop::AgentLoopOptionsRecord<Mode> =
-                    maestro_agent::agent_loop::AgentLoopOptionsRecord {
+                let options: maestro_agent::execution::AgentLoopOptionsRecord<Mode> =
+                    maestro_agent::execution::AgentLoopOptionsRecord {
                         signal: Some(Cancellation::new()),
                         stream_fn: Some(Owner::new(move |_, _, _, _| {
                             let mut count = requested.lock().unwrap();
@@ -1006,9 +1006,9 @@ replay!(
     Local,
     Rc,
     new_local,
-    maestro_agent::agent_loop::local::run_agent_loop,
-    |options: maestro_agent::agent_loop::AgentLoopOptionsRecord<Local>| {
-        maestro_agent::agent_loop::LocalAgentLoopOptions::ReplacementStream {
+    maestro_agent::execution::local::run_agent_loop,
+    |options: maestro_agent::execution::AgentLoopOptionsRecord<Local>| {
+        maestro_agent::execution::LocalAgentLoopOptions::ReplacementStream {
             signal: options.signal,
             stream_fn: options.stream_fn.unwrap(),
         }

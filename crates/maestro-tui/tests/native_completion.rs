@@ -3,14 +3,14 @@
 /// Shared controlled completion fixtures.
 use crate::fixtures;
 use fixtures::futures::block_on;
-use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
+use maestro_tui::candidates::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
 
 /// Run one native request through the public provider.
 fn query<E: Fn(&str) -> Option<String>>(
     provider: &CombinedAutocompleteProvider<NativeAutocompleteOperations<E>>,
     text: &str,
-) -> Result<Option<maestro_tui::AutocompleteSuggestions>, maestro_tui::autocomplete::CompletionError>
+) -> Result<Option<maestro_tui::AutocompleteSuggestions>, maestro_tui::candidates::CompletionError>
 {
     let lines = [text.to_owned()];
     block_on(provider.get_suggestions(
@@ -179,11 +179,11 @@ struct LocaleFiles<E> {
     /// Native comparison with an injected environment.
     native: NativeAutocompleteOperations<E>,
     /// Entries whose input order the test owns.
-    entries: Vec<maestro_tui::autocomplete::DirectoryEntry>,
+    entries: Vec<maestro_tui::candidates::DirectoryEntry>,
     /// Controlled enumeration failure before locale is needed.
     fail_listing: bool,
 }
-impl<E: Fn(&str) -> Option<String>> maestro_tui::autocomplete::AutocompleteOperations
+impl<E: Fn(&str) -> Option<String>> maestro_tui::candidates::AutocompleteOperations
     for LocaleFiles<E>
 {
     type Signal = ();
@@ -201,14 +201,14 @@ impl<E: Fn(&str) -> Option<String>> maestro_tui::autocomplete::AutocompleteOpera
     fn home_dir(&self) -> std::io::Result<String> {
         self.native.home_dir()
     }
-    fn read_dir(&self, _: &str) -> std::io::Result<Vec<maestro_tui::autocomplete::DirectoryEntry>> {
+    fn read_dir(&self, _: &str) -> std::io::Result<Vec<maestro_tui::candidates::DirectoryEntry>> {
         if self.fail_listing {
             return Err(std::io::Error::other("listing failed"));
         }
         Ok(self
             .entries
             .iter()
-            .map(|entry| maestro_tui::autocomplete::DirectoryEntry {
+            .map(|entry| maestro_tui::candidates::DirectoryEntry {
                 name: entry.name.clone(),
                 kind: entry.kind,
             })
@@ -227,7 +227,7 @@ fn locale_query<E: Fn(&str) -> Option<String>>(
     provider: &CombinedAutocompleteProvider<LocaleFiles<E>>,
     text: &str,
     force: bool,
-) -> Result<Option<maestro_tui::AutocompleteSuggestions>, maestro_tui::autocomplete::CompletionError>
+) -> Result<Option<maestro_tui::AutocompleteSuggestions>, maestro_tui::candidates::CompletionError>
 {
     let lines = [text.to_owned()];
     block_on(provider.get_suggestions(
@@ -245,7 +245,7 @@ fn locale_query<E: Fn(&str) -> Option<String>>(
 
 #[test]
 fn native_collation_matches_locale_ordering() {
-    use maestro_tui::autocomplete::{DirectoryEntry, DirectoryEntryKind};
+    use maestro_tui::candidates::{DirectoryEntry, DirectoryEntryKind};
     for case in LOCALES {
         let native = NativeAutocompleteOperations::with_environment(|key| {
             case.environment
@@ -805,7 +805,7 @@ const LOCALES: &[LocaleCase] = &[
 
 #[test]
 fn locale_selection_is_lazy_cached_and_uses_the_first_present_variable() {
-    use maestro_tui::autocomplete::{DirectoryEntry, DirectoryEntryKind};
+    use maestro_tui::candidates::{DirectoryEntry, DirectoryEntryKind};
     use std::cell::{Cell, RefCell};
     use std::rc::Rc;
     assert_locale_reads_avoided().expect("avoided locale reads");
@@ -858,8 +858,8 @@ fn locale_selection_is_lazy_cached_and_uses_the_first_present_variable() {
 }
 
 /// Prove the command and listing branches that do not need collation.
-fn assert_locale_reads_avoided() -> Result<(), maestro_tui::autocomplete::CompletionError> {
-    use maestro_tui::autocomplete::{Command, DirectoryEntry, DirectoryEntryKind};
+fn assert_locale_reads_avoided() -> Result<(), maestro_tui::candidates::CompletionError> {
+    use maestro_tui::candidates::{Command, DirectoryEntry, DirectoryEntryKind};
     use std::cell::Cell;
     for (fail_listing, kinds) in [
         (true, vec![]),

@@ -1,8 +1,8 @@
 //! Browser tool views.
 use crate::tools::types::ToolUiError;
-pub mod artifacts;
+pub mod documents;
 /// Document-extraction cards.
-pub mod extract_document;
+pub mod extraction;
 /// JavaScript execution cards and browser-local hidden tool registration.
 pub mod javascript_repl;
 
@@ -102,7 +102,7 @@ fn dispatch<P: 'static, D: 'static, C: ContentKind>(
 #[cfg(target_arch = "wasm32")]
 pub mod dom {
     use super::{ContentKind, ToolParams, ToolRenderResult, ToolUiError, dispatch, types};
-    use crate::dom::DomContent;
+    use crate::page::DomContent;
     impl ContentKind for Box<dyn DomContent> {
         fn renderer<P: 'static, D: 'static>(
             binding: &types::ToolRendererBinding,

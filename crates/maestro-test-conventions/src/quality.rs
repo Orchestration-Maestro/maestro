@@ -188,6 +188,7 @@ const PROTECTED: &[(&str, &str)] = &[
     ("rust", "unsafe_code"),
     ("rust", "forbidden_lint_groups"),
     ("clippy", "pedantic"),
+    ("clippy", "module_name_repetitions"),
     ("clippy", "missing_docs_in_private_items"),
     ("clippy", "redundant_clone"),
     ("clippy", "too_many_arguments"),

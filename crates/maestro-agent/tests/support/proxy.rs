@@ -431,10 +431,7 @@ pub fn held() -> (Fetch, Requests, Held) {
 
 /// A transport selected for the proxy stream function.
 #[must_use]
-pub fn proxy_stream_fn(
-    url: String,
-    fetch: Option<maestro_models::Fetch>,
-) -> maestro_agent::StreamFn {
+pub fn stream_fn(url: String, fetch: Option<maestro_models::Fetch>) -> maestro_agent::StreamFn {
     let spawner: maestro_agent::AgentSpawner = std::sync::Arc::new(|task| {
         tokio::spawn(task);
     });
@@ -451,7 +448,7 @@ pub fn proxy_stream_fn(
 }
 
 /// An Agent whose model calls go through the proxy stream function.
-pub fn proxy_agent(stream_fn: maestro_agent::StreamFn) -> std::sync::Arc<maestro_agent::Agent> {
+pub fn agent(stream_fn: maestro_agent::StreamFn) -> std::sync::Arc<maestro_agent::Agent> {
     let spawn: maestro_agent::AgentSpawner = std::sync::Arc::new(|task| {
         tokio::spawn(task);
     });

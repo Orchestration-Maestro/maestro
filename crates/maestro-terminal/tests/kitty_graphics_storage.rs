@@ -3,8 +3,8 @@
 use maestro_terminal::{
     Screen,
     kitty::graphics::{
-        image::Image,
-        storage::{ImageStorage, Location, Placement},
+        bitmap::Image,
+        images::{ImageStorage, Location, Placement},
     },
     screen::Options,
 };
@@ -164,7 +164,7 @@ fn anonymous_placements_coexist_and_disabling_releases_all_pins() {
     let mut screen = Screen::init(Options::default());
     let baseline = screen.pages.tracked_pins().count();
     let mut storage = ImageStorage::default();
-    storage.image_limits = maestro_terminal::kitty::graphics::image::Limits::ALL;
+    storage.image_limits = maestro_terminal::kitty::graphics::bitmap::Limits::ALL;
     storage
         .add_image(&mut screen.pages, image(1, b"aaaa"))
         .unwrap();
@@ -450,7 +450,7 @@ fn range_deletion_keeps_both_outside_controls() {
 #[test]
 fn id_and_newest_deletion_keep_other_placements_until_the_last_user() {
     use maestro_terminal::{
-        kitty::graphics::{command::Delete, storage::PlacementId},
+        kitty::graphics::{command::Delete, images::PlacementId},
         point::Coordinate,
     };
     for newest in [false, true] {

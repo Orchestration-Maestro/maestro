@@ -5,9 +5,9 @@ mod render;
 
 use super::editing::LastAction;
 use crate::{
+    clipboard::KillRing,
     get_keybindings,
-    kill_ring::KillRing,
-    tui::{Component, FocusFlag, Focusable, InputHandler},
+    interface::{Component, FocusFlag, Focusable, InputHandler},
     undo_stack::UndoStack,
 };
 use std::{cell::RefCell, rc::Rc};

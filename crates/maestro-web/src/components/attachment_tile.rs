@@ -7,7 +7,7 @@ use crate::{
         points, style,
     },
 };
-use maestro_app::{browser::utils::attachment_utils::AttachmentType, truncate_utf16};
+use maestro_app::{browser::utils::attachments::AttachmentType, truncate_utf16};
 use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, rc::Rc};
 /// A caller-owned attachment tile.

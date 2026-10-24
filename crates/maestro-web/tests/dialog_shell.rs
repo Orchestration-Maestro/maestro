@@ -6,8 +6,8 @@ use crate::input_support;
 use maestro_web::{
     browser::attachment_content::ReadingContent,
     dialogs::{
-        dialog::{DialogBody, DialogProps, dialog},
         dialog_base::{DialogBase, DialogContext},
+        surface::{DialogBody, DialogProps, dialog},
     },
 };
 use num_traits::ToPrimitive as _;
@@ -1087,7 +1087,8 @@ fn expected_pixel_alpha(origin: egui::Pos2, density: f32, spread: f32, radius: f
 #[test]
 fn dialog_errors_preserve_sources_and_retained_owners() {
     use maestro_web::{
-        I18nError, browser::attachment_content::AttachmentHostError, dialogs::dialog::DialogUiError,
+        I18nError, browser::attachment_content::AttachmentHostError,
+        dialogs::surface::DialogUiError,
     };
     use std::error::Error as _;
     let host = input_support::Host::new(|_, _| {});

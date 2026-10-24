@@ -2,8 +2,8 @@
 #![cfg(target_os = "linux")]
 
 use maestro_app::daemon::{
-    app::state::ThemeRuntimeConfig,
-    settings::{model::Config, theme::CustomThemeColors},
+    app::model::ThemeRuntimeConfig,
+    settings::{appearance::CustomThemeColors, model::Config},
     terminal_theme::HostAppearance,
 };
 use maestro_multiplexer::palette::{Palette, resolve_effective_theme};

@@ -132,7 +132,7 @@ fn label_update_does_not_rebuild_the_current_filtered_view() {
 
 #[test]
 fn label_timestamp_toggle_obeys_live_keys_and_action_priority() {
-    let (_, definition) = maestro_app::presentation_data::keybindings::KEYBINDINGS
+    let (_, definition) = maestro_app::presentation_data::bindings::KEYBINDINGS
         .iter()
         .find(|(id, _)| id == "app.tree.toggleLabelTimestamp")
         .unwrap();

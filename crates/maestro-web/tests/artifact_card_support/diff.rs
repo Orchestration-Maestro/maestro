@@ -5,7 +5,7 @@ use crate::{
     tool_renderer_browser as drawing,
 };
 use maestro_web::{
-    components::diff::{DiffProps, diff},
+    components::changes::{DiffProps, diff},
     tools::types::{ToolRenderResult, ToolRenderState},
 };
 

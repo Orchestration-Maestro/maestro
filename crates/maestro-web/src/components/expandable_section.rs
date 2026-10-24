@@ -161,7 +161,7 @@ impl ExpandableSection {
         )
         .map_err(ToolUiError::Control)?;
         let last = ui.ctx().graphics_mut(|g| g.entry(ui.layer_id()).next_idx());
-        crate::tools::renderer_registry::header::center_leading(
+        crate::tools::renderer_registry::heading::center_leading(
             ui,
             Some((first, last, rect.center().y)),
             row.response.rect.center().y,

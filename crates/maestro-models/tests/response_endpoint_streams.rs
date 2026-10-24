@@ -355,19 +355,18 @@ fn maestro_responses_emit_carriage_delimited_events() -> chat::TestResult {
         let model =
             chat::model(&serde_json::json!({"api":"openai-responses","provider":"openai"}))?;
         let context = chat::context(&serde_json::json!({"messages":[]}))?;
-        let stream =
-            maestro_models::providers::responses::openai_responses::stream_openai_responses(
-                model,
-                context,
-                Some(OpenAIResponsesOptions {
-                    common: StreamOptions {
-                        api_key: Some("fixture-key".into()),
-                        fetch: Some(fetch),
-                        ..Default::default()
-                    },
+        let stream = maestro_models::providers::responses_api::openai::stream_openai_responses(
+            model,
+            context,
+            Some(OpenAIResponsesOptions {
+                common: StreamOptions {
+                    api_key: Some("fixture-key".into()),
+                    fetch: Some(fetch),
                     ..Default::default()
-                }),
-            );
+                },
+                ..Default::default()
+            }),
+        );
         reached.await?;
         let mut partial = None;
         while let Some(Some(event)) = stream.next().now_or_never() {

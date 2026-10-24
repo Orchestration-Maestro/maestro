@@ -1,6 +1,6 @@
 //! Children whose three standard streams the caller drives directly.
 #![cfg(unix)]
-use maestro_process::child_process::{CapturedChild, Termination};
+use maestro_process::children::{CapturedChild, Termination};
 use std::os::unix::process::ExitStatusExt;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};

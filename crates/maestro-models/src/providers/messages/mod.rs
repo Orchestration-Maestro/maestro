@@ -1,3 +1,3 @@
 //! Direct message-protocol adapters.
 
-pub mod anthropic;
+pub mod endpoint;

@@ -1,6 +1,6 @@
 //! Editing text in the user's external editor on the inherited terminal.
 use crate::temporary_file::write_temporary_file;
-use maestro_tui::{Editor, TUI, tui::TuiRuntime};
+use maestro_tui::{Editor, TUI, interface::TuiRuntime};
 use std::{fs, io, path::Path};
 
 /// One edit: the configured command, the file it edits and the text written there first.

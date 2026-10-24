@@ -1,6 +1,6 @@
 //! Horizontal single-line viewports through the component interface.
 use crate::input_support;
-use maestro_tui::{Component, Focusable, Input, tui::InputHandler};
+use maestro_tui::{Component, Focusable, Input, interface::InputHandler};
 #[test]
 fn wide_scripts_fit_at_start_middle_and_end() {
     let _guard = input_support::globals();

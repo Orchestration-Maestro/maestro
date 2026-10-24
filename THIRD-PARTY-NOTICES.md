@@ -778,7 +778,7 @@ the agent resume, terminal state, terminal metadata, terminal title and terminal
 theme modules under the same license. Retained provenance uses Maestro's
 canonical source spelling; state arbitration retains the source's session and
 process-generation ownership rules.
-The pane terminal policy in `crates/maestro-daemon/src/pane/terminal/` and
+The pane terminal policy in `crates/maestro-daemon/src/panes/display/` and
 `pane/terminal.rs`, the OSC, cursor, input and capability-query modules under
 `pane/`, `selection.rs`, `render_prof.rs` and their tests derive from the pane
 terminal, OSC, cursor, input, XTGETTCAP, selection and render profiler sources
@@ -792,19 +792,19 @@ truncating unmapped control characters to a byte.
 Render request coalescing in `crates/maestro-daemon/src/render_signal.rs` and its
 tests derives from the render signal module under the same license.
 The pane runtime, launch environment, shell selection, foreground probing and
-agent detection under `crates/maestro-daemon/src/pane/`, `events.rs`,
+agent detection under `crates/maestro-daemon/src/panes/`, `events.rs`,
 `handoff_runtime.rs` and `terminal/runtime_registry.rs` derive from the pane,
 event, handoff-runtime and terminal-runtime-registry modules under the same
-license. The native child setup entry in `crates/maestro-process/src/pty/` uses
+license. The native child setup entry in `crates/maestro-process/src/terminal/` uses
 safe re-execution in place of the source's post-fork setup.
 The input model and mouse geometry derive from the input model and mouse
 modules; decoded input events derive from the raw input module. Structured key
 conversions derive from the client input and protocol wire modules. The structured
 host key decoder in `crates/maestro-tui/src/keys/` derives from the input parser;
 shared SGR fields and admitted host mouse records in
-`crates/maestro-tui/src/stdin_buffer/mouse.rs` derive from the mouse and raw input
+`crates/maestro-tui/src/input_buffer/mouse.rs` derive from the mouse and raw input
 modules. The retained byte framer, reply windows and mouse-tail handling in
-`crates/maestro-tui/src/stdin_buffer/` derive from the raw input module. The daemon projections in
+`crates/maestro-tui/src/input_buffer/` derive from the raw input module. The daemon projections in
 `crates/maestro-daemon/src/input/{parse,raw_input}.rs` derive from those input
 modules and reuse the toolkit decoders. Chat and
 host input share sequence recognition while retaining their different byte and
@@ -819,7 +819,7 @@ and `settings/io/`, annotated defaults in `settings/defaults.jsonc` and their
 settings tests derive from the configuration, configuration I/O, model, sidebar,
 sound, theme, tab-bar, window-title and default configuration sources under the
 same license.
-The supplied paths and named-daemon operations in `crates/maestro-daemon/src/paths.rs`
+The supplied paths and named-daemon operations in `crates/maestro-daemon/src/locations.rs`
 and `instances.rs` derive from the session, persistence I/O, detection catalog,
 action paths, announcement and remote path sources. The action component encoder
 and its hash and reserved-stem helpers derive from the action paths and API
@@ -837,7 +837,7 @@ and PTY backend, descriptor and actor modules.
 
 The pane launch environment, shell, foreground probe, screen detection policy and
 async detector in
-`crates/maestro-daemon/src/pane/{launch_env,shell,probe,agent_detection,detection_task}.rs`,
+`crates/maestro-daemon/src/panes/{launch_env,shell,probe,agent_detection,detection_task}.rs`,
 their submodules and their tests derive from the pane, platform and integration
 environment sources under the same license. Background pane records and delivery
 in `crates/maestro-daemon/src/events.rs` derive from the event and pane sources. Native login argument zero follows the terminal command builder
@@ -1278,7 +1278,7 @@ SOFTWARE.
 
 ## Frontmatter grammar
 
-The owned frontmatter grammar in `crates/maestro-resources/src/frontmatter/`
+The owned frontmatter grammar in `crates/maestro-resources/src/metadata/`
 derives from YAML 2.8.4, licensed under ISC. The package is not a runtime dependency.
 
 ```text

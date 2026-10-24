@@ -1,7 +1,7 @@
 //! Snapshot effects through the shared workspace storage owner.
 
-use crate::{logging, paths::DaemonPaths};
-use maestro_workspace::persist::snapshot::{SessionHistorySnapshot, SessionSnapshot};
+use crate::{diagnostics as logging, locations::DaemonPaths};
+use maestro_workspace::persist::records::{SessionHistorySnapshot, SessionSnapshot};
 use maestro_workspace::persist::{clear_path, save_to_paths};
 use std::path::Path;
 

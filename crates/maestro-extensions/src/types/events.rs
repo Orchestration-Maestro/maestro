@@ -1,7 +1,7 @@
 //! Concrete native aliases of one shared schema.
 /// Native application messages supplied to event handlers.
 pub type NativeAgentMessage =
-    maestro_agent::AgentMessage<maestro_session::messages::CustomAgentMessages>;
+    maestro_agent::AgentMessage<maestro_session::message_records::CustomAgentMessages>;
 /// Existing native domain operand.
 type Payload = serde_json::Value;
 /// Existing native domain operand.
@@ -19,7 +19,7 @@ type Stream = maestro_models::AssistantMessageEvent;
 /// Existing native domain operand.
 type Prompt = maestro_models::system_prompt::BuildSystemPromptOptions;
 /// Existing native domain operand.
-type CustomInput = maestro_session::messages::CustomMessageInput;
+type CustomInput = maestro_session::message_records::CustomMessageInput;
 /// Existing native domain operand.
 type Signal = maestro_models::Cancellation;
 /// Existing native domain operand.
@@ -29,9 +29,9 @@ type BranchSummaryEntry = maestro_session::session_manager::BranchSummaryEntry;
 /// Existing native domain operand.
 type CompactionEntry = maestro_session::session_manager::CompactionEntry;
 /// Existing native domain operand.
-type Preparation = maestro_session::compaction::CompactionPreparation;
+type Preparation = maestro_session::summarization::CompactionPreparation;
 /// Existing native domain operand.
-type CompactionResult = maestro_session::compaction::CompactionResult;
+type CompactionResult = maestro_session::summarization::CompactionResult;
 /// Shared event schema specialized for native operands.
 pub type ContextEvent<M = NativeAgentMessage> =
     maestro_models::extension_events::agent_events::ContextEvent<M>;

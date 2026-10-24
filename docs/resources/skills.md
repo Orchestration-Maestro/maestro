@@ -41,7 +41,7 @@ even when its metadata is invalid. Otherwise the scan loads lowercase `.md` file
 only at its root and descends into directories for entry files. Hidden entries,
 `node_modules`, broken links and nonfiles are skipped; file and directory links
 follow their targets. Resource discovery and package discovery share
-[`skills::observed_type`](../../crates/maestro-resources/src/skills/discovery.rs).
+[`catalog::observed_type`](../../crates/maestro-resources/src/catalog/discovery.rs).
 
 Relative explicit paths normalize with `cwd` as the first operand, so a relative
 `cwd` itself continues from the process working directory. On

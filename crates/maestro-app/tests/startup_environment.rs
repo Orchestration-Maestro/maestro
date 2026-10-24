@@ -4,14 +4,14 @@
 use crate::resource_fixtures::{Root, module_loader, with_isolated_home};
 use crate::service_observations as services;
 use crate::support::session_harness::on_task_set;
-use maestro_app::configuration::telemetry::{
+use maestro_app::configuration::installation::{
     is_install_telemetry_enabled, report_install_telemetry,
 };
-use maestro_app::configuration::version_check::{
+use maestro_app::configuration::releases::{
     VersionCheckOptions, check_for_new_maestro_version, get_latest_maestro_release,
     get_latest_maestro_version,
 };
-use maestro_app::resources::resource_loader::{
+use maestro_app::resources::loading::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
 };
 use maestro_app::{

@@ -5,7 +5,7 @@ use maestro_export::{ExportAsset, ExportOperations};
 use maestro_theme::{ColorMode, LiveTheme, Theme, ThemeError, ThemeExportColors, ThemeOptions};
 use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::TerminalImage;
-use maestro_tui::tui::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
+use maestro_tui::interface::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
 use std::{cell::RefCell, io, path::Path, rc::Rc, time::Duration};
 
 /// The host an export renders through: no clock, deferred work, environment or log files.

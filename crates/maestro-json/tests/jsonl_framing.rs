@@ -1,7 +1,7 @@
 //! JSONL framing through the public synchronous codec.
 #![cfg(test)]
 
-use maestro_json::jsonl::serialize_json_line;
+use maestro_json::lines::serialize_json_line;
 use serde_json::json;
 
 #[test]
@@ -17,7 +17,7 @@ fn json_line_keeps_unicode_separators() {
 
 #[test]
 fn jsonl_only_lf_ends_a_record() {
-    let mut splitter = maestro_json::jsonl::JsonlLineSplitter::default();
+    let mut splitter = maestro_json::lines::JsonlLineSplitter::default();
     let content = "a\u{2028}b\u{2029}c\u{85}\u{b}\u{c}\rd";
     assert!(splitter.push(content.as_bytes()).is_empty());
     assert_eq!(splitter.push(b"\n\nx\n"), [content, "", "x"]);
@@ -63,7 +63,7 @@ fn json_line_reuses_canonical_json() {
 
 #[test]
 fn jsonl_removes_one_terminal_cr() {
-    let mut splitter = maestro_json::jsonl::JsonlLineSplitter::default();
+    let mut splitter = maestro_json::lines::JsonlLineSplitter::default();
     assert!(splitter.push(b"a\r").is_empty());
     assert_eq!(splitter.push(b"\nb\r\r\n\r\n"), ["a", "b\r", ""]);
     assert!(splitter.push(b"\r").is_empty());
@@ -74,13 +74,13 @@ fn jsonl_removes_one_terminal_cr() {
 fn jsonl_retains_split_utf8() {
     let bytes = "é☃🦀\n".as_bytes();
     for cut in 0..=bytes.len() {
-        let mut splitter = maestro_json::jsonl::JsonlLineSplitter::default();
+        let mut splitter = maestro_json::lines::JsonlLineSplitter::default();
         let mut lines = splitter.push(&bytes[..cut]);
         lines.extend(splitter.push(&bytes[cut..]));
         assert_eq!(lines, ["é☃🦀"]);
         assert_eq!(splitter.finish(), None);
     }
-    let mut splitter = maestro_json::jsonl::JsonlLineSplitter::default();
+    let mut splitter = maestro_json::lines::JsonlLineSplitter::default();
     for byte in "é☃🦀".as_bytes() {
         assert!(splitter.push(&[*byte]).is_empty());
     }
@@ -95,7 +95,7 @@ fn jsonl_flushes_unterminated_tail_once() {
         ("\r", vec![], Some("")),
         ("a\n", vec!["a"], None),
     ] {
-        let mut splitter = maestro_json::jsonl::JsonlLineSplitter::default();
+        let mut splitter = maestro_json::lines::JsonlLineSplitter::default();
         assert!(splitter.push(b"").is_empty());
         assert_eq!(splitter.push(input.as_bytes()), completed);
         assert_eq!(splitter.finish().as_deref(), tail);
@@ -105,7 +105,7 @@ fn jsonl_flushes_unterminated_tail_once() {
 
 #[test]
 fn jsonl_keeps_bom_and_invalid_byte_replacements() {
-    let mut splitter = maestro_json::jsonl::JsonlLineSplitter::default();
+    let mut splitter = maestro_json::lines::JsonlLineSplitter::default();
     assert_eq!(
         splitter.push(b"\xef\xbb\xbfa\n\xef\xbb\xbfb\n\xff\xc0\n\xe2\x82\n"),
         ["\u{feff}a", "\u{feff}b", "��", "�"]
@@ -117,7 +117,7 @@ fn jsonl_keeps_bom_and_invalid_byte_replacements() {
 #[test]
 fn jsonl_chunk_partition_preserves_lines() {
     for row in fixture().split {
-        let mut splitter = maestro_json::jsonl::JsonlLineSplitter::default();
+        let mut splitter = maestro_json::lines::JsonlLineSplitter::default();
         let mut lines = Vec::new();
         for chunk in row.chunks {
             lines.extend(splitter.push(&chunk));
@@ -127,7 +127,7 @@ fn jsonl_chunk_partition_preserves_lines() {
         assert_eq!(splitter.finish(), None);
     }
     for length in [32, 64] {
-        let mut splitter = maestro_json::jsonl::JsonlLineSplitter::default();
+        let mut splitter = maestro_json::lines::JsonlLineSplitter::default();
         for _ in 0..length {
             assert!(splitter.push(b"x").is_empty());
         }
@@ -137,8 +137,8 @@ fn jsonl_chunk_partition_preserves_lines() {
 
 #[test]
 fn jsonl_splitters_keep_independent_state() {
-    let mut left = maestro_json::jsonl::JsonlLineSplitter::default();
-    let mut right = maestro_json::jsonl::JsonlLineSplitter::default();
+    let mut left = maestro_json::lines::JsonlLineSplitter::default();
+    let mut right = maestro_json::lines::JsonlLineSplitter::default();
     assert!(left.push(b"lef").is_empty());
     assert!(right.push(b"righ").is_empty());
     assert_eq!(right.push(b"t\n"), ["right"]);

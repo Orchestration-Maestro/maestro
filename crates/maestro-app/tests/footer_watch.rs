@@ -4,13 +4,11 @@
 #[cfg(unix)]
 use crate::native;
 use crate::watching;
-use maestro_app::presentation_data::footer_data_provider::{
+use maestro_app::presentation_data::status_line::{
     FooterDataProvider, FooterFileStats, ReadonlyFooterDataProvider,
 };
 #[cfg(unix)]
-use maestro_app::presentation_data::footer_data_provider::{
-    FooterOperations, NativeFooterOperations,
-};
+use maestro_app::presentation_data::status_line::{FooterOperations, NativeFooterOperations};
 use serde::Deserialize;
 use std::{
     cell::{Cell, RefCell},
@@ -1234,7 +1232,7 @@ async fn footer_reaping_barrier(pid: rustix::process::Pid) {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn footer_embedded_checkout_retains_branch_and_watch_identity() {
-    use maestro_workspace::workspace::git::native::discover_git_paths;
+    use maestro_workspace::spaces::repository::native::discover_git_paths;
     let e = Rc::new(Effects::default());
     e.directory("/container/.bare/objects");
     e.directory("/container/.bare/refs");

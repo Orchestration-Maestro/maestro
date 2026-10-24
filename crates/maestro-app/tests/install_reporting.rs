@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::service_observations as services;
-use maestro_app::configuration::telemetry::is_install_telemetry_enabled;
+use maestro_app::configuration::installation::is_install_telemetry_enabled;
 use maestro_settings::SettingsManager;
 #[test]
 fn unset_telemetry_uses_the_existing_enabled_default() {
@@ -26,7 +26,7 @@ fn telemetry_environment_presence_overrides_the_setting() {
         );
     }
 }
-use maestro_app::configuration::telemetry::report_install_telemetry;
+use maestro_app::configuration::installation::report_install_telemetry;
 use services::{ORIGIN, Transport};
 #[cfg(unix)]
 #[test]

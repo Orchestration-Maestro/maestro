@@ -1,6 +1,6 @@
 //! Browser request policy exercised through application exports.
 #![cfg(test)]
-use maestro_app::browser::utils::proxy_utils::should_use_proxy_for_provider;
+use maestro_app::browser::utils::proxy::should_use_proxy_for_provider;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -52,7 +52,7 @@ fn proxy_rewrite_preserves_model_fields() {
         serde_json::from_str(include_str!("fixtures/browser_providers/rewrite.json")).unwrap();
     for case in cases {
         assert_eq!(
-            maestro_app::browser::utils::proxy_utils::apply_proxy_if_needed(
+            maestro_app::browser::utils::proxy::apply_proxy_if_needed(
                 case.model,
                 &case.key,
                 case.proxy_url.as_deref()
@@ -81,7 +81,7 @@ struct CorsCase {
 #[test]
 /// Cors classifier distinguishes failure classes.
 fn cors_classifier_distinguishes_failure_classes() {
-    use maestro_app::browser::utils::proxy_utils::is_cors_error;
+    use maestro_app::browser::utils::proxy::is_cors_error;
     use maestro_app::{DiagnosticErrorInfo, FetchError};
     let cases: Vec<CorsCase> =
         serde_json::from_str(include_str!("fixtures/browser_providers/cors.json")).unwrap();
@@ -136,7 +136,7 @@ fn context() -> Context {
 /// Read one queued setting per invocation.
 fn settings_getter(
     reads: Arc<std::sync::atomic::AtomicUsize>,
-) -> maestro_app::browser::utils::proxy_utils::GetProxyUrl {
+) -> maestro_app::browser::utils::proxy::GetProxyUrl {
     let settings = Mutex::new(
         [
             None,
@@ -232,7 +232,7 @@ fn simple_options(key: Option<&str>) -> SimpleStreamOptions {
 #[test]
 /// Proxy stream reads current settings and forwards inputs.
 fn proxy_stream_reads_current_settings_and_forwards_inputs() {
-    use maestro_app::browser::utils::proxy_utils::create_stream_fn;
+    use maestro_app::browser::utils::proxy::create_stream_fn;
     run(async {
         let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let observations = Arc::new(Mutex::new(Vec::new()));
@@ -282,7 +282,7 @@ fn proxy_stream_reads_current_settings_and_forwards_inputs() {
 fn proxy_stream_does_not_dispatch_after_setting_failure() {
     run(async {
         use futures_util::FutureExt;
-        use maestro_app::browser::utils::proxy_utils::create_stream_fn;
+        use maestro_app::browser::utils::proxy::create_stream_fn;
         use maestro_models::{ApiProvider, register_api_provider, unregister_api_providers};
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let simple = {

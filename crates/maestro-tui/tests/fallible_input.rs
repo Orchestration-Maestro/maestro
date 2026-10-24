@@ -1,6 +1,6 @@
 //! Fallible focused input and host error ownership.
 use crate::editor_host::{manual_runtime, recording_terminal};
-use maestro_tui::{Component, TUI, TerminalImage, tui::InputHandler};
+use maestro_tui::{Component, TUI, TerminalImage, interface::InputHandler};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
@@ -148,12 +148,13 @@ fn focused_input_returns_failure_before_render() {
             tui.set_focus(Some(receiver.clone()));
         }
         if gate == "listener-consumed" {
-            let _remove =
-                tui.add_input_listener(Rc::new(|_| maestro_tui::tui::InputListenerResult::Consume));
+            let _remove = tui.add_input_listener(Rc::new(|_| {
+                maestro_tui::interface::InputListenerResult::Consume
+            }));
         }
         if gate == "listener-empty" {
             let _remove = tui.add_input_listener(Rc::new(|_| {
-                maestro_tui::tui::InputListenerResult::Replace(String::new())
+                maestro_tui::interface::InputListenerResult::Replace(String::new())
             }));
         }
         if gate == "debug" {

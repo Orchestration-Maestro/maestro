@@ -158,7 +158,7 @@ impl AgentExecution for $mode {
     }
     fn default_converter<C: CustomAgentMessages>() -> ConvertToLlm<C, Self> {
         $ptr::new(|history| {
-            let messages = crate::agent::read(&history)
+            let messages = crate::runtime::read(&history)
                 .iter()
                 .filter_map(AgentMessage::to_message)
                 .collect();
@@ -178,13 +178,13 @@ impl AgentExecution for $mode {
             let progress = update.map(|update| {
                 $ptr::new(move |result| match super::tools::encode_result(result) {
                     Ok(result) => update(result),
-                    Err(error) => *crate::agent::write(&progress_failure) = Some(error),
+                    Err(error) => *crate::runtime::write(&progress_failure) = Some(error),
                 }) as AgentToolUpdateCallback<D, Self>
             });
             let result = execute(id, parameters, signal, progress);
             Box::pin(async move {
                 let result = result.await?;
-                if let Some(error) = crate::agent::write(&failure).take() {
+                if let Some(error) = crate::runtime::write(&failure).take() {
                     return Err(error);
                 }
                 super::tools::encode_result(result)
@@ -247,12 +247,12 @@ pub trait ExecutionFor<C: CustomAgentMessages + 'static>: AgentExecution {
         stream: maestro_models::EventStream<AgentEvent<C>, Vec<AgentMessage<C>>>,
     ) -> crate::AgentEventSink<C, Self>;
     /// Erase the common owned-operation future.
-    fn owned(work: crate::agent::OwnedRun<C, Self>) -> Self::Future<'static, ()>;
+    fn owned(work: crate::runtime::OwnedRun<C, Self>) -> Self::Future<'static, ()>;
     /// Erase the common submitted-stream future.
-    fn submitted(work: crate::agent_loop::Submitted<C, Self>) -> Self::Future<'static, ()>;
+    fn submitted(work: crate::execution::Submitted<C, Self>) -> Self::Future<'static, ()>;
     /// Erase direct synchronous progress admission.
     fn progress(
-        work: crate::agent_loop::progress::Progress<C, Self>,
+        work: crate::execution::progress::Progress<C, Self>,
     ) -> AgentToolUpdateCallback<serde_json::Value, Self>;
     /// Bind the existing steering and follow-up queues.
     fn install_queues(
@@ -300,14 +300,14 @@ impl<C: CustomAgentMessages + 'static $($extra)*> ExecutionFor<C> for $mode {
             Box::pin(std::future::ready(Ok(())))
         })
     }
-    fn owned(work: crate::agent::OwnedRun<C, Self>) -> Self::Future<'static, ()> {
+    fn owned(work: crate::runtime::OwnedRun<C, Self>) -> Self::Future<'static, ()> {
         Box::pin(work.drive())
     }
-    fn submitted(work: crate::agent_loop::Submitted<C, Self>) -> Self::Future<'static, ()> {
+    fn submitted(work: crate::execution::Submitted<C, Self>) -> Self::Future<'static, ()> {
         Box::pin(work.drive())
     }
     fn progress(
-        work: crate::agent_loop::progress::Progress<C, Self>,
+        work: crate::execution::progress::Progress<C, Self>,
     ) -> AgentToolUpdateCallback<serde_json::Value, Self> {
         $ptr::new(move |partial| work.update(partial))
     }
@@ -341,7 +341,7 @@ run_glue!(
     futures_util::stream::LocalBoxStream<'static, Result<(), DiagnosticErrorInfo>>
 );
 #[cfg(not(target_arch = "wasm32"))]
-run_glue!(Threaded,Arc,[+crate::agent::Native],boxed,futures_util::stream::BoxStream<'static,Result<(),DiagnosticErrorInfo>>);
+run_glue!(Threaded,Arc,[+crate::runtime::Native],boxed,futures_util::stream::BoxStream<'static,Result<(),DiagnosticErrorInfo>>);
 #[cfg(target_arch = "wasm32")]
 run_glue!(
     Threaded,

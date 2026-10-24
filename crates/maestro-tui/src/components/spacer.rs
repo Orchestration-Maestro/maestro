@@ -2,7 +2,7 @@
 
 use std::cell::Cell;
 
-use crate::tui::Component;
+use crate::interface::Component;
 
 /// Renders a configurable number of empty rows, whatever the viewport width.
 pub struct Spacer {

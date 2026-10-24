@@ -16,7 +16,7 @@ detection and retained image rendering, [key input](keys.md) for decoding and
 
 The crate root re-exports the component, container, widget, overlay, terminal, editor and
 completion names used below and in the widget guide, so `maestro_tui::Component` and
-`maestro_tui::tui::Component` are the same trait; supporting types such as
+`maestro_tui::interface::Component` are the same trait; supporting types such as
 `ComponentHandle` stay in their modules.
 
 ## Components
@@ -100,7 +100,7 @@ included, is padded with spaces to exactly the viewport width.
 ```rust
 use std::rc::Rc;
 
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use maestro_tui::{Component, Container, TruncatedText};
 
 let title: ComponentHandle = Rc::new(TruncatedText::new("Hello world\nignored".into(), 1, 0));

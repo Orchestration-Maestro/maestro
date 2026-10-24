@@ -1,8 +1,8 @@
 //! Legacy keyboard bytes for pane applications.
 use maestro_terminal::input::{
-    key::{Key, KeyEvent},
     key_encode::{KeyEncoder, OptionAsAlt},
     key_mods::{Mod, Mods, Side},
+    keyboard::{Key, KeyEvent},
 };
 use maestro_terminal::modes::{Mode, ModeState};
 

@@ -2,7 +2,7 @@
 
 use super::support::terminal::{assert_text, cell};
 use maestro_terminal::{
-    Mode, Terminal, ansi::StatusDisplay, page::cell::SemanticContent, screen_set::Key,
+    Mode, Terminal, ansi::StatusDisplay, page::cell::SemanticContent, screens::Key,
     terminal::SwitchScreenMode,
 };
 

@@ -1,5 +1,5 @@
 //! Session configuration, events and operation results.
-use crate::resources::resource_loader::ResourceLoader;
+use crate::resources::loading::ResourceLoader;
 use indexmap::IndexMap;
 use maestro_agent::SharedAgentTool;
 use maestro_agent::{Agent, AgentEvent};
@@ -11,7 +11,7 @@ use maestro_extensions::{
 use maestro_models::{ImageContent, Local, Model, ModelThinkingLevel};
 use maestro_session::{
     BranchSummaryEntry, CompactionResult, SessionManager,
-    messages::{CustomAgentMessages, UserMessageDelivery},
+    message_records::{CustomAgentMessages, UserMessageDelivery},
 };
 use maestro_settings::SettingsManager;
 use maestro_theme::LiveTheme;

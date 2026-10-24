@@ -12,7 +12,7 @@ use maestro_export::NativeExportOperations;
 use maestro_models::Local;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_theme::{LiveTheme, ThemeDirectories, ThemeState};
-use maestro_tui::{components::Text, tui::ComponentHandle};
+use maestro_tui::{components::Text, interface::ComponentHandle};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 

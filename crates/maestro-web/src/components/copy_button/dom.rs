@@ -3,9 +3,9 @@ use crate::{
     browser::{
         attachment_content::ClipboardMode, event_subscription::EventSubscription, timer::Timer,
     },
-    components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    dom::{DomView, Link, Property, Reflected, connected, live},
-    utils::i18n::I18n,
+    components::controls::{ButtonProps, ButtonSize, ButtonVariant, button},
+    page::{DomView, Link, Property, Reflected, connected, live},
+    utils::localization::I18n,
 };
 use std::{
     cell::RefCell,
@@ -156,7 +156,7 @@ fn render(root: &HtmlElement, view: &DomView, i18n: &I18n, copied: bool) -> Resu
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
     let observed = vec!["title".into(), "show-text".into()];
-    crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
+    crate::page::define_element(TAG, observed, PROPERTIES, move |root, properties| {
         CopyElement {
             root: js_sys::WeakRef::new(&root),
             view: Rc::clone(&view),

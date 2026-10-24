@@ -1,6 +1,6 @@
 //! Session lookups and the operation the authored arguments select.
 
-use crate::input::args::Args;
+use crate::input::arguments::Args;
 use maestro_app::{Presence, SessionInfo, SessionManager};
 use std::io;
 

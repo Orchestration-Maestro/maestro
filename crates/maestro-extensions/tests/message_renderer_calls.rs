@@ -13,10 +13,10 @@ use maestro_extensions::{
 };
 use maestro_models::{Local, Threaded};
 use maestro_session::Presence;
-use maestro_session::messages::CustomMessage;
+use maestro_session::message_records::CustomMessage;
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::Text;
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use serde::Deserialize;
 use serde_json::{Number, Value};
 use std::{

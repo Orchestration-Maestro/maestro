@@ -11,7 +11,7 @@ fn overlay_images_use_original_bytes_and_contain_fit() {
     let record = attachment();
     {
         let mut record = record.borrow_mut();
-        record.r#type = maestro_app::browser::utils::attachment_utils::AttachmentType::Image;
+        record.r#type = maestro_app::browser::utils::attachments::AttachmentType::Image;
         record.mime_type = "image/svg+xml".into();
         record.preview = Some("thumbnail".into());
     }
@@ -579,9 +579,9 @@ fn assert_retained_text_mode(
             let mut original = record.borrow_mut();
             original.mime_type = mime.into();
             original.r#type = if image {
-                maestro_app::browser::utils::attachment_utils::AttachmentType::Image
+                maestro_app::browser::utils::attachments::AttachmentType::Image
             } else {
-                maestro_app::browser::utils::attachment_utils::AttachmentType::Document
+                maestro_app::browser::utils::attachments::AttachmentType::Document
             };
         }
         frame.overlay(overlay, vec![]).unwrap();
@@ -614,9 +614,9 @@ fn assert_error_survives_record_edits(
             let mut original = record.borrow_mut();
             original.mime_type = mime.into();
             original.r#type = if mime == "image/png" {
-                maestro_app::browser::utils::attachment_utils::AttachmentType::Image
+                maestro_app::browser::utils::attachments::AttachmentType::Image
             } else {
-                maestro_app::browser::utils::attachment_utils::AttachmentType::Document
+                maestro_app::browser::utils::attachments::AttachmentType::Document
             };
         }
         frame.overlay(overlay, vec![]).unwrap();
@@ -692,7 +692,7 @@ fn valid_pdf(
 ) -> Rc<std::cell::RefCell<maestro_web::Attachment>> {
     if record.borrow().mime_type == "application/pdf"
         && record.borrow().r#type
-            == maestro_app::browser::utils::attachment_utils::AttachmentType::Document
+            == maestro_app::browser::utils::attachments::AttachmentType::Document
     {
         record.borrow_mut().content = pdf_bytes();
     }

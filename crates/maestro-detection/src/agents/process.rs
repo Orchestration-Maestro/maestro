@@ -5,7 +5,7 @@ use super::{Agent, agent_label, identify_agent, normalized_agent_lookup_name, pa
 /// Equal-priority members retain their supplied order.
 #[must_use]
 pub fn identify_agent_in_job(
-    job: &maestro_process::pty::foreground::ForegroundJob,
+    job: &maestro_process::terminal::jobs::ForegroundJob,
 ) -> Option<(Agent, String)> {
     if let Some(process) = job
         .processes
@@ -36,16 +36,14 @@ pub fn identify_agent_in_job(
 /// Identifies a borrowed process, including runtime scripts and executable paths.
 #[must_use]
 pub fn identify_agent_in_process(
-    process: &maestro_process::pty::foreground::ForegroundProcess,
+    process: &maestro_process::terminal::jobs::ForegroundProcess,
 ) -> Option<(Agent, String)> {
     let candidate = normalized_process_name(process);
     identify_agent(&candidate).map(|agent| (agent, candidate))
 }
 
 /// Selects the observed identity, including runtime scripts and executable paths.
-fn normalized_process_name(
-    process: &maestro_process::pty::foreground::ForegroundProcess,
-) -> String {
+fn normalized_process_name(process: &maestro_process::terminal::jobs::ForegroundProcess) -> String {
     let effective = process.argv0.as_deref().unwrap_or(&process.name);
     let lower_effective = effective.to_lowercase();
 
@@ -327,7 +325,7 @@ fn path_basename(path: &str) -> &str {
 
 /// Ranks wrapped identities ahead of native agents and generic runtimes.
 fn process_priority(
-    process: &maestro_process::pty::foreground::ForegroundProcess,
+    process: &maestro_process::terminal::jobs::ForegroundProcess,
     normalized_name: &str,
 ) -> u8 {
     let lower_name = normalized_name.to_lowercase();

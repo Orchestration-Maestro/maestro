@@ -5,7 +5,7 @@ use crate::support::session_harness::{
     Auth, Harness, HarnessOptions, TestResourceLoader, answer, create_test_extensions_result,
     create_test_resource_loader, harness,
 };
-use maestro_app::resources::resource_loader::LoadPromptsResult;
+use maestro_app::resources::loading::LoadPromptsResult;
 use maestro_app::{
     AgentSessionRuntime, AgentSessionServices, CreateAgentSessionOptions,
     CreateAgentSessionRuntimeFactory, CreateAgentSessionRuntimeOptions,
@@ -94,7 +94,7 @@ pub fn factory(
             let settings = Rc::new(RefCell::new(SettingsManager::in_memory(
                 maestro_settings::Settings::default(),
             )));
-            let loader: Rc<dyn maestro_app::resources::resource_loader::ResourceLoader<Local>> =
+            let loader: Rc<dyn maestro_app::resources::loading::ResourceLoader<Local>> =
                 Rc::new(TestResourceLoader {
                     extensions,
                     skills: resources.skills,

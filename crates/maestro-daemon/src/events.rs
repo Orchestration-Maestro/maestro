@@ -3,7 +3,7 @@
 use std::time::Instant;
 
 use maestro_detection::agents::{Agent, AgentState};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use tokio::sync::mpsc;
 
 /// An observation from a background pane task.
@@ -66,7 +66,7 @@ pub enum AppEvent {
         /// Source-local sequence.
         seq: Option<u64>,
         /// Validated session identity.
-        session_ref: Option<crate::agent_resume::AgentSessionRef>,
+        session_ref: Option<crate::resume::AgentSessionRef>,
     },
     /// Integration ownership released back to the shell.
     HookAgentReleased {
@@ -91,9 +91,9 @@ pub enum AppEvent {
     /// Detection catalogue publication has completed against the shared cache.
     AgentDetectionManifestsUpdated {
         /// Successfully published agent versions.
-        updated: Vec<maestro_detection::manifest_update::ManifestUpdateCommit>,
+        updated: Vec<maestro_detection::updates::ManifestUpdateCommit>,
         /// Latest catalogue diagnostics, including checks with no updates.
-        status: maestro_detection::manifest_update::ManifestUpdateStatus,
+        status: maestro_detection::updates::ManifestUpdateStatus,
     },
     /// Fallback screen detection changed a pane's state.
     StateChanged {

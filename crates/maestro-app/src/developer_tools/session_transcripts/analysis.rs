@@ -1,7 +1,7 @@
 //! One analysis child, its event stream and the terminal text it prints.
 
-use maestro_json::jsonl::JsonlLineSplitter;
-use maestro_process::child_process::{
+use maestro_json::lines::JsonlLineSplitter;
+use maestro_process::children::{
     CapturedChild, OutputStream, Termination, WaitOptions, wait_for_child_process_with_sink,
 };
 use serde_json::Value;

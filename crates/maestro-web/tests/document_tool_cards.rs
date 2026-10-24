@@ -75,7 +75,7 @@ fn document_cards_register_once_with_replacement_removal_and_json_mode() {
 #[test]
 fn document_renderers_keep_model_json_and_native_operands() {
     use maestro_app::browser::tools::{
-        extract_document::{ExtractDocumentParams, ExtractDocumentResult},
+        extraction::{ExtractDocumentParams, ExtractDocumentResult},
         javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
     };
     for name in ["javascript_repl", "extract_document"] {

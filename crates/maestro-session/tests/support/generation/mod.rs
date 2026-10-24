@@ -156,7 +156,7 @@ fn run(row: &Row) {
         .unwrap()
         .block_on(future);
     match row.expected["kind"].as_str().unwrap() {
-        "value" => super::value::assert_value(&actual.unwrap(), &row.expected["value"], &row.id),
+        "value" => super::value::assert_equal(&actual.unwrap(), &row.expected["value"], &row.id),
         "error" => {
             let error = actual.unwrap_err();
             if let Some(message) = row.expected.get("message") {

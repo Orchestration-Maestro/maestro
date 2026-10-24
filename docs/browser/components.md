@@ -1,6 +1,6 @@
 # Browser input, timers and dialogs
 
-[`Input`](../../crates/maestro-web/src/components/input.rs) is a retained
+[`Input`](../../crates/maestro-web/src/components/fields.rs) is a retained
 single-line field. Construct it with owned `InputProps` and an `Rc` to the
 existing `AttachmentHost`; `BrowserAttachmentHost` places its real native input
 in the same canvas-relative surface registry as attachment previews.

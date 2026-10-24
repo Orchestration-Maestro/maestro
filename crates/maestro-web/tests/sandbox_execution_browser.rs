@@ -783,7 +783,7 @@ pub async fn execution_preserves_shared_whitespace_and_number_spelling() {
 /// Default registration is lazy, configurable, and executes the same real hidden adapter.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn hidden_host_and_default_tool_use_the_same_real_adapter() {
-    use maestro_web::browser::sandbox_value::BrowserSandboxValue;
+    use maestro_web::browser::values::BrowserSandboxValue;
     use maestro_web::{JAVASCRIPT_REPL_TOOL, SandboxRuntimeProvider, SandboxUrlProvider};
 
     let fixture = Fixture::load().await;

@@ -31,7 +31,7 @@ fn native_messages() -> Vec<NativeAgentMessage> {
         })
         .collect();
     messages.push(AgentMessage::Custom(Arc::new(RwLock::new(
-        maestro_session::messages::CustomAgentMessages::Custom(serde_json::from_value(json!({"role":"custom","customType":"custom","content":"custom","details":{"nested":{"value":1}},"display":true,"timestamp":4})).unwrap())
+        maestro_session::message_records::CustomAgentMessages::Custom(serde_json::from_value(json!({"role":"custom","customType":"custom","content":"custom","details":{"nested":{"value":1}},"display":true,"timestamp":4})).unwrap())
     ))));
     messages
 }
@@ -43,7 +43,8 @@ fn message_values(messages: &[NativeAgentMessage]) -> Value {
             .map(|message| match message {
                 AgentMessage::Custom(value) => {
                     let value = value.read().unwrap();
-                    let maestro_session::messages::CustomAgentMessages::Custom(value) = &*value
+                    let maestro_session::message_records::CustomAgentMessages::Custom(value) =
+                        &*value
                     else {
                         panic!("custom")
                     };
@@ -123,7 +124,8 @@ fn context_edits_survive_failure_and_empty_replacement() {
                         panic!("custom")
                     };
                     let mut value = value.write().unwrap();
-                    let maestro_session::messages::CustomAgentMessages::Custom(value) = &mut *value
+                    let maestro_session::message_records::CustomAgentMessages::Custom(value) =
+                        &mut *value
                     else {
                         panic!("custom")
                     };
@@ -575,7 +577,7 @@ async fn resource_paths_keep_kind_order_duplicates_and_source_case() {
             .emit_resources_discover("relative/../root".into(), reason)
             .await
             .unwrap();
-        let pairs = |paths: Vec<maestro_extensions::runner::ResourcePath>| {
+        let pairs = |paths: Vec<maestro_extensions::execution::ResourcePath>| {
             paths
                 .into_iter()
                 .map(|path| (path.path, path.extension_path))
@@ -792,7 +794,8 @@ fn edit_context_payloads(messages: &[NativeAgentMessage]) {
             }
             AgentMessage::Custom(value) => {
                 let mut value = value.write().unwrap();
-                let maestro_session::messages::CustomAgentMessages::Custom(value) = &mut *value
+                let maestro_session::message_records::CustomAgentMessages::Custom(value) =
+                    &mut *value
                 else {
                     panic!("custom")
                 };

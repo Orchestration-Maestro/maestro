@@ -1,7 +1,7 @@
 //! Captured native children observed through the public lifecycle interface.
 #![cfg(test)]
 #![cfg(unix)]
-use maestro_process::child_process::{
+use maestro_process::children::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
 use std::cell::Cell;

@@ -5,7 +5,7 @@ use crate::chat;
 #[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::reasoning::mistral::stream_simple_mistral;
+use maestro_models::providers::reasoning::endpoint::stream_simple_mistral;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::stream_mistral;
 #[cfg(not(target_arch = "wasm32"))]

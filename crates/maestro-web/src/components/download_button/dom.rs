@@ -4,9 +4,9 @@ use crate::{
         attachment_content::{AttachmentHostError, browser::host_error},
         event_subscription::EventSubscription,
     },
-    components::button::{ButtonProps, ButtonSize, ButtonType, ButtonVariant, button},
-    dom::{DomRoot, DomView},
+    components::controls::{ButtonProps, ButtonSize, ButtonType, ButtonVariant, button},
     icons::{self, IconSize},
+    page::{DomRoot, DomView},
     tools::types::ToolUiError,
     utils::{base64, download::download_bytes},
 };

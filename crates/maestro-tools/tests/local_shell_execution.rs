@@ -35,7 +35,7 @@ use crate::read_support;
 use crate::runtime::run;
 use maestro_models::Cancellation;
 use maestro_tools::BashError;
-use maestro_tools::utils::shell::{ShellEnv, get_shell_config};
+use maestro_tools::utils::environment::{ShellEnv, get_shell_config};
 use read_support::{Fixture, Scratch};
 use std::{ffi::OsString, future::Future};
 
@@ -491,7 +491,7 @@ fn supplied_bash_operations_keep_open_result_values() {
 
 #[test]
 fn native_shell_environment_reads_each_process_inheritance() {
-    use maestro_tools::utils::shell::get_shell_env;
+    use maestro_tools::utils::environment::get_shell_env;
     for (mode, value) in [
         ("absent", None),
         ("empty", Some("")),

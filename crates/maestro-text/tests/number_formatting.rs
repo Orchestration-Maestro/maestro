@@ -1,7 +1,7 @@
 //! Recorded finite-number presentation through the public formatter.
 #![cfg(test)]
 #![cfg(feature = "number-format")]
-use maestro_text::number_format::LocaleNumberFormat;
+use maestro_text::numbers::LocaleNumberFormat;
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet};
 

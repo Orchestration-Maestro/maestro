@@ -5,7 +5,7 @@ use crate::attachment_support;
 use crate::effects_support;
 use crate::input_support;
 use effects_support::Host;
-use maestro_web::{Input, browser::attachment_content::*, components::input::InputProps};
+use maestro_web::{Input, browser::attachment_content::*, components::fields::InputProps};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -99,7 +99,7 @@ fn browser_effects_keep_local_futures_and_host_failures() {
         );
         assert!(matches!(
             input.render(&mut ui, i, p),
-            Err(maestro_web::components::input::InputUiError::Host(
+            Err(maestro_web::components::fields::InputUiError::Host(
                 AttachmentHostError::Presentation(_)
             ))
         ));
@@ -151,7 +151,7 @@ fn input_escape_bridge_keeps_one_keydown_route_and_releases_it() {
         };
         seen.borrow_mut().push((s.id, props.on_key_down.clone()));
     });
-    let callback: maestro_web::components::input::KeyCallback = Rc::new(|_| {});
+    let callback: maestro_web::components::fields::KeyCallback = Rc::new(|_| {});
     let mut input = Input::new(InputProps::default(), host.clone());
     input_support::render(&mut input, 300.);
     input_support::render(&mut input, 300.);

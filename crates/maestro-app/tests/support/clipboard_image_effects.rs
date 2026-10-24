@@ -4,11 +4,11 @@ use crate::clipboard_status as completed;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use futures_util::future::LocalBoxFuture;
 use maestro_app::utils::{
-    clipboard::{ClipboardOperations, ClipboardPlatform},
-    clipboard_image::{
+    clipboard_native::ClipboardModule,
+    copying::{ClipboardOperations, ClipboardPlatform},
+    image_clipboard::{
         ClipboardImageOperations, ReadClipboardImageOptions, read_clipboard_image_with,
     },
-    clipboard_native::ClipboardModule,
 };
 use maestro_app::{OutputMode, SpawnSyncError, SpawnSyncOptions};
 use serde::Deserialize;
@@ -371,7 +371,7 @@ fn replay(case: &Case) {
 /// Retains bytes, ordering and native error identity when comparing the oracle.
 fn check_result(
     case: &Case,
-    result: io::Result<Option<maestro_app::utils::clipboard_image::ClipboardImage>>,
+    result: io::Result<Option<maestro_app::utils::image_clipboard::ClipboardImage>>,
 ) {
     if let Some(length) = case.expected.length {
         let image = result.unwrap().unwrap();

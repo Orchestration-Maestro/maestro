@@ -570,7 +570,7 @@ fn queue_updates(h: &Harness) -> (Rc<RefCell<Vec<Value>>>, Rc<Notify>) {
 
 #[test]
 fn extension_steering_reaches_the_next_provider_request() {
-    use maestro_session::messages::{SendUserMessageOptions, UserMessageDelivery};
+    use maestro_session::message_records::{SendUserMessageOptions, UserMessageDelivery};
     let expected = expected("extension");
     on_task_set(|_| async {
         let (api, sources) = (Rc::default(), Rc::default());

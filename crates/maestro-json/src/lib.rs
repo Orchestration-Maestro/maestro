@@ -10,8 +10,8 @@
 //! assert_eq!(compact_json(&json!({"b": 1, "10": -0.0, "2": 1e21})).unwrap(), r#"{"2":1e+21,"10":0,"b":1}"#);
 //! ```
 mod json_text;
-pub mod jsonl;
 mod keys;
+pub mod lines;
 pub mod object;
 mod truth;
 

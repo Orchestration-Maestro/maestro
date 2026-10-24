@@ -8,7 +8,7 @@ use maestro_extensions::{
     BuildSystemPromptOptions, ExtensionExecution, NativeAgentMessage, RegisteredTool,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, SharedAssistantMessage};
-use maestro_session::messages::CustomAgentMessages;
+use maestro_session::message_records::CustomAgentMessages;
 use serde_json::Value;
 use std::collections::VecDeque;
 use std::sync::{Arc, RwLock};
@@ -171,7 +171,7 @@ pub(crate) fn thrown(
     error: impl Into<Box<dyn std::error::Error + Send + Sync>>,
 ) -> DiagnosticErrorInfo {
     let error = error.into();
-    maestro_extensions::runner::retained_diagnostic(error.as_ref()).map_or_else(
+    maestro_extensions::execution::retained_diagnostic(error.as_ref()).map_or_else(
         || DiagnosticErrorInfo::error(error.to_string()),
         Clone::clone,
     )

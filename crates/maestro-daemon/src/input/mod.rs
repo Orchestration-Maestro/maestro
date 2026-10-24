@@ -1,12 +1,12 @@
 //! Owned terminal input and supplied host geometry.
 
+/// Supplied host byte decoding for the multiplexer input loop.
+pub mod framing;
 mod model;
 mod parse;
-/// Supplied host byte decoding for the multiplexer input loop.
-pub mod raw_input;
 
+pub use framing::parse_raw_input_bytes_sync;
 pub use parse::parse_terminal_key_sequence;
-pub use raw_input::parse_raw_input_bytes_sync;
 /// Supplied geometry and mouse report operations.
 pub mod mouse;
 

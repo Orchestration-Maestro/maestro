@@ -13,7 +13,7 @@ use ui_host::Named;
 use local_support::{
     Loaded, LocalBus, Released, STALE, Trace, listener, loaded, local, mark, runner,
 };
-use maestro_extensions::footer_data_provider::{ExtensionStatuses, ReadonlyFooterDataProvider};
+use maestro_extensions::footer::{ExtensionStatuses, ReadonlyFooterDataProvider};
 use maestro_extensions::types::{
     ComponentDisposer, ComponentFactory, CustomClose, CustomComponentFactory, CustomDone,
     CustomFactory, CustomFactoryOutcome, CustomUIOptions, ExtensionCollection, ExtensionComponent,
@@ -29,12 +29,12 @@ use maestro_extensions::{
 };
 use maestro_models::{Cancellation, Local, UserContent};
 use maestro_session::Presence;
-use maestro_session::messages::CustomMessage;
+use maestro_session::message_records::CustomMessage;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeInfo, ThemeState, get_editor_theme};
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::{
     CompletionError, CompletionOptions, CompletionResult, CursorPosition,
 };
-use maestro_tui::tui::{ComponentHandle, InputListenerResult};
+use maestro_tui::interface::{ComponentHandle, InputListenerResult};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Editor, EditorComponent,
     EditorOptions, EditorTheme, Input, KeybindingDefinition, KeybindingKeys, KeybindingsManager,

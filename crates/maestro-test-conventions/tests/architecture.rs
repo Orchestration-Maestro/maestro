@@ -3047,11 +3047,11 @@ fn assert_forwarding_controls() {
 fn assert_tracked_delegation(sources: &[(String, String)]) {
     for (path, function) in [
         (
-            "crates/maestro-resources/src/prompt_templates.rs",
+            "crates/maestro-resources/src/prompts.rs",
             "resolve_prompt_path",
         ),
         (
-            "crates/maestro-resources/src/skills/mod.rs",
+            "crates/maestro-resources/src/catalog/mod.rs",
             "normalize_skill_path",
         ),
     ] {

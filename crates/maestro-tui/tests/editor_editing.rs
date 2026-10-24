@@ -57,7 +57,7 @@ fn editor_bindings_keep_precedence() {
 #[test]
 fn editor_reads_binding_replacement_after_construction() {
     use maestro_tui::{
-        Editor, EditorOptions, KeybindingKeys, KeybindingsManager, tui::InputHandler,
+        Editor, EditorOptions, KeybindingKeys, KeybindingsManager, interface::InputHandler,
     };
     let _guard = support::globals();
     let (tui, _, _) = support::host(24);

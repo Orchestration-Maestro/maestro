@@ -11,7 +11,7 @@ pub const TRUECOLOR: &[(&str, &str)] = &[("COLORTERM", "truecolor")];
 ///
 /// # Panics
 /// Panics if a child fails or does not start exactly `test`.
-pub fn per_environment<C>(
+pub fn with_observations<C>(
     test: &str,
     cases: impl IntoIterator<Item = C>,
     environment: impl Fn(&C) -> &[(&'static str, &'static str)],
@@ -25,7 +25,7 @@ pub fn per_environment<C>(
     .unwrap()
 }
 
-/// Whether this process runs `test`'s body under [`per_environment`].
+/// Whether this process runs `test`'s body under [`with_observations`].
 pub fn in_child(test: &str, env: &'static [(&'static str, &'static str)]) -> bool {
-    per_environment(test, [env], |env| env).is_some()
+    with_observations(test, [env], |env| env).is_some()
 }

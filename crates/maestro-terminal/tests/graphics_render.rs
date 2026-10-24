@@ -3,8 +3,8 @@
 use maestro_terminal::{
     Terminal,
     kitty::graphics::{
-        image::Image,
-        storage::{Location, Placement},
+        bitmap::Image,
+        images::{Location, Placement},
     },
 };
 

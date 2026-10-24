@@ -14,7 +14,7 @@ use maestro_models::{
     AssistantMessage, DiagnosticErrorInfo, Local, StopReason, UserContent, UserMessage,
     timestamp_now,
 };
-use maestro_session::messages::CustomAgentMessages;
+use maestro_session::message_records::CustomAgentMessages;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 

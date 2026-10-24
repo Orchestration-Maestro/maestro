@@ -1,7 +1,7 @@
 //! Supplied daemon roots and the shared socket selector.
 #![cfg(all(test, unix))]
 
-use maestro_daemon::paths::{DaemonPaths, action_path_component};
+use maestro_daemon::locations::{DaemonPaths, action_path_component};
 
 #[test]
 fn daemon_path_table_covers_default_and_named_roots() {

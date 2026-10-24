@@ -2,7 +2,7 @@
 
 use super::{
     App,
-    state::{ThemeRuntimeConfig, ToastKind, ToastNotification},
+    model::{ThemeRuntimeConfig, ToastKind, ToastNotification},
 };
 use crate::settings::{
     io::{apply_loaded, config_diagnostic_summary, load_live_config},
@@ -80,7 +80,7 @@ impl<C: FnMut() -> u128> App<C> {
         self.clear_history_after_reload |=
             valid_experimental && !self.config.experimental.pane_history.0;
         if valid_ui {
-            if self.state.sidebar_width_source == super::state::SidebarWidthSource::ConfigDefault {
+            if self.state.sidebar_width_source == super::model::SidebarWidthSource::ConfigDefault {
                 self.state.sidebar_width = self.config.ui.sidebar_width;
             }
             self.state.sidebar_width = self.state.sidebar_width.clamp(

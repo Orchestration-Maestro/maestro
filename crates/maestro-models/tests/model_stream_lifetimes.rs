@@ -429,7 +429,7 @@ mod tests {
 
     #[test]
     fn maestro_cleanup_uses_live_registrations() {
-        use maestro_models::records::session_resources::{
+        use maestro_models::records::sessions::{
             SessionResourceCleanup, cleanup_session_resources, register_session_resource_cleanup,
         };
         let _serial = crate::bundled::registry();
@@ -474,7 +474,7 @@ mod tests {
 
     #[test]
     fn maestro_cleanup_observes_live_changes() {
-        use maestro_models::records::session_resources::{
+        use maestro_models::records::sessions::{
             SessionResourceCleanup, SessionResourceRemoval, cleanup_session_resources,
             register_session_resource_cleanup,
         };

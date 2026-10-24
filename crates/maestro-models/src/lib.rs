@@ -1,8 +1,8 @@
 #![doc = include_str!("../../../docs/records.md")]
 
-pub mod arguments;
-pub mod bedrock_provider;
-pub use arguments::*;
+pub mod native;
+pub mod parameters;
+pub use parameters::*;
 /// Built-in provider environment utilities.
 mod builtins;
 pub use builtins::{
@@ -37,26 +37,28 @@ pub use catalog::models::{
     get_supported_thinking_levels, models_are_equal,
 };
 
-pub use providers::chat::openai_completions::{
+pub use providers::chat::endpoint::{
     OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
 };
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
-pub use providers::content::google::{GoogleOptions, stream_google, stream_google_for};
+pub use providers::content::generative::{GoogleOptions, stream_google, stream_google_for};
 pub use providers::content::google_shared::GoogleThinkingLevel;
-pub use providers::http::{Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch};
-pub use providers::messages::anthropic::{
+pub use providers::messages::endpoint::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
     AnthropicThinkingDisplay, stream_anthropic, stream_anthropic_for,
 };
-pub use providers::reasoning::mistral::{
+pub use providers::reasoning::endpoint::{
     MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice, stream_mistral,
     stream_mistral_for,
 };
-pub use providers::responses::azure_openai_responses::{
+pub use providers::responses_api::azure_transport::{
     AzureOpenAIResponsesOptions, stream_azure_openai_responses, stream_azure_openai_responses_for,
 };
-pub use providers::responses::openai_responses::{
+pub use providers::responses_api::openai::{
     OpenAIResponsesOptions, stream_openai_responses, stream_openai_responses_for,
+};
+pub use providers::transport::{
+    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch,
 };
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
@@ -67,35 +69,35 @@ pub use records::diagnostics::{
     append_assistant_message_diagnostic, create_assistant_message_diagnostic,
     extract_diagnostic_error, format_thrown_value, timestamp_now,
 };
-pub use records::event_stream::EventStream;
-pub use records::event_stream::create_assistant_message_event_stream;
-pub use records::hash::short_hash;
-pub use records::headers::headers_to_record;
-pub use records::session_resources::{
-    SessionResourceCleanup, SessionResourceCleanupError, SessionResourceRemoval,
-    cleanup_session_resources, register_session_resource_cleanup,
-};
-pub use records::stream::{
+pub use records::digest::short_hash;
+pub use records::events::EventStream;
+pub use records::events::create_assistant_message_event_stream;
+pub use records::header_values::headers_to_record;
+pub use records::invocation::{
     complete, complete_for, complete_simple, complete_simple_for, stream, stream_for,
     stream_simple, stream_simple_for,
+};
+pub use records::sessions::{
+    SessionResourceCleanup, SessionResourceCleanupError, SessionResourceRemoval,
+    cleanup_session_resources, register_session_resource_cleanup,
 };
 pub use records::typebox_helpers::{StringEnumOptions, string_enum};
 pub use records::types::*;
 
 pub mod providers;
-pub use providers::faux::*;
+pub use providers::scripted::*;
 
 pub mod oauth;
-pub use oauth::device::github_copilot::{
+pub use oauth::device::browser::{
     GITHUB_COPILOT_OAUTH_PROVIDER, get_github_copilot_base_url, login_github_copilot,
     normalize_domain, refresh_github_copilot_token,
 };
-pub use oauth::oauth_page::{oauth_error_html, oauth_success_html};
-pub use oauth::pkce::{Pkce, generate_pkce};
-pub use oauth::responses::openai_codex::{
+pub use oauth::pages::{oauth_error_html, oauth_success_html};
+pub use oauth::proof_key::{Pkce, generate_pkce};
+pub use oauth::responses::code_login::{
     OPENAI_CODEX_OAUTH_PROVIDER, login_openai_codex, refresh_openai_codex_token,
 };
-pub use oauth::subscription::anthropic::{
+pub use oauth::subscription::browser::{
     ANTHROPIC_OAUTH_PROVIDER, login_anthropic, refresh_anthropic_token,
 };
 pub use oauth::types::{
@@ -108,7 +110,7 @@ pub use oauth::{
     refresh_oauth_token, register_oauth_provider, reset_oauth_providers, unregister_oauth_provider,
 };
 
-pub use providers::response_sessions::openai_codex_responses::{
+pub use providers::response_sessions::codex::{
     OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats, stream_openai_codex_responses,
     stream_openai_codex_responses_for,
 };
@@ -125,7 +127,7 @@ pub use providers::websocket::{
     ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest,
 };
 
-pub use providers::content::google_vertex::{
+pub use providers::content::managed::{
     GoogleVertexOptions, stream_google_vertex, stream_google_vertex_for,
     stream_simple_google_vertex, stream_simple_google_vertex_for,
 };

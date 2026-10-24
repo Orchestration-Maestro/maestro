@@ -7,7 +7,7 @@ mod state_events;
 use super::{
     App,
     actions::{PaneStateUpdate, notification_context},
-    state::ToastNotification,
+    model::ToastNotification,
 };
 use crate::{events::AppEvent, settings::model::ToastDelivery};
 
@@ -109,7 +109,7 @@ impl<C: FnMut() -> u128> App<C> {
     pub(super) fn live_notification_context(
         &self,
         workspace: usize,
-        pane: maestro_workspace::layout::PaneId,
+        pane: maestro_workspace::tiling::PaneId,
     ) -> Option<String> {
         let target = self.state.topology.workspaces.get(workspace)?;
         let label = crate::workspace::display_name_from(

@@ -2,7 +2,7 @@
 use crate::{
     I18nError,
     browser::attachment_content::{AttachmentHostError, ControlError},
-    components::code_block::ReadingUiError,
+    components::source::ReadingUiError,
 };
 /// Tool rendering operation failure.
 #[derive(Debug)]

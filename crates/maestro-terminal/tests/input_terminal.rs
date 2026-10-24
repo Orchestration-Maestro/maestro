@@ -3,9 +3,9 @@
 use maestro_terminal::{
     Mode, Terminal,
     input::{
-        key::{Key, KeyEvent},
         key_encode::{KeyEncoder, OptionAsAlt},
         key_mods::Mods,
+        keyboard::{Key, KeyEvent},
     },
     kitty::key::Flags,
 };
@@ -29,8 +29,8 @@ fn key_encoder_from_terminal_preserves_terminal_defaults() {
     );
 }
 
-fn size() -> maestro_terminal::input::mouse_encode::size::Size {
-    use maestro_terminal::input::mouse_encode::size::{CellSize, Padding, ScreenSize, Size};
+fn size() -> maestro_terminal::input::mouse_encode::dimensions::Size {
+    use maestro_terminal::input::mouse_encode::dimensions::{CellSize, Padding, ScreenSize, Size};
     Size {
         screen: ScreenSize {
             width: 80,
@@ -47,8 +47,8 @@ fn size() -> maestro_terminal::input::mouse_encode::size::Size {
 #[test]
 fn input_encoders_observe_terminal_modes() {
     use maestro_terminal::input::{
-        mouse::{MouseButton, MouseEvent},
         mouse_encode::MouseEncoder,
+        pointer::{MouseButton, MouseEvent},
     };
     let mut terminal = Terminal::new(80, 24, 0).unwrap();
     terminal.write(b"\x1b[?1h\x1b[>1u\x1b[?1000h\x1b[?1006h");
@@ -130,7 +130,7 @@ fn key_snapshot_uses_active_screen_protocol_stack() {
 #[test]
 fn mouse_snapshot_defaults_disable_reports_and_tracking() {
     use maestro_terminal::{
-        input::{mouse::MouseEvent, mouse_encode::MouseEncoder},
+        input::{mouse_encode::MouseEncoder, pointer::MouseEvent},
         mouse::{Event, Format},
     };
     let terminal = Terminal::new(80, 24, 0).unwrap();
@@ -182,8 +182,8 @@ fn mouse_snapshot_reads_event_and_format_modes() {
 fn mouse_snapshot_allows_size_and_format_overrides_without_borrowing() {
     use maestro_terminal::{
         input::{
-            mouse::{MouseButton, MouseEvent, Pos},
             mouse_encode::MouseEncoder,
+            pointer::{MouseButton, MouseEvent, Pos},
         },
         mouse::Format,
     };

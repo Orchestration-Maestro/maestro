@@ -9,13 +9,13 @@ pub use maestro_session::session_manager::{
 pub use maestro_session::{Presence, SessionInfo, SessionManager};
 
 /// The session's message records, including the application roles a transcript shows.
-pub use maestro_session::messages;
+pub use maestro_session::message_records as messages;
 
-pub use maestro_session::messages::{
+pub use maestro_session::message_records::{
     BranchSummaryMessage, CompactionSummaryMessage, parse_timestamp_millis,
 };
 
-pub use maestro_session::messages::CustomMessage;
+pub use maestro_session::message_records::CustomMessage;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_session::session_manager::SessionListProgress;
@@ -34,14 +34,14 @@ pub use crate::agent_session::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use crate::runtime::agent_session_runtime::{
+pub use crate::runtime::session_engine::{
     AgentSessionRuntime, AgentSessionRuntimeError, CreateAgentSessionRuntimeFactory,
     CreateAgentSessionRuntimeOptions, CreateAgentSessionRuntimeResult, ForkResult, RebindSession,
     SessionImportFileNotFoundError, create_agent_session_runtime,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use crate::runtime::agent_session_services::{
+pub use crate::runtime::session_dependencies::{
     CreateAgentSessionFromServicesOptions, create_agent_session_from_services,
 };
 
@@ -51,7 +51,7 @@ pub use crate::sdk::{
     create_agent_session,
 };
 
-pub use maestro_session::compaction::{
+pub use maestro_session::summarization::{
     BranchPreparation, BranchSummaryResult, CollectEntriesResult, CompactionResult, CutPointResult,
     DEFAULT_COMPACTION_SETTINGS, FileOperations, GenerateBranchSummaryOptions,
     calculate_context_tokens, collect_entries_for_branch_summary, compact, estimate_tokens,
@@ -70,7 +70,7 @@ pub use maestro_session::session_manager::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_extensions::runner::ExtensionRunnerSession;
+pub use maestro_extensions::execution::ExtensionRunnerSession;
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_session::session_manager::CompactionOptions;
 #[cfg(not(target_arch = "wasm32"))]

@@ -93,7 +93,7 @@ pub fn rich_caption_keeps_intrinsic_heights_and_single_invocation() {
 #[wasm_bindgen]
 pub fn vertical_native_child_grows_horizontal_caption() {
     let mut surface = surface();
-    let mut block = maestro_web::components::code_block::CodeBlock::new(surface.host());
+    let mut block = maestro_web::components::source::CodeBlock::new(surface.host());
     block.code = "caption".into();
     surface.draw(|ui, view| {
         ui.allocate_ui_with_layout(
@@ -109,7 +109,7 @@ pub fn vertical_native_child_grows_horizontal_caption() {
 #[wasm_bindgen]
 pub fn horizontal_native_scroll_uses_real_clip() {
     let mut surface = surface();
-    let mut block = maestro_web::components::code_block::CodeBlock::new(surface.host());
+    let mut block = maestro_web::components::source::CodeBlock::new(surface.host());
     block.code = "line\n".repeat(80);
     for frame in 0..2 {
         surface.draw(|ui, view| {
@@ -134,7 +134,7 @@ pub fn horizontal_native_scroll_uses_real_clip() {
 #[wasm_bindgen]
 pub fn horizontal_offer_does_not_cap_natural_child() {
     let mut surface = surface();
-    let mut block = maestro_web::components::code_block::CodeBlock::new(surface.host());
+    let mut block = maestro_web::components::source::CodeBlock::new(surface.host());
     block.code = "line\n".repeat(80);
     surface.draw(|ui, view| {
         ui.set_max_size(egui::vec2(350., 40.));
@@ -150,7 +150,7 @@ pub fn horizontal_offer_does_not_cap_natural_child() {
 #[wasm_bindgen]
 pub fn native_horizontal_in_scroll_area_keeps_bounded_scroll() {
     let mut surface = surface();
-    let mut block = maestro_web::components::code_block::CodeBlock::new(surface.host());
+    let mut block = maestro_web::components::source::CodeBlock::new(surface.host());
     block.code = "line\n".repeat(80);
     for frame in 0..2 {
         surface.draw(|ui, view| {

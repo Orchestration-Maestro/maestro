@@ -6,7 +6,7 @@ use crate::{
     tool_renderer_browser as drawing,
 };
 use maestro_app::{
-    JsonObject, ToolCall, ToolResultMessage, browser::tools::artifacts::ArtifactsParams,
+    JsonObject, ToolCall, ToolResultMessage, browser::tools::documents::ArtifactsParams,
 };
 use maestro_web::{
     ArtifactsToolRenderer, AssistantMessage, AssistantMessageProps, ToolMessage, ToolMessageProps,
@@ -178,7 +178,7 @@ fn assistant(surface: &mut Surface, call: &ToolCall, result: &mut ToolResultMess
             [(call.id.clone(), result.clone())].into()
         };
         let mut draw = |ui: &mut egui::Ui,
-                        frame: maestro_web::components::code_block::CodeBlockView<
+                        frame: maestro_web::components::source::CodeBlockView<
             '_,
             maestro_web::TranslationFunction,
         >| {

@@ -36,15 +36,15 @@
 /// Invocation-local callback emission.
 pub mod callbacks;
 /// Ordered shared channel delivery.
-pub mod event_bus;
+pub mod events;
 pub use callbacks::CallbackEmitter;
-pub use event_bus::{
+pub use events::{
     ErrorReporter, EventBus, EventBusController, EventError, EventListener, EventTail,
     Subscription, TailSpawner, create_event_bus, create_event_bus_for,
 };
 
 /// The read-only footer metadata extension footers receive.
-pub mod footer_data_provider;
+pub mod footer;
 mod loader;
 /// Owned registration records and callback types.
 pub mod types;
@@ -60,8 +60,8 @@ pub use types::{
     TerminalInputHandler, UIHostCall, WidgetPlacement, WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
-pub mod runner;
-pub use runner::ExtensionRunner;
+pub mod execution;
+pub use execution::ExtensionRunner;
 
 pub use loader::runtime::create_extension_runtime;
 pub use maestro_models::{ToolInfo, system_prompt::BuildSystemPromptOptions};

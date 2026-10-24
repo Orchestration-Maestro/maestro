@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_app::BuildSystemPromptOptions;
 use maestro_app::configuration::config::{get_docs_path, get_readme_path};
-use maestro_app::resources::system_prompt::build_system_prompt;
+use maestro_app::resources::instructions::build_system_prompt;
 use maestro_test_process::{TestProcess, selection};
 use serde::Deserialize;
 use serde_json::Value;

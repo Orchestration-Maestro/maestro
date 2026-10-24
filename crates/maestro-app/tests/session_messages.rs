@@ -9,7 +9,7 @@ use crate::support::session_harness::{
 use maestro_app::agent_session::PromptOptions;
 use maestro_models::{ImageContent, TextContent, UserBlock, UserContent};
 use maestro_session::Presence;
-use maestro_session::messages::{
+use maestro_session::message_records::{
     CustomMessageInput, MessageDelivery, SendMessageOptions, SendUserMessageOptions,
     UserMessageDelivery,
 };

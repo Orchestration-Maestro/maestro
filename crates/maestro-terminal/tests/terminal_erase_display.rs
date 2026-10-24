@@ -402,7 +402,7 @@ fn later_output_prevents_prompt_scroll_clear() {
 
 #[test]
 fn alternate_prompt_clear_does_not_create_history() {
-    use maestro_terminal::{screen::Options, screen_set::Key};
+    use maestro_terminal::{screen::Options, screens::Key};
     let mut t = Terminal::new(5, 3, 10000).unwrap();
     t.erase_display(EraseDisplay::Complete, false);
     assert_eq!(t.screens.active().pages.history_rows(), 0);

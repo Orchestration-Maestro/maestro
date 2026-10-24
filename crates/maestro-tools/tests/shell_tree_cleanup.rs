@@ -2,8 +2,8 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::runtime::run;
-use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
-use maestro_tools::utils::shell::{
+use maestro_process::children::{CapturedChild, WaitOptions, wait_for_child_process};
+use maestro_tools::utils::environment::{
     kill_process_tree, kill_tracked_detached_children, track_detached_child_pid,
 };
 use tokio::io::AsyncReadExt;

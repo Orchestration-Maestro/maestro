@@ -1,8 +1,6 @@
 //! Resource path resolution, classification and real-path fallback.
 
-use crate::{
-    current_directory, drive_directories, frontmatter::text_whitespace, skills::real_path,
-};
+use crate::{catalog::real_path, current_directory, drive_directories, metadata::text_whitespace};
 use std::{
     io,
     path::{Path, PathBuf},

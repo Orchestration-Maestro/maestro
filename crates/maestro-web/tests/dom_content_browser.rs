@@ -9,15 +9,16 @@ use maestro_web::DefaultRenderer;
 use maestro_web::{
     MessageRenderer,
     components::{
-        button::{ButtonProps, ButtonSize, ButtonType, ButtonVariant, button},
+        controls::{ButtonProps, ButtonSize, ButtonType, ButtonVariant, button},
         message_renderer_registry::dom::{
             get_message_renderer as get_page_message_renderer,
             render_message as render_page_message,
         },
     },
-    dom::{DomContent, DomRoot, DomView, MountedContent},
-    get_message_renderer, register_message_renderer, register_tool_renderer, render_message,
-    render_tool, set_show_json_mode,
+    get_message_renderer,
+    page::{DomContent, DomRoot, DomView, MountedContent},
+    register_message_renderer, register_tool_renderer, render_message, render_tool,
+    set_show_json_mode,
     tools::{
         dom::render_tool as render_page_tool,
         types::{

@@ -2,7 +2,7 @@
 
 use super::{RightClickPassthroughModifierConfig, ToastConfig};
 use crate::settings::{
-    sidebar::SidebarConfig, sound::SoundConfig, tab_bar::TabBarRightEntryConfig,
+    audio::SoundConfig, navigation::SidebarConfig, tabs::TabBarRightEntryConfig,
 };
 use maestro_protocol::shared::Flag;
 use serde::{Deserialize, Serialize};
@@ -185,7 +185,7 @@ impl Default for UiConfig {
             tab_bar_position: TabBarPositionConfig::Top,
             tab_bar_right: Vec::new(),
             tab_bar_right_separator: " ".into(),
-            window_title: crate::settings::window_title::default_window_title(),
+            window_title: crate::settings::titles::default_window_title(),
             agent_panel_sort: AgentPanelSortConfig::Spaces,
             status_indicators: StatusIndicatorStyle::Dots,
             sidebar: SidebarConfig::default(),

@@ -16,7 +16,7 @@ use maestro_tools::{
     ToolDefinition, ToolRenderResultOptions, WriteOperations, WriteToolInput, WriteToolOptions,
     create_write_tool_definition, key_hint, output::render_utils::strip_ansi,
 };
-use maestro_tui::{Component, Container, Text, tui::ComponentHandle};
+use maestro_tui::{Component, Container, Text, interface::ComponentHandle};
 use read_support::{Fixture, Scratch};
 use serde::Deserialize;
 use serde_json::{Value, json};

@@ -211,20 +211,20 @@ fn truncation_views_keep_numeric_domains() {
 #[test]
 fn read_details_keep_optional_truncation() {
     check::<
-        maestro_tool::tools::read::ReadToolDetails<
+        maestro_tool::tools::reading::ReadToolDetails<
             maestro_request::presence::Presence<
                 maestro_tool::tools::truncate::TruncationResult<f64>,
             >,
         >,
     >("details")
     .unwrap();
-    let absent = maestro_tool::tools::read::ReadToolDetails::<
+    let absent = maestro_tool::tools::reading::ReadToolDetails::<
         Option<maestro_tool::tools::truncate::TruncationResult<usize>>,
     > {
         truncation: None,
     };
     assert_eq!(serde_json::to_value(absent).unwrap(), serde_json::json!({}));
-    let present = maestro_tool::tools::read::ReadToolDetails {
+    let present = maestro_tool::tools::reading::ReadToolDetails {
         truncation: Some(maestro_tool::tools::truncate::TruncationResult {
             content: "selected".into(),
             truncated: true,

@@ -19,7 +19,7 @@ returns no entries. The schema declares neither a range nor an integer type.
 
 ## Listing
 
-[`LsOperations`](../crates/maestro-tools/src/search/ls/mod.rs) supplies the three file
+[`LsOperations`](../crates/maestro-tools/src/search/directory/mod.rs) supplies the three file
 effects of a listing: `exists`, `stat` (whether a path is a directory) and `readdir` (entry
 names). `LsToolOptions::operations` replaces the local filesystem with another system; it
 is used instead of the native operations, never beside them, and nothing but these three
@@ -74,7 +74,7 @@ the row and leave it unchanged when a theme color is missing.
 
 ## Search programs
 
-[`ToolsManager`](../crates/maestro-tools/src/search/tools_manager.rs) is native-only.
+[`ToolsManager`](../crates/maestro-tools/src/search/acquisition.rs) is native-only.
 Its constructor takes a binary-directory string and an optional replacement HTTP
 transport. `get_tool_path` checks that directory first, then probes `fd`, `fdfind`
 (in that order) or `rg` on `PATH` with `--version`. A candidate passing
@@ -105,7 +105,7 @@ errors do not change availability. Find and grep use silent acquisition.
 
 ## Find
 
-[`create_find_tool` and `create_find_tool_definition`](../crates/maestro-tools/src/search/find/mod.rs)
+[`create_find_tool` and `create_find_tool_definition`](../crates/maestro-tools/src/search/discovery/mod.rs)
 take a working directory, `FindToolOptions` and an `Arc<ToolsManager>`. Construction
 neither resolves paths nor acquires a program. Both factories are native-only.
 
@@ -154,7 +154,7 @@ row's previous `Text`, and a rendering failure leaves its text unchanged.
 
 ## Content search
 
-[`create_grep_tool` and `create_grep_tool_definition`](../crates/maestro-tools/src/search/grep/mod.rs)
+[`create_grep_tool` and `create_grep_tool_definition`](../crates/maestro-tools/src/search/matching/mod.rs)
 take a working directory, `GrepToolOptions` and an `Arc<ToolsManager>`. They are native-only
 and construction performs no I/O. `pattern` is required; `path` names a file or directory
 and defaults to the working directory. Paths resolve at execution, after silent

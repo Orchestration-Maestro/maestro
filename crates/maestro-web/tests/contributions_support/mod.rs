@@ -3,8 +3,8 @@
 use maestro_app::{SandboxUrlProvider, SharedHandle, TextContent, ToolResultMessage, UserBlock};
 use maestro_web::{
     I18n,
-    contributions::{BrowserContribution, ContributionHost},
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
+    runtime_contributions::{BrowserContribution, ContributionHost},
     tools::types::ToolUiError,
 };
 use serde_json::Value;

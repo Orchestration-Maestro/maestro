@@ -158,7 +158,7 @@ fn local_graphics_media_remain_available() {
     let terminal = terminal();
     assert_eq!(
         terminal.screens.active().kitty_images.image_limits,
-        maestro_terminal::kitty::graphics::image::Limits::ALL
+        maestro_terminal::kitty::graphics::bitmap::Limits::ALL
     );
 }
 

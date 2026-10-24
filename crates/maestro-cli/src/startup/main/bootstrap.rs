@@ -1,6 +1,6 @@
 //! Mode selection, diagnostics and directory precedence before a frontend starts.
 
-use crate::input::args::{Args, Diagnostic, DiagnosticType, Mode};
+use crate::input::arguments::{Args, Diagnostic, DiagnosticType, Mode};
 use maestro_app::configuration::config::paths::expand_tilde_path;
 use maestro_app::{
     AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, SettingsManager,

@@ -12,8 +12,8 @@ use super::wire::{
     ContentBlock, PromptVariableValues, SystemContentBlock, ToolConfiguration, Union, list, map,
 };
 use crate::options::resolve_cache_retention;
-use crate::providers::http::RequestFailure;
 use crate::providers::json_text::compact_json;
+use crate::providers::transport::RequestFailure;
 use crate::{Context, Model};
 
 /// One conversation turn.

@@ -10,7 +10,7 @@ use maestro_tools::{
     ToolRenderResultOptions, ToolRendererBinding, ToolRendererState,
     output::render_utils::ToolRenderResultLike,
 };
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};

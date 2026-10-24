@@ -88,16 +88,16 @@ fn history_resize_reflow_exceeds_hyperlink_memory_forcing_capacity_increase() {
         page.get_row_mut(pin.y).set_wrap(index == 0);
         page.get_row_mut(pin.y).set_wrap_continuation(index == 1);
         let id = page
-            .insert_hyperlink(crate::hyperlink::Hyperlink {
-                id: crate::hyperlink::HyperlinkId::Implicit(u32::try_from(index).unwrap()),
+            .insert_hyperlink(crate::links::Hyperlink {
+                id: crate::links::HyperlinkId::Implicit(u32::try_from(index).unwrap()),
                 uri: uri.clone(),
             })
             .unwrap();
         page.set_hyperlink(CellPosition { x: pin.x, y: pin.y }, id)
             .unwrap();
         assert_eq!(
-            page.insert_hyperlink(crate::hyperlink::Hyperlink {
-                id: crate::hyperlink::HyperlinkId::Implicit(u32::try_from(index + 1).unwrap()),
+            page.insert_hyperlink(crate::links::Hyperlink {
+                id: crate::links::HyperlinkId::Implicit(u32::try_from(index + 1).unwrap()),
                 uri: vec![b'A'; 26],
             }),
             Err(crate::page::StorageError::StringsOutOfMemory)
@@ -118,7 +118,7 @@ fn history_resize_reflow_exceeds_hyperlink_memory_forcing_capacity_increase() {
         assert_eq!(link.uri, uri);
         assert_eq!(
             link.id,
-            crate::hyperlink::HyperlinkId::Implicit(u32::try_from(index).unwrap())
+            crate::links::HyperlinkId::Implicit(u32::try_from(index).unwrap())
         );
         assert!(page.capacity.string_bytes > bytes);
     }

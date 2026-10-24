@@ -12,11 +12,9 @@ use std::path::Path;
 use std::rc::Rc;
 
 use maestro_app::ReadonlyFooterDataProvider;
-use maestro_app::presentation_data::footer_data_provider::{ExtensionStatuses, FooterDataProvider};
+use maestro_app::presentation_data::status_line::{ExtensionStatuses, FooterDataProvider};
 #[cfg(unix)]
-use maestro_app::presentation_data::footer_data_provider::{
-    FooterOperations, NativeFooterOperations,
-};
+use maestro_app::presentation_data::status_line::{FooterOperations, NativeFooterOperations};
 use serde::Deserialize;
 use support::{Entry, Git, MetadataEffects, load, plain, provider, target};
 #[cfg(unix)]
@@ -1251,7 +1249,8 @@ fn footer_bare_checkout_uses_shared_repository_discovery() {
     );
     let bare = scratch.join("bare");
     let discovered =
-        maestro_workspace::workspace::git::native::discover_git_paths(Path::new(&bare)).unwrap();
+        maestro_workspace::spaces::repository::native::discover_git_paths(Path::new(&bare))
+            .unwrap();
     assert_eq!(discovered.repo_root, Path::new(&bare));
     assert_eq!(
         std::fs::read_to_string(discovered.git_dir.join("HEAD"))

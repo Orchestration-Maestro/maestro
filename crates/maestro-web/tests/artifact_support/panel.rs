@@ -3,8 +3,8 @@ use super::{
     Frame,
     presentation::{Presentation, ready},
 };
-use maestro_app::browser::tools::artifacts::{Artifact, LocalArtifactsPanel};
-use maestro_web::{ArtifactsPanel, tools::artifacts::ArtifactUiError};
+use maestro_app::browser::tools::documents::{Artifact, LocalArtifactsPanel};
+use maestro_web::{ArtifactsPanel, tools::documents::ArtifactUiError};
 use serde::Deserialize;
 use std::{
     cell::Cell,

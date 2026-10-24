@@ -32,7 +32,7 @@ fn guest_tool_aliases_use_shared_records() {
     };
     let module: crate::tools::TruncationResult = truncation;
     let reason: Option<maestro_tool::tools::truncate::TruncationBy> = module.truncated_by;
-    let details: crate::ReadToolDetails = maestro_tool::tools::read::ReadToolDetails {
+    let details: crate::ReadToolDetails = maestro_tool::tools::reading::ReadToolDetails {
         truncation: Presence::Present(crate::TruncationResult {
             truncated_by: reason,
             ..module

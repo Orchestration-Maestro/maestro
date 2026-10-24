@@ -11,7 +11,7 @@ use serde_json::value::RawValue;
 
 use crate::JsonObject;
 
-pub(crate) use crate::arguments::parsed_arguments;
+pub(crate) use crate::parameters::parsed_arguments;
 
 pub use maestro_json::compact_json;
 pub(crate) use maestro_json::compact_object;

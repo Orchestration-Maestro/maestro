@@ -425,7 +425,7 @@ application factories.
 
 ## Word numbering and embedded fonts
 
-`maestro_app::browser::docx_preview::numbering::NumberingPart::parse_xml` returns
+`maestro_app::browser::docx_preview::lists::NumberingPart::parse_xml` returns
 ordered raw definitions, concrete references, overrides and nullable picture
 slots, plus an owned concrete level sequence. Each matching concrete instance
 keeps its identifier; ordered level/start overrides affect that instance only.

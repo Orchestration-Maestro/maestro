@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_app::utils::clipboard_image::extension_for_image_mime_type;
+use maestro_app::utils::image_clipboard::extension_for_image_mime_type;
 #[path = "support/clipboard_image_effects.rs"]
 mod controlled;
 

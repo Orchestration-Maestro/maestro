@@ -1,11 +1,11 @@
 //! Browser attachment and provider utilities.
 
-pub use maestro_models::arguments::json_parse::parse_json;
+pub use maestro_models::parameters::json_parse::parse_json;
 /// Image, text and presentation attachment loading.
-pub mod attachment_utils;
+pub mod attachments;
 
 /// Provider-specific CORS proxy policy.
-pub mod proxy_utils;
+pub mod proxy;
 
 /// Local-server model discovery.
 pub mod model_discovery;

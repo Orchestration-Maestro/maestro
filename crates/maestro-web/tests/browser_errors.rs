@@ -5,10 +5,10 @@ use crate::support::tool_output::TextOnlyOutput as _;
 use maestro_web::{
     I18nError,
     browser::attachment_content::{AttachmentHostError, ControlError},
-    components::input::InputUiError,
-    dialogs::{attachment_overlay::AttachmentUiError, dialog::DialogUiError},
+    components::fields::InputUiError,
+    dialogs::{attachment_overlay::AttachmentUiError, surface::DialogUiError},
     icons::{IconError, IconSize, icon},
-    tools::artifacts::{ArtifactUiError, PresentationCause},
+    tools::documents::{ArtifactUiError, PresentationCause},
 };
 use std::error::Error;
 
@@ -117,7 +117,7 @@ use crate::input_support;
 fn artifact_control_cause(filename: &str) {
     let host = input_support::Host::new(|_, _| panic!("header must not publish a native body"));
     let mut artifact =
-        maestro_web::tools::artifacts::create_artifact_element(filename, "", host).unwrap();
+        maestro_web::tools::documents::create_artifact_element(filename, "", host).unwrap();
     let mut frame = attachment_support::Frame::default();
     frame.run(vec![], |ctx, i18n, presentation| {
         let mut presentation = presentation.clone();
@@ -130,7 +130,7 @@ fn artifact_control_cause(filename: &str) {
         let error = artifact
             .get_header_buttons(
                 &mut ui,
-                maestro_web::tools::artifacts::artifact_element::ArtifactView {
+                maestro_web::tools::documents::artifact_element::ArtifactView {
                     i18n,
                     presentation: &presentation,
                     highlighter: &highlighter_support::NoHighlight,
@@ -174,7 +174,7 @@ use crate::text_image_support;
 #[test]
 fn markdown_artifact_preparation_keeps_original_highlight_cause() {
     let host = input_support::Host::new(|_, _| panic!("failed preparation published a body"));
-    let mut artifact = maestro_web::tools::artifacts::create_artifact_element(
+    let mut artifact = maestro_web::tools::documents::create_artifact_element(
         "a.md",
         "```rust\nlet value = 1;\n```",
         host,
@@ -192,7 +192,7 @@ fn markdown_artifact_preparation_keeps_original_highlight_cause() {
         let error = artifact
             .render(
                 &mut ui,
-                maestro_web::tools::artifacts::artifact_element::ArtifactView {
+                maestro_web::tools::documents::artifact_element::ArtifactView {
                     i18n,
                     presentation,
                     highlighter: &highlighter,
@@ -206,11 +206,11 @@ fn markdown_artifact_preparation_keeps_original_highlight_cause() {
         let reading = error
             .source()
             .unwrap()
-            .downcast_ref::<maestro_web::components::code_block::ReadingUiError>()
+            .downcast_ref::<maestro_web::components::source::ReadingUiError>()
             .unwrap();
         assert!(matches!(
             reading,
-            maestro_web::components::code_block::ReadingUiError::Highlight(_)
+            maestro_web::components::source::ReadingUiError::Highlight(_)
         ));
         let cause = reading
             .source()
@@ -227,7 +227,7 @@ fn markdown_artifact_preparation_keeps_original_highlight_cause() {
 fn markdown_native_failures_keep_the_host_phase() {
     let host = input_support::Host::new(|_, _| {});
     *host.failure.borrow_mut() = Some("measure");
-    let mut artifact = maestro_web::tools::artifacts::create_artifact_element(
+    let mut artifact = maestro_web::tools::documents::create_artifact_element(
         "a.md",
         "literal body",
         host.clone(),
@@ -240,7 +240,7 @@ fn markdown_native_failures_keep_the_host_phase() {
             egui::Id::new("native-error"),
             egui::UiBuilder::new().max_rect(ctx.content_rect()),
         );
-        let view = maestro_web::tools::artifacts::artifact_element::ArtifactView {
+        let view = maestro_web::tools::documents::artifact_element::ArtifactView {
             i18n,
             presentation,
             highlighter: &highlighter_support::NoHighlight,
@@ -269,7 +269,7 @@ fn artifact_localization_failures_keep_the_leaf_phase() {
         let host =
             input_support::Host::new(|_, _| panic!("localization failed before publication"));
         let mut artifact =
-            maestro_web::tools::artifacts::create_artifact_element(filename, content, host)
+            maestro_web::tools::documents::create_artifact_element(filename, content, host)
                 .unwrap();
         let mut frame = attachment_support::Frame::default();
         frame.run(vec![], |ctx, i18n, presentation| {
@@ -284,7 +284,7 @@ fn artifact_localization_failures_keep_the_leaf_phase() {
                 egui::UiBuilder::new().max_rect(ctx.content_rect()),
             );
             let highlighter = text_image_support::Highlighter::default();
-            let view = maestro_web::tools::artifacts::artifact_element::ArtifactView {
+            let view = maestro_web::tools::documents::artifact_element::ArtifactView {
                 i18n,
                 presentation,
                 highlighter: &highlighter,
@@ -327,7 +327,7 @@ fn console_presentation_failures_keep_the_original_cause() {
             .unwrap_err();
         assert!(matches!(
             error,
-            maestro_web::components::code_block::ReadingUiError::Presentation(_)
+            maestro_web::components::source::ReadingUiError::Presentation(_)
         ));
         let cause = error
             .source()
@@ -374,11 +374,11 @@ fn tool_rendering_failures_keep_the_original_reading_cause() {
         let reading = error
             .source()
             .unwrap()
-            .downcast_ref::<maestro_web::components::code_block::ReadingUiError>()
+            .downcast_ref::<maestro_web::components::source::ReadingUiError>()
             .unwrap();
         assert!(matches!(
             reading,
-            maestro_web::components::code_block::ReadingUiError::Highlight(_)
+            maestro_web::components::source::ReadingUiError::Highlight(_)
         ));
         let cause = reading
             .source()

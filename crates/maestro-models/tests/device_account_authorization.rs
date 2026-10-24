@@ -450,7 +450,7 @@ fn device_provider_exposes_shared_contract() {
     ));
     assert!(std::ptr::eq(
         provider,
-        maestro_models::oauth::device::github_copilot::GITHUB_COPILOT_OAUTH_PROVIDER
+        maestro_models::oauth::device::browser::GITHUB_COPILOT_OAUTH_PROVIDER
     ));
     assert!(std::ptr::eq(
         provider,

@@ -108,7 +108,7 @@ fn typed_definitions_keep_custom_state_and_details() {
     assert_eq!(states[0].borrow().count, 2);
 }
 
-use maestro_tui::{Component, tui::ComponentHandle};
+use maestro_tui::{Component, interface::ComponentHandle};
 use serde::Deserialize;
 use std::{cell::RefCell, rc::Rc};
 #[derive(Default)]

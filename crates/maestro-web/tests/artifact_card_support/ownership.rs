@@ -7,7 +7,7 @@ use crate::{
 };
 use maestro_app::{
     JsonObject,
-    browser::tools::artifacts::{ArtifactsParams, LocalArtifactsPanel},
+    browser::tools::documents::{ArtifactsParams, LocalArtifactsPanel},
 };
 use maestro_web::{ArtifactsToolRenderer, ToolRenderer, tools::types::ToolRenderState};
 use serde_json::{Value, json};

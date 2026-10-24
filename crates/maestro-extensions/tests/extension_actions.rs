@@ -6,7 +6,7 @@ use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::{
     EventError, ExtensionAPI, ExtensionContextActions, ExtensionExecution,
     create_extension_runtime,
-    runner::ExtensionRunner,
+    execution::ExtensionRunner,
     types::{
         ExtensionActions, ExtensionError, ExtensionRuntime, ProviderActions, ProviderConfig,
         ProviderModelConfig,
@@ -16,7 +16,7 @@ use maestro_models::{
     Local, ModelCost, ModelInput, ModelThinkingLevel as ThinkingLevel, SharedHandle, Threaded,
     ToolInfo,
 };
-use maestro_session::messages::CustomMessageInput;
+use maestro_session::message_records::CustomMessageInput;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -108,8 +108,8 @@ fn threaded_api(
 
 fn session(
     registry: SharedHandle<ModelRegistry>,
-) -> maestro_extensions::runner::ExtensionRunnerSession {
-    maestro_extensions::runner::ExtensionRunnerSession {
+) -> maestro_extensions::execution::ExtensionRunnerSession {
+    maestro_extensions::execution::ExtensionRunnerSession {
         cwd: "/work".into(),
         session_manager: Rc::new(RefCell::new(
             maestro_session::SessionManager::in_memory(Some("/work")).unwrap(),

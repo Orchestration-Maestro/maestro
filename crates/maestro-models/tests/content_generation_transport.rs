@@ -10,7 +10,7 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 use indexmap::IndexMap;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::content::google::create_client;
+use maestro_models::providers::content::generative::create_client;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::content::google_shared::{
     ApiClient, PreparedContentRequest, project_content_request,

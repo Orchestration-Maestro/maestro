@@ -95,7 +95,7 @@ async fn body(fetch: &Fetch, source: Source) -> Result<String, String> {
     while let Some(chunk) = response.body.next().await {
         bytes.extend(chunk.map_err(|error| error.to_string())?);
     }
-    Ok(crate::providers::http::decode_utf8(&bytes).into_owned())
+    Ok(crate::providers::transport::decode_utf8(&bytes).into_owned())
 }
 /// Report acquisition and its completed count.
 async fn retrieve(

@@ -1,8 +1,8 @@
 //! Browser transactions and source-derived raw-value fixture construction.
 use maestro_app::DiagnosticErrorInfo;
 use maestro_app::SharedHandle;
-use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
-use maestro_web::browser::sandbox_value::BrowserSandboxValue;
+use maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider;
+use maestro_web::browser::values::BrowserSandboxValue;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
 use wasm_bindgen::{JsCast as _, prelude::*};
 
@@ -47,7 +47,9 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Provider {
     fn handle_message(
         &self,
         message: BrowserSandboxValue,
-        respond: maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond<BrowserSandboxValue>,
+        respond: maestro_app::browser::components::sandbox::providers::SandboxRespond<
+            BrowserSandboxValue,
+        >,
     ) -> maestro_app::BoxFuture<Result<(), DiagnosticErrorInfo>> {
         if js_sys::Reflect::get(&message.0, &"type".into())
             .unwrap()

@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
-use maestro_models::providers::chat::openai_completions::stream_simple_openai_completions;
+use maestro_models::providers::chat::endpoint::stream_simple_openai_completions;
 use maestro_models::{
     AssistantMessageEventStream, Cancellation, Fetch, FetchError, HttpResponse, OnPayload,
     OnResponse, OpenAICompletionsOptions, SimpleStreamOptions, StreamOptions,

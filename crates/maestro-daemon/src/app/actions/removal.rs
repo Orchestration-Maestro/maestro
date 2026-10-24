@@ -1,7 +1,7 @@
 //! Pane-owned metadata and focus cleanup after topology removal.
 
-use crate::app::state::{DaemonState, Mode};
-use maestro_workspace::{layout::PaneId, terminal_id::TerminalId};
+use crate::app::model::{DaemonState, Mode};
+use maestro_workspace::{terminal_id::TerminalId, tiling::PaneId};
 use std::collections::HashSet;
 
 impl<C: FnMut() -> u128> DaemonState<C> {

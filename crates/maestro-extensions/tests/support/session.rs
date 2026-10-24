@@ -2,7 +2,7 @@
 #![cfg(test)]
 use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
-use maestro_extensions::runner::ExtensionRunnerSession;
+use maestro_extensions::execution::ExtensionRunnerSession;
 use maestro_models::SharedHandle;
 use maestro_session::SessionManager;
 use std::{cell::RefCell, rc::Rc};

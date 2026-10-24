@@ -1,7 +1,7 @@
 //! The message conversion a session's agent uses, with images withheld when blocked.
 use maestro_agent::AgentMessage;
 use maestro_models::{Message, TextContent, UserBlock, UserContent};
-use maestro_session::messages::{CustomAgentMessages, convert_to_llm};
+use maestro_session::message_records::{CustomAgentMessages, convert_to_llm};
 
 /// The text that stands in for a withheld image.
 const IMAGE_PLACEHOLDER: &str = "Image reading is disabled.";

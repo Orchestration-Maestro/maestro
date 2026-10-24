@@ -7,7 +7,7 @@ mod nodes;
 mod search;
 pub use search::{get_searchable_text, matches_search};
 mod structure;
-use crate::session_manager::{SessionEntry, SessionTreeNode as InputNode, context::ancestor_path};
+use crate::session_manager::{SessionEntry, SessionTreeNode as InputNode, history::ancestor_path};
 pub use nodes::{SessionTreeNode, retain};
 use serde_json::Value;
 use std::{

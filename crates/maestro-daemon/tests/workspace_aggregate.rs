@@ -2,11 +2,11 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use maestro_daemon::{terminal::state::TerminalState, workspace::aggregate};
+use maestro_daemon::{terminal::model::TerminalState, workspace::summary as aggregate};
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_workspace::{
-    layout::PaneId,
-    workspace::{Workspace, WorkspaceTopology},
+    spaces::{Workspace, WorkspaceTopology},
+    tiling::PaneId,
 };
 use std::collections::HashMap;
 
@@ -50,7 +50,7 @@ fn workspace_rollup_priority() {
     let id2 = topology
         .split_pane_with_runtime(
             0,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: None,
@@ -89,7 +89,7 @@ fn workspace_rollup_done_unseen_beats_working() {
     let id2 = topology
         .split_pane_with_runtime(
             0,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: None,
@@ -158,7 +158,7 @@ fn daemon_pane_details_includes_tab_context_for_multi_tab_workspace() {
     let mut root_terminal = terminal_for_pane(ws, root_pane);
     root_terminal
         .set_hook_authority_at(
-            maestro_daemon::terminal::state::HookReport {
+            maestro_daemon::terminal::model::HookReport {
                 source: "test".into(),
                 agent_label: "pi".into(),
                 state: AgentState::Working,
@@ -173,7 +173,7 @@ fn daemon_pane_details_includes_tab_context_for_multi_tab_workspace() {
     let mut review_terminal = terminal_for_pane(ws, review_pane);
     review_terminal
         .set_hook_authority_at(
-            maestro_daemon::terminal::state::HookReport {
+            maestro_daemon::terminal::model::HookReport {
                 source: "test".into(),
                 agent_label: "claude".into(),
                 state: AgentState::Idle,

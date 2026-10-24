@@ -455,7 +455,7 @@ mod tests {
     #[wasm_bindgen]
     pub fn native_reading_grows_a_horizontal_caption_line() {
         let mut surface = surface();
-        let mut block = maestro_web::components::code_block::CodeBlock::new(surface.host());
+        let mut block = maestro_web::components::source::CodeBlock::new(surface.host());
         block.code = "caption file.txt".into();
         surface.draw(|ui, view| {
             ui.allocate_ui_with_layout(

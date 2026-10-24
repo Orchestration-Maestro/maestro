@@ -1,14 +1,14 @@
 //! Installation configuration and startup observations.
 
 pub mod config;
-pub mod maestro_user_agent;
-pub mod telemetry;
+pub mod identification;
+pub mod installation;
 pub mod timings;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod migrations;
+pub mod conversion;
 #[cfg(not(target_arch = "wasm32"))]
-pub mod version_check;
+pub mod releases;
 
 /// Whether a nonempty environment flag disables the operation that reads it.
 #[cfg(not(target_arch = "wasm32"))]

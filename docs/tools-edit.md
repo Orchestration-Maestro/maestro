@@ -10,7 +10,7 @@ excluded from browser builds, which still build the portable tool definitions.
 
 ## Write tool
 
-[`create_write_tool_definition`](../crates/maestro-tools/src/write/mod.rs) builds the
+[`create_write_tool_definition`](../crates/maestro-tools/src/writing/mod.rs) builds the
 `write` definition and `create_write_tool` wraps it as an `AgentTool` with no caller
 context. The model supplies two required strings:
 
@@ -85,7 +85,7 @@ text for a failure. Display strings, tab expansion and key hints follow the
 
 ## Edit tool
 
-[`create_edit_tool_definition`](../crates/maestro-tools/src/edit/mod.rs) builds the
+[`create_edit_tool_definition`](../crates/maestro-tools/src/editing/mod.rs) builds the
 native definition; `create_edit_tool` wraps it without caller context. Required
 arguments are `path` and `edits`, an array of `{ "oldText": "…", "newText": "…" }`
 replacements. Both object levels reject additional properties during shared
@@ -149,7 +149,7 @@ waiting call observes cancellation only after its predecessor finishes.
 
 ## Original-snapshot matching
 
-[`edit_diff`](../crates/maestro-tools/src/edit_diff.rs) owns matching and previews.
+[`previews`](../crates/maestro-tools/src/previews.rs) owns matching and previews.
 The pure matching operation `apply_edits_to_normalized_content` reads no file; it takes
 content that already uses LF endings (convert it with
 [`normalize_to_lf`](text.md)) and returns the comparison base with the edited text, or a
@@ -177,12 +177,12 @@ failure, which names no edit.
 
 ## Numbered diffs and read-only previews
 
-[`generate_diff_string`](../crates/maestro-tools/src/edit_diff/numbered.rs) returns
+[`generate_diff_string`](../crates/maestro-tools/src/previews/numbered.rs) returns
 numbered changes and the first changed line in the new text. Omitted context selects
 four lines; explicit context includes zero. Identical texts return an empty diff
 and no first changed line.
 
-[`compute_edits_diff`](../crates/maestro-tools/src/edit_diff/preview.rs) checks
+[`compute_edits_diff`](../crates/maestro-tools/src/previews/preview.rs) checks
 readability, reads the target and returns a diff or caught failure without writing it.
 `compute_edit_diff` delegates one replacement to that operation. Path resolution
 uses [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs) when called;
@@ -196,7 +196,7 @@ then uses the [matching operation's](#original-snapshot-matching) comparison bas
 
 ## Diff rendering
 
-[`render_diff`](../crates/maestro-tools/src/diff/mod.rs), also exported from the
+[`render_diff`](../crates/maestro-tools/src/changes/mod.rs), also exported from the
 application root, colors numbered diff rows with the supplied
 [live theme](theme.md#live-theme-and-change-callback). Only a consecutive run of one removed row
 followed by one added row receives word-level inverse styling. Other rows keep
@@ -209,7 +209,7 @@ files. The renderer does not compute edits, wrap text or truncate rows.
 
 ## File mutation queue
 
-[`with_file_mutation_queue`](../crates/maestro-tools/src/file_mutation_queue.rs)
+[`with_file_mutation_queue`](../crates/maestro-tools/src/mutations.rs)
 runs an operation after every earlier call for the same file has finished.
 
 - A call takes its place when `with_file_mutation_queue` is called, not when the

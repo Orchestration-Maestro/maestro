@@ -1,2 +1,2 @@
 //! Subscription account authorization.
-pub mod anthropic;
+pub mod browser;

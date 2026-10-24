@@ -4,10 +4,10 @@ mod command;
 mod context;
 mod text;
 
-use super::{App, state::TabBarStatusSegment};
+use super::{App, model::TabBarStatusSegment};
 use crate::settings::{
-    tab_bar::TabBarRightEntryConfig,
-    tab_bar::{
+    tabs::TabBarRightEntryConfig,
+    tabs::{
         MAX_TAB_BAR_COMMAND_INTERVAL_SECONDS, MAX_TAB_BAR_COMMAND_TIMEOUT_SECONDS,
         MAX_TAB_BAR_RIGHT_ENTRIES, parse_tab_bar_datetime_format,
     },

@@ -91,7 +91,7 @@ feedback and caller-measured message slots. It does not render message content.
 
 ## Page content
 
-[`DomContent`](../../crates/maestro-web/src/dom.rs) is page content: `mount`
+[`DomContent`](../../crates/maestro-web/src/page.rs) is page content: `mount`
 creates its own `DomRoot` and `update` brings that root up to date. A `DomRoot`
 holds the root node and, optionally, an owner for native resources that live
 exactly as long as the root, such as an isolated frame. `DomView` carries the
@@ -145,7 +145,7 @@ A package lists browser contribution files under `maestro.contributions` in its
 `package.json`, or places them in a `contributions/` directory. Package
 resolution treats them as the fifth resource kind beside extensions, skills,
 prompts and themes, with the same ordering, deduplication and `contributions`
-settings filter. `maestro_app::contributions::load_contributions` reads each
+settings filter. `maestro_app::contribution_files::load_contributions` reads each
 enabled file as one descriptor. An unreadable or invalid file yields one warning
 naming its path, and the other files still load. `DefaultResourceLoader` reads
 them on each reload, beside the other four kinds. Explicit package sources come

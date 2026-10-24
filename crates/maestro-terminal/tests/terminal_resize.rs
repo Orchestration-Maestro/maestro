@@ -259,7 +259,7 @@ fn same_grid_resize_updates_only_host_geometry_and_sync() {
 #[test]
 fn zero_grid_resize_preserves_all_state() {
     use maestro_terminal::{
-        screen_set::Key,
+        screens::Key,
         terminal::{ResizeError, SwitchScreenMode},
     };
     let mut t = Terminal::new(10, 5, 0).unwrap();
@@ -301,7 +301,7 @@ fn zero_cell_pixels_use_one_pixel_geometry() {
 }
 #[test]
 fn alternate_resize_does_not_reflow_soft_lines() {
-    use maestro_terminal::{screen_set::Key, terminal::SwitchScreenMode};
+    use maestro_terminal::{screens::Key, terminal::SwitchScreenMode};
     let mut t = Terminal::new(4, 3, 100_000).unwrap();
     t.print_string("ABCDEFGH").unwrap();
     t.switch_screen_mode(SwitchScreenMode::Mode1049, true)

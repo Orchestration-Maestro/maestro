@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn maestro_assistant_stream_is_exported_from_record_types() {
-        use maestro_models::records::event_stream::create_assistant_message_event_stream;
+        use maestro_models::records::events::create_assistant_message_event_stream;
         use maestro_models::records::types::{
             AssistantMessageEvent, AssistantMessageEventStream, DoneReason, ErrorReason,
         };

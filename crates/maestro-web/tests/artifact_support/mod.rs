@@ -1,6 +1,6 @@
 //! Drawing and strict source-derived artifact input records.
 #![cfg(test)]
-use maestro_web::{ArtifactElement, tools::artifacts::artifact_element::ArtifactView};
+use maestro_web::{ArtifactElement, tools::documents::artifact_element::ArtifactView};
 use serde::Deserialize;
 /// Complete source-run fixture, consumed by disjoint behavior tests.
 #[derive(Deserialize)]
@@ -127,7 +127,7 @@ impl Frame {
         view: &mut dyn ArtifactElement,
         header: bool,
         events: Vec<egui::Event>,
-    ) -> Result<egui::FullOutput, maestro_web::tools::artifacts::ArtifactUiError> {
+    ) -> Result<egui::FullOutput, maestro_web::tools::documents::ArtifactUiError> {
         let presentation = self.pack.presentation(self.mode).unwrap();
         let mut result = Ok(());
         let mut output = self.context.run_ui(
@@ -189,7 +189,7 @@ impl Frame {
     pub fn click(
         &self,
         view: &mut dyn ArtifactElement,
-    ) -> Result<(), maestro_web::tools::artifacts::ArtifactUiError> {
+    ) -> Result<(), maestro_web::tools::documents::ArtifactUiError> {
         self.draw(view, true, vec![])?;
         let pos = egui::pos2(18., 16.);
         self.draw(
@@ -226,9 +226,9 @@ impl Frame {
     pub fn draw_panel(
         &self,
         panel: &maestro_web::ArtifactsPanel,
-        caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+        caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
         events: Vec<egui::Event>,
-    ) -> Result<egui::FullOutput, maestro_web::tools::artifacts::ArtifactUiError> {
+    ) -> Result<egui::FullOutput, maestro_web::tools::documents::ArtifactUiError> {
         self.draw_panel_observing(panel, caller, events, |_| {})
     }
     /// Observe renderer uploads before the drawing harness releases them.
@@ -239,10 +239,10 @@ impl Frame {
     pub fn draw_panel_observing(
         &self,
         panel: &maestro_web::ArtifactsPanel,
-        caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+        caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
         events: Vec<egui::Event>,
         observe: impl FnOnce(&egui::FullOutput),
-    ) -> Result<egui::FullOutput, maestro_web::tools::artifacts::ArtifactUiError> {
+    ) -> Result<egui::FullOutput, maestro_web::tools::documents::ArtifactUiError> {
         let presentation = self.pack.presentation(self.mode).unwrap();
         let mut result = Ok(());
         let mut output = self.context.run_ui(

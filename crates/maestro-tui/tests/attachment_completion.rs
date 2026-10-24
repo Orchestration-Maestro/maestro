@@ -81,7 +81,7 @@ fn windows_attachment_paths_keep_devices_and_separators() {
 fn completion_exports_remain_usable_from_crate_root() {
     use fixtures::futures::block_on;
     use maestro_tui::AutocompleteProvider;
-    use maestro_tui::autocomplete::{CompletionOptions, CursorPosition};
+    use maestro_tui::candidates::{CompletionOptions, CursorPosition};
     use std::cell::Cell;
     let signal = Cell::new(false);
     let provider = exported_provider();

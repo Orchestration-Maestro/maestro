@@ -1,7 +1,7 @@
 //! Tool registry, active tools and the rebuilt system prompt.
 use super::{AgentSession, ToolDefinitionHandle, state::thrown};
-use crate::resources::resource_loader::ResourceLoader;
-use crate::resources::system_prompt::{BuildSystemPromptOptions, build_system_prompt};
+use crate::resources::instructions::{BuildSystemPromptOptions, build_system_prompt};
+use crate::resources::loading::ResourceLoader;
 use crate::utils::lock::{read, write};
 use indexmap::{IndexMap, IndexSet};
 use maestro_extensions::{

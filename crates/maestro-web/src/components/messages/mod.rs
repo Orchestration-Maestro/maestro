@@ -11,7 +11,7 @@ pub use tool_message_debug_view::ToolMessageDebugView;
 pub use user_message::{UserMessage, UserMessageInput};
 
 use crate::{
-    components::code_block::CodeBlockView,
+    components::source::CodeBlockView,
     tools::types::{ToolRenderView, ToolUiError},
 };
 

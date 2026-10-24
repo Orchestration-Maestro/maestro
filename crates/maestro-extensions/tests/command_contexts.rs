@@ -830,7 +830,7 @@ async fn message_roundtrip(
     ctx: &ReplacedSessionContext,
     messages: &Rc<RefCell<Vec<serde_json::Value>>>,
 ) {
-    use maestro_session::messages::{MessageDelivery, SendMessageOptions};
+    use maestro_session::message_records::{MessageDelivery, SendMessageOptions};
     use serde_json::json;
     for details in [None, Some(serde_json::Value::Null), Some(json!({"k":1}))] {
         let modes = if details.is_none() { 0..6 } else { 0..3 };
@@ -951,7 +951,7 @@ async fn user_message_roundtrip(
     ctx: &ReplacedSessionContext,
     messages: &Rc<RefCell<Vec<serde_json::Value>>>,
 ) {
-    use maestro_session::messages::{SendUserMessageOptions, UserMessageDelivery};
+    use maestro_session::message_records::{SendUserMessageOptions, UserMessageDelivery};
     use serde_json::json;
     for content in [
         json!("hello"),

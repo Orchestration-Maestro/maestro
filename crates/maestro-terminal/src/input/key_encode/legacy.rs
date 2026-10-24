@@ -2,8 +2,8 @@
 
 use super::KeyEncoder;
 use crate::input::function_keys::{modifier_code, sequence};
-use crate::input::key::{Key, KeyAction, KeyEvent};
 use crate::input::key_mods::Mods;
+use crate::input::keyboard::{Key, KeyAction, KeyEvent};
 use crate::modes::Mode;
 
 /// Encode traditional terminal input, retaining function-key precedence.

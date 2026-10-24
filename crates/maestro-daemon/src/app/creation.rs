@@ -1,12 +1,12 @@
 //! Workspace creation through the topology allocator and shared native launch inputs.
 
-use super::{App, state::Mode};
+use super::{App, model::Mode};
 use crate::{
-    pane::{launch_env::PaneLaunchEnv, runtime::PaneRuntime, shell::PaneShellConfig},
+    panes::{commands::PaneShellConfig, launch::PaneLaunchEnv, lifecycle::PaneRuntime},
     settings::model::NewTerminalCwdConfig,
-    terminal::state::TerminalState,
+    terminal::model::TerminalState,
 };
-use maestro_workspace::workspace::{public_pane_id_for_number, public_tab_id_for_number};
+use maestro_workspace::spaces::{public_pane_id_for_number, public_tab_id_for_number};
 use std::{io, path::PathBuf};
 
 /// Expands only an exact `~` or a leading `~/` (`~\` on Windows), joining the rest as a
@@ -148,7 +148,10 @@ impl<C: FnMut() -> u128> App<C> {
             &mut self.state.topology.workspaces[index],
             home.as_deref(),
         );
-        crate::logging::workspace_created(&self.state.topology.workspaces[index].id, pane.raw());
+        crate::diagnostics::workspace_created(
+            &self.state.topology.workspaces[index].id,
+            pane.raw(),
+        );
         if focus || self.state.active.is_none() {
             self.state.switch_workspace(index);
             self.state.mode = Mode::Terminal;
@@ -216,7 +219,7 @@ impl<C: FnMut() -> u128> App<C> {
                     .map(|terminal| (terminal.state, pane.seen))
             })
             .max_by_key(|(state, seen)| {
-                crate::workspace::aggregate::pane_attention_priority(*state, *seen)
+                crate::workspace::summary::pane_attention_priority(*state, *seen)
             })
             .unwrap_or((maestro_detection::agents::AgentState::Unknown, true));
         Some(maestro_protocol::schema::TabInfo {
@@ -236,7 +239,7 @@ impl<C: FnMut() -> u128> App<C> {
     ) -> Option<maestro_protocol::schema::WorkspaceInfo> {
         use maestro_protocol::schema::{WorkspaceInfo, WorkspaceWorktreeInfo};
         let ws = self.state.topology.workspaces.get(index)?;
-        let (state, seen) = crate::workspace::aggregate::aggregate_state(ws, &self.state.terminals);
+        let (state, seen) = crate::workspace::summary::aggregate_state(ws, &self.state.terminals);
         Some(WorkspaceInfo {
             workspace_id: ws.id.clone(),
             number: index + 1,
@@ -253,10 +256,7 @@ impl<C: FnMut() -> u128> App<C> {
                 .state
                 .public_tab_id(index, ws.active_tab)
                 .unwrap_or_else(|| {
-                    maestro_workspace::workspace::public_tab_id_for_number(
-                        &ws.id,
-                        ws.active_tab + 1,
-                    )
+                    maestro_workspace::spaces::public_tab_id_for_number(&ws.id, ws.active_tab + 1)
                 }),
             agent_status: super::actions::pane_agent_status(state, seen),
             tokens: ws.metadata_tokens.values(),

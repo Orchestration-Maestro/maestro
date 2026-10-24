@@ -6,7 +6,7 @@ use crate::{attachment_support, effects_support};
 use maestro_web::{
     AbortedMessage, AssistantMessage, AssistantMessageProps, UserMessage, UserMessageInput,
     browser::attachment_content::{AttachmentHost, AttachmentHostError},
-    components::code_block::ReadingUiError,
+    components::source::ReadingUiError,
     dialogs::attachment_overlay::AttachmentUiError,
     tools::types::{ToolRenderView, ToolUiError},
 };

@@ -2,7 +2,7 @@
 use super::{AgentSession, state::thrown};
 use crate::utils::lock::read;
 use chrono::{SecondsFormat, Utc};
-use maestro_agent::agent_loop::tool_definitions;
+use maestro_agent::execution::tool_definitions;
 use maestro_export::{
     ExportOperations, ExportOptions, ExportState, ToolHtmlRendererDeps, create_tool_html_renderer,
     export_session_to_html,
@@ -82,13 +82,13 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ) -> Result<String, DiagnosticErrorInfo> {
         let manager = self.session_manager.borrow();
         let header = json!({"type": "session", "version": CURRENT_SESSION_VERSION, "id": manager.get_session_id(), "timestamp": Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true), "cwd": manager.get_cwd()});
-        let mut text = maestro_json::jsonl::serialize_json_line(&header).map_err(thrown)?;
+        let mut text = maestro_json::lines::serialize_json_line(&header).map_err(thrown)?;
         let mut previous = Value::Null;
         for entry in manager.get_branch(None).map_err(thrown)? {
             let mut linear = entry.clone();
             linear["parentId"] = previous;
             previous = entry.get("id").cloned().unwrap_or(Value::Null);
-            text.push_str(&maestro_json::jsonl::serialize_json_line(&linear).map_err(thrown)?);
+            text.push_str(&maestro_json::lines::serialize_json_line(&linear).map_err(thrown)?);
         }
         drop(manager);
         let stamp = Utc::now()

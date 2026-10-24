@@ -180,13 +180,11 @@ pub struct MessageWindow {
     pub index: usize,
 }
 /// Convert fixture records to constructor input, preserving every field.
-pub fn messages(
-    records: Vec<Message>,
-) -> Vec<maestro_chat::components::user_message_selector::UserMessageItem> {
+pub fn messages(records: Vec<Message>) -> Vec<maestro_chat::components::history::UserMessageItem> {
     records
         .into_iter()
         .map(
-            |record| maestro_chat::components::user_message_selector::UserMessageItem {
+            |record| maestro_chat::components::history::UserMessageItem {
                 id: record.id,
                 text: record.text,
                 timestamp: record.timestamp,
@@ -195,22 +193,18 @@ pub fn messages(
         .collect()
 }
 /// Source-generated chronological input for interaction recordings.
-pub fn entries(
-    count: usize,
-) -> Vec<maestro_chat::components::user_message_selector::UserMessageItem> {
+pub fn entries(count: usize) -> Vec<maestro_chat::components::history::UserMessageItem> {
     (0..count)
-        .map(
-            |index| maestro_chat::components::user_message_selector::UserMessageItem {
-                id: format!("id-{index}"),
-                text: format!("message {index}"),
-                timestamp: Some((count - index).to_string()),
-            },
-        )
+        .map(|index| maestro_chat::components::history::UserMessageItem {
+            id: format!("id-{index}"),
+            text: format!("message {index}"),
+            timestamp: Some((count - index).to_string()),
+        })
         .collect()
 }
 /// Construct a message selector with the controlled runtime.
 pub fn message_selector(
-    records: Vec<maestro_chat::components::user_message_selector::UserMessageItem>,
+    records: Vec<maestro_chat::components::history::UserMessageItem>,
     initial: Option<String>,
     events: &Events,
     theme: maestro_theme::LiveTheme,
@@ -220,7 +214,7 @@ pub fn message_selector(
         records,
         events.select(),
         events.cancel(),
-        maestro_chat::components::user_message_selector::UserMessageSelectorOptions {
+        maestro_chat::components::history::UserMessageSelectorOptions {
             initial_selected_id: initial,
             theme,
             runtime: runtime.handle(),

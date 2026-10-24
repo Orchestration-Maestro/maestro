@@ -6,7 +6,7 @@ use crate::{
     support::tool_output::TextOnlyOutput as _,
 };
 use maestro_web::{
-    components::diff::{DiffProps, diff},
+    components::changes::{DiffProps, diff},
     tools::types::{ToolRenderResult, ToolRenderState},
 };
 use std::rc::Rc;

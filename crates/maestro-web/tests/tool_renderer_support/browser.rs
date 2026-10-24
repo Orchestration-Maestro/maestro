@@ -3,7 +3,7 @@
 use crate::{markdown_support::Surface, support::tool_output::TextOnlyOutput as _};
 use maestro_web::tools::types::ToolUiError;
 use maestro_web::{
-    components::code_block::{CodeBlock, CodeBlockView},
+    components::source::{CodeBlock, CodeBlockView},
     tools::{
         renderer_registry::ToolHeaderState,
         types::{ToolContent, ToolRenderResult, ToolRenderState, ToolRenderView},

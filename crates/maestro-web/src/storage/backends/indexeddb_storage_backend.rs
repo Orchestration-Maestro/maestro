@@ -70,11 +70,13 @@ fn prefix_bounds(prefix: Option<&str>) -> Option<(&str, String)> {
 /// Select non-unique native cursor traversal.
 #[cfg(any(target_arch = "wasm32", test))]
 fn cursor_direction(
-    direction: maestro_app::browser::storage::IndexDirection,
+    direction: maestro_app::browser::persistence::IndexDirection,
 ) -> web_sys::IdbCursorDirection {
     match direction {
-        maestro_app::browser::storage::IndexDirection::Asc => web_sys::IdbCursorDirection::Next,
-        maestro_app::browser::storage::IndexDirection::Desc => web_sys::IdbCursorDirection::Prev,
+        maestro_app::browser::persistence::IndexDirection::Asc => web_sys::IdbCursorDirection::Next,
+        maestro_app::browser::persistence::IndexDirection::Desc => {
+            web_sys::IdbCursorDirection::Prev
+        }
     }
 }
 
@@ -98,10 +100,13 @@ fn json_number(value: f64) -> std::io::Result<serde_json::Value> {
 
 /// Preserve independent estimate fallbacks and division-before-scaling order.
 #[cfg(any(target_arch = "wasm32", test))]
-fn quota_info(usage: Option<f64>, quota: Option<f64>) -> maestro_app::browser::storage::QuotaInfo {
+fn quota_info(
+    usage: Option<f64>,
+    quota: Option<f64>,
+) -> maestro_app::browser::persistence::QuotaInfo {
     let usage = usage.unwrap_or(0.0);
     let quota = quota.unwrap_or(0.0);
-    maestro_app::browser::storage::QuotaInfo {
+    maestro_app::browser::persistence::QuotaInfo {
         usage,
         quota,
         percent: if quota == 0.0 {

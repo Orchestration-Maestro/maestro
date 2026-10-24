@@ -14,17 +14,17 @@ pub mod dynamic_border;
 
 pub mod countdown_timer;
 
-pub mod bordered_loader;
+pub mod loading;
 
 pub mod custom_editor;
 
 pub mod session_selector_search;
-pub mod tree_selector;
+pub mod tree_picker;
 
-pub mod user_message;
+pub mod authored;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod footer;
+pub mod status;
 
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor, paint};
 use maestro_tui::{
@@ -58,16 +58,16 @@ fn mark_zone(mut lines: Vec<String>) -> Vec<String> {
     lines
 }
 
-pub mod assistant_message;
+pub mod response;
 
-pub mod branch_summary_message;
+pub mod history_summary;
 
-pub mod custom_message;
+pub mod custom_content;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod skill_invocation_message;
+pub mod invocation;
 
-pub mod compaction_summary_message;
+pub mod context_summary;
 
 /// Shared constructor inputs and Markdown composition for transcript widgets.
 struct MessageRendering {
@@ -130,7 +130,7 @@ impl MessageRendering {
     }
 }
 
-pub mod thinking_selector;
+pub mod reasoning;
 
 /// Composes the shared bounded-column list between live borders.
 fn bordered_select_list(
@@ -150,16 +150,16 @@ fn bordered_select_list(
     (container, list)
 }
 
-pub mod show_images_selector;
+pub mod images;
 
-pub mod theme_selector;
+pub mod appearance;
 
-pub mod user_message_selector;
+pub mod history;
 
-pub mod model_selector;
+pub mod models;
 pub mod oauth_selector;
 
-pub mod extension_selector;
+pub mod extensions;
 
 /// Builds padded dialog chrome and its live countdown title updater.
 fn dialog_chrome(
@@ -212,7 +212,7 @@ fn dialog_chrome(
 fn dialog_countdown(
     timeout: Option<f64>,
     tui: Option<&maestro_tui::TUI>,
-    runtime: Rc<dyn maestro_tui::tui::TuiRuntime>,
+    runtime: Rc<dyn maestro_tui::interface::TuiRuntime>,
     update: Rc<dyn Fn(f64)>,
     cancel: Rc<dyn Fn()>,
 ) -> Option<countdown_timer::CountdownTimer> {
@@ -224,7 +224,7 @@ fn dialog_countdown(
         })
 }
 
-pub mod extension_input;
+pub mod extension_prompt;
 
 /// Builds the shared bounded primary-column list.
 fn bounded_select_list(
@@ -245,11 +245,11 @@ fn bounded_select_list(
     ))
 }
 
-pub mod settings_selector;
+pub mod preferences;
 
+pub mod authentication;
 #[cfg(not(target_arch = "wasm32"))]
-pub mod extension_editor;
-pub mod login_dialog;
+pub mod extension_composer;
 
 #[cfg(test)]
 mod tests;
@@ -277,8 +277,8 @@ pub(crate) fn shorten_home_path(path: &str, home: Option<&str>) -> String {
         .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
 }
 
-pub mod bash_execution;
-pub mod session_selector;
+pub mod session_picker;
+pub mod shell_output;
 /// Navigates a nonempty captured view, releasing its borrow before redraw.
 fn navigate_list<T>(
     selected: &Cell<usize>,
@@ -298,10 +298,10 @@ fn navigate_list<T>(
     redraw();
 }
 
-pub mod scoped_models_selector;
-pub use scoped_models_selector::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
+pub mod scoped_selection;
+pub use scoped_selection::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
 
-pub mod tool_execution;
+pub mod tool_output;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod config_selector;
+pub mod configuration;

@@ -8,7 +8,7 @@ use super::google_auth::configuration_error;
 use super::oauth_client_auth_handler;
 use crate::DiagnosticErrorInfo;
 use crate::builtins::env_value;
-use crate::providers::http::{RequestPolicy, RetryStatuses};
+use crate::providers::transport::{RequestPolicy, RetryStatuses};
 use crate::{Fetch, HttpRequest};
 use google_cloud_auth::credentials::Credentials;
 use std::time::Duration;

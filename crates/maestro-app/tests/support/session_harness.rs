@@ -5,8 +5,8 @@ use indexmap::IndexMap;
 use maestro_agent::{Agent, AgentInitialState, AgentOptions};
 use maestro_app::agent_session::CompactionReason;
 use maestro_app::agent_session::ToolDefinitionHandle;
-use maestro_app::contributions::LoadContributionsResult;
-use maestro_app::resources::resource_loader::{
+use maestro_app::contribution_files::LoadContributionsResult;
+use maestro_app::resources::loading::{
     LoadPromptsResult, LoadThemesResult, ResourceExtensionPaths, ResourceLoader,
 };
 use maestro_app::{AgentSession, AgentSessionConfig, AgentSessionEvent};
@@ -28,7 +28,9 @@ use maestro_models::{
 };
 use maestro_resources::LoadSkillsResult;
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
-use maestro_session::{CompactionResult, Presence, SessionManager, messages::CustomAgentMessages};
+use maestro_session::{
+    CompactionResult, Presence, SessionManager, message_records::CustomAgentMessages,
+};
 use maestro_settings::SettingsManager;
 use maestro_tools::ToolDefinitionRecord;
 use serde_json::{Value, json};

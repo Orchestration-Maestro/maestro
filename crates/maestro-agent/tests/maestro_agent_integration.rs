@@ -15,7 +15,7 @@ use support::scripted::{
     Registered, agent_for, ask_calculator, block_text, history, last_assistant, record_events, say,
     set_history, streaming, user,
 };
-use support::utils::calculate::{calculate, calculate_tool};
+use support::utils::calculate::{calculate, tool};
 
 /// A prompt answered by the registered adapter settles user then assistant history.
 #[test]
@@ -56,7 +56,7 @@ async fn maestro_calculator_execution_tracks_pending_ids_case() {
         ask_calculator("calc-1", "123 * 456"),
         say("The result is 56088."),
     ]);
-    let agent = agent_for(faux.get_model(None).unwrap(), vec![calculate_tool()]);
+    let agent = agent_for(faux.get_model(None).unwrap(), vec![tool()]);
     let pending = Arc::new(Mutex::new(vec![]));
     let (sink, state) = (Arc::clone(&pending), Arc::clone(agent.state()));
     agent.subscribe(Arc::new(move |event, _| {
@@ -297,7 +297,7 @@ async fn maestro_tool_result_tail_can_continue_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
     faux.set_responses(vec![say("The answer is 8.")]);
-    let tool = calculate_tool();
+    let tool = tool();
     let execute = Arc::clone(&tool.read().unwrap().execute);
     let outcome = execute("calc-1".into(), json!({"expression": "5 + 3"}), None, None)
         .await
@@ -363,7 +363,7 @@ fn maestro_calculator_fixture_returns_known_results_and_errors() {
     for rejected in ["(", "2 - 1", "x + 1", "9223372036854775807 + 1"] {
         assert!(calculate(rejected).is_err(), "{rejected}");
     }
-    let tool = calculate_tool();
+    let tool = tool();
     let tool = tool.read().unwrap();
     assert_eq!(
         (tool.label.as_str(), tool.definition.name.as_str()),

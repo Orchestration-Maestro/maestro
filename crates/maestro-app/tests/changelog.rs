@@ -267,12 +267,15 @@ fn changelog_exports_keep_the_configuration_path_owner() {
         owner
     );
     assert_eq!(
-        maestro_app::utils::changelog::get_changelog_path(&package_dir).unwrap(),
+        maestro_app::utils::release_notes::get_changelog_path(&package_dir).unwrap(),
         owner
     );
     std::fs::write(&owner, "## 2.0.0\nbody").unwrap();
     let root = maestro_app::parse_changelog(&owner);
-    assert_eq!(root, maestro_app::utils::changelog::parse_changelog(&owner));
+    assert_eq!(
+        root,
+        maestro_app::utils::release_notes::parse_changelog(&owner)
+    );
     let last = ChangelogEntry {
         major: 1.0,
         minor: 0.0,
@@ -285,12 +288,12 @@ fn changelog_exports_keep_the_configuration_path_owner() {
         1.0_f64.to_bits()
     );
     assert_eq!(
-        maestro_app::utils::changelog::compare_versions(&root[0], &last).to_bits(),
+        maestro_app::utils::release_notes::compare_versions(&root[0], &last).to_bits(),
         1.0_f64.to_bits()
     );
     let newer = maestro_app::get_new_entries(&root, "1.0.0");
     assert_eq!(newer, [&root[0]]);
-    let newer = maestro_app::utils::changelog::get_new_entries(&root, "1.0.0");
+    let newer = maestro_app::utils::release_notes::get_new_entries(&root, "1.0.0");
     assert_eq!(newer, [&root[0]]);
 }
 

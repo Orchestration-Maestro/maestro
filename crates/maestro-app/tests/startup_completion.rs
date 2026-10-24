@@ -71,7 +71,7 @@ struct ValueInput {
 #[test]
 fn slash_command_records_keep_owned_source_metadata() {
     use maestro_app::{SlashCommandInfo, SlashCommandSource};
-    use maestro_resources::source_info::{SourceInfo, SourceOrigin, SourceScope};
+    use maestro_resources::provenance::{SourceInfo, SourceOrigin, SourceScope};
     assert_eq!(
         [
             SlashCommandSource::EXTENSION,
@@ -281,7 +281,7 @@ struct WarningPhase {
 
 #[cfg(unix)]
 fn check_warning_pause(name: &str) {
-    use maestro_app::configuration::migrations::show_deprecation_warnings;
+    use maestro_app::configuration::conversion::show_deprecation_warnings;
     use std::{
         cell::{Cell, RefCell},
         future::{Future, poll_fn},
@@ -340,7 +340,7 @@ fn deprecation_output_waits_for_one_host_completion() {
 #[test]
 fn migration_output_and_wait_errors_preserve_their_phase() {
     use futures_util::FutureExt;
-    use maestro_app::configuration::migrations::{MigrationStyle, show_deprecation_warnings};
+    use maestro_app::configuration::conversion::{MigrationStyle, show_deprecation_warnings};
     use std::{
         cell::{Cell, RefCell},
         future::poll_fn,

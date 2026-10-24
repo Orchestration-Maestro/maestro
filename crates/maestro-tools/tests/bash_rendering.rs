@@ -513,8 +513,8 @@ fn check_state(
 fn frame(
     expected: &Value,
     kind: &str,
-    previous: Option<&maestro_tui::tui::ComponentHandle>,
-    next: &maestro_tui::tui::ComponentHandle,
+    previous: Option<&maestro_tui::interface::ComponentHandle>,
+    next: &maestro_tui::interface::ComponentHandle,
     width: usize,
 ) {
     let expected: FrameExpected = serde_json::from_value(expected.clone()).unwrap();
@@ -778,7 +778,11 @@ fn bash_expand_hint_changes_on_retained_render() {
 }
 
 /// A retained body survives a later missing-theme failure with an unstyled live hint.
-fn check_plain_fallback(row: &maestro_tui::tui::ComponentHandle, expected: &Value, env: &Env) {
+fn check_plain_fallback(
+    row: &maestro_tui::interface::ComponentHandle,
+    expected: &Value,
+    env: &Env,
+) {
     env.state
         .set_theme_instance(std::rc::Rc::new(display::bare_theme()))
         .unwrap();

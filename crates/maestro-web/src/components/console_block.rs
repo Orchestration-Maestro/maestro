@@ -1,12 +1,12 @@
 //! Literal console output with retained native scrolling and owned copy feedback.
-use crate::components::code_block::ReadingUiError;
+use crate::components::source::ReadingUiError;
 use crate::{
     I18n,
     browser::attachment_content::{
         self, AttachmentHost, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
-    components::{code_block, copy_button::CopyButton},
+    components::{copy_button::CopyButton, source as code_block},
 };
 use std::{
     cell::RefCell,

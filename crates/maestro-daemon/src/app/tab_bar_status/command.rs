@@ -2,7 +2,7 @@
 
 use super::text::command_output_text;
 use crate::events::AppEvent;
-use maestro_process::child_process::{
+use maestro_process::children::{
     CapturedChild, OutputMode, OutputStream, WaitOptions, wait_for_child_process,
 };
 use std::{
@@ -89,7 +89,7 @@ impl StatusCommandControl {
 /// Terminates the detached process group through the shared native process owner.
 fn kill_group(group: u32) {
     #[cfg(unix)]
-    let _ = maestro_process::child_process::kill_process_group(group);
+    let _ = maestro_process::children::kill_process_group(group);
     #[cfg(not(unix))]
     let _ = group;
 }

@@ -21,13 +21,13 @@ pub mod terminal_targets;
 /// Shared launch inputs and daemon construction.
 pub mod construction;
 
-use crate::terminal::runtime_registry::TerminalRuntimeRegistry;
-use state::DaemonState;
+use crate::terminal::owners::TerminalRuntimeRegistry;
+use model::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
 pub struct App<C> {
     /// Parsed outer-title format with the server hostname resolved at configuration time.
-    window_title_template: Option<(crate::settings::window_title::WindowTitleTemplate, String)>,
+    window_title_template: Option<(crate::settings::titles::WindowTitleTemplate, String)>,
     /// Earliest capture time for the next debounced session save.
     pub session_save_deadline: Option<std::time::Instant>,
     /// The sole writer of an already captured session job.
@@ -68,7 +68,7 @@ pub struct App<C> {
     pub event_hub: crate::api::event_hub::EventHub,
     /// Temporary panes awaiting exit and restoration of their previous focus.
     pub overlay_panes:
-        std::collections::HashMap<maestro_workspace::layout::PaneId, OverlayPaneState>,
+        std::collections::HashMap<maestro_workspace::tiling::PaneId, OverlayPaneState>,
 }
 
 /// Focus and cleanup retained while a temporary overlay process owns a pane.
@@ -78,7 +78,7 @@ pub struct OverlayPaneState {
     /// Tab display position containing the overlay.
     pub tab_idx: usize,
     /// Pane to restore if the overlay still has focus when it exits.
-    pub previous_focus: maestro_workspace::layout::PaneId,
+    pub previous_focus: maestro_workspace::tiling::PaneId,
     /// Zoom state before the overlay took focus.
     pub previous_zoomed: bool,
     /// Temporary files owned by the overlay process.
@@ -86,7 +86,7 @@ pub struct OverlayPaneState {
 }
 
 /// Retained daemon data independent of attached views.
-pub mod state;
+pub mod model;
 
 mod ids;
 

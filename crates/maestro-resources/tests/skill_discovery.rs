@@ -1036,7 +1036,7 @@ fn skill_entry_links_preserve_precedence_and_failure_fallback() {
 #[test]
 fn entry_classification_uses_supplied_observations() {
     use maestro_resources::ResourceFileType as Kind;
-    use maestro_resources::skills::observed_type;
+    use maestro_resources::catalog::observed_type;
     use std::os::unix::{fs::symlink, net::UnixListener};
     let dir = Directory::new();
     let file = dir.file("file", "x");

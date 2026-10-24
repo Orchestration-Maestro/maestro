@@ -14,17 +14,17 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::runtime_support::{is_child, rerun, run_set};
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::{
     AutocompleteOperations, CompletionError, CompletionOptions, CompletionResult, CursorPosition,
     NativeAutocompleteOperations,
 };
-use maestro_tui::tui::{
+use maestro_tui::interface::{
     LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime,
 };
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Component, Editor,
     EditorOptions, EditorTheme, KeybindingsManager, SelectListTheme, TUI, TUI_KEYBINDINGS,
-    Terminal, TerminalImage, set_keybindings, tui::InputHandler,
+    Terminal, TerminalImage, interface::InputHandler, set_keybindings,
 };
 use maestro_tui_crossterm::ProcessTuiRuntime;
 use tokio::sync::{mpsc, oneshot};

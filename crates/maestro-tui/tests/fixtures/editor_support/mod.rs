@@ -1,7 +1,7 @@
 #![cfg(test)]
 //! Public editor observations with controlled terminal effects.
 pub use crate::editor_host::*;
-use maestro_tui::{Component, Editor, EditorOptions, Focusable, tui::InputHandler};
+use maestro_tui::{Component, Editor, EditorOptions, Focusable, interface::InputHandler};
 use serde::Deserialize;
 use std::{cell::RefCell, rc::Rc};
 #[derive(Deserialize)]
@@ -232,7 +232,7 @@ impl Replay {
         if let Some(cursor) = &expected.cursor {
             assert_eq!(
                 self.editor.get_cursor(),
-                maestro_tui::autocomplete::CursorPosition {
+                maestro_tui::candidates::CursorPosition {
                     line: cursor.line,
                     col: cursor.col
                 },

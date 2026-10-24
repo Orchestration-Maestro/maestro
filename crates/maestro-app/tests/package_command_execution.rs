@@ -9,7 +9,7 @@ use maestro_app::configuration::config::{
     PACKAGE_NAME, SelfUpdateCommand, SelfUpdateCommandStep, VERSION, get_self_update_plan,
     run_self_update,
 };
-use maestro_app::configuration::version_check::VersionCheckOptions;
+use maestro_app::configuration::releases::VersionCheckOptions;
 use maestro_process::SpawnSyncError;
 use std::{fs, io, process::Output};
 

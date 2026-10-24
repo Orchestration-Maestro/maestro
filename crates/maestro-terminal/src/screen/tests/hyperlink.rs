@@ -1,5 +1,5 @@
 use super::{page, pin, screen, split_rows, write_row};
-use crate::hyperlink::HyperlinkId;
+use crate::links::HyperlinkId;
 
 #[test]
 fn screen_hyperlink_start_end() {
