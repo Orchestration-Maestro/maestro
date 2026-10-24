@@ -2,8 +2,8 @@
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_packages::{
-    ConfiguredPackage, DefaultPackageManager, InstalledSourceScope, NativePackageOperations,
-    PackageFuture, PackageManager, PackageManagerOptions, PackageOperations, PathMetadata,
-    ProgressAction, ProgressCallback, ProgressEvent, ProgressEventType, ResolvedPaths,
-    ResolvedResource,
+    CommandCaptureOptions, CommandOutput, ConfiguredPackage, DefaultPackageManager,
+    InstalledSourceScope, NativePackageOperations, PackageFuture, PackageManager,
+    PackageManagerOptions, PackageOperations, PathMetadata, ProgressAction, ProgressCallback,
+    ProgressEvent, ProgressEventType, ResolvedPaths, ResolvedResource,
 };

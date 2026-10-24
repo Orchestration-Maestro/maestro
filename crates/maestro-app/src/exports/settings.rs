@@ -8,4 +8,6 @@ pub use maestro_settings::{PackageSource, Settings, SettingsListEntry, SettingsM
 
 pub use maestro_settings::SettingsScope;
 
+pub use maestro_settings::{SettingsStorage, SettingsStorageError, SettingsUpdate};
+
 pub use maestro_settings::{CompactionSettings, ImageSettings, RetrySettings};
