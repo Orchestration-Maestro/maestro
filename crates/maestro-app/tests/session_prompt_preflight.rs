@@ -4,10 +4,10 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Auth, Harness, HarnessOptions, Transcript, agent_ended, answer, assert_transcript, assistant,
-    case, command_extension, entries_view, harness, hold_first_answer, labelled, load_history,
-    messages_view, observed_preflight, of_kinds, on_task_set, outcome, queue_view, recorded_skills,
-    script_responses, shell_entries, start_and_abandon, start_prompt, supplied_failure, template,
-    transcribed, usage, user, with_placeholders,
+    case, command_extension, entries_view, harness, history_view, hold_first_answer, labelled,
+    load_history, messages_view, observed_preflight, of_kinds, on_task_set, outcome, queue_view,
+    recorded_skills, script_responses, shell_entries, start_and_abandon, start_prompt,
+    supplied_failure, template, transcribed, usage, user, with_placeholders,
 };
 use maestro_app::agent_session::PromptOptions;
 use maestro_extensions::{
@@ -678,5 +678,70 @@ fn abandoned_prompt_still_delivers_its_next_turn_messages() {
             .map(|message| message["customType"].clone())
             .collect();
         assert_eq!(kinds, [Value::Null, json!("note"), Value::Null]);
+    });
+}
+
+#[test]
+fn prompt_starts_before_observer_is_polled() {
+    on_task_set(|_| async {
+        let refused = harness(HarnessOptions {
+            auth: Auth::None,
+            ..HarnessOptions::default()
+        })
+        .await;
+        let order = Rc::new(RefCell::new(Vec::new()));
+        let queued = Rc::clone(&order);
+        drop(refused.session.subscribe(Rc::new(move |event| {
+            if let maestro_app::agent_session::AgentSessionEvent::QueueUpdate { .. } = event {
+                queued.borrow_mut().push("queue".to_owned());
+            }
+        })));
+        let checked = Rc::clone(&order);
+        let options = PromptOptions {
+            preflight_result: Some(Rc::new(move |accepted| {
+                checked.borrow_mut().push(format!("preflight:{accepted}"));
+            })),
+            ..PromptOptions::default()
+        };
+        let observer = refused.session.prompt("refused", options);
+        refused.session.steer("tail", &[]).unwrap();
+        assert_eq!(*order.borrow(), ["preflight:false", "queue"]);
+        assert!(observer.await.is_err());
+
+        let gate = Rc::new(tokio::sync::Notify::new());
+        let inputs = Rc::new(RefCell::new(Vec::new()));
+        let heard = Rc::clone(&inputs);
+        let accepted = harness(HarnessOptions {
+            factories: vec![
+                input_extension(move |event| {
+                    heard.borrow_mut().push(event.text.clone());
+                    Ok(None)
+                }),
+                gated_start(Rc::clone(&gate)),
+            ],
+            ..HarnessOptions::default()
+        })
+        .await;
+        script_responses(&accepted, vec![answer("reply", None, None)]);
+        let ended = agent_ended(&accepted);
+        drop(
+            accepted
+                .session
+                .prompt("accepted", PromptOptions::default()),
+        );
+        assert_eq!(
+            *inputs.borrow(),
+            ["accepted"],
+            "the prompt began at invocation"
+        );
+        gate.notify_one();
+        ended.notified().await;
+        assert_eq!(
+            history_view(&accepted),
+            [
+                json!({"role": "user", "text": "accepted"}),
+                json!({"role": "assistant", "text": "reply"})
+            ]
+        );
     });
 }

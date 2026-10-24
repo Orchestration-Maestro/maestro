@@ -80,6 +80,16 @@ the [application plan and runner](application/configuration.md#self-update-selec
 a release that is not newer skips it, a changed package identity replaces the
 installed one, and a nonzero child exit reports the manual command to run.
 
+`handle_config_command` handles one leading `config` and ignores later tokens. It
+observes the working directory and the agent directory once, loads the settings
+owner, reports their failures as
+`Warning (config command, <scope> settings): <message>`, builds the manager over
+that same owner, resolves the configured paths and presents the
+[selector](cli.md#selectors) over them. A command whose presentation succeeds asks
+that presentation's exit effect for status 0; directory, settings, manager,
+resolution and presentation failures keep their own error, so it requests no exit and
+prints no package-command error line.
+
 ## Persistence
 
 `install_and_persist` records the source after successful acquisition, replacing a

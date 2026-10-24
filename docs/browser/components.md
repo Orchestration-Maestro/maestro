@@ -107,6 +107,13 @@ Close focus decoration is qualified through sampled raster pixels at multiple
 densities; other canvas paint is qualified through visible tessellated primitives.
 Broader canvas raster qualification follows [the canvas runner](https://github.com/Orchestration-Maestro/maestro/issues/1760).
 
+## Markdown and reasoning
+
+Markdown and the reasoning disclosure also mount as native page content and as
+the `markdown-block` and `thinking-block` elements; see
+[native Markdown and code](transcript.md#native-markdown-and-code) and
+[page content](frontend.md#page-content).
+
 ## Tool content
 
 [Tool renderers](tool-renderers.md) provide named dispatch, retained tool headers,

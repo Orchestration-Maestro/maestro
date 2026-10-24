@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const deviceScaleFactor = 1.25;
 const launchArgs = ['--no-sandbox', `--force-device-scale-factor=${deviceScaleFactor}`];
 const families = ['execution', 'loading', 'contributions'];
-const counts = {execution: 26, loading: 19, contributions: 49};
+const counts = {execution: 26, loading: 19, contributions: 56};
 const total = Object.values(counts).reduce((sum, count) => sum + count);
 // Runtime modules initialize without unsafe-eval; frames load their own document.
 const contributionPolicy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'";
@@ -340,6 +340,11 @@ async function run({root, chromium, executablePath, inventory, log = console.log
           // Real keyboard input and the accessibility tree for the contribution exports.
           await page.exposeBinding('driverPress', ({page}, key) => page.keyboard.press(key));
           await page.exposeBinding('driverAria', ({page}, selector) => page.locator(selector).ariaSnapshot());
+          // Real pointer movement or a click at `[x, y, click]` in page coordinates.
+          await page.exposeBinding('driverPointer', ({page}, point) => {
+            const [x, y, click] = JSON.parse(point);
+            return click ? page.mouse.click(x, y) : page.mouse.move(x, y);
+          });
           await page.addInitScript(() => {
             addEventListener('message', event => {
               if (event.data?.type === 'pointer-done') void window.sandboxDriverPhase('pointer-done received');

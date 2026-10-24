@@ -1,5 +1,5 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts and typed input.
+//! resources, notices, transcript shortcuts, typed input and queued input.
 
 use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
@@ -18,6 +18,8 @@ use std::{
 };
 
 mod autocomplete;
+mod key_display;
+mod queues;
 mod replay;
 mod resources;
 mod startup;
@@ -87,6 +89,8 @@ pub struct InteractiveMode {
     is_bash_mode: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Messages typed while the session compacts, in the order they were typed.
+    compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
     /// The selected search program for file completion, absent until startup prepares it.
     fd_path: RefCell<Option<String>>,
 }
@@ -130,11 +134,14 @@ impl InteractiveMode {
             session.session_manager().borrow().get_cwd().to_owned(),
             operations.clone(),
         );
-        let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
-        footer.set_auto_compact_enabled(session.auto_compaction_enabled());
+        let footer = create_footer(&session, &footer_data_provider, themes.theme())?;
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let selected_theme = session.settings_manager().borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
+        let hide_thinking_block = session
+            .settings_manager()
+            .borrow()
+            .get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
             options,
@@ -155,16 +162,12 @@ impl InteractiveMode {
             tool_environment,
             fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(
-                session
-                    .settings_manager()
-                    .borrow()
-                    .get_hide_thinking_block(),
-            ),
+            hide_thinking_block: Cell::new(hide_thinking_block),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
+            compaction_queued_messages: RefCell::default(),
         }))
     }
 
@@ -198,6 +201,7 @@ impl InteractiveMode {
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
         self.setup_key_handlers();
+        self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
@@ -220,6 +224,34 @@ impl InteractiveMode {
             ..resources::ShowLoadedResourcesOptions::default()
         })?;
         self.render_initial_messages()
+    }
+
+    /// Clears the transcript and the pending-message rows, then replays the current session
+    /// with the initial replay's footer, history and compaction effects.
+    ///
+    /// # Errors
+    /// Returns the failure of reading the session context, of a stored record, of a row's
+    /// rendering or of the published theme.
+    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+        self.chat_container.clear();
+        self.pending_messages_container.clear();
+        self.render_initial_messages()
+    }
+
+    /// Reports a fatal runtime failure as its transcript notice, draws that frame before
+    /// the stop that would cancel it, closes the theme watch and stops the terminal, so
+    /// nothing repaints while the process ends.
+    fn report_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) {
+        let _ = self.show_error(&format!("{prefix}: {error}"));
+        let _ = self.ui.render_pending_frame();
+        self.themes.stop_theme_watcher();
+        let _ = self.ui.stop();
+    }
+
+    /// Reports a fatal runtime failure and ends the process with status one.
+    pub fn handle_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) -> ! {
+        self.report_fatal_runtime_error(prefix, error);
+        std::process::exit(1);
     }
 }
 
@@ -263,20 +295,23 @@ fn create_editor(
     ))
 }
 
-/// Builds the footer over the session, its metadata and the published theme.
+/// Builds the footer over the session, its metadata and the published theme, and applies
+/// the session's auto-compaction setting.
 ///
 /// # Errors
 /// Returns the failure of the collator reading the locale environment.
 fn create_footer(
-    session: Rc<AgentSession>,
+    session: &Rc<AgentSession>,
     data: &FooterDataProvider,
     theme: LiveTheme,
 ) -> Result<Rc<FooterComponent>, Box<dyn Error>> {
-    Ok(Rc::new(FooterComponent::new(
-        session,
+    let footer = FooterComponent::new(
+        Rc::clone(session),
         Rc::new(data.clone()),
         theme,
         Rc::new(Collator::new(&|key| std::env::var(key).ok())?),
         Rc::new(|key| std::env::var(key).ok()),
-    )))
+    );
+    footer.set_auto_compact_enabled(session.auto_compaction_enabled());
+    Ok(Rc::new(footer))
 }

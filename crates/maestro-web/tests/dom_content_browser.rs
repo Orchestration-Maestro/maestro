@@ -1,6 +1,8 @@
 //! Mounted page content, page-content registries and built-in elements in a real document.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{Text, body, container, host, result, text, view};
+use crate::contributions_support::{
+    Text, body, computed, container, host, result, rgb, text, view,
+};
 use crate::message_renderer_support::{NativeMessage, message};
 use maestro_app::{AgentMessage, JsonObject, NoCustomMessages, ToolResultMessage};
 use maestro_web::DefaultRenderer;
@@ -652,21 +654,6 @@ pub async fn built_in_elements_follow_property_and_attribute_changes(
     assert_eq!(*copies.borrow(), ["property text"]);
 }
 
-/// A CSS `rgb(...)` value for a `#rrggbb` brand color.
-fn rgb(hex: &str) -> String {
-    let channel = |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).unwrap();
-    format!("rgb({}, {}, {})", channel(1), channel(3), channel(5))
-}
-/// One computed style property of an element.
-fn computed(element: &Element, property: &str) -> String {
-    web_sys::window()
-        .unwrap()
-        .get_computed_style(element)
-        .unwrap()
-        .unwrap()
-        .get_property_value(property)
-        .unwrap()
-}
 /// Running animations on an element.
 fn animations(element: &Element) -> u32 {
     let list: js_sys::Function = js_sys::Reflect::get(element, &"getAnimations".into())
