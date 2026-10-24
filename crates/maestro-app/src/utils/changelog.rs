@@ -1,5 +1,9 @@
 //! Changelog sections and the numeric release order they carry.
 
+use maestro_text::{is_whitespace_scalar, lossy_string};
+
+pub use crate::configuration::config::paths::get_changelog_path;
+
 /// A changelog section and the numeric version from its heading.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChangelogEntry {
@@ -11,6 +15,34 @@ pub struct ChangelogEntry {
     pub patch: f64,
     /// The heading line followed by the section body.
     pub content: String,
+}
+
+/// Reads the changelog sections at `changelog_path`, in file order.
+///
+/// A path that cannot be read yields no sections.
+#[must_use]
+pub fn parse_changelog(changelog_path: &str) -> Vec<ChangelogEntry> {
+    let Ok(bytes) = std::fs::read(changelog_path) else {
+        return Vec::new();
+    };
+    let text = lossy_string(bytes);
+    let mut entries = Vec::new();
+    let mut section: Option<(ChangelogEntry, String)> = None;
+    for line in text.split('\n') {
+        if line.starts_with("## ") {
+            if let Some(flushed) = section.take() {
+                entries.push(with_content(flushed));
+            }
+            section = parse_heading(line).map(|entry| (entry, line.to_owned()));
+        } else if let Some((_, content)) = &mut section {
+            content.push('\n');
+            content.push_str(line);
+        }
+    }
+    if let Some(flushed) = section {
+        entries.push(with_content(flushed));
+    }
+    entries
 }
 
 /// Compares the first differing numeric component, retaining its difference.
@@ -31,4 +63,55 @@ pub fn compare_versions(v1: &ChangelogEntry, v2: &ChangelogEntry) -> f64 {
 /// Whether two numeric components hold the same value, counting a missing value as different.
 fn same(left: f64, right: f64) -> bool {
     left.partial_cmp(&right) == Some(std::cmp::Ordering::Equal)
+}
+
+/// Attaches the trimmed section text to its numeric record.
+fn with_content((entry, content): (ChangelogEntry, String)) -> ChangelogEntry {
+    ChangelogEntry {
+        content: content.trim_matches(is_whitespace_scalar).to_owned(),
+        ..entry
+    }
+}
+
+/// Reads the numeric version of an admitted heading line.
+///
+/// The numbers may follow later heading marks on the same line.
+fn parse_heading(line: &str) -> Option<ChangelogEntry> {
+    let mut rest = line;
+    while let Some(at) = rest.find("##") {
+        rest = &rest[at + 2..];
+        if let Some(entry) = read_version(rest) {
+            return Some(entry);
+        }
+    }
+    None
+}
+
+/// Reads the heading whitespace, an optional bracket and three numeric components.
+fn read_version(rest: &str) -> Option<ChangelogEntry> {
+    let text = rest.trim_start_matches(is_whitespace_scalar);
+    if text.len() == rest.len() {
+        return None;
+    }
+    let text = text.strip_prefix('[').unwrap_or(text);
+    let (major, text) = read_number(text)?;
+    let (minor, text) = read_number(text.strip_prefix('.')?)?;
+    let (patch, _) = read_number(text.strip_prefix('.')?)?;
+    Some(ChangelogEntry {
+        major,
+        minor,
+        patch,
+        content: String::new(),
+    })
+}
+
+/// Reads one run of ASCII digits as a number, returning the remaining text.
+fn read_number(text: &str) -> Option<(f64, &str)> {
+    let end = text.bytes().take_while(u8::is_ascii_digit).count();
+    if end == 0 {
+        return None;
+    }
+    let (digits, rest) = text.split_at(end);
+    let number = digits.parse().ok()?;
+    Some((number, rest))
 }
