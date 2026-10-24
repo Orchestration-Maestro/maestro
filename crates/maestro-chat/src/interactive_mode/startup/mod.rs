@@ -87,15 +87,16 @@ impl InteractiveMode {
         )?;
         let collapsed = format!("{logo}\n{compact}\n{compact_onboarding}\n\n{onboarding}");
         let expanded = format!("{logo}\n{expanded}\n\n{onboarding}");
-        let header = ExpandableText::new(
+        let header = Rc::new(ExpandableText::new(
             Box::new(move || Ok(collapsed.clone())),
             Box::new(move || Ok(expanded.clone())),
             self.get_startup_expansion_state(),
             1,
             0,
-        )?;
+        )?);
+        self.built_in_header.replace(Some(header.clone()));
         self.header_container.add_child(Rc::new(Spacer::new(1)));
-        self.header_container.add_child(Rc::new(header));
+        self.header_container.add_child(header);
         self.header_container.add_child(Rc::new(Spacer::new(1)));
         Ok(())
     }

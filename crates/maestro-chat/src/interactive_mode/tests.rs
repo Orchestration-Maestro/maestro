@@ -1,6 +1,8 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod transcript;
+mod transfer;
 mod typed;
 
 use crate::{InteractiveMode, InteractiveModeOptions};
@@ -13,9 +15,10 @@ use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DiagnosticErrorInfo, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, ResourceExtensionPaths,
-    ResourceLoader, SettingsManager, Skill,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, ExtensionFactory,
+    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
+    PromptTemplate, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill,
+    create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -23,11 +26,11 @@ use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
     EditorComponent, autocomplete,
 };
-use serde::Deserialize;
+use serde::{Deserialize, de::DeserializeOwned};
 use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
 
 /// Every recorded presentation case.
-const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
+pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
@@ -79,14 +82,21 @@ pub(super) struct ForwardingLoader {
     skills: Rc<LoadSkillsResult>,
     /// The prompt templates of each read; the last answers every later read.
     prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
+    /// The loaded extensions answered instead of the default loader's.
+    extensions: Option<Rc<LoadExtensionsResult<Local>>>,
 }
 
 /// The context files, skills and successive prompt templates a loader answers.
 type Resources = (Vec<ContextFile>, Vec<Skill>, Vec<Vec<PromptTemplate>>);
 
 impl ForwardingLoader {
-    /// A loader over `inner` answering the dark and light palettes and `resources`.
-    fn new(inner: Rc<dyn ResourceLoader<Local>>, (context, skills, prompts): Resources) -> Self {
+    /// A loader over `inner` answering the dark and light palettes, `resources` and the
+    /// supplied `extensions`.
+    fn new(
+        inner: Rc<dyn ResourceLoader<Local>>,
+        (context, skills, prompts): Resources,
+        extensions: Option<Rc<LoadExtensionsResult<Local>>>,
+    ) -> Self {
         let prompts = prompts.into_iter().map(|prompts| {
             Rc::new(LoadPromptsResult {
                 prompts,
@@ -103,13 +113,16 @@ impl ForwardingLoader {
                 diagnostics: Vec::new(),
             }),
             prompts: RefCell::new(prompts.collect()),
+            extensions,
         }
     }
 }
 
 impl ResourceLoader<Local> for ForwardingLoader {
     fn get_extensions(&self) -> Rc<LoadExtensionsResult<Local>> {
-        self.inner.get_extensions()
+        self.extensions
+            .clone()
+            .unwrap_or_else(|| self.inner.get_extensions())
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
         Rc::clone(&self.skills)
@@ -197,6 +210,10 @@ pub(super) struct Setup {
     pub(super) skills: Vec<Skill>,
     /// The prompt templates of each loader read; the last answers every later read.
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
+    /// The inline extension the session loads, when supplied.
+    pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// The directories the theme registry reads, when it records themes on disk.
+    pub(super) directories: Option<maestro_theme::ThemeDirectories>,
 }
 
 impl Default for Setup {
@@ -209,8 +226,33 @@ impl Default for Setup {
             context: Vec::new(),
             skills: Vec::new(),
             prompts: Vec::new(),
+            directories: None,
+            extension: None,
         }
     }
+}
+
+/// Loads `factory` as the session's only extension; its initialization must finish at once.
+fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResult<Local>> {
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let bus = <Local as DefaultEventBus>::default_event_bus(&local);
+    let runtime = create_extension_runtime::<Local>();
+    let loading = std::pin::pin!(load_extension_from_factory(
+        factory,
+        cwd.to_owned(),
+        bus.for_extension(),
+        Rc::clone(&runtime),
+        None,
+    ));
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
+        panic!("the inline extension initializes at once");
+    };
+    Rc::new(LoadExtensionsResult {
+        extensions: vec![owner.unwrap()],
+        errors: Vec::new(),
+        runtime,
+    })
 }
 
 impl Setup {
@@ -222,8 +264,9 @@ impl Setup {
         let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
         let resources = (self.context, self.skills, self.prompts);
+        let extensions = self.extension.map(|factory| loaded(&cwd, factory));
         let result = session::session(&cwd, None, move |inner| {
-            let loader = Rc::new(ForwardingLoader::new(inner, resources));
+            let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
             *created.borrow_mut() = Some(Rc::clone(&loader));
             loader
         });
@@ -240,7 +283,10 @@ impl Setup {
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(published::unpublished());
+        let themes = Rc::new(match self.directories {
+            Some(directories) => ThemeState::new(directories),
+            None => published::unpublished(),
+        });
         let local = Rc::new(tokio::task::LocalSet::new());
         let mode = InteractiveMode::new(
             Rc::clone(&host),
@@ -291,16 +337,16 @@ pub(super) fn painted(theme: &Theme, rows: &[String]) -> Vec<String> {
     rows.iter().map(|row| roles(theme, row)).collect()
 }
 
-/// One recorded case of this module's witnesses.
+/// One recorded case, read before its witness gives the input and observation their types.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Case {
+pub(super) struct Case {
     /// The witness the case belongs to.
     test: String,
     /// The recorded operation.
-    input: Input,
+    input: serde_json::Value,
     /// The recorded observation.
-    expected: Expected,
+    expected: serde_json::Value,
 }
 
 /// The recorded operations.
@@ -389,13 +435,21 @@ pub(super) enum Expected {
     },
 }
 
-/// The recorded cases of `test`.
-pub(super) fn cases(test: &str) -> Vec<(Input, Expected)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
+/// The recorded cases of `test` in `fixtures`, typed by that witness.
+pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
+    fixtures: &str,
+    test: &str,
+) -> Vec<(I, E)> {
+    let all: Vec<Case> = serde_json::from_str(fixtures).unwrap();
     let cases: Vec<_> = all
         .into_iter()
         .filter(|case| case.test == test)
-        .map(|case| (case.input, case.expected))
+        .map(|case| {
+            (
+                serde_json::from_value(case.input).unwrap(),
+                serde_json::from_value(case.expected).unwrap(),
+            )
+        })
         .collect();
     assert!(!cases.is_empty());
     cases
@@ -406,9 +460,10 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
     isolated(
         "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
         |directory| {
-            for (input, expected) in
-                cases("startup_header_keeps_quiet_verbose_and_configured_hints_distinct")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
+            ) {
                 let (
                     Input::Header {
                         quiet,
@@ -449,8 +504,10 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
     isolated(
         "startup_notices_keep_labels_styles_padding_and_redraw",
         |directory| {
-            for (input, expected) in cases("startup_notices_keep_labels_styles_padding_and_redraw")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_notices_keep_labels_styles_padding_and_redraw",
+            ) {
                 let (Input::Notice { kind, text, width }, Expected::Notice { lines, renders }) =
                     (input, expected)
                 else {
@@ -481,9 +538,12 @@ fn clear_editor_changes_text_and_requests_a_frame() {
         "clear_editor_changes_text_and_requests_a_frame",
         |directory| {
             let [(Input::Clear, Expected::Clear { text, renders })] =
-                <[_; 1]>::try_from(cases("clear_editor_changes_text_and_requests_a_frame"))
-                    .ok()
-                    .unwrap()
+                <[_; 1]>::try_from(cases::<Input, Expected>(
+                    FIXTURES,
+                    "clear_editor_changes_text_and_requests_a_frame",
+                ))
+                .ok()
+                .unwrap()
             else {
                 panic!("one clear case");
             };

@@ -1,28 +1,36 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices and typed input.
+//! resources, notices, transcript shortcuts and typed input.
 
-use crate::{CustomEditor, FooterComponent};
+use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
+use indexmap::IndexMap;
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager,
+    ReadonlySessionManager, SettingsManager, ToolRenderEnvironment,
 };
-use maestro_theme::{Collator, LiveTheme, ThemeState, get_editor_theme};
+use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
-use maestro_tui::{Container, EditorOptions, TUI, TerminalImage};
+use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
 use std::{
     cell::{Cell, RefCell},
     error::Error,
     rc::Rc,
 };
 
+mod replay;
 mod resources;
 mod startup;
 mod submit;
+mod toggles;
+mod transcript;
+mod transfer;
 
 #[cfg(test)]
 #[cfg(unix)]
 mod tests;
+
+/// The spacer and text of a status line.
+type StatusLine = (Rc<dyn Component>, Rc<Text>);
 
 /// How the interactive mode starts.
 #[derive(Default)]
@@ -63,10 +71,22 @@ pub struct InteractiveMode {
     footer_data_provider: FooterDataProvider,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
+    /// The expandable startup help, absent when startup is quiet.
+    built_in_header: RefCell<Option<Rc<startup::ExpandableText>>>,
+    /// The runtime, theme, highlighter and image support shared by transcript rows.
+    tool_environment: Rc<ToolRenderEnvironment>,
+    /// Whether tool output and summaries, and with them the startup text, are expanded.
+    tool_output_expanded: Cell<bool>,
+    /// Whether assistant thinking is replaced by its label.
+    hide_thinking_block: Cell<bool>,
+    /// The spacer and text of the latest status line.
+    last_status: RefCell<Option<StatusLine>>,
+    /// Tool rows waiting for their results, by call id in call order.
+    pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
+    /// Whether the editor holds a shell command.
+    is_bash_mode: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
-    /// Whether tool output, and with it the startup text, is expanded.
-    tool_output_expanded: Cell<bool>,
 }
 
 impl InteractiveMode {
@@ -74,8 +94,8 @@ impl InteractiveMode {
     /// effects, then registers the session's loaded themes and selects the configured one.
     ///
     /// # Errors
-    /// Returns the failure that stopped the keybinding manager, the footer's collator or
-    /// the theme selection.
+    /// Returns the failure that stopped the documentation path, the highlighter, the
+    /// keybinding manager, the footer's collator or the theme selection.
     pub fn new(
         runtime_host: Rc<AgentSessionRuntime>,
         options: InteractiveModeOptions,
@@ -84,7 +104,16 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
-        let ui = create_ui(&session, terminal);
+        let tool_environment = Rc::new(ToolRenderEnvironment {
+            runtime: terminal.1.clone(),
+            readme_path: maestro_app::configuration::config::get_readme_path()?,
+            live_theme: themes.theme(),
+            highlighter: Rc::new(
+                SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
+            ),
+            terminal_image: TerminalImage::default(),
+        });
+        let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
         let editor = create_editor(
@@ -120,18 +149,30 @@ impl InteractiveMode {
             footer,
             footer_data_provider,
             is_initialized: Cell::new(false),
-            on_input_callback: Rc::default(),
+            built_in_header: RefCell::default(),
+            tool_environment,
             tool_output_expanded: Cell::new(false),
+            hide_thinking_block: Cell::new(
+                session
+                    .settings_manager()
+                    .borrow()
+                    .get_hide_thinking_block(),
+            ),
+            last_status: RefCell::default(),
+            pending_tools: RefCell::default(),
+            is_bash_mode: Cell::new(false),
+            on_input_callback: Rc::default(),
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, installs
-    /// editor submission, starts the terminal and lists the loaded resources, once;
-    /// theme and branch changes then request fresh frames.
+    /// Builds the header, adds every container in order, focuses the editor, binds the
+    /// transcript shortcuts, installs editor submission, starts the terminal, lists the
+    /// loaded resources and replays the session, once; theme changes then refresh the
+    /// editor border, and theme and branch changes request fresh frames.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start or of
-    /// the resource listing.
+    /// Returns the failure of the header's theme colours, of the terminal start, of the
+    /// resource listing or of the replay.
     pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -150,6 +191,7 @@ impl InteractiveMode {
         }
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
+        self.setup_key_handlers();
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
@@ -157,6 +199,7 @@ impl InteractiveMode {
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
                 mode.ui.invalidate();
+                mode.update_editor_border_color()?;
                 mode.ui.request_render(false);
             }
             Ok(())
@@ -166,17 +209,23 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(false)
+        self.show_loaded_resources(false)?;
+        self.render_initial_messages()
     }
 }
 
-/// Builds the frame writer with the configured hardware-cursor and clear-on-shrink policies.
-fn create_ui(session: &AgentSession, terminal: (TerminalHandle, Rc<dyn TuiRuntime>)) -> TUI {
+/// Builds the frame writer with the configured hardware-cursor and clear-on-shrink policies,
+/// sharing the transcript rows' image support.
+fn create_ui(
+    session: &AgentSession,
+    terminal: (TerminalHandle, Rc<dyn TuiRuntime>),
+    image: TerminalImage,
+) -> TUI {
     let settings = session.settings_manager().borrow();
     let ui = TUI::new(
         terminal.0,
         terminal.1,
-        TerminalImage::default(),
+        image,
         Some(settings.get_show_hardware_cursor()),
     );
     ui.set_clear_on_shrink(settings.get_clear_on_shrink());

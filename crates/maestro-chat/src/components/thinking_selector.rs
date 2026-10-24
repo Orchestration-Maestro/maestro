@@ -62,7 +62,7 @@ impl Component for ThinkingSelectorComponent {
 }
 
 /// The single name and description owner for reasoning levels.
-pub(super) fn thinking_text(level: &ThinkingLevel) -> (&'static str, &'static str) {
+pub(crate) fn thinking_text(level: &ThinkingLevel) -> (&'static str, &'static str) {
     match level {
         ThinkingLevel::Off => ("off", "No reasoning"),
         ThinkingLevel::Minimal => ("minimal", "Very brief reasoning (~1k tokens)"),

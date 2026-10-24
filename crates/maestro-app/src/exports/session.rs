@@ -8,6 +8,9 @@ pub use maestro_session::session_manager::{
 
 pub use maestro_session::{Presence, SessionInfo, SessionManager};
 
+/// The session's message records, including the application roles a transcript shows.
+pub use maestro_session::messages;
+
 pub use maestro_session::messages::{
     BranchSummaryMessage, CompactionSummaryMessage, parse_timestamp_millis,
 };
@@ -18,6 +21,9 @@ pub use maestro_session::messages::CustomMessage;
 pub use maestro_session::session_manager::SessionListProgress;
 
 pub use maestro_session::export_html;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_export::{ExportOperations, NativeExportOperations};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use crate::agent_session::{
