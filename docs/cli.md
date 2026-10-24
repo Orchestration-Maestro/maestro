@@ -44,10 +44,16 @@ search prints its own line.
 
 `input::config_selector::select_config` and
 `input::session_picker::select_session` present a supplied component in a frame
-writer: focus moves before the first frame, closing stops the writer and the
-theme watch, and the explicit-exit notification ends the process after those
-effects. `input::selector::SelectorHost::native` supplies the native terminal frame
-writer. The records a presentation exchanges with its factory live in
-`maestro_app::presentation_data::input_selectors`, re-exported here, so the
-interactive frontend and this library name one owner. See
-[selectors](chat/selectors.md) for the widgets.
+writer: focus moves before the first frame, and everything a presentation
+started stops with it, whether it closes, is cancelled or fails. The
+configuration presentation starts a theme watch and stops it; the session
+presentation has no theme and stops only the writer. The explicit-exit
+notification ends the process after those effects.
+`input::selector::SelectorHost::native` supplies the native terminal frame
+writer. Before it presents, the session selector loads the configured
+keybindings and installs that manager, so the search field and the list dispatch
+the configured controls. The records a presentation exchanges with its factory
+live in `maestro_app::presentation_data::input_selectors`; this library
+re-exports `ConfigSelectorOptions` from there and imports the rest from that
+application path, so the interactive frontend and this library name one owner.
+See [selectors](chat/selectors.md) for the widgets.
