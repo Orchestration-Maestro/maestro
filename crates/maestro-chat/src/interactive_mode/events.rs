@@ -57,15 +57,14 @@ impl InteractiveMode {
     /// # Errors
     /// Returns the invalid stored name or the terminal's title-writing failure.
     pub(super) fn update_terminal_title(&self) -> Result<(), Box<dyn Error>> {
-        let (basename, name) = {
+        let title = {
             let session = self.runtime_host.session();
             let manager = session.session_manager().borrow();
             let basename = maestro_path::basename(manager.get_cwd(), None);
-            (basename, manager.get_session_name()?.map(str::to_owned))
-        };
-        let title = match name {
-            Some(name) => format!("{APP_TITLE} - {name} - {basename}"),
-            None => format!("{APP_TITLE} - {basename}"),
+            match manager.get_session_name()? {
+                Some(name) => format!("{APP_TITLE} - {name} - {basename}"),
+                None => format!("{APP_TITLE} - {basename}"),
+            }
         };
         self.ui.terminal().borrow_mut().set_title(&title)?;
         Ok(())

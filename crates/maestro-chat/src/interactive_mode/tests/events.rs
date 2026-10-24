@@ -189,9 +189,10 @@ fn initialization(world: &World, initialized: bool) {
 }
 
 /// Drives the subscription, a second initialization, the removal operation and the release.
-fn subscription(world: World) {
+fn subscription(world: World, unchanged_rows: &Unchanged) {
     let session = world.host.session();
     let basename = maestro_path::basename(session.session_manager().borrow().get_cwd(), None);
+    world.mode.init().unwrap();
     world.mode.init().unwrap();
     world.runtime.settle().unwrap();
     let effects = tap(&world);
@@ -201,14 +202,16 @@ fn subscription(world: World) {
         titles(&effects),
         vec![format!("{APP_TITLE} - named - {basename}")]
     );
+    unchanged(&world, unchanged_rows);
     let removal = world.mode.unsubscribe.borrow_mut().take().unwrap();
+    // The listener keeps no strong reference: the mode is released while it is still
+    // subscribed, and the retained removal operation still detaches it afterwards.
+    let released = Rc::downgrade(&world.mode);
+    drop(world.mode);
+    assert!(released.upgrade().is_none());
     removal();
     session.set_session_name("other").unwrap();
     assert_eq!(titles(&effects).len(), 1);
-    // The listener keeps no reference to the mode.
-    let mode = Rc::downgrade(&world.mode);
-    drop(world);
-    assert!(mode.upgrade().is_none());
 }
 
 #[test]
@@ -225,7 +228,7 @@ fn events_subscription_initializes_once_and_releases() {
                     initialization(&world, initialized);
                     unchanged(&world, &unchanged_rows);
                 }
-                Input::Subscribe => subscription(world),
+                Input::Subscribe => subscription(world, &unchanged_rows),
                 _ => panic!("a subscription case"),
             }
         }
