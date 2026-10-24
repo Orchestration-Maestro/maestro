@@ -160,16 +160,10 @@ impl InteractiveMode {
         for call in
             calls.filter(|block| block.get("type").and_then(Value::as_str) == Some("toolCall"))
         {
-            let (id, row) = self.render_tool_call(call)?;
+            let (id, name) = (call_field(call, "id")?, call_field(call, "name")?);
+            let row = self.render_tool_call(&id, &name, call.get("arguments").cloned())?;
             match &failure {
-                Some(text) => {
-                    let result = ToolExecutionResult {
-                        content: vec![UserBlock::Text(TextContent::new(text.clone()))],
-                        details: None,
-                        is_error: true,
-                    };
-                    row.update_result(result, false)?;
-                }
+                Some(text) => row.update_result(failure_result(text), false)?,
                 None => rendered.insert(id, row),
             }
         }
@@ -180,40 +174,24 @@ impl InteractiveMode {
     fn failure_text(&self, record: &Value) -> Option<String> {
         match record.get("stopReason").and_then(Value::as_str)? {
             "aborted" => Some(aborted_notice(self.runtime_host.session().retry_attempt())),
-            "error" => Some(
-                record
-                    .get("errorMessage")
-                    .and_then(Value::as_str)
-                    .filter(|text| !text.is_empty())
-                    .unwrap_or("Error")
-                    .to_owned(),
-            ),
+            "error" => Some(error_notice(
+                record.get("errorMessage").and_then(Value::as_str),
+            )),
             _ => None,
         }
     }
 
-    /// Appends a row for a stored tool call with the configured image policies, the session's
-    /// registered renderers and the built-in ones of its name, returning its call id.
+    /// Appends a row for tool call `id` of `name` with its raw arguments, the configured image
+    /// policies, the session's registered renderers and the built-in ones of its name.
     ///
     /// # Errors
-    /// Returns a call without a string id or name, or the failure of a renderer binding or
-    /// of the row's rendering.
-    fn render_tool_call(
+    /// Returns the failure of a renderer binding or of the row's rendering.
+    pub(super) fn render_tool_call(
         &self,
-        call: &Value,
-    ) -> Result<(String, Rc<ToolExecutionComponent>), Box<dyn Error>> {
-        let text = |key| {
-            call.get(key)
-                .and_then(Value::as_str)
-                .map(str::to_owned)
-                .ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!("tool call {key} is not a string"),
-                    )
-                })
-        };
-        let (id, name) = (text("id")?, text("name")?);
+        id: &str,
+        name: &str,
+        args: Option<Value>,
+    ) -> Result<Rc<ToolExecutionComponent>, Box<dyn Error>> {
         let session = self.runtime_host.session();
         let options = {
             let settings = session.settings_manager().borrow();
@@ -224,11 +202,11 @@ impl InteractiveMode {
         };
         let cwd = session.session_manager().borrow().get_cwd().to_owned();
         let row = Rc::new(ToolExecutionComponent::new(ToolExecutionParams {
-            tool_definition: self.get_registered_tool_definition(&name)?,
-            built_in_tool_definition: built_in_tool_definition(&name, &cwd)?,
-            tool_name: name,
-            tool_call_id: id.clone(),
-            args: call.get("arguments").cloned(),
+            tool_definition: self.get_registered_tool_definition(name)?,
+            built_in_tool_definition: built_in_tool_definition(name, &cwd)?,
+            tool_name: name.to_owned(),
+            tool_call_id: id.to_owned(),
+            args,
             options,
             environment: Rc::clone(&self.tool_environment),
             cwd,
@@ -236,7 +214,7 @@ impl InteractiveMode {
         })?);
         row.set_expanded(self.tool_output_expanded.get())?;
         self.chat_container.add_child(row.clone());
-        Ok((id, row))
+        Ok(row)
     }
 
     /// The renderers of the session's registered tool `name`, for a row's custom rendering.
@@ -271,6 +249,39 @@ fn complete_tool_call(record: Value, rendered: &mut PendingTools) -> Result<(), 
         is_error: result.is_error,
     };
     Ok(row.update_result(result, false)?)
+}
+
+/// The string field `key` of a stored tool call.
+///
+/// # Errors
+/// Returns the field as invalid data when it is missing or not a string.
+fn call_field(call: &Value, key: &str) -> io::Result<String> {
+    call.get(key)
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("tool call {key} is not a string"),
+            )
+        })
+}
+
+/// The failed result a tool call of a failed message shows: `text` as its only block.
+pub(super) fn failure_result(text: &str) -> ToolExecutionResult {
+    ToolExecutionResult {
+        content: vec![UserBlock::Text(TextContent::new(text.to_owned()))],
+        details: None,
+        is_error: true,
+    }
+}
+
+/// The result text of a failed message's tool calls: its nonempty error, else `Error`.
+pub(super) fn error_notice(error: Option<&str>) -> String {
+    error
+        .filter(|text| !text.is_empty())
+        .unwrap_or("Error")
+        .to_owned()
 }
 
 /// The result text of an aborted message's tool calls after `attempts` retries.

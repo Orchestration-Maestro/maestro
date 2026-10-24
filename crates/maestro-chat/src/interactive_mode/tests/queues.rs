@@ -205,6 +205,9 @@ fn seed(world: &World, queues: Queues) {
                     mode: local.mode.delivery(),
                 }),
         );
+    // The recording seeds the queues without showing them; the session's queue updates
+    // drew the rows here, so the case starts from the recorded empty rows.
+    world.mode.pending_messages_container.clear();
 }
 
 /// What `world` holds now, given the queue operations since seeding and the stopped turns.
@@ -341,6 +344,9 @@ fn streaming<T>(world: &World, body: impl FnOnce(&World, &Held) -> T) -> T {
         });
         let held = receiver.await.unwrap();
         assert!(session.is_streaming());
+        // The recording streams without a prompt; this prompt's own user row is set aside so
+        // the case starts from the recorded empty transcript.
+        world.mode.chat_container.clear();
         let result = body(world, &held);
         held.stream.end(Some(answer()));
         run.await.unwrap().unwrap();
@@ -422,6 +428,9 @@ fn queued_texts_merge_by_mode_without_reordering_or_deduplication() {
             assert!(calls.borrow().is_empty(), "reading consumes nothing");
             assert_eq!(world.mode.get_all_queued_messages(), before);
             let cleared = world.mode.clear_all_queues();
+            // The session's queue update drew the compaction rows still kept while clearing;
+            // the only caller refreshes the rows right after, as the recording shows.
+            world.mode.update_pending_messages_display().unwrap();
             assert_eq!(
                 Snapshot {
                     steering: before.steering,

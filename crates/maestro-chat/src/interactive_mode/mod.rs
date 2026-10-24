@@ -2,16 +2,19 @@
 //! resources, notices, transcript shortcuts, editor actions, typed input and queued
 //! input.
 
-use crate::{BashExecutionComponent, CustomEditor, FooterComponent, ToolExecutionComponent};
+use crate::{
+    AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent,
+    ToolExecutionComponent,
+};
 use indexmap::IndexMap;
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, ToolRenderEnvironment,
+    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
-use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
+use maestro_tui::{Component, Container, EditorOptions, Loader, TUI, TerminalImage, Text};
 use std::{
     cell::{Cell, RefCell},
     error::Error,
@@ -32,6 +35,7 @@ mod extension_ui;
 mod toggles;
 mod transcript;
 mod transfer;
+mod working;
 
 #[cfg(test)]
 #[cfg(unix)]
@@ -39,6 +43,9 @@ mod tests;
 
 /// The spacer and text of a status line.
 type StatusLine = (Rc<dyn Component>, Rc<Text>);
+
+/// The assistant row a response streams into and the message it shows.
+type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
 /// How the interactive mode starts.
 #[derive(Default)]
@@ -115,6 +122,10 @@ pub struct InteractiveMode {
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
     /// The session subscription that delivers agent and session events.
     unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
+    /// The working row while a response runs.
+    loading_animation: RefCell<Option<Loader>>,
+    /// The assistant row of the response streaming now.
+    streaming: RefCell<Option<StreamingMessage>>,
 }
 
 impl InteractiveMode {
@@ -184,6 +195,8 @@ impl InteractiveMode {
             on_input_callback: Rc::default(),
             compaction_queued_messages: RefCell::default(),
             unsubscribe: RefCell::default(),
+            loading_animation: RefCell::default(),
+            streaming: RefCell::default(),
         }))
     }
 
