@@ -1,13 +1,55 @@
 //! The extension UI host over the retained interactive mode.
 use super::InteractiveMode;
-use maestro_app::{EventError, ExtensionUIContextPort, ThemeSelection, ThemeSetResult};
+use maestro_app::{
+    EventError, ExtensionUIContextPort, ExtensionUIDialogOptions, ExtensionUIFuture,
+    ThemeSelection, ThemeSetResult,
+};
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
 use maestro_tui::tui::InputHandler;
 use std::rc::Rc;
 
 mod widgets;
+mod dialogs;
 
 impl ExtensionUIContextPort for InteractiveMode {
+    /// Shows a selector in place of the editor until it is answered, cancelled, timed
+    /// out or aborted.
+    fn select(
+        &self,
+        title: String,
+        options: Vec<String>,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_selector(title, options, opts)
+    }
+
+    /// Asks `title` and `message` with `Yes` and `No`; only `Yes` is true.
+    fn confirm(
+        &self,
+        title: String,
+        message: String,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<bool> {
+        self.show_extension_confirm(&title, &message, opts)
+    }
+
+    /// Shows a text input in place of the editor until it is submitted, cancelled,
+    /// timed out or aborted.
+    fn input(
+        &self,
+        title: String,
+        placeholder: Option<String>,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_input(title, placeholder.as_deref(), opts)
+    }
+
+    /// Shows a multiline editor in place of the editor until it is submitted or
+    /// cancelled.
+    fn editor(&self, title: String, prefill: Option<String>) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_editor(title, prefill)
+    }
+
     /// Updates the keyed footer status and requests a frame.
     ///
     /// # Errors

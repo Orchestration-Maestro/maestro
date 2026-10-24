@@ -15,7 +15,7 @@ use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text}
 use std::{
     cell::{Cell, RefCell},
     error::Error,
-    rc::Rc,
+    rc::{Rc, Weak},
 };
 
 mod actions;
@@ -63,12 +63,14 @@ pub struct InteractiveMode {
     extension_widgets_above: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
     /// Live keyed widgets below the editor.
     extension_widgets_below: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    /// This mode, for callbacks that must not keep it alive.
+    this: Weak<InteractiveMode>,
     /// The runtime the current session is read from.
     runtime_host: Rc<AgentSessionRuntime>,
     /// How the mode starts.
     options: InteractiveModeOptions,
-    /// The terminal user interface this mode owns.
-    ui: TUI,
+    /// The terminal user interface this mode owns, shared with dialogs that keep it weakly.
+    ui: Rc<TUI>,
     /// The theme registry and its published theme.
     themes: Rc<ThemeState>,
     /// The startup header container.
@@ -159,7 +161,8 @@ impl InteractiveMode {
         let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
         let hide_thinking_block = settings.borrow().get_hide_thinking_block();
-        Ok(Rc::new(Self {
+        Ok(Rc::new_cyclic(|this| Self {
+            this: this.clone(),
             extension_widgets_above: maestro_app::Live::new(),
             extension_widgets_below: maestro_app::Live::new(),
             runtime_host,
@@ -275,7 +278,7 @@ fn create_ui(
     session: &AgentSession,
     terminal: (TerminalHandle, Rc<dyn TuiRuntime>),
     image: TerminalImage,
-) -> TUI {
+) -> Rc<TUI> {
     let settings = session.settings_manager().borrow();
     let ui = TUI::new(
         terminal.0,
@@ -284,7 +287,7 @@ fn create_ui(
         Some(settings.get_show_hardware_cursor()),
     );
     ui.set_clear_on_shrink(settings.get_clear_on_shrink());
-    ui
+    Rc::new(ui)
 }
 
 /// Builds the editor with the configured padding and completion limit.
