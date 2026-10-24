@@ -16,8 +16,8 @@ pub fn uncanonicalized_scratch() -> Scratch {
 }
 
 /// `name` joined below `root` as the stored string spelling, asserting that the joined
-/// spelling still holds the dot segments the caller supplied; joining below a canonicalized
-/// root removes them, which would leave a preservation assertion nothing to tell apart.
+/// spelling still holds the dot segments the caller supplied; on Windows, joining below a
+/// verbatim root removes them, which would leave a preservation assertion nothing to tell apart.
 pub fn below_keeping_dots(root: &std::path::Path, name: &str) -> String {
     let spelling = below(root, name);
     assert!(
