@@ -166,7 +166,8 @@ let tool = Tool {
         "type": "object",
         "properties": {"count": {"type": "integer", "minimum": 1}},
         "required": ["count"]
-    }),
+    })
+    .into(),
 };
 let mut call = ToolCall {
     id: "call-1".into(),
