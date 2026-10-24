@@ -16,6 +16,7 @@ use std::{
     rc::Rc,
 };
 
+mod autocomplete;
 mod resources;
 mod startup;
 mod submit;
@@ -65,6 +66,8 @@ pub struct InteractiveMode {
     is_initialized: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// The selected search program for file completion, absent until startup prepares it.
+    fd_path: RefCell<Option<String>>,
     /// Whether tool output, and with it the startup text, is expanded.
     tool_output_expanded: Cell<bool>,
 }
@@ -121,22 +124,25 @@ impl InteractiveMode {
             footer_data_provider,
             is_initialized: Cell::new(false),
             on_input_callback: Rc::default(),
+            fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, installs
-    /// editor submission, starts the terminal and lists the loaded resources with their
-    /// diagnostics, once;
+    /// Prepares both search programs, installs completion, builds the header, adds every
+    /// container in order, focuses the editor, installs editor submission, starts the
+    /// terminal and lists the loaded resources with their diagnostics, once;
     /// theme and branch changes then request fresh frames.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start or of
-    /// the resource listing.
-    pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+    /// Returns the failure of the managed binary directory, of the header's theme colours,
+    /// of the terminal start or of the resource listing.
+    pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
+        self.prepare_search_tools().await?;
+        self.setup_autocomplete_provider();
         self.build_header()?;
         for child in [
             &self.header_container,

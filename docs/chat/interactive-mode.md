@@ -28,13 +28,22 @@ fallback theme is returned.
 
 ## Startup
 
-`init` runs once; later calls change nothing. It builds the header, then adds the
-header, transcript, pending-messages, status, upper widget, editor and lower widget
-containers and the footer, in that order. It focuses the editor, installs editor
-submission and starts the terminal. A terminal start failure is returned and leaves the mode uninitialized.
+`init` is asynchronous and runs once; later calls change nothing. It first ensures
+both search programs and installs [completion](extension-ui.md#completion), then
+builds the header, adds the header, transcript, pending-messages, status, upper
+widget, editor and lower widget containers and the footer in that order, focuses the
+editor, installs editor submission and starts the terminal. A failure to locate
+the managed binary directory or to start the terminal is returned and leaves the mode
+uninitialized.
 After a successful start, a theme change invalidates the presentation and requests a
 frame, and a branch change requests a frame. Neither callback keeps the mode alive.
 Last, it lists the loaded resources and their diagnostics in the transcript.
+
+The search programs are `fd` and `rg`. Both start before either finishes, so a missing
+program does not delay the other. `fd` stays selected for file completion. The managed
+directory is the application's agent directory under `bin`, never the session's
+working directory. The search owner writes its own progress and advice lines, before
+the terminal takes the screen.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the

@@ -2,6 +2,10 @@
 
 pub use maestro_tools::diff::text_diff::{Change, diff_lines};
 
+/// The two search programs the terminal frontend prepares before its first completion.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{SearchTool, ToolsManagerOutput};
+
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
     BashOperations, BashRenderState, BashSpawnContext, BashSpawnHook, BashToolDetails,

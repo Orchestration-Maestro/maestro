@@ -1,4 +1,5 @@
 //! Native presentation witnesses through the interactive mode's own interface.
+mod autocomplete;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod typed;
@@ -23,7 +24,7 @@ use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
-    EditorComponent, autocomplete,
+    EditorComponent, autocomplete as tui_autocomplete,
 };
 use serde::Deserialize;
 use std::{
@@ -418,10 +419,24 @@ impl Setup {
     }
 }
 
+/// Runs `future` to completion on a current-thread runtime with the process driver.
+pub(super) fn complete<T>(future: impl Future<Output = T>) -> T {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
+
+/// Initializes `world` once, before the first frame is settled.
+pub(super) fn start(world: &World) {
+    complete(world.mode.init()).unwrap();
+}
+
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
 fn started(directory: &Path) -> World {
     let world = Setup::default().build(directory);
-    world.mode.init().unwrap();
+    start(&world);
     world.runtime.settle().unwrap();
     world
 }
@@ -588,7 +603,7 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                     ..Setup::default()
                 }
                 .build(directory);
-                world.mode.init().unwrap();
+                start(&world);
                 let theme = world.themes.theme().get().unwrap();
                 let expected = painted(&theme, &before);
                 assert_eq!(
@@ -666,12 +681,15 @@ impl AutocompleteProvider for Numbered {
     fn get_suggestions<'a>(
         &'a self,
         _lines: &'a [String],
-        _cursor: autocomplete::CursorPosition,
-        _options: autocomplete::CompletionOptions<'a, Self::Signal>,
+        _cursor: tui_autocomplete::CursorPosition,
+        _options: tui_autocomplete::CompletionOptions<'a, Self::Signal>,
     ) -> Pin<
         Box<
             dyn Future<
-                    Output = Result<Option<AutocompleteSuggestions>, autocomplete::CompletionError>,
+                    Output = Result<
+                        Option<AutocompleteSuggestions>,
+                        tui_autocomplete::CompletionError,
+                    >,
                 > + 'a,
         >,
     > {
@@ -692,11 +710,11 @@ impl AutocompleteProvider for Numbered {
     fn apply_completion(
         &self,
         _lines: &[String],
-        _cursor: autocomplete::CursorPosition,
+        _cursor: tui_autocomplete::CursorPosition,
         item: &AutocompleteItem,
         _prefix: &str,
-    ) -> autocomplete::CompletionResult {
-        autocomplete::CompletionResult {
+    ) -> tui_autocomplete::CompletionResult {
+        tui_autocomplete::CompletionResult {
             lines: vec![item.value.clone()],
             cursor_line: 0,
             cursor_col: item.value.len(),
@@ -711,7 +729,7 @@ fn visible_candidates(directory: &Path, maximum: f64) -> usize {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    start(&world);
     world
         .mode
         .editor
@@ -729,7 +747,7 @@ fn editor_indent(directory: &Path, padding: f64) -> usize {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    start(&world);
     world.mode.editor.set_text("typed");
     let rows = world.mode.editor.render(40);
     let row = rows.iter().find(|row| row.contains("typed")).unwrap();
@@ -752,7 +770,7 @@ fn startup_constructor_forwards_each_display_setting() {
                 .build(directory);
                 assert_eq!(world.mode.ui.get_show_hardware_cursor(), cursor);
                 assert_eq!(world.mode.ui.get_clear_on_shrink(), shrink);
-                world.mode.init().unwrap();
+                start(&world);
                 world.runtime.settle().unwrap();
                 world.mode.show_error("tall").unwrap();
                 world.runtime.settle().unwrap();
@@ -778,7 +796,7 @@ fn startup_constructor_forwards_each_display_setting() {
                     ..Setup::default()
                 }
                 .build(directory);
-                world.mode.init().unwrap();
+                start(&world);
                 let footer = world.mode.footer.render(120).join("\n");
                 assert_eq!(footer.contains("(auto)"), enabled);
             }
@@ -839,7 +857,7 @@ fn startup_layout_focus_and_start_happen_once() {
         assert!(mode.widget_container_below.children().borrow().is_empty());
         world.terminal.send_input("x");
         assert_eq!(mode.editor.get_text(), "x");
-        mode.init().unwrap();
+        complete(mode.init()).unwrap();
         assert!(same(&mode.ui.children().borrow()));
         assert_eq!(world.terminal.events(), ["start"]);
         assert_eq!(mode.header_container.children().borrow().len(), 3);
@@ -855,7 +873,7 @@ fn startup_failed_terminal_start_does_not_mark_initialized() {
             world
                 .terminal
                 .set_hide_error(Some(io::ErrorKind::BrokenPipe));
-            let error = world.mode.init().unwrap_err();
+            let error = complete(world.mode.init()).unwrap_err();
             assert_eq!(
                 error.downcast_ref::<io::Error>().unwrap().kind(),
                 io::ErrorKind::BrokenPipe

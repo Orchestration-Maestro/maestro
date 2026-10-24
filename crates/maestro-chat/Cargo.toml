@@ -23,7 +23,7 @@ serde.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-path = { path = "../maestro-path" }
-tokio = { version = "=1.53.3", default-features = false, features = ["process"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["macros", "process"] }
 
 [[test]]
 name = "integration"
