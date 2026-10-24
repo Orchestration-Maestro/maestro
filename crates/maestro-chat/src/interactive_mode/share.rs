@@ -38,12 +38,15 @@ impl ShareArtifact {
     /// Returns the native directory-creation error, including an existing directory.
     pub(super) fn new() -> io::Result<Self> {
         let directory = named(NEXT_SHARE.fetch_add(1, Ordering::Relaxed));
-        let mut builder = fs::DirBuilder::new();
         #[cfg(unix)]
-        {
+        let builder = {
             use std::os::unix::fs::DirBuilderExt as _;
+            let mut builder = fs::DirBuilder::new();
             builder.mode(0o700);
-        }
+            builder
+        };
+        #[cfg(not(unix))]
+        let builder = fs::DirBuilder::new();
         builder.create(&directory)?;
         Ok(Self {
             file: directory.join("session.html"),
