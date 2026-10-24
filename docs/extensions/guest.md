@@ -632,6 +632,23 @@ component in a controlled host, and `examples/extensions/README.md` holds the
 build and controlled-run commands. Reloading a running application is not part
 of that controlled run.
 
+### A protected-paths tool-call hook
+
+[`examples/extensions/protected_paths.rs`](../../examples/extensions/protected_paths.rs)
+handles `tool_call` and returns a blocking `ToolCallEventResult` when a `write`
+or `edit` call names a path containing `.env`, `.git/` or `node_modules/`. The
+reason is `Path "<path>" is protected`, and the hook first asks the context
+whether the host has UI: if it does, it sends one warning,
+`Blocked write to protected path: <path>`, before returning the verdict.
+
+It reads the path after the tool-name filter, so every other tool passes
+through untouched and an unreadable path operand never reaches the UI. Matching is
+a case-sensitive literal substring test on the authored path: dot segments,
+uppercase spellings and backslash separators are left as they are, and no
+filesystem call decides the answer. The three patterns are the example's own
+policy; a hook needs a host that enables the component runtime, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes
