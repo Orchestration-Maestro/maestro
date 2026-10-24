@@ -214,7 +214,7 @@ pub(super) async fn deliver(
         let text = match block {
             AssistantContent::Text(value) => Cow::Borrowed(value.text.as_str()),
             AssistantContent::Thinking(value) => Cow::Borrowed(value.thinking.as_str()),
-            AssistantContent::ToolCall(value) => Cow::Owned(usage::json(&value.arguments)?),
+            AssistantContent::ToolCall(value) => Cow::Owned(usage::canonical(&value.arguments)?),
         };
         for chunk in pacing.chunks(&text) {
             pacing.schedule(&chunk).await?;

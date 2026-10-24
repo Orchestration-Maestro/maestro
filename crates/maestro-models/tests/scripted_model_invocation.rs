@@ -1659,6 +1659,10 @@ mod tests {
             (serde_json::json!([1, 1]), "[1,1]"),
             (serde_json::json!(false), "false"),
             (serde_json::json!("text"), "\"text\""),
+            (serde_json::json!(-0.0), "0"),
+            (serde_json::json!(42.0), "42"),
+            (serde_json::json!(1e20), "100000000000000000000"),
+            (serde_json::json!({"10": 1, "2": 2}), "{\"2\":2,\"10\":1}"),
         ] {
             registration.set_responses(vec![FauxResponseStep::Message(Box::new(
                 faux_assistant_message(
@@ -1682,6 +1686,32 @@ mod tests {
             assert_eq!(ended.name, "t");
             assert_eq!(ended.arguments, arguments);
         }
+        registration.unregister();
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    /// Estimated output usage counts the canonical argument text a scripted call streams.
+    fn scripted_usage_counts_canonical_argument_text() {
+        let _serial = crate::bundled::registry();
+        let registration = fixed(None);
+        registration.set_responses(vec![FauxResponseStep::Message(Box::new(
+            faux_assistant_message(
+                faux_tool_call(
+                    "t",
+                    serde_json::json!(1e20),
+                    FauxToolCallOptions {
+                        id: Some("call".into()),
+                    },
+                ),
+                FauxAssistantMessageOptions::default(),
+            ),
+        ))]);
+        // `t:100000000000000000000` is 23 scalars, counted as six tokens.
+        number(
+            invoke(&registration, context("hello"), None).usage.output,
+            6.0,
+        );
         registration.unregister();
     }
 
@@ -1719,8 +1749,8 @@ mod tests {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    /// Exercise serialization retains native values through the public invocation boundary.
-    fn maestro_serialization_retains_native_values() {
+    /// Canonical streamed argument text keeps every supplied value.
+    fn maestro_serialization_keeps_supplied_values() {
         let _serial = crate::bundled::registry();
         let registration = fixed(None);
         let mut arguments = JsonObject::new();
@@ -1730,7 +1760,8 @@ mod tests {
             "a".into(),
             serde_json::json!([true,null,"line\n\"😀",{"nested":false}]),
         );
-        let expected = r#"{"10":-0.0,"2":1e+20,"a":[true,null,"line\n\"😀",{"nested":false}]}"#;
+        let expected =
+            r#"{"2":100000000000000000000,"10":0,"a":[true,null,"line\n\"😀",{"nested":false}]}"#;
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
             faux_assistant_message(
                 faux_tool_call(

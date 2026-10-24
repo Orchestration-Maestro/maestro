@@ -5,7 +5,6 @@ use maestro_models::{
     StopReason, TextContent, ThinkingContent, ToolCall, Usage, parsed_arguments,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 /// Compact server event without the reconstructed shared partial.
@@ -417,11 +416,11 @@ fn tool_delta(
         return Err("Received toolcall_delta for non-toolCall content".into());
     };
     // A falsy reconstructed root falls back to an empty object.
-    block.arguments = match parsed_arguments(arguments) {
-        Value::Null | Value::Bool(false) => JsonObject::new().into(),
-        Value::Number(number) if number.as_f64() == Some(0.0) => JsonObject::new().into(),
-        Value::String(text) if text.is_empty() => JsonObject::new().into(),
-        value => value,
+    let parsed = parsed_arguments(arguments);
+    block.arguments = if maestro_json::is_truthy(&parsed) {
+        parsed
+    } else {
+        JsonObject::new().into()
     };
     Ok(Event::ToolcallDelta {
         content_index,

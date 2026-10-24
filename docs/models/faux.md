@@ -126,8 +126,10 @@ No network credentials or server are needed.
   and prompt separators preserve whitespace. Nonempty session IDs with omitted,
   `Short` or `Long` retention enable caching; `Some(CacheRetention::None)` disables
   both reads and writes without changing existing cache. Empty IDs behave as absent.
-- Tool arguments emit compact JSON deltas; partial arguments remain empty until
-  tool end. Partial observations within one block share its accumulation, but
+- Tool arguments emit canonical compact JSON deltas in the spelling an authored
+  script writes: array-index keys first and each number as the double it names. The
+  usage estimate counts that same text. Partial arguments remain empty until tool
+  end. Partial observations within one block share its accumulation, but
   retained earlier observations never gain subsequent content blocks. Terminal
   messages retain original content metadata, while constructed partials are unsigned.
 - Unpaced chunks yield through native async; a positive `tokens_per_second` waits

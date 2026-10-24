@@ -72,6 +72,18 @@ assert_eq!(completed, json!({"label":"ready\n"}));
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
+## Replay defaults
+
+A provider that replays an earlier call applies its own default to the argument root.
+A nullish default replaces only null with an empty object. A truthy default replaces
+every falsy root, so null, `false`, zero and the empty string all become one. A
+supplied empty array or object is truthy and stays as recorded, and every nonempty
+root of any kind is replayed unchanged. The same default decides the argument value of
+a call whose service data carries none or carries null.
+
+The replay default is one shared operation rather than a rule per provider, so the two
+policies differ only in which roots they replace.
+
 ## Checking without conversion
 
 `maestro_models::arguments::validation::validate_schema` checks an original JSON
