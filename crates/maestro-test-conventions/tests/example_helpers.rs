@@ -43,6 +43,31 @@ const BYPASSES: &[Bypass] = &[
         "example_support::release_all",
     ),
     (
+        "qualified_serde_example.rs",
+        "//! Qualified.\n/// Decodes the member through a qualified type.\nfn parameters(m: &Value) -> Value {\n    serde_json::from_str::<serde_json::Value>(m[\"parameters\"].as_str().unwrap()).unwrap()\n}\n",
+        "example_support::decoded",
+    ),
+    (
+        "qualified_nested_example.rs",
+        "//! Nested.\n/// Decodes the member through a nested generic type.\nfn parameters(m: &Value) -> Value {\n    serde_json::from_str::<Map<String, Value>>(m[\"parameters\"].as_str().unwrap()).unwrap()\n}\n",
+        "example_support::decoded",
+    ),
+    (
+        "receiver_example.rs",
+        "//! Receiver.\n/// Decodes the member through a parenthesised receiver.\nfn parameters(m: &Value) -> Value {\n    serde_json::from_str((m[\"parameters\"]).as_str().unwrap()).unwrap()\n}\n",
+        "example_support::decoded",
+    ),
+    (
+        "nested_receiver_example.rs",
+        "//! Nested.\n/// Decodes the member through a doubly nested expression.\nfn parameters(m: &Value) -> Value {\n    serde_json::from_str(&(m[\"p\"]).as_str().unwrap().to_owned()).unwrap()\n}\n",
+        "example_support::decoded",
+    ),
+    (
+        "closure_decode_example.rs",
+        "//! Closure.\n/// Decodes the member from a closure.\nfn parameters(m: &Value) -> Value {\n    let decode = || serde_json::from_str(m[\"parameters\"].as_str().unwrap()).unwrap();\n    decode()\n}\n",
+        "example_support::decoded",
+    ),
+    (
         "method_decode_example.rs",
         "//! Method.\n/// Decodes the member inside a method.\nstruct Recorded;\nimpl Recorded {\n    /// Reads the recorded parameters.\n    fn parameters(&self, recorded: &str) -> Value {\n        serde_json::from_str::<Value>(recorded[\"parameters\"].as_str().unwrap()).unwrap()\n    }\n}\n",
         "example_support::decoded",
@@ -92,7 +117,7 @@ fn example_helpers_accept_the_shared_calls() {
         &workspace,
         "maestro-extensions-wasm",
         "src/tests/hello_example.rs",
-        "//! Hello.\n/// Releases the single tool the example registered.\nfn greet(host: &Record) {\n    release_all(host, &[\"tool hello\"]);\n    let _ = decoded(registered, \"parameters\");\n    let _ = serde_json::from_str(include_str!(\"hello_expected.json\"));\n    let _ = row[\"duration\"].as_str();\n}\n",
+        "//! Hello.\n/// Releases the single tool the example registered.\nfn greet(host: &Record) {\n    release_all(host, &[\"tool hello\"]);\n    let _ = decoded(registered, \"parameters\");\n    let _ = serde_json::from_str(include_str!(\"hello_expected.json\"));\n    let _ = serde_json::from_str::<Value>(document);\n    let _ = serde_json::from_str::<Map<String, Value>>(&body[\"document\"]);\n    let _ = row[\"duration\"].as_str();\n}\n",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }

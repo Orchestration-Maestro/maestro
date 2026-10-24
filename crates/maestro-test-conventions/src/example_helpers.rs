@@ -22,7 +22,9 @@ const RELEASED: &str = "example_support::release_all";
 /// The shared decoding and registration release live once in the example support
 /// module; a per-example test that repeats one of them is reported with its file
 /// and line. Each rule matches the operation's token fragment, so a copy inside a
-/// macro argument, a closure or a method is rejected like a bare call.
+/// macro argument, a closure or a method is rejected like a bare call. Only one call
+/// expression at a time is judged: a decode split over statements through an
+/// intermediate binding repeats no fragment and is not reported.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = Vec::new();
     for member in members.iter().filter(|member| member.name == GUEST) {
@@ -95,42 +97,36 @@ fn inline_copies(tokens: TokenStream, found: &mut Vec<(usize, String)>) {
     }
 }
 
-/// The argument tokens of the call whose callee starts at `index`, past a turbofish.
+/// The argument tokens of the call whose callee starts at `index`.
+///
+/// Everything between the callee and its first parenthesised group is skipped, so a
+/// turbofish naming a qualified or nested type still reaches the call's arguments.
 fn arguments(tokens: &[TokenTree], index: usize) -> Option<TokenStream> {
-    let mut depth = 0usize;
-    for token in &tokens[index + 1..] {
-        match token {
-            TokenTree::Group(group) if depth == 0 => {
-                return (group.delimiter() == Delimiter::Parenthesis).then(|| group.stream());
-            }
-            TokenTree::Punct(punct) if punct.as_char() == '<' => depth += 1,
-            TokenTree::Punct(punct) if punct.as_char() == '>' && depth > 0 => depth -= 1,
-            TokenTree::Punct(punct) if depth == 0 && punct.as_char() == ':' => {}
-            TokenTree::Group(_) | TokenTree::Ident(_) | TokenTree::Literal(_) if depth > 0 => {}
-            _ => return None,
+    tokens[index + 1..].iter().find_map(|token| match token {
+        TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
+            Some(group.stream())
         }
-    }
-    None
+        _ => None,
+    })
 }
 
 /// Whether these argument tokens take an indexed member as a string.
 fn decodes_member(tokens: TokenStream) -> bool {
-    let tokens: Vec<TokenTree> = tokens.into_iter().collect();
-    for (index, token) in tokens.iter().enumerate() {
-        if let TokenTree::Group(group) = token {
-            if group.delimiter() == Delimiter::Bracket && reads_text(&tokens, index) {
-                return true;
-            }
-            if decodes_member(group.stream()) {
-                return true;
-            }
-        }
-    }
-    false
+    let (mut indexed, mut text) = (false, false);
+    marks(tokens, &mut indexed, &mut text);
+    indexed && text
 }
 
-/// Whether the group at `index` is an index followed by `.as_str`.
-fn reads_text(tokens: &[TokenTree], index: usize) -> bool {
-    matches!(tokens.get(index + 1), Some(TokenTree::Punct(punct)) if punct.as_char() == '.')
-        && matches!(tokens.get(index + 2), Some(TokenTree::Ident(ident)) if ident == "as_str")
+/// Flag whether the flattened `tokens` hold an index group and an `as_str` ident.
+fn marks(tokens: TokenStream, indexed: &mut bool, text: &mut bool) {
+    for token in tokens {
+        match token {
+            TokenTree::Group(group) => {
+                *indexed |= group.delimiter() == Delimiter::Bracket;
+                marks(group.stream(), indexed, text);
+            }
+            TokenTree::Ident(ident) => *text |= ident == "as_str",
+            _ => {}
+        }
+    }
 }
