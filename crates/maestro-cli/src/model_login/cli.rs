@@ -105,7 +105,7 @@ async fn login(
         };
         selected
     } else if providers.iter().any(|provider| provider.id() == requested) {
-        requested.to_owned()
+        requested
     } else {
         console.write(
             &format!(
@@ -116,14 +116,14 @@ async fn login(
         return Ok(1);
     };
     console.write(&format!("Logging in to {provider_id}...\n"), false);
-    authorize(&provider_id, get_provider, console).await
+    authorize(provider_id, get_provider, console).await
 }
 
 /// Ask for one snapshot position and return the selected identifier.
-async fn choose_provider(
-    providers: &[OAuthProviderHandle],
+async fn choose_provider<'a>(
+    providers: &'a [OAuthProviderHandle],
     console: &dyn AccountConsole,
-) -> Result<Option<String>, Failure> {
+) -> Result<Option<&'a str>, Failure> {
     let input = console.create_interface();
     let guard = InputGuard(Arc::clone(&input));
     console.write("Select a provider:\n\n", false);
@@ -139,7 +139,7 @@ async fn choose_provider(
         console.write("Invalid selection\n", true);
         return Ok(None);
     };
-    Ok(Some(provider.id().to_owned()))
+    Ok(Some(provider.id()))
 }
 
 /// The snapshot provider that one complete numbered answer selects.
@@ -172,22 +172,11 @@ async fn authorize(
         console: Arc::clone(&console),
         input,
     });
-    let outcome = match provider.login(callbacks, None).await {
-        Ok(credentials) => store(provider_id, credentials),
-        Err(error) => Err(Box::new(error) as Failure),
-    };
-    match outcome {
-        Ok(()) => {
-            console.write(&format!("\nCredentials saved to {AUTH_FILE}\n"), false);
-            drop(guard);
-            Ok(0)
-        }
-        Err(failure) => {
-            drop(guard);
-            console.write(&format!("Error: {failure}\n"), true);
-            Ok(1)
-        }
-    }
+    let credentials = provider.login(callbacks, None).await?;
+    store(provider_id, credentials)?;
+    console.write(&format!("\nCredentials saved to {AUTH_FILE}\n"), false);
+    drop(guard);
+    Ok(0)
 }
 
 /// Add one login to the account file under its provider key.
