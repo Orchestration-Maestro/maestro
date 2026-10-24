@@ -3,14 +3,18 @@
 use super::connection::Connection;
 use super::ui::RpcUi;
 use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, write_record};
-use crate::agent_session::ExtensionBindings;
+use crate::agent_session::{AgentSession, ExtensionBindings};
 use crate::runtime::agent_session_runtime::AgentSessionRuntime;
-use maestro_extensions::EventError;
-use maestro_extensions::types::ExtensionUIContext;
+use maestro_extensions::types::{ExtensionUIContext, SessionChangeResult};
+use maestro_extensions::{EventError, ExtensionCommandContextActions};
 use maestro_models::DiagnosticErrorInfo;
 use maestro_process::TerminationSignal;
 use serde::Serialize;
-use std::{cell::RefCell, io, rc::Rc};
+use std::{
+    cell::RefCell,
+    io,
+    rc::{Rc, Weak},
+};
 use tokio::sync::oneshot;
 
 /// Receives how the connection ended.
@@ -58,6 +62,7 @@ impl Connection {
             output,
             options,
             early: RefCell::new(Some(Vec::new())),
+            bound: tokio::sync::Notify::new(),
             lifecycle: RefCell::new(Lifecycle {
                 finish: Some(finish),
                 ..Lifecycle::default()
@@ -97,6 +102,7 @@ impl Connection {
         for record in early.into_iter().flatten() {
             self.spawn(record);
         }
+        self.bound.notify_one();
     }
 
     /// Binds the current session's extensions to the protocol, then replaces the event
@@ -125,7 +131,7 @@ impl Connection {
         let output = Rc::clone(&self.output);
         ExtensionBindings {
             ui_context: Some(ExtensionUIContext::new(Rc::clone(&self.ui) as Rc<_>)),
-            command_context_actions: Some(self.runtime.command_context_actions()),
+            command_context_actions: Some(command_actions(Rc::downgrade(&self.runtime))),
             shutdown_handler: Some(Rc::new(move || {
                 if let Some(connection) = weak.upgrade() {
                     connection.lifecycle.borrow_mut().shutdown_requested = true;
@@ -204,5 +210,73 @@ impl Connection {
         if let Some(finish) = finish {
             drop(finish.send(outcome));
         }
+    }
+}
+
+/// The current runtime, while the connection's caller keeps it.
+fn current(runtime: &Weak<AgentSessionRuntime>) -> Result<Rc<AgentSessionRuntime>, EventError> {
+    runtime
+        .upgrade()
+        .ok_or_else(|| "the session runtime has ended".into())
+}
+
+/// The command-context operations, forwarded to the runtime's current owners.
+fn command_actions(runtime: Weak<AgentSessionRuntime>) -> ExtensionCommandContextActions {
+    let (idle, new, fork, navigate, switch, reload) = (
+        runtime.clone(),
+        runtime.clone(),
+        runtime.clone(),
+        runtime.clone(),
+        runtime.clone(),
+        runtime,
+    );
+    ExtensionCommandContextActions {
+        wait_for_idle: Rc::new(move || {
+            let runtime = current(&idle);
+            Box::pin(async move {
+                runtime?.session().agent().wait_for_idle().await;
+                Ok(())
+            })
+        }),
+        new_session: Rc::new(move |options| {
+            let runtime = current(&new);
+            Box::pin(async move { Ok(runtime?.new_session(options.unwrap_or_default()).await?) })
+        }),
+        fork: Rc::new(move |entry_id, options| {
+            let runtime = current(&fork);
+            Box::pin(async move {
+                let result = runtime?
+                    .fork(&entry_id, options.unwrap_or_default())
+                    .await?;
+                Ok(SessionChangeResult {
+                    cancelled: result.cancelled,
+                })
+            })
+        }),
+        navigate_tree: Rc::new(move |target_id, options| {
+            let runtime = current(&navigate);
+            Box::pin(async move {
+                let session: Rc<AgentSession> = runtime?.session();
+                let result = session
+                    .navigate_tree(&target_id, options.unwrap_or_default())
+                    .await?;
+                Ok(SessionChangeResult {
+                    cancelled: result.cancelled,
+                })
+            })
+        }),
+        switch_session: Rc::new(move |session_path, options| {
+            let runtime = current(&switch);
+            Box::pin(async move {
+                let switched = runtime?
+                    .switch_session(&session_path, None, options.unwrap_or_default())
+                    .await?;
+                Ok(switched)
+            })
+        }),
+        reload: Rc::new(move || {
+            let runtime = current(&reload);
+            Box::pin(async move { Ok(runtime?.session().reload().await?) })
+        }),
     }
 }

@@ -14,6 +14,7 @@ mod json_dependencies;
 mod message_renderer_ownership;
 mod quality;
 mod repetition;
+mod rpc_ownership;
 mod support;
 mod temp_directories;
 mod test_directories;

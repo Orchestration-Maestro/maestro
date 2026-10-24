@@ -7,4 +7,6 @@ pub mod clipboard_image;
 pub mod clipboard_native;
 
 pub(crate) mod lock;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) mod task;
 pub(crate) mod uri;

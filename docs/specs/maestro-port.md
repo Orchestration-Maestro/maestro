@@ -582,6 +582,9 @@ lets extension tests and doctests build a real model catalog over in-memory
 credential storage; it permits no normal or build dependency on credentials.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development
 dependency, supplies terminal newline normalization for checked-child tests.
+`maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
+development dependencies, let the standard-stream child tests build the real export
+rendering environment; the adapter's normal dependency stays `maestro-app` alone.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -608,8 +611,9 @@ fixtures, and it is excluded from the foundation utility permission. Its only in
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
-`maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
-`maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
+`maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
+`maestro-test-conventions`, `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`
+and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
 non-native declaration, no other consumer and no other `maestro-test-*` crate is
 admitted by this rule. The terminal scenario owner below states its own single
@@ -638,8 +642,8 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
-`maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-session`,
-`maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
+`maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
+`maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
 `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
 `maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
 `maestro-workspace`; a caller
@@ -749,8 +753,11 @@ Maestro has one protocol: the 29 established session commands and all workspace 
 command set, the established `type`-tagged request and `response` envelopes, one `type`-tagged event
 format and one protocol version on both stdio and daemon sockets. The 29 session commands keep their
 exact wire bytes, fields, omission/null rules and results. Workspace commands are additive on stdio.
-`maestro-protocol` owns the records and schema; `maestro-json::jsonl` owns JSONL framing;
-`maestro-rpc` presents the shared contract through `maestro-app`. Live screen traffic stays binary in
+`maestro-protocol` owns the generic request and response envelopes, the workspace records and
+their schema; `maestro-app::rpc_types` owns the session records and the composed command
+family; `maestro-json::jsonl` owns JSONL framing. `maestro-app::rpc_mode` is the one connection
+runner: it serves a local session runtime over a caller's line reader and writer and returns
+how the connection ended. `maestro-rpc` is its standard-stream adapter, which exits the process. Live screen traffic stays binary in
 a channel of the same protocol and version. Plain JSONL clients need no new header, handshake or
 version member, and receive no unsolicited startup record or binary bytes.
 

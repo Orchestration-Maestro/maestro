@@ -7,6 +7,7 @@ use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, write_record};
 use crate::agent_session::AgentSession;
 use crate::rpc_types::{RpcCommandBody, RpcCommandRejection, RpcResponse, parse_rpc_command};
 use crate::runtime::agent_session_runtime::AgentSessionRuntime;
+use crate::utils::task::start_now;
 use maestro_json::jsonl::JsonlLineSplitter;
 use serde::Serialize;
 use serde_json::Value;
@@ -106,6 +107,8 @@ pub(super) struct Connection {
     pub(super) options: RpcModeOptions,
     /// Records admitted during the initial binding, in arrival order; `None` once bound.
     pub(super) early: RefCell<Option<Vec<Record>>>,
+    /// Notified once the initial binding has handled the records that arrived meanwhile.
+    pub(super) bound: tokio::sync::Notify,
     /// Shutdown and subscription state.
     pub(super) lifecycle: RefCell<super::lifecycle::Lifecycle>,
 }
@@ -152,8 +155,8 @@ impl Connection {
         }
     }
 
-    /// Ends the input: shuts down while handling the final line, or finishes at once when a
-    /// shutdown is already running.
+    /// Ends the input: once the initial binding is done, shuts down while handling the final
+    /// line, or finishes at once when a shutdown is already running.
     async fn end(
         self: &Rc<Self>,
         tail: Option<String>,
@@ -161,6 +164,14 @@ impl Connection {
     ) -> io::Result<RpcConnectionOutcome> {
         if self.lifecycle.borrow().shutting_down {
             return Ok(RpcConnectionOutcome::Eof);
+        }
+        // Input is served after the initial binding, so its end waits for the binding too.
+        if self.early.borrow().is_some() {
+            tokio::select! {
+                biased;
+                outcome = &mut *finished => return outcome.map_err(io::Error::other)?,
+                () = self.bound.notified() => {}
+            }
         }
         let tail = tail.and_then(|line| self.admit(&line));
         let shutdown =
@@ -206,12 +217,14 @@ impl Connection {
         }
     }
 
-    /// Handles `record` on its own task, so commands overlap.
+    /// Handles `record` at once and finishes it on its own task, so commands overlap and a
+    /// command that answers without waiting is answered before the next line is read.
     pub(super) fn spawn(self: &Rc<Self>, record: Record) {
         let connection = Rc::clone(self);
-        drop(tokio::task::spawn_local(async move {
+        let task = Box::pin(async move {
             connection.handle(record).await;
-        }));
+        });
+        start_now(task, |task| drop(tokio::task::spawn_local(task)));
     }
 
     /// Answers `record`; a handled command checks for a requested shutdown afterwards.

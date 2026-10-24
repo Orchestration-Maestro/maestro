@@ -4375,6 +4375,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-rpc"
+version = "0.1.0"
+dependencies = [
+ "maestro-app",
+ "maestro-dependencies",
+ "maestro-test-directory",
+ "maestro-test-process",
+ "maestro-theme",
+ "maestro-tui-crossterm",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "maestro-session"
 version = "0.1.0"
 dependencies = [

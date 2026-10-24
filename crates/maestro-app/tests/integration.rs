@@ -57,6 +57,7 @@ mod docx_tables;
 mod docx_values;
 mod docx_xml;
 mod extension_context_exports;
+mod extension_ui;
 mod extension_ui_exports;
 #[path = "docx_support/font_resources.rs"]
 mod font_resources;
@@ -104,6 +105,8 @@ mod sdk_root_exports;
 mod self_update_native;
 mod self_update_selection;
 mod server_commands;
+mod server_events;
+mod server_lifetime;
 #[cfg(unix)]
 #[path = "support/service_observations.rs"]
 mod service_observations;
@@ -180,5 +183,6 @@ mod tree_interface;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/watching.rs"]
 mod watching;
+mod wire_records;
 mod workbook_fixture;
 mod workbooks;

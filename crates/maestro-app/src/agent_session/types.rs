@@ -216,7 +216,7 @@ pub enum CycleDirection {
 }
 
 /// The model selected by cycling.
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelCycleResult {
     /// The selected model.
@@ -228,7 +228,7 @@ pub struct ModelCycleResult {
 }
 
 /// Token totals of a session.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionStatsTokens {
     /// Input tokens.
@@ -244,11 +244,11 @@ pub struct SessionStatsTokens {
 }
 
 /// Session statistics.
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionStats {
     /// The session file, absent in memory.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_file: Option<String>,
     /// The session identity.
     pub session_id: String,
@@ -267,7 +267,7 @@ pub struct SessionStats {
     /// Total cost.
     pub cost: f64,
     /// Context usage, absent without a context window.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub context_usage: Option<maestro_extensions::ContextUsage>,
 }
 
@@ -285,7 +285,7 @@ pub struct NavigateTreeResult {
 }
 
 /// A user message a session can be forked from.
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ForkMessage {
     /// The message entry.
