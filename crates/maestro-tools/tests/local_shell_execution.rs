@@ -86,7 +86,7 @@ fn local_bash_forwards_factory_shell_path_each_run() {
             .unwrap();
         assert_eq!(first.exit_code, Some(7.0));
         std::fs::remove_file(&path).unwrap();
-        std::os::unix::fs::symlink("/bin/false", &path).unwrap();
+        std::os::unix::fs::symlink("/usr/bin/false", &path).unwrap();
         let second = operations
             .exec(
                 "exit 7",
