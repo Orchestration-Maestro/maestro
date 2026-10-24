@@ -1,7 +1,7 @@
 //! The loaded-resource listing through the mode's startup and retained sections.
 use super::{
-    HomeLookup, ResourceItem, build_scope_groups, format_context_path, format_display_path,
-    format_scope_groups, get_short_path,
+    HomeLookup, ResourceItem, ShowLoadedResourcesOptions, build_scope_groups, format_context_path,
+    format_display_path, format_scope_groups, get_short_path,
 };
 use crate::interactive_mode::startup::ExpandableText;
 use crate::interactive_mode::tests::{Setup, World, isolated_case, light, painted, roles};
@@ -15,6 +15,7 @@ use serde::Deserialize;
 use std::{any::Any, cell::Cell, io, path::Path, rc::Rc};
 
 mod loaded;
+mod loaded_support;
 
 /// Every recorded listing case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_resources.json");
@@ -115,7 +116,7 @@ struct Listing {
 }
 
 /// How the mode starts.
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Clone, Copy)]
 #[serde(deny_unknown_fields, default)]
 struct Startup {
     /// Whether startup is quiet.
@@ -135,7 +136,7 @@ struct Located {
 }
 
 /// One recorded skill or prompt template.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 struct Recorded {
     /// The resource file.
@@ -347,7 +348,11 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
     world.mode.tool_output_expanded.set(tool_output_expanded);
     // A forced listing is a later call; startup's own listing goes through `init`.
     if listing.force {
-        world.mode.show_loaded_resources(true).unwrap();
+        let options = ShowLoadedResourcesOptions {
+            force: true,
+            ..ShowLoadedResourcesOptions::default()
+        };
+        world.mode.show_loaded_resources(options).unwrap();
     } else {
         world.mode.init().unwrap();
     }
@@ -588,7 +593,13 @@ fn listed(directory: &Path, setup: Setup, home: &HomeLookup<'_>) -> Result<Vec<S
     world.mode.tool_output_expanded.set(true);
     world
         .mode
-        .list_loaded_resources(true, home)
+        .list_loaded_resources(
+            ShowLoadedResourcesOptions {
+                force: true,
+                ..ShowLoadedResourcesOptions::default()
+            },
+            home,
+        )
         .map(|()| world.mode.chat_container.render(WIDTH))
         .map_err(|error| error.to_string())
 }
