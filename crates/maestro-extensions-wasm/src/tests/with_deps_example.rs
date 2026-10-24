@@ -91,7 +91,7 @@ fn run_group(group: &str, count: usize) -> Result<(), String> {
                 &invoked(&host, &exports, key, params(&row, false)).await,
             );
         }
-        release_all(&host);
+        assert_eq!(release_all(&host), ["tool parse_duration"]);
         Ok(())
     })
 }
@@ -103,7 +103,7 @@ fn with_deps_registers_duration_schema() -> Result<(), String> {
         let (host, ..) = registered::<WithDeps>("tool parse_duration").await?;
         assert_metadata(&host.observed().tools, &corpus()["metadata"]);
         assert!(host.observed().callback("prepare parse_duration").is_err());
-        release_all(&host);
+        assert_eq!(release_all(&host), ["tool parse_duration"]);
         Ok(())
     })
 }
@@ -162,7 +162,7 @@ fn with_deps_ignores_unused_invocation_handles() -> Result<(), String> {
             &row,
             &invoked(&host, &exports, key, params(&row, false)).await,
         );
-        release_all(&host);
+        assert_eq!(release_all(&host), ["tool parse_duration"]);
         Ok(())
     })
 }

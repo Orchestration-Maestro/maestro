@@ -1193,7 +1193,7 @@ fn standalone_inputs(source: &Path, package: &Path) {
 }
 
 /// The shipped examples and their index page, as authors write them.
-fn shipped_examples() -> [(&'static str, &'static str); 5] {
+fn shipped_examples() -> [(&'static str, &'static str); 6] {
     [
         (
             "examples/extensions/hello.rs",

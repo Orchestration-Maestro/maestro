@@ -36,7 +36,7 @@ fn hello_registers_the_greeting_schema() -> Result<(), String> {
         let (host, ..) = registered::<Hello>("tool hello").await?;
         assert_metadata(&host.observed().tools, &corpus()["metadata"]);
         assert!(host.observed().callback("prepare hello").is_err());
-        release_all(&host);
+        assert_eq!(release_all(&host), ["tool hello"]);
         Ok(())
     })
 }
@@ -63,7 +63,7 @@ fn hello_preserves_supplied_names() -> Result<(), String> {
                 .await?;
             assert_eq!(result_value(&actual), row["result"]);
         }
-        release_all(&host);
+        assert_eq!(release_all(&host), ["tool hello"]);
         Ok(())
     })
 }
@@ -91,7 +91,7 @@ fn hello_ignores_unused_invocation_handles() -> Result<(), String> {
             .await?;
         assert_eq!(result_value(&actual), corpus()["rows"][0]["result"]);
         assert!(host.observed().updates.is_empty());
-        release_all(&host);
+        assert_eq!(release_all(&host), ["tool hello"]);
         Ok(())
     })
 }
