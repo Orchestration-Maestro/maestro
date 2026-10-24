@@ -1,7 +1,7 @@
 //! Disposable native histories, including one whose next publication really fails.
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_directory::Scratch;
+use maestro_test_directory::{Scratch, temporary_root};
 use serde_json::json;
 
 /// `name` joined below `root` as the stored string spelling.
@@ -12,7 +12,7 @@ pub fn below(root: &std::path::Path, name: &str) -> String {
 /// A disposable root spelled as the temporary directory spells it, not canonicalized,
 /// so a fixture can supply a spelling whose dot segments survive joining.
 pub fn uncanonicalized_scratch() -> Scratch {
-    Scratch::new_in(&std::env::temp_dir()).unwrap()
+    Scratch::new_in(&temporary_root()).unwrap()
 }
 
 /// `name` joined below `root` as the stored string spelling, asserting that the joined

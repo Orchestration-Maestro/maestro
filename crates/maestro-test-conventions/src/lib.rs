@@ -78,11 +78,12 @@ mod time_limits;
 /// line, wherever the copy sits.
 ///
 /// Test code in the crates the temporary-directory migration has reached may not
-/// create or remove a directory derived from `std::env::temp_dir()`, including
-/// through a local function that returns such a path. Diagnostics name
-/// `TEST_DIRECTORY_CALLERS`; the owner parent, an uncreated socket path and
-/// platform-directory observations remain accepted. The scope grows with each
-/// migration batch and disappears when every crate uses the owner.
+/// name the platform temporary directory itself: not as a call, a value or a macro
+/// argument inside test-owned code, and not as an import anywhere in the crate,
+/// whatever the alias. Diagnostics name `TEST_DIRECTORY_CALLERS`; the owner's
+/// `temporary_root` accessor, the owner parent and an uncreated socket path remain
+/// accepted. The scope grows with each migration batch and disappears when every
+/// crate uses the owner.
 ///
 /// # Errors
 ///

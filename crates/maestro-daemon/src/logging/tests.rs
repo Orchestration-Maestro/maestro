@@ -1,6 +1,6 @@
 //! File rotation behavior.
 use super::writer::*;
-use maestro_test_directory::Scratch;
+use maestro_test_directory::{Scratch, temporary_root};
 use std::{fs, io::Write, path::PathBuf};
 use tracing_subscriber::fmt::writer::MakeWriter;
 
@@ -225,7 +225,7 @@ fn emit_lifecycle_events() {
 #[test]
 fn log_roles_filters_and_failures_use_one_writer() {
     // Windows runs this too: DaemonPaths joins with '/', which a canonical `\\?\` root refuses.
-    let scratch = Scratch::new_in(&std::env::temp_dir()).unwrap();
+    let scratch = Scratch::new_in(&temporary_root()).unwrap();
     let root = scratch.path();
     let paths = crate::paths::DaemonPaths::new(root.to_str().unwrap(), Some("work")).unwrap();
     for (role, filter, has_debug, has_info, has_warn) in [

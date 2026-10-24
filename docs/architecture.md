@@ -292,17 +292,18 @@ lent. A per-example test beside it that writes the decode or the release walk
 inline is rejected with its file and line, wherever the copy sits: a bare call, a
 macro argument, a closure or a method.
 
-Conventions reject a temporary directory that migrated-crate test code creates or
-removes itself: a path derived from `std::env::temp_dir()` through `join`,
-`parent` or a local function returning one, passed to `create_dir`,
-`create_dir_all`, `remove_dir` or `remove_dir_all`. Derived paths reach the check
-through local bindings and through functions whose body returns one; nested
-functions use their own bindings. The check covers the crates the migration onto
-`maestro-test-directory` has reached, and each batch adds its crates until the
-last one removes the scope. Taking the platform directory as the owner's parent
-with `Scratch::new_in`, an uncreated socket path and observations of the platform
-directory stay accepted. The diagnostic names `TEST_DIRECTORY_CALLERS`, where a
-new crate asks for the owner.
+Conventions reject a platform temporary directory that migrated-crate test code
+names itself. Test-owned code is a test file layout and every item inside an
+inherited `cfg(test)` context, closures and macro arguments included; the
+`temp_dir` spelling is rejected there as a call, as a value or inside macro
+tokens, and its import is rejected anywhere in the crate, whatever the alias.
+The check follows no bindings or data flow. Tests that observe the platform
+directory, name an uncreated socket path under it or pass it as the owner's
+parent read it through `maestro_test_directory::temporary_root`, and directory
+creation and removal go through `Scratch`. The check covers the crates the
+migration onto `maestro-test-directory` has reached, and each batch adds its
+crates until the last one removes the scope. The diagnostic names
+`TEST_DIRECTORY_CALLERS`, where a new crate asks for the owner.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.

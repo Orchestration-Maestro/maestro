@@ -1,6 +1,7 @@
 //! Real commands through the runtime's public process and terminal owners.
 use super::*;
 use crate::pane::launch_env::PaneLaunchEnv;
+use maestro_test_directory::temporary_root;
 use maestro_test_process::{TestProcess, run_alone};
 use std::{ffi::OsString, io};
 
@@ -38,7 +39,7 @@ fn config(args: &[String]) -> (PaneRuntimeConfig, mpsc::Receiver<AppEvent>, Arc<
             executable: std::env::current_exe().unwrap(),
             args: args.iter().map(OsString::from).collect(),
         },
-        socket: std::env::temp_dir().join("maestro-test.sock"),
+        socket: temporary_root().join("maestro-test.sock"),
         executable: None,
     };
     (config, receiver, notify)
@@ -60,7 +61,7 @@ where
                 let runtime = PaneRuntime::spawn_shell_command(
                     config,
                     command,
-                    std::env::temp_dir(),
+                    temporary_root(),
                     &PaneLaunchEnv::default(),
                 )
                 .unwrap();
@@ -254,7 +255,7 @@ fn runtime_follow_cwd_falls_back_to_reported_pane_cwd_without_foreground_group()
         return;
     }
     with_runtime(name, "read -r line", |runtime, _, _| async move {
-        let cwd = std::env::temp_dir();
+        let cwd = temporary_root();
         runtime.shared.publish_cwd(cwd.clone());
         runtime.io.release_after_commit().await.unwrap();
         assert_eq!(runtime.follow_cwd().await, Some(cwd));
@@ -824,7 +825,7 @@ async fn check_manifest_resets(args: &[String]) {
     let runtime = PaneRuntime::spawn_shell_command(
         runtime_config,
         "read -r line",
-        std::env::temp_dir(),
+        temporary_root(),
         &PaneLaunchEnv::default(),
     )
     .unwrap();

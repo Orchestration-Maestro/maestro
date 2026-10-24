@@ -1,13 +1,14 @@
 //! Snapshot effects and their ordered diagnostic events.
 use super::*;
 use crate::logging::tests::capture;
+use maestro_test_directory::{Scratch, temporary_root};
 use maestro_workspace::persist::snapshot::{SNAPSHOT_VERSION, SessionHistorySnapshot};
 use std::fs;
 
 #[test]
 fn daemon_snapshot_wrappers_preserve_save_and_clear_order() {
     // Windows runs this too: DaemonPaths joins with '/', which a canonical `\\?\` root refuses.
-    let scratch = maestro_test_directory::Scratch::new_in(&std::env::temp_dir()).unwrap();
+    let scratch = Scratch::new_in(&temporary_root()).unwrap();
     let paths = DaemonPaths::new(scratch.path().to_str().unwrap(), Some("work")).unwrap();
     let snapshot: SessionSnapshot = serde_json::from_value(serde_json::json!({
         "version":SNAPSHOT_VERSION,"workspaces":[],"active":null,"selected":0

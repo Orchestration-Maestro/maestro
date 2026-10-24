@@ -2,7 +2,7 @@
 #![cfg(test)]
 use super::{ReadonlySessionManager, generate_id};
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_test_directory::Scratch;
+use maestro_test_directory::{Scratch, temporary_root};
 use serde::Deserialize;
 use serde_json::Value;
 use uuid::Uuid;
@@ -149,7 +149,7 @@ fn failed_probe_releases_its_owned_file() {
         }
     }
     let released = std::rc::Rc::new(std::cell::Cell::new(false));
-    let path = std::env::temp_dir().join(format!("maestro-reader-{}", Uuid::new_v4()));
+    let path = temporary_root().join(format!("maestro-reader-{}", Uuid::new_v4()));
     let reader = Failing {
         file: Some(std::fs::File::create(&path).unwrap()),
         released: released.clone(),
@@ -161,7 +161,7 @@ fn failed_probe_releases_its_owned_file() {
     assert!(released.get());
     std::fs::remove_file(path).unwrap();
     #[cfg(unix)]
-    assert!(super::files::probe(std::fs::File::open(std::env::temp_dir()).unwrap()).is_err());
+    assert!(super::files::probe(std::fs::File::open(temporary_root()).unwrap()).is_err());
 }
 
 #[cfg(not(target_arch = "wasm32"))]
