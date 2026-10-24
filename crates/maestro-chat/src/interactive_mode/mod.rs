@@ -138,18 +138,12 @@ impl InteractiveMode {
             operations.clone(),
         );
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
-        let hide_thinking_block = session
-            .settings_manager()
-            .borrow()
-            .get_hide_thinking_block();
         footer.set_auto_compact_enabled(session.auto_compaction_enabled());
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = session.settings_manager().borrow().get_theme();
+        let settings = session.settings_manager();
+        let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
-        let hide_thinking_block = session
-            .settings_manager()
-            .borrow()
-            .get_hide_thinking_block();
+        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
             options,

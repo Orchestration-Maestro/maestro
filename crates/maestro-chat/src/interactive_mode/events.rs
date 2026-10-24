@@ -20,7 +20,7 @@ impl InteractiveMode {
                         return;
                     };
                     if let Err(error) = mode.handle_event(event) {
-                        mode.report(error);
+                        mode.report(Err(error));
                     }
                 }));
         self.unsubscribe.replace(Some(Box::new(removal)));
@@ -68,12 +68,5 @@ impl InteractiveMode {
         };
         self.ui.terminal().borrow_mut().set_title(&title)?;
         Ok(())
-    }
-
-    /// Hands a failure to the terminal runtime's error route.
-    fn report(&self, error: Box<dyn Error>) {
-        self.tool_environment
-            .runtime
-            .spawn_local(Box::pin(std::future::ready(Err(error))));
     }
 }
