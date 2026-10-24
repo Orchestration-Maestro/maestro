@@ -10,6 +10,7 @@ use tokio::signal::unix::Signal;
 use tokio::time::{Instant, sleep_until};
 
 use super::{Shared, descriptor::Source};
+use crate::output_errors::FailureSource;
 use maestro_text::Utf8Stream;
 
 /// The most bytes one read takes.
@@ -69,7 +70,7 @@ impl Input {
                 () = until(deadline) => Wake::Deadline,
             };
             if let Err(error) = self.handle(wake, &chunk) {
-                return self.shared.fail(error);
+                return self.shared.fail(FailureSource::Input, error);
             }
         }
     }

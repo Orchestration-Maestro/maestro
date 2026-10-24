@@ -1877,6 +1877,48 @@ fn extension_credentials_edge_is_development_only() {
 }
 
 #[test]
+fn rpc_child_rendering_edges_are_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-rpc", "maestro-tui-crossterm"]);
+    let application = "maestro-app = { path = \"../maestro-app\" }";
+    for target in ["maestro-tui-crossterm"] {
+        for kind in [
+            "dev-dependencies",
+            "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies",
+        ] {
+            workspace.member(
+                "maestro-rpc",
+                "maestro-rpc",
+                &format!(
+                    "[dependencies]\n{application}\n[{kind}]\n{target} = {{ path = \"../{target}\" }}"
+                ),
+            );
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Ok(()),
+                "{kind} {target}"
+            );
+        }
+        for (kind, extra) in DECLARATIONS {
+            let declared = format!("{target} = {{ path = \"../{target}\"{extra} }}");
+            let manifest = if *kind == "dependencies" {
+                format!("[dependencies]\n{application}\n{declared}")
+            } else {
+                format!("[dependencies]\n{application}\n[{kind}]\n{declared}")
+            };
+            workspace.member("maestro-rpc", "maestro-rpc", &manifest);
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!(
+                    "forbidden production dependency: maestro-rpc -> {target}"
+                )),
+                "{kind}{extra} {target}"
+            );
+        }
+    }
+}
+
+#[test]
 fn terminal_example_brand_edge_keeps_required_runtime_dependencies() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-tui-crossterm", "maestro-brand"]);
@@ -2422,6 +2464,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
+    "maestro-rpc",
     "maestro-session",
     "maestro-settings",
     "maestro-terminal",
@@ -3129,4 +3172,56 @@ fn explicit_instruction_paths_share_their_resolver() {
     );
     assert_forwarding_controls();
     assert_tracked_delegation(&sources);
+}
+
+/// The target table the interactive frontend declares its native witness in.
+const WITNESS_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
+
+/// The interactive frontend's manifest, keeping its required edges beside the witness table.
+fn witness_chat(table: &str, extra: &str) -> String {
+    let mut manifest = String::from("[dependencies]\n");
+    for target in required_targets("maestro-chat") {
+        writeln!(
+            manifest,
+            "{} = {{ package = {target:?}, path = \"../{target}\" }}",
+            target.replace('-', "_")
+        )
+        .unwrap();
+    }
+    writeln!(
+        manifest,
+        "[{table}]\nterminal = {{ package = \"maestro-tui-crossterm\", path = \"../maestro-tui-crossterm\"{extra} }}"
+    )
+    .unwrap();
+    manifest
+}
+
+#[test]
+fn interactive_native_witness_edge_is_native_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-tui-crossterm"]);
+    workspace.member(
+        "maestro-chat",
+        "maestro-chat",
+        &witness_chat(WITNESS_DEV, ""),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for table in [
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        workspace.member("maestro-chat", "maestro-chat", &witness_chat(table, ""));
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("maestro-chat: maestro-tui-crossterm is admitted only as a native, non-optional development dependency".to_owned()),
+            "{table}"
+        );
+    }
+    let optional = witness_chat("dev-dependencies", ", optional = true");
+    workspace.member("maestro-chat", "maestro-chat", &optional);
+    assert!(
+        check_workspace(workspace.root.path())
+            .is_err_and(|error| error.contains("dev-dependencies are not allowed to be optional")),
+        "Cargo refuses an optional development declaration"
+    );
 }

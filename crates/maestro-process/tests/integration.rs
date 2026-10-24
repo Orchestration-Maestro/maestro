@@ -7,3 +7,4 @@ mod helper_launches;
 mod pty_children;
 mod streamed_capture;
 mod synchronous_capture;
+mod termination;
