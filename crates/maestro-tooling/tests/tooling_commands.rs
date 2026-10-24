@@ -1213,6 +1213,10 @@ fn shipped_examples() -> &'static [(&'static str, &'static str)] {
             include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
         ),
         (
+            "examples/extensions/model_status.rs",
+            include_str!("../../../examples/extensions/model_status.rs"),
+        ),
+        (
             "examples/extensions/pirate.rs",
             include_str!("../../../examples/extensions/pirate.rs"),
         ),
