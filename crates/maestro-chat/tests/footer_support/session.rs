@@ -17,11 +17,11 @@ pub fn session(
     oauth_provider: Option<&str>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> CreateAgentSessionRuntimeResult {
-    session_over(cwd, oauth_provider, loader, None)
+    with_history(cwd, oauth_provider, loader, None)
 }
 
 /// The same session, over a history file under `session_dir` when supplied.
-pub fn session_over(
+pub fn with_history(
     cwd: &str,
     oauth_provider: Option<&str>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,

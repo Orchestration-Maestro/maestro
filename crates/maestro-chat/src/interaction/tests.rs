@@ -464,7 +464,7 @@ impl Setup {
             .session_history
             .as_ref()
             .map(|d| d.to_str().unwrap().to_owned());
-        let result = session::session_over(
+        let result = session::with_history(
             &cwd,
             None,
             move |inner| {

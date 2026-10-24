@@ -6,7 +6,8 @@ pub use maestro_tools::changes::text::{Change, diff_lines};
 pub use maestro_tools::{
     BashError, BashExecOptions, BashExecResult, BashOperations, BashRenderState, BashSpawnContext,
     BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions, create_bash_tool,
-    create_bash_tool_definition, create_local_bash_operations, utils::environment::get_shell_config,
+    create_bash_tool_definition, create_local_bash_operations,
+    utils::environment::get_shell_config,
 };
 
 pub use maestro_tools::output::render_utils::{
