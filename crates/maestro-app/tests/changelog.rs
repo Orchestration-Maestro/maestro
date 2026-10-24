@@ -7,6 +7,7 @@ use crate::resource_fixtures::{child_stderr, directory_read_error, warnings};
 use maestro_app::{ChangelogEntry, compare_versions, parse_changelog};
 use maestro_test_directory::Scratch;
 use serde::Deserialize;
+use std::path::Path;
 
 /// The recorded fields of one changelog entry.
 #[derive(Debug, Deserialize, PartialEq)]
@@ -182,7 +183,40 @@ fn changelog_decodes_invalid_utf8_lossily() {
     check_file_rows(&rows(), 35..36);
 }
 
-/// The warning line written for an unreadable changelog file.
+/// Parses every recorded read failure under `base`, which names a directory.
+fn parse_read_failures(base: &str) {
+    let rows = rows();
+    let missing = format!("{base}/missing.md");
+    let directory = format!("{base}/unreadable.md");
+    std::fs::create_dir(&directory).unwrap();
+    for (index, row) in rows.iter().enumerate().take(39).skip(36) {
+        let Row::Unreadable { kind, warnings } = row else {
+            panic!("row {index} is not a read failure");
+        };
+        let path = match kind {
+            UnreadableKind::Missing => missing.as_str(),
+            UnreadableKind::Directory => directory.as_str(),
+            UnreadableKind::Nul => "nul\0name",
+        };
+        assert_eq!(Path::new(path).exists(), *warnings == 1, "row {index}");
+        assert!(parse_changelog(path).is_empty(), "row {index}");
+    }
+}
+
+/// Compares the child's standard error with the reference's read warning.
+///
+/// The child parses every recorded failure, so its standard error carries the one warning.
+#[cfg(unix)]
+fn check_read_warning() {
+    let Some((_base, stderr)) = child_stderr("changelog_missing_or_unreadable_is_empty", |base| {
+        parse_read_failures(base);
+    }) else {
+        return;
+    };
+    assert_eq!(warnings(&stderr), [read_warning()]);
+}
+
+/// The warning line written for the changelog path `path`, which is a directory.
 #[cfg(unix)]
 fn read_warning() -> String {
     format!(
@@ -191,43 +225,15 @@ fn read_warning() -> String {
     )
 }
 
-/// Parses every recorded read failure under `base`, which names a directory.
-#[cfg(unix)]
-fn parse_read_failures(base: &str) {
-    let rows = rows();
-    let missing = format!("{base}/missing.md");
-    let directory = format!("{base}/unreadable.md");
-    std::fs::create_dir(&directory).unwrap();
-    for (index, row) in rows.iter().enumerate().take(39).skip(36) {
-        let Row::Unreadable { kind, .. } = row else {
-            panic!("row {index} is not a read failure");
-        };
-        let path = match kind {
-            UnreadableKind::Missing => missing.as_str(),
-            UnreadableKind::Directory => directory.as_str(),
-            UnreadableKind::Nul => "nul\0name",
-        };
-        assert!(parse_changelog(path).is_empty(), "row {index}");
-    }
-}
-
-#[cfg(unix)]
 #[test]
 fn changelog_missing_or_unreadable_is_empty() {
-    let recorded: usize = rows()[36..39]
-        .iter()
-        .map(|row| match row {
-            Row::Unreadable { warnings, .. } => *warnings,
-            _ => panic!("not a read failure"),
-        })
-        .sum();
-    let Some((_base, stderr)) = child_stderr("changelog_missing_or_unreadable_is_empty", |base| {
-        parse_read_failures(base);
-    }) else {
-        return;
-    };
-    assert_eq!(warnings(&stderr), [read_warning()]);
-    assert_eq!(warnings(&stderr).len(), recorded);
+    let scratch = Scratch::new().unwrap();
+    let base = scratch.path().display().to_string();
+    #[cfg(unix)]
+    check_read_warning();
+    if cfg!(not(unix)) {
+        parse_read_failures(&base);
+    }
 }
 
 #[test]
