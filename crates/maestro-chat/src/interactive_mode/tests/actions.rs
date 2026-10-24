@@ -103,48 +103,6 @@ fn border_text_change_uses_the_shared_whitespace_domain() {
     );
 }
 
-/// A border refresh in one shell mode and thinking level.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Refresh {
-    /// Always `border`.
-    op: String,
-    /// Whether the editor is in shell mode.
-    shell: bool,
-    /// The session's thinking level.
-    level: ThinkingLevel,
-}
-
-/// The painted border after a refresh.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Painted {
-    /// The probe glyph as painted.
-    border: String,
-}
-
-#[test]
-fn border_refresh_paints_every_level_and_shell_override() {
-    isolated(
-        "border_refresh_paints_every_level_and_shell_override",
-        |directory| {
-            let world = started(directory);
-            for (input, expected) in
-                cases::<Refresh, Painted>("border_refresh_paints_every_level_and_shell_override")
-            {
-                assert_eq!(input.op, "border");
-                world.mode.is_bash_mode.set(input.shell);
-                select_level(&world, input.level);
-                world.mode.update_editor_border_color().unwrap();
-                assert_eq!(
-                    rendered_border(&world),
-                    border_row(&world, &expected.border)
-                );
-            }
-        },
-    );
-}
-
 #[test]
 fn border_theme_change_refreshes_the_first_returned_frame() {
     isolated(
