@@ -356,6 +356,22 @@ impl PrintRun {
         self.runtime.dispose().await
     }
 
+    /// Reports every failure the run retained and returns the exit status.
+    fn settle(&self, outcome: Result<i32, DiagnosticErrorInfo>) -> i32 {
+        let event = self.event_failure();
+        if let Some(error) = &event {
+            self.write_stderr(&error.message);
+        }
+        match outcome {
+            Err(error) => {
+                self.write_stderr(&error.message);
+                1
+            }
+            Ok(status) if event.is_none() => status,
+            Ok(_) => 1,
+        }
+    }
+
     /// Removes this run's signal handlers, disposes the runtime and flushes raw output.
     async fn finish(&self) -> Result<(), DiagnosticErrorInfo> {
         let cleanups = std::mem::take(&mut self.state.borrow_mut().signal_cleanup);
@@ -399,19 +415,7 @@ pub(crate) async fn run_print_mode_with(
             }
         })
     })));
-    let status = match run.body(options).await {
-        Ok(status) => match run.event_failure() {
-            Some(error) => {
-                run.write_stderr(&error.message);
-                1
-            }
-            None => status,
-        },
-        Err(error) => {
-            run.write_stderr(&error.message);
-            1
-        }
-    };
+    let status = run.settle(run.body(options).await);
     run.finish().await?;
     Ok(status)
 }

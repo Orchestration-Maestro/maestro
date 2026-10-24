@@ -732,6 +732,39 @@ fn event_write_failure_reaches_the_error_path() {
 }
 
 #[test]
+fn a_rejected_prompt_keeps_the_retained_event_failure() {
+    on_task_set(async {
+        let recorder = recorder();
+        let hook = {
+            let recorder = Rc::clone(&recorder);
+            Rc::new(move || -> PrintFuture<()> {
+                recorder.stdout_failure.set(true);
+                recorder.emit(&AgentSessionEvent::SessionInfoChanged { name: None });
+                recorder.stdout_failure.set(false);
+                Box::pin(std::future::ready(Ok(())))
+            })
+        };
+        *recorder.on_prompt.borrow_mut() = Some(hook);
+        recorder
+            .prompt_results
+            .borrow_mut()
+            .push_back(Some("prompt failed".to_owned()));
+        assert_eq!(
+            run(&recorder, json(&["report"])).await,
+            Ok(1),
+            "a rejected prompt does not hide the retained event failure"
+        );
+        assert_eq!(
+            *recorder.stderr.borrow(),
+            vec!["write failed".to_owned(), "prompt failed".to_owned()],
+            "both retained failures reach standard error"
+        );
+        assert_eq!(recorder.count("dispose"), 1);
+        assert_eq!(recorder.count("flush"), 1);
+    });
+}
+
+#[test]
 fn replacement_rebinds_before_subscribing() {
     on_task_set(async {
         let recorder = recorder();
