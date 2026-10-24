@@ -43,6 +43,11 @@ impl<'p, 'a> Emission<'p, 'a> {
         }
     }
 
+    /// Index of the style state the output leaves the terminal in.
+    pub(super) const fn state(&self) -> usize {
+        self.state
+    }
+
     /// Emits only the metadata escapes, leaving style escapes out.
     pub(super) fn opaque_events(&mut self, range: Range<usize>) {
         for event in self.parsed.events[range]

@@ -75,11 +75,17 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
 - Lines break at ASCII spaces and fill greedily. A word wider than `width` breaks
   between whole graphemes, and a non-whitespace grapheme wider than `width` is kept
   whole.
+- Whitespace that shows is content. A blank painted by inverse, underline or a
+  background colour wraps and stays like any other grapheme, and the plain whitespace
+  of its run before it stays too. A run without such a blank still breaks and drops.
 - Text is split at literal newlines before escapes are read, so no escape reaches
   across a line feed. Empty text, and an empty literal line, return an empty line.
 - A literal line that measures at most `width` is neither broken nor trimmed. A
-  wider one is broken, every line it breaks into loses its trailing whitespace, and
-  a line left empty by that is dropped.
+  wider one is broken, every line it breaks into loses its trailing whitespace
+  unless a style escape is written after it, and a line that then shows nothing is
+  dropped.
+- A line that ends inside a whitespace run keeps the escapes written before the next
+  blank, so the cells after that line paint as the source does.
 - A literal line left with no graphemes returns one line holding only its metadata
   escapes; style escapes alone give an empty line.
 - A line that has text starts with the style in effect at its first grapheme, also
@@ -97,6 +103,9 @@ assert_eq!(lines, ["This is a long line", "that needs wrapping"]);
 
 let red = wrap_text_with_ansi("\x1b[31mhello world\x1b[0m", 7);
 assert_eq!(red, ["\x1b[31mhello", "\x1b[31mworld\x1b[0m"]);
+
+let inverse = wrap_text_with_ansi("ab \x1b[7m \x1b[27m cd", 3);
+assert_eq!(inverse, ["ab", " \x1b[7m \x1b[27m", "cd"]);
 
 let link = wrap_text_with_ansi("\x1b]8;;https://example.com\x07click here\x1b]8;;\x07", 6);
 assert_eq!(

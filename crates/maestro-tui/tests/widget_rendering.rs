@@ -142,6 +142,59 @@ fn text_narrow_viewports_keep_whole_graphemes() -> Result<(), serde_json::Error>
     Ok(())
 }
 
+/// A release notice whose version number carries an inverse blank: a styled blank row keeps its
+/// cell through padding and a width change, and the rows are rebuilt when the text is replaced.
+#[test]
+fn text_retains_visible_styled_blank_rows() {
+    let dark = "\u{1b}[1m\u{1b}[38;2;255;255;0mUpdate Available\u{1b}[39m\u{1b}[22m\n\
+                \u{1b}[38;2;128;128;128mNew version \u{1b}[7m \u{1b}[27m is available. Run \
+                \u{1b}[39m\u{1b}[38;2;138;190;183mmaestro update\u{1b}[39m";
+    let light = "\u{1b}[1m\u{1b}[38;2;154;115;38mUpdate Available\u{1b}[39m\u{1b}[22m\n\
+                 \u{1b}[38;2;108;108;108mNew version \u{1b}[7m \u{1b}[27m is available. Run \
+                 \u{1b}[39m\u{1b}[38;2;90;128;128mmaestro update\u{1b}[39m";
+    let dark_rows = [
+        " \u{1b}[1m\u{1b}[38;2;255;255;0mUpdate       ",
+        " \u{1b}[1;38;2;255;255;0mAvailable\u{1b}[39m\u{1b}[22m    ",
+        " \u{1b}[38;2;128;128;128mNew version  ",
+        " \u{1b}[38;2;128;128;128m \u{1b}[7m \u{1b}[27m is        ",
+        " \u{1b}[38;2;128;128;128mavailable.   ",
+        " \u{1b}[38;2;128;128;128mRun \u{1b}[39m\u{1b}[38;2;138;190;183mmaestro  ",
+        " \u{1b}[38;2;138;190;183mupdate\u{1b}[39m       ",
+    ];
+    let text = Text::new(dark.to_owned(), 1, 0, None);
+    assert_eq!(text.render(14), dark_rows);
+
+    let light_rows = [
+        " \u{1b}[1m\u{1b}[38;2;154;115;38mUpdate       ",
+        " \u{1b}[1;38;2;154;115;38mAvailable\u{1b}[39m\u{1b}[22m    ",
+        " \u{1b}[38;2;108;108;108mNew version  ",
+        " \u{1b}[38;2;108;108;108m \u{1b}[7m \u{1b}[27m is        ",
+        " \u{1b}[38;2;108;108;108mavailable.   ",
+        " \u{1b}[38;2;108;108;108mRun \u{1b}[39m\u{1b}[38;2;90;128;128mmaestro  ",
+        " \u{1b}[38;2;90;128;128mupdate\u{1b}[39m       ",
+    ];
+    let narrow: Vec<&str> = vec![
+        " \u{1b}[1m\u{1b}[38;2;255;255;0mUpdate ",
+        " \u{1b}[1;38;2;255;255;0mAvaila ",
+        " \u{1b}[1;38;2;255;255;0mble\u{1b}[39m\u{1b}[22m    ",
+        " \u{1b}[38;2;128;128;128mNew    ",
+        " \u{1b}[38;2;128;128;128mversio ",
+        " \u{1b}[38;2;128;128;128mn \u{1b}[7m \u{1b}[27m is ",
+        " \u{1b}[38;2;128;128;128mavaila ",
+        " \u{1b}[38;2;128;128;128mble.   ",
+        " \u{1b}[38;2;128;128;128mRun    ",
+        " \u{1b}[38;2;128;128;128m\u{1b}[39m\u{1b}[38;2;138;190;183mmaestr ",
+        " \u{1b}[38;2;138;190;183mo      ",
+        " \u{1b}[38;2;138;190;183mupdate\u{1b}[39m ",
+    ];
+    assert_eq!(text.render(8), narrow, "a width change re-wraps the blanks");
+
+    text.set_text(light.to_owned());
+    assert_eq!(text.render(14), light_rows, "prepared styling is replaced");
+    text.invalidate();
+    assert_eq!(text.render(14), light_rows, "a repaint keeps the same rows");
+}
+
 /// A child that records the widths it renders at and shows `x` only when it has a cell.
 struct Letter(RefCell<Vec<usize>>);
 

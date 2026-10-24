@@ -405,3 +405,94 @@ fn metadata_before_dropped_leading_whitespace_moves_to_the_first_line() {
         [format!("{MARKER}ab")]
     );
 }
+
+/// Inverse, underline and background blanks paint a cell, so a wrapped row keeps them and the
+/// plain whitespace inside the same run instead of dropping it as trailing whitespace.
+#[test]
+fn styled_whitespace_survives_soft_wrapping() {
+    let cases: &[(&str, usize, &[&str])] = &[
+        (
+            "ab \u{1b}[7m \u{1b}[27m cd",
+            3,
+            &["ab", " \u{1b}[7m \u{1b}[27m", "cd"],
+        ),
+        (
+            "ab \u{1b}[7m \u{1b}[27m cd",
+            2,
+            &["ab", " \u{1b}[7m \u{1b}[27m", "cd"],
+        ),
+        (
+            "ab \u{1b}[7m \u{1b}[27m cd",
+            4,
+            &["ab", " \u{1b}[7m \u{1b}[27m", "cd"],
+        ),
+        (
+            "ab \u{1b}[7m \u{1b}[27m cd",
+            8,
+            &["ab \u{1b}[7m \u{1b}[27m cd"],
+        ),
+        ("\u{1b}[7m \u{1b}[27m", 3, &["\u{1b}[7m \u{1b}[27m"]),
+        (
+            "ab\n\u{1b}[7m \u{1b}[27m\ncd",
+            1,
+            &["a", "b", "\u{1b}[7m \u{1b}[27m", "c", "d"],
+        ),
+        (
+            "a\u{1b}[7m \u{1b}[7m \u{1b}[27m\u{1b}[27mb",
+            2,
+            &["a", "\u{1b}[7m \u{1b}[7m", "\u{1b}[7m\u{1b}[27m\u{1b}[27mb"],
+        ),
+        (
+            "ab \u{1b}[7m \u{1b}[27m",
+            3,
+            &["ab", " \u{1b}[7m \u{1b}[27m"],
+        ),
+        ("- \u{1b}[4m \u{1b}[24m", 1, &["-", "\u{1b}[4m \u{1b}[24m"]),
+        (
+            "- \u{1b}[44m \u{1b}[49m",
+            1,
+            &["-", " \u{1b}[44m", "\u{1b}[44m \u{1b}[49m"],
+        ),
+    ];
+    for (text, width, expected) in cases {
+        assert_eq!(
+            wrap_text_with_ansi(text, *width),
+            *expected,
+            "{text:?} at {width}"
+        );
+    }
+}
+
+/// Whitespace that paints nothing keeps the existing correction: escape-only pieces and
+/// plain, foreground-only, bold-only and hidden-only blanks do not add rows.
+#[test]
+fn styled_whitespace_checks_do_not_keep_invisible_overflow() {
+    let cases: &[(&str, usize, &[&str])] = &[
+        (
+            "ab\u{1b}[31m \u{1b}[39mcd",
+            2,
+            &["ab", "\u{1b}[31m\u{1b}[39mcd"],
+        ),
+        (
+            "ab\u{1b}[1m \u{1b}[22mcd",
+            2,
+            &["ab", "\u{1b}[1m\u{1b}[22mcd"],
+        ),
+        (
+            "ab\u{1b}[8m \u{1b}[28mcd",
+            2,
+            &["ab", "\u{1b}[8m\u{1b}[28mcd"],
+        ),
+        ("ab \u{1b}[7m\u{1b}[27m cd", 3, &["ab", "cd"]),
+        ("ab   ", 2, &["ab"]),
+        ("  ", 1, &[""]),
+        ("a\n\nb", 1, &["a", "", "b"]),
+    ];
+    for (text, width, expected) in cases {
+        assert_eq!(
+            wrap_text_with_ansi(text, *width),
+            *expected,
+            "{text:?} at {width}"
+        );
+    }
+}
