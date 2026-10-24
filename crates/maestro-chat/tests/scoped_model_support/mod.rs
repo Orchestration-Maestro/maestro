@@ -233,7 +233,7 @@ impl Fixture {
             all_models: models.clone(),
             enabled_model_ids: query.enabled.take(),
         };
-        let (theme, live) = published::published(&colors(0));
+        let (theme, live) = published::published(&colors(0)).unwrap();
         let runtime = ManualRuntime::new();
         let observed = Rc::new(Observations::default());
         let query = Rc::new(query);

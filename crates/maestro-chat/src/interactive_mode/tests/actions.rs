@@ -135,7 +135,7 @@ fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
     let source = bin.join(format!("{name}.source"));
     std::fs::write(&source, script).unwrap();
     let target = bin.join(name);
-    native::install_executable(&source, &target);
+    native::install_executable(&source, &target).expect("install starts");
     std::fs::remove_file(source).unwrap();
     target
 }

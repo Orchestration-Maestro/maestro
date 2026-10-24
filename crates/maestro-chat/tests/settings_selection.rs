@@ -14,7 +14,7 @@ fn settings_rows_keep_text_order_and_initial_values() {
     for (_, expected) in
         cases::<Empty, Inventory>("settings_rows_keep_text_order_and_initial_values")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = maestro_chat::SettingsSelectorComponent::new(
             config(),
@@ -43,7 +43,7 @@ fn settings_rows_keep_text_order_and_initial_values() {
 #[test]
 fn boolean_changes_report_only_the_selected_setting() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in
         cases::<BooleanInput, ThreeFrames>("boolean_changes_report_only_the_selected_setting")
     {
@@ -68,7 +68,7 @@ fn boolean_changes_report_only_the_selected_setting() {
 #[test]
 fn delivery_modes_remain_independent_on_constructor_and_change() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in cases::<DeliveryInput, ThreeFrames>(
         "delivery_modes_remain_independent_on_constructor_and_change",
     ) {
@@ -102,7 +102,7 @@ fn delivery_modes_remain_independent_on_constructor_and_change() {
 #[test]
 fn transport_cycles_all_four_typed_choices() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in
         cases::<Current, BeforeAfter>("transport_cycles_all_four_typed_choices")
     {
@@ -125,7 +125,7 @@ fn transport_cycles_all_four_typed_choices() {
 #[test]
 fn escape_action_and_tree_filter_cover_every_choice() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in
         cases::<ActionInput, BeforeAfter>("escape_action_and_tree_filter_cover_every_choice")
     {
@@ -150,7 +150,7 @@ fn escape_action_and_tree_filter_cover_every_choice() {
 #[test]
 fn settings_search_dispatches_visible_rows_and_cancel() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in
         cases::<Query, BeforeAfter>("settings_search_dispatches_visible_rows_and_cancel")
     {
@@ -171,7 +171,7 @@ fn settings_search_dispatches_visible_rows_and_cancel() {
 #[test]
 fn settings_selected_descriptions_and_scroll_are_exact() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in
         cases::<Id, Frame>("settings_selected_descriptions_and_scroll_are_exact")
     {
@@ -190,7 +190,7 @@ fn settings_selected_descriptions_and_scroll_are_exact() {
 #[test]
 fn settings_layout_reuses_terminal_width_rules() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in cases::<Layout, Frame>("settings_layout_reuses_terminal_width_rules") {
         let events = Events::default();
         let mut cfg = config();
@@ -218,7 +218,7 @@ fn settings_layout_reuses_terminal_width_rules() {
 #[test]
 fn thinking_submenu_keeps_descriptions_and_typed_confirmation() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in
         cases::<Current, BeforeAfter>("thinking_submenu_keeps_descriptions_and_typed_confirmation")
     {
@@ -242,7 +242,7 @@ fn thinking_submenu_keeps_descriptions_and_typed_confirmation() {
 #[test]
 fn thinking_submenu_handles_empty_singleton_duplicates_and_missing_current() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in cases::<ThinkingInput, Frames>(
         "thinking_submenu_handles_empty_singleton_duplicates_and_missing_current",
     ) {
@@ -270,7 +270,7 @@ fn thinking_submenu_handles_empty_singleton_duplicates_and_missing_current() {
 #[test]
 fn thinking_cancel_retains_value_and_reopens_same_selection() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (_, expected) in
         cases::<Empty, Frame>("thinking_cancel_retains_value_and_reopens_same_selection")
     {
@@ -293,7 +293,7 @@ fn thinking_cancel_retains_value_and_reopens_same_selection() {
 #[test]
 fn submenus_cap_visible_options_at_ten() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in cases::<Window, Frame>("submenus_cap_visible_options_at_ten") {
         let events = Events::default();
         let mut cfg = config();
@@ -318,7 +318,7 @@ fn submenus_cap_visible_options_at_ten() {
 #[test]
 fn theme_navigation_preview_cancel_and_confirm_follow_callback_order() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in cases::<ThemeInput, Frames>(
         "theme_navigation_preview_cancel_and_confirm_follow_callback_order",
     ) {
@@ -346,7 +346,7 @@ fn theme_navigation_preview_cancel_and_confirm_follow_callback_order() {
 #[test]
 fn theme_cancel_restores_latest_committed_value() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (_, expected) in cases::<Empty, Frame>("theme_cancel_restores_latest_committed_value") {
         let events = Events::default();
         let selector = maestro_chat::SettingsSelectorComponent::new(
@@ -367,7 +367,7 @@ fn theme_cancel_restores_latest_committed_value() {
 #[test]
 fn warning_edits_keep_unknown_members_snapshots_and_reopened_state() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in cases::<WarningsInput, Frames>(
         "warning_edits_keep_unknown_members_snapshots_and_reopened_state",
     ) {
@@ -398,7 +398,7 @@ fn settings_live_colors_keep_captured_cursor_and_submenu_chrome() {
         cases::<Empty, Colors>("settings_live_colors_keep_captured_cursor_and_submenu_chrome")
     {
         let events = Events::default();
-        let (state, theme) = published::published(&colors(0));
+        let (state, theme) = published::published(&colors(0)).unwrap();
         let selector = maestro_chat::SettingsSelectorComponent::new(
             config(),
             events.callbacks(true),
@@ -420,7 +420,7 @@ fn settings_live_colors_keep_captured_cursor_and_submenu_chrome() {
 #[test]
 fn settings_and_submenus_use_live_keybindings() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (query, expected) in cases::<Id, Frames>("settings_and_submenus_use_live_keybindings") {
         let events = Events::default();
         let selector = maestro_chat::SettingsSelectorComponent::new(
@@ -447,7 +447,7 @@ fn settings_and_submenus_use_live_keybindings() {
 #[test]
 fn settings_list_handle_survives_chrome_removal() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (_, expected) in cases::<Empty, Children>("settings_list_handle_survives_chrome_removal") {
         let events = Events::default();
         let selector = maestro_chat::SettingsSelectorComponent::new(
@@ -474,7 +474,7 @@ fn settings_list_handle_survives_chrome_removal() {
 #[test]
 fn warning_callback_reenters_after_state_is_committed() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     for (_, expected) in cases::<Empty, Frame>("warning_callback_reenters_after_state_is_committed")
     {
         let events = Events::default();
@@ -500,7 +500,7 @@ fn warning_callback_reenters_after_state_is_committed() {
 #[test]
 fn settings_callbacks_release_after_last_list_handle() {
     let _guard = bindings_guard();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     let events = Events::default();
     let captured = std::rc::Rc::new(());
     let released = std::rc::Rc::downgrade(&captured);

@@ -267,6 +267,7 @@ fn provider_trait_reports_input_failure_once_without_render() {
             selector_failure_support::errors::error_value(
                 &selector_failure_support::errors::failure()
             )
+            .unwrap()
         );
         assert_eq!(rig.runtime.futures(), 0);
         assert_eq!(rig.runtime.pending(), 0);

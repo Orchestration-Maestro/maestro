@@ -1229,12 +1229,7 @@ async fn proxy_borrowed_result_and_final_usage_keep_identity_case() {
     assert!(weak.upgrade().is_none());
 }
 
-#[allow(
-    dead_code,
-    reason = "This binary uses part of the shared loopback server."
-)]
-#[path = "../../maestro-models/tests/support/loopback.rs"]
-mod loopback;
+use maestro_test_process::loopback;
 
 /// How a proxy request reaches its server.
 #[derive(Clone, Copy, Debug)]

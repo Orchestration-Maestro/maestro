@@ -74,7 +74,7 @@ fn replay_case(case: &Case) {
         TerminalImage::new(|_| None, || 1),
         Some(true),
     );
-    let (_, theme) = published::published(&palette::palette("dark"));
+    let (_, theme) = published::published(&palette::palette("dark").unwrap()).unwrap();
     let entry = json!({"id":"a","parentId":null,"type":"message","message":{"role":"user","content":"hello"}});
     let node = maestro_app::SessionTreeNode {
         entry: &entry,

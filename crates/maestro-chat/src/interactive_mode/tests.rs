@@ -3,13 +3,7 @@ mod actions;
 mod bash;
 mod events;
 mod extension_ui;
-#[allow(
-    dead_code,
-    unused_imports,
-    reason = "Only executable installation is shared."
-)]
-#[path = "../../../maestro-app/tests/support/native.rs"]
-mod native;
+use maestro_test_process::native;
 mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
@@ -83,8 +77,8 @@ pub(super) fn isolated_case(
         }
         return;
     }
-    let scratch = child::Scratch::new();
-    let root = scratch.0.path();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let root = scratch.path();
     for name in ["bin", "tmp"] {
         std::fs::create_dir(root.join(name)).unwrap();
     }
@@ -109,7 +103,8 @@ pub(super) fn isolated_case(
         root,
         &all,
         &[],
-    );
+    )
+    .expect("child starts");
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
@@ -332,12 +327,12 @@ impl ResourceLoader<Local> for ForwardingLoader {
 
 /// The dark palette the loader registers.
 pub(super) fn dark() -> Rc<Theme> {
-    published::named(0, Some("dark"))
+    published::named(0, Some("dark")).unwrap()
 }
 
 /// The light palette the loader registers, in other colours.
 pub(super) fn light() -> Rc<Theme> {
-    published::named(100, Some("light"))
+    published::named(100, Some("light")).unwrap()
 }
 
 /// One mode over a recording terminal, a controlled host and the loader's themes.

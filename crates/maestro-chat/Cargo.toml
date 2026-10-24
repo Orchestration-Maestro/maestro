@@ -18,6 +18,9 @@ chrono = { version = "=0.4.45", default-features = false, features = ["std", "cl
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 
 [dev-dependencies]
+maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
+maestro-theme = { path = "../maestro-theme", features = ["test-support"] }
+maestro-credentials = { path = "../maestro-credentials", features = ["test-support"] }
 serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

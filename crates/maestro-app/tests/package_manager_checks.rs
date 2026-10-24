@@ -1,8 +1,6 @@
 //! Selected configuration roots feed existing package operations end to end.
 #![cfg(test)]
 #![cfg(unix)]
-#[path = "../../maestro-packages/tests/component_support/mod.rs"]
-mod component_support;
 use crate::child as probe;
 use crate::package_fixtures as fixtures;
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, get_agent_dir};
@@ -11,6 +9,7 @@ use maestro_app::{
     DefaultPackageManager, PackageManager, PathMetadata, ProgressCallback, ProgressEvent,
     ResolvedPaths, ResolvedResource, SettingsManager,
 };
+use maestro_packages::test_support::component_support;
 use maestro_packages::{NativePackageOperations, PackageManagerOptions};
 use maestro_test_directory as scratch;
 use serde::Deserialize;
@@ -156,6 +155,7 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
                 &envs,
                 &["MAESTRO_CODING_AGENT_DIR", "MAESTRO_OFFLINE"]
             )
+            .expect("child starts")
             .is_empty()
         );
     }
@@ -287,6 +287,7 @@ fn selected_package_roots_keep_update_pins_and_progress() {
                 ],
                 &["MAESTRO_OFFLINE"]
             )
+            .expect("child starts")
             .is_empty()
         );
     }

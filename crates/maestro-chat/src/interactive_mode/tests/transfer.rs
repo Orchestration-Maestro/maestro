@@ -86,8 +86,8 @@ fn isolated_export(test: &str, body: impl FnOnce(&Path, &Path)) {
         body(Path::new(&directory), Path::new(&package));
         return;
     }
-    let scratch = child::Scratch::new();
-    let directory = scratch.0.path();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let directory = scratch.path();
     let package = directory.join("package");
     std::fs::create_dir(&package).unwrap();
     child::probe(
@@ -98,7 +98,8 @@ fn isolated_export(test: &str, body: impl FnOnce(&Path, &Path)) {
             (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
         ],
         &[],
-    );
+    )
+    .expect("child starts");
 }
 
 /// The directory the export bundle of `layout` sits in inside `package`.

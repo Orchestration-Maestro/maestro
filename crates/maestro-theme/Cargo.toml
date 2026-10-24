@@ -40,3 +40,9 @@ path = "tests/integration.rs"
 
 [lints]
 workspace = true
+
+[features]
+test-support = []
+
+[dev-dependencies]
+maestro-theme = { path = ".", features = ["test-support"] }

@@ -1385,20 +1385,20 @@ fn native_launch(test: &str) {
         "leading-dash",
         "unlink-error",
     ] {
-        let dir = native_child::Scratch::new();
-        std::fs::create_dir(dir.0.path().join("bin")).unwrap();
+        let dir = maestro_test_directory::Scratch::new().unwrap();
+        std::fs::create_dir(dir.path().join("bin")).unwrap();
         let name = if mode == "leading-dash" {
             "-session.jsonl"
         } else {
             "session.jsonl"
         };
         if mode == "unlink-error" {
-            std::fs::create_dir(dir.0.path().join(name)).unwrap();
+            std::fs::create_dir(dir.path().join(name)).unwrap();
         } else {
             std::fs::OpenOptions::new()
                 .write(true)
                 .create_new(true)
-                .open(dir.0.path().join(name))
+                .open(dir.path().join(name))
                 .unwrap();
         }
         if mode != "unavailable" {
@@ -1408,25 +1408,26 @@ fn native_launch(test: &str) {
                     std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                         .join("tests/fixtures/session-trash.sh"),
                 )
-                .arg(dir.0.path().join("bin/trash"))
+                .arg(dir.path().join("bin/trash"))
                 .status()
                 .unwrap();
             assert!(status.success());
         }
-        let path = dir.join("bin");
-        let log = dir.join("argv");
+        let path = dir.path().join("bin").to_string_lossy().into_owned();
+        let log = dir.path().join("argv").to_string_lossy().into_owned();
         let lines = native_child::probe(
             maestro_test_process::TestProcess::named(test)
                 .unwrap()
                 .case(mode),
-            dir.0.path(),
+            dir.path(),
             &[
                 ("SESSION_TRASH_OUTCOME", mode),
                 ("PATH", &path),
                 ("MAESTRO_TRASH_LOG", &log),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         assert_eq!(lines, ["native qualified"]);
     }
 }

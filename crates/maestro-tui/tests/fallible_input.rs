@@ -1,5 +1,6 @@
 //! Fallible focused input and host error ownership.
 use crate::editor_host::{manual_runtime, recording_terminal};
+use maestro_tui::test_support::runtime_spy;
 use maestro_tui::{Component, TUI, TerminalImage, tui::InputHandler};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -7,8 +8,6 @@ use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
-#[path = "../../maestro-chat/tests/support/runtime_spy.rs"]
-mod runtime_spy;
 
 /// Strict recorded input and outcome.
 #[derive(Deserialize)]

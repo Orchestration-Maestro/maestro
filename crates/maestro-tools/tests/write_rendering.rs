@@ -38,6 +38,7 @@ fn setup(expanded: bool) -> Setup {
         "bindings": ["ctrl+o"],
         "expanded": expanded,
     }))
+    .unwrap()
 }
 
 /// `setup` once the arguments are complete.
@@ -48,7 +49,7 @@ fn settled(mut setup: Setup) -> Setup {
 
 /// The environment with the corpus palette and the native highlighter.
 fn env() -> Env {
-    Env::for_keys(&theme_keys(), 0)
+    Env::for_keys(&theme_keys(), 0).unwrap()
 }
 
 /// Draw a call, reusing `last`.
@@ -170,9 +171,10 @@ fn write_highlighting_follows_explicit_selected_path() {
     ] {
         let probe = Probe::new(true);
         let env = Env::with(
-            Rc::new(palette_of(&theme_keys(), 0)),
+            Rc::new(palette_of(&theme_keys(), 0).unwrap()),
             Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
-        );
+        )
+        .unwrap();
         draw_call(&args, &settled(setup(true)), &env, None);
         let expected: Vec<(String, String)> = language
             .map(|language| ("a   b".to_owned(), language.to_owned()))
@@ -182,9 +184,10 @@ fn write_highlighting_follows_explicit_selected_path() {
     }
     let probe = Probe::new(true);
     let env = Env::with(
-        Rc::new(palette_of(&theme_keys(), 0)),
+        Rc::new(palette_of(&theme_keys(), 0).unwrap()),
         Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
-    );
+    )
+    .unwrap();
     let alias =
         |content: &str| json!({"path": "other.txt", "file_path": "chosen.rs", "content": content});
     let first = draw_call(&alias("a"), &setup(true), &env, None);
@@ -291,9 +294,10 @@ fn write_streaming_cache_rebuilds_or_appends_at_owned_boundaries() {
         assert_eq!(steps.len(), expected.len());
         let probe = Probe::new(true);
         let env = Env::with(
-            Rc::new(palette_of(&theme_keys(), 0)),
+            Rc::new(palette_of(&theme_keys(), 0).unwrap()),
             Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
-        );
+        )
+        .unwrap();
         let mut last: Option<ComponentHandle> = None;
         for ((path, content, complete), step) in steps.into_iter().zip(expected) {
             let args = json!({"path": path, "content": content});
@@ -445,7 +449,7 @@ fn write_rendering_uses_theme_roles_without_new_tokens() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
     for name in ["dark", "light"] {
         let theme = display_support::shipped_theme(name, None);
-        let env = Env::with(Rc::clone(&theme), native_highlighter());
+        let env = Env::with(Rc::clone(&theme), native_highlighter().unwrap()).unwrap();
         let fg = |color: ThemeColor, text: &str| theme.fg(&color, text).unwrap();
         let title = fg(
             ThemeColor::ToolTitle,

@@ -22,3 +22,7 @@ pub mod proxy;
 #[doc = include_str!("../../../docs/agent/api.md")]
 mod guide {}
 pub use proxy::{ProxyAssistantMessageEvent, ProxyStreamOptions, stream_proxy};
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

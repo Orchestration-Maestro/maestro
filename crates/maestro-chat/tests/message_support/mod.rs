@@ -45,7 +45,8 @@ fn markdown(live: LiveTheme, enabled: bool) -> MarkdownTheme {
 fn replay(case: &Case) {
     let input = &case.input;
     let (state, live) =
-        published::published(&palette::palette(input.palette.as_deref().unwrap_or("a")));
+        published::published(&palette::palette(input.palette.as_deref().unwrap_or("a")).unwrap())
+            .unwrap();
     bind(vec!["ctrl+o".into()]);
     let enabled = input.styles_enabled.unwrap_or(true);
     let mut markdown = markdown(live.clone(), enabled);
@@ -70,7 +71,9 @@ fn replay(case: &Case) {
             Action::Expand { value } => widget.expand(*value),
             Action::Invalidate {} => widget.invalidate(),
             Action::Theme { value } => {
-                state.set_theme_instance(palette::palette(value)).unwrap();
+                state
+                    .set_theme_instance(palette::palette(value).unwrap())
+                    .unwrap();
             }
             Action::Keys { value } => bind(value.clone()),
             Action::CaptureChildren {} => alias = Some(widget.children()),
@@ -120,7 +123,7 @@ pub fn group(name: &str) {
 
 /// Weak handles prove replacement and final-drop release without a clock.
 pub fn releases_handles() {
-    let (_, live) = published::published(&palette::palette("a"));
+    let (_, live) = published::published(&palette::palette("a").unwrap()).unwrap();
     let markdown = Rc::new(markdown(live.clone(), true));
     let original = widget::message(None);
     let old = std::sync::Arc::downgrade(&original);
@@ -173,7 +176,7 @@ const TERMINAL_CONTROL_CASES: &[(&str, &str)] = &[
 /// Text and thinking that carry terminal control sequences in prose and fenced code
 /// render without them, keeping the words around them.
 pub fn drops_terminal_controls() {
-    let (_, live) = published::published(&palette::palette("a"));
+    let (_, live) = published::published(&palette::palette("a").unwrap()).unwrap();
     let markdown = Rc::new(markdown(live.clone(), true));
     let mut leaks = Vec::new();
     for &(name, control) in TERMINAL_CONTROL_CASES {

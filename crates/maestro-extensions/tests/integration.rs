@@ -67,17 +67,10 @@ mod module_loader;
 use display_context::manual_runtime;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-test-terminal/src/recording_terminal.rs"]
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-mod recording_terminal;
+use maestro_tui::test_support::recording_terminal;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-tools/tests/display_palette.rs"]
-mod display_palette;
-
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-tools/tests/display_context.rs"]
-mod display_context;
+use maestro_tools::test_support::display_context;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/session.rs"]

@@ -95,7 +95,7 @@ fn key_hints_use_current_bindings_order_and_separate_styles() {
     for case in cases("key_hints_use_current_bindings_order_and_separate_styles") {
         let keys: Vec<String> = serde_json::from_value(case.input["binding"].clone()).unwrap();
         let _bindings = bind(&keys);
-        let env = Env::new(0);
+        let env = Env::new(0).unwrap();
         let actual = json!({
             "text": key_text("app.tools.expand"),
             "hint": key_hint("app.tools.expand", "to expand", &env.live).unwrap(),
@@ -127,7 +127,7 @@ fn display_width_cases_use_shared_toolkit_boundaries() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn display_output_handles_absence_and_orders_content_by_kind() {
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     for case in cases("display_output_handles_absence_and_orders_content_by_kind") {
         let result = case.input["result"]
             .as_object()
@@ -229,7 +229,8 @@ fn search_corpus_loading_preserves_validation_and_palette() {
     assert_eq!(json!(search_keys(&corpus.to_string())), keys);
     // The display recording's palette is read from its own committed file on every target.
     let palette =
-        crate::display_palette::palette_keys(include_str!("fixtures/read_display_palette.json"));
+        crate::display_palette::palette_keys(include_str!("fixtures/read_display_palette.json"))
+            .unwrap();
     assert_eq!(palette.len(), 19);
     assert_eq!(palette.first().map(String::as_str), Some("toolTitle"));
     assert_eq!(

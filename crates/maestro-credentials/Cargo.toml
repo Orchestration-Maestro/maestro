@@ -31,3 +31,9 @@ workspace = true
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
+
+[features]
+test-support = []
+
+[dev-dependencies]
+maestro-credentials = { path = ".", features = ["test-support"] }

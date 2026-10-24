@@ -272,7 +272,7 @@ const GROUPS: &[&str] = &[
 
 /// Publishes the named recording palette and keeps its state for a later refresh.
 fn published(variant: &str) -> (ThemeState, LiveTheme) {
-    crate::published::published(&palette::palette(variant))
+    crate::published::published(&palette::palette(variant).unwrap()).unwrap()
 }
 
 /// Installs the recorded expand keys.
@@ -488,7 +488,7 @@ fn replay(widget: &impl Replay, state: &ThemeState, ops: &[Operation]) -> Vec<Ve
             Operation::Named(Named::Same) => widget.expand(false),
             Operation::Named(Named::Theme) => {
                 state
-                    .set_theme_instance(palette::palette("b"))
+                    .set_theme_instance(palette::palette("b").unwrap())
                     .expect("republished theme");
             }
         }

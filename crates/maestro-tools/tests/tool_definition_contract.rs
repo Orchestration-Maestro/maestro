@@ -572,7 +572,8 @@ fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
 #[test]
 fn tool_context_preserves_missing_arguments_and_environment_handles() {
     let env =
-        display_support::Env::with(Rc::new(display_support::bare_theme()), Rc::new(NoLanguages));
+        display_support::Env::with(Rc::new(display_support::bare_theme()), Rc::new(NoLanguages))
+            .unwrap();
     let args = Value::Null;
     let setup = display_support::Setup {
         readme: "/opt/maestro/README.md".into(),

@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 /// Constructs either public summary with the same controlled rendering inputs.
 fn summary(kind: &str, text: &str, hyperlinks: bool) -> Widget {
-    let (_, live) = published::published(&palette::palette("a"));
+    let (_, live) = published::published(&palette::palette("a").unwrap()).unwrap();
     let markdown = Rc::new(markdown(live.clone(), true));
     let terminal = TerminalImage::new(|_| None, || 1);
     terminal.set_capabilities(TerminalCapabilities {
@@ -200,7 +200,7 @@ fn assert_expanded(rows: &str, kind: &str, name: &str, payload: &str, hyperlinks
 
 /// User-authored colour and prompt markers remain outside model-content cleaning.
 pub fn user_styles() {
-    let (_, live) = published::published(&palette::palette("a"));
+    let (_, live) = published::published(&palette::palette("a").unwrap()).unwrap();
     let component = maestro_chat::UserMessageComponent::new(
         "before \x1b[31mred\x1b[0m after".into(),
         live.clone(),

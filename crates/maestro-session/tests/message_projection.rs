@@ -418,7 +418,8 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
                 .unwrap()
                 .case("*"),
                 &[("TZ", Some(tz))],
-            );
+            )
+            .unwrap();
         }
         return;
     }
@@ -474,7 +475,8 @@ fn local_timestamps_keep_gap_overlap_and_calendar_boundaries() {
                 .unwrap()
                 .case("*"),
                 &[("TZ", Some(tz))],
-            );
+            )
+            .unwrap();
         }
         return;
     }

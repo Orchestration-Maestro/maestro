@@ -191,7 +191,8 @@ pub fn isolated(name: &str) -> bool {
         &std::env::current_dir().unwrap(),
         &[],
         FLAGS,
-    );
+    )
+    .expect("child starts");
     true
 }
 #[cfg(unix)]
@@ -233,7 +234,8 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
             &std::env::current_dir().unwrap(),
             &envs,
             FLAGS,
-        );
+        )
+        .expect("child starts");
     }
     None
 }
@@ -250,7 +252,8 @@ pub fn native_probe(name: &str, envs: &[(&str, &str)], removed: &[&str]) {
         &std::env::current_dir().unwrap(),
         envs,
         removed,
-    );
+    )
+    .expect("child starts");
 }
 
 /// Owned observations and the delayed-header completion signal.

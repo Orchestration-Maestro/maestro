@@ -97,7 +97,8 @@ fn frame(list: &TreeList, input: &Input, frame: &Frame, host: &manual_runtime::M
             .map(|n| n.entry()["id"].as_str().unwrap().to_owned()),
         frame.selected
     );
-    let (state, live) = published::published(&palette::palette(&input.palettes[0]));
+    let (state, live) =
+        published::published(&palette::palette(&input.palettes[0]).unwrap()).unwrap();
     assert_eq!(
         frame.rendered.len(),
         input.palettes.len() * input.widths.len()
@@ -110,7 +111,7 @@ fn frame(list: &TreeList, input: &Input, frame: &Frame, host: &manual_runtime::M
     ) {
         assert_eq!((&expected.palette, expected.width), (palette, *width));
         state
-            .set_theme_instance(self::palette::palette(palette))
+            .set_theme_instance(self::palette::palette(palette).unwrap())
             .unwrap();
         let actual = list
             .render(*width, &live, host, input.styles_enabled)
@@ -171,7 +172,8 @@ fn replay(case: &Case) {
             assert_eq!(index, case.expected.frames.len());
             assert_eq!(index, input.ops.len());
             assert_eq!(case.expected.error.as_ref().unwrap().kind, "InvalidData");
-            let (_, live) = published::published(&palette::palette(&input.palettes[0]));
+            let (_, live) =
+                published::published(&palette::palette(&input.palettes[0]).unwrap()).unwrap();
             assert_eq!(
                 list.render(input.widths[0], &live, &host, input.styles_enabled)
                     .unwrap_err()

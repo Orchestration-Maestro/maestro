@@ -2,9 +2,7 @@
 
 use super::*;
 use maestro_agent::AgentToolResult;
-#[path = "../../../../maestro-test-terminal/src/manual_runtime.rs"]
-#[allow(dead_code)] // shared host exposes operations unused by pure witnesses
-mod manual_runtime;
+use maestro_tui::test_support::manual_runtime;
 #[path = "../../../tests/edit_render_support/mod.rs"]
 mod support;
 use maestro_theme::{LiveTheme, SyntectHighlighter, ThemeDirectories, ThemeState};

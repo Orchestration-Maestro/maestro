@@ -10,7 +10,7 @@ use std::rc::{Rc, Weak};
 use std::task::{Context, Poll, Waker};
 use std::time::Duration;
 
-use maestro_tui::tui::{LogContext, RenderCallback, RenderTimer, TuiRuntime};
+use crate::tui::{LogContext, RenderCallback, RenderTimer, TuiRuntime};
 
 /// A log file effect the writer asked for.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -86,7 +86,7 @@ pub fn ms(value: u64) -> Duration {
 impl ManualRuntime {
     /// Take submitted futures to await them in a controlled order.
     #[must_use]
-    pub fn take_futures(&self) -> Vec<maestro_tui::tui::LocalFuture> {
+    pub fn take_futures(&self) -> Vec<crate::tui::LocalFuture> {
         std::mem::take(&mut self.state.borrow_mut().futures)
     }
 

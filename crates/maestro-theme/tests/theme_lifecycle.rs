@@ -43,7 +43,7 @@ fn counting(calls: &Rc<Cell<usize>>) -> Callback {
 /// Compact text of [`custom_json`].
 #[cfg(test)]
 fn custom_theme(name: &str, accent: &str) -> String {
-    custom_json(name, accent).to_string()
+    custom_json(name, accent).unwrap().to_string()
 }
 
 /// Path of an entry in the custom-themes directory.
@@ -271,7 +271,7 @@ fn theme_selected_name_is_recorded_before_loading() {
 fn theme_construction_reports_integer_keys_before_authored_order() {
     let scratch = Scratch::new();
     let state = state(&scratch);
-    let mut json = custom_json("ordered", "missingAccent");
+    let mut json = custom_json("ordered", "missingAccent").unwrap();
     json["colors"]["0"] = "missingIndex".into();
     scratch.write("custom/ordered.json", &json.to_string());
 
@@ -570,12 +570,12 @@ fn maestro_theme_keeps_last_good_file_on_reload_error() {
     assert_eq!((good.name(), calls.get()), (Some("good"), 1));
     assert!(Rc::ptr_eq(&state.get_theme_by_name("a").unwrap(), &good));
 
-    let mut missing_color = custom_json("broken", "#010203");
+    let mut missing_color = custom_json("broken", "#010203").unwrap();
     missing_color["colors"]
         .as_object_mut()
         .unwrap()
         .shift_remove("text");
-    let mut bad_alias = custom_json("broken", "#010203");
+    let mut bad_alias = custom_json("broken", "#010203").unwrap();
     bad_alias["colors"]["accent"] = "undefinedVariable".into();
     let broken = [
         missing_color.to_string(),

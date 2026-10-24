@@ -29,3 +29,9 @@ workspace = true
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
+
+[features]
+test-support = []
+
+[dev-dependencies]
+maestro-agent = { path = ".", features = ["test-support"] }

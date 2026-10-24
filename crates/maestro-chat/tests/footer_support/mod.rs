@@ -151,7 +151,7 @@ impl World {
     /// A world over `cwd` with the dark palette published and one provider.
     pub fn new(cwd: &str, oauth_provider: Option<&str>) -> Self {
         let session = session(cwd, oauth_provider, |loader| loader).session;
-        let (publication, theme) = published::published(&dark_theme());
+        let (publication, theme) = published::published(&dark_theme()).unwrap();
         Self {
             session,
             metadata: Metadata::new(Some("main"), 1.0),
@@ -312,12 +312,12 @@ pub fn unpublished(cwd: &str) -> World {
 
 /// The palette a footer test starts with: one distinct colour per role.
 pub fn dark_theme() -> Rc<Theme> {
-    published::theme(0)
+    published::theme(0).unwrap()
 }
 
 /// The palette a paint swap publishes: the same roles in other colours.
 pub fn light_theme() -> Rc<Theme> {
-    published::theme(100)
+    published::theme(100).unwrap()
 }
 
 /// The text of a recorded environment value.

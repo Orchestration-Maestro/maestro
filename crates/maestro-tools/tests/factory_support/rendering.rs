@@ -19,10 +19,11 @@ fn compare<P, D: serde::Serialize, S>(
     let args = super::execution::arguments(&selected.definition.name);
     let env = display_support::Env::with(
         display_support::shipped_theme("dark", None),
-        display_support::native_highlighter(),
-    );
+        display_support::native_highlighter().unwrap(),
+    )
+    .unwrap();
     let recorded = json!({"readme":"/opt/maestro/README.md","bindings":["ctrl+o"],"expanded":true,"argsComplete":true});
-    let setup = display_support::Setup::from(&recorded);
+    let setup = display_support::Setup::from(&recorded).unwrap();
     let _bindings = display_support::bind(&display_support::expand_keys(&recorded));
     let draw = |tool: &ToolDefinition<(), P, D, S>| {
         let context = display_support::context::<S>(&args, &setup, &env, None);

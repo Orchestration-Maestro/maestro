@@ -803,7 +803,7 @@ mod tests {
         let actual = match result {
             Ok(value) => json!({"branch":"ok", "value":value, "calls":calls}),
             Err(error) => {
-                json!({"branch":"error", "error":crate::fallback_support::error_value(&error), "calls":calls})
+                json!({"branch":"error", "error":crate::fallback_support::error_value(&error).unwrap(), "calls":calls})
             }
         };
         assert!(actual == case.expected, "recorded refresh outcome");
@@ -817,6 +817,7 @@ mod tests {
         block_on(async {
             for case in
                 crate::fallback_support::cases("fallback_error_after_empty_refresh_is_not_recorded")
+                    .unwrap()
             {
                 refresh_fallback_case(case).await;
             }

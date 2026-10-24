@@ -111,12 +111,7 @@ pub(crate) mod json;
 mod json_boundary_consumers;
 #[path = "support/key_selection.rs"]
 mod key_selection;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the loopback server."
-)]
-#[path = "support/loopback.rs"]
-mod loopback;
+use maestro_test_process::loopback;
 mod message_adaptive_thinking;
 mod message_eager_input;
 mod message_long_retention;

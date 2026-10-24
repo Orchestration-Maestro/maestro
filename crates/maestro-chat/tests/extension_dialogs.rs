@@ -121,7 +121,7 @@ fn dialogs_release_captures_and_cancel_work_with_containing_writer() {
             let spy = runtime_spy::Spy::default();
             let terminal = recording_terminal::RecordingTerminal::new(80, 24);
             let tui = writer(&spy, &terminal);
-            let (_, theme) = published::published(&colors(0));
+            let (_, theme) = published::published(&colors(0)).unwrap();
             let capture = Rc::new(Cell::new(0));
             let weak_capture = Rc::downgrade(&capture);
             let callback: Rc<dyn Fn()> = Rc::new(move || capture.set(capture.get() + 1));
@@ -169,7 +169,7 @@ fn input_focus_routes_hardware_cursor_through_writer() {
         let terminal = recording_terminal::RecordingTerminal::new(80, 24);
         let tui = writer(&spy, &terminal);
         tui.set_show_hardware_cursor(true).unwrap();
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let dialog = Rc::new(native_dialog(Kind::Input, theme, &spy, None));
         tui.add_child(dialog.clone());
         tui.set_focus(Some(dialog.clone()));
@@ -206,8 +206,8 @@ fn dialog_surface_uses_published_pack_roles() {
     use maestro_tui::Component;
     extension_dialog_support::native(|| {
         for mode in ["dark", "light"] {
-            let theme = palette::palette(mode);
-            let (_, live) = published::published(&theme);
+            let theme = palette::palette(mode).unwrap();
+            let (_, live) = published::published(&theme).unwrap();
             let spy = runtime_spy::Spy::default();
             for kind in [Kind::Selector, Kind::Input] {
                 let dialog = native_dialog(kind, live.clone(), &spy, None);
@@ -222,7 +222,7 @@ fn dialogs_keep_plain_rows_within_one_column() {
     use extension_dialog_support::{Kind, colors, native_dialog};
     use maestro_tui::Component;
     extension_dialog_support::native(|| {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let spy = runtime_spy::Spy::default();
         for kind in [Kind::Selector, Kind::Input] {
             let dialog = native_dialog(kind, theme.clone(), &spy, None);

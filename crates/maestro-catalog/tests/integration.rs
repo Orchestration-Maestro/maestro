@@ -15,8 +15,7 @@ mod catalog_request_auth;
     dead_code,
     reason = "This binary uses part of the shared credential fallback corpus."
 )]
-#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
-mod credential_fallback;
+use maestro_credentials::test_support::fallback_support as credential_fallback;
 #[path = "support/descriptors.rs"]
 mod descriptors;
 #[path = "support/dynamic.rs"]

@@ -2,8 +2,8 @@
 
 #[path = "../tests/support/ftp_server.rs"]
 pub(crate) mod ftp_server;
-#[path = "../tests/support/loopback.rs"]
-pub mod loopback;
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_test_process::loopback;
 #[path = "../tests/support/runtime.rs"]
 pub(crate) mod runtime;
 #[path = "../tests/support/socks.rs"]

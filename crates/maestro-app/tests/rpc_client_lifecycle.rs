@@ -111,7 +111,8 @@ fn relative_entry_uses_the_selected_child_directory() {
     let peer = Peer::new();
     let dist = peer.scratch.join("dist");
     std::fs::create_dir(&dist).unwrap();
-    crate::native::install_executable(Path::new(&peer.entry), &Path::new(&dist).join("maestro"));
+    crate::native::install_executable(Path::new(&peer.entry), &Path::new(&dist).join("maestro"))
+        .expect("install starts");
     let here = std::env::current_dir().unwrap();
     let up = "../".repeat(here.components().count() - 1);
     let from_here = format!("{up}{}", peer.entry.trim_start_matches('/'));

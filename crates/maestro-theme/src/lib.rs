@@ -22,3 +22,7 @@ pub use theme::{get_editor_theme, get_markdown_theme, get_select_list_theme};
 pub use theme::paint;
 
 mod highlight;
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

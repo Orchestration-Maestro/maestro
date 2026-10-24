@@ -45,12 +45,7 @@ fn output_backlog_draws_latest_state_after_drain() {
     assert!(!bytes.contains("frame-A"));
 }
 
-#[allow(
-    dead_code,
-    reason = "Reuse the toolkit's existing default terminal adapters."
-)]
-#[path = "../../maestro-tui/tests/fixtures/terminals.rs"]
-mod default_terminals;
+use maestro_tui::test_support::terminals as default_terminals;
 
 #[test]
 fn output_backlog_default_terminal_is_never_deferred() {

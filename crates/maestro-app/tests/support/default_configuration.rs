@@ -546,7 +546,8 @@ pub fn settings(name: &str, group: Group) {
                 ("MAESTRO_DEFAULT_ROOT", scratch.0.path().to_str().unwrap()),
             ],
             REMOVED,
-        );
+        )
+        .expect("child starts");
         assert_eq!(output, ["settings-ok"]);
     }
     assert_eq!(

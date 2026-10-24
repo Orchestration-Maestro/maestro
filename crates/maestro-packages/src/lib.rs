@@ -25,3 +25,7 @@ pub use package_manager::{
 pub use maestro_pattern::{PatternError, minimatch};
 
 pub use maestro_resources::{PathMetadata, SourceOrigin, SourceScope};
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

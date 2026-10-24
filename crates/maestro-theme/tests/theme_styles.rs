@@ -81,7 +81,7 @@ fn check(select: impl Fn(bool, &str) -> bool) -> usize {
 #[test]
 fn decorations_keep_empty_and_disabled_text() {
     assert_eq!(check(|on, text| !on || text.is_empty()), 100);
-    let literal = theme(0);
+    let literal = theme(0).unwrap();
     assert_eq!(
         literal.fg(&ThemeColor::Accent, "x").unwrap(),
         "\x1b[38;5;1mx\x1b[39m"
@@ -144,8 +144,8 @@ fn decorations_close_and_reopen_around_line_breaks() {
 
 #[test]
 fn border_callbacks_retain_their_prepared_instance() {
-    let first = theme(0);
-    let (state, _live) = published(&first);
+    let first = theme(0).unwrap();
+    let (state, _live) = published(&first).unwrap();
     let cases = records(
         include_str!("fixtures/borders.json"),
         &["expected", "level"],
@@ -157,7 +157,7 @@ fn border_callbacks_retain_their_prepared_instance() {
             level => first.get_thinking_border_color(level),
         })
         .collect();
-    state.set_theme_instance(theme(100)).unwrap();
+    state.set_theme_instance(theme(100).unwrap()).unwrap();
     for (case, callback) in cases.iter().zip(&callbacks) {
         assert_eq!(
             callback("border"),
@@ -250,18 +250,18 @@ fn snapshot(h: &Helpers) -> Value {
 #[test]
 fn retained_component_fields_read_the_live_theme() {
     let fixture: Value = serde_json::from_str(include_str!("fixtures/live_styles.json")).unwrap();
-    let (state, live) = published(&theme(0));
+    let (state, live) = published(&theme(0).unwrap()).unwrap();
     let retained = helpers(&live);
     assert_eq!(snapshot(&retained), fixture["before"]);
-    state.set_theme_instance(theme(100)).unwrap();
+    state.set_theme_instance(theme(100).unwrap()).unwrap();
     assert_eq!(snapshot(&retained), fixture["after"]);
 }
 
 #[test]
 fn settings_cursor_is_captured_while_callbacks_change() {
-    let (state, live) = published(&theme(0));
+    let (state, live) = published(&theme(0).unwrap()).unwrap();
     let retained = get_settings_list_theme(live.clone());
-    state.set_theme_instance(theme(100)).unwrap();
+    state.set_theme_instance(theme(100).unwrap()).unwrap();
     assert_eq!(retained.cursor, "\x1b[38;5;1m\u{2192} \x1b[39m");
     assert_eq!((retained.label)("x", true), "\x1b[38;5;101mx\x1b[39m");
     assert_eq!(
@@ -282,7 +282,7 @@ fn real_markdown_observes_callback_invalidation() {
             .collect()
     };
     let width = usize::try_from(fixture["width"].as_u64().unwrap()).unwrap();
-    let (state, live) = published(&theme(0));
+    let (state, live) = published(&theme(0).unwrap()).unwrap();
     let options = MarkdownOptions {
         clean_content: false,
         padding_x: 0,
@@ -295,7 +295,7 @@ fn real_markdown_observes_callback_invalidation() {
     let markdown = Rc::new(Markdown::new(text, options, styles, image));
     assert_eq!(markdown.render(width), rows(&fixture["before"]));
 
-    state.set_theme_instance(theme(100)).unwrap();
+    state.set_theme_instance(theme(100).unwrap()).unwrap();
     assert_eq!(markdown.render(width), rows(&fixture["before"]));
 
     let invalidated = Rc::clone(&markdown);
@@ -303,7 +303,7 @@ fn real_markdown_observes_callback_invalidation() {
         invalidated.invalidate();
         Ok(())
     }));
-    state.set_theme_instance(theme(100)).unwrap();
+    state.set_theme_instance(theme(100).unwrap()).unwrap();
     assert_eq!(markdown.render(width), rows(&fixture["after"]));
 }
 
@@ -327,7 +327,7 @@ fn uninitialized_component_callbacks_return_plain_text() {
 
 #[test]
 fn missing_color_callbacks_return_plain_text() {
-    let (state, live) = published(&theme(0));
+    let (state, live) = published(&theme(0).unwrap()).unwrap();
     let retained = helpers(&live);
     let partial = Theme::new(
         [(ThemeColor::Accent, ColorValue::Index(9))],
@@ -353,10 +353,10 @@ fn missing_color_callbacks_return_plain_text() {
 
 #[test]
 fn retained_style_handles_release_after_last_owner() {
-    let first = theme(0);
-    let (first_gone, second) = (Rc::downgrade(&first), theme(100));
+    let first = theme(0).unwrap();
+    let (first_gone, second) = (Rc::downgrade(&first), theme(100).unwrap());
     let second_gone = Rc::downgrade(&second);
-    let (state, live) = published(&first);
+    let (state, live) = published(&first).unwrap();
     let border = first.get_bash_mode_border_color();
     let retained = helpers(&live);
     let markdown = Rc::new(Markdown::new(
@@ -389,7 +389,7 @@ fn retained_style_handles_release_after_last_owner() {
 fn toolkit_paint_preserves_missing_and_live_theme_fallbacks() {
     use maestro_theme::paint;
     assert_eq!(paint(None, &ThemeColor::Accent, "x"), "x");
-    let first = theme(0);
+    let first = theme(0).unwrap();
     assert_eq!(
         paint(Some(&first), &ThemeColor::Named("absent".into()), "x"),
         "x"
@@ -402,9 +402,9 @@ fn toolkit_paint_preserves_missing_and_live_theme_fallbacks() {
         paint(Some(&first), &ThemeColor::Accent, ""),
         "\x1b[38;5;1m\x1b[39m"
     );
-    let (state, live) = published(&first);
+    let (state, live) = published(&first).unwrap();
     let retained = get_editor_theme(live);
-    state.set_theme_instance(theme(100)).unwrap();
+    state.set_theme_instance(theme(100).unwrap()).unwrap();
     assert_eq!((retained.border_color)("x"), "\x1b[38;5;104mx\x1b[39m");
 }
 

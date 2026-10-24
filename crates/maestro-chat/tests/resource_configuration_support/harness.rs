@@ -85,7 +85,7 @@ pub(super) struct Harness {
 impl Harness {
     /// Uses the recorder's ambient cwd, deliberately separate from selected dirs.
     pub fn new(resolved: ResolvedPaths, scopes: &Scopes, dirs: (&str, &str), bold: bool) -> Self {
-        let (_, theme) = crate::published::published(&colors(0));
+        let (_, theme) = crate::published::published(&colors(0)).unwrap();
         let options = ConfigSelectorOptions {
             cwd: dirs.0.into(),
             agent_dir: dirs.1.into(),
@@ -118,7 +118,7 @@ impl Harness {
             &user.to_string_lossy(),
             ".maestro",
         )));
-        let (publication, theme) = crate::published::published(&colors(0));
+        let (publication, theme) = crate::published::published(&colors(0)).unwrap();
         let styles = Rc::new(Cell::new(bold));
         let policy = styles.clone();
         options.theme = theme;

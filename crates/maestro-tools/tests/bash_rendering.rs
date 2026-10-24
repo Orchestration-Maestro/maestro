@@ -77,7 +77,7 @@ fn render_context() -> serde_json::Value {
 }
 /// Existing context setup with no filesystem or highlighting effects.
 fn setup() -> Setup {
-    Setup::from(&render_context())
+    Setup::from(&render_context()).unwrap()
 }
 /// Publish the corpus's six role colors with an optional shift.
 fn env(shift: u8) -> Env {
@@ -97,7 +97,7 @@ fn env(shift: u8) -> Env {
     for (index, key) in keys.iter().enumerate() {
         assert_eq!(corpus.colors[key], index + 1);
     }
-    let mut env = Env::for_keys(&keys, shift);
+    let mut env = Env::for_keys(&keys, shift).unwrap();
     env.highlighter = display::Probe::new(true);
     env
 }
@@ -870,7 +870,7 @@ fn bash_default_themes_keep_role_colors() {
                 recorded.fg(&color, "sample").unwrap()
             );
         }
-        let env = Env::with(theme, display::Probe::new(true));
+        let env = Env::with(theme, display::Probe::new(true)).unwrap();
         let args = serde_json::json!({"command":"echo hello","timeout":2});
         let mut setup = setup();
         setup.phase.execution_started = true;

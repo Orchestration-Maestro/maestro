@@ -67,3 +67,7 @@ pub use text::expand_tabs;
 
 /// Host terminal colour queries and OSC reply parsing.
 pub mod terminal_theme;
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

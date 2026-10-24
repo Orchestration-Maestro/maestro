@@ -415,7 +415,7 @@ fn replay(
         KEYBINDINGS.clone(),
         bindings(&query.bindings),
     ));
-    let (theme, live) = super::published::published(&colors(0));
+    let (theme, live) = super::published::published(&colors(0)).unwrap();
     let live = if test == "dialog_constructor_propagates_hint_theme_failure" {
         super::published::unpublished().theme()
     } else {

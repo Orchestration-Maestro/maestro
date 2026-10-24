@@ -24,6 +24,7 @@ base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
 maestro-test-directory.workspace = true
 
 [lints]

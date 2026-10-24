@@ -109,7 +109,7 @@ pub fn group(name: &str) {
         } else {
             Rc::new(theme)
         };
-        let env = Env::with(theme, Rc::new(NoLanguages));
+        let env = Env::with(theme, Rc::new(NoLanguages)).unwrap();
         let options = RenderDiffOptions {
             file_path: case.input.options.file_path.clone(),
         };

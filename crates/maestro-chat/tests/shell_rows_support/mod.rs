@@ -203,7 +203,8 @@ fn run(case: Case, palettes: &BTreeMap<String, Palette>) {
         TerminalImage::default(),
         None,
     );
-    let (state, live) = published::published(&theme(&palettes["a"], input.brand_mode.as_deref()));
+    let (state, live) =
+        published::published(&theme(&palettes["a"], input.brand_mode.as_deref())).unwrap();
     let command = input.command.unwrap_or_else(|| "echo hello".into());
     let component = BashExecutionComponent::new(
         command.clone(),

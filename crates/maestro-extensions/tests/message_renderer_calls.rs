@@ -1,8 +1,7 @@
 //! Retained message-renderer calls through real registrations and both callback families.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-chat/tests/message_support/palette.rs"]
-mod palette;
+use maestro_theme::test_support::palette;
 
 use crate::local_support::{
     LocalBus, Released, Trace, listener, loaded, loaded_for, local, mark, runner, runner_for,
@@ -99,7 +98,7 @@ fn details(case: &DomainInput) -> Presence<Value> {
 
 /// Builds the recording palette's live theme.
 fn theme() -> LiveTheme {
-    LiveTheme::from_theme(palette::palette("a"))
+    LiveTheme::from_theme(palette::palette("a").unwrap())
 }
 
 /// Registers a renderer that records what it receives and selects one outcome.

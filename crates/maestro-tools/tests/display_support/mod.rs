@@ -124,17 +124,6 @@ impl Drop for Bindings {
     }
 }
 
-impl Env {
-    /// Like [`Env::new`] with the palette built from `keys`.
-    pub fn for_keys(keys: &[String], shift: u8) -> Self {
-        Self::with(Rc::new(palette_of(keys, shift)), native_highlighter())
-    }
-    /// Publish a palette shifted by `shift` and make it the renderers' theme.
-    pub fn republish(&self, shift: u8) {
-        self.publish(Rc::new(palette(shift)));
-    }
-}
-
 /// Recorded truncation fields.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -210,9 +199,9 @@ pub fn expand_keys(context: &Value) -> Vec<String> {
 /// Render a recorded call or result and return its rows.
 pub fn render_case(case: &Case) -> Vec<String> {
     let recorded = &case.input["context"];
-    let setup = Setup::from(recorded);
+    let setup = Setup::from(recorded).unwrap();
     let _bindings = bind(&expand_keys(recorded));
-    let env = Env::from_setup(&setup);
+    let env = Env::from_setup(&setup).unwrap();
     let tool = create_read_tool_definition::<()>(
         "/work".into(),
         maestro_tools::ReadToolOptions::default(),

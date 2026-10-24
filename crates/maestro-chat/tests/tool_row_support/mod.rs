@@ -110,7 +110,7 @@ fn environment(
 /// Replay all observations, including callback order and request counts.
 fn replay(corpus: &Corpus, case: &records::Case) {
     let input = &case.input;
-    let (published, live) = published::published(&theme(corpus, false));
+    let (published, live) = published::published(&theme(corpus, false)).unwrap();
     keys(vec!["ctrl+o".into()]);
     let runtime = manual_runtime::ManualRuntime::new();
     let callbacks = Rc::new(callbacks::Callbacks::default());
@@ -202,7 +202,7 @@ fn params(
     runtime: &manual_runtime::ManualRuntime,
 ) -> (ToolExecutionParams, Rc<Cell<usize>>) {
     let corpus: Corpus = serde_json::from_str(include_str!("../fixtures/tool_rows.json")).unwrap();
-    let (_, live) = published::published(&theme(&corpus, false));
+    let (_, live) = published::published(&theme(&corpus, false)).unwrap();
     constructor(input, runtime, live)
 }
 /// Constructor routes consume options directly, without setter assistance.

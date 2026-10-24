@@ -172,7 +172,7 @@ pub fn live_callback_phases() {
     let input = super::default_input();
     let corpus: super::records::Corpus =
         serde_json::from_str(include_str!("../fixtures/tool_rows.json")).unwrap();
-    let (publication, live) = super::published::published(&super::theme(&corpus, false));
+    let (publication, live) = super::published::published(&super::theme(&corpus, false)).unwrap();
     let runtime = super::manual_runtime::ManualRuntime::new();
     let (mut params, _) = super::constructor(&input, &runtime, live);
     let changed = super::theme(&corpus, true);
@@ -250,7 +250,7 @@ pub fn invalidation_error() {
     let corpus: super::records::Corpus =
         serde_json::from_str(include_str!("../fixtures/tool_rows.json")).unwrap();
     let valid = super::theme(&corpus, false);
-    let (publication, live) = super::published::published(&valid);
+    let (publication, live) = super::published::published(&valid).unwrap();
     let runtime = super::manual_runtime::ManualRuntime::new();
     let (params, _) = super::constructor(&super::default_input(), &runtime, live);
     let row = ToolExecutionComponent::new(params).unwrap();

@@ -4,10 +4,9 @@
 use crate::error_support;
 use crate::limited_host;
 use crate::local_support;
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
 use crate::ui_host;
 use crate::ui_toolkit;
+use maestro_theme::test_support::published;
 use ui_host::Named;
 
 use local_support::{
@@ -175,7 +174,7 @@ fn headless_queries(ui: &Ui, rejected: &Rejecting) {
         success: false,
         error: Some("UI not available".into()),
     };
-    let instance = LiveTheme::from_theme(published::theme(0));
+    let instance = LiveTheme::from_theme(published::theme(0).unwrap());
     for selection in [
         ThemeSelection::Name("dark".into()),
         ThemeSelection::Theme(instance),
@@ -506,7 +505,7 @@ impl Screen {
             tui,
             state,
             api,
-            prepared: published::theme(20),
+            prepared: published::theme(20).unwrap(),
             calls: Trace::default(),
             widgets: RefCell::default(),
             header: RefCell::default(),
@@ -763,7 +762,7 @@ fn live_theme_follows_publication(ui: &Ui, host: &Screen, fallback: &LiveTheme) 
         unpublished,
         "Theme not initialized. Call initTheme() first."
     );
-    let first = published::theme(0);
+    let first = published::theme(0).unwrap();
     host.state.set_theme_instance(Rc::clone(&first)).unwrap();
     assert!(Rc::ptr_eq(&live.get().unwrap(), &first));
     let prepared = LiveTheme::from_theme(Rc::clone(&first));
@@ -2302,12 +2301,12 @@ fn message_renderers_keep_messages_options_theme_and_errors() {
     assert!(runner.get_message_renderer::<u32>("count").is_some());
     let input = Rc::new(Input::new());
     let shown = notes_message("shown", &input);
-    let (state, live) = published::published(&published::theme(0));
+    let (state, live) = published::published(&published::theme(0).unwrap()).unwrap();
     let returned = render(&bus, &notes, shown.clone(), true, live.clone())
         .unwrap()
         .unwrap();
     assert!(Rc::ptr_eq(&returned, &(input.clone() as ComponentHandle)));
-    let prepared = published::theme(30);
+    let prepared = published::theme(30).unwrap();
     let missing = Rc::new(message("notes", Presence::Missing));
     assert!(
         render(
@@ -2350,7 +2349,7 @@ fn retained_operands(
         ("notes", &true, &1.5)
     );
     assert!(matches!(content, UserContent::Text(text) if text == "body"));
-    let next = published::theme(10);
+    let next = published::theme(10).unwrap();
     state.set_theme_instance(next.clone()).unwrap();
     let themes = rendered.themes.borrow();
     assert!(Rc::ptr_eq(&themes[0].get().unwrap(), &next));

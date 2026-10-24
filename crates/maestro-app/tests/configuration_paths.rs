@@ -539,7 +539,8 @@ fn native_agent_root_reads_disposable_environment() {
                 ("MAESTRO_CODING_AGENT_DIR", override_dir),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         assert_eq!(output, ["agent-directory-ok", env!("CARGO_PKG_VERSION")]);
     }
 }
@@ -558,6 +559,7 @@ fn native_probe_rejects_missing_selection() {
                 &[],
                 &[],
             )
+            .expect("child starts")
         })
         .is_err(),
         "unselected probe returned success"
@@ -599,7 +601,8 @@ fn native_probe_preserves_cwd_and_environment_order() {
             ("MAESTRO_PROBE_PATH", &std::env::var("PATH").unwrap()),
         ],
         &[KEY],
-    );
+    )
+    .expect("child starts");
     assert_eq!(records, ["first", "second"]);
     assert_eq!(std::env::var_os(KEY), before);
 }

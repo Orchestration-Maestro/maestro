@@ -95,7 +95,7 @@ struct Run {
 impl Run {
     /// Build a controlled panel and obtain retained aliases through public children.
     fn new(query: &mut Query) -> Self {
-        let (state, theme) = super::published::published(&colors(0));
+        let (state, theme) = super::published::published(&colors(0)).unwrap();
         let events = Rc::new(RefCell::new(Vec::new()));
         let renders = Rc::new(Cell::new(0));
         let launches = Rc::new(RefCell::new(Vec::new()));
@@ -333,7 +333,7 @@ pub fn controlled(
     platform: LoginDialogPlatform,
     launch_browser: Option<Launcher>,
 ) -> (LoginDialogComponent, Rc<Cell<usize>>) {
-    let (_, theme) = super::published::published(&colors(0));
+    let (_, theme) = super::published::published(&colors(0)).unwrap();
     let renders = Rc::new(Cell::new(0));
     let count = renders.clone();
     let dialog = LoginDialogComponent::new(
@@ -365,7 +365,7 @@ pub fn retained_input(dialog: &LoginDialogComponent) -> Rc<dyn Component> {
 }
 /// Completion must observe both abort and rejected input; later cancellation rejects again silently.
 pub fn cancellation_order() {
-    let (_, theme) = super::published::published(&colors(0));
+    let (_, theme) = super::published::published(&colors(0)).unwrap();
     let observer: Rc<RefCell<Option<LoginInputFuture>>> = Rc::default();
     let signal: Rc<RefCell<Option<maestro_tui::Cancellation>>> = Rc::default();
     let completed = Rc::new(Cell::new(0));

@@ -6,21 +6,9 @@ use maestro_tui::tui::InputHandler;
 )]
 #[path = "recorded_keys/bindings.rs"]
 pub(crate) mod bindings;
-#[allow(
-    dead_code,
-    reason = "The controlled host supports other terminal effects."
-)]
-#[path = "../../../maestro-test-terminal/src/manual_runtime.rs"]
-pub(crate) mod manual_runtime;
-#[allow(dead_code, reason = "Only theme publication helpers are shared.")]
-#[path = "../../../maestro-theme/tests/published/mod.rs"]
-pub(crate) mod published;
-#[allow(
-    dead_code,
-    reason = "Shared terminal support exposes controls used by other crates."
-)]
-#[path = "../../../maestro-test-terminal/src/recording_terminal.rs"]
-pub(crate) mod recording_terminal;
+pub(crate) use maestro_theme::test_support::published;
+pub(crate) use maestro_tui::test_support::manual_runtime;
+pub(crate) use maestro_tui::test_support::recording_terminal;
 #[path = "registry.rs"]
 pub(crate) mod registry;
 use bindings::Binding;
@@ -126,7 +114,7 @@ pub fn header_constructor(name: &str) {
     let _guard = registry::REGISTRY.lock().unwrap();
     let _restore = registry::Restore(get_keybindings());
     set_keybindings(manager(Vec::default()));
-    let (_state, theme) = published::published(&palette(0));
+    let (_state, theme) = published::published(&palette(0)).unwrap();
     for (i, e) in cases::<Policies, Lines>(name) {
         let h = SessionSelectorHeader::new(
             scope(&i.scope),
@@ -177,7 +165,7 @@ pub fn header_loading(name: &str) {
     let _guard = registry::REGISTRY.lock().unwrap();
     let _restore = registry::Restore(get_keybindings());
     set_keybindings(manager(Vec::default()));
-    let (_state, theme) = published::published(&palette(0));
+    let (_state, theme) = published::published(&palette(0)).unwrap();
     for (i, e) in cases::<Loading, LoadingFrames>(name) {
         let h = SessionSelectorHeader::new(
             scope(&i.scope),
@@ -270,7 +258,7 @@ impl HeaderScenario {
     /// Retains the isolated theme and operation inputs.
     fn new(name: &str, i: HeaderInput, e: HeaderExpected) -> Self {
         set_keybindings(manager(Vec::default()));
-        let (state, theme) = published::published(&palette(0));
+        let (state, theme) = published::published(&palette(0)).unwrap();
         let runtime = manual_runtime::ManualRuntime::new();
         let events = Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
         let log = events.clone();
@@ -501,7 +489,7 @@ pub fn age(name: &str) {
     let _guard = registry::REGISTRY.lock().unwrap();
     let _restore = registry::Restore(get_keybindings());
     set_keybindings(manager(Vec::default()));
-    let (_state, theme) = published::published(&palette(0));
+    let (_state, theme) = published::published(&palette(0)).unwrap();
     for (i, e) in cases::<Age, ListFrame>(name) {
         let mut record = session("a");
         record.modified = i.modified;
@@ -670,7 +658,7 @@ pub struct World {
 impl World {
     /// Creates isolated observations while registry admission belongs to the outer witness.
     fn new() -> Self {
-        let (state, theme) = published::published(&palette(0));
+        let (state, theme) = published::published(&palette(0)).unwrap();
         Self {
             state,
             theme,
@@ -1402,5 +1390,4 @@ pub mod session_picker_scopes;
 
 /// Shared subprocess isolation for native picker observations.
 #[cfg(unix)]
-#[path = "../../../maestro-app/tests/support/child.rs"]
-pub mod native_child;
+pub use maestro_test_process::probe as native_child;

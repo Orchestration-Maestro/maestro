@@ -7,8 +7,7 @@ use maestro_markdown::{Cell, Kind, LinkType, Node, Table};
 use std::fs;
 use std::path::Path;
 
-#[path = "../../maestro-markdown/tests/support/nodes.rs"]
-mod nodes;
+use maestro_markdown::test_support::nodes;
 
 /// Resolve the folder through the running process's package directory.
 #[test]

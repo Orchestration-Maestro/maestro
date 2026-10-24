@@ -232,8 +232,9 @@ fn render_callbacks_keep_result_first_arguments_and_shared_state() {
     let args = json!({"arg":4});
     let setup = display_context::Setup::from(
         &json!({"readme":"/opt/maestro/README.md","bindings":[],"showImages":false}),
-    );
-    let env = display_context::Env::from_setup(&setup);
+    )
+    .unwrap();
+    let env = display_context::Env::from_setup(&setup).unwrap();
     let mut row = display_context::context::<ToolRendererState>(&args, &setup, &env, None);
     row.tool_call_id = "call".into();
     let call = binding.render_call.as_ref().unwrap()(Some(&args), &env.live, &row).unwrap();
@@ -289,8 +290,9 @@ fn raw_registration_keeps_serialize_only_details() {
         let binding = registered.definition.renderer_binding().unwrap();
         let args = json!({});
         let setup =
-            display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
-        let env = display_context::Env::from_setup(&setup);
+            display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}))
+                .unwrap();
+        let env = display_context::Env::from_setup(&setup).unwrap();
         let row = display_context::context::<ToolRendererState>(&args, &setup, &env, None);
         for (value, count) in [(7, 1), (9, 2)] {
             let result = (wrapped.execute)("raw".into(), json!({}), None, None)
@@ -720,8 +722,9 @@ fn check_heterogeneous_rendering(
 ) {
     let args = json!({});
     let setup =
-        display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
-    let env = display_context::Env::from_setup(&setup);
+        display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}))
+            .unwrap();
+    let env = display_context::Env::from_setup(&setup).unwrap();
     let row = display_context::context::<ToolRendererState>(&args, &setup, &env, None);
     let raw = registrations[0].definition.renderer_binding().unwrap();
     for count in 1..=2 {
@@ -1007,8 +1010,9 @@ fn registered_callbacks_reenter_and_retire_without_registry_guards() {
         );
         let args = json!({});
         let setup =
-            display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
-        let env = display_context::Env::from_setup(&setup);
+            display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}))
+                .unwrap();
+        let env = display_context::Env::from_setup(&setup).unwrap();
         let row = display_context::context::<ToolRendererState>(&args, &setup, &env, None);
         assert_eq!(
             binding.render_call.as_ref().unwrap()(Some(&args), &env.live, &row)

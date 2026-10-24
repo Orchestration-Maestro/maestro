@@ -104,7 +104,7 @@ fn application_provider_lookup_reaches_default_title() {
         .into_iter()
         .next()
         .unwrap();
-    let (_, theme) = published::published(&login_support::colors(0));
+    let (_, theme) = published::published(&login_support::colors(0)).unwrap();
     let dialog = LoginDialogComponent::new(
         Rc::new(|| {}),
         provider.id(),
@@ -139,7 +139,7 @@ fn input_futures_are_eager_owned_and_do_not_cycle() {
         maestro_tui::TerminalImage::new(|_| None, || 1),
         Some(true),
     );
-    let (_, theme) = published::published(&login_support::colors(0));
+    let (_, theme) = published::published(&login_support::colors(0)).unwrap();
     let completion = Rc::new(Cell::new(0));
     let count = completion.clone();
     let dialog = themed_panel(
@@ -217,7 +217,7 @@ fn login_dialog_uses_current_brand_roles() {
             )
             .unwrap(),
         );
-        let (_, live) = published::published(&theme);
+        let (_, live) = published::published(&theme).unwrap();
         let dialog = themed_panel(live.clone(), Rc::new(|| {}), Rc::new(|_, _| {}));
         dialog
             .show_auth("https://auth.example.test", Some("Instructions"))
