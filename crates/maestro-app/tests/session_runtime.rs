@@ -2,11 +2,8 @@
 //! re-checked switch, forks before and at an entry, imports and the final shutdown,
 //! compared with the recorded runtime cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::runtime_fixtures::{Recorded, Resources, factory, runtime_for, stored_in};
-use crate::support::session_harness::{
-    Harness, HarnessOptions, answer, create_test_extensions_result, harness, on_task_set,
-    script_responses,
-};
+use crate::support::runtime_fixtures::{Recorded, runtime_for, stored_in};
+use crate::support::session_harness::{Harness, answer, on_task_set, script_responses};
 use maestro_app::{
     AgentSessionRuntime, AgentSessionRuntimeError, CreateAgentSessionRuntimeOptions, PromptOptions,
     create_agent_session_runtime,
@@ -85,35 +82,42 @@ fn creates_the_first_runtime_after_the_working_directory_check() {
 #[test]
 fn refuses_a_first_runtime_whose_stored_directory_is_gone() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("faux-1", true)],
-            ..HarnessOptions::default()
-        })
-        .await;
-        let root = h.scratch.path().display().to_string();
-        let manager = stored_elsewhere(&root, "sessions");
-        let manager =
-            SessionManager::open(manager.get_session_file().unwrap(), None, None).unwrap();
-        let recorded = Recorded::default();
-        let extensions = Rc::new(create_test_extensions_result(Vec::new(), &root).await);
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path().display().to_string();
+        let cwd = format!("{root}/missing-cwd");
+        std::fs::create_dir_all(&cwd).unwrap();
+        let manager = stored_in(&cwd, &format!("{root}/sessions"), &root);
+        let file = manager.get_session_file().unwrap().to_owned();
+        std::fs::remove_dir_all(&cwd).unwrap();
+        let manager = SessionManager::open(&file, None, None).unwrap();
+        let calls = Rc::new(std::cell::Cell::new(0));
+        let counted = Rc::clone(&calls);
         let created = create_agent_session_runtime(
-            factory(&h, &Resources::of(&extensions), &recorded),
+            Rc::new(move |_| {
+                counted.set(counted.get() + 1);
+                Box::pin(std::future::ready(Err(
+                    maestro_models::DiagnosticErrorInfo::error("factory must not run"),
+                )))
+            }),
             CreateAgentSessionRuntimeOptions {
                 cwd: root.clone(),
-                agent_dir: root,
+                agent_dir: root.clone(),
                 session_manager: Rc::new(RefCell::new(manager)),
                 session_start_event: None,
             },
         )
         .await;
-        assert!(matches!(
-            created,
-            Err(AgentSessionRuntimeError::MissingSessionCwd(_))
-        ));
-        assert!(
-            recorded.factory_calls.borrow().is_empty(),
-            "the factory never ran"
-        );
+        let Err(AgentSessionRuntimeError::MissingSessionCwd(error)) = created else {
+            panic!("runtime must reject the missing working directory before construction");
+        };
+        let expected = crate::support::session_harness::corpus("replacement");
+        assert_eq!(json!(calls.get()), expected["missing_cwd"]["called"]);
+        assert_eq!(json!(error.name()), expected["missing_cwd"]["name"]);
+        let message = error
+            .to_string()
+            .replace(&file, "$ROOT/missing.jsonl")
+            .replace(&root, "$ROOT");
+        assert_eq!(json!(message), expected["missing_cwd"]["message"]);
     });
 }
 

@@ -1,11 +1,14 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_session_branching_checks;
 mod agent_session_concurrent_checks;
 mod agent_session_prompt_checks;
 mod agent_session_queue_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
+mod agent_session_runtime_checks;
+mod agent_session_runtime_events_checks;
 mod analysis_cost;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/analysis_fixtures.rs"]
@@ -91,6 +94,7 @@ mod legacy_workbooks;
 mod lm_studio_discovery;
 #[cfg(not(target_arch = "wasm32"))]
 mod lm_studio_support;
+mod message_end_cost_override_checks;
 #[path = "docx_support/metadata.rs"]
 mod metadata;
 mod model_selector_exports;
@@ -111,6 +115,7 @@ mod pdf_pages;
 mod pptx_attachments;
 mod prompt_templates_checks;
 mod queued_slash_command_followup_checks;
+mod replaced_session_context_checks;
 mod resource_extension_loading;
 #[cfg(unix)]
 #[path = "support/resource_fixtures.rs"]
@@ -146,6 +151,7 @@ mod session_facade;
 mod session_harness_checks;
 mod session_messages;
 mod session_model_selection;
+mod session_name_event_checks;
 mod session_prompt_preflight;
 mod session_queues;
 mod session_runtime;
