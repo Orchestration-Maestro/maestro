@@ -55,7 +55,7 @@ impl ShareArtifact {
     }
 
     /// The directory this process's next share operation would create.
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     pub(super) fn next_directory() -> PathBuf {
         named(NEXT_SHARE.load(Ordering::Relaxed))
     }
