@@ -88,6 +88,7 @@ mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;
 pub(crate) mod ui_host;
+mod widget_placement_example;
 mod with_deps_example;
 mod working_message_example;
 
