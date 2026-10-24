@@ -86,8 +86,8 @@ native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
 <<<<<<< HEAD
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
-`maestro-rpc` to `maestro-theme`, `maestro-tools` and `maestro-tui-crossterm` edges for its
-standard-stream child tests, and the native development edges from the twenty-two declared
+`maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
+child tests, and the native development edges from the twenty-two declared
 callers to the
 `maestro-test-process` owner (see the
 `maestro-test-process` owner (see the

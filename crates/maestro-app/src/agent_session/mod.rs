@@ -395,14 +395,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
         operation: impl std::future::Future<Output = T> + 'static,
     ) -> tokio::sync::oneshot::Receiver<T> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let mut task: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> =
-            Box::pin(async move {
-                drop(sender.send(operation.await));
-            });
-        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-        if task.as_mut().poll(&mut context).is_pending() {
-            (self.spawn)(task);
-        }
+        let task = Box::pin(async move {
+            drop(sender.send(operation.await));
+        });
+        crate::utils::task::start_now(task, |task| (self.spawn)(task));
         receiver
     }
 

@@ -251,8 +251,8 @@ edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
 the native-only `maestro-extensions` to `maestro-credentials`, for extension tests
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
-the native `maestro-rpc` to `maestro-theme`, `maestro-tools` and
-`maestro-tui-crossterm` edges for its standard-stream child tests,
+the native `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges
+for its standard-stream child tests,
 and the native, non-optional dev-dependencies
 of the twenty-two declared callers on `maestro-test-process`, the owner of
 checked child tests (see
@@ -300,10 +300,13 @@ code-generation evidence and framework/highlighting equivalents. See
 [architecture checks](docs/architecture.md) for commands, diagnostics and limits.
 Publish reusable adapter conformance from the owning leaf, not a forwarding test crate.
 
-`maestro-protocol` owns the shared RPC records, binary screen channel and generated
-JSON Schema, with no domain dependencies. Session and workspace operations use one
-contract across stdio and daemon sockets; JSONL framing belongs to
-`maestro-json::jsonl`. Native input, rendering and notification conversions stay with their runtime adapters. See
+`maestro-protocol` owns the generic RPC envelopes, the workspace records, binary
+screen channel and generated JSON Schema, with no domain dependencies.
+`maestro-app::rpc_types` owns the session records and `maestro-app::rpc_mode` the one
+connection runner; `maestro-rpc` is its standard-stream adapter. Session and workspace
+operations use one contract across stdio and daemon sockets; JSONL framing belongs to
+`maestro-json::jsonl`. Conventions keep protocol records in the application and the
+protocol crate, and protocol output on the one record writer. Native input, rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).
 
 The workspace daemon is core design: the root always wires the daemon and the
