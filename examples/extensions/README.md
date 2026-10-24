@@ -32,6 +32,7 @@ steps.
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
+| `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
 
 ### Building an example
 

@@ -723,6 +723,21 @@ It is opt-in like the other shipped extensions: its crate's tests run the built
 component in a controlled host with a supplied wall clock, and
 `examples/extensions/README.md` holds the build and controlled-run commands.
 
+### A custom working message on session start
+
+[`examples/extensions/working_message_test.rs`](../../examples/extensions/working_message_test.rs)
+registers one `session_start` handler. It acquires the context's UI and sends
+`set_working_message` with the authored text, then `set_working_indicator` with
+one authored frame and no interval, and returns no event result. Both requests
+keep every authored byte, including the colour and reset sequences. A refusal the
+host returns ends the callback with the host's message, so a refused working-text
+request leaves the indicator unsent.
+
+The controlled run asserts the ordered requests the guest sends; it does not show
+that an interactive host keeps them across agent turns or loader recreation, which
+belongs to the host's own working-loader operations. Loading the component into an
+application is opt-in and needs that application's component runtime.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes
