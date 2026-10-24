@@ -10,6 +10,7 @@ mod extension_ui;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod notices;
 mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
@@ -24,7 +25,7 @@ use crate::components::session_selector::list::tests::session_picker::{
     manual_runtime::ManualRuntime, native_child as child, published,
     recording_terminal::RecordingTerminal,
 };
-use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
+use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
@@ -51,11 +52,39 @@ use std::{
     path::Path,
     pin::Pin,
     rc::Rc,
-    sync::{Arc, RwLock},
+    sync::{Arc, LazyLock, RwLock},
 };
+
+/// The package-directory environment key the installation reads.
+pub(super) static ENV_PACKAGE_DIR: LazyLock<String> =
+    LazyLock::new(|| format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase()));
 
 /// Every recorded presentation case.
 pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
+
+/// Runs `body` in a fresh single-test child whose working directory is a disposable root
+/// and whose package directory is `package` inside it.
+pub(super) fn isolated_package(test: &str, body: impl FnOnce(&Path, &Path)) {
+    if maestro_test_process::selection().is_child() {
+        let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
+        let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
+        body(Path::new(&directory), Path::new(&package));
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let directory = scratch.0.path();
+    let package = directory.join("package");
+    std::fs::create_dir(&package).unwrap();
+    child::probe(
+        TestProcess::current(test).unwrap().case("child"),
+        directory,
+        &[
+            (ENV_AGENT_DIR.as_str(), directory.to_str().unwrap()),
+            (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
+        ],
+        &[],
+    );
+}
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
@@ -557,6 +586,7 @@ fn started(directory: &Path) -> World {
 pub(super) fn roles(theme: &Theme, text: &str) -> String {
     let mut text = text.replace("<version>", VERSION);
     for (marker, role) in [
+        ("@border@", ThemeColor::Border),
         ("@accent@", ThemeColor::Accent),
         ("@dim@", ThemeColor::Dim),
         ("@muted@", ThemeColor::Muted),

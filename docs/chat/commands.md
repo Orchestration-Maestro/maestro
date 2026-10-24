@@ -5,7 +5,7 @@ Text it recognizes as a command runs in the mode and answers on the transcript;
 every other submission reaches the [typed input](interactive-mode.md#typed-input)
 and the editor history as before.
 
-Today the mode handles shell input and one slash command, `/export`. Import, the
+Today the mode handles shell input and two slash commands, `/export` and `/changelog`. Import, the
 offline viewer and packaged asset injection are not delivered yet (see
 [what is missing](#what-is-missing)).
 
@@ -37,6 +37,7 @@ Extensions can answer a shell command through the `user_bash` event: returning a
 result shows it without running a process and records it once, and returning operations
 runs the command through them instead of the local shell.
 
+
 ## `/export`
 
 `/export` with no path writes the whole session as an HTML document. A path
@@ -63,6 +64,23 @@ A recoverable failure shows `Failed to export session: <diagnostic>` in the
 transcript's error colour, with the diagnostic the export owner produced. A
 failure to render that notice goes to the terminal runtime's error route, which
 is the route the mode's shortcuts already use.
+
+## `/changelog`
+
+`/changelog` prints the whole changelog, not only the sections added since the
+last run. It reads the changelog beside the running package and appends a
+bordered "What's New" card holding every section, newest first.
+
+```text
+/changelog
+```
+
+The card reuses the [changelog utility](startup.md) for the file read and the
+Markdown renderer for the body, so the mode adds no parser and no renderer of its
+own. A package whose changelog holds no section shows
+`No changelog entries found.` inside the same card. The submission must be
+exactly `/changelog`; `/changelogs`, `/changelog extra` and `/CHANGELOG` are
+prompt text.
 
 ## How the path is read
 
