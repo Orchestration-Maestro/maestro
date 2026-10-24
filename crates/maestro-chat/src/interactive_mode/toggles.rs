@@ -28,14 +28,11 @@ impl InteractiveMode {
     /// terminal runtime's error route.
     fn on_action(self: &Rc<Self>, action: &str, operation: Operation) {
         let mode = Rc::downgrade(self);
-        let runtime = Rc::clone(&self.tool_environment.runtime);
         self.editor.on_action(
             action.to_owned(),
             Rc::new(move || {
-                if let Some(mode) = mode.upgrade()
-                    && let Err(error) = operation(&mode)
-                {
-                    runtime.spawn_local(Box::pin(std::future::ready(Err(error))));
+                if let Some(mode) = mode.upgrade() {
+                    mode.report(operation(&mode));
                 }
             }),
         );

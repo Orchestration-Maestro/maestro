@@ -44,8 +44,11 @@ ends the prompt:
 `preflight_result` hears once whether the prompt was accepted: `true` when a
 command ran, a handler handled the input, the prompt was queued or the agent is
 about to be prompted, and `false` when a step failed. `prompt` returns after the
-agent and any retry settle. Once started, a prompt belongs to the session: dropping
-the returned future leaves it running to the end.
+agent and any retry settle. The prompt starts when `prompt` is called, so its
+steps up to the first wait (a command, the input handlers, queueing while a response
+streams, a refusal) have already run before the returned future is first polled.
+The prompt belongs to the session: the future only observes the result, and
+dropping it leaves the prompt running to the end.
 
 The base prompt is the system prompt construction built, or the one
 `set_active_tools_by_name` last built for the active tools.
