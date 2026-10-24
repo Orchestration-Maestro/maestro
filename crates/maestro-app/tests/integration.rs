@@ -31,6 +31,9 @@ mod clipboard_platform;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/clipboard_status.rs"]
 mod clipboard_status;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/command_operations.rs"]
+mod command_operations;
 mod configuration_paths;
 mod context_discovery;
 #[cfg(unix)]

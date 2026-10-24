@@ -5,8 +5,9 @@ use super::{
 };
 use maestro_app::{
     AgentSessionEvent, AgentSessionEventListener, AssistantContent, AssistantMessage,
-    DiagnosticErrorInfo, ExtensionBindings, ExtensionCommandContextActions, FileEntry,
-    ImageContent, PromptOptions, StopReason, TerminationSignal, TextContent, Usage, output_guard,
+    CommandContextOperations, DiagnosticErrorInfo, ExtensionBindings,
+    ExtensionCommandContextActions, FileEntry, ImageContent, PromptOptions, SessionChangeResult,
+    StopReason, TerminationSignal, TextContent, Usage, output_guard,
 };
 use serde_json::json;
 use std::{
@@ -278,13 +279,22 @@ impl PrintRuntime for TestRuntime {
     fn command_actions(&self) -> ExtensionCommandContextActions {
         // The runtime supplies its own command operations; the run only binds them.
         let recorder = Rc::clone(&self.recorder);
-        ExtensionCommandContextActions {
+        let uncancelled = || {
+            Box::pin(std::future::ready(Ok(SessionChangeResult {
+                cancelled: false,
+            })))
+        };
+        ExtensionCommandContextActions::new(CommandContextOperations {
+            wait_for_idle: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+            new_session: Rc::new(move |_| uncancelled()),
+            fork: Rc::new(move |_, _| uncancelled()),
+            navigate_tree: Rc::new(move |_, _| uncancelled()),
+            switch_session: Rc::new(move |_, _| uncancelled()),
             reload: Rc::new(move || {
                 recorder.push("runtime_reload");
                 Box::pin(std::future::ready(Ok(())))
             }),
-            ..ExtensionCommandContextActions::default()
-        }
+        })
     }
 
     fn set_rebind(&self, rebind: Option<PrintRebind>) {
@@ -917,7 +927,7 @@ async fn reload_bound_actions(recorder: Rc<Recorder>) -> Result<(), DiagnosticEr
             .clone()
             .expect("the runtime operations")
     };
-    checked((actions.reload)().await)
+    checked((actions.operations().reload)().await)
 }
 
 /// The diagnostic a command operation's failure becomes on this side of the seam.

@@ -332,9 +332,12 @@ assert_eq!(history.borrow().get_cwd(), "/work");
 
 Commands receive `ExtensionCommandContext`, the base context plus six operations:
 `wait_for_idle`, `new_session`, `fork`, `navigate_tree`, `switch_session` and `reload`.
-`bind_command_context(Some(actions))` replaces these independently of `bind_core`;
-`None` restores no-op waits and reloads and uncancelled session-change results.
-Defaults never run supplied setup or continuation callbacks.
+They travel as `CommandContextOperations`, which a runtime owns and which
+`ExtensionCommandContextActions::new` wraps for a runner to bind. The value a session
+binds is the one its application runtime builds, so a caller asks the runtime instead
+of supplying a second policy. `bind_command_context(Some(actions))` replaces these
+independently of `bind_core`; `None` restores no-op waits and reloads and uncancelled
+session-change results. Defaults never run supplied setup or continuation callbacks.
 
 Each call checks activity, selects the current operation and starts it immediately,
 before its returned local future is polled. A later rebind or invalidation does not
@@ -351,10 +354,23 @@ base and command members still apply the guard. Application operations, not the
 context, run `setup` and `with_session` callbacks and create replacement sessions.
 
 ```rust
-use maestro_extensions::{ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext};
+use maestro_extensions::{
+    CommandContextOperations, ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext,
+};
 use maestro_extensions::types::{NewSessionCommandOptions, SessionChangeResult};
 use maestro_extensions::runner::ExtensionRunnerSession;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
+# fn no_op_operations() -> CommandContextOperations {
+#     let uncancelled = || Box::pin(std::future::ready(Ok(SessionChangeResult { cancelled: false })));
+#     CommandContextOperations {
+#         wait_for_idle: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+#         new_session: Rc::new(move |_| uncancelled()),
+#         fork: Rc::new(move |_, _| uncancelled()),
+#         navigate_tree: Rc::new(move |_, _| uncancelled()),
+#         switch_session: Rc::new(move |_, _| uncancelled()),
+#         reload: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+#     }
+# }
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 # let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
 # struct NoCommands;
@@ -373,13 +389,15 @@ let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,
     Arc::new(|_| {}), maestro_theme::LiveTheme::default(),
 );
-runner.bind_command_context(Some(ExtensionCommandContextActions {
-    new_session: Rc::new(|options| {
-        assert_eq!(options.unwrap().parent_session.as_deref(), Some("/parent.jsonl"));
-        Box::pin(async { Ok(SessionChangeResult { cancelled: true }) })
-    }),
-    ..Default::default()
-}));
+runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+    CommandContextOperations {
+        new_session: Rc::new(|options| {
+            assert_eq!(options.unwrap().parent_session.as_deref(), Some("/parent.jsonl"));
+            Box::pin(async { Ok(SessionChangeResult { cancelled: true }) })
+        }),
+        ..no_op_operations()
+    },
+)));
 let ctx = runner.create_command_context();
 let executor = tokio::runtime::Builder::new_current_thread().build()?;
 executor.block_on(async {
