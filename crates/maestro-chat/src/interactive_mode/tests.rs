@@ -106,7 +106,7 @@ pub(super) fn isolated_case(
             .unwrap()
             .env_clear()
             .case(case)
-            .shell_setup("trap '' XFSZ")
+            .shell_setup("/bin/bash", "trap '' XFSZ")
             .temp_dir(root.join("tmp")),
         root,
         &all,
