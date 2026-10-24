@@ -1506,7 +1506,7 @@ fn interrupt_binding(directory: &Path) {
     streaming(&world, |world, held| {
         bind("app.interrupt", Some("alt+z"));
         world.mode.editor.handle_input("\x1b");
-        world.mode.editor.handle_input("\x1a");
+        world.mode.editor.handle_input("z");
         assert_eq!(held.aborts(), 0);
         world.mode.editor.handle_input("\x1bz");
         assert_eq!(held.aborts(), 1);

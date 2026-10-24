@@ -546,6 +546,10 @@ with their feature owners. The process leaf also owns the retained-front byte qu
 shared by pane-process input and native terminal output: ordered admission, partial
 write advancement and failure cleanup. Callers choose the write chunk bound and
 keep descriptor readiness, lifecycle and error-reporting policy.
+It also owns the current process's native signal effects: the default action a
+prepared termination signal or interrupt takes, the job-control stop of the process
+group and the observation of its continuation. Callers keep when to prepare, restore,
+stop and resume.
 The shared launch contract includes synchronous capture
 with optional raw stdin, an optional caller-supplied timeout and an optional
 combined captured-byte bound, inherited standard

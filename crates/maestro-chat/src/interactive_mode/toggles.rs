@@ -19,6 +19,10 @@ impl InteractiveMode {
     /// Binds the transcript shortcuts and editor actions on the editor, in the order the
     /// editor consults them, then installs its change and image-paste callbacks.
     pub(super) fn setup_key_handlers(self: &Rc<Self>) {
+        #[cfg(unix)]
+        self.on_action("app.suspend", Self::handle_ctrl_z);
+        #[cfg(windows)]
+        self.on_action("app.suspend", Self::show_suspend_unsupported);
         self.on_action("app.thinking.cycle", Self::cycle_thinking_level);
         self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
         self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
