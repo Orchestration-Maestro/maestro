@@ -4306,6 +4306,7 @@ dependencies = [
  "rustix",
  "serde",
  "serde_json",
+ "signal-hook",
  "tokio",
  "tracing",
 ]
