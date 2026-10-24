@@ -29,6 +29,7 @@ steps.
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
+| `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 
 ### Building an example
 
@@ -58,6 +59,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- pirate_
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -148,3 +151,14 @@ which has no reload method, so it queues `/reload-runtime` as a follow-up user
 message and answers that it queued it. The controlled run reloads nothing in a
 running application; loading the component is opt-in and needs that
 application's component runtime.
+
+### What the pirate example does
+
+`/pirate` starts disabled. Each invocation reports the state it switched to and
+ignores its arguments. While the mode is on, `before_agent_start` returns the
+supplied prompt followed by this example's own pirate instructions; while it is
+off, the handler returns no override and leaves the event as it arrived. The
+state belongs to the factory instance, so two loaded copies toggle apart, and a
+host that refuses the notification still keeps the switch it made first. Loading
+the component into an application is opt-in and needs that application's
+component runtime.

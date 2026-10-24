@@ -4,8 +4,8 @@ use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::example_support::{
-    decoded, invoke_command_on_component, invoke_tool_on_component, release_all, result_value,
-    start,
+    Command, assert_registered_command, decoded, invoke_command_on_component,
+    invoke_tool_on_component, release_all, result_value, start,
 };
 use super::host::Harness;
 use super::host_family::guest::ToolCapabilities as ComponentCapabilities;
@@ -256,14 +256,7 @@ fn reload_runtime_registers_command_and_tool() -> Result<(), String> {
 
 /// Assert the recorded command and tool records against what the host received.
 fn assert_metadata(observed: &super::observed::Observed, expected: &Metadata) {
-    assert_eq!(
-        observed.registrations.commands,
-        [(
-            expected.command.name.clone(),
-            Some(expected.command.description.clone()),
-            expected.command.completions
-        )]
-    );
+    assert_registered_command(observed, &expected.command);
     assert_eq!(observed.tools.len(), 1);
     assert_eq!(tool_metadata(&observed.tools[0]), expected.tool);
 }
@@ -521,18 +514,6 @@ struct Registration {
     operation: Operation,
     /// The name it registered.
     name: String,
-}
-
-/// The registered command's name, description and absent argument completions.
-#[derive(Debug, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-struct Command {
-    /// The command name.
-    name: String,
-    /// The command description.
-    description: String,
-    /// Whether the factory registers argument completions.
-    completions: bool,
 }
 
 /// The registered tool's metadata.

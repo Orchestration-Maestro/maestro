@@ -45,6 +45,11 @@ name = "protected_paths"
 path = "../../examples/extensions/protected_paths.rs"
 crate-type = ["cdylib"]
 
+[[example]]
+name = "pirate"
+path = "../../examples/extensions/pirate.rs"
+crate-type = ["cdylib"]
+
 [dependencies]
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
