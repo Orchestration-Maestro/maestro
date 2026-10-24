@@ -378,7 +378,7 @@ existing source loader; no crate gains an FTP dependency and
 `workspace-crates.json` gains no edge. That client owns the plain-FTP subset the loader
 uses: connecting and greeting, logging in, binary and file-structure settings, extended
 and classic passive preparation, the modification time, one directory listing and one
-download. One byte-activity window governs both connections, one sender frames every
+download. Each connection keeps its own byte-activity window, one sender frames every
 command so a credential never reaches a diagnostic, and the loader keeps the
 modification/cache decision. FTPS, uploads, active FTP and public client options are not
 part of that caller.

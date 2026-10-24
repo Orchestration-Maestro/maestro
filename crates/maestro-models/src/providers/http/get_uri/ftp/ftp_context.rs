@@ -1,4 +1,4 @@
-//! The owned FTP connections: the one command sender and the one inactivity clock.
+//! The owned FTP connections: the one command sender and each connection's inactivity timer.
 
 use std::collections::VecDeque;
 use std::io;
@@ -10,19 +10,6 @@ use tokio::net::TcpStream;
 use super::INACTIVITY;
 use super::parse_control_response::{Frames, Reply};
 use crate::providers::http::get_uri::Failure;
-
-/// How long the context waits for a connection, a reply, a write or a read.
-///
-/// One inactivity window resets with each completed operation, so a peer that keeps sending or
-/// receiving bytes may take longer than the window overall. While admitted transfer data is
-/// active the control connection waits without a deadline, as the reference suspends that timer.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum Deadline {
-    /// One inactivity window.
-    Inactivity,
-    /// No deadline.
-    Open,
-}
 
 /// The connection whose silence ended a wait.
 #[derive(Clone, Copy, Debug)]
@@ -54,6 +41,55 @@ impl std::fmt::Display for Silent {
 }
 
 impl std::error::Error for Silent {}
+
+/// The inactivity timer of one connection: off, or armed with the instant its silence expires.
+///
+/// The instant belongs to the connection, so a wait another event cancels resumes towards the
+/// same instant instead of starting a fresh window; only the connection's own bytes move it.
+#[derive(Default)]
+struct Inactivity {
+    /// When the armed window expires; none while the timer is off.
+    expires_at: Option<tokio::time::Instant>,
+}
+
+impl Inactivity {
+    /// Start a full window from now.
+    fn arm(&mut self) {
+        self.expires_at = Some(tokio::time::Instant::now() + INACTIVITY);
+    }
+
+    /// Stop the timer.
+    fn clear(&mut self) {
+        self.expires_at = None;
+    }
+
+    /// Restart an armed window for bytes just moved; a timer that is off stays off.
+    fn refresh(&mut self) {
+        if self.expires_at.is_some() {
+            self.arm();
+        }
+    }
+
+    /// Run one socket operation, failing with the silence of `socket` once the armed window
+    /// expires; an operation that is ready at the same moment wins.
+    async fn bound<T>(
+        &self,
+        socket: Socket,
+        operation: impl Future<Output = io::Result<T>>,
+    ) -> Result<T, Failure> {
+        let expired = async {
+            match self.expires_at {
+                Some(at) => tokio::time::sleep_until(at).await,
+                None => std::future::pending().await,
+            }
+        };
+        tokio::select! {
+            biased;
+            done = operation => done.map_err(Failure::from),
+            () = expired => Err(Box::new(Silent(socket))),
+        }
+    }
+}
 
 /// A server reply that refuses the command it answers.
 #[derive(Debug)]
@@ -116,39 +152,43 @@ pub(super) async fn connect_data(address: SocketAddr) -> Result<Data<TcpStream>,
 pub(super) struct Data<R> {
     /// The reader carrying the transfer.
     reader: R,
-    /// The instant this connection's silence expires, stamped by its own last byte.
-    silent_at: tokio::time::Instant,
+    /// The data timer, off until the transfer admits the connection and again once its data ends.
+    inactivity: Inactivity,
 }
 
 impl<R> Data<R> {
-    /// Wrap a reader that the inactivity window governs.
+    /// Wrap a reader whose timer stays off until the transfer admits it.
     pub(super) fn new(reader: R) -> Self {
         Self {
             reader,
-            silent_at: tokio::time::Instant::now() + INACTIVITY,
+            inactivity: Inactivity::default(),
         }
+    }
+
+    /// Admit the transfer: start the data window, which allows reads.
+    pub(super) fn admit(&mut self) {
+        self.inactivity.arm();
+    }
+
+    /// Whether the transfer admitted the connection and its data has not ended.
+    pub(super) fn active(&self) -> bool {
+        self.inactivity.expires_at.is_some()
     }
 }
 
 impl<R: AsyncRead + Unpin> Data<R> {
-    /// Read one chunk, failing when the connection stays silent for one inactivity window.
-    ///
-    /// The deadline belongs to the connection, so a wait another event cancels resumes towards
-    /// the same instant instead of starting a fresh window.
+    /// Read one chunk, failing when the admitted connection stays silent for one window.
     ///
     /// # Errors
     /// Returns the reader's own error, or a data-socket timeout.
     pub(super) async fn read(&mut self, buffer: &mut [u8]) -> Result<usize, Failure> {
-        let silent_at = self.silent_at;
-        let read = tokio::select! {
-            biased;
-            read = self.reader.read(buffer) => read,
-            () = tokio::time::sleep_until(silent_at) => {
-                return Err(Box::new(Silent(Socket::Data)));
-            }
-        };
-        let read = read.map_err(Failure::from)?;
-        self.silent_at = tokio::time::Instant::now() + INACTIVITY;
+        let read = self
+            .inactivity
+            .bound(Socket::Data, self.reader.read(buffer))
+            .await?;
+        if read > 0 {
+            self.inactivity.refresh();
+        }
         Ok(read)
     }
 }
@@ -214,6 +254,8 @@ pub(super) struct Control {
     replies: VecDeque<Reply>,
     /// The first terminal reason this session stopped answering commands.
     closing: Option<String>,
+    /// The control timer, armed while a command waits and no admitted data is active.
+    inactivity: Inactivity,
 }
 
 impl Control {
@@ -227,12 +269,16 @@ impl Control {
             }
             Err(_) => return Err(Box::new(Silent(Socket::Control))),
         };
+        // The connection starts the greeting's window.
+        let mut inactivity = Inactivity::default();
+        inactivity.arm();
         Ok(Self {
             stream,
             decoder: maestro_text::Utf8Stream::default(),
             frames: Frames::default(),
             replies: VecDeque::new(),
             closing: None,
+            inactivity,
         })
     }
 
@@ -266,20 +312,23 @@ impl Control {
         let bytes = framed.as_bytes();
         let mut written = 0;
         while written < bytes.len() {
-            match tokio::time::timeout(INACTIVITY, self.stream.write(&bytes[written..])).await {
-                Ok(Ok(0)) => {
+            let write = self.stream.write(&bytes[written..]);
+            match self.inactivity.bound(Socket::Control, write).await {
+                Ok(0) => {
                     return Err(self.fail(io::Error::other(Self::UNEXPECTED_CLOSE).into()));
                 }
-                Ok(Ok(count)) => written += count,
-                Ok(Err(error)) => return Err(self.fail(error.into())),
-                Err(_) => return Err(self.fail(Box::new(Silent(Socket::Control)))),
+                Ok(count) => {
+                    written += count;
+                    self.inactivity.refresh();
+                }
+                Err(failure) => return Err(self.fail(failure)),
             }
         }
         Ok(())
     }
 
     /// Wait for the next complete reply.
-    pub(super) async fn reply(&mut self, deadline: Deadline) -> Result<Reply, Failure> {
+    pub(super) async fn reply(&mut self) -> Result<Reply, Failure> {
         if let Some(reason) = &self.closing {
             return Err(closed(reason));
         }
@@ -287,28 +336,23 @@ impl Control {
             if let Some(reply) = self.replies.pop_front() {
                 return Ok(reply);
             }
-            if let Err(failure) = self.fill(deadline).await {
+            if let Err(failure) = self.fill().await {
                 return Err(self.fail(failure));
             }
         }
     }
 
     /// Read once from the socket and frame whatever replies it completed.
-    async fn fill(&mut self, deadline: Deadline) -> Result<(), Failure> {
+    async fn fill(&mut self) -> Result<(), Failure> {
         let mut chunk = [0u8; 4096];
-        let read = match deadline {
-            Deadline::Inactivity => {
-                match tokio::time::timeout(INACTIVITY, self.stream.read(&mut chunk)).await {
-                    Ok(Ok(read)) => read,
-                    Ok(Err(error)) => return Err(error.into()),
-                    Err(_) => return Err(Box::new(Silent(Socket::Control))),
-                }
-            }
-            Deadline::Open => self.stream.read(&mut chunk).await?,
-        };
+        let read = self
+            .inactivity
+            .bound(Socket::Control, self.stream.read(&mut chunk))
+            .await?;
         if read == 0 {
             return Err(io::Error::other(Self::UNEXPECTED_CLOSE).into());
         }
+        self.inactivity.refresh();
         let text = self.decoder.push(&chunk[..read]);
         for reply in self.frames.push(&text)? {
             self.replies.push_back(reply);
@@ -361,7 +405,9 @@ impl FtpContext {
     /// # Errors
     /// Returns the server's refusal, or a transport failure.
     pub(super) async fn greeting(&mut self) -> Result<(), Failure> {
-        let reply = self.control.reply(Deadline::Inactivity).await?;
+        let reply = self.control.reply().await;
+        self.control.inactivity.clear();
+        let reply = reply?;
         if reply.completed() {
             Ok(())
         } else {
@@ -386,15 +432,18 @@ impl FtpContext {
     /// # Errors
     /// Returns a transport failure; a refusal is that command's answer.
     pub(super) async fn request_ignoring_error(&mut self, command: &str) -> Result<Reply, Failure> {
-        self.control.send(command).await?;
-        self.control.reply(Deadline::Inactivity).await
+        self.start(command).await?;
+        let reply = self.control.reply().await;
+        self.control.inactivity.clear();
+        reply
     }
 
-    /// Submit one command whose replies a transfer settles.
+    /// Start the task of one command: arm the control window, then send the command.
     ///
     /// # Errors
     /// Returns a transport failure.
-    pub(super) async fn send(&mut self, command: &str) -> Result<(), Failure> {
+    pub(super) async fn start(&mut self, command: &str) -> Result<(), Failure> {
+        self.control.inactivity.arm();
         self.control.send(command).await
     }
 
@@ -422,9 +471,34 @@ impl FtpContext {
         self.control.fail(failure)
     }
 
-    /// Drop the data connection of a finished operation.
+    /// Admit the transfer: the data connection takes the window over from the control connection.
+    ///
+    /// # Errors
+    /// Returns a failure when no data connection is installed.
+    pub(super) fn on_data_start(&mut self) -> Result<(), Failure> {
+        let Some(data) = self.data.as_mut() else {
+            return Err(io::Error::other(
+                "Data transfer should start but there is no data connection.",
+            )
+            .into());
+        };
+        self.control.inactivity.clear();
+        data.admit();
+        Ok(())
+    }
+
+    /// End the data: the control connection takes the window back to wait for the completion.
+    pub(super) fn on_data_done(&mut self) {
+        if let Some(data) = self.data.as_mut() {
+            data.inactivity.clear();
+        }
+        self.control.inactivity.arm();
+    }
+
+    /// Drop the data connection of a finished operation, which ends its command's task.
     pub(super) fn release(&mut self) {
         self.data = None;
+        self.control.inactivity.clear();
     }
 
     /// Close the write side of the installed data connection so a waiting peer completes.
@@ -457,6 +531,7 @@ mod tests {
             // The transfer's wait starts at t=0 and a control reply interrupts it at t=20.
             let (_server, connection) = tokio::io::duplex(64);
             let mut data = Data::new(connection);
+            data.admit();
             let mut chunk = [0u8; 8];
             assert!(
                 step(&mut data, &mut chunk).is_pending(),
@@ -487,6 +562,7 @@ mod tests {
         runtime::run_paused(async {
             let (mut server, connection) = tokio::io::duplex(64);
             let mut data = Data::new(connection);
+            data.admit();
             let mut chunk = [0u8; 8];
             assert!(
                 step(&mut data, &mut chunk).is_pending(),

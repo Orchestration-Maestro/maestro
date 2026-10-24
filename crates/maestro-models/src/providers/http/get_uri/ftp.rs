@@ -62,6 +62,7 @@ where
     R: AsyncRead + Unpin,
 {
     let mut reader = Data::new(data);
+    reader.admit();
     let mut payload = Payload::bounded(limit);
     let mut chunk = [0u8; 8192];
     loop {

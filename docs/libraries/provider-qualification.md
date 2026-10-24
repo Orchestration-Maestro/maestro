@@ -92,7 +92,7 @@ its source loader uses, over the already-locked Tokio socket, clock and I/O faci
 machine-listing instants. That subset is connecting and greeting, logging in, selecting
 binary and file-structure settings, preparing an extended or classic passive data
 connection, reading the modification time, listing one directory and downloading one
-file. One byte-activity window governs both connections and one sender frames every
+file. Each connection keeps its own byte-activity window and one sender frames every
 command, so a password never reaches a diagnostic. The implementation is native-only, so
 the browser build gains nothing. The earlier client dependency removed `suppaftp`,
 `lazy-regex =3.6.2` and `lazy-regex-proc_macros =3.6.2` from the lockfile and added no

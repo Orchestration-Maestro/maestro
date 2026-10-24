@@ -131,6 +131,11 @@ async fn expires<T>(
     );
 }
 
+/// A whole number of seconds.
+fn seconds(seconds: u64) -> Duration {
+    Duration::from_secs(seconds)
+}
+
 /// The instant one millisecond before `seconds`.
 fn before(seconds: u64) -> Duration {
     Duration::from_millis(seconds * 1000 - 1)
@@ -1293,6 +1298,202 @@ fn ftp_data_activity_outlives_a_reply_window() {
         assert_eq!(loaded.bytes, b"abcdefghi");
         peer.finish().unwrap();
     });
+}
+
+/// A scenario whose `RETR` answer waits until the test admits the transfer.
+fn admitted_by(admission: std::sync::mpsc::Receiver<()>, transfer: Transfer) -> Scenario {
+    Scenario {
+        held: Some(Held {
+            commands: &["RETR"],
+            releases: admission,
+        }),
+        transfer,
+        ..Scenario::default()
+    }
+}
+
+/// A transfer whose data connection sends these pieces, one per release, and then stays open
+/// until its close is released.
+fn dribbled(
+    parts: &'static [&'static [u8]],
+    pieces: std::sync::mpsc::Receiver<()>,
+    close: std::sync::mpsc::Receiver<()>,
+) -> Transfer {
+    Transfer {
+        dribble: Some(Dribble {
+            parts,
+            releases: pieces,
+        }),
+        close_after: Some(close),
+        ..Transfer::body(Vec::new())
+    }
+}
+
+#[test]
+fn ftp_data_window_starts_at_admission() {
+    // The data connection connects before the command and stays silent; the preliminary reply
+    // that admits the transfer twenty seconds later starts its window.
+    for opening in ["150", "125"] {
+        run_held(async move {
+            let (admit, admission) = gated();
+            let (piece, pieces) = gated();
+            let (close, closing) = gated();
+            let replies = (opening == "125").then(|| {
+                (
+                    &["RETR"] as &'static [&'static str],
+                    whole(&[b"125 data connection already open\r\n"]),
+                )
+            });
+            let peer = ftp_server::serve(vec![Scenario {
+                replies,
+                ..admitted_by(admission, dribbled(&[b"", b"never"], pieces, closing))
+            }])
+            .unwrap();
+            let mut running = loading(source(&peer, "", "/script.pac"));
+            running.reached(&peer, "RETR", 1).await;
+            let origin = Instant::now();
+            to(origin, seconds(20)).await;
+            admit.send(()).unwrap();
+            running.reached(&peer, &marker("piece-0"), 1).await;
+            to(origin, seconds(30)).await;
+            running
+                .pending(&format!("{opening}: the data window starts at admission"))
+                .await;
+            to(origin, before(50)).await;
+            running
+                .pending(&format!("{opening}: the admitted window is still open"))
+                .await;
+            to(origin, seconds(50)).await;
+            expires(running, origin, seconds(50), "data socket").await;
+            drop((piece, close));
+            peer.finish().unwrap();
+        });
+    }
+}
+
+#[test]
+fn ftp_late_data_byte_moves_the_admitted_window() {
+    // (admitted at, first byte at): the byte restarts the window wherever the admission put it.
+    for (admitted, byte) in [(20, 35), (0, 25)] {
+        run_held(async move {
+            let (admit, admission) = gated();
+            let (piece, pieces) = gated();
+            let (close, closing) = gated();
+            let peer = ftp_server::serve(vec![admitted_by(
+                admission,
+                dribbled(&[b"", b"x"], pieces, closing),
+            )])
+            .unwrap();
+            let mut running = loading(source(&peer, "", "/script.pac"));
+            running.reached(&peer, "RETR", 1).await;
+            let origin = Instant::now();
+            to(origin, seconds(admitted)).await;
+            admit.send(()).unwrap();
+            running.reached(&peer, &marker("piece-0"), 1).await;
+            to(origin, seconds(byte)).await;
+            running
+                .pending("the admitted window is open when the byte arrives")
+                .await;
+            piece.send(()).unwrap();
+            running.reached(&peer, &marker("piece-1"), 1).await;
+            to(origin, seconds(admitted + 30)).await;
+            running
+                .pending("the byte replaced the admitted window")
+                .await;
+            to(origin, before(byte + 30)).await;
+            running.pending("the byte's window is still open").await;
+            to(origin, seconds(byte + 30)).await;
+            expires(running, origin, seconds(byte + 30), "data socket").await;
+            drop(close);
+            peer.finish().unwrap();
+        });
+    }
+}
+
+#[test]
+fn ftp_early_completion_keeps_the_data_window() {
+    // (admitted at, completion at): a completion before the data ends neither ends nor restarts
+    // the data window.
+    for (admitted, completion) in [(20, 40), (0, 20)] {
+        run_held(async move {
+            let (admit, admission) = gated();
+            let (piece, pieces) = gated();
+            let (close, closing) = gated();
+            let peer = ftp_server::serve(vec![admitted_by(
+                admission,
+                Transfer {
+                    completion_first: true,
+                    ..dribbled(&[b"", b""], pieces, closing)
+                },
+            )])
+            .unwrap();
+            let mut running = loading(source(&peer, "", "/script.pac"));
+            running.reached(&peer, "RETR", 1).await;
+            let origin = Instant::now();
+            to(origin, seconds(admitted)).await;
+            admit.send(()).unwrap();
+            running.reached(&peer, &marker("piece-0"), 1).await;
+            to(origin, seconds(completion)).await;
+            piece.send(()).unwrap();
+            running.reached(&peer, &marker("completion-sent"), 1).await;
+            to(origin, before(admitted + 30)).await;
+            running
+                .pending("the completion leaves the data window open")
+                .await;
+            to(origin, seconds(admitted + 30)).await;
+            expires(running, origin, seconds(admitted + 30), "data socket").await;
+            drop(close);
+            peer.finish().unwrap();
+        });
+    }
+}
+
+#[test]
+fn ftp_data_end_hands_the_window_back_to_control() {
+    // The data ends at 25 seconds; the completion never comes, or its first fragment comes at 45.
+    for fragment in [None, Some(45)] {
+        run_held(async move {
+            let (piece, pieces) = gated();
+            let (close, closing) = gated();
+            let (complete, completing) = gated();
+            let peer = ftp_server::serve(vec![Scenario {
+                transfer: dribbled(&[b"", b"x"], pieces, closing),
+                completion: Some(Dribble {
+                    parts: &[b"", b"22", b"6 transfer complete\r\n"],
+                    releases: completing,
+                }),
+                ..Scenario::default()
+            }])
+            .unwrap();
+            let mut running = loading(source(&peer, "", "/script.pac"));
+            running.reached(&peer, &marker("piece-0"), 1).await;
+            let origin = Instant::now();
+            to(origin, seconds(20)).await;
+            piece.send(()).unwrap();
+            running.reached(&peer, &marker("piece-1"), 1).await;
+            to(origin, seconds(25)).await;
+            close.send(()).unwrap();
+            // The peer starts its completion only once the client closed its end of the data.
+            running.reached(&peer, &marker("piece-0"), 2).await;
+            let expiry = match fragment {
+                None => 55,
+                Some(at) => {
+                    to(origin, seconds(at)).await;
+                    complete.send(()).unwrap();
+                    running.reached(&peer, &marker("piece-1"), 2).await;
+                    at + 30
+                }
+            };
+            to(origin, before(expiry)).await;
+            running
+                .pending("the control window runs from its last activity")
+                .await;
+            to(origin, seconds(expiry)).await;
+            expires(running, origin, seconds(expiry), "control socket").await;
+            drop(complete);
+            peer.finish().unwrap();
+        });
+    }
 }
 
 #[test]

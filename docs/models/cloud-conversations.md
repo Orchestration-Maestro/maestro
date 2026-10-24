@@ -224,9 +224,12 @@ A passive data connection opens in extended passive mode first, taking only the 
 reply that may delimit it with `|` or, as the IBM i server does, with `!`. When that preparation
 fails the loader falls back to the classic mode, which keeps the data host the server advertises
 unless that address is private and the control connection's is not. Every completed read or
-write restarts the inactivity window, so a greeting, reply or transfer that keeps arriving
-byte by byte outlives thirty seconds while a silent connection fails at its own boundary; a
-transfer settles only when both the data connection ended and the control connection reported
+write restarts its own connection's inactivity window, so a greeting, reply or transfer that
+keeps arriving byte by byte outlives thirty seconds while a silent connection fails at its own
+boundary. The data connection's window starts when the server admits the transfer, and control
+replies during the transfer neither end nor restart it; once the data ends, the control
+connection's window runs again until the completion arrives. A transfer
+settles only when both the data connection ended and the control connection reported
 completion, in either order. A directory listing larger than 40 MiB is refused, and the control
 and data connections close on success, failure and cancellation, with the goodbye sent without
 waiting for its reply.

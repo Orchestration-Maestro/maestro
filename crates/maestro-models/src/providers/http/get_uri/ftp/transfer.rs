@@ -6,7 +6,7 @@ use std::sync::LazyLock;
 
 use tokio::net::TcpStream;
 
-use super::ftp_context::{Data, Deadline, FtpContext, Payload, connect_data};
+use super::ftp_context::{Data, FtpContext, Payload, connect_data};
 use super::parse_control_response::Reply;
 use crate::providers::http::decimal_prefix;
 use crate::providers::http::get_uri::Failure;
@@ -93,10 +93,9 @@ pub(super) async fn download(
     command: &str,
     limit: Option<usize>,
 ) -> Result<Vec<u8>, Failure> {
-    context.send(command).await?;
+    context.start(command).await?;
     let mut payload = Payload::bounded(limit);
     let mut chunk = [0u8; 8192];
-    let mut admitted = false;
     let mut eof = false;
     let mut completed = false;
     loop {
@@ -106,15 +105,9 @@ pub(super) async fn download(
         }
         let event = {
             let (control, data) = context.parts();
-            // The reference suspends the control timer only while admitted data is active.
-            let deadline = if admitted && !eof {
-                Deadline::Open
-            } else {
-                Deadline::Inactivity
-            };
             tokio::select! {
-                reply = control.reply(deadline) => Event::Reply(reply),
-                read = read(data, &mut chunk, admitted && !eof) => Event::Data(read),
+                reply = control.reply() => Event::Reply(reply),
+                read = read(data, &mut chunk) => Event::Data(read),
             }
         };
         match event {
@@ -130,15 +123,15 @@ pub(super) async fn download(
             Event::Reply(Ok(reply)) if reply.intermediate() => {
                 return Err(context.fail(unexpected(&reply)));
             }
-            Event::Reply(Ok(reply)) => {
-                if reply.code == 125 || reply.code == 150 {
-                    admitted = true;
-                } else if reply.completed() {
-                    completed = true;
+            Event::Reply(Ok(reply)) if reply.code == 125 || reply.code == 150 => {
+                if let Err(failure) = context.on_data_start() {
+                    return Err(context.fail(failure));
                 }
             }
+            Event::Reply(Ok(reply)) => completed |= reply.completed(),
             Event::Data(Ok(0)) => {
                 eof = true;
+                context.on_data_done();
                 context.shutdown_data().await;
             }
             Event::Data(Ok(read)) => {
@@ -158,14 +151,13 @@ enum Event {
     Data(Result<usize, Failure>),
 }
 
-/// Read one data chunk once the transfer admitted the connection.
+/// Read one data chunk while the transfer admitted the connection and its data has not ended.
 async fn read(
     data: Option<&mut Data<TcpStream>>,
     chunk: &mut [u8; 8192],
-    admitted: bool,
 ) -> Result<usize, Failure> {
-    match (data, admitted) {
-        (Some(data), true) => data.read(&mut chunk[..]).await,
+    match data {
+        Some(data) if data.active() => data.read(&mut chunk[..]).await,
         _ => std::future::pending().await,
     }
 }
