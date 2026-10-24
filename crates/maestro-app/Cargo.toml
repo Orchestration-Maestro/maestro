@@ -118,4 +118,3 @@ test = true
 [[example]]
 name = "rpc_client_demo"
 path = "examples/rpc_client_demo/main.rs"
-test = true

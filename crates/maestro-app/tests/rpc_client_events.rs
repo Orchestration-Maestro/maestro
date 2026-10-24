@@ -4,6 +4,7 @@
 use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of, poll_once};
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcEventListener};
+use maestro_process::child_process::process_exists;
 use serde_json::{Value, json};
 use std::{cell::RefCell, pin::pin, rc::Rc, task::Poll, time::Duration};
 
@@ -103,6 +104,7 @@ fn event_registrations_keep_duplicates_and_stop_on_error() {
         remove_first();
         remove_first();
         log.borrow_mut().clear();
+        while events.try_recv().is_ok() {}
         client.abort().await.unwrap();
         next_of(&mut events, "two").await;
         let expected = [
@@ -230,6 +232,90 @@ fn idle_and_collection_deadlines_keep_their_defaults_and_overrides() {
             assert!(matches!(collect, RpcClientError::CollectionTimeout { .. }));
             assert_eq!(collect.to_string(), "Timeout collecting events. Stderr: ");
         }
+    });
+}
+
+#[test]
+fn waits_ignore_events_after_their_deadline() {
+    let peer = Peer::new();
+    let script = r"
+emit({'type': 'peer_ready'})
+lines = commands()
+prompt = json.loads(next(lines))
+emit({'type': 'received'})
+abort = json.loads(next(lines))
+emit({'type': 'agent_end'})
+respond(prompt)
+respond(abort)
+sys.stdin.read()
+";
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        let (release, hold) = hold_clock();
+        let timeout = Some(Duration::from_secs(1));
+        let mut idle = pin!(client.wait_for_idle(timeout));
+        let mut collected = pin!(client.collect_events(timeout));
+        let mut prompted = pin!(client.prompt_and_wait("hello", None, timeout));
+        assert!(poll_once(prompted.as_mut()).is_pending());
+        next_of(&mut events, "received").await;
+        tokio::time::advance(Duration::from_secs(1)).await;
+        client.abort().await.unwrap();
+        assert!(matches!(
+            poll_once(idle.as_mut()),
+            Poll::Ready(Err(RpcClientError::IdleTimeout { .. }))
+        ));
+        assert!(matches!(
+            poll_once(collected.as_mut()),
+            Poll::Ready(Err(RpcClientError::CollectionTimeout { .. }))
+        ));
+        assert!(
+            matches!(
+                poll_once(prompted.as_mut()),
+                Poll::Ready(Err(RpcClientError::CollectionTimeout { .. }))
+            ),
+            "a prompt admitted after the collection's deadline times out"
+        );
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        client.stop().await.unwrap();
+    });
+}
+
+#[test]
+fn answers_after_their_deadline_reach_listeners() {
+    let peer = Peer::new();
+    let script = r"
+emit({'type': 'peer_ready'})
+lines = commands()
+first = json.loads(next(lines))
+emit({'type': 'received'})
+second = json.loads(next(lines))
+respond(first)
+respond(second)
+sys.stdin.read()
+";
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        let (release, hold) = hold_clock();
+        let mut first = pin!(client.abort());
+        assert!(poll_once(first.as_mut()).is_pending());
+        next_of(&mut events, "received").await;
+        tokio::time::advance(Duration::from_secs(30)).await;
+        client.abort().await.unwrap();
+        assert!(matches!(
+            poll_once(first.as_mut()),
+            Poll::Ready(Err(RpcClientError::RequestTimeout { .. }))
+        ));
+        assert_eq!(next_of(&mut events, "response").await["id"], "req_1");
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        client.stop().await.unwrap();
     });
 }
 
@@ -387,6 +473,81 @@ for line in commands():
             );
             client.stop().await.unwrap();
         }
+    });
+}
+
+/// Whether `future` has settled with [`RpcClientError::Stopped`] by now.
+fn stopped<T>(
+    future: std::pin::Pin<&mut impl std::future::Future<Output = Result<T, RpcClientError>>>,
+) -> bool {
+    matches!(poll_once(future), Poll::Ready(Err(RpcClientError::Stopped)))
+}
+
+#[test]
+fn child_exit_settles_work_while_a_descendant_keeps_the_output_open() {
+    let peer = Peer::new();
+    let script = r"
+import subprocess
+emit({'type': 'peer_ready', 'pid': os.getpid()})
+next(commands())
+subprocess.Popen(['sh', '-c', 'read _'])
+os._exit(0)
+";
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        let ready = next_of(&mut events, "peer_ready").await;
+        let pid = u32::try_from(ready["pid"].as_u64().unwrap()).unwrap();
+        let (release, hold) = hold_clock();
+        let mut idle = pin!(client.wait_for_idle(None));
+        let mut state = pin!(client.get_state());
+        assert!(poll_once(state.as_mut()).is_pending());
+        while process_exists(pid) {
+            tokio::task::yield_now().await;
+        }
+        assert!(stopped(state.as_mut()), "the request settles at the exit");
+        assert!(stopped(idle.as_mut()), "the wait settles at the exit");
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        client.stop().await.unwrap();
+    });
+}
+
+#[test]
+fn work_registered_during_termination_settles_when_it_ends() {
+    let peer = Peer::new();
+    let script = r"
+signal.signal(signal.SIGTERM, lambda *_: os.write(2, b'terminating\n'))
+emit({'type': 'peer_ready'})
+while True: time.sleep(1)
+";
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        let (release, hold) = hold_clock();
+        let mut stop = pin!(client.stop());
+        assert!(poll_once(stop.as_mut()).is_pending());
+        while !client.get_stderr().contains("terminating") {
+            tokio::task::yield_now().await;
+        }
+        let mut idle = pin!(client.wait_for_idle(None));
+        let mut state = pin!(client.get_state());
+        assert!(poll_once(state.as_mut()).is_pending());
+        tokio::time::advance(Duration::from_millis(1000)).await;
+        stop.await.unwrap();
+        assert!(
+            stopped(state.as_mut()),
+            "a request sent while stopping settles"
+        );
+        assert!(
+            stopped(idle.as_mut()),
+            "a wait registered while stopping settles"
+        );
+        release.send(()).unwrap();
+        hold.await.unwrap();
     });
 }
 

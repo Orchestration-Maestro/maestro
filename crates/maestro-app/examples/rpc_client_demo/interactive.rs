@@ -12,7 +12,7 @@ pub type Output = Rc<RefCell<dyn Write>>;
 const PREVIEW_CHARS: usize = 200;
 
 /// Runs the flow until an `exit` line, which stops the client, or an interrupt while no turn
-/// runs, which starts stopping it. Lines that arrive during a turn are ignored; an interrupt
+/// runs, which asks the child to terminate without waiting for its end. Lines that arrive during a turn are ignored; an interrupt
 /// during a turn sends an abort without waiting for it.
 ///
 /// # Errors
@@ -39,6 +39,9 @@ pub async fn run(
             Some(()) = interrupts.recv() => {
                 if turn.is_none() {
                     tokio::task::spawn_local(async move { client.stop().await });
+                    // One yield runs the stop and the child's driver, which asks the child to
+                    // terminate before the caller tears the task set down.
+                    tokio::task::yield_now().await;
                     return Ok(());
                 }
                 writeln!(output.borrow_mut(), "\n[Aborting...]")?;
@@ -136,6 +139,7 @@ pub fn report(result: Result<(), RpcClientError>, stderr: &mut dyn Write) {
 mod tests {
     use super::*;
     use crate::rpc_peer::{Peer, events, next_of};
+    use crate::support::session_harness::on_task_set;
     use serde_json::json;
     use tokio::sync::mpsc;
 
@@ -263,15 +267,10 @@ for line in commands():
         }
     }
 
-    /// Completes `future` inside a task set on a runtime with its I/O and time drivers.
-    fn on_task_set<F: std::future::Future>(future: F) -> F::Output {
-        crate::runtime::io_runtime().block_on(tokio::task::LocalSet::new().run_until(future))
-    }
-
     #[test]
     fn illustration_streams_state_text_thinking_and_tool_output() {
         let peer = Peer::new();
-        on_task_set(async {
+        on_task_set(|_| async {
             for (model, selected) in [
                 (Some(model()), "anthropic/claude-sonnet-4-20250514"),
                 (None, "undefined/undefined"),
@@ -293,7 +292,7 @@ for line in commands():
     #[test]
     fn illustration_keeps_original_lines_and_exact_exit_whitespace() {
         let peer = Peer::new();
-        on_task_set(async {
+        on_task_set(|_| async {
             let mut flow = Flow::start(&peer, &state(None));
             flow.answer("  hello  ").await;
             flow.answer("\u{85}exit").await;
@@ -316,7 +315,7 @@ for line in commands():
     #[test]
     fn illustration_suppresses_input_while_a_turn_is_waiting() {
         let peer = Peer::new();
-        on_task_set(async {
+        on_task_set(|_| async {
             let mut flow = Flow::start(&peer, &state(None));
             let mut events = events(&flow.client);
             flow.answer("hold").await;
@@ -339,7 +338,7 @@ for line in commands():
     #[test]
     fn illustration_interrupts_follow_the_waiting_state() {
         let peer = Peer::new();
-        on_task_set(async {
+        on_task_set(|_| async {
             let mut flow = Flow::start(&peer, &state(None));
             let mut events = events(&flow.client);
             flow.answer("hold").await;
@@ -362,6 +361,47 @@ for line in commands():
     }
 
     #[test]
+    fn illustration_idle_interrupt_requests_termination_before_teardown() {
+        let peer = Peer::new();
+        let marker = peer.scratch.join("marker");
+        let script = r"
+mark = lambda text: os.write(os.open(os.environ['PEER_MARKER'], os.O_WRONLY | os.O_CREAT), text)
+signal.signal(signal.SIGTERM, lambda *_: (mark(b'terminated'), os._exit(0)))
+for line in commands(): respond(json.loads(line), json.loads(os.environ['PEER_STATE']))
+mark(b'input closed')
+";
+        let mut options = peer.options(script);
+        options.env.insert("PEER_MARKER".into(), marker.clone());
+        options
+            .env
+            .insert("PEER_STATE".into(), state(None).to_string());
+        let (signal, mut prompts) = mpsc::unbounded_channel();
+        let output: Output = Rc::new(RefCell::new(Recorder {
+            text: Vec::new(),
+            prompts: signal,
+        }));
+        let (_lines, input) = mpsc::unbounded_channel();
+        let (interrupt, interrupts) = mpsc::unbounded_channel();
+        let runtime = crate::support::io_runtime();
+        tokio::task::LocalSet::new().block_on(&runtime, async {
+            let interrupting = async {
+                prompts.recv().await.unwrap();
+                interrupt.send(()).unwrap();
+            };
+            let client = Rc::new(RpcClient::new(options));
+            let (result, ()) = tokio::join!(run(client, input, interrupts, output), interrupting);
+            result.unwrap();
+        });
+        // The task set is gone, as it is once the example's entry returns.
+        let mut ended = String::new();
+        while ended.is_empty() {
+            std::thread::yield_now();
+            ended = std::fs::read_to_string(&marker).unwrap_or_default();
+        }
+        assert_eq!(ended, "terminated");
+    }
+
+    #[test]
     fn illustration_preview_keeps_the_boundary_scalar() {
         let quoted = |text: String| preview(&json!(text)).unwrap();
         assert_eq!(preview(&Value::Null).unwrap(), "null");
@@ -377,7 +417,7 @@ for line in commands():
     #[test]
     fn illustration_reports_top_level_error_without_extra_diagnostics() {
         let peer = Peer::new();
-        on_task_set(async {
+        on_task_set(|_| async {
             let mut options = peer.options(SESSION);
             options.cli_path = Some(peer.scratch.join("missing"));
             let (_lines, input) = mpsc::unbounded_channel();

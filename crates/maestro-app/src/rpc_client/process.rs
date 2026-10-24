@@ -67,9 +67,10 @@ pub(super) fn launch(
         done: done.clone(),
         exit: None,
     });
+    let forward = forward_stderr()?;
     let weak = Rc::downgrade(inner);
     tokio::task::spawn_local(write_lines(input, queue));
-    tokio::task::spawn_local(record_stderr(errors, weak.clone()));
+    tokio::task::spawn_local(record_stderr(errors, forward, weak.clone()));
     tokio::task::spawn_local(drive_child(child, output, stopped, weak, finished));
     Ok(done)
 }
@@ -85,19 +86,39 @@ async fn write_lines(
     }
 }
 
-/// Forwards the child's diagnostic bytes to this process's stderr and appends their text
-/// to the client's, until the pipe ends.
-async fn record_stderr(mut errors: ChildStderr, inner: Weak<Inner>) {
+/// Starts the thread that writes the child's diagnostic bytes to this process's stderr, so
+/// a slow reader of it never holds up the client; the thread ends with the returned sender.
+///
+/// # Errors
+/// Returns the failure to start the thread.
+fn forward_stderr() -> io::Result<std::sync::mpsc::Sender<Vec<u8>>> {
+    let (forward, chunks) = std::sync::mpsc::channel::<Vec<u8>>();
+    std::thread::Builder::new().spawn(move || {
+        let mut stderr = io::stderr();
+        for chunk in chunks {
+            // Like any diagnostic output, a failure to forward is not the child's failure.
+            let _ = stderr.write_all(&chunk);
+        }
+    })?;
+    Ok(forward)
+}
+
+/// Appends the text of the child's diagnostic bytes to the client's, then hands the bytes
+/// to `forward`, until the pipe ends.
+async fn record_stderr(
+    mut errors: ChildStderr,
+    forward: std::sync::mpsc::Sender<Vec<u8>>,
+    inner: Weak<Inner>,
+) {
     let mut text = Utf8Stream::default();
-    let mut chunk = Vec::with_capacity(8192);
     loop {
-        chunk.clear();
+        let mut chunk = Vec::with_capacity(8192);
         if !matches!(errors.read_buf(&mut chunk).await, Ok(1..)) {
             break;
         }
-        // Like any diagnostic output, a failure to forward is not the child's failure.
-        let _ = io::stderr().write_all(&chunk);
         append_stderr(&inner, &text.push(&chunk));
+        // A send fails only once the forwarding thread has gone, leaving nowhere to forward.
+        let _ = forward.send(chunk);
     }
     append_stderr(&inner, &text.finish());
 }
@@ -110,9 +131,10 @@ fn append_stderr(inner: &Weak<Inner>, text: &str) {
 }
 
 /// Hands each output line to the client until a stop request or until the child has exited
-/// and its output has ended, which ends the client's pending work. A stop detaches the
-/// output, then terminates the child and reports the outcome. `finished` is dropped on
-/// return.
+/// and its output has ended. The child's exit ends the client's pending work, whoever still
+/// holds the output open, and so does the driver's end, for work added meanwhile. A stop
+/// detaches the output, then terminates the child and reports the outcome. `finished` is
+/// dropped on return.
 async fn drive_child(
     mut child: CapturedChild,
     output: ChildStdout,
@@ -135,8 +157,7 @@ async fn drive_child(
             report = &mut stop => {
                 lines.detach();
                 let _ = report.send(child.terminate(Termination::TerminateThenKill { after: STOP_GRACE }).await);
-                drop(finished);
-                return;
+                break;
             }
             read = lines.next_line(), if reading => {
                 let line = match read {
@@ -161,13 +182,19 @@ async fn drive_child(
                 if let Ok(status) = status {
                     record_exit(&inner, status);
                 }
+                settle(&inner);
             }
         }
     }
+    settle(&inner);
+    drop(finished);
+}
+
+/// Ends the client's pending work while the client exists.
+fn settle(inner: &Weak<Inner>) {
     if let Some(inner) = inner.upgrade() {
         inner.fail_owned();
     }
-    drop(finished);
 }
 
 /// Records the child's exit status on the running child.

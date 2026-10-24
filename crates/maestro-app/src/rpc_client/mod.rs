@@ -8,6 +8,9 @@ mod commands;
 mod events;
 mod process;
 mod requests;
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+mod tests;
 mod types;
 
 pub use types::{ModelInfo, RpcClientError, RpcClientOptions, RpcEventListener};
@@ -15,7 +18,7 @@ pub use types::{ModelInfo, RpcClientError, RpcClientOptions, RpcEventListener};
 use events::ClientListener;
 use maestro_models::records::listeners::Listeners;
 use maestro_process::child_process::CapturedChild;
-use requests::Responder;
+use requests::Pending;
 use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
 use tokio::sync::{mpsc, oneshot, watch};
 
@@ -45,7 +48,7 @@ struct ClientState {
     /// The current child, from start until stop.
     running: Option<Running>,
     /// The requests awaiting their answer, by identifier.
-    pending: HashMap<String, Responder>,
+    pending: HashMap<String, Pending>,
     /// The number of the last request sent.
     request_id: u64,
     /// Every child's diagnostic text, in arrival order.

@@ -5,7 +5,13 @@ use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcClientOptions};
 use maestro_process::child_process::process_exists;
 use serde_json::{Value, json};
-use std::{path::Path, pin::pin, task::Poll, time::Duration};
+use std::{
+    io::{BufRead, Read},
+    path::Path,
+    pin::pin,
+    task::Poll,
+    time::Duration,
+};
 
 /// Reports the arguments, directory and environment, then waits for its input to end.
 const REPORT: &str = r"
@@ -231,51 +237,116 @@ fn startup_observes_the_hundred_millisecond_boundary() {
     });
 }
 
+/// More diagnostic text than a pipe holds, so an unread standard error blocks its writer.
+const FILL: usize = 1 << 20;
+
+/// Runs a client whose child writes more diagnostic text than this process's unread
+/// standard error holds, then reports the retained text and waits for the parent.
+fn forwarding_child() {
+    let peer = Peer::new();
+    let script = format!(
+        r"
+signal.signal(signal.SIGTERM, lambda *_: (os.write(2, b'terminating\xc3'), os.write(2, b'\xa9\n')))
+os.write(2, b'boot\xff\n')
+sys.stderr.buffer.write(b'x' * {FILL}); sys.stderr.flush()
+emit({{'type': 'peer_ready'}})
+for line in commands(): respond(json.loads(line))
+"
+    );
+    on_task_set(|_| async {
+        let client = RpcClient::new(peer.options(&script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        client.abort().await.unwrap();
+        client.stop().await.unwrap();
+        let retained = client.get_stderr().replace(&"x".repeat(FILL), "<fill>");
+        println!("PROBE {}", json!(retained));
+    });
+    // The parent reads the forwarded text only now, then lets this process end.
+    let _ = std::io::stdin().read_line(&mut String::new());
+}
+
 #[test]
 fn stderr_is_forwarded_and_retained_during_start_and_stop() {
     if maestro_test_process::selection().is_child() {
-        let peer = Peer::new();
-        let script = r"
-signal.signal(signal.SIGTERM, lambda *_: (os.write(2, b'terminating\xc3'), os.write(2, b'\xa9\n')))
-os.write(2, b'boot\xff\n')
-emit({'type': 'peer_ready'})
-while True: time.sleep(1)
-";
-        on_task_set(|_| async {
-            let client = RpcClient::new(peer.options(script));
-            let mut events = events(&client);
-            client.start().await.unwrap();
-            next_of(&mut events, "peer_ready").await;
-            client.stop().await.unwrap();
-            println!("PROBE {}", json!(client.get_stderr()));
-        });
+        forwarding_child();
         return;
     }
-    let output = maestro_test_process::TestProcess::current(
+    let mut child = maestro_test_process::TestProcess::current(
         "stderr_is_forwarded_and_retained_during_start_and_stop",
     )
     .unwrap()
     .nocapture()
+    .stdin(std::process::Stdio::piped())
+    .stderr(std::process::Stdio::piped())
     .case("*")
-    .output()
+    .spawn()
     .unwrap();
-    assert!(output.status.success());
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let probe = stdout
-        .lines()
-        .find_map(|line| line.strip_prefix("PROBE "))
-        .unwrap();
+    let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
+    let probe = loop {
+        let mut line = String::new();
+        assert!(
+            stdout.read_line(&mut line).unwrap() > 0,
+            "the child reports"
+        );
+        if let Some(probe) = line.strip_prefix("PROBE ") {
+            break probe.trim_end().to_owned();
+        }
+    };
     assert_eq!(
         probe,
-        json!("boot\u{fffd}\nterminating\u{e9}\n").to_string()
+        json!("boot\u{fffd}\n<fill>terminating\u{e9}\n").to_string()
     );
-    let forwarded = b"boot\xff\nterminating\xc3\xa9\n";
-    assert!(
-        output
-            .stderr
-            .windows(forwarded.len())
-            .any(|window| window == forwarded)
-    );
+    let forwarded = [
+        &b"boot\xff\n"[..],
+        &b"x".repeat(FILL),
+        b"terminating\xc3\xa9\n",
+    ]
+    .concat();
+    let mut stderr = child.stderr.take().unwrap();
+    let mut seen = Vec::new();
+    while !seen.ends_with(b"terminating\xc3\xa9\n") {
+        let mut chunk = [0; 8192];
+        let read = stderr.read(&mut chunk).unwrap();
+        assert!(read > 0, "the forwarded text arrives before the child ends");
+        seen.extend_from_slice(&chunk[..read]);
+    }
+    assert!(seen.ends_with(&forwarded));
+    drop(child.stdin.take());
+    assert!(child.wait().unwrap().success());
+}
+
+#[test]
+fn stderr_keeps_a_character_split_across_reads() {
+    let peer = Peer::new();
+    let script = r"
+os.write(2, b'a\xc3')
+emit({'type': 'peer_ready'})
+for line in commands():
+    os.write(2, b'\xa9\n')
+    respond(json.loads(line))
+";
+    on_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        while client.get_stderr().is_empty() {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(
+            client.get_stderr(),
+            "a",
+            "a partial character waits for its end"
+        );
+        client.abort().await.unwrap();
+        while !client.get_stderr().ends_with('\n') {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(client.get_stderr(), "a\u{e9}\n");
+        client.stop().await.unwrap();
+    });
 }
 
 #[test]

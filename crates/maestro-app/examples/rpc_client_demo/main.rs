@@ -52,31 +52,3 @@ fn main() -> std::io::Result<()> {
 /// The client controls a native child, which browser builds do not have.
 #[cfg(target_arch = "wasm32")]
 fn main() {}
-
-#[cfg(test)]
-#[cfg(unix)]
-#[path = "../../tests/support/child.rs"]
-#[allow(dead_code, reason = "These tests use only the scratch directory.")]
-mod child;
-
-#[cfg(test)]
-#[cfg(unix)]
-#[path = "../../tests/support/native.rs"]
-#[allow(
-    dead_code,
-    unused_imports,
-    reason = "These tests use only the executable installer."
-)]
-mod native;
-
-#[cfg(test)]
-#[cfg(unix)]
-#[path = "../../tests/support/rpc_peer.rs"]
-#[allow(dead_code, reason = "These tests use only the controlled child.")]
-mod rpc_peer;
-
-#[cfg(test)]
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "../../tests/support/runtime.rs"]
-#[allow(dead_code, reason = "These tests use only the I/O runtime.")]
-mod runtime;

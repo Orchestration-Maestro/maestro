@@ -23,8 +23,10 @@ child and `stop` ends it; a stopped client can be started again.
 reports a child that exited in that time, with its exit code (`null` when a signal
 ended it) and its diagnostic text. That child still counts as started until `stop`.
 
-The child's stderr is copied to the caller's stderr as it arrives. `get_stderr`
-returns the text every child of the client has written so far.
+The child's stderr is kept as it arrives and copied to the caller's stderr by a
+separate thread, so a slow reader of that stream never holds up answers or
+deadlines. Bytes still waiting to be copied when the process exits are lost.
+`get_stderr` returns the text every child of the client has written so far.
 
 `stop` stops delivering the child's output, sends the ordinary termination signal,
 kills the child if it is still running one second later, and waits until it is
@@ -48,8 +50,11 @@ A method fails with:
 - `Client not started` without a child;
 - `Timeout waiting for response to <command>. Stderr: <text>` when no answer arrives
   within 30 seconds;
-- `Client stopped` when the client is stopped, or the child ends, before the answer
-  arrives.
+- `Client stopped` when the client is stopped, or the child exits, before the answer
+  arrives. A request sent while the client is stopping fails this way when the stop
+  ends.
+
+An answer that arrives after the 30 seconds goes to the event callbacks.
 
 `get_last_assistant_text` returns a `Presence<String>`: missing when the session has
 no assistant message, and `null` or the text when it answers with one of them.
@@ -74,7 +79,9 @@ does nothing; dropping it keeps the registration.
 seconds unless given a timeout. They fail with
 `Timeout waiting for agent to become idle. Stderr: <text>` or
 `Timeout collecting events. Stderr: <text>`, and with `Client stopped` when the
-child is stopped or ends first.
+child is stopped or exits first. A wait registered while the client is stopping
+fails this way when the stop ends. Nothing that arrives after the deadline counts,
+even when the wait is awaited later.
 
 `prompt_and_wait` starts collecting before it sends the prompt, so events the
 session writes before its answer are kept. When the prompt fails, the collection

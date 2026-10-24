@@ -11,7 +11,15 @@ use tokio::{sync::oneshot, time::Instant};
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Settles one request with its answer, or with the failure to decode it.
-pub(super) type Responder = oneshot::Sender<Result<RpcResponse, RpcClientError>>;
+type Responder = oneshot::Sender<Result<RpcResponse, RpcClientError>>;
+
+/// A request awaiting its answer, until its deadline.
+pub(super) struct Pending {
+    /// Settles the request.
+    respond: Responder,
+    /// From when an answer no longer counts.
+    deadline: Instant,
+}
 
 /// Removes a request's correlation when its call ends, however it ends.
 struct PendingRequest<'a> {
@@ -49,7 +57,9 @@ impl RpcClient {
             state.request_id += 1;
             let id = format!("req_{}", state.request_id);
             let (respond, answer) = oneshot::channel();
-            state.pending.insert(id.clone(), respond);
+            state
+                .pending
+                .insert(id.clone(), Pending { respond, deadline });
             (input, id, answer)
         };
         let _pending = PendingRequest {
@@ -104,13 +114,19 @@ impl Inner {
         }
     }
 
-    /// Removes and returns the pending request that `record` answers.
+    /// Removes and returns the pending request that `record` answers before its deadline;
+    /// an answer at or after the deadline goes to the event callbacks, like the answer to a
+    /// request that has already timed out.
     fn correlated(&self, record: &Value) -> Option<Responder> {
         if record["type"] != "response" {
             return None;
         }
         let id = record.get("id")?.as_str()?;
-        self.state.borrow_mut().pending.remove(id)
+        let mut state = self.state.borrow_mut();
+        if state.pending.get(id)?.deadline <= Instant::now() {
+            return None;
+        }
+        state.pending.remove(id).map(|pending| pending.respond)
     }
 }
 

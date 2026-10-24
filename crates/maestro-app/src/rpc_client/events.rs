@@ -50,6 +50,8 @@ struct EventWait {
 struct WaitState {
     /// What the wait keeps.
     kind: WaitKind,
+    /// When the wait gives up; nothing that arrives from then on counts.
+    deadline: Option<Instant>,
     /// Settles the wait; taken when it does.
     settle: RefCell<Option<oneshot::Sender<WaitOutcome>>>,
     /// The events kept so far.
@@ -59,7 +61,10 @@ struct WaitState {
 impl WaitState {
     /// Keeps `input` when the wait collects, and settles the wait when `input` ends it.
     fn observe(&self, input: &ClientInput<'_>) {
-        if self.settle.borrow().is_none() {
+        let expired = self
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline);
+        if expired || self.settle.borrow().is_none() {
             return;
         }
         let outcome = match input {
@@ -151,6 +156,7 @@ impl RpcClient {
         let (settle, outcome) = oneshot::channel();
         let state = WaitState {
             kind,
+            deadline,
             settle: RefCell::new(Some(settle)),
             events: RefCell::new(Vec::new()),
         };
