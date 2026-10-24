@@ -1544,3 +1544,45 @@ fn transcript_replay_and_expansion_keep_linear_work() {
         },
     );
 }
+
+#[test]
+fn transcript_batched_results_keep_pending_call_order() {
+    isolated(
+        "transcript_batched_results_keep_pending_call_order",
+        |directory| {
+            for count in [16, 32, 64] {
+                let world = recorded(directory, Setup::default());
+                let id = |index: usize| format!("c{index}");
+                let calls: Vec<_> = (0..count)
+                    .map(|index| call(&id(index), "unknown_tool"))
+                    .collect();
+                let last = id(count - 1);
+                // The batch's results arrive in call order after every call; `c1` is called
+                // again while pending, `c0` again after its result, and two calls stay open.
+                let mut messages = vec![
+                    assistant(&Value::Array(calls), "toolUse", None),
+                    assistant(&json!([call("c1", "unknown_tool")]), "toolUse", None),
+                ];
+                messages.extend(
+                    (0..count)
+                        .map(id)
+                        .filter(|key| key != "c1" && *key != last)
+                        .map(|key| result(&key)),
+                );
+                messages.push(assistant(
+                    &json!([call("c0", "unknown_tool")]),
+                    "toolUse",
+                    None,
+                ));
+                replay(&world, messages);
+                let rows = world.mode.chat_container.render(100);
+                let completed = rows
+                    .iter()
+                    .filter(|row| row.contains("HISTORICAL_RESULT"))
+                    .count();
+                assert_eq!(completed, count - 2, "{rows:#?}");
+                assert_eq!(pending(&world), ["c1".to_owned(), last, "c0".to_owned()]);
+            }
+        },
+    );
+}
