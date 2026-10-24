@@ -85,8 +85,8 @@ impl HostWallClock for Clock {
 pub struct State {
     /// WASI state the component's standard library needs.
     wasi: WasiCtx,
-    /// The wall clock the standard library reads.
-    clock: Clock,
+    /// The wall clock the standard library reads, when the test supplies one.
+    clock: Option<Clock>,
     /// Host-side resources by handle.
     pub table: ResourceTable,
     /// What the host observed.
@@ -105,11 +105,17 @@ impl WasiView for State {
 }
 
 impl State {
-    /// A state with no registrations.
+    /// A state with no registrations, reading the host's own wall clock.
     fn new() -> Self {
-        let clock = Clock::default();
+        Self::with_clock(None)
+    }
+
+    /// A state with no registrations whose standard library reads `clock`.
+    fn with_clock(clock: Option<Clock>) -> Self {
         let mut builder = WasiCtxBuilder::new();
-        builder.wall_clock(clock.clone());
+        if let Some(clock) = &clock {
+            builder.wall_clock(clock.clone());
+        }
         Self {
             wasi: builder.build(),
             clock,
@@ -956,10 +962,28 @@ impl Harness {
 
     /// Instantiates a supplied compiled component and runs its factory.
     pub async fn from_compiled(engine: &Engine, component: &Component) -> wasmtime::Result<Self> {
+        Self::start_on(engine, component, State::new()).await
+    }
+
+    /// Instantiates a supplied compiled component whose standard library reads `clock`.
+    pub async fn from_compiled_with_clock(
+        engine: &Engine,
+        component: &Component,
+        clock: Clock,
+    ) -> wasmtime::Result<Self> {
+        Self::start_on(engine, component, State::with_clock(Some(clock))).await
+    }
+
+    /// Instantiates a component on `state` and runs its factory.
+    async fn start_on(
+        engine: &Engine,
+        component: &Component,
+        state: State,
+    ) -> wasmtime::Result<Self> {
         let mut linker = Linker::new(engine);
         wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
         Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
-        let mut store = Store::new(engine, State::new());
+        let mut store = Store::new(engine, state);
         let extension = Extension::instantiate_async(&mut store, component, &linker).await?;
         let exports = extension.maestro_extension_guest().clone();
         store.data_mut().guest = Some(exports.clone());
@@ -986,8 +1010,8 @@ impl Harness {
         &mut self.store.data_mut().observed
     }
 
-    /// The wall clock the component's standard library reads.
-    pub fn clock(&self) -> Clock {
+    /// The wall clock the component's standard library reads, when the test supplied one.
+    pub fn clock(&self) -> Option<Clock> {
         self.store.data().clock.clone()
     }
 

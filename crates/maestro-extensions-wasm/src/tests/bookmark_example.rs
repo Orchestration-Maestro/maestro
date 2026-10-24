@@ -125,8 +125,12 @@ impl ComponentHost {
         let path = super::build::example_component("bookmark")?;
         let (engine, component) =
             super::build::compile(&path).map_err(|error| error.to_string())?;
-        let harness = super::block_on(Harness::from_compiled(&engine, &component))
-            .map_err(|error| error.to_string())?;
+        let harness = super::block_on(Harness::from_compiled_with_clock(
+            &engine,
+            &component,
+            super::host::Clock::default(),
+        ))
+        .map_err(|error| error.to_string())?;
         let bookmark = harness
             .callback("command bookmark")
             .map_err(|error| error.to_string())?;
@@ -159,13 +163,13 @@ impl Host for ComponentHost {
     }
 
     fn set_clock(&mut self, millis: u64) {
-        let clock = self.harness.clock();
+        let clock = self.harness.clock().expect("a supplied clock");
         clock.set(millis);
         clock.reset_reads();
     }
 
     fn clock_reads(&self) -> Option<usize> {
-        Some(self.harness.clock().reads())
+        Some(self.harness.clock().expect("a supplied clock").reads())
     }
 
     fn run(&mut self, command: Command, args: &str) -> Answer {
@@ -474,6 +478,39 @@ fn bookmark_component_replays_recorded_cases() -> Result<(), String> {
         run_case(&mut started, case);
     }
     started.release();
+    Ok(())
+}
+
+/// A component the test never gives a clock reads the host wall clock.
+#[test]
+fn bookmark_component_reads_host_clock() -> Result<(), String> {
+    let path = super::build::example_component("bookmark")?;
+    let mut harness =
+        super::block_on(super::host::Harness::start(&path)).map_err(|error| error.to_string())?;
+    harness.observed().readers.control(
+        &json!({ "bind": { "replies": [{
+            "method": "getEntries",
+            "args": [],
+            "value": [assistant("assistant")],
+        }] } })
+        .to_string(),
+    );
+    harness.store.data().observed.readers.acquire()?;
+    let key = harness
+        .callback("command bookmark")
+        .map_err(|error| error.to_string())?;
+    super::example_support::invoke_command_on_component(&mut harness, key, "", false)?;
+    let sets = label_writes(&harness.store.data().observed.transcript);
+    let label = sets
+        .first()
+        .and_then(|set| set.label.as_deref())
+        .ok_or("a default timestamp label")?;
+    let millis: u128 = label
+        .strip_prefix("bookmark-")
+        .ok_or("a generated label")?
+        .parse()
+        .map_err(|error| format!("{error}"))?;
+    assert!(millis > 0, "the host clock reports a real instant: {label}");
     Ok(())
 }
 
