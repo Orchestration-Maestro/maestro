@@ -271,7 +271,7 @@ fn shorten_path_with_home(path: &str, environment: &dyn Fn(&str) -> Option<Strin
 }
 
 /// Replaces a nonempty supplied raw home prefix for display.
-fn shorten_home_path(path: &str, home: Option<&str>) -> String {
+pub(crate) fn shorten_home_path(path: &str, home: Option<&str>) -> String {
     home.filter(|home| !home.is_empty())
         .and_then(|home| path.strip_prefix(home))
         .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
