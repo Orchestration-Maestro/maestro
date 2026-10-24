@@ -241,7 +241,7 @@ fn moved(root: &str, value: Value) -> Value {
 /// needs links or a removed working directory where the platform has neither, for a case
 /// recorded with POSIX paths on a Windows host, and for a permission row this host cannot
 /// state because it is not refused the write.
-fn prepare(mut case: Value, tree: &maestro_test_directory::Scratch) -> Option<Prepared> {
+fn prepare(mut case: Value, tree: &maestro_test_directory::Scratch) -> Option<Case> {
     if case["input"]["windows"] != true {
         if cfg!(windows) {
             return None;
@@ -288,19 +288,7 @@ fn prepare(mut case: Value, tree: &maestro_test_directory::Scratch) -> Option<Pr
             case.expected = json!({"error": std::env::current_dir().unwrap_err().to_string()});
         }
     }
-    let restores = refuse_writes(&case)?;
-    Some(Prepared {
-        case,
-        _restores: restores,
-    })
-}
-
-/// One recorded case on its own install tree.
-struct Prepared {
-    /// The case with its POSIX paths moved below that tree.
-    case: Case,
-    /// Permissions to give back before the tree is dropped, held only for that effect.
-    _restores: Restoring,
+    Some(case)
 }
 
 /// What a permission row has to give back: guards on Unix, nothing elsewhere.
@@ -352,6 +340,9 @@ pub fn run_bun_roots(fixture: &str) {
         return;
     }
     replay_cases(fixture, false);
+    // These rows state the Unix home rule, where an empty home stays empty and joins below
+    // the working directory.
+    #[cfg(unix)]
     for row in home_rows() {
         let tree = maestro_test_directory::Scratch::new().unwrap();
         let case = row.case(tree.path().to_str().unwrap());
@@ -377,13 +368,17 @@ fn replay_cases(fixture: &str, compose_root: bool) {
     assert!(!cases.is_empty());
     for case in cases {
         let tree = maestro_test_directory::Scratch::new().unwrap();
-        let Some(prepared) = prepare(case, &tree) else {
+        let Some(case) = prepare(case, &tree) else {
             continue;
         };
-        if prepared.case.input.home.is_some() {
-            replay_with_home(&prepared.case, compose_root, None, &tree);
+        // The refused writes are given back before the tree that holds them is dropped.
+        let Some(_restores) = refuse_writes(&case) else {
+            continue;
+        };
+        if case.input.home.is_some() {
+            replay_with_home(&case, compose_root, None, &tree);
         } else {
-            replay(&prepared.case, compose_root);
+            replay(&case, compose_root);
         }
     }
 }
@@ -458,6 +453,7 @@ fn home_variable() -> &'static str {
 
 /// The selections whose home comes from the child environment: a home with spaces, an empty
 /// home, an absent home and an unrelated home beside a matching bin root.
+#[cfg(unix)]
 fn home_rows() -> [HomeRow; 4] {
     const PACKAGE: &str = ".bun/install/global/node_modules/@old/agent";
     const CUSTOM: &str = "custom/install/global/node_modules/@old/agent";
@@ -494,6 +490,7 @@ fn home_rows() -> [HomeRow; 4] {
 }
 
 /// The home directory one row's child receives.
+#[cfg(unix)]
 enum Home {
     /// A directory below the tree; an empty spelling is the empty value.
     At(&'static str),
@@ -502,6 +499,7 @@ enum Home {
 }
 
 /// One selection whose home comes from the child environment.
+#[cfg(unix)]
 struct HomeRow {
     /// Case identifier.
     id: &'static str,
@@ -513,6 +511,7 @@ struct HomeRow {
     stdout: Option<&'static str>,
 }
 
+#[cfg(unix)]
 impl HomeRow {
     /// The case this row replays below `root`, which must admit the Bun command.
     fn case(&self, root: &str) -> Case {
@@ -556,8 +555,10 @@ pub fn run_owned(fixture: &str) {
     let mut cases: Vec<Value> = serde_json::from_str(fixture).expect("owned fixture parses");
     assert_eq!(cases.len(), 1);
     let tree = maestro_test_directory::Scratch::new().unwrap();
-    let Prepared { case, _restores } =
-        prepare(cases.remove(0), &tree).expect("the owned case needs no link");
+    let case = prepare(cases.remove(0), &tree).expect("the owned case needs no link");
+    let Some(_restores) = refuse_writes(&case) else {
+        return;
+    };
     let Case {
         id,
         input,
