@@ -2,6 +2,7 @@
 
 use super::InteractiveMode;
 use crate::BashExecutionComponent;
+use crate::local_dispatch::local_dispatch;
 use maestro_app::ReadonlySessionManager;
 use maestro_app::agent_session::{BashChunkCallback, BashRunOptions};
 use maestro_app::is_whitespace_scalar;
@@ -12,10 +13,18 @@ use maestro_app::{
 use maestro_tui::Component;
 use maestro_tui::EditorComponent;
 use std::{cell::RefCell, error::Error, rc::Rc, sync::Arc};
-use tokio::sync::{mpsc, oneshot};
 
 /// The callable operations an extension supplies for one shell command.
 type ShellOperations = Arc<dyn BashOperations>;
+
+/// The shell command a submission selected, which an extension cannot rewrite.
+#[derive(Clone, Copy)]
+struct Selected<'a> {
+    /// The command to run.
+    command: &'a str,
+    /// Whether its output stays out of the model context.
+    excluded: bool,
+}
 
 /// The shell command `text` selects and whether its output stays out of the context.
 ///
@@ -93,9 +102,13 @@ impl InteractiveMode {
             .emit_user_bash::<ShellOperations, BashResult>(&mut event)
             .await
             .map_err(|error| -> Box<dyn Error> { error })?;
-        let row = self.attach_shell_row(&event.command, event.exclude_from_context);
+        let selected = Selected {
+            command,
+            excluded: exclude_from_context,
+        };
+        let row = self.attach_shell_row(selected.command, selected.excluded);
         let outcome = self
-            .settle_shell_command(&session, &event, &row, answer)
+            .settle_shell_command(&session, selected, &row, answer)
             .await;
         self.release_shell_row(&row);
         self.ui.request_render(false);
@@ -106,7 +119,7 @@ impl InteractiveMode {
     async fn settle_shell_command(
         self: &Rc<Self>,
         session: &Rc<AgentSession>,
-        event: &UserBashEvent,
+        selected: Selected<'_>,
         row: &Rc<BashExecutionComponent>,
         answer: Option<UserBashEventResult<ShellOperations, BashResult>>,
     ) -> Result<(), Box<dyn Error>> {
@@ -117,14 +130,14 @@ impl InteractiveMode {
         if let Presence::Present(result) = result {
             show_shell_result(row, &result)?;
             return session
-                .record_bash_result(&event.command, &result, Some(event.exclude_from_context))
+                .record_bash_result(selected.command, &result, Some(selected.excluded))
                 .map_err(|error| -> Box<dyn Error> { Box::new(error) });
         }
         let options = BashRunOptions {
-            exclude_from_context: Some(event.exclude_from_context),
+            exclude_from_context: Some(selected.excluded),
             operations,
         };
-        match execute_bash_command(self, &event.command, Rc::clone(row), options).await {
+        match execute_bash_command(self, selected.command, Rc::clone(row), options).await {
             Ok(result) => show_shell_result(row, &result),
             Err(error) => {
                 row.set_complete(None, false, None, None);
@@ -238,35 +251,16 @@ async fn execute_bash_command(
     row: Rc<BashExecutionComponent>,
     options: BashRunOptions,
 ) -> Result<BashResult, DiagnosticErrorInfo> {
-    let (sender, mut chunks) = mpsc::unbounded_channel::<String>();
-    let on_chunk: BashChunkCallback = Box::new(move |chunk: &str| {
-        // A closed receiver means the row is gone; its chunk has nowhere to go.
-        drop(sender.send(chunk.to_owned()));
-    });
-    let (drained, delivered) = oneshot::channel::<()>();
     let ui = mode.ui.clone();
-    mode.tool_environment
-        .runtime
-        .spawn_local(Box::pin(async move {
-            let outcome = deliver_chunks(&mut chunks, &row, &ui).await;
-            drop(drained);
-            outcome
-        }));
-    let session = mode.runtime_host.session();
-    let result = session.execute_bash(command, Some(on_chunk), options).await;
-    drop(delivered.await);
-    result
-}
-
-/// Appends each chunk that arrives to `row`, in order, until the sender is gone.
-async fn deliver_chunks(
-    chunks: &mut mpsc::UnboundedReceiver<String>,
-    row: &Rc<BashExecutionComponent>,
-    ui: &maestro_tui::tui::TUI,
-) -> Result<(), Box<dyn Error>> {
-    while let Some(chunk) = chunks.recv().await {
+    let dispatch = local_dispatch(&mode.tool_environment.runtime, move |chunk: String| {
         row.append_output(&chunk)?;
         ui.request_render(false);
-    }
-    Ok(())
+        Ok(())
+    });
+    let mut send = dispatch.sender();
+    let on_chunk: BashChunkCallback = Box::new(move |chunk: &str| send(chunk.to_owned()));
+    let session = mode.runtime_host.session();
+    let result = session.execute_bash(command, Some(on_chunk), options).await;
+    dispatch.settle().await;
+    result
 }

@@ -16,12 +16,34 @@ pub fn session(
     oauth_provider: Option<&str>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> CreateAgentSessionRuntimeResult {
+    session_over(cwd, oauth_provider, loader, None)
+}
+
+/// The same session, over a history file under `session_dir` when supplied.
+pub fn session_over(
+    cwd: &str,
+    oauth_provider: Option<&str>,
+    loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
+    session_dir: Option<&str>,
+) -> CreateAgentSessionRuntimeResult {
     let services = services(cwd, oauth_provider, loader);
+    let manager = match session_dir {
+        Some(directory) => SessionManager::create(cwd, Some(directory), &services.agent_dir)
+            .expect("a session history file"),
+        None => SessionManager::in_memory(Some(cwd)).expect("a memory session"),
+    };
+    over(cwd, &services, manager)
+}
+
+/// A session over `manager` and the services built for `cwd`.
+fn over(
+    cwd: &str,
+    services: &Rc<AgentSessionServices<Local>>,
+    manager: SessionManager,
+) -> CreateAgentSessionRuntimeResult {
     let session = AgentSession::new(AgentSessionConfig {
         agent: Rc::default(),
-        session_manager: Rc::new(RefCell::new(
-            SessionManager::in_memory(Some(cwd)).expect("a memory session"),
-        )),
+        session_manager: Rc::new(RefCell::new(manager)),
         settings_manager: Rc::clone(&services.settings_manager),
         cwd: cwd.to_owned(),
         bin_dir: String::new(),
@@ -43,7 +65,7 @@ pub fn session(
     .expect("a memory session");
     CreateAgentSessionRuntimeResult {
         session,
-        services: Rc::clone(&services),
+        services: Rc::clone(services),
         extensions_result: services.resource_loader.get_extensions(),
         diagnostics: Vec::new(),
         model_fallback_message: None,

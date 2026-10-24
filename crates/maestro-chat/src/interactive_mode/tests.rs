@@ -164,6 +164,10 @@ struct Setup {
     select: Option<String>,
     /// The inline extension the session loads, when supplied.
     extension: Option<ExtensionFactory<Local>>,
+    /// Starts a fresh session for each replacement instead of failing it.
+    replacing: bool,
+    /// Creates the session history under a file in this directory when supplied.
+    session_history: Option<std::path::PathBuf>,
 }
 
 impl Default for Setup {
@@ -173,6 +177,8 @@ impl Default for Setup {
             configure: Box::new(|_| {}),
             select: None,
             extension: None,
+            replacing: false,
+            session_history: None,
         }
     }
 }
@@ -207,7 +213,11 @@ impl Setup {
         let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
         let extensions = self.extension.map(|factory| loaded(cwd, factory));
-        let result = session::session(cwd, None, move |inner| {
+        let history = self
+            .session_history
+            .as_ref()
+            .map(|directory| directory.to_str().unwrap().to_owned());
+        let wrapper = move |inner: Rc<dyn ResourceLoader<Local>>| -> Rc<dyn ResourceLoader<Local>> {
             let themes = Rc::new(ForwardingLoader {
                 inner,
                 themes: vec![dark(), light()],
@@ -216,7 +226,8 @@ impl Setup {
             });
             *created.borrow_mut() = Some(Rc::clone(&themes));
             themes
-        });
+        };
+        let result = session::session_over(cwd, None, wrapper, history.as_deref());
         let settings = Rc::clone(result.session.settings_manager());
         settings.borrow_mut().set_theme("dark".to_owned());
         (self.configure)(&mut settings.borrow_mut());
@@ -226,7 +237,7 @@ impl Setup {
         }
         let host = Rc::new(AgentSessionRuntime::new(
             result,
-            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) })),
+            create(cwd, self.replacing),
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
@@ -248,6 +259,19 @@ impl Setup {
             host,
         }
     }
+}
+
+/// The factory that creates each replacement session: a fresh one in `cwd` when
+/// `replacing`, otherwise the failure the other witnesses expect.
+fn create(cwd: &str, replacing: bool) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    if !replacing {
+        return Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) }));
+    }
+    let cwd = cwd.to_owned();
+    Rc::new(move |_| {
+        let cwd = cwd.clone();
+        Box::pin(async move { Ok(session::session(&cwd, None, |inner| inner)) })
+    })
 }
 
 /// Builds a default mode in `directory` and initializes it, settling the first frame.

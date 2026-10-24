@@ -11,6 +11,9 @@ pub use maestro_extensions::{
 
 pub use maestro_extensions::types::events::*;
 pub use maestro_extensions::types::{ExtensionFlag, FlagType};
+
+/// The options that start a replacement session through the runtime's own operation.
+pub use maestro_extensions::types::NewSessionCommandOptions;
 pub use maestro_extensions::{
     Extension, ExtensionAPI, ExtensionExecution, ExtensionFactory, ExtensionHandler,
     ExtensionRunner, RegisteredTool, RegisteredToolInput, load_extension_from_factory,
