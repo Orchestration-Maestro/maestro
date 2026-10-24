@@ -1,11 +1,14 @@
 //! A test-only native host: it instantiates the built author component and implements the
 //! imports the component calls.
 use std::path::Path;
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 
 use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Component, HasData, Linker, Resource, ResourceTable};
 use wasmtime::{Engine, Store};
+use wasmtime_wasi::clocks::HostWallClock;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use super::observed::{Observed, Session, pause};
@@ -37,10 +40,53 @@ pub struct Replaced(
     pub(super) Option<super::reader_host::Reader>,
 );
 
+/// The wall clock of the component's WASI context, set by the test and counting its reads.
+#[derive(Clone, Default)]
+pub struct Clock(Arc<ClockFace>);
+
+/// State shared by every clone of one supplied clock.
+#[derive(Default)]
+struct ClockFace {
+    /// Milliseconds since the Unix epoch the clock reports.
+    millis: AtomicU64,
+    /// Wall-clock reads since the last reset.
+    reads: AtomicUsize,
+}
+
+impl Clock {
+    /// Supplies the instant every later read reports.
+    pub fn set(&self, millis: u64) {
+        self.0.millis.store(millis, Ordering::SeqCst);
+    }
+
+    /// Counts reads from zero from now on.
+    pub fn reset_reads(&self) {
+        self.0.reads.store(0, Ordering::SeqCst);
+    }
+
+    /// The wall-clock reads since the last reset.
+    pub fn reads(&self) -> usize {
+        self.0.reads.load(Ordering::SeqCst)
+    }
+}
+
+impl HostWallClock for Clock {
+    fn resolution(&self) -> Duration {
+        Duration::from_millis(1)
+    }
+
+    fn now(&self) -> Duration {
+        self.0.reads.fetch_add(1, Ordering::SeqCst);
+        Duration::from_millis(self.0.millis.load(Ordering::SeqCst))
+    }
+}
+
 /// Host state shared by every import.
 pub struct State {
     /// WASI state the component's standard library needs.
     wasi: WasiCtx,
+    /// The wall clock the standard library reads.
+    clock: Clock,
     /// Host-side resources by handle.
     pub table: ResourceTable,
     /// What the host observed.
@@ -61,8 +107,12 @@ impl WasiView for State {
 impl State {
     /// A state with no registrations.
     fn new() -> Self {
+        let clock = Clock::default();
+        let mut builder = WasiCtxBuilder::new();
+        builder.wall_clock(clock.clone());
         Self {
-            wasi: WasiCtxBuilder::new().build(),
+            wasi: builder.build(),
+            clock,
             table: ResourceTable::new(),
             observed: Observed::default(),
             guest: None,
@@ -934,6 +984,11 @@ impl Harness {
     /// What the host observed.
     pub fn observed(&mut self) -> &mut Observed {
         &mut self.store.data_mut().observed
+    }
+
+    /// The wall clock the component's standard library reads.
+    pub fn clock(&self) -> Clock {
+        self.store.data().clock.clone()
     }
 
     /// A fresh ordinary context in `cwd`.

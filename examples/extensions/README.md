@@ -31,6 +31,7 @@ steps.
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 
 ### Building an example
 
@@ -64,6 +65,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- bookmark_
 ```
 
 No provider, paid service or extension installation is required. Loading a
