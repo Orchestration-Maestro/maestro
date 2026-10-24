@@ -31,7 +31,8 @@ lists the examples still to come with their owners.
 
 A test checks both directions: every entry of a folder is listed in that
 folder's index, and every relative link or table row an index carries names a
-path that exists.
+path that exists. The extension index keeps its table and its run commands in
+file-name order, so a new example inserts at its own place.
 
 The default system prompt names this folder, and `get_examples_path` resolves it
 from the package directory, so a source run and a standalone build expose the

@@ -11,6 +11,8 @@ cargo-hakari = "github:guppy-rs/guppy"
 just = "1.58.0"
 # Installs and runs commit hooks.
 prek = "0.5.4"
+# Refuses a secret in the staged change before it is committed.
+gitleaks = "8.30.1"
 
 # Watches compiler inputs with native argument forwarding.
 watchexec = "2.8.0"

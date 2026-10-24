@@ -57,6 +57,7 @@ fn options(
         model_registry: None,
         extension_flag_values: None,
         resource_loader_options: resources,
+        offline: None,
     }
 }
 
