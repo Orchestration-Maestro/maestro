@@ -126,7 +126,8 @@ impl InteractiveMode {
     }
 
     /// Builds the header, adds every container in order, focuses the editor, installs
-    /// editor submission, starts the terminal and lists the loaded resources, once;
+    /// editor submission, starts the terminal and lists the loaded resources with their
+    /// diagnostics, once;
     /// theme and branch changes then request fresh frames.
     ///
     /// # Errors
@@ -166,7 +167,10 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(false)
+        self.show_loaded_resources(resources::ShowLoadedResourcesOptions {
+            show_diagnostics_when_quiet: true,
+            ..resources::ShowLoadedResourcesOptions::default()
+        })
     }
 }
 

@@ -34,7 +34,7 @@ containers and the footer, in that order. It focuses the editor, installs editor
 submission and starts the terminal. A terminal start failure is returned and leaves the mode uninitialized.
 After a successful start, a theme change invalidates the presentation and requests a
 frame, and a branch change requests a frame. Neither callback keeps the mode alive.
-Last, it lists the loaded resources in the transcript.
+Last, it lists the loaded resources and their diagnostics in the transcript.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the
@@ -50,7 +50,8 @@ The listing appends one section per kind of loaded resource that has entries, in
 the order `[Context]`, `[Skills]`, `[Prompts]`, `[Extensions]`, `[Themes]`. Each
 section is its heading over its entries, followed by an empty row; `[Context]` also
 gets an empty row above it.
-With `quietStartup` set and verbose off, nothing is listed.
+With `quietStartup` set and verbose off, startup lists no sections but still shows
+the resource diagnostics described below.
 
 `[Context]` lists the context files the session's resource loader discovered, in
 discovery order. The compact form puts them on one row, separated by commas: a file
@@ -88,6 +89,29 @@ such as the shipped ones, are left out. The compact form is one row of theme nam
 sorted like skill names. A theme without a name shows the last segment of its path
 instead, and an empty name is left off that row. The expanded form groups the
 theme files by scope and package, as for skills.
+
+After the sections come the resource diagnostics, as plain text that does not
+expand: `[Skill conflicts]`, `[Prompt conflicts]`, `[Extension issues]` and
+`[Theme conflicts]`, each heading in the warning colour and followed by an empty
+row, and each left out when it has nothing to show. Name collisions come first,
+grouped by name in the order first seen: `"name" collision:`, the kept file after
+`✓`, then each skipped file after `✗` with `(skipped)`. Other diagnostics follow
+in order, in the error colour for errors and the warning colour otherwise: a
+diagnostic with a path shows the path on one row and its message indented below
+it, and one without a path shows only the message. `[Extension issues]` lists the
+extensions that failed to load, the command and shortcut problems the extensions
+reported, and each extension command named like a built-in command, which is
+either skipped in completion or reachable under its numbered name:
+
+```text
+Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.
+```
+
+A path in a diagnostic is shown after the source of the listed resource at that
+path, or else at its nearest parent: `user`, `project` or `path (temp)` for local
+files, `path` for command-line files, and a package source with its scope, such as
+`npm:tools (project) extensions/index.ts`. A path with no known source is shown with
+only its home directory abbreviated.
 
 Sections start expanded in verbose mode or when tool output is expanded, and compact
 otherwise. Each section keeps the text it was built with. Expanding or collapsing it
