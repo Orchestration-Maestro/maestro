@@ -27,16 +27,7 @@ pub(super) fn dns_lookup(name: &str, context: &Context) -> Option<std::net::Ipv4
     })
 }
 
-/// Parse the decimal integer prefix used by numeric helper arguments.
-pub(super) fn decimal_prefix(text: &str) -> Option<i32> {
-    let text = text.trim_start_matches(maestro_text::is_whitespace_scalar);
-    let digits = text.strip_prefix(['+', '-']).unwrap_or(text);
-    let count = digits.bytes().take_while(u8::is_ascii_digit).count();
-    if count == 0 {
-        return None;
-    }
-    text[..text.len() - digits.len() + count].parse().ok()
-}
+pub(super) use super::super::decimal_prefix;
 
 /// Remove only an exact trailing GMT marker without coercing other argument kinds.
 pub(super) fn timezone(args: &[JsValue]) -> (&[JsValue], bool) {

@@ -264,7 +264,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Daemon state:** The daemon-owned record of workspace topology, terminal metadata, focus, notifications and pending persistence. Live process handles stay in the application runtime registry.
 - **Daemon loop:** The application loop that drains internal observations, consumes scheduled work, selects the next deadline and completes shutdown.
 - **Named daemon:** An independent workspace daemon with its own sockets and snapshot, chosen by name.
-- **Daemon protocol:** Maestro's single versioned RPC contract shared by stdio, daemon sockets and SDK clients. `maestro-protocol` owns command, response, event, UI and binary-channel records and JSON Schema; `maestro-json::jsonl` owns JSONL framing. Live screen frames are binary within that contract. See [daemon protocol](docs/daemon-protocol.md).
+- **Daemon protocol:** Maestro's single versioned RPC contract shared by stdio, daemon sockets and SDK clients. `maestro-protocol` owns the generic envelopes, the workspace and binary-channel records and JSON Schema; `maestro-app::rpc_types` owns the session command, response, event and dialog records; `maestro-json::jsonl` owns JSONL framing. Live screen frames are binary within that contract. See [daemon protocol](docs/daemon-protocol.md).
 - **Workspace:** A named project space in the daemon holding ordered tabs; not the Cargo workspace.
 - **Tab:** An ordered split layout of panes within a workspace.
 - **Pane:** One leaf of a tab's layout, showing one pane terminal.

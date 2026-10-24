@@ -31,6 +31,7 @@ steps.
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
 | `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 
 ### Building an example
 
@@ -64,6 +65,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- bookmark_
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -162,6 +165,16 @@ when the host answers, each one only while a UI is available.
 No provider, paid service or extension installation is required for the
 controlled run. Loading the built component into an application is opt-in, and a
 real compaction also needs that application's model and runtime configuration.
+
+### What the bookmark example does
+
+`/bookmark` labels the newest assistant message and `/unbookmark` removes the
+newest label from any entry, so the tree view can show where the important
+points of a session are. A blank argument becomes a `bookmark-<epoch
+milliseconds>` label. The controlled run replays every recorded case against
+the built component with a supplied wall clock, so it needs no provider and no
+installation; loading the component into an application is opt-in and needs
+that application's component runtime.
 
 ### What the runtime reload command does
 

@@ -30,6 +30,7 @@ mod agent_events;
 mod application_messages;
 mod author;
 mod basic_ui;
+mod bookmark_example;
 mod build;
 mod bus_callbacks;
 pub(crate) mod bus_host;

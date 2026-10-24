@@ -9,7 +9,8 @@ mod tools;
 pub use maestro_models::ModelThinkingLevel as ThinkingLevel;
 pub use tools::*;
 /// Queue consumption policy.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum QueueMode {
     /// Consume all queued input together.
     All,
