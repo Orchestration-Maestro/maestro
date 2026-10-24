@@ -1,17 +1,11 @@
 //! The RPC client's event callbacks, its deadlines and the work that a stop or the child's
 //! end settles.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, next_of};
+use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of, poll_once};
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcEventListener};
 use serde_json::{Value, json};
-use std::{cell::RefCell, future::Future, pin::pin, rc::Rc, task::Poll, time::Duration};
-
-/// Polls `future` once without a waker.
-fn poll_once<F: Future + ?Sized>(future: std::pin::Pin<&mut F>) -> Poll<F::Output> {
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    future.poll(&mut context)
-}
+use std::{cell::RefCell, pin::pin, rc::Rc, task::Poll, time::Duration};
 
 /// Emits each record of `PEER_RECORDS` once a command arrives, after answering it.
 const BURST: &str = r"
@@ -61,15 +55,6 @@ fn failing_at_end() -> RpcEventListener {
 
 /// Removal operations a callback runs.
 type Removers = Rc<RefCell<Vec<Box<dyn Fn()>>>>;
-
-/// Keeps the paused clock from advancing on its own until the returned sender is used.
-fn hold_clock() -> (std::sync::mpsc::Sender<()>, tokio::task::JoinHandle<()>) {
-    let (release, released) = std::sync::mpsc::channel::<()>();
-    let hold = tokio::task::spawn_blocking(move || {
-        let _ = released.recv();
-    });
-    (release, hold)
-}
 
 #[test]
 fn event_registrations_keep_duplicates_and_stop_on_error() {

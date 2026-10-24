@@ -1,18 +1,12 @@
 //! The RPC client's commands on the wire, the answers they return and the records that
 //! reach its event callbacks.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, next_of};
+use crate::rpc_peer::{Peer, SERVE, events, next_of, poll_once};
 use crate::support::session_harness::on_task_set;
 use maestro_app::{Presence, RpcClient, RpcClientError};
 use serde::Serialize;
 use serde_json::{Value, json};
-use std::{cell::RefCell, future::Future, pin::pin, rc::Rc, task::Poll};
-
-/// Polls `future` once without a waker.
-fn poll_once<F: Future + ?Sized>(future: std::pin::Pin<&mut F>) -> Poll<F::Output> {
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    future.poll(&mut context)
-}
+use std::{cell::RefCell, pin::pin, rc::Rc};
 
 /// A returned value as the JSON text the session would write for it.
 fn value(result: &impl Serialize) -> Value {

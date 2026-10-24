@@ -1,11 +1,11 @@
 //! Launching, observing and stopping the RPC client's child.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, next_of};
+use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of, poll_once};
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcClientOptions};
 use maestro_process::child_process::process_exists;
 use serde_json::{Value, json};
-use std::{future::Future, path::Path, pin::pin, task::Poll, time::Duration};
+use std::{path::Path, pin::pin, task::Poll, time::Duration};
 
 /// Reports the arguments, directory and environment, then waits for its input to end.
 const REPORT: &str = r"
@@ -17,12 +17,6 @@ sys.stdin.read()
 
 /// Changes one launch option.
 type Configure = fn(&mut RpcClientOptions);
-
-/// Polls `future` once without a waker.
-fn poll_once<F: Future + ?Sized>(future: std::pin::Pin<&mut F>) -> Poll<F::Output> {
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    future.poll(&mut context)
-}
 
 /// Starts `client`, returns its first `peer_ready` event and stops it.
 async fn ready(client: &RpcClient) -> Value {
@@ -218,9 +212,7 @@ fn startup_observes_the_hundred_millisecond_boundary() {
     let script = "sys.stderr.write('booting\\n'); sys.stderr.flush()\nemit({'type': 'peer_ready'})\nsys.stdin.read()";
     on_paused_task_set(|_| async {
         let client = RpcClient::new(peer.options(script));
-        let (release, released) = std::sync::mpsc::channel::<()>();
-        // A blocking task keeps the paused clock from advancing on its own.
-        let hold = tokio::task::spawn_blocking(move || released.recv());
+        let (release, hold) = hold_clock();
         let mut events = events(&client);
         let mut start = pin!(client.start());
         assert!(poll_once(start.as_mut()).is_pending());
@@ -234,7 +226,7 @@ fn startup_observes_the_hundred_millisecond_boundary() {
         tokio::time::advance(Duration::from_millis(1)).await;
         assert!(matches!(poll_once(start.as_mut()), Poll::Ready(Ok(()))));
         release.send(()).unwrap();
-        hold.await.unwrap().unwrap();
+        hold.await.unwrap();
         client.stop().await.unwrap();
     });
 }
@@ -322,9 +314,7 @@ while True: time.sleep(1)
                 .unwrap(),
         )
         .unwrap();
-        let (release, released) = std::sync::mpsc::channel::<()>();
-        // A blocking task keeps the paused clock from advancing on its own.
-        let hold = tokio::task::spawn_blocking(move || released.recv());
+        let (release, hold) = hold_clock();
         let mut stop = pin!(client.stop());
         assert!(poll_once(stop.as_mut()).is_pending());
         while !client.get_stderr().contains("terminating") {
@@ -341,7 +331,7 @@ while True: time.sleep(1)
             "nothing is delivered after stop"
         );
         release.send(()).unwrap();
-        hold.await.unwrap().unwrap();
+        hold.await.unwrap();
     });
 }
 
