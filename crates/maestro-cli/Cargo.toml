@@ -14,11 +14,13 @@ maestro-theme = { path = "../maestro-theme" }
 indexmap = "=2.14.2"
 ryu-js.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 maestro-dependencies.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["signal"] }
 
 [[test]]
 name = "integration"
