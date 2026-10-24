@@ -76,6 +76,8 @@ pub use components::tool_execution::{
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod interactive_mode;
+#[cfg(not(target_arch = "wasm32"))]
+mod local_dispatch;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use interactive_mode::{InteractiveMode, InteractiveModeOptions};

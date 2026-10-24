@@ -2,7 +2,7 @@
 //! resources, notices, transcript shortcuts, editor actions, typed input and queued
 //! input.
 
-use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
+use crate::{BashExecutionComponent, CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
@@ -19,6 +19,7 @@ use std::{
 };
 
 mod actions;
+mod bash;
 mod events;
 mod key_display;
 mod models;
@@ -106,6 +107,10 @@ pub struct InteractiveMode {
     pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// The shell row that is still producing output, when one is attached.
+    active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
+    /// Shell rows shown in the pending area until the next ordinary submission.
+    pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Whether this mode has shown the subscription billing notice.
@@ -178,6 +183,8 @@ impl InteractiveMode {
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            active_shell: RefCell::default(),
+            pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
             anthropic_subscription_warning_shown: Cell::new(false),
             compaction_queued_messages: RefCell::default(),

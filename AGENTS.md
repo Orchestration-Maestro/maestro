@@ -128,8 +128,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 
 - One job per crate, describable in one sentence without "and".
 - Dependencies point one way; core crates never use dedicated
-  (non-core) crates as normal or build dependencies; the declared native
-  test-process, test-directory and test-tracing development edges are permitted.
+  (non-core) crates as normal or build dependencies; the declared test-support
+  development edges are permitted under their owners' target rules.
 - `maestro-path` is the foundation utility for lexical path strings. It sits
   below layer 0 and depends on no workspace crate. Native normalization reuses its
   segment reducer without decoding path bytes or accessing the filesystem.
@@ -243,7 +243,7 @@ Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, terminal scenario harness, checked test-process owner,
-disposable test-directory owner, test tracing owner,
+disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
@@ -285,6 +285,14 @@ leaf names apart, and `folded_names(paths)` reports every name group it does not
 apart across all components of the supplied relative paths, so a fixture can state a
 premise the host can exercise.
 Both graph cycle checks still apply.
+
+The dedicated, unpublished `maestro-test-fixtures` portable leaf owns shared test
+fixture operations. Only agent, models, request, catalog, chat, credentials, tools
+and export may declare it as a development dependency, portable or target-specific;
+models, request, catalog, chat and credentials use portable declarations, while
+agent, tools and export use native declarations. It has no product or utility
+edge, only the native unifier exception. Both cycle checks apply. See the
+[fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
 scoped tracing subscriber that sees every callsite. Only daemon, models, process,

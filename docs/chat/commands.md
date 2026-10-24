@@ -4,13 +4,41 @@ The interactive mode reads a few commands from the editor before ordinary
 input. Submitted text is trimmed with the shared whitespace rule first: BOM and
 no-break space count as whitespace, while U+0085 and zero-width space do not. The
 editor empties itself before calling back, so a command needs no clearing step; a
-command never answers the waiting input and never enters the editor history. Any
+slash command never answers the waiting input and never enters the editor history. Any
 other text, including `/Model`, `/models`, `/model<Tab>term` and
 `/scoped-models extra`, is ordinary input.
 
-The mode handles `/export` for the session, and `/model` and `/scoped-models` for
-the model selection. Import, the offline viewer and packaged asset injection are
-not delivered yet (see [what is missing](#what-is-missing)).
+The mode handles shell input, `/export` for the session, and `/model` and
+`/scoped-models` for model selection. Import, the offline viewer and packaged
+asset injection are not delivered yet (see [what is missing](#what-is-missing)).
+
+## Shell input
+
+Text starting with `!` runs a shell command instead of sending a prompt.
+
+- `!command` runs `command` and keeps its output in the model's context.
+- `!!command` runs the same way and records the output as excluded from the context.
+
+Boundaries around the prefix and the command are whitespace: `! ls ` runs `ls`. The
+shapes the editor accepts as whitespace are the ones the rest of the mode uses, so a
+non-breaking space or a byte-order mark next to the prefix counts as a boundary, while
+the next-line and zero-width-space characters do not.
+
+A submission that holds only the prefix, `!` or `!!`, has no command to run and is
+delivered as ordinary input instead.
+
+While a shell command from the same session is still running, a new submission does not
+start a second one. The editor shows
+`A bash command is already running. Press Esc to cancel it first.` as a warning, keeps the
+typed text in the editor so nothing is lost, and records no history entry.
+
+An accepted shell command is recorded in the editor's history. When an agent response is
+streaming, the command's row appears in the pending area and moves into the transcript
+with the next ordinary submission; otherwise the row appears in the transcript at once.
+
+Extensions can answer a shell command through the `user_bash` event: returning a full
+result shows it without running a process and records it once, and returning operations
+runs the command through them instead of the local shell.
 
 ## `/export`
 
