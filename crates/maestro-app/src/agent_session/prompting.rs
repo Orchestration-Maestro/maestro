@@ -29,23 +29,22 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// messages are sent. Returns after the agent and any retry settle.
     ///
     /// `options.preflight_result` hears once whether the prompt was accepted, before the
-    /// agent is prompted. Once started, the prompt belongs to the session: dropping the
-    /// returned future leaves it running.
+    /// agent is prompted. The prompt starts when this is called and belongs to the session:
+    /// the returned future only observes its result, and dropping it leaves it running.
     ///
     /// # Errors
     /// Returns the refusal of a prompt that arrives while a response streams without a queue
     /// choice, the missing-credentials message, and failures of the extensions, the
     /// compaction check, the session history and the agent.
-    pub async fn prompt(
+    pub fn prompt(
         self: &Rc<Self>,
         text: &str,
         options: PromptOptions,
-    ) -> Result<(), DiagnosticErrorInfo> {
+    ) -> impl std::future::Future<Output = Result<(), DiagnosticErrorInfo>> + use<E> {
         let session = Rc::clone(self);
         let text = text.to_owned();
-        self.start_operation(async move { session.run_prompt(&text, options).await })
-            .await
-            .map_err(thrown)?
+        let result = self.start_operation(async move { session.run_prompt(&text, options).await });
+        async move { result.await.map_err(thrown)? }
     }
 
     /// The prompt the session runs, from its preflight to the settled agent and retry.

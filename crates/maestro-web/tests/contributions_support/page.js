@@ -49,3 +49,36 @@ export async function sha256(text) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
+
+// Select every child of `node`; returns the selected text.
+export function select(node) {
+  getSelection().selectAllChildren(node);
+  return getSelection().toString();
+}
+
+// The selected text and whether `root` contains the selection's anchor.
+export function selection(root) {
+  const selected = getSelection();
+  return [selected.toString(), root.contains(selected.anchorNode)];
+}
+
+// Whether the browser's own find locates `text` from the start of the page.
+export function find(text) {
+  getSelection().removeAllRanges();
+  return window.find(text);
+}
+
+// Pause the running transition of `property` on `element` at `time` milliseconds; returns
+// its duration, or null when none runs.
+export function seek(element, property, time) {
+  const transition = element.getAnimations().find(a => a.transitionProperty === property);
+  if (!transition) return null;
+  transition.pause();
+  transition.currentTime = time;
+  return transition.effect.getTiming().duration;
+}
+
+// Finish every running animation of `element`.
+export function finish(element) {
+  for (const animation of element.getAnimations()) animation.finish();
+}
