@@ -112,7 +112,10 @@
     "preview_toggle_dom_defaults_and_programmatic_selection",
     "preview_toggle_dom_emits_only_changed_bubbling_modes",
     "preview_toggle_dom_reconnects_without_duplicate_handlers",
-    "artifact_controls_dom_paint_tokens_and_keyboard_actions"
+    "artifact_controls_dom_paint_tokens_and_keyboard_actions",
+    "generic_artifact_dom_guidance_is_literal_and_localized",
+    "generic_artifact_dom_header_preserves_complete_binary",
+    "generic_artifact_dom_roots_release_their_own_resources"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",
