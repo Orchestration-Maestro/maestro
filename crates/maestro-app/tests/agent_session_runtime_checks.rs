@@ -183,3 +183,104 @@ fn switch_restores_the_destination_model_and_thinking() {
         runtime.dispose().await.unwrap();
     });
 }
+
+/// The normal session factory for its first call, then a recorded refusal.
+async fn refusing_factory(
+    phases: &std::rc::Rc<std::cell::RefCell<Vec<&'static str>>>,
+    calls: &std::rc::Rc<std::cell::Cell<usize>>,
+) -> (Harness, maestro_app::CreateAgentSessionRuntimeFactory) {
+    let seen = std::rc::Rc::clone(phases);
+    let shutdown = crate::session_events::handling::<maestro_extensions::SessionShutdownEvent, ()>(
+        "session_shutdown",
+        move |_| {
+            seen.borrow_mut().push("session_shutdown");
+            Ok(None)
+        },
+    );
+    let h =
+        crate::support::session_harness::harness(crate::support::session_harness::HarnessOptions {
+            models: vec![("faux-1", true)],
+            ..Default::default()
+        })
+        .await;
+    let extensions = std::rc::Rc::new(
+        crate::support::session_harness::create_test_extensions_result(
+            vec![(None, shutdown)],
+            &h.cwd,
+        )
+        .await,
+    );
+    let recorded = crate::support::runtime_fixtures::Recorded::default();
+    let create = crate::support::runtime_fixtures::factory(
+        &h,
+        &crate::support::runtime_fixtures::Resources::of(&extensions),
+        &recorded,
+    );
+    let counted = std::rc::Rc::clone(calls);
+    let seen = std::rc::Rc::clone(phases);
+    let failing: maestro_app::CreateAgentSessionRuntimeFactory = std::rc::Rc::new(move |options| {
+        counted.set(counted.get() + 1);
+        if counted.get() == 1 {
+            return create(options);
+        }
+        seen.borrow_mut().push("factory_failure");
+        Box::pin(std::future::ready(Err(
+            maestro_models::DiagnosticErrorInfo::error("factory refused replacement"),
+        )))
+    });
+    (h, failing)
+}
+
+#[test]
+fn failed_replacement_keeps_the_torn_down_session_without_rollback() {
+    let expected = corpus("replacement");
+    on_task_set(|_| async {
+        let phases = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let calls = std::rc::Rc::new(std::cell::Cell::new(0));
+        let (h, failing) = refusing_factory(&phases, &calls).await;
+        let root = h.scratch.path().display().to_string();
+        std::fs::create_dir_all(&h.cwd).unwrap();
+        let runtime = maestro_app::create_agent_session_runtime(
+            failing,
+            maestro_app::CreateAgentSessionRuntimeOptions {
+                cwd: h.cwd.clone(),
+                agent_dir: root.clone(),
+                session_manager: std::rc::Rc::new(std::cell::RefCell::new(
+                    SessionManager::create(&h.cwd, Some(&format!("{root}/failed-sessions")), &root)
+                        .unwrap(),
+                )),
+                session_start_event: None,
+            },
+        )
+        .await
+        .unwrap();
+        let old = runtime.session();
+        let context = old.extension_runner().create_context();
+        let seen = std::rc::Rc::clone(&phases);
+        runtime.set_before_session_invalidate(Some(std::rc::Rc::new(move || {
+            seen.borrow_mut().push("before_invalidate");
+        })));
+        let continued = std::rc::Rc::new(std::cell::Cell::new(false));
+        let bound = std::rc::Rc::clone(&continued);
+        runtime.set_rebind_session(Some(std::rc::Rc::new(move |_| {
+            bound.set(true);
+            Box::pin(std::future::ready(Ok(())))
+        })));
+        let next = std::rc::Rc::clone(&continued);
+        let result = runtime
+            .new_session(maestro_extensions::types::NewSessionCommandOptions {
+                with_session: Some(std::rc::Rc::new(move |_| {
+                    next.set(true);
+                    Box::pin(std::future::ready(Ok(())))
+                })),
+                ..Default::default()
+            })
+            .await
+            .unwrap_err();
+        let observed = json!({"error": result.to_string(), "continued": continued.get(), "sameSession": std::rc::Rc::ptr_eq(&old, &runtime.session()), "builds": calls.get(), "phases": *phases.borrow(), "stale": context.cwd().unwrap_err().to_string()});
+        assert_eq!(observed, expected["failed_replacement"]);
+        runtime.set_before_session_invalidate(None);
+        runtime.set_rebind_session(None);
+        runtime.dispose().await.unwrap();
+    });
+}

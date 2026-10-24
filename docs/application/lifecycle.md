@@ -4,6 +4,18 @@ See [embedding a session](sdk.md) for session construction and subscriptions,
 and [session operations](session-operations.md) for history and replacement
 operations.
 
+## Replacement lifetime
+
+New, resumed and forked sessions can be vetoed before replacement. Shutdown
+handlers finish before the host's invalidation callback; the old contexts then
+become stale. The host rebinds the replacement before its `with_session`
+continuation runs. Use that continuation's context for messages to the new
+session, not a captured command context or extension API. Reads from the old
+command frame fail recoverably after replacement.
+
+A factory failure after teardown does not roll the old session back into service.
+Its handle remains selected but its extension contexts are stale.
+
 ## Names
 
 `AgentSession::set_session_name` stores the trimmed name before publishing

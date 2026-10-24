@@ -9,6 +9,7 @@ mod agent_session_queue_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
 mod agent_session_runtime_checks;
+mod agent_session_runtime_events_checks;
 mod agent_session_stats_checks;
 mod agent_session_tree_navigation_checks;
 mod analysis_cost;
@@ -118,6 +119,7 @@ mod pptx_attachments;
 mod prompt_templates_checks;
 mod queued_slash_command_followup_checks;
 mod reload_stale_resource_settings_checks;
+mod replaced_session_context_checks;
 mod resource_extension_loading;
 #[cfg(unix)]
 #[path = "support/resource_fixtures.rs"]
