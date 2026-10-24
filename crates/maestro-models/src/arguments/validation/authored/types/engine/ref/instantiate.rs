@@ -3,10 +3,11 @@
 use std::rc::Rc;
 
 use super::super::{cyclic::check::cyclic_check, instantiate::instantiate};
-use crate::arguments::validation::authored::schema_view::{Converter, Node, View};
+use crate::arguments::validation::authored::context::Context;
+use crate::arguments::validation::authored::schema_view::{Node, View};
 
 /// Substitute a reference by its visible definition, keeping one that recurses in place.
-pub(crate) fn ref_instantiate<'a>(converter: &Converter<'a>, view: View<'a>) -> Rc<Node<'a>> {
+pub(crate) fn ref_instantiate<'a>(converter: &Context<'a>, view: View<'a>) -> Rc<Node<'a>> {
     let target = view
         .raw
         .get("$ref")

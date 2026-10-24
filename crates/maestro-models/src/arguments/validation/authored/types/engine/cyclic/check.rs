@@ -3,7 +3,8 @@
 use serde_json::Value;
 
 use crate::SchemaKind;
-use crate::arguments::validation::authored::schema_view::{Converter, View};
+use crate::arguments::validation::authored::context::Context;
+use crate::arguments::validation::authored::schema_view::View;
 
 /// Whether the supplied node reaches one of the names already on the stack.
 ///
@@ -11,23 +12,23 @@ use crate::arguments::validation::authored::schema_view::{Converter, View};
 /// name that reappears on that walk. Keeping such a reference is what lets a recursive schema
 /// convert without expanding forever.
 pub(crate) fn cyclic_check<'a>(
-    converter: &Converter<'a>,
+    converter: &Context<'a>,
     stack: &mut Vec<&'a str>,
     view: View<'a>,
 ) -> bool {
     let children: Vec<View<'a>> = match view.kind {
         Some(SchemaKind::Ref) => return from_ref(converter, stack, view),
-        Some(SchemaKind::Array) => converter.keyword(view, "items").into_iter().collect(),
-        Some(SchemaKind::Object) => converter.children(view, "properties").unwrap_or_default(),
-        Some(SchemaKind::Tuple) => converter.children(view, "items").unwrap_or_default(),
-        Some(SchemaKind::Union) => converter.children(view, "anyOf").unwrap_or_default(),
-        Some(SchemaKind::Intersect) => converter.children(view, "allOf").unwrap_or_default(),
+        Some(SchemaKind::Array) => view.keyword("items").into_iter().collect(),
+        Some(SchemaKind::Object) => view.children("properties").unwrap_or_default(),
+        Some(SchemaKind::Tuple) => view.children("items").unwrap_or_default(),
+        Some(SchemaKind::Union) => view.children("anyOf").unwrap_or_default(),
+        Some(SchemaKind::Intersect) => view.children("allOf").unwrap_or_default(),
         Some(SchemaKind::Record) => view
             .raw
             .get("patternProperties")
             .and_then(Value::as_object)
             .and_then(|patterns| patterns.values().next())
-            .map(|value| converter.view(value))
+            .map(|value| converter.document.view(value))
             .into_iter()
             .collect(),
         _ => return false,
@@ -38,7 +39,7 @@ pub(crate) fn cyclic_check<'a>(
 }
 
 /// Whether a reference names a definition already on the stack or one that reaches it.
-fn from_ref<'a>(converter: &Converter<'a>, stack: &mut Vec<&'a str>, view: View<'a>) -> bool {
+fn from_ref<'a>(converter: &Context<'a>, stack: &mut Vec<&'a str>, view: View<'a>) -> bool {
     let Some(name) = view.raw.get("$ref").and_then(Value::as_str) else {
         return false;
     };

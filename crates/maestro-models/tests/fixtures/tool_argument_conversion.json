@@ -18636,5 +18636,396 @@
         ]
       }
     }
+  },
+  {
+    "case": "authored:comparison:union-in-array-of-tuples",
+    "group": "comparison",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "additionalItems": false,
+                    "items": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 2
+                  }
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Array",
+      "/properties/value/allOf/0/anyOf/0/items": "Union",
+      "/properties/value/allOf/0/anyOf/0/items/anyOf/0": "String",
+      "/properties/value/allOf/0/anyOf/0/items/anyOf/1": "Number",
+      "/properties/value/allOf/0/anyOf/1": "Array",
+      "/properties/value/allOf/0/anyOf/1/items": "Tuple",
+      "/properties/value/allOf/0/anyOf/1/items/items/0": "String",
+      "/properties/value/allOf/0/anyOf/1/items/items/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": [
+        null
+      ]
+    },
+    "expected": {
+      "Ok": {
+        "value": [
+          "null"
+        ]
+      }
+    }
+  },
+  {
+    "case": "authored:comparison:alternatives-inside-tuple-positions",
+    "group": "comparison",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "additionalItems": false,
+                    "items": [
+                      {
+                        "type": "string"
+                      }
+                    ],
+                    "minItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "additionalItems": false,
+                    "items": [
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 1
+                  }
+                ]
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "additionalItems": false,
+                "items": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  }
+                ],
+                "minItems": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Array",
+      "/properties/value/allOf/0/items": "Union",
+      "/properties/value/allOf/0/items/anyOf/0": "Tuple",
+      "/properties/value/allOf/0/items/anyOf/0/items/0": "String",
+      "/properties/value/allOf/0/items/anyOf/1": "Tuple",
+      "/properties/value/allOf/0/items/anyOf/1/items/0": "Number",
+      "/properties/value/allOf/1": "Array",
+      "/properties/value/allOf/1/items": "Tuple",
+      "/properties/value/allOf/1/items/items/0": "Union",
+      "/properties/value/allOf/1/items/items/0/anyOf/0": "String",
+      "/properties/value/allOf/1/items/items/0/anyOf/1": "Number"
+    },
+    "arguments": {
+      "value": [
+        [
+          null
+        ]
+      ]
+    },
+    "expected": {
+      "Ok": {
+        "value": [
+          [
+            "null"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "case": "authored:comparison:optional-member-stays-optional",
+    "group": "comparison",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "a",
+                      "b"
+                    ],
+                    "properties": {
+                      "a": {
+                        "type": "string"
+                      },
+                      "b": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "a"
+                    ],
+                    "properties": {
+                      "a": {
+                        "type": "string"
+                      },
+                      "b": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Array",
+      "/properties/value/allOf/0/anyOf/0/items": "Object",
+      "/properties/value/allOf/0/anyOf/0/items/properties/a": "String",
+      "/properties/value/allOf/0/anyOf/0/items/properties/b": "String",
+      "/properties/value/allOf/0/anyOf/1": "Array",
+      "/properties/value/allOf/0/anyOf/1/items": "Object",
+      "/properties/value/allOf/0/anyOf/1/items/properties/a": "String",
+      "/properties/value/allOf/0/anyOf/1/items/properties/b": "String",
+      "/properties/value/allOf/0/anyOf/2": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": [
+        {
+          "a": null
+        }
+      ]
+    },
+    "expected": {
+      "Ok": {
+        "value": [
+          {
+            "a": "null"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "case": "authored:comparison:tuple-alternative-control",
+    "group": "comparison",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "additionalItems": false,
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "minItems": 2
+              }
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Array",
+      "/properties/value/allOf/0/items": "Tuple",
+      "/properties/value/allOf/0/items/items/0": "String",
+      "/properties/value/allOf/0/items/items/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": [
+        [
+          null,
+          1
+        ]
+      ]
+    },
+    "expected": {
+      "Ok": {
+        "value": [
+          [
+            "null",
+            1
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "case": "authored:comparison:required-member-control",
+    "group": "comparison",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "a",
+                      "b"
+                    ],
+                    "properties": {
+                      "a": {
+                        "type": "string"
+                      },
+                      "b": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Array",
+      "/properties/value/allOf/0/anyOf/0/items": "Object",
+      "/properties/value/allOf/0/anyOf/0/items/properties/a": "String",
+      "/properties/value/allOf/0/anyOf/0/items/properties/b": "String",
+      "/properties/value/allOf/0/anyOf/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": [
+        {
+          "a": null,
+          "b": null
+        }
+      ]
+    },
+    "expected": {
+      "Ok": {
+        "value": [
+          {
+            "a": "null",
+            "b": "null"
+          }
+        ]
+      }
+    }
   }
 ]

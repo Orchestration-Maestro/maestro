@@ -3,7 +3,8 @@
 use serde_json::Map;
 
 use super::from_type::from_type;
-use crate::arguments::validation::authored::schema_view::{Converter, Node};
+use crate::arguments::validation::authored::context::Context;
+use crate::arguments::validation::authored::schema_view::Node;
 
 /// Convert every member no declared entry matches through the additional node.
 ///
@@ -11,7 +12,7 @@ use crate::arguments::validation::authored::schema_view::{Converter, Node};
 /// member as often as the entry count; Maestro applies it once to the uncovered complement,
 /// so a member keeps the single conversion its own node already gave it.
 pub(crate) fn from_additional<'a>(
-    converter: &mut Converter<'a>,
+    converter: &mut Context<'a>,
     object: &mut Map<String, serde_json::Value>,
     entries: &[(&str, regress::Regex)],
     additional: &Node<'a>,

@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 use crate::SchemaKind;
-use crate::arguments::validation::authored::schema_view::{Converter, Node};
+use crate::arguments::validation::authored::schema_view::Node;
 use crate::arguments::validation::authored::types::extends::extends;
 
 /// Relation of one node's values to another node's values.
@@ -20,17 +20,13 @@ pub(crate) enum Relation {
 }
 
 /// Compare the supplied nodes and determine their set relation.
-pub(crate) fn compare<'a>(
-    converter: &Converter<'a>,
-    left: &Rc<Node<'a>>,
-    right: &Rc<Node<'a>>,
-) -> Relation {
+pub(crate) fn compare<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> Relation {
     let left_unknown = left.kind() == Some(SchemaKind::Unknown);
-    let left_extends = !left_unknown && extends(converter, left, right);
+    let left_extends = !left_unknown && extends(left, right);
     let right_extends = if left_unknown {
         true
     } else {
-        extends(converter, right, left)
+        extends(right, left)
     };
     match (left_extends, right_extends) {
         (true, true) => Relation::Equal,

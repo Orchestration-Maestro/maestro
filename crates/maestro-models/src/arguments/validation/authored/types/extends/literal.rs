@@ -4,14 +4,10 @@ use std::rc::Rc;
 
 use super::extends_right::extends_right;
 use crate::SchemaKind;
-use crate::arguments::validation::authored::schema_view::{Converter, Node};
+use crate::arguments::validation::authored::schema_view::Node;
 
 /// A literal node extends the matching literal or the matching scalar kind.
-pub(crate) fn extends_literal<'a>(
-    converter: &Converter<'a>,
-    left: &Rc<Node<'a>>,
-    right: &Rc<Node<'a>>,
-) -> bool {
+pub(crate) fn extends_literal<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {
     let Some(constant) = constant(left) else {
         return false;
     };
@@ -20,7 +16,7 @@ pub(crate) fn extends_literal<'a>(
         serde_json::Value::Number(_) => SchemaKind::Number,
         serde_json::Value::String(_) => SchemaKind::String,
         serde_json::Value::Null | serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
-            return extends_right(converter, left, right);
+            return extends_right(left, right);
         }
     };
     match right.kind() {
@@ -28,7 +24,7 @@ pub(crate) fn extends_literal<'a>(
             crate::arguments::validation::scalars::equal(declared, constant)
         }),
         Some(kind) if kind == matching => true,
-        _ => extends_right(converter, left, right),
+        _ => extends_right(left, right),
     }
 }
 

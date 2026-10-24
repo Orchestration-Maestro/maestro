@@ -3,29 +3,21 @@
 use std::rc::Rc;
 
 use super::extends_left::extends_left;
-use crate::arguments::validation::authored::schema_view::{Converter, Node};
+use crate::arguments::validation::authored::schema_view::Node;
 use crate::arguments::validation::authored::types::engine::enumeration::enum_to_union;
 
 /// An enumerated node extends what the union of its constants extends.
-pub(crate) fn extends_enum<'a>(
-    converter: &Converter<'a>,
-    left: &Rc<Node<'a>>,
-    right: &Rc<Node<'a>>,
-) -> bool {
+pub(crate) fn extends_enum<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {
     match enumeration(left) {
-        Some(constants) => extends_left(converter, &enum_union(constants), right),
+        Some(constants) => extends_left(&enum_union(constants), right),
         None => false,
     }
 }
 
 /// A left node extends an enumerated right node when it extends the union of its constants.
-pub(crate) fn extends_enum_values<'a>(
-    converter: &Converter<'a>,
-    left: &Rc<Node<'a>>,
-    right: &Rc<Node<'a>>,
-) -> bool {
+pub(crate) fn extends_enum_values<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {
     match enumeration(right) {
-        Some(constants) => extends_left(converter, left, &enum_union(constants)),
+        Some(constants) => extends_left(left, &enum_union(constants)),
         None => false,
     }
 }

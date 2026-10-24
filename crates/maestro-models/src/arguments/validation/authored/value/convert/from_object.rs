@@ -4,12 +4,13 @@ use serde_json::Value;
 
 use super::convert_member;
 use super::from_type::from_type;
-use crate::arguments::validation::authored::schema_view::{Converter, Node, ObjectNode, View};
+use crate::arguments::validation::authored::context::Context;
+use crate::arguments::validation::authored::schema_view::{Node, ObjectNode, View};
 use crate::arguments::validation::coercion;
 
 /// Convert the present members of an instantiated or composed object.
 pub(crate) fn from_object<'a>(
-    converter: &mut Converter<'a>,
+    converter: &mut Context<'a>,
     object: &ObjectNode<'a>,
     value: &mut Value,
 ) -> Option<Value> {
@@ -23,13 +24,13 @@ pub(crate) fn from_object<'a>(
 ///
 /// Only present members convert; a member the value does not carry is never inserted.
 pub(crate) fn from_object_view<'a>(
-    converter: &mut Converter<'a>,
+    converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
 ) -> Option<Value> {
     let object = value.as_object_mut()?;
     coercion::members(view.raw, object, |member, child| {
-        let child = Node::Leaf(converter.view(child));
+        let child = Node::Leaf(converter.document.view(child));
         convert_member(converter, &child, member);
     });
     None
@@ -37,7 +38,7 @@ pub(crate) fn from_object_view<'a>(
 
 /// Convert a supplied value through the members a composed object carries.
 fn from_composed<'a>(
-    converter: &mut Converter<'a>,
+    converter: &mut Context<'a>,
     object: &ObjectNode<'a>,
     value: &mut Value,
 ) -> Option<Value> {

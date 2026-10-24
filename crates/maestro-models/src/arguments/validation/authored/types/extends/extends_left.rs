@@ -10,33 +10,29 @@ use super::{
     union::extends_union, unknown::extends_unknown,
 };
 use crate::SchemaKind;
-use crate::arguments::validation::authored::schema_view::{Converter, Node};
+use crate::arguments::validation::authored::schema_view::Node;
 
 /// Perform the structural check for the left node's kind.
 ///
 /// A kind the authored JSON contract cannot produce, such as an unresolved reference or a base
 /// type, accepts nothing the right node asks for, as it does in the reference.
-pub(crate) fn extends_left<'a>(
-    converter: &Converter<'a>,
-    left: &Rc<Node<'a>>,
-    right: &Rc<Node<'a>>,
-) -> bool {
+pub(crate) fn extends_left<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {
     match left.kind() {
         Some(SchemaKind::Any) => extends_any(),
-        Some(SchemaKind::Array) => extends_array(converter, left, right),
-        Some(SchemaKind::Boolean) => extends_boolean(converter, left, right),
-        Some(SchemaKind::Enum) => extends_enum(converter, left, right),
-        Some(SchemaKind::Integer) => extends_integer(converter, left, right),
-        Some(SchemaKind::Intersect) => extends_intersect(converter, left, right),
-        Some(SchemaKind::Literal) => extends_literal(converter, left, right),
+        Some(SchemaKind::Array) => extends_array(left, right),
+        Some(SchemaKind::Boolean) => extends_boolean(left, right),
+        Some(SchemaKind::Enum) => extends_enum(left, right),
+        Some(SchemaKind::Integer) => extends_integer(left, right),
+        Some(SchemaKind::Intersect) => extends_intersect(left, right),
+        Some(SchemaKind::Literal) => extends_literal(left, right),
         Some(SchemaKind::Never) => extends_never(),
-        Some(SchemaKind::Null) => extends_null(converter, left, right),
-        Some(SchemaKind::Number) => extends_number(converter, left, right),
-        Some(SchemaKind::Object) => extends_object(converter, left, right),
-        Some(SchemaKind::String) => extends_string(converter, left, right),
-        Some(SchemaKind::TemplateLiteral) => extends_template_literal(converter, left, right),
-        Some(SchemaKind::Tuple) => extends_tuple(converter, left, right),
-        Some(SchemaKind::Union) => extends_union(converter, left, right),
+        Some(SchemaKind::Null) => extends_null(left, right),
+        Some(SchemaKind::Number) => extends_number(left, right),
+        Some(SchemaKind::Object) => extends_object(left, right),
+        Some(SchemaKind::String) => extends_string(left, right),
+        Some(SchemaKind::TemplateLiteral) => extends_template_literal(left, right),
+        Some(SchemaKind::Tuple) => extends_tuple(left, right),
+        Some(SchemaKind::Union) => extends_union(left, right),
         Some(SchemaKind::Unknown) => extends_unknown(right),
         _ => false,
     }

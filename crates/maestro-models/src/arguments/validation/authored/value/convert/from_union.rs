@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use super::from_type::from_type;
 use crate::arguments::validation::authored::schema_view::{Node, View};
-use crate::arguments::validation::authored::{self, Converter};
+use crate::arguments::validation::authored::{self, context::Context};
 
 /// Convert through the alternatives of a union node.
 ///
@@ -14,7 +14,7 @@ use crate::arguments::validation::authored::{self, Converter};
 /// candidate the whole union accepts replaces it, as the reference selects one. The whole
 /// union is its authored node when there is one, with that node's options.
 pub(crate) fn from_union<'a>(
-    converter: &mut Converter<'a>,
+    converter: &mut Context<'a>,
     alternatives: &[Rc<Node<'a>>],
     source: Option<View<'a>>,
     value: &mut Value,
@@ -40,12 +40,12 @@ pub(crate) fn from_union<'a>(
 
 /// Convert through the alternatives an authored union declares.
 pub(crate) fn from_union_view<'a>(
-    converter: &mut Converter<'a>,
+    converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
 ) -> Option<Value> {
-    let alternatives: Vec<Rc<Node<'a>>> = converter
-        .children(view, "anyOf")?
+    let alternatives: Vec<Rc<Node<'a>>> = view
+        .children("anyOf")?
         .into_iter()
         .map(|alternative| Rc::new(Node::Leaf(alternative)))
         .collect();
@@ -53,7 +53,7 @@ pub(crate) fn from_union_view<'a>(
 }
 
 /// Whether any alternative accepts the supplied value.
-fn matches_any(converter: &Converter<'_>, alternatives: &[Rc<Node<'_>>], value: &Value) -> bool {
+fn matches_any(converter: &Context<'_>, alternatives: &[Rc<Node<'_>>], value: &Value) -> bool {
     alternatives
         .iter()
         .any(|alternative| authored::accepts(converter, alternative, value))

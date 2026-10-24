@@ -8,7 +8,8 @@ use super::{
     from_tuple, from_union,
 };
 use crate::SchemaKind;
-use crate::arguments::validation::authored::schema_view::{Converter, Node, View};
+use crate::arguments::validation::authored::context::Context;
+use crate::arguments::validation::authored::schema_view::{Node, View};
 
 /// Convert a supplied value through one schema node.
 ///
@@ -17,7 +18,7 @@ use crate::arguments::validation::authored::schema_view::{Converter, Node, View}
 /// converts through the authored node it was instantiated from; only structural comparison
 /// builds a sequence without one, and conversion never meets it.
 pub(crate) fn from_type<'a>(
-    converter: &mut Converter<'a>,
+    converter: &mut Context<'a>,
     node: &Node<'a>,
     value: &mut Value,
 ) -> Option<Value> {
@@ -41,11 +42,7 @@ pub(crate) fn from_type<'a>(
 }
 
 /// Convert through the kind an authored node declares.
-fn from_leaf<'a>(
-    converter: &mut Converter<'a>,
-    view: View<'a>,
-    value: &mut Value,
-) -> Option<Value> {
+fn from_leaf<'a>(converter: &mut Context<'a>, view: View<'a>, value: &mut Value) -> Option<Value> {
     match view.kind {
         Some(SchemaKind::String) => from_string::from_string(value),
         Some(SchemaKind::Number) => from_number::from_number(value),

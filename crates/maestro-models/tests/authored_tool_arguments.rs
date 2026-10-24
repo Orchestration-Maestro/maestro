@@ -200,6 +200,10 @@ const MATRIX: &[(&str, &[&str])] = &[
         "nested_definitions_restore_the_enclosing_scope",
         &["cyclic_scope"],
     ),
+    (
+        "comparison_keeps_each_kind_and_modifier_separate",
+        &["group:comparison"],
+    ),
 ];
 
 /// Read the recorded corpus.
@@ -731,6 +735,16 @@ fn declared(entries: &[(&str, SchemaKind)]) -> Vec<(String, SchemaKind)> {
         .iter()
         .map(|(pointer, kind)| ((*pointer).to_owned(), kind.clone()))
         .collect()
+}
+
+/// Each kind compares under its own rules and every member keeps its declared optionality.
+///
+/// An alternative set never becomes a sequence of the same positions or an intersection of
+/// the same members, so its alternatives keep converting where the reference converts them.
+/// A member an object leaves optional never satisfies a required member of another object.
+#[test]
+fn comparison_keeps_each_kind_and_modifier_separate() {
+    run("comparison_keeps_each_kind_and_modifier_separate");
 }
 
 /// Assert the prepared arguments one authored schema yields.

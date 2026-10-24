@@ -2,7 +2,7 @@
 
 use std::{borrow::Cow, collections::HashMap, rc::Rc};
 
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 use crate::SchemaKind;
 
@@ -20,7 +20,7 @@ pub(crate) struct Document<'a> {
 
 impl<'a> Document<'a> {
     /// Index each authored kind by the node its pointer addresses.
-    fn new(root: &'a Value, kinds: &'a HashMap<String, SchemaKind>) -> Self {
+    pub(crate) fn new(root: &'a Value, kinds: &'a HashMap<String, SchemaKind>) -> Self {
         let indexed = kinds
             .iter()
             .filter_map(|(pointer, kind)| {
@@ -34,6 +34,21 @@ impl<'a> Document<'a> {
     }
 }
 
+impl<'a> Document<'a> {
+    /// The authored view of the supplied schema document's root.
+    pub(crate) fn root(&'a self) -> View<'a> {
+        self.view(self.root)
+    }
+
+    /// The authored view of one supplied node, with its declared kind when it has one.
+    pub(crate) fn view(&'a self, raw: &'a Value) -> View<'a> {
+        View {
+            raw,
+            kind: self.kinds.get(&std::ptr::from_ref(raw)).copied(),
+            kinds: &self.kinds,
+        }
+    }
+}
 /// Borrowed authored schema node with its declared kind.
 #[derive(Clone, Copy)]
 pub(crate) struct View<'a> {
@@ -41,75 +56,33 @@ pub(crate) struct View<'a> {
     pub(crate) raw: &'a Value,
     /// Kind the author declared for this node, when the node is authored.
     pub(crate) kind: Option<&'a SchemaKind>,
+    /// Indexed kinds a child view looks its own declared kind up in.
+    kinds: &'a HashMap<*const Value, &'a SchemaKind>,
 }
 
-/// One authored conversion: the supplied document, its kinds and its definition frames.
-pub(crate) struct Converter<'a> {
-    /// Authored kinds by node identity.
-    document: Document<'a>,
-    /// Definition frames on the conversion call path, outermost first; each frame's enclosing
-    /// frame is the one below it, and a frame leaves when the conversion that entered it returns.
-    frames: Vec<&'a Map<String, Value>>,
-}
-
-impl<'a> Converter<'a> {
-    /// Start converting against the supplied document.
-    pub(crate) fn new(root: &'a Value, kinds: &'a HashMap<String, SchemaKind>) -> Self {
-        Self {
-            document: Document::new(root, kinds),
-            frames: Vec::new(),
-        }
-    }
-
-    /// The view of the supplied document root.
-    pub(crate) fn root(&self) -> View<'a> {
-        self.view(self.document.root)
-    }
-
-    /// The view of one node of the supplied document.
-    pub(crate) fn view(&self, raw: &'a Value) -> View<'a> {
+impl<'a> View<'a> {
+    /// The authored view of one child node of this node.
+    pub(crate) fn child(self, raw: &'a Value) -> View<'a> {
         View {
             raw,
-            kind: self
-                .document
-                .kinds
-                .get(&std::ptr::from_ref::<Value>(raw))
-                .copied(),
+            kind: self.kinds.get(&std::ptr::from_ref(raw)).copied(),
+            kinds: self.kinds,
         }
     }
 
-    /// The child node a keyword names, when the supplied view holds it.
-    pub(crate) fn keyword(&self, view: View<'a>, keyword: &str) -> Option<View<'a>> {
-        view.raw.get(keyword).map(|child| self.view(child))
+    /// The authored view of the node this keyword addresses, when it holds one.
+    pub(crate) fn keyword(self, keyword: &str) -> Option<View<'a>> {
+        self.raw.get(keyword).map(|raw| self.child(raw))
     }
 
-    /// The child nodes a keyword names, the members of an array or the values of an object.
-    pub(crate) fn children(&self, view: View<'a>, keyword: &str) -> Option<Vec<View<'a>>> {
-        let children = super::super::references::children(view.raw.get(keyword)?);
-        Some(children.into_iter().map(|child| self.view(child)).collect())
-    }
-
-    /// The definition a name names in the current frames, the innermost declaration first.
-    pub(crate) fn definition(&self, name: &str) -> Option<View<'a>> {
-        super::super::references::definition(&self.frames, name).map(|raw| self.view(raw))
-    }
-
-    /// The current definition frames, outermost first.
-    pub(crate) fn frames(&self) -> &[&'a Map<String, Value>] {
-        &self.frames
-    }
-
-    /// Run one conversion step with the definitions a cyclic node declares visible.
-    ///
-    /// The declarations overlay the current frames for that step alone, so a sibling converted
-    /// afterwards sees the enclosing frames again.
-    pub(crate) fn within<R>(&mut self, view: View<'a>, step: impl FnOnce(&mut Self) -> R) -> R {
-        let depth = self.frames.len();
-        self.frames
-            .extend(view.raw.get("$defs").and_then(Value::as_object));
-        let result = step(self);
-        self.frames.truncate(depth);
-        result
+    /// The authored views of every node this keyword lists.
+    pub(crate) fn children(self, keyword: &str) -> Option<Vec<View<'a>>> {
+        Some(
+            super::super::references::children(self.raw.get(keyword)?)
+                .into_iter()
+                .map(|raw| self.child(raw))
+                .collect(),
+        )
     }
 }
 
@@ -167,33 +140,6 @@ pub(crate) struct Member<'a> {
     pub(crate) optional: bool,
 }
 
-impl<'a> Member<'a> {
-    /// The members an authored object declares, in declaration order, each through the node
-    /// the supplied stage gives its child; a member the object does not require is optional.
-    pub(crate) fn declared(
-        converter: &Converter<'a>,
-        view: View<'a>,
-        mut node: impl FnMut(View<'a>) -> Rc<Node<'a>>,
-    ) -> Option<Vec<Self>> {
-        let properties = view.raw.get("properties").and_then(Value::as_object)?;
-        let required = view.raw.get("required").and_then(Value::as_array);
-        Some(
-            properties
-                .iter()
-                .map(|(name, child)| Self {
-                    name: Cow::Borrowed(name.as_str()),
-                    node: node(converter.view(child)),
-                    optional: !required.is_some_and(|required| {
-                        required
-                            .iter()
-                            .any(|required| required.as_str() == Some(name))
-                    }),
-                })
-                .collect(),
-        )
-    }
-}
-
 /// Object-like members indexed once by their exact names.
 pub(crate) struct Members<'m, 'a>(HashMap<&'m str, &'m Member<'a>>);
 
@@ -216,7 +162,7 @@ impl<'m, 'a> Members<'m, 'a> {
     }
 }
 
-impl<'a> Node<'a> {
+impl Node<'_> {
     /// The kind this node converts and compares as.
     pub(crate) fn kind(&self) -> Option<SchemaKind> {
         match self {
@@ -231,52 +177,6 @@ impl<'a> Node<'a> {
             Node::Never => Some(SchemaKind::Never),
             Node::Any => Some(SchemaKind::Any),
             Node::Unknown => Some(SchemaKind::Unknown),
-        }
-    }
-
-    /// The parts of a union, tuple or intersection: the nodes a composed one holds, or the
-    /// children its authored node declares, each with its declared kind.
-    pub(crate) fn parts(&self, converter: &Converter<'a>) -> Option<Cow<'_, [Rc<Node<'a>>]>> {
-        let view = match self {
-            Node::Union(parts, _) | Node::Tuple(parts, _) | Node::Intersect(parts, _) => {
-                return Some(Cow::Borrowed(parts));
-            }
-            Node::Leaf(view) => *view,
-            _ => return None,
-        };
-        let keyword = match view.kind? {
-            SchemaKind::Union => "anyOf",
-            SchemaKind::Tuple => "items",
-            SchemaKind::Intersect => "allOf",
-            _ => return None,
-        };
-        let children = converter.children(view, keyword)?;
-        Some(Cow::Owned(
-            children
-                .into_iter()
-                .map(|child| Rc::new(Node::Leaf(child)))
-                .collect(),
-        ))
-    }
-
-    /// The members of an object-like node, object or tuple, in member order.
-    ///
-    /// A tuple's positions become required members named by their index.
-    pub(crate) fn members(&self) -> Option<Cow<'_, [Member<'a>]>> {
-        match self {
-            Node::Object(object) => Some(Cow::Borrowed(&object.properties)),
-            Node::Tuple(items, _) => Some(Cow::Owned(
-                items
-                    .iter()
-                    .enumerate()
-                    .map(|(index, item)| Member {
-                        name: Cow::Owned(index.to_string()),
-                        node: Rc::clone(item),
-                        optional: false,
-                    })
-                    .collect(),
-            )),
-            _ => None,
         }
     }
 }

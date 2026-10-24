@@ -6,3 +6,6 @@ pub(crate) mod instantiate;
 pub(crate) mod patterns;
 pub(crate) mod r#ref;
 pub(crate) mod template_literal;
+
+/// Tuple positions spelled as named object properties.
+pub(crate) mod tuple;
