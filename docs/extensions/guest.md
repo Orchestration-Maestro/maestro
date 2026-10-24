@@ -680,6 +680,26 @@ filesystem call decides the answer. The three patterns are the example's own
 policy; a hook needs a host that enables the component runtime, and
 `examples/extensions/README.md` holds the build and controlled-run commands.
 
+### A compaction trigger
+
+[`examples/extensions/trigger_compact.rs`](../../examples/extensions/trigger_compact.rs)
+registers a `turn_end` hook and a `trigger-compact` command. The hook records the
+context usage the host reports and requests compaction once a known estimate at or
+below 100,000 tokens is followed by a known estimate above it; an estimate the host
+does not report leaves the last one in place. The command requests compaction at
+once, passing its trimmed arguments as the instructions, or none when they are
+blank, and it never changes the recorded estimate.
+
+The example only asks the host for compaction and reports `Compaction started`
+before the request, then `Compaction completed` or `Compaction failed: <message>`
+when the host answers. Each report reads the UI availability of that moment, so a
+headless start can still report a completion that arrives after a UI appears.
+
+It is opt-in like the greeting tool: its crate's tests run the built component in a
+controlled host, and `examples/extensions/README.md` holds the build and
+controlled-run commands. Compacting a running application is not part of that
+controlled run.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes
