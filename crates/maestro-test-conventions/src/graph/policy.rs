@@ -290,6 +290,9 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-detection", "maestro-text"),
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
+    ("maestro-rpc", "maestro-theme"),
+    ("maestro-rpc", "maestro-tools"),
+    ("maestro-rpc", "maestro-tui-crossterm"),
 ];
 
 /// Foundation utility that native crates may use beyond their table row.
@@ -314,6 +317,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
+    "maestro-rpc",
     "maestro-session",
     "maestro-settings",
     "maestro-test-conventions",
@@ -345,6 +349,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
+    "maestro-rpc",
     "maestro-session",
     "maestro-settings",
     "maestro-terminal",
