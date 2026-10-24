@@ -52,7 +52,9 @@ notification ends the process after those effects.
 `input::selector::SelectorHost::native` supplies the native terminal frame
 writer. Before it presents, the session selector loads the configured
 keybindings and installs that manager, so the search field and the list dispatch
-the configured controls. The records a presentation exchanges with its factory
+the configured controls. `packages::handle_config_command` presents the
+configuration selector over the configured paths it resolved from the loaded
+settings. The records a presentation exchanges with its factory
 live in `maestro_app::presentation_data::input_selectors`; this library
 re-exports `ConfigSelectorOptions` from there and imports the rest from that
 application path, so the interactive frontend and this library name one owner.

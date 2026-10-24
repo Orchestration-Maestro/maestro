@@ -16,6 +16,10 @@ pub use maestro_tools::output::render_utils::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{EditRenderState, ToolDef};
 
+/// The built-in tool definitions by name, for a frontend's built-in rendering.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{ToolName, create_all_tool_definitions};
+
 pub use maestro_tools::{
     ToolDefinition, ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase,
     ToolRenderResult, ToolRenderResultBinding, ToolRenderResultCallback, ToolRenderResultOptions,

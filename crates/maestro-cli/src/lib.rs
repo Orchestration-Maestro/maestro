@@ -10,6 +10,7 @@ pub mod input;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod model_login;
+pub mod packages;
 mod print;
 
 pub use print::print_mode::{PrintMode, PrintModeOptions, run_print_mode};

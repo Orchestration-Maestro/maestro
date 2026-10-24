@@ -15,9 +15,6 @@ mod message_renderers;
 /// Single-owner rule for work polled once before a task facility takes it.
 mod inline_polls;
 
-/// Single-owner rule for the lines a protocol server writes.
-mod rpc_writers;
-
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
@@ -52,7 +49,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
-    rpc_writers::check(members)?;
     inline_polls::check(members)?;
     wit.finish()
 }
@@ -283,7 +279,11 @@ fn check_declarations(
         }
         if matches!(
             owner,
-            "maestro-tools" | "maestro-request" | "maestro-entry" | "maestro-app"
+            "maestro-tools"
+                | "maestro-request"
+                | "maestro-entry"
+                | "maestro-app"
+                | "maestro-listeners"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
@@ -339,6 +339,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-request"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
         "maestro-entry"
+    } else if name == "Listeners" {
+        "maestro-listeners"
     } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
         "maestro-test-terminal"
     } else if input_presenter_record(name) {

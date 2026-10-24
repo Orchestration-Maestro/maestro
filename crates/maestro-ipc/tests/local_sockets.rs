@@ -47,8 +47,14 @@ fn socket_prepare_preserves_non_socket_entries() {
     symlink(&absent, &dangling).unwrap();
     for path in [&file, &folder, &file_link, &stale_link, &dangling] {
         let before = fs::symlink_metadata(path).unwrap();
+        let native = local::connect_local_stream(path).unwrap_err();
         let error = local::prepare_socket_path(path, |_| panic!("not live")).unwrap_err();
-        assert_eq!(error.kind(), io::ErrorKind::AlreadyExists);
+        assert_eq!(
+            error.kind(),
+            io::ErrorKind::AlreadyExists,
+            "{}: {native:?}",
+            path.display()
+        );
         let after = fs::symlink_metadata(path).unwrap();
         assert_eq!((after.dev(), after.ino()), (before.dev(), before.ino()));
     }
@@ -240,6 +246,7 @@ fn socket_prepare_creates_parents() {
 
 #[test]
 fn socket_prepare_preserves_unclassified_failures() {
+    use std::os::unix::fs::MetadataExt;
     let directory = Directory::new();
     let file = directory.path().join("parent-file");
     fs::write(&file, b"retained").unwrap();
@@ -249,12 +256,50 @@ fn socket_prepare_preserves_unclassified_failures() {
     assert_eq!(fs::read(&file).unwrap(), b"retained");
     let long = directory.path().join("x".repeat(120));
     fs::write(&long, b"also retained").unwrap();
+    let before = fs::symlink_metadata(&long).unwrap();
     let native = local::connect_local_stream(&long).unwrap_err();
     assert_eq!(native.kind(), io::ErrorKind::InvalidInput);
     let error = local::prepare_socket_path(&long, |_| panic!("not live")).unwrap_err();
     assert_eq!(error.kind(), native.kind());
     assert_eq!(error.raw_os_error(), native.raw_os_error());
+    assert_eq!(error.to_string(), native.to_string());
+    let after = fs::symlink_metadata(&long).unwrap();
+    assert_eq!((after.dev(), after.ino()), (before.dev(), before.ino()));
     assert_eq!(fs::read(&long).unwrap(), b"also retained");
+    let denied = directory.path().join("denied");
+    fs::create_dir(&denied).unwrap();
+    let before = fs::symlink_metadata(&denied).unwrap();
+    let Some(guard) = maestro_test_directory::deny(&denied, 0).unwrap() else {
+        return;
+    };
+    let child = denied.join("new/child");
+    let native = fs::create_dir_all(child.parent().unwrap()).unwrap_err();
+    let error = local::prepare_socket_path(&child, |_| panic!("not live")).unwrap_err();
+    assert_eq!(native.kind(), io::ErrorKind::PermissionDenied);
+    assert_eq!(error.kind(), native.kind());
+    assert_eq!(error.raw_os_error(), native.raw_os_error());
+    assert_eq!(error.to_string(), native.to_string());
+    drop(guard);
+    let after = fs::symlink_metadata(&denied).unwrap();
+    assert_eq!((after.dev(), after.ino()), (before.dev(), before.ino()));
+    assert!(!denied.join("new").exists());
+}
+
+#[test]
+fn socket_prepare_retains_datagram_socket_errors() {
+    use std::os::unix::fs::MetadataExt;
+    use std::os::unix::net::UnixDatagram;
+    let directory = Directory::new();
+    let path = directory.path().join("datagram.sock");
+    let _socket = UnixDatagram::bind(&path).unwrap();
+    let before = fs::symlink_metadata(&path).unwrap();
+    let native = local::connect_local_stream(&path).unwrap_err();
+    let error = local::prepare_socket_path(&path, |_| panic!("not live")).unwrap_err();
+    assert_eq!(error.kind(), native.kind());
+    assert_eq!(error.raw_os_error(), native.raw_os_error());
+    assert_eq!(error.to_string(), native.to_string());
+    let after = fs::symlink_metadata(&path).unwrap();
+    assert_eq!((after.dev(), after.ino()), (before.dev(), before.ino()));
 }
 
 #[test]

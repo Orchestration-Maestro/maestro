@@ -1,17 +1,23 @@
 //! One connection: line reading, the record each line holds, and the loop that admits lines
 //! until the input ends or the connection shuts down.
 use super::commands::Reply;
-use super::lifecycle::Finish;
+use super::lifecycle::{Finish, Lifecycle};
 use super::ui::RpcUi;
-use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, write_record};
+use super::{RpcConnectionOutcome, RpcLine, RpcModeOptions, RpcOutput, RpcRecord};
 use crate::agent_session::AgentSession;
 use crate::rpc_types::{RpcCommandBody, RpcCommandRejection, RpcResponse, parse_rpc_command};
 use crate::runtime::agent_session_runtime::AgentSessionRuntime;
 use crate::utils::task::start_now;
 use maestro_json::jsonl::JsonlLineSplitter;
-use serde::Serialize;
 use serde_json::Value;
-use std::{cell::RefCell, collections::VecDeque, future::Future, io, pin::Pin, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    future::Future,
+    io,
+    pin::Pin,
+    rc::{Rc, Weak},
+};
 use tokio::io::{AsyncRead, AsyncReadExt};
 
 /// What a line reader observed next.
@@ -99,18 +105,19 @@ pub(super) type Record = Result<Value, serde_json::Error>;
 pub(super) struct Connection {
     /// The session runtime.
     pub(super) runtime: Rc<AgentSessionRuntime>,
-    /// The output.
-    pub(super) output: RpcOutput,
+    /// The output, which only [`Connection::write`] reaches.
+    output: RpcOutput,
     /// The extension interface.
     pub(super) ui: Rc<RpcUi>,
     /// The caller's facilities.
     pub(super) options: RpcModeOptions,
     /// Records admitted during the initial binding, in arrival order; `None` once bound.
     pub(super) early: RefCell<Option<Vec<Record>>>,
-    /// Notified once the initial binding has handled the records that arrived meanwhile.
+    /// Notifies every waiter once the initial binding has handled the records that arrived
+    /// meanwhile.
     pub(super) bound: tokio::sync::Notify,
     /// Shutdown and subscription state.
-    pub(super) lifecycle: RefCell<super::lifecycle::Lifecycle>,
+    pub(super) lifecycle: RefCell<Lifecycle>,
 }
 
 /// Serves `runtime_host` over `input` and `output` until the input ends, an extension
@@ -136,6 +143,26 @@ pub async fn run_rpc_connection(
 }
 
 impl Connection {
+    /// A connection serving `runtime` over `output` with `lifecycle`, before its initial
+    /// binding.
+    pub(super) fn new(
+        runtime: Rc<AgentSessionRuntime>,
+        output: RpcOutput,
+        options: RpcModeOptions,
+        lifecycle: Lifecycle,
+    ) -> Rc<Self> {
+        let theme = options.theme.clone();
+        Rc::new_cyclic(|connection| Self {
+            ui: Rc::new(RpcUi::new(Weak::clone(connection), theme)),
+            runtime,
+            output,
+            options,
+            early: RefCell::new(Some(Vec::new())),
+            bound: tokio::sync::Notify::new(),
+            lifecycle: RefCell::new(lifecycle),
+        })
+    }
+
     /// Reads and admits lines until the connection finishes.
     async fn serve(
         self: &Rc<Self>,
@@ -146,34 +173,39 @@ impl Connection {
             let next = tokio::select! {
                 biased;
                 outcome = &mut *finished => return outcome.map_err(io::Error::other)?,
-                next = input.next_line() => next?,
+                next = input.next_line() => next,
             };
             match next {
-                RpcInput::Line(line) => self.accept(&line),
-                RpcInput::End { tail } => return self.end(tail, finished).await,
+                Ok(RpcInput::Line(line)) => self.accept(&line),
+                Ok(RpcInput::End { tail }) => return self.end(tail, finished).await,
+                Err(error) => {
+                    self.fail(error);
+                    return finished.await.map_err(io::Error::other)?;
+                }
             }
         }
     }
 
-    /// Ends the input: once the initial binding is done, shuts down while handling the final
-    /// line, or finishes at once when a shutdown is already running.
+    /// Ends the input: answers a final dialog response at once, then, once the initial
+    /// binding is done, shuts down while handling any other final line, or repeats the
+    /// shutdown that already owns the teardown.
     async fn end(
         self: &Rc<Self>,
         tail: Option<String>,
         finished: &mut Finish,
     ) -> io::Result<RpcConnectionOutcome> {
-        if self.lifecycle.borrow().shutting_down {
-            return Ok(RpcConnectionOutcome::Eof);
+        if self.shutting_down() {
+            self.shutdown(RpcConnectionOutcome::Eof).await;
+            return finished.await.map_err(io::Error::other)?;
         }
+        // A startup dialog may wait for this answer, so it comes before the binding's end.
+        let tail = tail.and_then(|line| self.decode(&line));
         // Input is served after the initial binding, so its end waits for the binding too.
-        if self.early.borrow().is_some() {
-            tokio::select! {
-                biased;
-                outcome = &mut *finished => return outcome.map_err(io::Error::other)?,
-                () = self.bound.notified() => {}
-            }
+        tokio::select! {
+            biased;
+            outcome = &mut *finished => return outcome.map_err(io::Error::other)?,
+            () = self.initial_binding() => {}
         }
-        let tail = tail.and_then(|line| self.admit(&line));
         let shutdown =
             futures_util::future::join(self.shutdown(RpcConnectionOutcome::Eof), async {
                 if let Some(record) = tail {
@@ -201,13 +233,7 @@ impl Connection {
     /// Decodes `line`, answers a dialog response at once and holds every other record
     /// while the initial binding runs; returns the record to handle now.
     fn admit(&self, line: &str) -> Option<Record> {
-        let record = serde_json::from_str::<Value>(line);
-        if let Ok(value) = &record
-            && value.get("type").and_then(Value::as_str) == Some("extension_ui_response")
-        {
-            self.ui.answer(value);
-            return None;
-        }
+        let record = self.decode(line)?;
         match &mut *self.early.borrow_mut() {
             Some(early) => {
                 early.push(record);
@@ -215,6 +241,18 @@ impl Connection {
             }
             None => Some(record),
         }
+    }
+
+    /// Decodes `line` and answers a dialog response; returns any other record.
+    fn decode(&self, line: &str) -> Option<Record> {
+        let record = serde_json::from_str::<Value>(line);
+        if let Ok(value) = &record
+            && value.get("type").and_then(Value::as_str) == Some("extension_ui_response")
+        {
+            self.ui.answer(value);
+            return None;
+        }
+        Some(record)
     }
 
     /// Handles `record` at once and finishes it on its own task, so commands overlap and a
@@ -232,11 +270,11 @@ impl Connection {
         match self.reply(record).await {
             Reply::Handled(response) => {
                 if let Some(response) = response {
-                    self.write(&response);
+                    drop(self.write(RpcRecord::Response(&response)));
                 }
                 self.check_shutdown_requested().await;
             }
-            Reply::Failed(response) => self.write(&response),
+            Reply::Failed(response) => drop(self.write(RpcRecord::Response(&response))),
         }
     }
 
@@ -281,12 +319,26 @@ impl Connection {
         self.runtime.session()
     }
 
-    /// Writes `record`; a failed write ends the connection with that failure.
-    pub(super) fn write(&self, record: &impl Serialize) {
-        if let Err(error) = write_record(&self.output, record) {
-            self.finish(Err(error));
-        }
+    /// Writes `record` as one line; a failed write ends the connection with that failure,
+    /// and the caller receives a failure of the same kind and message.
+    pub(super) fn write(self: &Rc<Self>, record: RpcRecord<'_>) -> io::Result<()> {
+        let written = RpcLine::new(&record)
+            .map_err(io::Error::from)
+            .and_then(|line| (self.output)(&line));
+        written.map_err(|error| {
+            let reported = io::Error::new(error.kind(), error.to_string());
+            self.fail(error);
+            reported
+        })
     }
+}
+
+/// Writes `record` on `connection` while the connection lasts.
+pub(super) fn write_to(connection: &Weak<Connection>, record: RpcRecord<'_>) -> io::Result<()> {
+    connection
+        .upgrade()
+        .ok_or_else(|| io::Error::other("the connection has ended"))?
+        .write(record)
 }
 
 /// The failure response of a record that is not a valid command.

@@ -1193,11 +1193,15 @@ fn standalone_inputs(source: &Path, package: &Path) {
 }
 
 /// The shipped examples and their index page, as authors write them.
-fn shipped_examples() -> [(&'static str, &'static str); 6] {
+fn shipped_examples() -> [(&'static str, &'static str); 11] {
     [
         (
             "examples/extensions/hello.rs",
             include_str!("../../../examples/extensions/hello.rs"),
+        ),
+        (
+            "examples/extensions/hidden_thinking_label.rs",
+            include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
         ),
         (
             "examples/extensions/shutdown_command.rs",
@@ -1214,6 +1218,22 @@ fn shipped_examples() -> [(&'static str, &'static str); 6] {
         (
             "examples/extensions/reload_runtime.rs",
             include_str!("../../../examples/extensions/reload_runtime.rs"),
+        ),
+        (
+            "examples/extensions/protected_paths.rs",
+            include_str!("../../../examples/extensions/protected_paths.rs"),
+        ),
+        (
+            "examples/extensions/pirate.rs",
+            include_str!("../../../examples/extensions/pirate.rs"),
+        ),
+        (
+            "examples/extensions/trigger_compact.rs",
+            include_str!("../../../examples/extensions/trigger_compact.rs"),
+        ),
+        (
+            "examples/extensions/bookmark.rs",
+            include_str!("../../../examples/extensions/bookmark.rs"),
         ),
         (
             "examples/extensions/README.md",

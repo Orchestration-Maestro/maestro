@@ -1,5 +1,7 @@
 //! Terminal UI capabilities offered to extension callbacks.
-use crate::{CallbackEmitter, EventError, footer_data_provider::ReadonlyFooterDataProvider};
+mod callbacks;
+use crate::{EventError, footer_data_provider::ReadonlyFooterDataProvider};
+pub use callbacks::UIHostCall;
 use maestro_models::{Cancellation, Execution, Local};
 use maestro_theme::{LiveTheme, Theme, ThemeInfo};
 use maestro_tui::{
@@ -82,15 +84,12 @@ pub struct ThemeSetResult {
     pub error: Option<String>,
 }
 
-/// Raw terminal input listener.
-pub type TerminalInputHandler = Rc<
-    dyn for<'a> Fn(String, CallbackEmitter<'a, Local>) -> Result<InputListenerResult, EventError>,
->;
+/// Terminal input listener bound to the facade that authored it.
+pub type TerminalInputHandler = UIHostCall<String, InputListenerResult>;
 /// Removes a subscription; dropping it does not.
 pub type UIUnsubscribe = Rc<dyn Fn() -> Result<(), EventError>>;
 /// Explicit disposal of an extension component.
-pub type ComponentDisposer =
-    Rc<dyn for<'a> Fn(CallbackEmitter<'a, Local>) -> Result<(), EventError>>;
+pub type ComponentDisposer = UIHostCall<(), ()>;
 
 /// A component an extension built, with its optional disposal.
 pub struct ExtensionComponent {
@@ -101,22 +100,10 @@ pub struct ExtensionComponent {
 }
 
 /// Builds a component from the terminal and the live theme.
-pub type ComponentFactory = Rc<
-    dyn for<'a> Fn(
-        TUI,
-        LiveTheme,
-        CallbackEmitter<'a, Local>,
-    ) -> Result<ExtensionComponent, EventError>,
->;
+pub type ComponentFactory = UIHostCall<(TUI, LiveTheme), ExtensionComponent>;
 /// Builds a footer that may read the footer metadata.
-pub type FooterFactory = Rc<
-    dyn for<'a> Fn(
-        TUI,
-        LiveTheme,
-        Rc<dyn ReadonlyFooterDataProvider>,
-        CallbackEmitter<'a, Local>,
-    ) -> Result<ExtensionComponent, EventError>,
->;
+pub type FooterFactory =
+    UIHostCall<(TUI, LiveTheme, Rc<dyn ReadonlyFooterDataProvider>), ExtensionComponent>;
 
 /// Widget content: fixed lines or a component factory.
 #[derive(Clone)]
@@ -128,26 +115,18 @@ pub enum WidgetContent {
 }
 
 /// Wraps the current autocomplete provider with additional behavior.
-pub type AutocompleteProviderFactory = Rc<
-    dyn for<'a> Fn(
-        Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
-        CallbackEmitter<'a, Local>,
-    ) -> Result<Rc<dyn AutocompleteProvider<Signal = Cancellation>>, EventError>,
+pub type AutocompleteProviderFactory = UIHostCall<
+    Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
+    Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
 >;
 /// Builds a replacement editor.
-pub type EditorFactory = Rc<
-    dyn for<'a> Fn(
-        TUI,
-        EditorTheme,
-        KeybindingsManager,
-        CallbackEmitter<'a, Local>,
-    ) -> Result<Rc<dyn EditorComponent<Signal = Cancellation>>, EventError>,
+pub type EditorFactory = UIHostCall<
+    (TUI, EditorTheme, KeybindingsManager),
+    Rc<dyn EditorComponent<Signal = Cancellation>>,
 >;
 
 /// Resolves overlay options each time the host asks for them.
-pub type OverlayOptionsResolver = Rc<
-    dyn for<'a> Fn(CallbackEmitter<'a, Local>) -> Result<Rc<RefCell<OverlayOptions>>, EventError>,
->;
+pub type OverlayOptionsResolver = UIHostCall<(), Rc<RefCell<OverlayOptions>>>;
 /// Static or resolved overlay options.
 #[derive(Clone)]
 pub enum OverlayOptionsSource {
@@ -157,12 +136,7 @@ pub enum OverlayOptionsSource {
     Resolver(OverlayOptionsResolver),
 }
 /// Receives the shown overlay's handle, shared with the host.
-pub type OverlayHandleCallback = Rc<
-    dyn for<'a> Fn(
-        Rc<RefCell<Box<dyn OverlayHandle>>>,
-        CallbackEmitter<'a, Local>,
-    ) -> Result<(), EventError>,
->;
+pub type OverlayHandleCallback = UIHostCall<Rc<RefCell<Box<dyn OverlayHandle>>>, ()>;
 
 /// Options for a custom component.
 #[derive(Clone, Default)]
@@ -188,25 +162,11 @@ pub enum CustomFactoryOutcome {
     Async(ExtensionUIFuture<ExtensionComponent>),
 }
 /// Builds a typed custom component.
-pub type CustomFactory<T> = Rc<
-    dyn for<'a> Fn(
-        TUI,
-        LiveTheme,
-        KeybindingsManager,
-        CustomDone<T>,
-        CallbackEmitter<'a, Local>,
-    ) -> Result<CustomFactoryOutcome, EventError>,
->;
+pub type CustomFactory<T> =
+    UIHostCall<(TUI, LiveTheme, KeybindingsManager, CustomDone<T>), CustomFactoryOutcome>;
 /// Builds a custom component that the host closes.
-pub type CustomComponentFactory = Rc<
-    dyn for<'a> Fn(
-        TUI,
-        LiveTheme,
-        KeybindingsManager,
-        CustomClose,
-        CallbackEmitter<'a, Local>,
-    ) -> Result<CustomFactoryOutcome, EventError>,
->;
+pub type CustomComponentFactory =
+    UIHostCall<(TUI, LiveTheme, KeybindingsManager, CustomClose), CustomFactoryOutcome>;
 
 /// Settles at once with `value`.
 fn ready<T: 'static>(value: T) -> ExtensionUIFuture<T> {
@@ -483,9 +443,9 @@ impl ExtensionUIContext {
         let slot = Rc::new(Cell::new(None));
         let result = Rc::clone(&slot);
         let component: CustomComponentFactory =
-            Rc::new(move |tui, theme, keybindings, close, events| {
+            UIHostCall::from_host(move |(tui, theme, keybindings, close)| {
                 let done = committing_done(close, Rc::clone(&slot));
-                factory(tui, theme, keybindings, done, events)
+                factory.call((tui, theme, keybindings, done))
             });
         let closed = self.port.custom_component(component, options);
         Box::pin(async move {

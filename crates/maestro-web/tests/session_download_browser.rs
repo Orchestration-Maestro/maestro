@@ -60,15 +60,29 @@ pub struct Fixture {
     /// Original packaged native namespace.
     module0: crate::browser_fixture_support::FixtureModule,
 }
+/// Packaged URL of the download fixture module.
+fn fixture_module() -> String {
+    wasm_bindgen::link_to!(module = "/tests/session_download_support/browser.js")
+}
+
 impl Fixture {
+    /// Load the namespace through a page's own module import, which its policy allows.
+    pub async fn import(import: &js_sys::Function) -> Self {
+        Self {
+            module0: crate::browser_fixture_support::FixtureModule::import(
+                import,
+                &fixture_module(),
+            )
+            .await
+            .unwrap(),
+        }
+    }
     /// Load each namespace before installing controlled host effects.
     pub async fn load() -> Self {
         Self {
-            module0: crate::browser_fixture_support::FixtureModule::load(&wasm_bindgen::link_to!(
-                module = "/tests/session_download_support/browser.js"
-            ))
-            .await
-            .unwrap(),
+            module0: crate::browser_fixture_support::FixtureModule::load(&fixture_module())
+                .await
+                .unwrap(),
         }
     }
     /// Start one controlled native DOM transaction.

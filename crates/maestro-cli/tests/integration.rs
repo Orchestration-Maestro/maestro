@@ -8,5 +8,7 @@ mod input_help;
 mod input_presenters;
 mod model_account_checks;
 mod model_tables;
+mod package_command_checks;
 mod print_output;
+mod startup_config;
 mod support;

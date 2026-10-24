@@ -587,6 +587,37 @@ prompt. A supplied user append is already part of the event's `systemPrompt`,
 including any edit an earlier handler made; the example never appends that
 option again. Loading it into an application is opt-in, and
 `examples/extensions/README.md` gives the build and controlled-run commands.
+
+### A hidden thinking label
+
+[`examples/extensions/hidden_thinking_label.rs`](../../examples/extensions/hidden_thinking_label.rs)
+is the shipped collapsed-thinking-label extension. Its `/thinking-label`
+command sets the label the host shows, and the same command without arguments
+clears that label and restores `Pondering...` for the next session start. The
+example also registers a `session_start` handler that applies the label it
+retains, so the next session shows the label the session before set.
+
+The command trims the surrounding whitespace of the text it receives and keeps
+the interior text unchanged, and a command that sends no text takes the reset
+branch rather than setting an empty label. Clearing the label and applying the
+example default are separate requests: the first asks the host to restore its own
+default, and the second shows the example's text at the next session start.
+
+A host rejection ends the command with the host's message. The command has
+already stored the label it chose, so the next session start applies it. Loading the component into an application is opt-in and needs a host that
+enables the component runtime; `examples/extensions/README.md` gives the build
+and controlled-run commands.
+
+### A prompt toggle
+
+`examples/extensions/pirate.rs` registers a `/pirate` command and a
+`before_agent_start` handler that share one boolean the factory instance owns.
+The command flips that boolean and reports the new state through
+`ExtensionUIContext::notify`; the handler appends this example's instructions to
+the supplied `systemPrompt` only while the boolean is set and otherwise returns
+no override. A refused notification leaves the flip in place. Loading it into an
+application is opt-in, and `examples/extensions/README.md` gives the build and
+controlled-run commands.
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses
@@ -631,6 +662,66 @@ The example is opt-in like the greeting tool: its crate's tests run the built
 component in a controlled host, and `examples/extensions/README.md` holds the
 build and controlled-run commands. Reloading a running application is not part
 of that controlled run.
+
+### A protected-paths tool-call hook
+
+[`examples/extensions/protected_paths.rs`](../../examples/extensions/protected_paths.rs)
+handles `tool_call` and returns a blocking `ToolCallEventResult` when a `write`
+or `edit` call names a path containing `.env`, `.git/` or `node_modules/`. The
+reason is `Path "<path>" is protected`, and the hook first asks the context
+whether the host has UI: if it does, it sends one warning,
+`Blocked write to protected path: <path>`, before returning the verdict.
+
+It reads the path after the tool-name filter, so every other tool passes
+through untouched and an unreadable path operand never reaches the UI. Matching is
+a case-sensitive literal substring test on the authored path: dot segments,
+uppercase spellings and backslash separators are left as they are, and no
+filesystem call decides the answer. The three patterns are the example's own
+policy; a hook needs a host that enables the component runtime, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
+
+### A compaction trigger
+
+[`examples/extensions/trigger_compact.rs`](../../examples/extensions/trigger_compact.rs)
+registers a `turn_end` hook and a `trigger-compact` command. The hook records the
+context usage the host reports and requests compaction once a known estimate at or
+below 100,000 tokens is followed by a known estimate above it; an estimate the host
+does not report leaves the last one in place. The command requests compaction at
+once, passing its trimmed arguments as the instructions, or none when they are
+blank, and it never changes the recorded estimate.
+
+The example only asks the host for compaction and reports `Compaction started`
+before the request, then `Compaction completed` or `Compaction failed: <message>`
+when the host answers. Each report reads the UI availability of that moment, so a
+headless start can still report a completion that arrives after a UI appears.
+
+It is opt-in like the greeting tool: its crate's tests run the built component in a
+controlled host, and `examples/extensions/README.md` holds the build and
+controlled-run commands. Compacting a running application is not part of that
+controlled run.
+
+### Entry bookmarks
+
+[`examples/extensions/bookmark.rs`](../../examples/extensions/bookmark.rs) labels
+session entries, which is what the tree view shows beside an entry. `/bookmark`
+labels the newest assistant message: with the argument text when it has any, and
+with `bookmark-<epoch milliseconds>` when the argument is blank. `/unbookmark`
+removes the newest label from any entry kind and ignores its arguments.
+
+The example reads the complete entry list once per invocation, walks it from the
+newest entry and stops at the first match, so a bookmark never scans the list
+twice. It keeps no label store of its own: `set_label` and `get_label` reach the
+host's session, and a label it removes keeps the entry it was written on.
+
+Entry identity comes from the entry `message`, `thinking_level_change`,
+`model_change`, `compaction`, `branch_summary`, `custom`, `custom_message`,
+`label` and `session_info` all carry, so removal covers every kind. Both commands
+return host failures unchanged, and a command that writes a label before
+notifying writes nothing when the label write itself fails.
+
+It is opt-in like the other shipped extensions: its crate's tests run the built
+component in a controlled host with a supplied wall clock, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
 
 ### A user-request summary handler
 

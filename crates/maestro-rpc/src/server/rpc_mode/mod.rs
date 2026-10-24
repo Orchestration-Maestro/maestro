@@ -3,8 +3,8 @@ mod native;
 
 pub use native::NativeRpcProcess;
 
-use maestro_app::output_guard::{take_over_stdout, write_raw_stdout};
-use maestro_app::rpc_mode::{JsonlLineReader, RpcOutput};
+use maestro_app::output_guard::take_over_stdout;
+use maestro_app::rpc_mode::{JsonlLineReader, stdout_output};
 use maestro_app::{AgentSessionRuntime, RpcModeOptions, run_rpc_connection};
 use std::{convert::Infallible, io, rc::Rc};
 
@@ -22,8 +22,7 @@ pub async fn run_rpc_mode(
     options: RpcModeOptions,
 ) -> io::Result<Infallible> {
     take_over_stdout();
-    let output: RpcOutput = Rc::new(write_raw_stdout);
     let input = Box::new(JsonlLineReader::new(tokio::io::stdin()));
-    let outcome = run_rpc_connection(runtime_host, input, output, options).await?;
+    let outcome = run_rpc_connection(runtime_host, input, stdout_output(), options).await?;
     std::process::exit(outcome.exit_code())
 }

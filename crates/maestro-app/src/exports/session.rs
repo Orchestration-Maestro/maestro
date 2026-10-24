@@ -8,6 +8,9 @@ pub use maestro_session::session_manager::{
 
 pub use maestro_session::{Presence, SessionInfo, SessionManager};
 
+/// The session's message records, including the application roles a transcript shows.
+pub use maestro_session::messages;
+
 pub use maestro_session::messages::{
     BranchSummaryMessage, CompactionSummaryMessage, parse_timestamp_millis,
 };

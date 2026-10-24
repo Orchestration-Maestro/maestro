@@ -12,8 +12,10 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command};
 use tokio::time::Sleep;
 
+mod exit_signal;
 mod native;
 mod wait;
+pub use exit_signal::exit_signal_name;
 #[cfg(windows)]
 pub use native::request_tree_kill;
 #[cfg(unix)]
