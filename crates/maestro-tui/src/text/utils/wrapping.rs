@@ -56,8 +56,7 @@ struct Placed {
 /// Breaks the graphemes of one literal line into lines.
 ///
 /// A literal line that fits the width stays whole, whitespace included. An overflowing one
-/// is broken into lines; each loses its trailing whitespace when no escape ends it, and a line
-/// left empty by that is dropped.
+/// is broken into ranges; trimming may leave an empty range whose terminal state still paints.
 fn place_lines(
     parsed: &Parsed<'_>,
     graphemes: &[Grapheme],
@@ -84,7 +83,7 @@ fn place_lines(
                 added,
             }
         })
-        .filter(|line| !line.kept.is_empty())
+        .filter(|line| !line.added.is_empty())
         .collect()
 }
 
@@ -102,54 +101,71 @@ fn wrap_line(parsed: &Parsed<'_>, span: Range<usize>, width: usize) -> Vec<Strin
         > width;
     let styled_after_line = parsed.has_style_escape(trailing_start..events.end);
     let placed = place_lines(parsed, &graphemes, width, styled_after_line);
-    if placed.is_empty() {
-        let mut empty = Emission::new(parsed);
-        empty.opaque_events(events);
-        return vec![empty.into_string()];
-    }
+    render_lines(parsed, &graphemes, &placed, events, overflows)
+}
+
+/// Emits rows, committing transferred events only when their row survives.
+fn render_lines(
+    parsed: &Parsed<'_>,
+    graphemes: &[Grapheme],
+    placed: &[Placed],
+    events: Range<usize>,
+    overflows: bool,
+) -> Vec<String> {
+    let trailing_start = graphemes.last().map_or(events.start, |g| g.events.end);
     let event_start = |index: usize| {
         graphemes
             .get(index)
             .map_or(trailing_start, |g| g.events.start)
     };
-    let last = placed.len() - 1;
-    placed
-        .iter()
-        .enumerate()
-        .filter_map(|(position, line)| {
-            let continues = breaks_whitespace_run(parsed, &graphemes, line.kept.start);
-            let mut emission = Emission::new(parsed);
-            if continues {
-                emission.inherit(parsed.state_after(&graphemes[line.kept.start]));
+    let mut consumed = events.start;
+    let mut rows: Vec<String> = Vec::new();
+    for (position, line) in placed.iter().enumerate() {
+        let first = &graphemes[line.kept.start];
+        let transferred = consumed > first.events.start;
+        let mut emission = Emission::new(parsed);
+        let prefix_end = emission.inherit(if transferred {
+            parsed.state_after(first)
+        } else {
+            first.state
+        });
+        let start = event_start(line.kept.start);
+        for (index, grapheme) in graphemes[line.kept.clone()].iter().enumerate() {
+            if transferred && index == 0 {
+                emission.content(grapheme);
             } else {
-                emission.inherit(graphemes[line.kept.start].state);
+                emission.grapheme(grapheme);
             }
-            if position == 0 {
-                emission.opaque_events(events.start..event_start(line.kept.start));
-            }
-            for (first, grapheme) in graphemes[line.kept.clone()].iter().enumerate() {
-                if continues && first == 0 {
-                    emission.content(grapheme);
-                } else {
-                    emission.grapheme(grapheme);
-                }
-            }
-            emission.events(event_start(line.kept.end)..event_start(line.added.end));
-            let dropped_end = placed
-                .get(position + 1)
-                .map_or(trailing_start, |next| event_start(next.kept.start));
-            emission.opaque_events(event_start(line.added.end)..dropped_end);
-            if breaks_whitespace_run(parsed, &graphemes, line.added.end) {
-                emission.events(parsed.leading_events(&graphemes[line.added.end]));
-            }
-            if position == last {
-                emission.events(trailing_start..events.end);
-            }
-            let state = emission.state();
-            let row = emission.finish(position != last);
-            shows(parsed, &graphemes, line, overflows, state).then_some(row)
-        })
-        .collect()
+        }
+        emission.events(consumed.max(event_start(line.kept.end))..event_start(line.added.end));
+        let mut end = placed
+            .get(position + 1)
+            .map_or(trailing_start, |next| event_start(next.kept.start));
+        emission.opaque_events(event_start(line.added.end)..end);
+        if breaks_whitespace_run(parsed, graphemes, line.added.end) {
+            let leading = parsed.leading_events(&graphemes[line.added.end]);
+            end = leading.end;
+            emission.events(leading);
+        }
+        let last = position + 1 == placed.len();
+        if last {
+            emission.events(trailing_start..events.end);
+            end = events.end;
+        }
+        if shows(parsed, graphemes, line, overflows, emission.state()) {
+            emission.insert_opaque_events(prefix_end, consumed.min(start)..start);
+            rows.push(emission.finish(!last));
+            consumed = end;
+        }
+    }
+    let mut tail = Emission::new(parsed);
+    tail.opaque_events(consumed..events.end);
+    if let Some(last) = rows.last_mut() {
+        last.push_str(&tail.into_string());
+    } else {
+        rows.push(tail.into_string());
+    }
+    rows
 }
 
 /// Whether a wrapped row shows anything: a grapheme that is not blank whitespace, a blank the
@@ -260,14 +276,17 @@ fn is_whitespace(parsed: &Parsed<'_>, grapheme: &Grapheme) -> bool {
 
 /// Index after the last grapheme of `line` that a wrapped row keeps.
 ///
-/// Trailing whitespace goes, unless a style escape is written after it: that escape decides how
-/// the row and the cells after it paint, so the whitespace before it stays.
+/// Trailing whitespace goes unless underline paints a blank row or a following escape protects it.
+/// Background and inverse can still paint an empty range through the inherited terminal state.
 fn trim_end(
     parsed: &Parsed<'_>,
     graphemes: &[Grapheme],
     line: &Range<usize>,
     styled_after_line: bool,
 ) -> usize {
+    let blank = graphemes[line.clone()]
+        .iter()
+        .all(|grapheme| is_whitespace(parsed, grapheme));
     let mut end = line.end;
     while end > line.start && is_whitespace(parsed, &graphemes[end - 1]) {
         let styled = if end < graphemes.len() {
@@ -276,7 +295,8 @@ fn trim_end(
         } else {
             styled_after_line
         };
-        if styled {
+        if styled || (blank && parsed.states[parsed.state_after(&graphemes[end - 1])].underlined())
+        {
             break;
         }
         end -= 1;
@@ -292,5 +312,6 @@ fn breaks_whitespace_run(parsed: &Parsed<'_>, graphemes: &[Grapheme], index: usi
     index > 0
         && index < graphemes.len()
         && is_whitespace(parsed, &graphemes[index - 1])
+        && is_whitespace(parsed, &graphemes[index])
         && space(&graphemes[index - 1]) == space(&graphemes[index])
 }

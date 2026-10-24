@@ -496,3 +496,53 @@ fn styled_whitespace_checks_do_not_keep_invisible_overflow() {
         );
     }
 }
+
+#[test]
+fn consecutive_painted_continuations_keep_their_rows() {
+    let mut actual_rows = Vec::new();
+    let mut expected_rows = Vec::new();
+    for (on, off, middle, prefix) in [
+        ("\x1b[44m", "\x1b[49m", "\x1b[44m", " \x1b[44m"),
+        ("\x1b[7m", "\x1b[27m", "\x1b[7m", " \x1b[7m"),
+        ("\x1b[4m", "\x1b[24m", "\x1b[4m \x1b[24m", ""),
+    ] {
+        let mut expected = vec!["-".to_owned()];
+        if !prefix.is_empty() {
+            expected.push(prefix.to_owned());
+        }
+        expected.extend([middle.to_owned(), middle.to_owned(), format!("{on} {off}")]);
+        actual_rows.push(wrap_text_with_ansi(&format!("- {on}   {off}"), 1));
+        expected_rows.push(expected);
+    }
+    assert_eq!(actual_rows, expected_rows);
+}
+
+#[test]
+fn filtered_authored_lines_keep_a_row_and_metadata() {
+    let markers = ["", "\x1b]133;A\x07", MARKER];
+    let actual: Vec<_> = markers
+        .iter()
+        .map(|marker| wrap_text_with_ansi(&format!("a\n\x1b[31m{marker}  \x1b[39m\nb"), 1))
+        .collect();
+    let expected: Vec<_> = markers
+        .iter()
+        .map(|marker| vec!["a", marker, "b"])
+        .collect();
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn metadata_on_discarded_continuations_is_emitted_once() {
+    for marker in [MARKER, "\x1b]133;A\x07"] {
+        assert_eq!(
+            (
+                wrap_text_with_ansi(&format!("- \x1b[4m{marker} \x1b[24m"), 1),
+                wrap_text_with_ansi(&format!("\t{marker}a"), 1)
+            ),
+            (
+                vec!["-".to_owned(), format!("\x1b[4m{marker} \x1b[24m")],
+                vec![format!("{marker}a")]
+            )
+        );
+    }
+}

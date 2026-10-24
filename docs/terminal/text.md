@@ -75,19 +75,22 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
 - Lines break at ASCII spaces and fill greedily. A word wider than `width` breaks
   between whole graphemes, and a non-whitespace grapheme wider than `width` is kept
   whole.
-- Whitespace that shows is content. A blank painted by inverse, underline or a
-  background colour wraps and stays like any other grapheme, and the plain whitespace
-  of its run before it stays too. A run without such a blank still breaks and drops.
+- Painted blanks keep their wrapped rows. Inverse, underline and background colour
+  make a blank visible; plain whitespace before it in the same run stays too. A run
+  without a painted blank still breaks and drops.
 - Text is split at literal newlines before escapes are read, so no escape reaches
   across a line feed. Empty text, and an empty literal line, return an empty line.
 - A literal line that measures at most `width` is neither broken nor trimmed. A
-  wider one is broken, every line it breaks into loses its trailing whitespace
-  unless a style escape is written after it, and a line that then shows nothing is
-  dropped.
+  wider one loses trailing whitespace unless underline paints an otherwise blank
+  row or a following style escape protects it. Empty continuation ranges survive
+  when their background or inverse state paints the row; otherwise invisible rows
+  are dropped.
 - A line that ends inside a whitespace run keeps the escapes written before the next
   blank, so the cells after that line paint as the source does.
-- A literal line left with no graphemes returns one line holding only its metadata
-  escapes; style escapes alone give an empty line.
+- Every authored line keeps at least one output row. If all its ranges are dropped,
+  that row holds only its metadata escapes; style escapes alone give an empty line.
+  Metadata transferred onto a dropped row moves to the next retained row, or the
+  end of the last retained row, without duplication.
 - A line that has text starts with the style in effect at its first grapheme, also
   after a literal newline.
 - A line that has text closes the hyperlink still open at its end, with the

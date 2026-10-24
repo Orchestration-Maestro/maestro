@@ -308,3 +308,57 @@ fn widget_defaults_keep_padding_and_passive_capabilities() {
         assert!(!widget.wants_key_release());
     }
 }
+
+#[test]
+fn text_paints_consecutive_blank_continuations() {
+    for (on, off) in [("\x1b[44m", "\x1b[49m"), ("\x1b[7m", "\x1b[27m")] {
+        let text = Text::new(format!("- {on}   {off}"), 0, 0, None);
+        assert_eq!(
+            text.render(1),
+            [
+                "-".to_owned(),
+                format!(" {on}"),
+                format!("{on} "),
+                format!("{on} "),
+                format!("{on} {off}")
+            ]
+        );
+    }
+    let text = Text::new("- \x1b[4m   \x1b[24m".to_owned(), 0, 0, None);
+    assert_eq!(
+        text.render(1),
+        [
+            "-",
+            "\x1b[4m \x1b[24m",
+            "\x1b[4m \x1b[24m",
+            "\x1b[4m \x1b[24m"
+        ]
+    );
+}
+
+#[test]
+fn text_keeps_filtered_authored_lines_and_metadata() {
+    for marker in ["", "\x1b]133;A\x07", maestro_tui::CURSOR_MARKER] {
+        let text = Text::new(format!("a\n\x1b[31m{marker}  \x1b[39m\nb"), 0, 0, None);
+        assert_eq!(
+            text.render(1),
+            ["a".to_owned(), format!("{marker} "), "b".to_owned()]
+        );
+    }
+}
+
+#[test]
+fn text_keeps_metadata_from_discarded_continuations() {
+    for marker in [maestro_tui::CURSOR_MARKER, "\x1b]133;A\x07"] {
+        let text = Text::new(format!("- \x1b[4m{marker} \x1b[24m"), 0, 0, None);
+        let underlined = text.render(1);
+        text.set_text(format!("\t{marker}a"));
+        assert_eq!(
+            (underlined, text.render(1)),
+            (
+                vec!["-".to_owned(), format!("\x1b[4m{marker} \x1b[24m")],
+                vec![format!("{marker}a")]
+            )
+        );
+    }
+}

@@ -27,10 +27,11 @@ impl<'p, 'a> Emission<'p, 'a> {
         }
     }
 
-    /// Establishes the canonical escapes of an inherited style state.
-    pub(super) fn inherit(&mut self, state: usize) {
+    /// Establishes an inherited style and returns the byte position after its escapes.
+    pub(super) fn inherit(&mut self, state: usize) -> usize {
         self.parsed.states[state].write_active(&mut self.out);
         self.state = state;
+        self.out.len()
     }
 
     /// Emits escapes verbatim, in order.
@@ -56,6 +57,13 @@ impl<'p, 'a> Emission<'p, 'a> {
         {
             self.out.push_str(event.raw);
         }
+    }
+
+    /// Inserts metadata at a saved output position after a row has been retained.
+    pub(super) fn insert_opaque_events(&mut self, position: usize, range: Range<usize>) {
+        let mut metadata = Self::new(self.parsed);
+        metadata.opaque_events(range);
+        self.out.insert_str(position, &metadata.into_string());
     }
 
     /// Emits a grapheme with every escape anchored at or inside it.
