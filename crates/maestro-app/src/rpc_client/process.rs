@@ -45,17 +45,24 @@ pub(super) fn command_for(options: &RpcClientOptions) -> io::Result<Command> {
     Ok(command)
 }
 
-/// Records `child` as the running child and starts the tasks that read its streams and
-/// await its end; returns the receiver that closes once its driver finishes.
+/// Starts the diagnostics' forwarding with `forward`, launches `command`, records the
+/// child as the running child and starts the tasks that read its streams and await its
+/// end; returns the receiver that closes once its driver finishes. A failed step
+/// publishes nothing and leaves no child running.
 ///
 /// # Errors
-/// Returns a broken-pipe failure for a child spawned without its three pipes.
-pub(super) fn launch(
+/// Returns `forward`'s failure, the native launch failure, or a broken-pipe failure for
+/// a child spawned without its three pipes.
+pub(super) async fn launch(
     inner: &Rc<Inner>,
-    mut child: CapturedChild,
+    command: &mut Command,
+    forward: impl FnOnce() -> io::Result<std::sync::mpsc::Sender<Forward>>,
 ) -> io::Result<watch::Receiver<()>> {
+    let forward = forward()?;
+    let mut child = CapturedChild::spawn_piped(command)?;
     let pipes = (child.take_stdin(), child.take_stdout(), child.take_stderr());
     let (Some(input), Some(output), Some(errors)) = pipes else {
+        child.terminate(Termination::Kill).await?;
         return Err(io::ErrorKind::BrokenPipe.into());
     };
     let (lines, queue) = mpsc::unbounded_channel();
@@ -65,9 +72,9 @@ pub(super) fn launch(
         input: lines,
         stop: Some(stop),
         done: done.clone(),
+        forward: forward.clone(),
         exit: None,
     });
-    let forward = forward_stderr()?;
     let weak = Rc::downgrade(inner);
     tokio::task::spawn_local(write_lines(input, queue, weak.clone()));
     tokio::task::spawn_local(record_stderr(errors, forward, weak.clone()));
@@ -91,28 +98,53 @@ async fn write_lines(
     }
 }
 
+/// What the forwarding thread handles, in order.
+pub(super) enum Forward {
+    /// Diagnostic bytes for this process's stderr.
+    Chunk(Vec<u8>),
+    /// Answered once every chunk queued before it has been written.
+    Flush(oneshot::Sender<()>),
+}
+
 /// Starts the thread that writes the child's diagnostic bytes to this process's stderr, so
-/// a slow reader of it never holds up the client; the thread ends with the returned sender.
+/// a slow reader of it never holds up the client; the thread ends once every sender is
+/// gone.
 ///
 /// # Errors
 /// Returns the failure to start the thread.
-fn forward_stderr() -> io::Result<std::sync::mpsc::Sender<Vec<u8>>> {
-    let (forward, chunks) = std::sync::mpsc::channel::<Vec<u8>>();
+pub(super) fn forward_stderr() -> io::Result<std::sync::mpsc::Sender<Forward>> {
+    let (forward, queue) = std::sync::mpsc::channel();
     std::thread::Builder::new().spawn(move || {
         let mut stderr = io::stderr();
-        for chunk in chunks {
-            // Like any diagnostic output, a failure to forward is not the child's failure.
-            let _ = stderr.write_all(&chunk);
+        for item in queue {
+            match item {
+                // Like any diagnostic output, a failure to forward is not the child's failure.
+                Forward::Chunk(chunk) => {
+                    let _ = stderr.write_all(&chunk);
+                }
+                Forward::Flush(written) => {
+                    let _ = written.send(());
+                }
+            }
         }
     })?;
     Ok(forward)
+}
+
+/// Waits until the forwarding thread has written every chunk queued before this call; at
+/// once when the thread has gone.
+pub(super) async fn flush(forward: &std::sync::mpsc::Sender<Forward>) {
+    let (flushed, written) = oneshot::channel();
+    if forward.send(Forward::Flush(flushed)).is_ok() {
+        let _ = written.await;
+    }
 }
 
 /// Appends the text of the child's diagnostic bytes to the client's, then hands the bytes
 /// to `forward`, until the pipe ends.
 async fn record_stderr(
     mut errors: ChildStderr,
-    forward: std::sync::mpsc::Sender<Vec<u8>>,
+    forward: std::sync::mpsc::Sender<Forward>,
     inner: Weak<Inner>,
 ) {
     let mut text = Utf8Stream::default();
@@ -123,7 +155,7 @@ async fn record_stderr(
         }
         append_stderr(&inner, &text.push(&chunk));
         // A send fails only once the forwarding thread has gone, leaving nowhere to forward.
-        let _ = forward.send(chunk);
+        let _ = forward.send(Forward::Chunk(chunk));
     }
     append_stderr(&inner, &text.finish());
 }

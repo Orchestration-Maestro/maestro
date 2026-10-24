@@ -17,7 +17,6 @@ pub use types::{ModelInfo, RpcClientError, RpcClientOptions, RpcEventListener};
 
 use events::ClientListener;
 use maestro_models::records::listeners::Listeners;
-use maestro_process::child_process::CapturedChild;
 use requests::Pending;
 use std::{
     cell::RefCell,
@@ -74,6 +73,8 @@ struct Running {
     stop: Option<oneshot::Sender<oneshot::Sender<std::io::Result<()>>>>,
     /// Closes when the driver has finished with the child.
     done: watch::Receiver<()>,
+    /// Queues the child's diagnostic bytes for this process's stderr.
+    forward: std::sync::mpsc::Sender<process::Forward>,
     /// The exit status once the child has exited.
     exit: Option<std::process::ExitStatus>,
 }
@@ -125,8 +126,8 @@ impl RpcClient {
         if self.inner.state.borrow().running.is_some() {
             return Err(RpcClientError::AlreadyStarted);
         }
-        let child = CapturedChild::spawn_piped(&mut process::command_for(&self.options)?)?;
-        let done = process::launch(&self.inner, child)?;
+        let mut command = process::command_for(&self.options)?;
+        let done = process::launch(&self.inner, &mut command, process::forward_stderr).await?;
         tokio::time::sleep(STARTUP_OBSERVATION).await;
         let state = self.inner.state.borrow();
         let exit = state
@@ -144,17 +145,23 @@ impl RpcClient {
     }
 
     /// Stops reading the child's output, asks it to terminate, kills it if it is still
-    /// running after one second, and waits until it is reaped. Does nothing without a child.
+    /// running after one second, and waits until it is reaped and until every diagnostic
+    /// byte read so far has been written to this process's stderr; it never waits for the
+    /// end of that stream, which a descendant can hold open. Does nothing without a child.
     ///
     /// # Errors
     /// Returns the native failure of the forced kill.
     pub async fn stop(&self) -> Result<(), RpcClientError> {
-        let (stop, mut done) = {
+        let (stop, mut done, forward) = {
             let mut state = self.inner.state.borrow_mut();
             let Some(running) = state.running.as_mut() else {
                 return Ok(());
             };
-            (running.stop.take(), running.done.clone())
+            (
+                running.stop.take(),
+                running.done.clone(),
+                running.forward.clone(),
+            )
         };
         self.inner.fail_owned();
         let mut terminated = Ok(());
@@ -165,6 +172,7 @@ impl RpcClient {
             }
         }
         let _ = done.changed().await;
+        process::flush(&forward).await;
         let finished = {
             let mut state = self.inner.state.borrow_mut();
             let current = state

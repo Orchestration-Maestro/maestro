@@ -263,7 +263,7 @@ for line in commands(): respond(json.loads(line))
         let retained = client.get_stderr().replace(&"x".repeat(FILL), "<fill>");
         println!("PROBE {}", json!(retained));
     });
-    // The parent reads the forwarded text only now, then lets this process end.
+    // The parent lets this process end once it has read the forwarded text.
     let _ = std::io::stdin().read_line(&mut String::new());
 }
 
@@ -284,6 +284,18 @@ fn stderr_is_forwarded_and_retained_during_start_and_stop() {
     .spawn()
     .unwrap();
     let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
+    let mut stderr = child.stderr.take().unwrap();
+    // The stop ends once the forwarded text is written, so it is read meanwhile.
+    let reading = std::thread::spawn(move || {
+        let mut seen = Vec::new();
+        while !seen.ends_with(b"terminating\xc3\xa9\n") {
+            let mut chunk = [0; 8192];
+            let read = stderr.read(&mut chunk).unwrap();
+            assert!(read > 0, "the forwarded text arrives before the child ends");
+            seen.extend_from_slice(&chunk[..read]);
+        }
+        seen
+    });
     let probe = loop {
         let mut line = String::new();
         assert!(
@@ -304,16 +316,90 @@ fn stderr_is_forwarded_and_retained_during_start_and_stop() {
         b"terminating\xc3\xa9\n",
     ]
     .concat();
-    let mut stderr = child.stderr.take().unwrap();
-    let mut seen = Vec::new();
-    while !seen.ends_with(b"terminating\xc3\xa9\n") {
-        let mut chunk = [0; 8192];
-        let read = stderr.read(&mut chunk).unwrap();
-        assert!(read > 0, "the forwarded text arrives before the child ends");
-        seen.extend_from_slice(&chunk[..read]);
-    }
+    let seen = reading.join().unwrap();
     assert!(seen.ends_with(&forwarded));
     drop(child.stdin.take());
+    assert!(child.wait().unwrap().success());
+}
+
+/// Runs a client whose child writes more diagnostic text than this process's unread
+/// standard error holds, then stops it and reports, once the child is reaped, whether the
+/// stop still waits for that text to be written.
+fn delivering_child() {
+    let peer = Peer::new();
+    let script = format!(
+        r"
+sys.stderr.buffer.write(b'x' * {FILL} + b'end\n'); sys.stderr.flush()
+emit({{'type': 'peer_ready', 'pid': os.getpid()}})
+while True: time.sleep(1)
+"
+    );
+    on_task_set(|_| async {
+        let client = RpcClient::new(peer.options(&script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        let ready = next_of(&mut events, "peer_ready").await;
+        let pid = u32::try_from(ready["pid"].as_u64().unwrap()).unwrap();
+        while !client.get_stderr().ends_with("end\n") {
+            tokio::task::yield_now().await;
+        }
+        let mut stop = pin!(client.stop());
+        assert!(poll_once(stop.as_mut()).is_pending());
+        while process_exists(pid) {
+            tokio::task::yield_now().await;
+        }
+        if poll_once(stop.as_mut()).is_ready() {
+            println!("VERDICT stopped");
+        } else {
+            println!("VERDICT waiting");
+            stop.await.unwrap();
+        }
+    });
+}
+
+#[test]
+fn stop_ends_after_every_captured_diagnostic_byte_is_written() {
+    if maestro_test_process::selection().is_child() {
+        delivering_child();
+        return;
+    }
+    let mut child = maestro_test_process::TestProcess::current(
+        "stop_ends_after_every_captured_diagnostic_byte_is_written",
+    )
+    .unwrap()
+    .nocapture()
+    .stderr(std::process::Stdio::piped())
+    .case("*")
+    .spawn()
+    .unwrap();
+    let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
+    let verdict = loop {
+        let mut line = String::new();
+        assert!(
+            stdout.read_line(&mut line).unwrap() > 0,
+            "the child reports"
+        );
+        if let Some(verdict) = line.strip_prefix("VERDICT ") {
+            break verdict.trim_end().to_owned();
+        }
+    };
+    assert_eq!(
+        verdict, "waiting",
+        "the stop waits until the captured text is written"
+    );
+    let mut forwarded = Vec::new();
+    child
+        .stderr
+        .take()
+        .unwrap()
+        .read_to_end(&mut forwarded)
+        .unwrap();
+    let expected = [&b"x".repeat(FILL)[..], b"end\n"].concat();
+    assert!(
+        forwarded
+            .windows(expected.len())
+            .any(|window| window == expected)
+    );
     assert!(child.wait().unwrap().success());
 }
 

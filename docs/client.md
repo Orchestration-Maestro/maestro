@@ -25,12 +25,17 @@ ended it) and its diagnostic text. That child still counts as started until `sto
 
 The child's stderr is kept as it arrives and copied to the caller's stderr by a
 separate thread, so a slow reader of that stream never holds up answers or
-deadlines. Bytes still waiting to be copied when the process exits are lost.
-`get_stderr` returns the text every child of the client has written so far.
+deadlines. `get_stderr` returns the text every child of the client has written so
+far.
 
 `stop` stops delivering the child's output, sends the ordinary termination signal,
 kills the child if it is still running one second later, and waits until it is
-reaped. Only the direct child is signalled.
+reaped. Only the direct child is signalled. `stop` also waits until every stderr
+byte read so far has been copied, but not for the end of that stream, which a
+descendant of the child can keep open.
+
+When `start` fails before the child runs, for example because the copying thread
+cannot be created, the client stays unstarted and no child is left behind.
 
 The client runs on the caller's Tokio local executor, so use it inside a
 `tokio::task::LocalSet`. The tasks that read the child's streams and run the
