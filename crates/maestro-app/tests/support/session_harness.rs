@@ -1735,7 +1735,7 @@ fn scripted_message(response: &Scripted) -> AssistantMessage {
         content.push(AssistantContent::ToolCall(ToolCall {
             id: format!("faux_tc_{call}"),
             name: name.clone(),
-            arguments: arguments.as_object().unwrap().clone(),
+            arguments: arguments.clone(),
             thought_signature: None,
         }));
     }

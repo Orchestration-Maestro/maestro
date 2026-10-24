@@ -27,7 +27,7 @@ fn schema_check_does_not_coerce_values() {
     let call = ToolCall {
         id: "call".into(),
         name: "counter".into(),
-        arguments: value.as_object().unwrap().clone(),
+        arguments: value,
         thought_signature: None,
     };
     assert_eq!(

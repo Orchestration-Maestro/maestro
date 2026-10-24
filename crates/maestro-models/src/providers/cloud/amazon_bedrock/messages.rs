@@ -5,7 +5,6 @@ use std::iter::Peekable;
 use std::vec::IntoIter;
 
 use base64::Engine as _;
-use serde_json::Value;
 
 use super::request::Message;
 use super::thinking::is_anthropic_claude_model;
@@ -221,7 +220,7 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<Conten
                 tool_use: Some(ToolUseBlock {
                     tool_use_id: Some(call.id),
                     name: Some(call.name),
-                    input: Some(Value::Object(call.arguments)),
+                    input: Some(call.arguments),
                     ..ToolUseBlock::default()
                 }),
                 ..ContentBlock::default()

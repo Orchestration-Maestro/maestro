@@ -637,7 +637,7 @@ fn costed(message: &NativeAgentMessage) -> Option<MessageEndEventResult<NativeAg
 fn probe_call() -> maestro_models::AssistantMessage {
     let call = maestro_models::faux_tool_call(
         "probe",
-        serde_json::Map::new(),
+        serde_json::Map::new().into(),
         maestro_models::FauxToolCallOptions::default(),
     );
     maestro_models::faux_assistant_message(

@@ -4,9 +4,9 @@ use maestro_agent::{
 };
 use maestro_models::{
     AssistantContent, AssistantMessage, FauxAssistantMessageOptions, FauxProviderRegistration,
-    FauxResponseStep, FauxToolCallOptions, JsonObject, Model, RegisterFauxProviderOptions,
-    StopReason, TextContent, UserBlock, UserContent, UserMessage, faux_assistant_message,
-    faux_text, faux_tool_call, register_faux_provider,
+    FauxResponseStep, FauxToolCallOptions, Model, RegisterFauxProviderOptions, StopReason,
+    TextContent, UserBlock, UserContent, UserMessage, faux_assistant_message, faux_text,
+    faux_tool_call, register_faux_provider,
 };
 use serde_json::json;
 use std::sync::{Arc, Mutex, RwLock};
@@ -43,16 +43,16 @@ pub fn say(content: impl Into<maestro_models::FauxAssistantContent>) -> FauxResp
 /// Panics if a controlled fixture lock is poisoned or a fixture is malformed.
 #[must_use]
 pub fn ask_calculator(id: &str, expression: &str) -> FauxResponseStep {
-    let arguments: JsonObject = json!({"expression": expression})
-        .as_object()
-        .unwrap()
-        .clone();
     let options = FauxToolCallOptions {
         id: Some(id.into()),
     };
     let content = vec![
         AssistantContent::Text(faux_text("Let me calculate that.")),
-        AssistantContent::ToolCall(faux_tool_call("calculate", arguments, options)),
+        AssistantContent::ToolCall(faux_tool_call(
+            "calculate",
+            json!({"expression": expression}),
+            options,
+        )),
     ];
     let options = FauxAssistantMessageOptions {
         stop_reason: Some(StopReason::ToolUse),

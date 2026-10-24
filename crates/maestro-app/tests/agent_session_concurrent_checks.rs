@@ -188,11 +188,10 @@ fn dummy_calls(text: Option<&str>, calls: &[(&str, &str)]) -> AssistantMessage {
         .into_iter()
         .collect();
     content.extend(calls.iter().map(|(q, id)| {
-        let arguments = json!({"q": q}).as_object().unwrap().clone();
         let options = FauxToolCallOptions {
             id: Some((*id).into()),
         };
-        AssistantContent::ToolCall(faux_tool_call("dummy", arguments, options))
+        AssistantContent::ToolCall(faux_tool_call("dummy", json!({"q": q}), options))
     }));
     let options = FauxAssistantMessageOptions {
         stop_reason: Some(StopReason::ToolUse),
