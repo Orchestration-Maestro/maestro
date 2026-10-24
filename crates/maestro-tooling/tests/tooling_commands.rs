@@ -1229,6 +1229,10 @@ fn shipped_examples() -> &'static [(&'static str, &'static str)] {
             include_str!("../../../examples/extensions/reload_runtime.rs"),
         ),
         (
+            "examples/extensions/send_user_message.rs",
+            include_str!("../../../examples/extensions/send_user_message.rs"),
+        ),
+        (
             "examples/extensions/shutdown_command.rs",
             include_str!("../../../examples/extensions/shutdown_command.rs"),
         ),
@@ -1614,6 +1618,11 @@ fn maestro_package_assets_come_from_the_package_directory() {
     );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
+    // The shipped example reaches the standalone copy byte for byte.
+    assert_eq!(
+        fs::read(destination.join("examples/extensions/send_user_message.rs")).unwrap(),
+        include_str!("../../../examples/extensions/send_user_message.rs").as_bytes()
+    );
 }
 
 #[test]

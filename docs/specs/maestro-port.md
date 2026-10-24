@@ -344,6 +344,7 @@ from the optional foundation utility described below.
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json`, `maestro-resources` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-directory` | own disposable native test directories | — | 0 |
+| `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
@@ -571,7 +572,7 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), component runtime adapter
 (`maestro-extensions-wasmtime`), terminal scenario harness
 (`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), disposable directory owner
-(`maestro-test-directory`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
+(`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
 request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
 (`maestro-lock`), process leaf (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
@@ -704,6 +705,20 @@ groups the host does not keep apart. Both let a caller state a premise a folding
 restrictive host cannot exercise. The leaf owns no caller policy, process launcher,
 timer, retry limit or ownership-transfer API.
 
+### Test fixture owner
+
+`maestro-test-fixtures` is a dedicated, unpublished, portable leaf for shared
+fixture records, recorded-header lookup, wire-literal round trips and single-color
+theme construction. It has no product dependencies or foundation utility edge;
+its only internal normal dependency is the native feature unifier.
+Fixture development callers are `maestro-agent`, `maestro-models`, `maestro-request`,
+`maestro-catalog`, `maestro-chat`, `maestro-credentials`, `maestro-tools` and
+`maestro-export`; declarations may be portable or target-specific, including aliases.
+Models, request, catalog, chat and credentials use portable development declarations;
+agent, tools and export use native development declarations. No normal or build
+edge to this owner is permitted. Both production and test cycle checks apply.
+The policy and inventory admit this owner before its first member exists.
+
 ### Test tracing owner
 
 `maestro-test-tracing` is a dedicated, unpublished, native leaf that runs a
@@ -799,7 +814,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 
 **Below layer 0:** `maestro-protocol`, `maestro-ipc` join the existing foundation leaves.
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
