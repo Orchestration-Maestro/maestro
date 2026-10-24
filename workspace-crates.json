@@ -16,6 +16,7 @@
   "maestro-extensions-wasm": "core",
   "maestro-ipc": "core",
   "maestro-json": "core",
+  "maestro-listeners": "core",
   "maestro-listing": "core",
   "maestro-lock": "core",
   "maestro-markdown": "core",

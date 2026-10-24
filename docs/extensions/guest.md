@@ -608,6 +608,16 @@ already stored the label it chose, so the next session start applies it. Loading
 enables the component runtime; `examples/extensions/README.md` gives the build
 and controlled-run commands.
 
+### A prompt toggle
+
+`examples/extensions/pirate.rs` registers a `/pirate` command and a
+`before_agent_start` handler that share one boolean the factory instance owns.
+The command flips that boolean and reports the new state through
+`ExtensionUIContext::notify`; the handler appends this example's instructions to
+the supplied `systemPrompt` only while the boolean is set and otherwise returns
+no override. A refused notification leaves the flip in place. Loading it into an
+application is opt-in, and `examples/extensions/README.md` gives the build and
+controlled-run commands.
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses
@@ -669,6 +679,26 @@ uppercase spellings and backslash separators are left as they are, and no
 filesystem call decides the answer. The three patterns are the example's own
 policy; a hook needs a host that enables the component runtime, and
 `examples/extensions/README.md` holds the build and controlled-run commands.
+
+### A compaction trigger
+
+[`examples/extensions/trigger_compact.rs`](../../examples/extensions/trigger_compact.rs)
+registers a `turn_end` hook and a `trigger-compact` command. The hook records the
+context usage the host reports and requests compaction once a known estimate at or
+below 100,000 tokens is followed by a known estimate above it; an estimate the host
+does not report leaves the last one in place. The command requests compaction at
+once, passing its trimmed arguments as the instructions, or none when they are
+blank, and it never changes the recorded estimate.
+
+The example only asks the host for compaction and reports `Compaction started`
+before the request, then `Compaction completed` or `Compaction failed: <message>`
+when the host answers. Each report reads the UI availability of that moment, so a
+headless start can still report a completion that arrives after a UI appears.
+
+It is opt-in like the greeting tool: its crate's tests run the built component in a
+controlled host, and `examples/extensions/README.md` holds the build and
+controlled-run commands. Compacting a running application is not part of that
+controlled run.
 
 ### A user-request summary handler
 

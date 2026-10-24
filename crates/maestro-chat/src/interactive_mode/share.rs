@@ -195,7 +195,7 @@ impl InteractiveMode {
         self.restore_share_editor(loader);
         artifact.remove();
         if let Err(error) = self.show_status("Share cancelled") {
-            self.report_runtime_error(error);
+            self.report(Err(error));
         }
     }
 

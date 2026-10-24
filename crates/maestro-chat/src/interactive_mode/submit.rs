@@ -1,6 +1,7 @@
 //! Editor submission and the single waiting input operation.
 use super::InteractiveMode;
 use maestro_app::is_whitespace_scalar;
+use maestro_app::messages::UserMessageDelivery;
 use std::{
     future::{Future, pending},
     rc::Rc,
@@ -28,8 +29,9 @@ impl InteractiveMode {
     }
 
     /// Installs submission on the editor without keeping the mode alive: a recognized
-    /// command runs and reports its own outcome, and any other trimmed nonempty text goes
-    /// to the waiting input, if any, then into the editor's history.
+    /// command runs and reports its own outcome, any other trimmed nonempty text is queued
+    /// as steering during a compaction or a response, and otherwise it goes to the waiting
+    /// input, if any, then into the editor's history.
     ///
     /// The editor empties itself before calling back, so a command needs no clearing step.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
@@ -41,6 +43,10 @@ impl InteractiveMode {
             };
             if mode.runs_command(text) {
                 return;
+            }
+            match mode.submit_queued_input(text, UserMessageDelivery::Steer) {
+                Ok(false) => {}
+                queued => return mode.report(queued.map(drop)),
             }
             let waiting = mode.on_input_callback.borrow_mut().take();
             if let Some(waiting) = waiting {
@@ -57,7 +63,7 @@ impl InteractiveMode {
     fn runs_command(self: &Rc<Self>, text: &str) -> bool {
         if text == "/export" || text.starts_with("/export ") {
             if let Err(error) = self.handle_export_command(text) {
-                self.report_runtime_error(error);
+                self.report(Err(error));
             }
             return true;
         }

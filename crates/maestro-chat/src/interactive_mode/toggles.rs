@@ -31,20 +31,11 @@ impl InteractiveMode {
         self.editor.on_action(
             action.to_owned(),
             Rc::new(move || {
-                if let Some(mode) = mode.upgrade()
-                    && let Err(error) = operation(&mode)
-                {
-                    mode.report_runtime_error(error);
+                if let Some(mode) = mode.upgrade() {
+                    mode.report(operation(&mode));
                 }
             }),
         );
-    }
-
-    /// Hands `error` to the terminal runtime beyond the transcript, where the reader sees
-    /// it as the frame writer reports it.
-    pub(super) fn report_runtime_error(&self, error: Box<dyn Error>) {
-        let runtime = Rc::clone(&self.tool_environment.runtime);
-        runtime.spawn_local(Box::pin(std::future::ready(Err(error))));
     }
 
     /// Flips the expansion of tool output and summaries.
