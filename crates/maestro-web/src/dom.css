@@ -1,4 +1,4 @@
-code-block {
+code-block, markdown-block, thinking-block {
   display: block;
 }
 .maestro-code .control-slot .maestro-button {
@@ -142,4 +142,24 @@ code-block {
 .maestro-contribution-failure {
   font-size: 0.875rem;
   color: var(--maestro-color-error);
+}
+.maestro-button.maestro-thinking-header {
+  display: flex;
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--maestro-color-muted);
+  font-weight: 400;
+  line-height: 1.25rem;
+}
+.maestro-thinking-chevron {
+  display: inline-flex;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.maestro-thinking-expanded .maestro-thinking-chevron {
+  transform: rotate(90deg);
 }

@@ -25,8 +25,8 @@ struct CodeElement {
     root: WeakRef,
     /// Page operands.
     view: Rc<DomView>,
-    /// The built listing and its copy control, changed in place on later renders.
-    shown: Option<(browser::Mounted, Element)>,
+    /// The built listing, changed in place on later renders.
+    shown: Option<Listing>,
     /// Accessors of the `code` and `language` properties.
     _properties: Reflected,
 }
@@ -61,33 +61,67 @@ impl CodeElement {
         let language = root.get_attribute("language").unwrap_or_default();
         let prepared = Prepared::new(&*self.view.highlighter, text, language)
             .map_err(|error| presentation(&error))?;
-        if let Some((mounted, copy)) = &self.shown {
-            mounted.update(&prepared);
-            return copy
-                .set_attribute("text", &prepared.text)
-                .map_err(|error| host_error(&error));
-        }
-        let document = &self.view.document;
-        let built = browser::build(document, &prepared)?;
         let title = self
             .view
             .i18n
             .text("Copy code")
             .map_err(|error| presentation(&error))?;
+        if let Some(listing) = &self.shown {
+            return listing.update(&prepared, &title);
+        }
+        let (node, listing) = Listing::build(&self.view.document, &prepared, &title)?;
+        root.replace_children_with_node_1(&node);
+        self.shown = Some(listing);
+        Ok(())
+    }
+}
+/// A built listing and its copy control.
+pub(crate) struct Listing {
+    /// Updatable label and body.
+    mounted: browser::Mounted,
+    /// Copy control receiving the listing text and title.
+    copy: Element,
+}
+impl Listing {
+    /// Build `prepared` with a copy control titled `title`; the caller places the returned node.
+    pub(crate) fn build(
+        document: &web_sys::Document,
+        prepared: &Prepared,
+        title: &str,
+    ) -> Result<(Element, Self), AttachmentHostError> {
+        let built = browser::build(document, prepared)?;
         let copy = document
             .create_element(crate::components::copy_button::dom::TAG)
             .map_err(|error| host_error(&error))?;
         for (name, value) in [
             ("text", prepared.text.as_str()),
-            ("title", &title),
+            ("title", title),
             ("show-text", ""),
         ] {
             copy.set_attribute(name, value)
                 .map_err(|error| host_error(&error))?;
         }
         append(&built.slot, &copy)?;
-        root.replace_children_with_node_1(&built.root);
-        self.shown = Some((built.mounted, copy));
+        let listing = Self {
+            mounted: built.mounted,
+            copy,
+        };
+        Ok((built.root, listing))
+    }
+    /// Change only the label, body, text and title that differ, retaining selection and feedback.
+    pub(crate) fn update(
+        &self,
+        prepared: &Prepared,
+        title: &str,
+    ) -> Result<(), AttachmentHostError> {
+        self.mounted.update(prepared);
+        for (name, value) in [("text", prepared.text.as_str()), ("title", title)] {
+            if self.copy.get_attribute(name).as_deref() != Some(value) {
+                self.copy
+                    .set_attribute(name, value)
+                    .map_err(|error| host_error(&error))?;
+            }
+        }
         Ok(())
     }
 }

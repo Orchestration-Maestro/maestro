@@ -10,12 +10,24 @@ use crate::{
 };
 use std::{cell::Cell, rc::Rc};
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
+
 /// Independently retained collapsed reasoning disclosure.
+///
+/// [`Default`] content mounts as native page content through
+/// [`DomContent`](crate::dom::DomContent); [`ThinkingBlock::new`] draws on a canvas host.
+#[derive(Default)]
 pub struct ThinkingBlock {
     /// Original reasoning source, never trimmed for display.
     pub content: String,
     /// Whether the literal header shimmers.
     pub is_streaming: bool,
+    /// Canvas drawing state, absent for page content.
+    canvas: Option<Canvas>,
+}
+/// Disclosure state of the canvas drawing.
+struct Canvas {
     /// Platform effects for newly expanded Markdown.
     host: Rc<dyn AttachmentHost>,
     /// Expansion shared only with weak native callbacks.
@@ -44,12 +56,14 @@ impl ThinkingBlock {
         Self {
             content: String::new(),
             is_streaming: false,
-            host,
-            expanded,
-            header,
-            body: None,
-            pressed: None,
-            transitions: None,
+            canvas: Some(Canvas {
+                host,
+                expanded,
+                header,
+                body: None,
+                pressed: None,
+                transitions: None,
+            }),
         }
     }
     /// Draw the disclosure, retaining expansion across content and streaming updates.
@@ -60,7 +74,21 @@ impl ThinkingBlock {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
     ) -> Result<egui::Response, ToolUiError> {
-        let header = self.draw_header(ui, view)?;
+        let canvas = self.canvas.as_mut().ok_or_else(|| {
+            attachment_content::AttachmentHostError::Host("Missing platform host".into())
+        })?;
+        canvas.render(ui, view, (&self.content, self.is_streaming))
+    }
+}
+impl Canvas {
+    /// Draw the disclosure of `content`, shimmering while `streaming`.
+    fn render(
+        &mut self,
+        ui: &mut egui::Ui,
+        view: ToolRenderView<'_>,
+        (content, streaming): (&str, bool),
+    ) -> Result<egui::Response, ToolUiError> {
+        let header = self.draw_header(ui, view, streaming)?;
         let response = header.on_hover_cursor(egui::CursorIcon::PointingHand);
         let visible = response.rect.intersect(ui.clip_rect());
         let slots = if response.enabled() && visible.is_positive() {
@@ -84,7 +112,7 @@ impl ThinkingBlock {
                 .body
                 .get_or_insert_with(|| MarkdownBlock::new(Rc::clone(&self.host)));
             body.is_thinking = true;
-            body.content.clone_from(&self.content);
+            content.clone_into(&mut body.content);
             body.render(ui, super::messages::reading_view(view))
                 .map_err(ToolUiError::reading)?;
         } else {
@@ -97,21 +125,19 @@ impl ThinkingBlock {
         &mut self,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
+        streaming: bool,
     ) -> Result<egui::Response, ToolUiError> {
         let header = ui.horizontal(|ui| -> Result<egui::Rect, ToolUiError> {
             ui.spacing_mut().item_spacing.x = 8.;
             let rect = ui.allocate_space(egui::vec2(16., 16.)).1;
-            self.header.render(
-                ui,
-                ("Thinking...", TextKind::Thinking(self.is_streaming)),
-                view,
-            )?;
+            self.header
+                .render(ui, ("Thinking...", TextKind::Thinking(streaming)), view)?;
             Ok(rect)
         });
         let rect = header.inner?;
         let hovered = header.response.hovered();
         #[cfg(target_arch = "wasm32")]
-        if !self.is_streaming {
+        if !streaming {
             self.header.set_hovered(hovered)?;
         }
         self.paint_chevron(ui, rect, hovered, view)?;
