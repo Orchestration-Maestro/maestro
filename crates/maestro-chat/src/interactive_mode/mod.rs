@@ -115,6 +115,7 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
+        let settings = session.settings_manager();
         let tool_environment = Rc::new(ToolRenderEnvironment {
             runtime: terminal.1.clone(),
             readme_path: maestro_app::configuration::config::get_readme_path()?,
@@ -127,12 +128,7 @@ impl InteractiveMode {
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
-        let editor = create_editor(
-            &ui,
-            themes.theme(),
-            (*keys).clone(),
-            session.settings_manager(),
-        );
+        let editor = create_editor(&ui, themes.theme(), (*keys).clone(), settings);
         let editor_container = Rc::new(Container::new());
         editor_container.add_child(editor.clone());
         let footer_data_provider = FooterDataProvider::new(
@@ -142,11 +138,8 @@ impl InteractiveMode {
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
         footer.set_auto_compact_enabled(session.auto_compaction_enabled());
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = session.settings_manager().borrow().get_theme();
-        let hide_thinking_block = session
-            .settings_manager()
-            .borrow()
-            .get_hide_thinking_block();
+        let selected_theme = settings.borrow().get_theme();
+        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
         Ok(Rc::new(Self {
             runtime_host,
