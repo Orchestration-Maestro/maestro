@@ -19,6 +19,7 @@ use std::{
 };
 
 mod actions;
+mod autocomplete;
 mod key_display;
 mod queues;
 mod replay;
@@ -93,6 +94,8 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The selected search program for file completion, absent until startup prepares it.
+    fd_path: RefCell<Option<String>>,
 }
 
 impl InteractiveMode {
@@ -134,8 +137,7 @@ impl InteractiveMode {
             session.session_manager().borrow().get_cwd().to_owned(),
             operations.clone(),
         );
-        let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
-        footer.set_auto_compact_enabled(session.auto_compaction_enabled());
+        let footer = create_footer(&session, &footer_data_provider, themes.theme())?;
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let selected_theme = session.settings_manager().borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
@@ -161,6 +163,7 @@ impl InteractiveMode {
             is_initialized: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
+            fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking_block),
             last_status: RefCell::default(),
@@ -171,18 +174,21 @@ impl InteractiveMode {
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission, starts the terminal, lists the
-    /// loaded resources and replays the session, once; theme changes then refresh the
-    /// editor border, and theme and branch changes request fresh frames.
+    /// Prepares both search programs, installs completion, builds the header, adds every
+    /// container in order, focuses the editor, binds the transcript shortcuts, installs
+    /// editor submission, starts the terminal, lists the loaded resources with their
+    /// diagnostics and replays the session, once; theme changes then refresh the editor
+    /// border, and theme and branch changes request fresh frames.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start, of the
-    /// resource listing or of the replay.
-    pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+    /// Returns the failure of the managed binary directory, of the header's theme colours,
+    /// of the terminal start, of the resource listing or of the replay.
+    pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
+        self.prepare_search_tools().await?;
+        self.setup_autocomplete_provider();
         self.build_header()?;
         for child in [
             &self.header_container,
@@ -216,8 +222,39 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(false)?;
+        self.show_loaded_resources(resources::ShowLoadedResourcesOptions {
+            show_diagnostics_when_quiet: true,
+            ..resources::ShowLoadedResourcesOptions::default()
+        })?;
         self.render_initial_messages()
+    }
+
+    /// Clears the transcript and the pending-message rows, then replays the current session
+    /// with the initial replay's footer, history and compaction effects.
+    ///
+    /// # Errors
+    /// Returns the failure of reading the session context, of a stored record, of a row's
+    /// rendering or of the published theme.
+    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+        self.chat_container.clear();
+        self.pending_messages_container.clear();
+        self.render_initial_messages()
+    }
+
+    /// Reports a fatal runtime failure as its transcript notice, draws that frame before
+    /// the stop that would cancel it, closes the theme watch and stops the terminal, so
+    /// nothing repaints while the process ends.
+    fn report_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) {
+        let _ = self.show_error(&format!("{prefix}: {error}"));
+        let _ = self.ui.render_pending_frame();
+        self.themes.stop_theme_watcher();
+        let _ = self.ui.stop();
+    }
+
+    /// Reports a fatal runtime failure and ends the process with status one.
+    pub fn handle_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) -> ! {
+        self.report_fatal_runtime_error(prefix, error);
+        std::process::exit(1);
     }
 }
 
@@ -261,20 +298,23 @@ fn create_editor(
     ))
 }
 
-/// Builds the footer over the session, its metadata and the published theme.
+/// Builds the footer over the session, its metadata and the published theme, and applies
+/// the session's auto-compaction setting.
 ///
 /// # Errors
 /// Returns the failure of the collator reading the locale environment.
 fn create_footer(
-    session: Rc<AgentSession>,
+    session: &Rc<AgentSession>,
     data: &FooterDataProvider,
     theme: LiveTheme,
 ) -> Result<Rc<FooterComponent>, Box<dyn Error>> {
-    Ok(Rc::new(FooterComponent::new(
-        session,
+    let footer = FooterComponent::new(
+        Rc::clone(session),
         Rc::new(data.clone()),
         theme,
         Rc::new(Collator::new(&|key| std::env::var(key).ok())?),
         Rc::new(|key| std::env::var(key).ok()),
-    )))
+    );
+    footer.set_auto_compact_enabled(session.auto_compaction_enabled());
+    Ok(Rc::new(footer))
 }

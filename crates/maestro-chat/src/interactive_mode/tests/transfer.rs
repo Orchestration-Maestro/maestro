@@ -1,7 +1,7 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
 use super::typed::{poll, recalled, submit, waiting};
-use super::{Setup, World, cases as recorded_cases, started};
+use super::{Setup, World, cases as recorded_cases, complete, started};
 use crate::components::session_selector::list::tests::session_picker::native_child as child;
 use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, get_theme_directories};
 use maestro_app::{NativeExportOperations, ReadonlySessionManager, SessionManager};
@@ -182,7 +182,7 @@ fn themed(directory: &Path, package: &Path) -> World {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    complete(world.mode.init()).unwrap();
     world.runtime.settle().unwrap();
     branches(&world, directory);
     world

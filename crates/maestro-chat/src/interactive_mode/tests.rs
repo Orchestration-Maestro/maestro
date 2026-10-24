@@ -1,5 +1,6 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
+mod autocomplete;
 #[allow(
     dead_code,
     unused_imports,
@@ -22,21 +23,38 @@ use crate::components::session_selector::list::tests::session_picker::{
 };
 use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
-use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
+use maestro_app::presentation_data::footer_data_provider::{
+    FooterFileStats, FooterOperations, NativeFooterOperations,
+};
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, ExtensionFactory,
-    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
-    PromptTemplate, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill,
-    create_extension_runtime, load_extension_from_factory,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, Extension,
+    ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
+    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
+    RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager,
+    Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
+    load_extension_from_factory, strip_ansi,
 };
 use maestro_test_process::TestProcess;
-use maestro_theme::{Theme, ThemeColor, ThemeState};
+use maestro_theme::{
+    Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
+};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
-    EditorComponent, autocomplete,
+    EditorComponent, Text, autocomplete as tui_autocomplete,
 };
 use serde::{Deserialize, de::DeserializeOwned};
-use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
+use serde_json::json;
+use std::{
+    cell::{Cell, RefCell},
+    collections::VecDeque,
+    future::Future,
+    io,
+    path::Path,
+    pin::Pin,
+    rc::Rc,
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 
 /// Every recorded presentation case.
 pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
@@ -44,7 +62,7 @@ pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
 fn isolated(test: &str, body: impl FnOnce(&Path)) {
-    isolated_case(test, "child", &[], body);
+    isolated_case(test, "child", (&[], &[]), body);
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
@@ -56,7 +74,7 @@ fn isolated(test: &str, body: impl FnOnce(&Path)) {
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
-    envs: &[(&str, &str)],
+    (envs, removed): (&[(&str, &str)], &[&str]),
     body: impl FnOnce(&Path),
 ) {
     let selection = maestro_test_process::selection();
@@ -92,7 +110,7 @@ pub(super) fn isolated_case(
             .temp_dir(root.join("tmp")),
         root,
         &all,
-        &[],
+        removed,
     );
 }
 
@@ -102,8 +120,8 @@ pub(super) fn isolated_case(
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
-    /// The loaded themes.
-    themes: Vec<Rc<Theme>>,
+    /// The loaded themes and their diagnostics.
+    themes: Rc<LoadThemesResult>,
     /// The settings and theme name selected while the themes are read.
     select: RefCell<Option<(Rc<RefCell<SettingsManager>>, String)>>,
     /// The discovered context files, replaceable after construction.
@@ -114,50 +132,168 @@ pub(super) struct ForwardingLoader {
     prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
     /// The loaded extensions answered instead of the default loader's.
     extensions: Option<Rc<LoadExtensionsResult<Local>>>,
+    /// The getters read, in order.
+    pub(super) calls: RefCell<Vec<&'static str>>,
 }
 
-/// The context files, skills and successive prompt templates a loader answers.
-type Resources = (Vec<ContextFile>, Vec<Skill>, Vec<Vec<PromptTemplate>>);
+/// The diagnostics a loader reports beside its skills, prompt templates and themes.
+#[derive(Default)]
+pub(super) struct LoadedDiagnostics {
+    /// The skill diagnostics.
+    pub(super) skills: Vec<ResourceDiagnostic>,
+    /// The prompt template diagnostics of the first read.
+    pub(super) prompts: Vec<ResourceDiagnostic>,
+    /// The theme diagnostics.
+    pub(super) themes: Vec<ResourceDiagnostic>,
+}
+
+/// The resources a loader answers.
+struct Resources {
+    /// The context files.
+    context: Vec<ContextFile>,
+    /// The skills.
+    skills: Vec<Skill>,
+    /// The prompt templates of each read; the last answers every later read.
+    prompts: Vec<Vec<PromptTemplate>>,
+    /// The loaded themes listed before the dark and light palettes.
+    themes: Vec<Rc<Theme>>,
+    /// The loaded extensions by path and provenance.
+    extensions: Vec<(String, SourceInfo)>,
+    /// The paths that failed to load.
+    errors: Vec<ExtensionLoadError>,
+    /// The commands registered, each by its own extension, by name and path.
+    commands: Vec<(String, String)>,
+    /// The diagnostics beside the skills, prompt templates and themes.
+    diagnostics: LoadedDiagnostics,
+}
 
 impl ForwardingLoader {
-    /// A loader over `inner` answering the dark and light palettes, `resources` and the
-    /// supplied `extensions`.
+    /// A loader over `inner` answering `resources`, then the dark and light palettes, and
+    /// the supplied `extensions`.
     fn new(
         inner: Rc<dyn ResourceLoader<Local>>,
-        (context, skills, prompts): Resources,
+        resources: Resources,
         extensions: Option<Rc<LoadExtensionsResult<Local>>>,
     ) -> Self {
+        let Resources {
+            context,
+            skills,
+            mut prompts,
+            mut themes,
+            extensions: paths,
+            errors,
+            commands,
+            diagnostics,
+        } = resources;
+        if prompts.is_empty() && !diagnostics.prompts.is_empty() {
+            prompts.push(Vec::new());
+        }
+        let mut prompt_diagnostics = Some(diagnostics.prompts);
         let prompts = prompts.into_iter().map(|prompts| {
             Rc::new(LoadPromptsResult {
                 prompts,
-                diagnostics: Vec::new(),
+                diagnostics: prompt_diagnostics.take().unwrap_or_default(),
             })
         });
+        themes.extend([dark(), light()]);
+        let fixture_extensions = !(paths.is_empty() && errors.is_empty() && commands.is_empty());
         Self {
             inner,
-            themes: vec![dark(), light()],
+            themes: Rc::new(LoadThemesResult {
+                themes,
+                diagnostics: diagnostics.themes,
+            }),
             select: RefCell::default(),
             context: RefCell::new(context.into()),
             skills: Rc::new(LoadSkillsResult {
                 skills,
-                diagnostics: Vec::new(),
+                diagnostics: diagnostics.skills,
             }),
             prompts: RefCell::new(prompts.collect()),
-            extensions,
+            extensions: extensions
+                .or_else(|| fixture_extensions.then(|| Rc::new(load(paths, errors, &commands)))),
+            calls: RefCell::default(),
         }
+    }
+}
+
+/// The command callback a registration stores; the witnesses never invoke it.
+type CommandHandler = Rc<
+    dyn Fn(
+        String,
+        ExtensionCommandContext,
+    )
+        -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>>>>,
+>;
+
+/// One loaded extension at `path` with its provenance, registering nothing.
+fn extension(path: String, source_info: SourceInfo) -> Rc<RwLock<Extension<Local>>> {
+    let source_info = Arc::new(RwLock::new(source_info));
+    Rc::new(RwLock::new(Extension::new(path.clone(), path, source_info)))
+}
+
+/// One local project extension at `path` registering the command `name`, as the
+/// extension registration interface stores it.
+fn commanding(name: &str, path: &str) -> Rc<RwLock<Extension<Local>>> {
+    let source_info = SourceInfo {
+        path: path.to_owned(),
+        source: "local".to_owned(),
+        scope: SourceScope::Project,
+        origin: SourceOrigin::TopLevel,
+        base_dir: None,
+    };
+    let owner = extension(path.to_owned(), source_info);
+    let handler: CommandHandler = Rc::new(|_, _| Box::pin(async { Ok(()) }));
+    let command = {
+        let owner = owner.read().unwrap();
+        RegisteredCommand {
+            name: name.to_owned(),
+            source_info: Arc::clone(&owner.source_info),
+            description: None,
+            get_argument_completions: None,
+            handler,
+        }
+    };
+    let command = Rc::new(RwLock::new(command));
+    owner
+        .write()
+        .unwrap()
+        .commands
+        .insert(name.to_owned(), command);
+    owner
+}
+
+/// Extensions loaded from `paths` with their provenance, then one extension per
+/// command, and the paths that failed.
+fn load(
+    paths: Vec<(String, SourceInfo)>,
+    errors: Vec<ExtensionLoadError>,
+    commands: &[(String, String)],
+) -> LoadExtensionsResult<Local> {
+    let extensions = paths
+        .into_iter()
+        .map(|(path, source_info)| extension(path, source_info))
+        .chain(commands.iter().map(|(name, path)| commanding(name, path)));
+    LoadExtensionsResult {
+        extensions: extensions.collect(),
+        errors,
+        runtime: create_extension_runtime::<Local>(),
     }
 }
 
 impl ResourceLoader<Local> for ForwardingLoader {
     fn get_extensions(&self) -> Rc<LoadExtensionsResult<Local>> {
+        self.calls.borrow_mut().push("extensions");
         self.extensions
             .clone()
             .unwrap_or_else(|| self.inner.get_extensions())
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
+        self.calls.borrow_mut().push("skills");
         Rc::clone(&self.skills)
     }
     fn get_prompts(&self) -> Rc<LoadPromptsResult> {
+        self.calls.borrow_mut().push("prompts");
         let mut prompts = self.prompts.borrow_mut();
         if prompts.len() > 1 {
             prompts.pop_front().unwrap()
@@ -169,18 +305,17 @@ impl ResourceLoader<Local> for ForwardingLoader {
         }
     }
     fn get_themes(&self) -> Rc<LoadThemesResult> {
+        self.calls.borrow_mut().push("themes");
         if let Some((settings, name)) = self.select.borrow_mut().take() {
             settings.borrow_mut().set_theme(name);
         }
-        Rc::new(LoadThemesResult {
-            themes: self.themes.clone(),
-            diagnostics: Vec::new(),
-        })
+        Rc::clone(&self.themes)
     }
     fn get_contributions(&self) -> Rc<LoadContributionsResult> {
         self.inner.get_contributions()
     }
     fn get_agents_files(&self) -> Rc<[ContextFile]> {
+        self.calls.borrow_mut().push("agents");
         Rc::clone(&self.context.borrow())
     }
     fn get_system_prompt(&self) -> Option<Rc<str>> {
@@ -244,6 +379,21 @@ pub(super) struct Setup {
     pub(super) extension: Option<ExtensionFactory<Local>>,
     /// The directories the theme registry reads, when it records themes on disk.
     pub(super) directories: Option<maestro_theme::ThemeDirectories>,
+    /// The loaded themes the loader answers before the dark and light palettes.
+    pub(super) themes: Vec<Rc<Theme>>,
+    /// The loaded extensions by path and provenance; the default loader's when these,
+    /// the failed paths and the commands are all empty.
+    pub(super) extensions: Vec<(String, SourceInfo)>,
+    /// The paths that failed to load.
+    pub(super) errors: Vec<ExtensionLoadError>,
+    /// The commands registered, each by its own extension, by name and path.
+    pub(super) commands: Vec<(String, String)>,
+    /// The diagnostics beside the skills, prompt templates and themes.
+    pub(super) diagnostics: LoadedDiagnostics,
+    /// The theme registry the mode publishes into; an empty one when absent.
+    pub(super) registry: Option<Rc<ThemeState>>,
+    /// The footer and watch effects the mode is built with; native effects when absent.
+    pub(super) operations: Option<Rc<dyn FooterOperations>>,
 }
 
 impl Default for Setup {
@@ -258,6 +408,13 @@ impl Default for Setup {
             prompts: Vec::new(),
             directories: None,
             extension: None,
+            themes: Vec::new(),
+            extensions: Vec::new(),
+            errors: Vec::new(),
+            commands: Vec::new(),
+            diagnostics: LoadedDiagnostics::default(),
+            registry: None,
+            operations: None,
         }
     }
 }
@@ -293,7 +450,16 @@ impl Setup {
             .unwrap_or_else(|| directory.to_str().unwrap().to_owned());
         let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
-        let resources = (self.context, self.skills, self.prompts);
+        let resources = Resources {
+            context: self.context,
+            skills: self.skills,
+            prompts: self.prompts,
+            themes: self.themes,
+            extensions: self.extensions,
+            errors: self.errors,
+            commands: self.commands,
+            diagnostics: self.diagnostics,
+        };
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
         let result = session::session(&cwd, None, move |inner| {
             let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
@@ -313,17 +479,22 @@ impl Setup {
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(match self.directories {
-            Some(directories) => ThemeState::new(directories),
-            None => published::unpublished(),
+        let themes = self.registry.unwrap_or_else(|| {
+            Rc::new(match self.directories {
+                Some(directories) => ThemeState::new(directories),
+                None => published::unpublished(),
+            })
         });
         let local = Rc::new(tokio::task::LocalSet::new());
+        let operations = self
+            .operations
+            .unwrap_or_else(|| Rc::new(NativeFooterOperations::new(local)));
         let mode = InteractiveMode::new(
             Rc::clone(&host),
             self.options,
             (terminal.handle(), runtime.handle()),
             Rc::clone(&themes),
-            Rc::new(NativeFooterOperations::new(local)),
+            operations,
         )
         .unwrap();
         World {
@@ -337,10 +508,24 @@ impl Setup {
     }
 }
 
+/// Runs `future` to completion on a current-thread runtime with the process driver.
+pub(super) fn complete<T>(future: impl Future<Output = T>) -> T {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
+
+/// Initializes `world` once, before the first frame is settled.
+pub(super) fn start(world: &World) {
+    complete(world.mode.init()).unwrap();
+}
+
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
 fn started(directory: &Path) -> World {
     let world = Setup::default().build(directory);
-    world.mode.init().unwrap();
+    start(&world);
     world.runtime.settle().unwrap();
     world
 }
@@ -363,6 +548,7 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@bashMode@", ThemeColor::BashMode),
         ("@mdHeading@", ThemeColor::MdHeading),
         ("@mdLink@", ThemeColor::MdLink),
+        ("@success@", ThemeColor::Success),
     ] {
         text = text.replace(marker, theme.get_fg_ansi(&role).unwrap());
     }
@@ -522,7 +708,7 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                     ..Setup::default()
                 }
                 .build(directory);
-                world.mode.init().unwrap();
+                start(&world);
                 let theme = world.themes.theme().get().unwrap();
                 let expected = painted(&theme, &before);
                 assert_eq!(
@@ -605,12 +791,15 @@ impl AutocompleteProvider for Numbered {
     fn get_suggestions<'a>(
         &'a self,
         _lines: &'a [String],
-        _cursor: autocomplete::CursorPosition,
-        _options: autocomplete::CompletionOptions<'a, Self::Signal>,
+        _cursor: tui_autocomplete::CursorPosition,
+        _options: tui_autocomplete::CompletionOptions<'a, Self::Signal>,
     ) -> Pin<
         Box<
             dyn Future<
-                    Output = Result<Option<AutocompleteSuggestions>, autocomplete::CompletionError>,
+                    Output = Result<
+                        Option<AutocompleteSuggestions>,
+                        tui_autocomplete::CompletionError,
+                    >,
                 > + 'a,
         >,
     > {
@@ -631,11 +820,11 @@ impl AutocompleteProvider for Numbered {
     fn apply_completion(
         &self,
         _lines: &[String],
-        _cursor: autocomplete::CursorPosition,
+        _cursor: tui_autocomplete::CursorPosition,
         item: &AutocompleteItem,
         _prefix: &str,
-    ) -> autocomplete::CompletionResult {
-        autocomplete::CompletionResult {
+    ) -> tui_autocomplete::CompletionResult {
+        tui_autocomplete::CompletionResult {
             lines: vec![item.value.clone()],
             cursor_line: 0,
             cursor_col: item.value.len(),
@@ -650,7 +839,7 @@ fn visible_candidates(directory: &Path, maximum: f64) -> usize {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    start(&world);
     world
         .mode
         .editor
@@ -668,7 +857,7 @@ fn editor_indent(directory: &Path, padding: f64) -> usize {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    start(&world);
     world.mode.editor.set_text("typed");
     let rows = world.mode.editor.render(40);
     let row = rows.iter().find(|row| row.contains("typed")).unwrap();
@@ -691,7 +880,7 @@ fn startup_constructor_forwards_each_display_setting() {
                 .build(directory);
                 assert_eq!(world.mode.ui.get_show_hardware_cursor(), cursor);
                 assert_eq!(world.mode.ui.get_clear_on_shrink(), shrink);
-                world.mode.init().unwrap();
+                start(&world);
                 world.runtime.settle().unwrap();
                 world.mode.show_error("tall").unwrap();
                 world.runtime.settle().unwrap();
@@ -717,7 +906,7 @@ fn startup_constructor_forwards_each_display_setting() {
                     ..Setup::default()
                 }
                 .build(directory);
-                world.mode.init().unwrap();
+                start(&world);
                 let footer = world.mode.footer.render(120).join("\n");
                 assert_eq!(footer.contains("(auto)"), enabled);
             }
@@ -778,7 +967,7 @@ fn startup_layout_focus_and_start_happen_once() {
         assert!(mode.widget_container_below.children().borrow().is_empty());
         world.terminal.send_input("x");
         assert_eq!(mode.editor.get_text(), "x");
-        mode.init().unwrap();
+        complete(mode.init()).unwrap();
         assert!(same(&mode.ui.children().borrow()));
         assert_eq!(world.terminal.events(), ["start"]);
         assert_eq!(mode.header_container.children().borrow().len(), 3);
@@ -794,7 +983,7 @@ fn startup_failed_terminal_start_does_not_mark_initialized() {
             world
                 .terminal
                 .set_hide_error(Some(io::ErrorKind::BrokenPipe));
-            let error = world.mode.init().unwrap_err();
+            let error = complete(world.mode.init()).unwrap_err();
             assert_eq!(
                 error.downcast_ref::<io::Error>().unwrap().kind(),
                 io::ErrorKind::BrokenPipe
@@ -851,6 +1040,246 @@ fn startup_callback_registration_does_not_retain_the_mode() {
             provider.set_cwd(directory.join("gone").to_str().unwrap().to_owned());
             assert_eq!(runtime.pending(), 0);
             drop((terminal, host, loader));
+        },
+    );
+}
+
+/// Footer and theme-watch effects where only the theme watches are observed.
+#[derive(Default)]
+struct Watched {
+    /// Whether each theme watch is still open, in creation order.
+    open: RefCell<Vec<Rc<Cell<bool>>>>,
+}
+
+/// One open theme watch.
+struct Handle {
+    /// Set once the watch closes.
+    closed: Rc<Cell<bool>>,
+}
+
+impl ThemeWatcher for Handle {
+    fn close(&mut self) -> io::Result<()> {
+        self.closed.set(true);
+        Ok(())
+    }
+}
+
+impl Drop for Handle {
+    fn drop(&mut self) {
+        self.closed.set(true);
+    }
+}
+
+/// A scheduled theme reload that never runs.
+struct Pending;
+
+impl ThemeReloadTimer for Pending {
+    fn cancel(&mut self) {}
+}
+
+impl ThemeWatchOperations for Watched {
+    fn watch(
+        &self,
+        _path: &str,
+        _listener: Rc<dyn Fn(Option<String>)>,
+        _on_error: Rc<dyn Fn()>,
+    ) -> io::Result<Box<dyn ThemeWatcher>> {
+        let closed = Rc::new(Cell::new(false));
+        self.open.borrow_mut().push(Rc::clone(&closed));
+        Ok(Box::new(Handle { closed }))
+    }
+
+    fn schedule(
+        &self,
+        _delay: Duration,
+        _callback: Box<dyn FnOnce()>,
+    ) -> Box<dyn ThemeReloadTimer> {
+        Box::new(Pending)
+    }
+}
+
+impl FooterOperations for Watched {
+    fn symbolic_ref_async(
+        &self,
+        _repo_dir: &str,
+        callback: Box<dyn FnOnce(io::Result<Option<String>>)>,
+    ) {
+        callback(Ok(None));
+    }
+
+    fn watch_file(
+        &self,
+        _path: &str,
+        _interval: Duration,
+        _listener: Rc<dyn Fn(FooterFileStats, FooterFileStats)>,
+    ) -> Box<dyn ThemeWatcher> {
+        Box::new(Handle {
+            closed: Rc::new(Cell::new(false)),
+        })
+    }
+
+    fn symbolic_ref_sync(&self, _repo_dir: &str) -> io::Result<Option<String>> {
+        Ok(None)
+    }
+}
+
+/// A mode whose selected custom theme is watched through `watched`, which must first see
+/// one open watch.
+fn watching(directory: &Path, watched: &Rc<Watched>) -> World {
+    let custom = directory.join("themes");
+    std::fs::create_dir_all(&custom).unwrap();
+    // The watcher only needs the entry's file; the registered theme answers the load.
+    std::fs::write(custom.join("watched.json"), "{}").unwrap();
+    let registry = Rc::new(ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: custom.to_str().unwrap().to_owned(),
+    }));
+    Setup {
+        configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
+        themes: vec![published::named(1, Some("watched"))],
+        registry: Some(registry),
+        operations: Some(Rc::clone(watched) as Rc<dyn FooterOperations>),
+        ..Setup::default()
+    }
+    .build(directory)
+}
+
+#[test]
+fn fatal_runtime_error_writes_its_notice_before_stopping_the_terminal() {
+    isolated(
+        "fatal_runtime_error_writes_its_notice_before_stopping_the_terminal",
+        |directory| {
+            for pending in [0, 262_144, 262_145] {
+                let watched = Rc::new(Watched::default());
+                let world = watching(directory, &watched);
+                start(&world);
+                world.runtime.settle().unwrap();
+                assert_eq!(watched.open.borrow().len(), 1);
+                assert!(!watched.open.borrow()[0].get());
+                world.terminal.set_pending_output_bytes(pending);
+                world.terminal.clear_writes();
+                world.mode.report_fatal_runtime_error(
+                    "Failed to create session",
+                    &io::Error::other("boom"),
+                );
+                let theme = world.themes.theme().get().unwrap();
+                let notice = theme
+                    .fg(&ThemeColor::Error, "Error: Failed to create session: boom")
+                    .unwrap();
+                let rows = world.mode.chat_container.render(100);
+                assert!(
+                    rows.iter().any(|row| row.contains(&notice)),
+                    "the failure notice: {rows:?}"
+                );
+                let writes = world.terminal.writes();
+                let notice_index = writes
+                    .iter()
+                    .position(|write| {
+                        strip_ansi(write)
+                            .unwrap()
+                            .contains("Error: Failed to create session: boom")
+                    })
+                    .unwrap_or_else(|| {
+                        panic!("the failure notice reached the terminal at {pending}: {writes:?}")
+                    });
+                let restore_index = writes
+                    .iter()
+                    .position(|write| write.contains("\x1b[?25h"))
+                    .expect("the cursor is shown");
+                assert!(
+                    notice_index < restore_index,
+                    "the notice precedes the restore at {pending}: {writes:?}"
+                );
+                assert!(watched.open.borrow()[0].get(), "the theme watch closes");
+                assert_eq!(world.terminal.events(), ["start", "stop"]);
+            }
+        },
+    );
+}
+
+#[test]
+fn fatal_runtime_error_ends_the_process_with_failure_status() {
+    let test = "fatal_runtime_error_ends_the_process_with_failure_status";
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        if selection.runs_case("fatal") {
+            let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
+            let world = Setup::default().build(Path::new(&directory));
+            println!("\nPROBE fatal body started");
+            world
+                .mode
+                .handle_fatal_runtime_error("Failed to create session", &io::Error::other("boom"));
+        }
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let output = TestProcess::current(test)
+        .unwrap()
+        .case("fatal")
+        .current_dir(scratch.0.path())
+        .env(&*ENV_AGENT_DIR, scratch.0.path())
+        .nocapture()
+        .output()
+        .unwrap();
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("PROBE fatal body started"),
+        "the child reached the fatal call: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert_eq!(output.status.code(), Some(1));
+}
+
+#[test]
+fn current_session_state_rendering_clears_stale_rows_and_replays_the_session() {
+    isolated(
+        "current_session_state_rendering_clears_stale_rows_and_replays_the_session",
+        |directory| {
+            let world = started(directory);
+            let session = world.host.session();
+            let mut manager = session.session_manager().borrow_mut();
+            manager
+                .append_message(transcript::user_record("REPLAYED"))
+                .unwrap();
+            manager
+                .append_message(transcript::assistant(
+                    &json!([transcript::call("call", "unknown_tool")]),
+                    "toolUse",
+                    None,
+                ))
+                .unwrap();
+            drop(manager);
+            let stale =
+                crate::ToolExecutionComponent::new(transcript::tool_params(&world, "stale"))
+                    .unwrap();
+            world
+                .mode
+                .pending_tools
+                .borrow_mut()
+                .insert("stale".to_owned(), Rc::new(stale));
+            world
+                .mode
+                .chat_container
+                .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+            world
+                .mode
+                .pending_messages_container
+                .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+            world.mode.render_current_session_state().unwrap();
+            let rows = world.mode.chat_container.render(100);
+            assert!(!rows.iter().any(|row| row.contains("STALE")), "{rows:?}");
+            assert!(rows.iter().any(|row| row.contains("REPLAYED")), "{rows:?}");
+            assert!(
+                world
+                    .mode
+                    .pending_messages_container
+                    .children()
+                    .borrow()
+                    .is_empty()
+            );
+            let pending: Vec<_> = world.mode.pending_tools.borrow().keys().cloned().collect();
+            assert_eq!(pending, ["call"]);
+            maestro_tui::tui::InputHandler::handle_input(world.mode.editor.as_ref(), "\x1b[A");
+            assert_eq!(world.mode.editor.get_text(), "REPLAYED");
         },
     );
 }
