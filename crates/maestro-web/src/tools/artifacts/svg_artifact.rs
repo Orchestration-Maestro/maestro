@@ -47,11 +47,11 @@ impl SvgArtifact {
             return Err(error);
         }
         self.source.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Code,
+            self.visible && self.toggle.mode() == ViewMode::Code,
             self.modal,
         )?;
         self.preview.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Preview,
+            self.visible && self.toggle.mode() == ViewMode::Preview,
             self.modal,
         )
     }
@@ -108,7 +108,7 @@ impl ArtifactElement for SvgArtifact {
     super::retained::artifact_header_buttons!();
     fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.reconcile()?;
-        if self.toggle.mode == ViewMode::Code {
+        if self.toggle.mode() == ViewMode::Code {
             self.source.render(ui, view)?;
         } else {
             self.preview.render(ui, view)?;

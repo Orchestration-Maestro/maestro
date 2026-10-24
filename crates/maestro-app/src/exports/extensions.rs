@@ -5,8 +5,8 @@ pub use maestro_extensions::{
     ExtensionCommandContext, ExtensionCommandContextActions, ExtensionContext,
     ExtensionContextActions, ExtensionError, ExtensionRuntime, ExtensionUIContext,
     ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer,
-    ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo, WidgetPlacement,
-    WorkingIndicatorOptions, create_extension_runtime,
+    ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo, UIHostCall,
+    WidgetPlacement, WorkingIndicatorOptions, create_extension_runtime,
 };
 
 pub use maestro_extensions::types::events::*;
@@ -27,6 +27,7 @@ pub use maestro_extensions::MessageRendererCall;
 /// A frontend binds an inline native renderer to this bus through
 /// [`MessageRendererCall::new`] and then retains the projected call.
 pub use maestro_extensions::create_event_bus;
+pub use maestro_extensions::create_event_bus_for;
 
 pub use maestro_extensions::{
     EventBus, EventBusController, ExtensionShortcut, RegisteredCommand, ResolvedCommand,

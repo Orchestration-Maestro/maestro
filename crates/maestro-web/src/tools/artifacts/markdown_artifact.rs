@@ -36,12 +36,12 @@ impl MarkdownArtifact {
     /// Route the selected branch through its existing retained owner.
     fn reconcile(&mut self) -> Result<(), ArtifactUiError> {
         self.source.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Code,
+            self.visible && self.toggle.mode() == ViewMode::Code,
             self.modal,
         )?;
         self.preview
             .set_visibility(
-                self.visible && self.toggle.mode == ViewMode::Preview,
+                self.visible && self.toggle.mode() == ViewMode::Preview,
                 self.modal,
             )
             .map_err(ArtifactUiError::Host)
@@ -73,7 +73,7 @@ impl ArtifactElement for MarkdownArtifact {
     super::retained::artifact_header_buttons!();
     fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.reconcile()?;
-        if self.toggle.mode == ViewMode::Code {
+        if self.toggle.mode() == ViewMode::Code {
             self.source.render(ui, view)?;
         } else {
             self.preview

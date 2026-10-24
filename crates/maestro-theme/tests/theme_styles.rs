@@ -51,6 +51,7 @@ fn decorate(style: &str, text: &str, enabled: bool) -> String {
         "strikethrough" => Theme::strikethrough(text, enabled),
         "green" => Theme::green(text, enabled),
         "dim" => Theme::dim(text, enabled),
+        "gray" => Theme::gray(text, enabled),
         other => panic!("unknown style {other}"),
     }
 }
@@ -104,6 +105,29 @@ fn package_decorations_keep_dim_and_green_boundaries() {
         );
     }
     assert_eq!(cases.len(), 24);
+}
+
+#[test]
+fn startup_decorators_keep_dim_gray_and_nested_resets() {
+    let cases = records(
+        include_str!("fixtures/startup_decorations.json"),
+        &["enabled", "expected", "style", "text"],
+    );
+    for case in &cases {
+        let style = case["style"].as_str().unwrap();
+        let enabled = case["enabled"].as_bool().unwrap();
+        assert_eq!(
+            decorate(style, case["text"].as_str().unwrap(), enabled),
+            case["expected"].as_str().unwrap(),
+            "{case}"
+        );
+    }
+    assert_eq!(cases.len(), 12);
+    assert_eq!(
+        Theme::gray("scope", true),
+        "\x1b[90mscope\x1b[39m",
+        "the model scope hint keeps the bright-black foreground"
+    );
 }
 
 #[test]

@@ -830,6 +830,45 @@ pub fn borrow(rep: u32) -> Resource<Identity> {
     Resource::new_borrow(rep)
 }
 
+/// Delivers a compaction result or failure to `handler`, lending a fresh emitter for it.
+pub async fn notify_compaction(
+    harness: &mut Harness,
+    handler: u32,
+    payload: &str,
+    complete: bool,
+) -> Result<(), String> {
+    let emitter = harness
+        .store
+        .data_mut()
+        .table
+        .push(super::bus_host::Emitter { key: 0 })
+        .map_err(|error| error.to_string())?;
+    let function = if complete {
+        harness.exports.func_invoke_compaction_complete()
+    } else {
+        harness.exports.func_invoke_compaction_error()
+    };
+    let result = function
+        .call_async(
+            &mut harness.store,
+            (
+                borrow(handler),
+                payload,
+                Resource::new_borrow(emitter.rep()),
+            ),
+        )
+        .await
+        .map_err(|error| error.to_string())?
+        .0;
+    harness
+        .store
+        .data_mut()
+        .table
+        .delete(emitter)
+        .map_err(|error| error.to_string())?;
+    result
+}
+
 /// The instantiated component and the table keys of what it registered.
 pub struct Harness {
     /// The store holding the host state and the instance.
