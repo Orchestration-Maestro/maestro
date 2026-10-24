@@ -67,9 +67,8 @@ pub(super) enum Input {
     },
     /// One package source's compact label.
     PackageSource {
-        /// Where the extension came from.
-        #[serde(rename = "sourceInfo")]
-        source_info: RecordedSource,
+        /// The package source.
+        source: String,
     },
     /// The source label of one provenance, or of none.
     Source {

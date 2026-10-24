@@ -237,11 +237,10 @@ fn extension_display_paths_strip_only_terminal_forward_slash_indexes() {
 #[test]
 fn extension_labels_keep_package_source_forms() {
     for (input, expected) in cases("extension_labels_keep_package_source_forms") {
-        let (Input::PackageSource { source_info }, Expected::Value { value }) = (input, expected)
-        else {
+        let (Input::PackageSource { source }, Expected::Value { value }) = (input, expected) else {
             panic!("a package source case");
         };
-        assert_eq!(get_compact_package_source_label(&source_info.source), value);
+        assert_eq!(get_compact_package_source_label(&source), value);
     }
 }
 
