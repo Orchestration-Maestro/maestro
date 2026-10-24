@@ -47,23 +47,6 @@ pub(crate) fn get_language_from_path(file_path: &str) -> Option<&'static str> {
     .flatten()
 }
 
-/// Avoid native time observation for absent or falsy operands.
-/// # Errors
-/// Propagates the owning locale observer's original failure.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "Prepared for offline message consumers")
-)]
-pub(crate) fn format_timestamp(
-    timestamp: Option<&Value>,
-    localize: &dyn Fn(&Value) -> std::io::Result<String>,
-) -> std::io::Result<String> {
-    match timestamp.filter(|value| maestro_app::is_truthy(value)) {
-        None => Ok(String::new()),
-        Some(value) => localize(value),
-    }
-}
-
 /// Borrow the first matching result, reading message receivers only when reached.
 /// # Errors
 /// Returns the shared invalid-data failure for a reached missing/null message.
@@ -87,34 +70,6 @@ pub(crate) fn find_tool_result<'a>(
         }
     }
     Ok(None)
-}
-
-/// Observe native local time with the viewer's two-digit hour, minute and second options.
-/// # Errors
-/// Propagates native conversion and locale-operation failures.
-#[cfg(target_arch = "wasm32")]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "Prepared for offline message consumers")
-)]
-pub(crate) fn localize_timestamp(timestamp: &serde_json::Value) -> std::io::Result<String> {
-    use crate::browser::json::encode_json;
-    use wasm_bindgen::JsValue;
-    let date = js_sys::Date::new(&encode_json(timestamp, |e| {
-        std::io::Error::other(format!("{e:?}"))
-    })?);
-    let options = js_sys::Object::new();
-    for field in ["hour", "minute", "second"] {
-        js_sys::Reflect::set(&options, &field.into(), &"2-digit".into())
-            .map_err(|e| std::io::Error::other(format!("{e:?}")))?;
-    }
-    let f = js_sys::Reflect::get(&date, &"toLocaleTimeString".into())
-        .and_then(wasm_bindgen::JsCast::dyn_into::<js_sys::Function>)
-        .map_err(|e| std::io::Error::other(format!("{e:?}")))?;
-    f.call2(&date, &JsValue::UNDEFINED, &options)
-        .map_err(|e| std::io::Error::other(format!("{e:?}")))?
-        .as_string()
-        .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::InvalidData))
 }
 
 /// Shorten the viewer's lexical home prefixes without observing the host filesystem.
