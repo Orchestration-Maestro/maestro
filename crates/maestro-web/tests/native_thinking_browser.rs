@@ -49,6 +49,22 @@ async fn pointer(point: (f64, f64), click: bool) {
     )
     .await;
 }
+/// The header label paints at the small text size: as wide as a copy of it set at 0.875rem.
+fn assert_small_header_text(toggle: &HtmlElement) {
+    let label = toggle.last_element_child().unwrap();
+    let probe: HtmlElement = label.clone_node_with_deep(true).unwrap().unchecked_into();
+    probe.style().set_property("font-size", "0.875rem").unwrap();
+    toggle.append_child(&probe).unwrap();
+    let (shown, small) = (
+        label.get_bounding_client_rect().width(),
+        probe.get_bounding_client_rect().width(),
+    );
+    probe.remove();
+    assert!(
+        shown > 0. && (shown - small).abs() < 0.01,
+        "header text {shown}px wide, small text {small}px"
+    );
+}
 /// The center of `element` in page coordinates.
 fn center(element: &Element) -> (f64, f64) {
     let rect = element.get_bounding_client_rect();
@@ -70,6 +86,7 @@ pub fn thinking_dom_disclosure_retains_state_and_exact_header(import_module: &js
     let mounted = root(&shown);
     let toggle = header(&mounted);
     assert_eq!(toggle.text_content().unwrap(), "Thinking...");
+    assert_small_header_text(&toggle);
     assert_eq!(
         toggle.get_attribute("aria-expanded").as_deref(),
         Some("false")

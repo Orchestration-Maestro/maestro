@@ -221,10 +221,17 @@ pub async fn markdown_dom_keeps_code_controls_across_presentation_changes(
     assert_eq!(selection(&page, &mounted).await, (selected, true));
     assert_eq!(computed(&paragraph, "color"), color(&fixture.view, "muted"));
     assert_eq!(computed(&paragraph, "font-style"), "italic");
-    supplied_adapters_reach_updates(&mut fixture, &block, &copy);
+    supplied_adapters_reach_updates(&page, &mut fixture, &block, &copy).await;
 }
 /// Click the document's copy control with a succeeding clipboard and wait for its feedback.
 async fn copied(page: &JsValue, mounted: &Element) -> Element {
+    let copy = mounted.query_selector("copy-button").unwrap().unwrap();
+    click_copy(page, &copy).await;
+    assert!(copy.text_content().unwrap().contains("Copied!"));
+    copy
+}
+/// Click `copy` with a succeeding clipboard and wait until it shows success feedback.
+async fn click_copy(page: &JsValue, copy: &Element) {
     let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(|_: String| {
         js_sys::Promise::resolve(&JsValue::UNDEFINED)
     });
@@ -232,21 +239,24 @@ async fn copied(page: &JsValue, mounted: &Element) -> Element {
     let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
     js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
     write.forget();
-    let copy = mounted.query_selector("copy-button").unwrap().unwrap();
     let control: web_sys::HtmlElement = copy
         .query_selector("button")
         .unwrap()
         .unwrap()
         .unchecked_into();
     control.click();
-    crate::contributions_support::until(page, &copy, || {
-        copy.text_content().unwrap_or_default().contains("Copied!")
+    crate::contributions_support::until(page, copy, || {
+        copy.query_selector("span").unwrap().is_some()
     })
     .await;
-    copy
 }
-/// A supplied language reaches the copy title; a supplied failing engine fails without publishing.
-fn supplied_adapters_reach_updates(fixture: &mut Fixture, block: &MarkdownBlock, copy: &Element) {
+/// A supplied language reaches the copy title and feedback; a supplied failing engine fails without publishing.
+async fn supplied_adapters_reach_updates(
+    page: &JsValue,
+    fixture: &mut Fixture,
+    block: &MarkdownBlock,
+    copy: &Element,
+) {
     let view = Rc::clone(&fixture.view);
     let german = I18n::new(Rc::new(crate::support::Host {
         stored: Some("de".to_owned()).into(),
@@ -262,6 +272,8 @@ fn supplied_adapters_reach_updates(fixture: &mut Fixture, block: &MarkdownBlock,
         copy.get_attribute("title").as_deref(),
         Some("Code kopieren")
     );
+    click_copy(page, copy).await;
+    assert!(copy.text_content().unwrap().contains("Kopiert!"));
     let failing = DomView {
         highlighter: Rc::new(crate::failing_highlighter::FailingEngine(Arc::new(()))),
         ..(*view).clone()
