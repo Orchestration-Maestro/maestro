@@ -12,7 +12,7 @@ pub const FIXTURE: &str = "crates/maestro-tooling/tests/fixtures/browser_author"
 pub struct Browser {
     pub workspace: Workspace,
     // Trunk writes binding/optimizer intermediates outside Cargo's build lock.
-    _build_lock: fs::File,
+    _build_lock: Option<fs::File>,
 }
 
 impl Browser {
@@ -28,6 +28,16 @@ impl Browser {
             .unwrap();
         record("phase: browser lock waiting");
         lock.lock().unwrap();
+        Self::prepare(Some(lock))
+    }
+
+    /// Prepare a workspace without the shared build lock, for recipes that run
+    /// with their own Cargo home and target directory.
+    pub fn unshared() -> Self {
+        Self::prepare(None)
+    }
+
+    fn prepare(lock: Option<fs::File>) -> Self {
         record("phase: browser lock acquired / fixture copy");
         let mut workspace = Workspace::new();
         let renamed = workspace.path().with_file_name(format!(
