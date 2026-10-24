@@ -14,6 +14,7 @@ mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod suspend;
 mod transcript;
 mod transfer;
 mod typed;
@@ -75,13 +76,32 @@ pub(super) fn isolated_case(
     envs: &[(&str, &str)],
     body: impl FnOnce(&Path),
 ) {
+    if let Some(output) = isolated_output(test, case, envs, "trap '' XFSZ", body) {
+        assert!(
+            output.status.success(),
+            "child probe failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+/// Runs `body` as `case` of `test` in the child [`isolated_case`] describes, after `setup`
+/// runs in the child's shell, and returns that child's output to the parent; the child
+/// itself returns nothing.
+pub(super) fn isolated_output(
+    test: &str,
+    case: &str,
+    envs: &[(&str, &str)],
+    setup: &str,
+    body: impl FnOnce(&Path),
+) -> Option<std::process::Output> {
     let selection = maestro_test_process::selection();
     if selection.is_child() {
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
             body(Path::new(&directory));
         }
-        return;
+        return None;
     }
     let scratch = child::Scratch::new();
     let root = scratch.0.path();
@@ -99,17 +119,19 @@ pub(super) fn isolated_case(
         ("WAYLAND_DISPLAY", "maestro-test"),
     ];
     all.extend_from_slice(envs);
-    child::probe(
-        TestProcess::current(test)
-            .unwrap()
-            .env_clear()
-            .case(case)
-            .shell_setup("trap '' XFSZ")
-            .temp_dir(root.join("tmp")),
-        root,
-        &all,
-        &[],
-    );
+    let output = TestProcess::current(test)
+        .unwrap()
+        .env_clear()
+        .case(case)
+        .shell_setup(setup)
+        .temp_dir(root.join("tmp"))
+        .nocapture()
+        .single_threaded()
+        .current_dir(root)
+        .envs(all)
+        .output()
+        .expect("child starts");
+    Some(output)
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
