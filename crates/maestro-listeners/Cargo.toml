@@ -5,8 +5,8 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[lints]
-workspace = true
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+
+[lints]
+workspace = true

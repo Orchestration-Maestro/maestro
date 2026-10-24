@@ -7,7 +7,10 @@ use crate::support::rpc_connection::{
 };
 use crate::support::runtime_fixtures::runtime_for;
 use crate::support::session_harness::{Harness, on_paused_task_set, on_task_set};
-use maestro_app::AgentSessionRuntime;
+use maestro_app::{
+    AgentSessionRuntime, Extension, ExtensionAPI, SourceInfo, SourceOrigin, SourceScope, Threaded,
+    create_event_bus, create_extension_runtime,
+};
 use maestro_extensions::types::{
     AutocompleteProviderFactory, ComponentFactory, CustomComponentFactory, EditorFactory,
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterFactory,
@@ -16,7 +19,15 @@ use maestro_extensions::types::{
 use maestro_models::Cancellation;
 use maestro_theme::{Theme, ThemeState};
 use serde_json::{Value, json};
-use std::{collections::HashSet, future::Future, pin::pin, rc::Rc, task::Poll, time::Duration};
+use std::{
+    collections::HashSet,
+    future::Future,
+    pin::pin,
+    rc::Rc,
+    sync::{Arc, RwLock},
+    task::Poll,
+    time::Duration,
+};
 
 /// A runtime bound to its connection, the client and the protocol's extension interface.
 async fn bound(label: &str) -> (Harness, Rc<AgentSessionRuntime>, Client, ExtensionUIContext) {
@@ -27,6 +38,29 @@ async fn bound(label: &str) -> (Harness, Rc<AgentSessionRuntime>, Client, Extens
     client.ask(r#"{"type":"get_state"}"#).await;
     let ui = runtime.session().extension_runner().get_ui_context();
     (h, runtime, client, ui)
+}
+
+/// A facade that binds the callbacks handed to the protocol's extension interface.
+fn facade() -> ExtensionAPI<Threaded> {
+    let source = SourceInfo {
+        path: "ui".into(),
+        source: "ui".into(),
+        scope: SourceScope::Temporary,
+        origin: SourceOrigin::TopLevel,
+        base_dir: None,
+    };
+    let owner = Arc::new(RwLock::new(Extension::new(
+        "ui".into(),
+        "ui".into(),
+        Arc::new(RwLock::new(source)),
+    )));
+    let events = create_event_bus(Arc::new(drop), Arc::new(|_| {})).for_extension();
+    ExtensionAPI::new(
+        &owner,
+        create_extension_runtime::<Threaded>(),
+        events,
+        ".".into(),
+    )
 }
 
 /// `request` without its identifier, after checking that the identifier is a fresh UUID v4.
@@ -320,7 +354,8 @@ fn widgets_keep_lines_and_ignore_factories() {
             ))
         };
         let placed = |placement| Some(ExtensionWidgetOptions { placement });
-        let factory: ComponentFactory = Rc::new(|_, _, _| panic!("a widget factory was built"));
+        let factory: ComponentFactory =
+            facade().ui_callback(|_, _| panic!("a widget factory was built"));
         ui.set_widget("w".into(), Some(WidgetContent::Factory(factory)), None)
             .unwrap();
         ui.set_widget(
@@ -360,7 +395,9 @@ fn unsupported_ui_methods_keep_each_default() {
     on_task_set(|_| async {
         let (_h, _runtime, mut client, ui) = bound("defaults").await;
         let unsubscribe = ui
-            .on_terminal_input(Rc::new(|_, _| panic!("terminal input was delivered")))
+            .on_terminal_input(
+                facade().ui_callback(|_: String, _| panic!("terminal input was delivered")),
+            )
             .unwrap();
         unsubscribe().unwrap();
         ui.set_working_message(Some("working".into())).unwrap();
@@ -368,17 +405,18 @@ fn unsupported_ui_methods_keep_each_default() {
         ui.set_working_indicator(Some(WorkingIndicatorOptions::default()))
             .unwrap();
         ui.set_hidden_thinking_label(Some("hidden".into())).unwrap();
-        let footer: FooterFactory = Rc::new(|_, _, _, _| panic!("a footer was built"));
+        let api = facade();
+        let footer: FooterFactory = api.ui_callback(|_, _| panic!("a footer was built"));
         ui.set_footer(Some(footer)).unwrap();
-        let header: ComponentFactory = Rc::new(|_, _, _| panic!("a header was built"));
+        let header: ComponentFactory = api.ui_callback(|_, _| panic!("a header was built"));
         ui.set_header(Some(header)).unwrap();
         let custom: CustomComponentFactory =
-            Rc::new(|_, _, _, _, _| panic!("a custom component was built"));
+            api.ui_callback(|_, _| panic!("a custom component was built"));
         ui.custom_component(custom, None).await.unwrap();
         let autocomplete: AutocompleteProviderFactory =
-            Rc::new(|_, _| panic!("an autocomplete provider was built"));
+            api.ui_callback(|_, _| panic!("an autocomplete provider was built"));
         ui.add_autocomplete_provider(autocomplete).unwrap();
-        let editor: EditorFactory = Rc::new(|_, _, _, _| panic!("an editor was built"));
+        let editor: EditorFactory = api.ui_callback(|_, _| panic!("an editor was built"));
         ui.set_editor_component(Some(editor)).unwrap();
         assert!(ui.get_editor_component().unwrap().is_none());
         assert_eq!(ui.get_editor_text().unwrap(), "");

@@ -141,13 +141,6 @@ and an owned I/O actor. The `byte_queue` module owns ordered buffers and partial
 offsets shared by that actor and native terminal output; callers keep readiness and
 shutdown policy. See [pane processes](workspace-daemon.md#pane-processes).
 
-The listener leaf `maestro-listeners` is declared core below layer 0 with no
-workspace dependencies, including `maestro-path`. It owns live callback
-registrations: each callback kept in registration order under the admission its
-caller chose. Agent subscriptions, session listeners, extension error delivery and the
-terminal adapter's output-failure handlers register through it; what each callback
-receives and when it runs stay with the caller.
-
 The listing leaf `maestro-listing` is declared core below layer 0 with no workspace
 dependencies, including `maestro-path`. It owns directory listing: one directory's
 entries, sorted by file name on every platform. Only resources, theme, the toolkit,
@@ -156,6 +149,16 @@ name decoding and any further ordering.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.
+
+The listener leaf `maestro-listeners` is declared core below layer 0 with no
+workspace dependencies. It owns one job: retaining callbacks in live registration
+order, admitting one per identity (or one per registration, as an event-emitter
+listener list keeps them) and returning removed ownership to the caller. Models,
+the toolkit, the agent, the application, the extension runtime and the terminal
+adapter may depend on it and keep their own borrowing, locking, delivery and settlement
+policy. Retired registrations are reclaimed while no traversal runs, so one
+removal costs expected constant work and clearing every registration costs work
+proportional to their number.
 
 ## Authored paths and the foundation utility
 
@@ -449,14 +452,16 @@ target at `tests/integration.rs`.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Live callback storage belongs to the
-dependency-free leaf `maestro-listeners::Listeners<P>`, which admits a callback
-either once per allocation or once per registration, as the caller's source keeps
-them. Agent subscriptions, session listeners, extension error delivery and native
-output-failure handlers reuse it; models keeps no copy. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
+its existing `ToolInfo<String>` alias. Live callback storage belongs to
+`maestro-listeners::Listeners<P>`, which admits a callback once per identity by
+default, or once per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal operation, and the live walk in
 registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+caller. The collection returns removed ownership for release outside guards, and
+it reclaims retired registrations while no traversal runs, so one removal and a
+complete clear both stay cheap.
 
 Extension runner sessions and context catalog getters retain one direct shared
 `ModelRegistry` holder; its internal synchronization stays catalog-owned.

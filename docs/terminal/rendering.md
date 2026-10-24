@@ -209,7 +209,11 @@ weakly, so it never keeps a dropped writer alive.
    even an empty one, is what the later listeners see; input that is still empty after
    the last listener is delivered to nothing.
    `add_input_listener` returns a function that removes the listener and may be called
-   again harmlessly; dropping it does not remove the listener.
+   again harmlessly; dropping it does not remove the listener. Registration admits one
+   callback per identity, so adding a live one again keeps its first position, and a
+   callback removed and added again takes the last position. The listeners live in the
+   shared [collection](../architecture.md); clearing them all costs work proportional to
+   their number.
 2. The cell-size reply check. A chunk that is exactly `ESC [ 6 ; height ; width t`
    with ASCII digits is a reply and is never forwarded. A zero value or one beyond
    32 bits is dropped and leaves the measured size alone; any other reply updates the

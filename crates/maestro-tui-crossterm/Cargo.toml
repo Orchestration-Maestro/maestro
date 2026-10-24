@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-maestro-listeners = { path = "../maestro-listeners" }
+maestro-listeners.workspace = true
 maestro-text = { path = "../maestro-text" }
 maestro-tui = { path = "../maestro-tui" }
 

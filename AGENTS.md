@@ -185,15 +185,17 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session and the application may depend on it, on native targets; callers keep
   kind filtering, name decoding and further ordering.
+- `maestro-listeners` is a declared core leaf below layer 0 with no workspace
+  dependencies. It retains callbacks in live registration order: one admission per
+  identity, or one per registration as an event-emitter listener list keeps them,
+  removal that returns ownership to the caller, and traversal that sees the
+  collection as it is. Models, the toolkit, agent, application, extensions and the
+  terminal adapter may depend on it; they keep their own borrowing, locking and
+  settlement policy.
+  Its storage reclaims retired registrations while no traversal runs.
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
-- `maestro-listeners` holds live callback registrations below layer 0, with no
-  internal dependencies. It keeps callbacks in registration order under a
-  caller-chosen admission: once per callback allocation, or once per registration
-  as an event-emitter listener list keeps them. Only agent, app, extensions and the
-  terminal adapter may depend on it; what each callback receives and when it runs
-  stay with the caller.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
@@ -532,14 +534,16 @@ target at `tests/integration.rs`.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Live callback storage belongs to the
-dependency-free leaf `maestro-listeners::Listeners<P>`, which admits a callback
-either once per allocation or once per registration, as the caller's source keeps
-them. Agent subscriptions, session listeners, extension error delivery and native
-output-failure handlers reuse it; models keeps no copy. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
+its existing `ToolInfo<String>` alias. Live callback storage belongs to
+`maestro-listeners::Listeners<P>`, which admits a callback once per identity by
+default, or once per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal operation, and the live walk in
 registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+caller. The collection returns removed ownership for release outside guards, and
+it reclaims retired registrations while no traversal runs, so one removal and a
+complete clear both stay cheap.
 
 
 Shared extension event/result schemas and assembled prompt records belong to

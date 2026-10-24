@@ -13,8 +13,8 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-watch", &[]),
     ("maestro-lock", &[]),
     ("maestro-process", &[]),
-    ("maestro-listeners", &[]),
     ("maestro-listing", &[]),
+    ("maestro-listeners", &[]),
     ("maestro-protocol", &[]),
     ("maestro-ipc", &[]),
     ("maestro-terminal", &["maestro-text"]),
@@ -76,6 +76,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-json",
             "maestro-brand",
+            "maestro-listeners",
         ],
     ),
     (
@@ -106,15 +107,16 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-markdown",
             "maestro-listing",
             "maestro-resources",
+            "maestro-listeners",
         ],
     ),
     (
         "maestro-agent",
         &[
-            "maestro-listeners",
             "maestro-models",
             "maestro-text",
             "maestro-tool",
+            "maestro-listeners",
         ],
     ),
     (
@@ -213,7 +215,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-extensions",
         &[
-            "maestro-listeners",
             "maestro-models",
             "maestro-agent",
             "maestro-session",
@@ -222,6 +223,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-theme",
             "maestro-tui",
             "maestro-resources",
+            "maestro-listeners",
         ],
     ),
     (
@@ -232,7 +234,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-daemon",
             "maestro-terminal",
             "maestro-markdown",
-            "maestro-listeners",
             "maestro-models",
             "maestro-agent",
             "maestro-credentials",
@@ -251,6 +252,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-json",
             "maestro-process",
             "maestro-listing",
+            "maestro-listeners",
         ],
     ),
     ("maestro-extensions-wasmtime", &["maestro-extensions"]),
@@ -423,7 +425,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-lock"
                 | "maestro-process"
                 | "maestro-listing"
-                | "maestro-listeners"
                 | "maestro-pattern"
                 | "maestro-markdown"
                 | "maestro-cancellation"
