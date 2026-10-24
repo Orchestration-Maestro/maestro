@@ -2,7 +2,9 @@
 //! nobody answers and the headless defaults of terminal-only operations.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::export_fixtures::published;
-use crate::support::rpc_connection::{Client, connect, no_workspace, serve};
+use crate::support::rpc_connection::{
+    Client, Outcomes, connect, no_workspace, serve, startup_select,
+};
 use crate::support::runtime_fixtures::runtime_for;
 use crate::support::session_harness::{Harness, on_paused_task_set, on_task_set};
 use maestro_app::AgentSessionRuntime;
@@ -11,14 +13,10 @@ use maestro_extensions::types::{
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterFactory,
     NotificationType, ThemeSelection, WidgetContent, WidgetPlacement, WorkingIndicatorOptions,
 };
-use maestro_extensions::{ExtensionFactory, SessionStartEvent};
-use maestro_models::{Cancellation, Local};
+use maestro_models::Cancellation;
 use maestro_theme::{Theme, ThemeState};
 use serde_json::{Value, json};
-use std::{
-    cell::RefCell, collections::HashSet, future::Future, pin::pin, rc::Rc, task::Poll,
-    time::Duration,
-};
+use std::{collections::HashSet, future::Future, pin::pin, rc::Rc, task::Poll, time::Duration};
 
 /// A runtime bound to its connection, the client and the protocol's extension interface.
 async fn bound(label: &str) -> (Harness, Rc<AgentSessionRuntime>, Client, ExtensionUIContext) {
@@ -437,35 +435,12 @@ fn ui_theme_follows_live_replacement() {
     });
 }
 
-/// The recorded outcome of each selection, or its failure text.
-type Outcomes = Rc<RefCell<Vec<Result<Option<String>, String>>>>;
-
-/// An extension whose `session_start` handler asks a selection and records its outcome.
-fn startup_select(outcomes: Outcomes) -> ExtensionFactory<Local> {
-    Rc::new(move |api| {
-        let outcomes = Rc::clone(&outcomes);
-        let started = api.on::<SessionStartEvent, ()>(
-            "session_start".into(),
-            Rc::new(move |_, ctx| {
-                let outcomes = Rc::clone(&outcomes);
-                Box::pin(async move {
-                    let select = ctx.ui()?.select("start".into(), vec!["a".into()], None);
-                    let outcome = select.await.map_err(|error| error.to_string());
-                    outcomes.borrow_mut().push(outcome);
-                    Ok(None)
-                })
-            }),
-        );
-        Box::pin(std::future::ready(started))
-    })
-}
-
 /// A present member of the wrong kind, `null` included, fails the dialog it answers and
 /// writes nothing, during the initial binding and after it; a dismissal still wins.
 #[test]
 fn malformed_dialog_values_fail_without_wire_reply() {
     on_task_set(|_| async {
-        let outcomes = Rc::default();
+        let outcomes: Outcomes = Rc::default();
         let factory = startup_select(Rc::clone(&outcomes));
         let (_h, runtime, _) = runtime_for("malformed", vec![(None, factory)]).await;
         let runtime = Rc::new(runtime);
