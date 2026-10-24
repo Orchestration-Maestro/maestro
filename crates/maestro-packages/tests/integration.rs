@@ -46,6 +46,7 @@ mod runtime;
 mod sandbox;
 mod scratch;
 mod skill_pack_checks;
+mod startup_environment;
 mod support;
 #[cfg(unix)]
 mod update_corpus;

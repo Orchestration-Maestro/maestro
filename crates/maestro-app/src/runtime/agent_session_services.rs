@@ -72,6 +72,8 @@ pub struct CreateAgentSessionServicesOptions<E: ExtensionExecution = Threaded> {
     pub extension_flag_values: Option<IndexMap<String, FlagValue>>,
     /// The resource loader inputs.
     pub resource_loader_options: ResourceLoaderOptions<E>,
+    /// A caller's offline selection for search programs, or the ambient flag.
+    pub offline: Option<bool>,
 }
 
 /// Coherent infrastructure for one session working directory; no session is created.
@@ -90,6 +92,8 @@ pub struct AgentSessionServices<E: ExtensionExecution = Threaded> {
     pub resource_loader: Rc<dyn ResourceLoader<E>>,
     /// Problems found while creating the services.
     pub diagnostics: Vec<AgentSessionRuntimeDiagnostic>,
+    /// The startup offline selection sessions created from these services inherit.
+    pub offline: Option<bool>,
 }
 
 /// An error diagnostic.
@@ -225,6 +229,7 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
         model_registry,
         resource_loader,
         diagnostics,
+        offline: options.offline,
     })
 }
 
@@ -297,6 +302,7 @@ pub async fn create_agent_session_from_services(
         settings_manager: Some(Rc::clone(&services.settings_manager)),
         session_start_event: options.session_start_event,
         theme: options.theme,
+        offline: services.offline,
     })
     .await
 }

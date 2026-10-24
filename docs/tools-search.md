@@ -84,7 +84,9 @@ Dropping discovery kills its running probe.
 
 `ensure_tool` returns an existing result without advice. Otherwise it reads
 `MAESTRO_OFFLINE` at the call through the [environment flag helper](text.md);
-an enabled flag skips acquisition.
+an enabled flag skips acquisition. `ToolsManager::with_offline` replaces that read
+with the caller's startup selection: `Some(true)` skips, `Some(false)` acquires, and
+`None` keeps reading the flag.
 Android instead receives `pkg install fd` or `pkg install ripgrep` advice.
 
 Other hosts request the latest release from `sharkdp/fd` or `BurntSushi/ripgrep`

@@ -86,6 +86,7 @@ fn services(
         model_registry: registry,
         resource_loader: loader,
         diagnostics: Vec::new(),
+        offline: None,
     })
 }
 
