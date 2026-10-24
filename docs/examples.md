@@ -8,7 +8,7 @@ Run them directly with Cargo in a disposable Unix terminal.
 
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
-`sdk/`, and each folder has its own index page. Eleven extensions ship:
+`sdk/`, and each folder has its own index page. Twelve extensions ship:
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
@@ -19,12 +19,13 @@ for collapsed thinking, and `extensions/with-deps/main.rs` builds one that parse
 durations with a regular expression; `extensions/reload_runtime.rs` builds a
 reload command with a tool that queues it as a follow-up message,
 `extensions/pirate.rs` builds a command that toggles a pirate response style in
-the supplied prompt, and `extensions/trigger_compact.rs` builds a hook that
-requests compaction above a token threshold and a command that requests
-compaction immediately. `extensions/bookmark.rs` labels the newest assistant
-message so the tree view can show it, and
-`extensions/working_message_test.rs` asks for custom working text and an
-indicator whenever a session starts. The
+the supplied prompt; `extensions/trigger_compact.rs` builds a hook that requests
+compaction above a token threshold and a command that requests compaction
+immediately, `extensions/bookmark.rs` labels the newest assistant message so the
+tree view can show it, `extensions/working_message_test.rs` asks for custom
+working text and an indicator whenever a session starts, and
+`extensions/system_prompt_header.rs` reports the current system prompt's length
+as status. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 

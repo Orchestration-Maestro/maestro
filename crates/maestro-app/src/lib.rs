@@ -19,6 +19,8 @@ pub mod output_guard;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod resources;
 #[cfg(not(target_arch = "wasm32"))]
+pub mod rpc_client;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod rpc_mode;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod rpc_types;
