@@ -14,7 +14,7 @@ use maestro_tui::Component;
 use std::{
     collections::HashSet,
     error::Error,
-    io,
+    io::{self, IsTerminal},
     rc::Rc,
     sync::{Arc, PoisonError, RwLock},
 };
@@ -298,22 +298,23 @@ impl InteractiveMode {
         ))
     }
 
-    /// Resolves `patterns` against the current catalog in order; the resolver's progress
-    /// and warning lines are not shown.
+    /// Resolves `patterns` against the current catalog in order, writing each pattern
+    /// warning to standard error, in yellow when standard error is a terminal.
     ///
     /// # Errors
     /// Returns the locale, availability or pattern failure.
     fn resolve_scope(&self, patterns: &[String]) -> Result<Vec<ScopedModel>, Box<dyn Error>> {
         let compare = model_id_comparator(&|key| std::env::var(key).ok())?;
         let session = self.runtime_host.session();
+        let mut stderr = io::stderr();
         Ok(resolve_model_scope(
             patterns,
             session.model_registry(),
             &compare,
             &mut ModelResolverOutput {
                 stdout: &mut io::sink(),
-                stderr: &mut io::sink(),
-                color: false,
+                color: stderr.is_terminal(),
+                stderr: &mut stderr,
             },
         )?)
     }

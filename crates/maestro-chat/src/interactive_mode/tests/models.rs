@@ -14,6 +14,7 @@ use maestro_app::{
     ScopedModel, SessionManager, Settings, SettingsListEntry, SettingsManager, SharedHandle,
     ThinkingLevel, WarningSettings,
 };
+use maestro_test_process::TestProcess;
 use maestro_tui::{Component, Input, Text, tui::InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
 use std::{
@@ -2044,4 +2045,34 @@ fn model_scope_persistence_flushes_and_reopens_in_order() {
             bulk_saves_reopen_and_cancel_saves_nothing(&world, directory);
         },
     );
+}
+
+#[test]
+fn scope_resolution_warnings_reach_standard_error() {
+    let test = "scope_resolution_warnings_reach_standard_error";
+    // A further child opens the panel, so its standard error reaches this parent unmixed.
+    if maestro_test_process::selection().is_child() {
+        super::isolated_case(test, "warning", &[], |directory| {
+            let world = started(directory);
+            catalog(&world);
+            enabled_models_setting(&world, serde_json::json!(["missing/none", "a/alpha:bogus"]));
+            submit_held(&world, "/scoped-models");
+            assert!(scope_panel(&world).is_some());
+        });
+    }
+    isolated(test, |_| {
+        let output = TestProcess::current(test)
+            .unwrap()
+            .case("warning")
+            .output()
+            .unwrap();
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        assert!(output.status.success(), "{stderr}");
+        assert_eq!(
+            stderr,
+            "Warning: No models match pattern \"missing/none\"\n\
+             Warning: Invalid thinking level \"bogus\" in pattern \"a/alpha:bogus\". \
+             Using default instead.\n"
+        );
+    });
 }
