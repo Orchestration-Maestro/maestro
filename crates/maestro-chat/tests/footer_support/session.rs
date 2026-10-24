@@ -16,7 +16,20 @@ pub fn session(
     oauth_provider: Option<&str>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> CreateAgentSessionRuntimeResult {
-    let services = services(cwd, oauth_provider, loader);
+    session_with_auth(
+        cwd,
+        Arc::new(AuthStorage::in_memory(credentials(oauth_provider))),
+        loader,
+    )
+}
+
+/// The same memory session over the caller's `storage`.
+pub fn session_with_auth(
+    cwd: &str,
+    storage: Arc<AuthStorage>,
+    loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
+) -> CreateAgentSessionRuntimeResult {
+    let services = services(cwd, storage, loader);
     let session = AgentSession::new(AgentSessionConfig {
         agent: Rc::default(),
         session_manager: Rc::new(RefCell::new(
@@ -53,13 +66,12 @@ pub fn session(
 /// The credentials, catalog, settings and loader the session is built over.
 fn services(
     cwd: &str,
-    oauth_provider: Option<&str>,
+    auth: Arc<AuthStorage>,
     wrap: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> Rc<AgentSessionServices<Local>> {
     let settings = Rc::new(RefCell::new(
         SettingsManager::in_memory(Settings::default()),
     ));
-    let auth = Arc::new(AuthStorage::in_memory(credentials(oauth_provider)));
     let commands: ConfigValues = Arc::new(ProcessConfigValueOperations::new(|| {
         Err(std::io::Error::other("not invoked"))
     }));

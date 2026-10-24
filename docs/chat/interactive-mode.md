@@ -168,7 +168,7 @@ the footer and editor border, then checks the
 other candidate it shows `Only one model in scope` or `Only one model available`; a
 session error is shown as an error notice and changes nothing.
 
-`/model`, `/scoped-models` and the model-select key are described in
+`/model`, `/scoped-models`, `/logout` and the model-select key are described in
 [interactive commands](commands.md).
 
 ## Editor border
