@@ -9,7 +9,7 @@ use maestro_tui::{Markdown, MarkdownOptions, Spacer, Text};
 use std::{error::Error, rc::Rc};
 
 impl InteractiveMode {
-    /// Appends every changelog section, newest first, as one bordered transcript card, or
+    /// Appends every changelog section, in reverse file order, as one bordered transcript card, or
     /// the row that says no section was found, then requests a frame.
     ///
     /// # Errors
@@ -45,7 +45,7 @@ impl InteractiveMode {
     }
 }
 
-/// The section contents of `entries` newest first, separated by a blank line, or the row
+/// The section contents of `entries` in reverse file order, separated by a blank line, or the row
 /// that says no section was found. The contents are borrowed, never copied.
 fn join_contents(entries: &[ChangelogEntry]) -> String {
     if entries.is_empty() {

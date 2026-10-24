@@ -5,8 +5,8 @@ Text it recognizes as a command runs in the mode and answers on the transcript;
 every other submission reaches the [typed input](interactive-mode.md#typed-input)
 and the editor history as before.
 
-Today the mode handles shell input and two slash commands, `/export` and `/changelog`. Import, the
-offline viewer and packaged asset injection are not delivered yet (see
+Today the mode handles shell input and two slash commands, `/export` and `/changelog`.
+Import, the offline viewer and packaged asset injection are not delivered yet (see
 [what is missing](#what-is-missing)).
 
 ## Shell input
@@ -36,7 +36,6 @@ with the next ordinary submission; otherwise the row appears in the transcript a
 Extensions can answer a shell command through the `user_bash` event: returning a full
 result shows it without running a process and records it once, and returning operations
 runs the command through them instead of the local shell.
-
 
 ## `/export`
 
@@ -69,7 +68,7 @@ is the route the mode's shortcuts already use.
 
 `/changelog` prints the whole changelog, not only the sections added since the
 last run. It reads the changelog beside the running package and appends a
-bordered "What's New" card holding every section, newest first.
+bordered "What's New" card holding every section, in reverse file order.
 
 ```text
 /changelog

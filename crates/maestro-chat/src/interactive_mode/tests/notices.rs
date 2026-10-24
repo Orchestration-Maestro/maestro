@@ -20,6 +20,15 @@ enum Input {
         palette: String,
         /// The render width.
         width: usize,
+        /// A directory at the file path makes the read fail on every Unix host.
+        #[serde(default)]
+        unreadable: bool,
+        /// The configured code-block indentation.
+        indent: Option<String>,
+        /// The previously seen version.
+        last: Option<String>,
+        /// Whether the startup notice would be collapsed.
+        collapse: Option<bool>,
     },
     /// One submitted editor text.
     Dispatch {
@@ -39,34 +48,51 @@ enum Expected {
         /// Frames requested.
         renders: usize,
     },
-    /// The command invocations and the reference editor's text after the submission.
+    /// The command invocations after the submission.
     Dispatch {
         /// The command invocations the submission made.
         calls: usize,
-        /// The text the reference editor was left with.
-        editor: String,
     },
 }
 
 #[test]
 fn changelog_command_uses_all_entries_and_empty_fallback() {
     const TEST: &str = "changelog_command_uses_all_entries_and_empty_fallback";
-    isolated_package(TEST, |directory, package| {
+    let stderr = isolated_package(TEST, |directory, package| {
         for (input, expected) in cases::<Input, Expected>(FIXTURES, TEST) {
             let (
                 Input::Command {
                     contents,
                     palette,
                     width,
+                    unreadable,
+                    indent,
+                    last,
+                    collapse,
                 },
                 Expected::Command { lines, renders },
             ) = (input, expected)
             else {
                 panic!("a command case and its observation disagree");
             };
-            std::fs::write(package.join("CHANGELOG.md"), contents).unwrap();
+            let path = package.join("CHANGELOG.md");
+            if unreadable {
+                std::fs::remove_file(&path).unwrap();
+                std::fs::create_dir(&path).unwrap();
+            } else {
+                std::fs::write(&path, contents).unwrap();
+            }
             let world = Setup {
-                configure: Box::new(move |settings| settings.set_theme(palette)),
+                configure: Box::new(move |settings| {
+                    settings.set_theme(palette);
+                    settings.set_global_key(
+                        "markdown",
+                        "codeBlockIndent",
+                        indent.unwrap_or_else(|| "  ".to_owned()),
+                    );
+                    settings.set_last_changelog_version(last.unwrap_or_default());
+                    settings.set_collapse_changelog(collapse.unwrap_or(false));
+                }),
                 ..Setup::default()
             }
             .build(directory);
@@ -81,28 +107,41 @@ fn changelog_command_uses_all_entries_and_empty_fallback() {
             );
         }
     });
+    if !maestro_test_process::selection().is_child() {
+        let error = std::fs::read(".").unwrap_err();
+        assert_eq!(
+            String::from_utf8(stderr).unwrap(),
+            format!("Warning: Could not parse changelog: {error}\n")
+        );
+    }
 }
 
 #[test]
 fn changelog_command_dispatch_is_exact_and_never_prompts() {
     const TEST: &str = "changelog_command_dispatch_is_exact_and_never_prompts";
     isolated_package(TEST, |directory, _package| {
+        let (_, Expected::Command { lines: fallback, .. }) =
+            cases::<Input, Expected>(FIXTURES, "changelog_command_uses_all_entries_and_empty_fallback")
+                .into_iter()
+                .find(|(input, _)| matches!(input, Input::Command { contents, palette, unreadable: false, .. } if contents.is_empty() && palette == "dark"))
+                .unwrap()
+        else {
+            panic!("the empty changelog has recorded rows");
+        };
         for (input, expected) in cases::<Input, Expected>(FIXTURES, TEST) {
-            let (Input::Dispatch { text }, Expected::Dispatch { calls, editor }) =
-                (input, expected)
-            else {
+            let (Input::Dispatch { text }, Expected::Dispatch { calls }) = (input, expected) else {
                 panic!("a dispatch case and its observation disagree");
             };
             // The package holds no changelog, so the command always appends its fallback card.
             let world = started(directory);
             let recorded = submitted(&world, &text);
             let rows = world.mode.chat_container.children().borrow().len();
-            // The reference clears its editor only in the command branch; this editor clears
-            // its own buffer before every callback, so only the branch distinction carries.
-            assert_eq!(editor.is_empty(), calls > 0, "{text:?}");
             assert!(world.mode.editor.get_text().is_empty(), "{text:?}");
             if calls > 0 {
                 assert_eq!(rows, recorded.transcript + 6, "{text:?}");
+                let theme = world.themes.theme().get().unwrap();
+                let rendered = world.mode.chat_container.render(80);
+                assert!(rendered.ends_with(&painted(&theme, &fallback)), "{text:?}");
                 assert_eq!(recorded.delivered, None, "{text:?}");
                 assert_eq!(recorded.history, Vec::<String>::new(), "{text:?}");
             } else {
