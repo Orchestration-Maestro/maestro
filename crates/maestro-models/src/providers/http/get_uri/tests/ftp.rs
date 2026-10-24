@@ -1,10 +1,12 @@
 //! FTP source login, modification checks, listing fallback, transfer and teardown.
 
+use super::super::ftp::parse_control_response::Frames;
 use super::super::ftp::{INACTIVITY, instant_millis, payload, port};
 use super::super::{self as get_uri, notfound::NotFound, notmodified::NotModified};
 use crate::providers::http::{Route, configured_fetch};
 use crate::tests::ftp_server::{
-    self, Features, Held, Listing, Modification, Passive, Peer, Scenario, Silence, Transfer,
+    self, Dribble, Features, Held, Listing, Modification, Passive, Peer, Scenario, Silence,
+    Transfer,
 };
 use std::future::Future;
 use std::net::Ipv4Addr;
@@ -20,6 +22,35 @@ fn step<T>(loading: &mut Pin<&mut impl Future<Output = T>>) -> Poll<T> {
     loading
         .as_mut()
         .poll(&mut Context::from_waker(Waker::noop()))
+}
+
+/// Drive a controlled load until the peer reports `marker`.
+async fn stage<T>(loading: &mut Pin<&mut impl Future<Output = T>>, peer: &Peer, marker: &str) {
+    let marker = format!("{}{marker}", ftp_server::STAGE);
+    while !peer.commands().iter().any(|line| line == &marker) {
+        assert!(step(loading).is_pending(), "the load ended before {marker}");
+        tokio::task::yield_now().await;
+    }
+}
+
+/// Drive a controlled load until the peer has read a command with this prefix.
+async fn until<T>(loading: &mut Pin<&mut impl Future<Output = T>>, peer: &Peer, prefix: &str) {
+    while !peer.commands().iter().any(|line| line.starts_with(prefix)) {
+        assert!(step(loading).is_pending(), "the load ended before {prefix}");
+        tokio::task::yield_now().await;
+    }
+}
+
+/// A release channel and the receiver a scripted peer waits on.
+fn gated() -> (std::sync::mpsc::Sender<()>, std::sync::mpsc::Receiver<()>) {
+    std::sync::mpsc::channel()
+}
+
+/// A reply sent in whole pieces, which needs no release from the test.
+fn whole(parts: &'static [&'static [u8]]) -> Dribble {
+    let (sender, releases) = gated();
+    drop(sender);
+    Dribble { parts, releases }
 }
 
 /// Poll a load until it completes, letting the peer answer between steps.
@@ -325,7 +356,7 @@ fn ftp_text_listing_supplies_no_modification_instant() {
                 .unwrap_err();
             assert!(error.is::<NotFound>(), "{error}");
             let commands = peer.commands();
-            assert!(commands.contains(&"LIST /".to_owned()), "{commands:?}");
+            assert!(commands.contains(&"LIST -a /".to_owned()), "{commands:?}");
             assert!(
                 !commands.iter().any(|line| line.starts_with("MLSD")),
                 "{commands:?}"
@@ -542,6 +573,7 @@ fn ftp_transfer_refusal_does_not_retry_the_data_connection() {
             passive: Passive {
                 extended: Some('|'),
                 standard: None,
+                extended_port: None,
             },
             ..Scenario::default()
         }])
@@ -592,6 +624,7 @@ fn ftp_ibm_i_extended_passive_reply_transfers() {
             passive: Passive {
                 extended: Some('!'),
                 standard: None,
+                extended_port: None,
             },
             ..Scenario::default()
         }])
@@ -766,6 +799,7 @@ fn ftp_epsv_only_server_transfers() {
             passive: Passive {
                 extended: Some('|'),
                 standard: None,
+                extended_port: None,
             },
             ..Scenario::default()
         }])
@@ -791,6 +825,7 @@ fn ftp_advertised_data_host_is_kept() {
             passive: Passive {
                 extended: None,
                 standard: Some(Ipv4Addr::new(127, 0, 0, 2)),
+                extended_port: None,
             },
             ..Scenario::default()
         }])
@@ -1007,4 +1042,586 @@ fn ftp_instants_parse_whole_and_fractional_seconds() {
         assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
         peer.finish().unwrap();
     });
+}
+
+#[test]
+fn ftp_control_activity_keeps_greeting_alive() {
+    crate::tests::runtime::run_paused(async {
+        let (releasing, held) = gated();
+        let peer = ftp_server::serve(vec![Scenario {
+            replies: Some((
+                &[""],
+                Dribble {
+                    parts: &[b"2", b"20 scripted", b" ftp ready\r\n"],
+                    releases: held,
+                },
+            )),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let releases = releasing;
+        let url = source(&peer, "", "/script.pac");
+        let mut loading = std::pin::pin!(load(&url, None));
+        stage(&mut loading, &peer, "piece-0").await;
+        tokio::time::advance(LOGIN_WAIT).await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "a greeting piece keeps the window open"
+        );
+        releases.send(()).unwrap();
+        stage(&mut loading, &peer, "piece-1").await;
+        tokio::time::advance(LOGIN_WAIT).await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "the second piece resets the window"
+        );
+        releases.send(()).unwrap();
+        let loaded = settle(&mut loading)
+            .await
+            .expect("the dribbled greeting is admitted");
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        peer.finish().unwrap();
+    });
+    crate::tests::runtime::run(async {
+        // A greeting that is not a positive completion is its own refusal.
+        for greeting in [
+            "120 service ready in five minutes",
+            "331 need an account",
+            "550 no service",
+        ] {
+            let peer = ftp_server::serve(vec![Scenario {
+                greeting,
+                ..Scenario::default()
+            }])
+            .unwrap();
+            let error = load(&source(&peer, "", "/script.pac"), None)
+                .await
+                .unwrap_err();
+            assert_eq!(error.to_string(), greeting);
+            assert!(peer.commands().is_empty(), "{greeting}");
+            peer.finish().unwrap();
+        }
+    });
+}
+
+#[test]
+fn ftp_control_activity_keeps_feature_reply_alive() {
+    crate::tests::runtime::run_paused(async {
+        let (releasing, held) = gated();
+        let peer = ftp_server::serve(vec![Scenario {
+            replies: Some((
+                &["FEAT"],
+                Dribble {
+                    parts: &[
+                        b"211-Features:\r\n ML",
+                        b"ST\r\n 220 inner\r\n MD",
+                        b"TM\r\n211 End\r\n",
+                    ],
+                    releases: held,
+                },
+            )),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let releases = releasing;
+        let url = source(&peer, "", "/script.pac");
+        let mut loading = std::pin::pin!(load(&url, None));
+        until(&mut loading, &peer, "FEAT").await;
+        stage(&mut loading, &peer, "piece-0").await;
+        tokio::time::advance(LOGIN_WAIT).await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "a multiline feature reply keeps its window open"
+        );
+        releases.send(()).unwrap();
+        stage(&mut loading, &peer, "piece-1").await;
+        tokio::time::advance(LOGIN_WAIT).await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "an inner line with another code does not end the group"
+        );
+        releases.send(()).unwrap();
+        let loaded = settle(&mut loading)
+            .await
+            .expect("the dribbled feature reply is read");
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        let commands = peer.commands();
+        assert!(
+            commands
+                .iter()
+                .any(|line| line.starts_with("OPTS MLST type;size;modify;")),
+            "{commands:?}"
+        );
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_control_activity_keeps_completion_alive() {
+    crate::tests::runtime::run_paused(async {
+        let (releasing, held) = gated();
+        let peer = ftp_server::serve(vec![Scenario {
+            completion: Some(Dribble {
+                parts: &[b"22", b"6 transfer complete\r\n"],
+                releases: held,
+            }),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let releases = releasing;
+        let url = source(&peer, "", "/script.pac");
+        let mut loading = std::pin::pin!(load(&url, None));
+        stage(&mut loading, &peer, "piece-0").await;
+        tokio::time::advance(LOGIN_WAIT).await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "completion bytes after the data end still reset the control window"
+        );
+        releases.send(()).unwrap();
+        let loaded = settle(&mut loading)
+            .await
+            .expect("the dribbled completion settles the transfer");
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_split_control_prefix_keeps_the_complete_reply() {
+    let mut frames = Frames::default();
+    let mut replies = Vec::new();
+    for piece in ["2", "2", "0 Ready\r\n", "2", "20 S\u{e9}", "cond\r\n"] {
+        replies.extend(frames.push(piece).unwrap());
+    }
+    assert_eq!(replies.len(), 2);
+    assert_eq!(replies[0].message, "220 Ready");
+    assert_eq!(replies[1].message, "220 S\u{e9}cond");
+
+    // Incomplete input at the end of the connection is a failure, not an empty reply.
+    crate::tests::runtime::run(async {
+        let peer = ftp_server::serve(vec![Scenario {
+            greeting: "220 incomplete",
+            hang_up: true,
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let error = load(&source(&peer, "", "/script.pac"), None)
+            .await
+            .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "Server sent FIN packet unexpectedly, closing connection."
+        );
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_data_activity_outlives_a_reply_window() {
+    crate::tests::runtime::run_paused(async {
+        let (releasing, held) = gated();
+        let peer = ftp_server::serve(vec![Scenario {
+            transfer: Transfer {
+                dribble: Some(Dribble {
+                    parts: &[b"abc", b"def", b"ghi"],
+                    releases: held,
+                }),
+                ..Transfer::body(Vec::new())
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let releases = releasing;
+        let url = source(&peer, "", "/script.pac");
+        let mut loading = std::pin::pin!(load(&url, None));
+        until(&mut loading, &peer, "RETR").await;
+        for (piece, release) in [(0, true), (1, true)] {
+            stage(&mut loading, &peer, &format!("piece-{piece}")).await;
+            tokio::time::advance(LOGIN_WAIT).await;
+            assert!(
+                step(&mut loading).is_pending(),
+                "data bytes keep the transfer alive past a control window"
+            );
+            if release {
+                releases.send(()).unwrap();
+            }
+        }
+        let loaded = settle(&mut loading)
+            .await
+            .expect("the dribbled transfer completes");
+        assert_eq!(loaded.bytes, b"abcdefghi");
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_optional_commands_keep_terminal_failures() {
+    crate::tests::runtime::run_paused(async {
+        for (command, silenced) in [
+            ("OPTS", &["OPTS"] as &'static [&'static str]),
+            ("FEAT", &["FEAT"]),
+            ("STRU", &["STRU"]),
+        ] {
+            let peer = silent(Silence {
+                commands: silenced,
+                ..Silence::EVERY
+            });
+            let url = source(&peer, "", "/script.pac");
+            let mut loading = std::pin::pin!(load(&url, None));
+            until(&mut loading, &peer, command).await;
+            tokio::time::advance(INACTIVITY + Duration::from_secs(1)).await;
+            let error = settle(&mut loading)
+                .await
+                .expect_err("a silent optional command ends the session");
+            assert_eq!(error.to_string(), "Timeout (control socket)", "{command}");
+            assert!(
+                peer.commands()
+                    .last()
+                    .is_some_and(|last| last.starts_with(command)),
+                "{command}: {:?}",
+                peer.commands()
+            );
+            peer.finish().unwrap();
+        }
+    });
+}
+
+#[test]
+fn ftp_password_never_enters_diagnostics() {
+    // A sentinel assembled at run time, so it is not a credential-shaped literal.
+    let sentinel = concat!("hunter2", "-sentinel");
+    crate::tests::runtime::run(async {
+        let peer = ftp_server::serve(vec![Scenario::default()]).unwrap();
+        let loaded = load(
+            &source(&peer, &format!("user:{sentinel}@"), "/script.pac"),
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        assert!(
+            peer.commands().contains(&format!("PASS {sentinel}")),
+            "the decoded password reaches the private wire"
+        );
+        peer.finish().unwrap();
+    });
+    rejected_credentials_stay_out_of_diagnostics(sentinel);
+    refused_login_stays_out_of_diagnostics(sentinel);
+}
+
+/// A rejected command reports its control characters without the command.
+fn rejected_credentials_stay_out_of_diagnostics(sentinel: &str) {
+    crate::tests::runtime::run(async {
+        for injected in [
+            format!("{sentinel}\rextra"),
+            format!("{sentinel}\n"),
+            format!("{sentinel}\0"),
+        ] {
+            let encoded: String = percent_encoding::utf8_percent_encode(
+                &injected,
+                percent_encoding::NON_ALPHANUMERIC,
+            )
+            .to_string();
+            let peer = ftp_server::serve(vec![Scenario::default()]).unwrap();
+            let error = load(
+                &source(&peer, &format!("user:{encoded}@"), "/script.pac"),
+                None,
+            )
+            .await
+            .unwrap_err();
+            assert_eq!(
+                error.to_string(),
+                "Invalid command: Contains control characters."
+            );
+            for shown in [error.to_string(), format!("{error:?}")] {
+                assert!(!shown.contains(sentinel), "{shown}");
+                assert!(!shown.contains("PASS"), "{shown}");
+            }
+            assert!(
+                !peer.commands().iter().any(|line| line.starts_with("PASS")),
+                "the rejected command never reaches the wire"
+            );
+            peer.finish().unwrap();
+        }
+    });
+}
+
+/// A refused login keeps the server's answer and no credential.
+fn refused_login_stays_out_of_diagnostics(sentinel: &str) {
+    crate::tests::runtime::run(async {
+        let peer = ftp_server::serve(vec![Scenario {
+            login: false,
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let error = load(
+            &source(&peer, &format!("user:{sentinel}@"), "/script.pac"),
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(error.to_string().contains("530 login incorrect"), "{error}");
+        for shown in [error.to_string(), format!("{error:?}")] {
+            assert!(!shown.contains(sentinel), "{shown}");
+        }
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_control_and_data_finish_in_either_order() {
+    crate::tests::runtime::run(async {
+        let peer = ftp_server::serve(vec![Scenario::default()]).unwrap();
+        let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        peer.finish().unwrap();
+    });
+    crate::tests::runtime::run_paused(async {
+        let (releasing, held) = gated();
+        let peer = ftp_server::serve(vec![Scenario {
+            transfer: Transfer {
+                completion_first: true,
+                close_after: Some(held),
+                ..Transfer::body(b"early completion".to_vec())
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let releases = releasing;
+        let url = source(&peer, "", "/script.pac");
+        let mut loading = std::pin::pin!(load(&url, None));
+        stage(&mut loading, &peer, "completion-sent").await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "an early completion waits for the end of the data"
+        );
+        releases.send(()).unwrap();
+        let loaded = settle(&mut loading)
+            .await
+            .expect("both endings settle the transfer");
+        assert_eq!(loaded.bytes, b"early completion");
+        peer.finish().unwrap();
+    });
+    crate::tests::runtime::run(async {
+        // A reply that asks for an answer the client cannot give fails instead of hanging.
+        let peer = ftp_server::serve(vec![Scenario {
+            transfer: Transfer {
+                completion: Some("350 restart at 3"),
+                ..Transfer::body(b"rest".to_vec())
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let error = load(&source(&peer, "", "/script.pac"), None)
+            .await
+            .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "Unexpected FTP response is requesting an answer: 350 restart at 3"
+        );
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_control_failure_interrupts_data_read() {
+    crate::tests::runtime::run(async {
+        let peer = ftp_server::serve(vec![Scenario {
+            transfer: Transfer {
+                body: b"half a script".to_vec(),
+                keep_open: true,
+                completion: Some("550 no such file"),
+                ..Transfer::body(Vec::new())
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let error = load(&source(&peer, "", "/script.pac"), None)
+            .await
+            .unwrap_err();
+        assert!(error.is::<NotFound>(), "{error}");
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_passive_connect_failure_tries_the_remaining_strategy() {
+    crate::tests::runtime::run(async {
+        // The extended passive reply announces a port nothing listens on, so the session falls
+        // back to the classic mode and submits the transfer once.
+        let peer = ftp_server::serve(vec![Scenario {
+            passive: Passive {
+                extended: Some('|'),
+                standard: Some(Ipv4Addr::LOCALHOST),
+                extended_port: Some(1),
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        let commands = peer.commands();
+        assert!(commands.contains(&"EPSV".to_owned()), "{commands:?}");
+        assert!(
+            commands.iter().any(|line| line.starts_with("PASV")),
+            "{commands:?}"
+        );
+        assert_eq!(transfers(&commands), 1, "{commands:?}");
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_list_candidates_retain_the_first_successful_choice() {
+    crate::tests::runtime::run(async {
+        // With a machine listing advertised, a refused MLSD lets the first LIST candidate answer,
+        // and the machine entry it carries still supplies the instant.
+        let peer = ftp_server::serve(vec![Scenario {
+            replies: Some((&["MLSD"], whole(&[b"550 no machine listing\r\n"]))),
+            modification: UNSUPPORTED,
+            listing: listing(ftp_server::machine("script.pac", Some("20240101120000"))),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
+        assert!(matches!(
+            loaded.cache,
+            get_uri::Cache::Ftp(Some(1_704_110_400_000))
+        ));
+        let commands = peer.commands();
+        let order: Vec<&str> = candidates(&commands);
+        assert_eq!(order, ["MLSD /", "LIST -a /"], "{commands:?}");
+        peer.finish().unwrap();
+
+        // Without a machine listing, only the LIST candidates are tried, in order.
+        let peer = ftp_server::serve(vec![Scenario {
+            features: TEXT_FEATURES,
+            modification: UNSUPPORTED,
+            listing: listing(ftp_server::machine("script.pac", Some("20240101120000"))),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
+        assert!(matches!(
+            loaded.cache,
+            get_uri::Cache::Ftp(Some(1_704_110_400_000))
+        ));
+        let commands = peer.commands();
+        assert_eq!(candidates(&commands), ["LIST -a /"], "{commands:?}");
+        peer.finish().unwrap();
+
+        // Every candidate refusing keeps the server's last answer.
+        let peer = ftp_server::serve(vec![Scenario {
+            modification: UNSUPPORTED,
+            listing: Listing {
+                lines: Vec::new(),
+                refusal: Some("550 listing refused"),
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let error = load(&source(&peer, "", "/script.pac"), None)
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("550 listing refused"), "{error}");
+        let commands = peer.commands();
+        assert_eq!(
+            candidates(&commands),
+            ["MLSD /", "LIST -a /", "LIST /"],
+            "{commands:?}"
+        );
+        peer.finish().unwrap();
+    });
+}
+
+/// The listing commands the peer read, in order.
+fn candidates(commands: &[String]) -> Vec<&str> {
+    commands
+        .iter()
+        .map(String::as_str)
+        .filter(|line| ["MLSD", "LIST"].iter().any(|verb| line.starts_with(verb)))
+        .collect()
+}
+
+#[test]
+fn ftp_control_response_limit_is_retained() {
+    let mut frames = Frames::default();
+    let boundary = format!("220 {}", "x".repeat(65_532));
+    assert_eq!(boundary.encode_utf16().count(), 65_536);
+    assert!(frames.push(&boundary).is_ok(), "the boundary is admitted");
+    assert!(frames.push("x").is_err(), "one unit more is refused");
+
+    let mut multibyte = Frames::default();
+    let boundary = format!("220 {}", "\u{1d11e}".repeat(32_766));
+    assert_eq!(boundary.encode_utf16().count(), 65_536);
+    assert!(multibyte.push(&boundary).is_ok(), "units, not bytes, count");
+    assert!(
+        multibyte.push("\u{1d11e}").is_err(),
+        "one scalar more is refused"
+    );
+
+    let mut consumed = Frames::default();
+    for line in ["220 ", "220 "] {
+        let reply = format!("{line}{}\r\n", "y".repeat(40_000));
+        assert_eq!(consumed.push(&reply).unwrap().len(), 1);
+    }
+}
+
+#[test]
+fn ftp_control_parser_work_stays_linear() {
+    // One multiline reply, fed one line at a time, is what the reference rescans.
+    let reply = |lines: usize| {
+        let mut text = String::from("211-Features:\r\n");
+        for _ in 0..lines {
+            text.push_str(" MLST type;size;modify;\r\n");
+        }
+        text.push_str("211 End\r\n");
+        text
+    };
+    let mut counted = Vec::new();
+    for lines in [64, 128, 256] {
+        let text = reply(lines);
+        let mut frames = Frames::default();
+        let mut replies = 0;
+        for line in text.split_inclusive('\n') {
+            replies += frames.push(line).unwrap().len();
+        }
+        assert_eq!(replies, 1, "{lines} lines form one reply");
+        let units = text.chars().count();
+        let visits = frames.visits();
+        assert!(
+            visits <= units,
+            "{lines} lines: {visits} visits for {units} units"
+        );
+        counted.push((units, rescan_work(&text)));
+    }
+    // The reference rescans its retained partial text on every read, so its work grows with the
+    // square of the reply's length while the incremental framing visits each unit once.
+    let (units, rescan) = counted[2];
+    assert!(
+        rescan > 4 * units,
+        "the rescan negative control must exceed the linear bound: {rescan} for {units}"
+    );
+    let (small, rescan_small) = counted[0];
+    assert!(
+        rescan / rescan_small > 8,
+        "the rescan control grows faster than its input: {rescan_small} then {rescan}"
+    );
+    let _ = small;
+}
+
+/// The reference's own framing cost: it splits and scans the whole retained text on every read.
+fn rescan_work(text: &str) -> usize {
+    let mut partial = String::new();
+    let mut work = 0;
+    for line in text.split_inclusive('\n') {
+        partial.push_str(line);
+        let complete: String = partial.clone();
+        work += complete.chars().count();
+        // A reply group completes only at its terminating line.
+        if complete.ends_with("211 End\r\n") {
+            partial.clear();
+        }
+    }
+    work
 }

@@ -46,14 +46,21 @@ pub struct Listing {
 }
 
 /// What the server sends for the requested file.
-#[derive(Clone)]
 pub struct Transfer {
     /// Bytes sent on the data connection.
     pub body: Vec<u8>,
     /// The reply that refuses the command, instead of a transfer.
     pub refusal: Option<&'static str>,
-    /// The reply sent after the bytes, or none when the data connection stays open.
+    /// The reply sent after the bytes, or none when no completion follows.
     pub completion: Option<&'static str>,
+    /// Send the completion before closing the data connection.
+    pub completion_first: bool,
+    /// Keep the data connection open after the bytes, without waiting for the client.
+    pub keep_open: bool,
+    /// Close the write side only after the test releases it.
+    pub close_after: Option<mpsc::Receiver<()>>,
+    /// Send the body in these pieces, pausing for a release between them.
+    pub dribble: Option<Dribble>,
 }
 
 impl Transfer {
@@ -66,7 +73,34 @@ impl Transfer {
             body,
             refusal: None,
             completion: Some(Self::COMPLETE),
+            completion_first: false,
+            keep_open: false,
+            close_after: None,
+            dribble: None,
         }
+    }
+}
+
+/// Bytes the peer sends in pieces, waiting for the test after each piece.
+pub struct Dribble {
+    /// The pieces, sent in order as raw bytes.
+    pub parts: &'static [&'static [u8]],
+    /// One release after each piece but the last.
+    pub releases: mpsc::Receiver<()>,
+}
+
+impl Dribble {
+    /// Send every piece, reporting each one to the test.
+    fn send(&self, control: &mut TcpStream, observed: &Observed) -> std::io::Result<()> {
+        for (index, part) in self.parts.iter().enumerate() {
+            control.write_all(part)?;
+            control.flush()?;
+            observed.stage(&format!("{STAGE}piece-{index}"));
+            if index + 1 < self.parts.len() && self.releases.recv().is_err() {
+                return Ok(());
+            }
+        }
+        Ok(())
     }
 }
 
@@ -77,6 +111,8 @@ pub struct Passive {
     pub extended: Option<char>,
     /// The data host `PASV` advertises, when `PASV` is answered.
     pub standard: Option<Ipv4Addr>,
+    /// A port an `EPSV` reply announces instead of the one it listens on.
+    pub extended_port: Option<u16>,
 }
 
 impl Passive {
@@ -84,6 +120,7 @@ impl Passive {
     pub const BOTH: Self = Self {
         extended: Some('|'),
         standard: Some(Ipv4Addr::LOCALHOST),
+        extended_port: None,
     };
 
     /// The data host this script binds for the command, when it answers it.
@@ -103,6 +140,8 @@ pub struct Silence {
     pub modification: bool,
     /// Whether `QUIT` is answered.
     pub quit: bool,
+    /// Other commands whose replies the peer withholds.
+    pub commands: &'static [&'static str],
 }
 
 impl Silence {
@@ -110,16 +149,24 @@ impl Silence {
     pub const EVERY: Self = Self {
         modification: true,
         quit: true,
+        commands: &[],
     };
 
     /// Whether the server answers this command.
     fn answers(self, command: &str) -> bool {
-        (self.modification || !command.starts_with("MDTM")) && (self.quit || command != "QUIT")
+        (self.modification || !command.starts_with("MDTM"))
+            && (self.quit || command != "QUIT")
+            && !self
+                .commands
+                .iter()
+                .any(|silent| command.starts_with(silent))
     }
 }
 
 /// One scripted server behaviour.
 pub struct Scenario {
+    /// The greeting sent before any command.
+    pub greeting: &'static str,
     /// Whether `PASS` is accepted.
     pub login: bool,
     /// `FEAT` reply.
@@ -136,6 +183,12 @@ pub struct Scenario {
     pub silence: Silence,
     /// Commands whose reply waits for the test to release it.
     pub held: Option<Held>,
+    /// Replies the peer sends in pieces, with the commands they answer.
+    pub replies: Option<(&'static [&'static str], Dribble)>,
+    /// The completion reply of a transfer, sent in pieces.
+    pub completion: Option<Dribble>,
+    /// Close the control connection right after the greeting.
+    pub hang_up: bool,
 }
 
 /// Commands whose reply the peer holds until the test releases it.
@@ -158,6 +211,7 @@ impl Held {
 impl Default for Scenario {
     fn default() -> Self {
         Self {
+            greeting: "220 scripted ftp ready",
             login: true,
             features: Features::MACHINE,
             modification: Modification::Instant("20240101120000"),
@@ -169,6 +223,9 @@ impl Default for Scenario {
             passive: Passive::BOTH,
             silence: Silence::EVERY,
             held: None,
+            replies: None,
+            completion: None,
+            hang_up: false,
         }
     }
 }
@@ -181,6 +238,9 @@ pub fn machine(name: &str, modified: Option<&str>) -> Vec<String> {
     );
     vec![facts]
 }
+
+/// The prefix that marks a progress marker in the command log.
+pub const STAGE: &str = "\u{1}";
 
 /// What the server observed about its connections when it stopped.
 pub struct Closed {
@@ -239,7 +299,11 @@ impl Drop for Peer {
         if let Some(worker) = self.worker.take() {
             self.stop.store(true, Ordering::SeqCst);
             TcpStream::connect(self.address).map(drop).ok();
-            worker.join().ok();
+            // An unwinding test already failed, and this peer may be waiting on a connection the
+            // failed test no longer closes.
+            if !std::thread::panicking() {
+                worker.join().ok();
+            }
         }
     }
 }
@@ -259,6 +323,11 @@ impl Observed {
             .unwrap_or_else(PoisonError::into_inner)
             .push(command.to_owned());
     }
+
+    /// Record one progress marker, which a test reads instead of a command.
+    fn stage(&self, marker: &str) {
+        self.command(marker);
+    }
 }
 
 /// Answer one admitted control connection from `scenario`.
@@ -268,7 +337,13 @@ fn session(
     observed: &Observed,
 ) -> std::io::Result<()> {
     let mut reader = BufReader::new(control.try_clone()?);
-    reply(&mut control, "220 scripted ftp ready")?;
+    match scripted(scenario, "") {
+        Some(pieces) => pieces.send(&mut control, observed)?,
+        None => reply(&mut control, scenario.greeting)?,
+    }
+    if scenario.hang_up {
+        return Ok(());
+    }
     let mut data: Option<TcpListener> = None;
     loop {
         let Some(command) = read_command(&mut reader)? else {
@@ -276,14 +351,19 @@ fn session(
             return Ok(());
         };
         observed.command(&command);
+        let verb = command.split(' ').next().unwrap_or_default();
         if let Some(held) = &scenario.held {
-            held.gate(command.split(' ').next().unwrap_or_default());
+            held.gate(verb);
         }
         if !scenario.silence.answers(&command) {
             // A command the script never answers is a stalled control connection.
             continue;
         }
-        match command.split(' ').next().unwrap_or_default() {
+        if let Some(pieces) = scripted(scenario, verb) {
+            pieces.send(&mut control, observed)?;
+            continue;
+        }
+        match verb {
             "QUIT" => {
                 reply(&mut control, "221 bye")?;
                 // The client closes the control connection next, which the next read observes.
@@ -295,7 +375,7 @@ fn session(
             "FEAT" => features(&mut control, &scenario.features)?,
             "MDTM" => modification(&mut control, &scenario.modification)?,
             "MLSD" | "LIST" => listed(&mut control, &scenario.listing, &mut data, observed)?,
-            "RETR" => transferred(&mut control, &scenario.transfer, &mut data, observed)?,
+            "RETR" => transferred(&mut control, scenario, &mut data, observed)?,
             _ => reply(&mut control, "200 ok")?,
         }
     }
@@ -317,24 +397,27 @@ fn passive(
     };
     let listener = TcpListener::bind((host, 0))?;
     let port = listener.local_addr()?.port();
-    match command {
-        "PASV" => {
-            let [a, b, c, d] = host.octets();
+    if command == "PASV" {
+        let [a, b, c, d] = host.octets();
+        reply(
+            control,
+            &format!(
+                "227 Entering Passive Mode ({a},{b},{c},{d},{},{}).",
+                port / 256,
+                port % 256
+            ),
+        )?;
+    } else {
+        // A server on IBM i delimits with `!` and leaves out the usual sentence.
+        let announced = script.extended_port.unwrap_or(port);
+        if script.extended == Some('!') {
+            reply(control, &format!("229 (!!!{announced}!)"))?;
+        } else {
             reply(
                 control,
-                &format!(
-                    "227 Entering Passive Mode ({a},{b},{c},{d},{},{}).",
-                    port / 256,
-                    port % 256
-                ),
+                &format!("229 Entering Extended Passive Mode (|||{announced}|)"),
             )?;
         }
-        // A server on IBM i delimits with `!` and leaves out the usual sentence.
-        _ if script.extended == Some('!') => reply(control, &format!("229 (!!!{port}!)"))?,
-        _ => reply(
-            control,
-            &format!("229 Entering Extended Passive Mode (|||{port}|)"),
-        )?,
     }
     Ok(Some(listener))
 }
@@ -386,62 +469,80 @@ fn listed(
     }
     let lines = announced.lines.join("\r\n") + "\r\n";
     reply(control, "150 here comes the listing")?;
-    let stream = accepted(data)?;
-    send_body(stream, lines.as_bytes(), true, observed)?;
+    let mut stream = accepted(data)?;
+    stream.write_all(lines.as_bytes())?;
+    stream.shutdown(std::net::Shutdown::Write)?;
+    observed.data_closed.store(true, Ordering::SeqCst);
+    let mut exhausted = Vec::new();
+    stream.read_to_end(&mut exhausted)?;
     reply(control, "226 listing done")
+}
+
+/// The pieces a scripted reply of `command` is sent in, when the test dribbles it.
+fn scripted<'a>(scenario: &'a Scenario, command: &str) -> Option<&'a Dribble> {
+    scenario
+        .replies
+        .as_ref()
+        .filter(|(commands, _)| commands.contains(&command))
+        .map(|(_, pieces)| pieces)
 }
 
 /// Answer `RETR`.
 fn transferred(
     control: &mut TcpStream,
-    announced: &Transfer,
+    scenario: &Scenario,
     data: &mut Option<TcpListener>,
     observed: &Observed,
 ) -> std::io::Result<()> {
+    let announced = &scenario.transfer;
     if refused(control, announced.refusal, data)? {
         return Ok(());
     }
     reply(control, "150 opening data connection")?;
-    let stream = accepted(data)?;
-    // A transfer without a completion reply keeps the data connection open, so the client's read
-    // never sees its end.
-    send_body(
-        stream,
-        &announced.body,
-        announced.completion.is_some(),
-        observed,
-    )?;
-    match announced.completion {
-        Some(completion) => reply(control, completion),
-        None => Ok(()),
+    let mut stream = accepted(data)?;
+    match &announced.dribble {
+        Some(pieces) => pieces.send(&mut stream, observed)?,
+        None => stream.write_all(&announced.body)?,
     }
-}
-
-/// Send `body`, then wait for the client to close the data connection before completing.
-fn send_body(
-    mut stream: TcpStream,
-    body: &[u8],
-    complete: bool,
-    observed: &Observed,
-) -> std::io::Result<()> {
-    let outcome = transfer_body(&mut stream, body, complete);
+    if announced.completion_first {
+        match (&scenario.completion, announced.completion) {
+            (Some(pieces), _) => pieces.send(control, observed)?,
+            (None, Some(completion)) => reply(control, completion)?,
+            (None, None) => {}
+        }
+        observed.stage(&format!("{STAGE}completion-sent"));
+        if let Some(release) = &announced.close_after {
+            release.recv().ok();
+        }
+        stream.shutdown(std::net::Shutdown::Write)?;
+        observed.data_closed.store(true, Ordering::SeqCst);
+        let mut exhausted = Vec::new();
+        stream.read_to_end(&mut exhausted)?;
+        return Ok(());
+    }
+    if let Some(release) = &announced.close_after {
+        release.recv().ok();
+    }
+    if announced.keep_open {
+        // The client still holds the data connection open, so its read never sees an end.
+        return match announced.completion {
+            Some(completion) => reply(control, completion),
+            None => Ok(()),
+        };
+    }
+    // A client reading to the end of the file needs the write side closed, whether or not a
+    // completion follows.
+    stream.shutdown(std::net::Shutdown::Write)?;
     // A client that closed the connection first ends the dialogue just as surely as one that
     // read every byte, so the observation covers both shapes.
     observed.data_closed.store(true, Ordering::SeqCst);
-    outcome
-}
-
-/// Write the body, close the write side of a completed transfer, then wait for the client's close.
-fn transfer_body(stream: &mut TcpStream, body: &[u8], complete: bool) -> std::io::Result<()> {
-    stream.write_all(body)?;
-    // A client reading to the end of the file needs the write side closed; one held mid-transfer
-    // never sees its end.
-    if complete {
-        stream.shutdown(std::net::Shutdown::Write)?;
-    }
     let mut exhausted = Vec::new();
     stream.read_to_end(&mut exhausted)?;
-    Ok(())
+    match (&scenario.completion, announced.completion) {
+        (Some(pieces), _) => pieces.send(control, observed),
+        (None, Some(completion)) => reply(control, completion),
+        (None, None) => Ok(()),
+    }
 }
 
 /// A transfer command without a data connection is a scripted-peer mistake.

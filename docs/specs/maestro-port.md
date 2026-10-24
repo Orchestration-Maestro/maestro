@@ -373,6 +373,16 @@ from the optional foundation utility described below.
 
 The sealed local/thread-safe callable representation (future, shared and weak pointer types) belongs to `maestro-models`, the lowest existing callback owner. Models also owns the provider callable, payload/response hook and options family, and provider submission representation. One retained provider or scripted factory is callable in both families with a family-associated return. Agent-specific callback signatures, conversion from existing task admission and typed local entry belong to `maestro-agent`; both representations reuse its single driver and lifecycle. Local registered dispatch requires caller-supplied submission; replacement-stream dispatch requires none. Native registered objects remain thread-safe even when accepting local request hooks. No crate edge changes. See [agent execution affinity](../adr/agent-execution-affinity.md).
 
+`maestro-models` serves FTP proxy script sources with its own native client inside the
+existing source loader; no crate gains an FTP dependency and
+`workspace-crates.json` gains no edge. That client owns the plain-FTP subset the loader
+uses: connecting and greeting, logging in, binary and file-structure settings, extended
+and classic passive preparation, the modification time, one directory listing and one
+download. One byte-activity window governs both connections, one sender frames every
+command so a credential never reaches a diagnostic, and the loader keeps the
+modification/cache decision. FTPS, uploads, active FTP and public client options are not
+part of that caller.
+
 `maestro-cancellation` owns cooperative cancellation below layer 0, with no
 internal dependencies. Only models and the terminal toolkit may depend on it.
 
