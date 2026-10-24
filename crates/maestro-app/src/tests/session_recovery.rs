@@ -1816,9 +1816,9 @@ fn a_manual_compaction_left_unobserved_still_completes() {
         let provider = gated(supplied_summary(), Some(gate.clone()));
         let h = seeded(json!({}), vec![provider]).await;
         let ended = compaction_ended(&h);
-        start_and_abandon(h.session.compact(None));
-        gate.0.notified().await;
+        drop(h.session.compact(None));
         assert!(h.session.is_compacting(), "the compaction still runs");
+        gate.0.notified().await;
         gate.1.notify_one();
         ended.notified().await;
         assert_observation(&h, &expected);
@@ -1848,6 +1848,30 @@ fn an_automatic_compaction_left_unobserved_still_completes() {
 }
 
 #[test]
+fn navigation_handler_and_abort_precede_observation() {
+    on_paused_task_set(|_| async {
+        let reached = Rc::new(Notify::new());
+        let h = seeded(json!({}), vec![waiting_tree_extension(Rc::clone(&reached))]).await;
+        let manager = h.session.session_manager();
+        let old_leaf = manager.borrow().get_leaf_id().map(str::to_owned);
+        let target = manager.borrow().get_entries()[1]["id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let observer = h.session.navigate_tree(&target, navigate_options());
+        let mut entered = std::pin::pin!(reached.notified());
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        let entered_at_call = std::future::Future::poll(entered.as_mut(), &mut context).is_ready();
+        assert_eq!((entered_at_call, h.session.is_compacting()), (true, true));
+        h.session.abort_branch_summary();
+        let outcome = observer.await.unwrap();
+        assert!(outcome.cancelled);
+        assert_eq!(manager.borrow().get_leaf_id(), old_leaf.as_deref());
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
 fn a_tree_navigation_left_unobserved_still_moves() {
     on_paused_task_set(|_| async {
         let gate: Gate = (Rc::new(Notify::new()), Rc::new(Notify::new()));
@@ -1860,9 +1884,9 @@ fn a_tree_navigation_left_unobserved_still_moves() {
             .as_str()
             .unwrap()
             .to_owned();
-        start_and_abandon(h.session.navigate_tree(&target, navigate_options()));
-        gate.0.notified().await;
+        drop(h.session.navigate_tree(&target, navigate_options()));
         assert!(h.session.is_compacting(), "the navigation still runs");
+        gate.0.notified().await;
         gate.1.notify_one();
         announced.notified().await;
         assert_eq!(moves.get(), 1);

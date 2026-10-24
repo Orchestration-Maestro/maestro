@@ -627,6 +627,30 @@ fn persists_application_and_llm_messages_at_message_end() {
 }
 
 #[test]
+fn compact_aborts_and_disconnects_before_observation() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let (requested, release) = hold_first_answer(&h, "first", &[]);
+        let running = start_prompt(&h, "first");
+        requested.notified().await;
+        let signal = h.session.agent().signal().unwrap();
+        let log = Rc::new(RefCell::new(Vec::new()));
+        log_events(&h, "listener", &log);
+        let observer = h.session.compact(None);
+        let aborted_at_call = signal.is_aborted();
+        release.notify_one();
+        drop(running.await);
+        let forwarded_ends = log
+            .borrow()
+            .iter()
+            .filter(|line| line.as_str() == "listener:agent_end")
+            .count();
+        drop(observer.await);
+        assert_eq!((aborted_at_call, forwarded_ends), (true, 0));
+    });
+}
+
+#[test]
 fn disconnects_and_reconnects_around_a_manual_compaction() {
     on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
