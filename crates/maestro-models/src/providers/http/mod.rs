@@ -147,3 +147,15 @@ pub type Fetch = Arc<dyn Fn(HttpRequest) -> BoxFuture<Result<HttpResponse, Fetch
 pub fn default_fetch() -> Fetch {
     Arc::new(client::fetch)
 }
+
+/// Parse the decimal integer prefix used by numeric helper arguments.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn decimal_prefix(text: &str) -> Option<i32> {
+    let text = text.trim_start_matches(maestro_text::is_whitespace_scalar);
+    let digits = text.strip_prefix(['+', '-']).unwrap_or(text);
+    let count = digits.bytes().take_while(u8::is_ascii_digit).count();
+    if count == 0 {
+        return None;
+    }
+    text[..text.len() - digits.len() + count].parse().ok()
+}
