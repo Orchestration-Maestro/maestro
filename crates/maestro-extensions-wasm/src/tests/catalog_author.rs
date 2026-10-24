@@ -239,6 +239,7 @@ fn retained(
     Ok(json!("done"))
 }
 /// Retain, clone, drop or call through an opaque UI owner, by its retained index.
+/// A drop names its index in the arguments and takes the last owner without one.
 fn retained_ui(
     kept: &RefCell<Kept>,
     request: &Request,
@@ -251,7 +252,12 @@ fn retained_ui(
             kept.borrow_mut().uis.push(ui);
         }
         "pop" => {
-            let old = kept.borrow_mut().uis.pop();
+            let count = kept.borrow().uis.len();
+            let index = request.args.first().and_then(Value::as_u64).map_or_else(
+                || count.saturating_sub(1),
+                |index| usize::try_from(index).unwrap_or(usize::MAX),
+            );
+            let old = (index < count).then(|| kept.borrow_mut().uis.remove(index));
             drop(old);
         }
         "call" => {

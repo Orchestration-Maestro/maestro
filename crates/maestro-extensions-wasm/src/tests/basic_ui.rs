@@ -461,7 +461,8 @@ async fn rebound(driver: &mut impl Driver, base: usize, shared: usize) -> Result
     Ok(independent)
 }
 
-/// Both aliases answer, and dropping them releases only what they held.
+/// Both aliases answer, then the original handle answers and releases the one owner while the
+/// later acquisition is still live.
 async fn aliases_drop(driver: &mut impl Driver, base: usize, shared: usize) -> Result<(), String> {
     retained_owner(driver, "pop").await?;
     assert_eq!(
@@ -486,43 +487,46 @@ async fn aliases_drop(driver: &mut impl Driver, base: usize, shared: usize) -> R
         base + 2,
         "the earlier acquisition keeps its owner"
     );
-    Ok(())
-}
-
-/// The acquisition made under the switched binding survives both alias drops.
-async fn later_survives(
-    driver: &mut impl Driver,
-    base: usize,
-    shared: usize,
-    independent: usize,
-) -> Result<(), String> {
-    let from = driver.transcript().len();
-    assert_eq!(
-        retained_call(driver, 1, &notify()).await?,
-        json!({"ok":"done"}),
-        "the later acquisition answers after both drops"
-    );
-    assert_eq!(
-        sole_receipt(driver, from),
-        independent,
-        "neither alias drop revoked the later acquisition"
-    );
-    retained_owner(driver, "pop").await?;
-    assert_eq!(
-        driver.live(),
-        base + 1,
-        "the later acquisition releases exactly one owner"
-    );
     let from = driver.transcript().len();
     assert_eq!(
         retained_call(driver, 0, &notify()).await?,
         json!({"ok":"done"}),
-        "the original handle answers last"
+        "the original handle answers while the later acquisition is live"
     );
     assert_eq!(
         sole_receipt(driver, from),
         shared,
-        "the original handle keeps its owner to the end"
+        "the original handle reaches the earlier binding"
+    );
+    assert_eq!(
+        route(driver, json!({"action":"ui","method":"pop","args":[0]})).await?,
+        json!({"ok":"done"}),
+        "the original handle is dropped while the later acquisition is live"
+    );
+    assert_eq!(
+        driver.live(),
+        base + 1,
+        "the last earlier handle releases exactly one owner"
+    );
+    Ok(())
+}
+
+/// The later acquisition answers after the earlier one is gone, and releases last.
+async fn later_survives(
+    driver: &mut impl Driver,
+    base: usize,
+    independent: usize,
+) -> Result<(), String> {
+    let from = driver.transcript().len();
+    assert_eq!(
+        retained_call(driver, 0, &notify()).await?,
+        json!({"ok":"done"}),
+        "the later acquisition answers after the earlier one is released"
+    );
+    assert_eq!(
+        sole_receipt(driver, from),
+        independent,
+        "releasing the earlier acquisition kept the later one's binding"
     );
     retained_owner(driver, "pop").await?;
     assert_eq!(driver.live(), base, "every acquisition is released");
@@ -537,7 +541,7 @@ async fn retention(driver: &mut impl Driver) -> Result<(), String> {
     let shared = first_acquisition(driver, base).await?;
     let independent = rebound(driver, base, shared).await?;
     aliases_drop(driver, base, shared).await?;
-    later_survives(driver, base, shared, independent).await?;
+    later_survives(driver, base, independent).await?;
     driver.release_all().await;
     assert_eq!(driver.live(), 0, "no UI resource stays lent");
     Ok(())
