@@ -1,8 +1,11 @@
 //! The frame writer one presented selector runs in.
 
 use maestro_theme::ThemeState;
+use maestro_tui::TUI;
+#[cfg(unix)]
+use maestro_tui::TerminalImage;
+#[cfg(unix)]
 use maestro_tui::tui::TerminalHandle;
-use maestro_tui::{TUI, TerminalImage};
 use std::cell::{Cell, RefCell};
 use std::io;
 use std::rc::{Rc, Weak};
