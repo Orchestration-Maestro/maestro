@@ -291,17 +291,10 @@ fn prepare(mut case: Value, tree: &maestro_test_directory::Scratch) -> Option<Ca
     Some(case)
 }
 
-/// What a permission row has to give back: guards on Unix, nothing elsewhere.
-#[cfg(unix)]
-type Restoring = Vec<maestro_test_directory::Restore>;
-/// Nothing to restore where the host has no permission modes.
-#[cfg(not(unix))]
-type Restoring = Vec<()>;
-
 /// Refuse this process the write each recorded access error needs. `None` when the host is
 /// not refused, as in a privileged run, so the row cannot state its premise here.
 #[cfg(unix)]
-fn refuse_writes(case: &Case) -> Option<Restoring> {
+fn refuse_writes(case: &Case) -> Option<Vec<maestro_test_directory::Restore>> {
     let mut restores = Vec::new();
     for path in &case.input.access_errors {
         match maestro_test_directory::deny(path, 0o500) {
@@ -316,12 +309,6 @@ fn refuse_writes(case: &Case) -> Option<Restoring> {
         }
     }
     Some(restores)
-}
-
-/// Refuse nothing where the host has no permission modes; absent paths still refuse access.
-#[cfg(not(unix))]
-fn refuse_writes(_case: &Case) -> Option<Restoring> {
-    Some(Vec::new())
 }
 
 /// Replay each recorded case on its own real install tree.
@@ -372,6 +359,7 @@ fn replay_cases(fixture: &str, compose_root: bool) {
             continue;
         };
         // The refused writes are given back before the tree that holds them is dropped.
+        #[cfg(unix)]
         let Some(_restores) = refuse_writes(&case) else {
             continue;
         };
@@ -556,6 +544,7 @@ pub fn run_owned(fixture: &str) {
     assert_eq!(cases.len(), 1);
     let tree = maestro_test_directory::Scratch::new().unwrap();
     let case = prepare(cases.remove(0), &tree).expect("the owned case needs no link");
+    #[cfg(unix)]
     let Some(_restores) = refuse_writes(&case) else {
         return;
     };

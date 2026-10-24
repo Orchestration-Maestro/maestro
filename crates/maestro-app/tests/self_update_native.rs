@@ -2,10 +2,10 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_app::configuration::config::{NativeSelfUpdateOperations, SelfUpdateOperations};
+use maestro_app::configuration::config::SelfUpdateOperations;
 #[cfg(unix)]
 use maestro_app::configuration::config::{
-    SelfUpdateCommand, SelfUpdateContext, get_self_update_command,
+    NativeSelfUpdateOperations, SelfUpdateCommand, SelfUpdateContext, get_self_update_command,
     get_self_update_unavailable_instruction,
 };
 use maestro_process::SpawnSyncError;
