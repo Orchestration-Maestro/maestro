@@ -9,6 +9,7 @@ mod models;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod navigation;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
@@ -29,11 +30,11 @@ use maestro_app::presentation_data::footer_data_provider::{
 };
 use maestro_app::{
     AgentSessionRuntime, ContextFile, CreateAgentSessionRuntimeFactory, DefaultEventBus,
-    DiagnosticErrorInfo, Extension, ExtensionCommandContext, ExtensionFactory,
-    ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult,
-    Local, PromptTemplate, RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths,
-    ResourceLoader, SettingsManager, Skill, SourceInfo, SourceOrigin, SourceScope,
-    create_extension_runtime, load_extension_from_factory, strip_ansi,
+    DiagnosticErrorInfo, Extension, ExtensionCommandContext, ExtensionFactory, ExtensionLoadError,
+    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
+    PromptTemplate, RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader,
+    SettingsManager, Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
+    load_extension_from_factory, strip_ansi,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{
@@ -88,9 +89,7 @@ pub(super) fn isolated_case(
     }
     let scratch = child::Scratch::new();
     let root = scratch.0.path();
-    for name in ["bin", "tmp"] {
-        std::fs::create_dir(root.join(name)).unwrap();
-    }
+    std::fs::create_dir(root.join("tmp")).unwrap();
     let path = format!(
         "{}:{}",
         root.join("bin").display(),
@@ -465,7 +464,7 @@ impl Setup {
             diagnostics: self.diagnostics,
         };
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
-        let result = session::session(&cwd, None, move |inner| {
+        let result = session::session(&cwd, None, None, move |inner| {
             let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
             *created.borrow_mut() = Some(Rc::clone(&loader));
             loader
@@ -510,6 +509,29 @@ impl Setup {
             loader,
         }
     }
+}
+
+/// A mode whose session can be replaced by a fresh memory session, optionally loading
+/// `extension` into the session first.
+pub(super) fn replaceable(directory: &Path, extension: Option<ExtensionFactory<Local>>) -> World {
+    let world = Setup {
+        create: Some(Rc::new(|options| {
+            Box::pin(async move {
+                Ok(session::session(
+                    &options.cwd,
+                    None,
+                    Some(Rc::clone(&options.session_manager)),
+                    |inner| inner,
+                ))
+            })
+        })),
+        extension,
+        ..Setup::default()
+    }
+    .build(directory);
+    complete(world.mode.init()).unwrap();
+    world.runtime.settle().unwrap();
+    world
 }
 
 /// Runs `future` to completion on a current-thread runtime with the process driver.

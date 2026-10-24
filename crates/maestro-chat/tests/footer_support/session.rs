@@ -9,19 +9,23 @@ use maestro_app::{
 use maestro_theme::LiveTheme;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-/// A memory session over an in-memory catalog, settings and loader, with its services;
-/// its resource loader is `loader` applied to the default one.
+/// A session over an in-memory catalog, settings and loader, with its services; its
+/// history is `manager` when supplied and otherwise a fresh memory session, and its
+/// resource loader is `loader` applied to the default one.
 pub fn session(
     cwd: &str,
     oauth_provider: Option<&str>,
+    manager: Option<Rc<RefCell<SessionManager>>>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> CreateAgentSessionRuntimeResult {
     let services = services(cwd, oauth_provider, loader);
     let session = AgentSession::new(AgentSessionConfig {
         agent: Rc::default(),
-        session_manager: Rc::new(RefCell::new(
-            SessionManager::in_memory(Some(cwd)).expect("a memory session"),
-        )),
+        session_manager: manager.unwrap_or_else(|| {
+            Rc::new(RefCell::new(
+                SessionManager::in_memory(Some(cwd)).expect("a memory session"),
+            ))
+        }),
         settings_manager: Rc::clone(&services.settings_manager),
         cwd: cwd.to_owned(),
         bin_dir: String::new(),

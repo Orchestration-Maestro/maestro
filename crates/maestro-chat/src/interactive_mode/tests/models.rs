@@ -4,7 +4,7 @@ use super::actions::{install, run_action, shows};
 use super::complete;
 use super::transcript::assistant;
 use super::typed::{poll, recalled, submit, waiting};
-use super::{Setup, World, isolated, started};
+use super::{Setup, World, isolated, replaceable, started};
 use crate::ModelSelectorComponent;
 use crate::components::scoped_models_selector::{ModelsCallbacks, ScopedModelsSelectorComponent};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
@@ -596,7 +596,7 @@ fn scope_callbacks_release_the_mode(directory: &Path) {
 /// The model panel saves its default through the settings it was opened with, while the
 /// selection applies to the session current when it is chosen.
 fn model_panel_writes_its_settings_and_selects_on_the_current_session(directory: &Path) {
-    let world = replaceable(directory);
+    let world = replaceable(directory, None);
     register(&world, "a", &["alpha"]);
     let panel = open_panel(&world, SELECT_KEY);
     let opened = world.host.session();
@@ -1594,20 +1594,6 @@ fn model_commands_leave_waiter_and_history_untouched() {
     );
 }
 
-/// A mode whose session can be replaced by a fresh memory session.
-fn replaceable(directory: &Path) -> World {
-    let world = Setup {
-        create: Some(Rc::new(|options| {
-            Box::pin(async move { Ok(super::session::session(&options.cwd, None, |inner| inner)) })
-        })),
-        ..Setup::default()
-    }
-    .build(directory);
-    complete(world.mode.init()).unwrap();
-    world.runtime.settle().unwrap();
-    world
-}
-
 /// The default value of `T`, for option records the application root does not name.
 fn defaults<T: Default>() -> T {
     T::default()
@@ -1628,7 +1614,7 @@ fn warning_lifetime_survives_rebinding_but_not_another_mode() {
     isolated(
         "warning_lifetime_survives_rebinding_but_not_another_mode",
         |directory| {
-            let world = replaceable(directory);
+            let world = replaceable(directory, None);
             key_command(&world, directory, "anthropic", (0, Some(SUBSCRIPTION_KEY)));
             check(&world, vec![Some(subscription_model(&world))]);
             assert!(shows(&world.mode.chat_container, "Warning: "));

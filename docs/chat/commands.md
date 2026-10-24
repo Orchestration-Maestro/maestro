@@ -67,15 +67,22 @@ Only an exact lower-case `.jsonl` suffix selects JSONL. `.JSONL`,
 HTML. The comparison stays case-sensitive on purpose: the reference command
 selects JSONL for that suffix alone.
 
-## What is missing
+## `/fork` and `/clone`
 
-- Import (`/import <path.jsonl>`) is not delivered. It waits for the shared
-  dialog host and the session rebuild helpers, and it stays part of the same work.
-- The complete offline viewer is separate work; the export tests supply a
-  controlled bundle, so they prove the serializer wiring and not a shipped viewer.
-- Packaging and asset injection are separate work. The mode reads the bundle the
-  configuration's package directory selects, exactly as the other export callers
-  do.
+`/fork` opens the earlier user messages in the editor's place, newest selected.
+Choosing one copies the active path up to the message before it into a new
+session, so that message becomes the editor's text; cancelling puts the editor
+back. A session without user messages shows `No messages to fork from`.
+
+`/clone` copies the current leaf at its own position into a new session, so the
+branch continues exactly where it was. It shows `Cloned to new session`, or
+`Nothing to clone yet` when the session has no leaf. Escape and a cancellation by
+an extension leave the session as it was.
+
+The fork key (`app.session.fork`, configurable in `keybindings.json`) opens the
+same panel as `/fork`. A fork or clone rebuilds the transcript from the replaced
+session and puts the chosen text into the editor; a failure keeps its failure
+category and is shown as an error notice.
 
 ## Selecting a model
 
@@ -146,3 +153,13 @@ Setting `warnings.anthropicExtraUsage` to `false` turns the notice off; any othe
 value leaves it on. The notice is shown at most once for the life of the
 interactive mode, even when its session is replaced, and checks that overlap
 show it once. Checking at startup comes with the prompt loop.
+
+## What is missing
+
+- Import (`/import <path.jsonl>`) is not delivered. It waits for the shared
+  dialog host and the session rebuild helpers, and it stays part of the same work.
+- The complete offline viewer is separate work; the export tests supply a
+  controlled bundle, so they prove the serializer wiring and not a shipped viewer.
+- Packaging and asset injection are separate work. The mode reads the bundle the
+  configuration's package directory selects, exactly as the other export callers
+  do.

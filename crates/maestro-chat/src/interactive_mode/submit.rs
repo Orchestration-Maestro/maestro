@@ -55,6 +55,16 @@ impl InteractiveMode {
                 );
                 return;
             }
+            if text == "/fork" {
+                mode.report(mode.show_user_message_selector());
+                mode.editor.set_text("");
+                return;
+            }
+            if text == "/clone" {
+                mode.editor.set_text("");
+                mode.submit_clone_command();
+                return;
+            }
             if mode.runs_command(text) {
                 return;
             }
@@ -81,6 +91,13 @@ impl InteractiveMode {
             self.report(Err(error));
         }
         true
+    }
+
+    /// Clears the editor and clones the current leaf on the terminal runtime.
+    fn submit_clone_command(self: &Rc<Self>) {
+        let runtime = Rc::clone(&self.tool_environment.runtime);
+        let mode = Rc::clone(self);
+        runtime.spawn_local(Box::pin(async move { mode.handle_clone_command().await }));
     }
 
     /// Clears the editor and runs `/model` with `search` on the terminal runtime.

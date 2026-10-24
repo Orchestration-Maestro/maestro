@@ -33,6 +33,9 @@ pub use crate::agent_session::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
+pub use maestro_extensions::types::ForkOptions;
+
+#[cfg(not(target_arch = "wasm32"))]
 pub use crate::runtime::agent_session_runtime::{
     AgentSessionRuntime, AgentSessionRuntimeError, CreateAgentSessionRuntimeFactory,
     CreateAgentSessionRuntimeOptions, CreateAgentSessionRuntimeResult, ForkResult, RebindSession,

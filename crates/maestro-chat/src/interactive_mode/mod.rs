@@ -22,6 +22,7 @@ mod actions;
 mod autocomplete;
 mod key_display;
 mod models;
+mod navigation;
 mod queues;
 mod replay;
 mod resources;
