@@ -707,6 +707,30 @@ fn isolated_children_carry_no_ambient_credential_inputs() {
 }
 
 #[test]
+fn model_cycle_ignores_an_inherited_credential() {
+    // A launcher's provider key would make built-in models available to the unscoped cycle.
+    let test = "model_cycle_ignores_an_inherited_credential";
+    let sibling = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .name()
+        .replace(
+            test,
+            "model_cycle_distinguishes_scope_and_available_exhaustion",
+        );
+    let output = maestro_test_process::TestProcess::named(sibling)
+        .unwrap()
+        .env("ANTHROPIC_API_KEY", "maestro-dummy-key")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn model_cycle_distinguishes_scope_and_available_exhaustion() {
     isolated(
         "model_cycle_distinguishes_scope_and_available_exhaustion",

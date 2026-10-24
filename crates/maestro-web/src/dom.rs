@@ -7,6 +7,7 @@ use std::{
 use web_sys::{Document, Node};
 
 /// Page-wide operands shared by mounted content and built-in elements.
+#[derive(Clone)]
 pub struct DomView {
     /// Document receiving mounted roots.
     pub document: Document,
@@ -102,6 +103,8 @@ pub(crate) enum Property {
     Text(&'static str, &'static str),
     /// A boolean property holding the attribute's presence.
     Flag(&'static str, &'static str),
+    /// A boolean property holding the attribute's absence, for properties that default to true.
+    Unset(&'static str, &'static str),
 }
 /// A property getter callable.
 #[cfg(target_arch = "wasm32")]
@@ -123,22 +126,22 @@ fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected
     let mut kept = Vec::new();
     for &property in properties {
         let (name, attribute, flag) = match property {
-            Property::Text(name, attribute) => (name, attribute, false),
-            Property::Flag(name, attribute) => (name, attribute, true),
+            Property::Text(name, attribute) => (name, attribute, None),
+            Property::Flag(name, attribute) => (name, attribute, Some(true)),
+            Property::Unset(name, attribute) => (name, attribute, Some(false)),
         };
         let weak = js_sys::WeakRef::new(element);
         let read = weak.clone();
-        let get = Getter::new(move || match live(&read) {
-            Some(element) if flag => element.has_attribute(attribute).into(),
-            Some(element) => element.get_attribute(attribute).unwrap_or_default().into(),
-            None => JsValue::UNDEFINED,
+        let get = Getter::new(move || match (live(&read), flag) {
+            (Some(element), Some(present)) => (element.has_attribute(attribute) == present).into(),
+            (Some(element), None) => element.get_attribute(attribute).unwrap_or_default().into(),
+            (None, _) => JsValue::UNDEFINED,
         });
         let set = Setter::new(move |value: JsValue| {
             let Some(element) = live(&weak) else { return };
-            let text = if flag {
-                value.is_truthy().then(String::new)
-            } else {
-                value.as_string()
+            let text = match flag {
+                Some(present) => (value.is_truthy() == present).then(String::new),
+                None => value.as_string(),
             };
             // Attribute changes on a live element only fail for invalid names, which these are not.
             let _ = match text {
@@ -157,6 +160,14 @@ fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected
     }
     Reflected { _accessors: kept }
 }
+/// The element behind `root` while it exists and is connected.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn connected(root: &js_sys::WeakRef) -> Option<web_sys::HtmlElement> {
+    use wasm_bindgen::JsCast as _;
+    root.deref()
+        .and_then(|root| root.dyn_into::<web_sys::HtmlElement>().ok())
+        .filter(|root| root.is_connected())
+}
 /// Install the built-in elements' stylesheet once per document, with the selected pack's properties.
 /// # Errors
 /// Returns a presentation, highlighting or native failure.
@@ -174,6 +185,8 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(crate::icons::ICON_STYLES);
     css.push_str(include_str!("components/code_block/code.css"));
     css.push_str(&maestro_theme::highlight_css().map_err(|error| failure(&error))?);
+    css.push_str(include_str!("components/markdown_block/markdown.css"));
+    css.push_str(include_str!("components/messages.css"));
     css.push_str(include_str!("dom.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))

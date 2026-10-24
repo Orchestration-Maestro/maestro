@@ -97,7 +97,14 @@
     "non_string_identifiers_tags_and_names_are_refused",
     "a_descriptor_with_module_and_document_mounts_the_module",
     "missing_register_export_and_mismatched_glue_fail_initialization",
-    "the_element_bridge_ships_its_pinned_shim"
+    "the_element_bridge_ships_its_pinned_shim",
+    "markdown_dom_defaults_and_unchanged_roots",
+    "markdown_dom_replays_qualified_document_rows",
+    "markdown_dom_keeps_code_controls_across_presentation_changes",
+    "thinking_dom_disclosure_retains_state_and_exact_header",
+    "thinking_dom_streaming_and_instances_are_independent",
+    "thinking_dom_reconnect_and_drop_release_listeners",
+    "thinking_dom_paints_brand_roles_and_disclosure_motion"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

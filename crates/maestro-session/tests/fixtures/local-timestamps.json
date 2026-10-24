@@ -1,0 +1,107 @@
+[
+  {
+    "zone": "America/New_York",
+    "wall": "2026-03-08T00:00:00",
+    "millis": 1772946000000,
+    "local_date": "2026-03-08",
+    "local_hour": 0
+  },
+  {
+    "zone": "America/New_York",
+    "wall": "2026-03-09T00:00:00",
+    "millis": 1773028800000,
+    "local_date": "2026-03-09",
+    "local_hour": 0
+  },
+  {
+    "zone": "America/New_York",
+    "wall": "2026-03-08T02:30:00",
+    "millis": 1772955000000,
+    "local_date": "2026-03-08",
+    "local_hour": 3
+  },
+  {
+    "zone": "America/New_York",
+    "wall": "2026-11-01T01:30:00",
+    "millis": 1793511000000,
+    "local_date": "2026-11-01",
+    "local_hour": 1
+  },
+  {
+    "zone": "America/Santiago",
+    "wall": "2026-09-06T00:00:00",
+    "millis": 1788667200000,
+    "local_date": "2026-09-06",
+    "local_hour": 1
+  },
+  {
+    "zone": "America/Santiago",
+    "wall": "2026-09-07T00:00:00",
+    "millis": 1788750000000,
+    "local_date": "2026-09-07",
+    "local_hour": 0
+  },
+  {
+    "zone": "America/Havana",
+    "wall": "2026-11-01T00:00:00",
+    "millis": 1793505600000,
+    "local_date": "2026-11-01",
+    "local_hour": 0
+  },
+  {
+    "zone": "America/Havana",
+    "wall": "2026-11-02T00:00:00",
+    "millis": 1793595600000,
+    "local_date": "2026-11-02",
+    "local_hour": 0
+  },
+  {
+    "zone": "Pacific/Apia",
+    "wall": "2011-12-29T00:00:00",
+    "millis": 1325152800000,
+    "local_date": "2011-12-29",
+    "local_hour": 0
+  },
+  {
+    "zone": "Pacific/Apia",
+    "wall": "2011-12-30T00:00:00",
+    "millis": 1325239200000,
+    "local_date": "2011-12-31",
+    "local_hour": 0
+  },
+  {
+    "zone": "America/Montreal",
+    "wall": "1919-03-31T00:00:00",
+    "millis": -1601751600000,
+    "local_date": "1919-03-31",
+    "local_hour": 1
+  },
+  {
+    "zone": "America/Montreal",
+    "wall": "1919-04-01T00:00:00",
+    "millis": -1601668800000,
+    "local_date": "1919-04-01",
+    "local_hour": 0
+  },
+  {
+    "zone": "Europe/Berlin",
+    "wall": "2026-03-29T02:30:00",
+    "millis": 1774747800000,
+    "local_date": "2026-03-29",
+    "local_hour": 3
+  },
+  {
+    "zone": "Europe/Berlin",
+    "wall": "2026-10-25T02:30:00",
+    "millis": 1792888200000,
+    "local_date": "2026-10-25",
+    "local_hour": 2
+  },
+  {
+    "zone": "Europe/Berlin",
+    "wall": "2026-03-30T00:00:00",
+    "millis": 1774821600000,
+    "local_date": "2026-03-30",
+    "local_hour": 0
+  }
+]
