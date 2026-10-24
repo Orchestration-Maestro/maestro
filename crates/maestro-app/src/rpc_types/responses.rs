@@ -5,7 +5,7 @@ use super::{RpcSessionState, RpcSlashCommand, workspace};
 use crate::agent_session::{ForkMessage, ModelCycleResult, SessionStats};
 use maestro_extensions::NativeAgentMessage;
 use maestro_models::{Model, ModelThinkingLevel};
-use maestro_session::CompactionResult;
+use maestro_session::{CompactionResult, Presence};
 use maestro_tools::BashResult;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use serde_json::Value;
@@ -57,11 +57,12 @@ pub struct RpcForkMessages {
 }
 
 /// The last assistant text.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RpcLastAssistantText {
-    /// The text, absent without an assistant message.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
+    /// The text: absent without an assistant message, and present `null` when a client
+    /// reads one.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub text: Presence<String>,
 }
 
 /// The session messages.

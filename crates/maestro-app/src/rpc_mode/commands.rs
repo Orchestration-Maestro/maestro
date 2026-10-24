@@ -12,6 +12,7 @@ use crate::utils::lock::read;
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use maestro_extensions::{ForkPosition, InputSource};
 use maestro_models::ImageContent;
+use maestro_session::Presence;
 use maestro_session::messages::UserMessageDelivery;
 use maestro_session::session_manager::ReadonlySessionManager;
 use std::{cell::Cell, rc::Rc, sync::Arc};
@@ -320,7 +321,9 @@ fn read_or_apply(session: &AgentSession, command: &RpcSessionCommand) -> RpcData
         }
         Command::GetLastAssistantText => {
             return RpcData::LastAssistantText(RpcLastAssistantText {
-                text: session.get_last_assistant_text(),
+                text: session
+                    .get_last_assistant_text()
+                    .map_or(Presence::Missing, Presence::Present),
             });
         }
         Command::GetMessages => {
