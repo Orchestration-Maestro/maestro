@@ -12,6 +12,9 @@ use wit::{ScanContext, WitInputs};
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
+/// Single-owner rule for the command-context operations bound to a session.
+mod command_contexts;
+
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
@@ -46,6 +49,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
+    command_contexts::check(members)?;
     wit.finish()
 }
 

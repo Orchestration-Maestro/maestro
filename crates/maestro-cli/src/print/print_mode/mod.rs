@@ -1,23 +1,23 @@
 //! One session run presented as its final text or as every session event.
-mod callbacks;
 mod signals;
+#[cfg(test)]
+mod tests;
 
-use crate::print::print_mode::callbacks::command_actions;
 use maestro_app::{
     AgentMessage, AgentSession, AgentSessionEvent, AgentSessionEventListener, AgentSessionRuntime,
-    AssistantContent, DiagnosticErrorInfo, ExtensionBindings, FileEntry, ForkOptions, ImageContent,
-    NavigateTreeOptions, NavigateTreeResult, NewSessionCommandOptions, PromptOptions,
-    ReadonlySessionManager, RebindSession, SessionChangeResult, StopReason, SwitchSessionOptions,
-    TerminationSignal, kill_tracked_detached_children, serialize_json_line,
+    AssistantContent, DiagnosticErrorInfo, ExtensionBindings, ExtensionCommandContextActions,
+    FileEntry, ImageContent, PromptOptions, ReadonlySessionManager, RebindSession,
+    SharedAssistantMessage, StopReason, TerminationSignal, kill_tracked_detached_children,
+    serialize_json_line,
 };
-pub use signals::{NativeSignals, SignalPort, signals_for_host};
+pub(crate) use signals::{NativeSignals, SignalPort};
 use std::{
     cell::RefCell,
     future::Future,
     io,
     pin::Pin,
     rc::{Rc, Weak},
-    sync::PoisonError,
+    sync::{Arc, PoisonError},
 };
 
 /// Which result a run presents.
@@ -61,74 +61,75 @@ pub async fn run_print_mode(
 }
 
 /// An operation of a print run.
-pub type PrintFuture<T> = Pin<Box<dyn Future<Output = Result<T, DiagnosticErrorInfo>>>>;
+pub(crate) type PrintFuture<T> = Pin<Box<dyn Future<Output = Result<T, DiagnosticErrorInfo>>>>;
 
 /// Replaces the run's session with a replacement one.
-pub type PrintRebind = Rc<dyn Fn(Rc<dyn PrintSession>) -> PrintFuture<()>>;
+pub(crate) type PrintRebind = Rc<dyn Fn(Rc<dyn PrintSession>) -> PrintFuture<()>>;
 
 /// The final history entry as text mode reads it.
 #[derive(Clone)]
-pub enum FinalMessage {
-    /// An assistant response with its outcome and text blocks, in order.
-    Assistant {
-        /// How the response ended.
-        stop_reason: StopReason,
-        /// The supplied failure message.
-        error_message: Option<String>,
-        /// The text blocks.
-        text: Vec<String>,
-    },
+pub(crate) enum FinalMessage {
+    /// The assistant response, shared with the session's history.
+    Assistant(SharedAssistantMessage),
     /// Any other final entry.
     Other,
 }
 
 /// The session operations a print run drives.
-pub trait PrintSession {
+pub(crate) trait PrintSession {
+    /// Binds the session's extensions.
     fn bind_extensions(&self, bindings: ExtensionBindings) -> PrintFuture<()>;
+    /// Adds an event listener; the returned operation removes it.
     fn subscribe(&self, listener: AgentSessionEventListener) -> Box<dyn Fn()>;
+    /// Sends one prompt.
     fn prompt(&self, text: String, options: PromptOptions) -> PrintFuture<()>;
-    fn wait_for_idle(&self) -> PrintFuture<()>;
-    fn navigate_tree(
-        &self,
-        target_id: String,
-        options: NavigateTreeOptions,
-    ) -> PrintFuture<NavigateTreeResult>;
-    fn reload(&self) -> PrintFuture<()>;
+    /// The session header, when the session stores one.
     fn header(&self) -> Option<FileEntry>;
+    /// The final history entry.
     fn final_message(&self) -> Option<FinalMessage>;
 }
 
 /// The runtime operations a print run drives.
-pub trait PrintRuntime {
+pub(crate) trait PrintRuntime {
+    /// The session now in effect.
     fn session(&self) -> Rc<dyn PrintSession>;
+    /// Sets the operation the runtime calls for each replacement session.
     fn set_rebind(&self, rebind: Option<PrintRebind>);
-    fn new_session(&self, options: NewSessionCommandOptions) -> PrintFuture<SessionChangeResult>;
-    fn fork(&self, entry_id: String, options: ForkOptions) -> PrintFuture<SessionChangeResult>;
-    fn switch_session(
-        &self,
-        session_path: String,
-        options: SwitchSessionOptions,
-    ) -> PrintFuture<SessionChangeResult>;
+    /// The command-context operations the run binds for the current session.
+    fn command_actions(&self) -> ExtensionCommandContextActions;
+    /// Disposes the current session.
     fn dispose(&self) -> PrintFuture<()>;
 }
 
+/// Writes protocol and final bytes to raw standard output.
+pub(crate) type WriteStdout = Rc<dyn Fn(&str) -> io::Result<()>>;
+
+/// Writes one diagnostic line to standard error.
+pub(crate) type WriteStderrLine = Rc<dyn Fn(&str)>;
+
+/// Flushes raw standard output.
+pub(crate) type FlushStdout = Rc<dyn Fn() -> io::Result<()>>;
+
+/// Kills the tracked detached children.
+pub(crate) type KillChildren = Rc<dyn Fn()>;
+
 /// The output, signal and child-process effects of a print run.
-pub struct PrintEffects {
+pub(crate) struct PrintEffects {
     /// Writes protocol and final bytes to raw standard output.
-    pub write_stdout: Rc<dyn Fn(&str) -> io::Result<()>>,
+    pub(crate) write_stdout: WriteStdout,
     /// Writes one diagnostic line to standard error.
-    pub write_stderr_line: Rc<dyn Fn(&str)>,
+    pub(crate) write_stderr_line: WriteStderrLine,
     /// Flushes raw standard output.
-    pub flush_stdout: Rc<dyn Fn() -> io::Result<()>>,
+    pub(crate) flush_stdout: FlushStdout,
     /// Kills the tracked detached children.
-    pub kill_children: Rc<dyn Fn()>,
+    pub(crate) kill_children: KillChildren,
     /// Delivers termination signals and ends the process.
-    pub signals: Rc<dyn SignalPort>,
+    pub(crate) signals: Rc<dyn SignalPort>,
 }
 
 impl PrintEffects {
     /// The host's own output, child cleanup and signal effects.
-    pub fn native() -> Self {
+    pub(crate) fn native() -> Self {
         Self {
             write_stdout: Rc::new(maestro_app::output_guard::write_raw_stdout),
             write_stderr_line: Rc::new(|line| {
@@ -154,6 +155,8 @@ struct RunState {
     disposed: bool,
     /// Stops the run's own signal delivery.
     signal_cleanup: Vec<Box<dyn Fn()>>,
+    /// The first event record the run could not write.
+    event_failure: Option<DiagnosticErrorInfo>,
 }
 
 /// One run over its runtime and effects.
@@ -188,39 +191,41 @@ impl PrintRun {
     }
 
     /// Writes one session event while `mode` is JSON.
+    ///
+    /// A session's emit ignores listener results, so the first failure waits for the run's own
+    /// error path instead of ending the stream silently.
     fn write_event(&self, event: &AgentSessionEvent) {
         if self.mode != PrintMode::Json {
             return;
         }
-        let Ok(value) = serde_json::to_value(event) else {
-            return;
-        };
-        let Ok(line) = serialize_json_line(&value) else {
-            return;
-        };
-        // A write failure has no caller to reject here: a session's emit ignores listener results.
-        drop((self.effects.write_stdout)(&line));
+        if let Err(error) = self.write_record(event) {
+            let mut state = self.state.borrow_mut();
+            state.event_failure = state.event_failure.take().or(Some(error));
+        }
+    }
+
+    /// Writes `event` as one compact JSONL record.
+    ///
+    /// # Errors
+    /// Returns the encoding or the write failure.
+    fn write_record(&self, event: &AgentSessionEvent) -> Result<(), DiagnosticErrorInfo> {
+        let value = serde_json::to_value(event).map_err(message_of)?;
+        self.write_stdout(&serialize_json_line(&value).map_err(message_of)?)
+    }
+
+    /// The first event record the run could not write, if any.
+    fn event_failure(&self) -> Option<DiagnosticErrorInfo> {
+        self.state.borrow_mut().event_failure.take()
     }
 
     /// Binds the current session's extensions, then replaces the event subscription.
     async fn bind_current(self: Rc<Self>) -> Result<(), DiagnosticErrorInfo> {
         let session = self.current_session();
-        let on_error = {
-            let run = Rc::downgrade(&self);
-            Rc::new(move |error: &maestro_app::ExtensionError| {
-                if let Some(run) = run.upgrade() {
-                    run.write_stderr(&format!(
-                        "Extension error ({}): {}",
-                        error.extension_path, error.error
-                    ));
-                }
-                Ok(())
-            })
-        };
+        let on_error = error_listener(Rc::downgrade(&self));
         session
             .bind_extensions(ExtensionBindings {
                 ui_context: None,
-                command_context_actions: Some(command_actions(Rc::downgrade(&self))),
+                command_context_actions: Some(self.runtime.command_actions()),
                 shutdown_handler: None,
                 on_error: Some(on_error),
             })
@@ -249,29 +254,23 @@ impl PrintRun {
     }
 
     /// Writes the header and runs the prompts, presenting the result text mode reads.
-    async fn body(self: &Rc<Self>, options: &PrintModeOptions) -> Result<i32, DiagnosticErrorInfo> {
-        if self.mode == PrintMode::Json {
-            if let Some(header) = self.current_session().header() {
-                self.write_stdout(&serialize_json_line(&header).map_err(message_of)?)?;
-            }
+    async fn body(self: &Rc<Self>, options: PrintModeOptions) -> Result<i32, DiagnosticErrorInfo> {
+        if self.mode == PrintMode::Json
+            && let Some(header) = self.current_session().header()
+        {
+            self.write_stdout(&serialize_json_line(&header).map_err(message_of)?)?;
         }
         Rc::clone(self).bind_current().await?;
-        let initial = options
-            .initial_message
-            .as_ref()
-            .filter(|text| !text.is_empty());
-        if let Some(initial) = initial {
-            let options = PromptOptions {
-                images: options.initial_images.clone(),
+        if let Some(initial) = options.initial_message.filter(|text| !text.is_empty()) {
+            let prompt = PromptOptions {
+                images: options.initial_images,
                 ..PromptOptions::default()
             };
-            self.current_session()
-                .prompt(initial.clone(), options)
-                .await?;
+            self.current_session().prompt(initial, prompt).await?;
         }
-        for message in &options.messages {
+        for message in options.messages {
             self.current_session()
-                .prompt(message.clone(), PromptOptions::default())
+                .prompt(message, PromptOptions::default())
                 .await?;
         }
         if self.mode == PrintMode::Json {
@@ -285,28 +284,32 @@ impl PrintRun {
     /// # Errors
     /// Returns a write failure.
     fn present_final_message(&self) -> Result<i32, DiagnosticErrorInfo> {
-        let Some(FinalMessage::Assistant {
-            stop_reason,
-            error_message,
-            text,
-        }) = self.current_session().final_message()
+        let Some(FinalMessage::Assistant(assistant)) = self.current_session().final_message()
         else {
             return Ok(0);
         };
-        if matches!(stop_reason, StopReason::Error | StopReason::Aborted) {
-            let reason = if stop_reason == StopReason::Error {
+        let assistant = assistant.read().unwrap_or_else(PoisonError::into_inner);
+        if matches!(
+            assistant.stop_reason,
+            StopReason::Error | StopReason::Aborted
+        ) {
+            let reason = if assistant.stop_reason == StopReason::Error {
                 "Request error"
             } else {
                 "Request aborted"
             };
-            let message = error_message
+            let message = assistant
+                .error_message
+                .as_deref()
                 .filter(|text| !text.is_empty())
-                .unwrap_or_else(|| reason.to_owned());
-            self.write_stderr(&message);
+                .unwrap_or(reason);
+            self.write_stderr(message);
             return Ok(1);
         }
-        for block in text {
-            self.write_stdout(&format!("{block}\n"))?;
+        for content in &assistant.content {
+            if let AssistantContent::Text(text) = content {
+                self.write_stdout(&format!("{}\n", text.text))?;
+            }
         }
         Ok(0)
     }
@@ -368,7 +371,7 @@ impl PrintRun {
 ///
 /// # Errors
 /// Returns a cleanup failure: a guarded disposal or the final flush rejects.
-pub async fn run_print_mode_with(
+pub(crate) async fn run_print_mode_with(
     runtime: Rc<dyn PrintRuntime>,
     options: PrintModeOptions,
     effects: PrintEffects,
@@ -380,6 +383,7 @@ pub async fn run_print_mode_with(
             unsubscribe: None,
             disposed: false,
             signal_cleanup: Vec::new(),
+            event_failure: None,
         }),
         runtime,
         effects,
@@ -395,9 +399,14 @@ pub async fn run_print_mode_with(
             }
         })
     })));
-    let outcome = run.body(&options).await;
-    let status = match outcome {
-        Ok(status) => status,
+    let status = match run.body(options).await {
+        Ok(status) => match run.event_failure() {
+            Some(error) => {
+                run.write_stderr(&error.message);
+                1
+            }
+            None => status,
+        },
         Err(error) => {
             run.write_stderr(&error.message);
             1
@@ -405,6 +414,25 @@ pub async fn run_print_mode_with(
     };
     run.finish().await?;
     Ok(status)
+}
+
+/// The listener that reports extension failures.
+type ErrorListener = Rc<
+    dyn Fn(&maestro_app::ExtensionError) -> Result<(), Box<dyn std::error::Error + Send + Sync>>,
+>;
+
+/// The listener that reports extension failures on standard error.
+fn error_listener(run: Weak<PrintRun>) -> ErrorListener {
+    Rc::new(move |error: &maestro_app::ExtensionError| {
+        let Some(run) = run.upgrade() else {
+            return Ok(());
+        };
+        run.write_stderr(&format!(
+            "Extension error ({}): {}",
+            error.extension_path, error.error
+        ));
+        Ok(())
+    })
 }
 
 /// The diagnostic a lower failure becomes, keeping its message.
@@ -430,28 +458,6 @@ impl PrintSession for SessionAdapter {
         Box::pin(async move { session.prompt(&text, options).await })
     }
 
-    fn wait_for_idle(&self) -> PrintFuture<()> {
-        let session = Rc::clone(&self.0);
-        Box::pin(async move {
-            session.agent().wait_for_idle().await;
-            Ok(())
-        })
-    }
-
-    fn navigate_tree(
-        &self,
-        target_id: String,
-        options: NavigateTreeOptions,
-    ) -> PrintFuture<NavigateTreeResult> {
-        let session = Rc::clone(&self.0);
-        Box::pin(async move { session.navigate_tree(&target_id, options).await })
-    }
-
-    fn reload(&self) -> PrintFuture<()> {
-        let session = Rc::clone(&self.0);
-        Box::pin(async move { session.reload().await })
-    }
-
     fn header(&self) -> Option<FileEntry> {
         self.0.session_manager().borrow().get_header().cloned()
     }
@@ -461,19 +467,7 @@ impl PrintSession for SessionAdapter {
         let messages = messages.read().unwrap_or_else(PoisonError::into_inner);
         match messages.last()? {
             AgentMessage::Assistant(assistant) => {
-                let assistant = assistant.read().unwrap_or_else(PoisonError::into_inner);
-                Some(FinalMessage::Assistant {
-                    stop_reason: assistant.stop_reason.clone(),
-                    error_message: assistant.error_message.clone(),
-                    text: assistant
-                        .content
-                        .iter()
-                        .filter_map(|content| match content {
-                            AssistantContent::Text(text) => Some(text.text.clone()),
-                            AssistantContent::Thinking(_) | AssistantContent::ToolCall(_) => None,
-                        })
-                        .collect(),
-                })
+                Some(FinalMessage::Assistant(Arc::clone(assistant)))
             }
             AgentMessage::User(_) | AgentMessage::ToolResult(_) | AgentMessage::Custom(_) => {
                 Some(FinalMessage::Other)
@@ -503,33 +497,8 @@ impl PrintRuntime for RuntimeAdapter {
         self.inner.set_rebind_session(mapped);
     }
 
-    fn new_session(&self, options: NewSessionCommandOptions) -> PrintFuture<SessionChangeResult> {
-        let runtime = Rc::clone(&self.inner);
-        Box::pin(async move { runtime.new_session(options).await.map_err(message_of) })
-    }
-
-    fn fork(&self, entry_id: String, options: ForkOptions) -> PrintFuture<SessionChangeResult> {
-        let runtime = Rc::clone(&self.inner);
-        Box::pin(async move {
-            let forked = runtime.fork(&entry_id, options).await.map_err(message_of)?;
-            Ok(SessionChangeResult {
-                cancelled: forked.cancelled,
-            })
-        })
-    }
-
-    fn switch_session(
-        &self,
-        session_path: String,
-        options: SwitchSessionOptions,
-    ) -> PrintFuture<SessionChangeResult> {
-        let runtime = Rc::clone(&self.inner);
-        Box::pin(async move {
-            runtime
-                .switch_session(&session_path, None, options)
-                .await
-                .map_err(message_of)
-        })
+    fn command_actions(&self) -> ExtensionCommandContextActions {
+        self.inner.command_context_actions()
     }
 
     fn dispose(&self) -> PrintFuture<()> {
