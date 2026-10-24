@@ -1,258 +1,30 @@
 //! The extension, theme and diagnostic sections of the loaded-resource listing.
+use super::super::diagnostics::{
+    SourceInfoRef, SourceInfos, format_diagnostics, format_path_with_source,
+    get_built_in_command_conflict_diagnostics, get_display_source_info,
+};
 use super::super::labels::{
     format_extension_display_path, get_compact_extension_labels, get_compact_package_source_label,
     get_compact_path_label, get_distinct_suffix_labels,
 };
 use super::super::{HomeLookup, ResourceItem};
+use super::loaded_support::{
+    Expected, Input, Listing, WIDTH, cases, check_listing, commands, diagnostics, identity,
+    listings, world,
+};
 use super::{HOME, RecordedSource, expand_all, in_home, repainted, sections, unknown_home};
-use crate::InteractiveModeOptions;
-use crate::interactive_mode::tests::{Setup, World, light, painted};
-use maestro_app::{SourceInfo, home_directory};
-use maestro_theme::{ColorMode, Theme, ThemeOptions};
+use crate::interactive_mode::tests::{Setup, World, dark, light, painted, roles};
+use maestro_app::{ResourceDiagnostic, SourceInfo, home_directory};
 use maestro_tui::Component;
-use serde::Deserialize;
 use std::{
-    cell::{Cell, RefCell},
-    hash::{Hash, Hasher},
-    path::Path,
+    cell::Cell,
+    collections::hash_map::RandomState,
+    hash::{BuildHasher, Hash, Hasher},
     rc::Rc,
 };
 
-/// Every recorded case of these witnesses.
-const FIXTURES: &str = include_str!("../../../../tests/fixtures/interactive_loaded_resources.json");
-
-/// The width recorded listings render at unless a case names one.
-const WIDTH: usize = 240;
-
 /// The width the recorded theme changes render at.
 const TOGGLE_WIDTH: usize = 120;
-
-/// One recorded case.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: Input,
-    /// The recorded observation.
-    expected: Expected,
-}
-
-/// The recorded operations.
-#[derive(Deserialize)]
-#[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
-enum Input {
-    /// A listing over the recorded resources.
-    Listing(Listing),
-    /// A listing whose theme changes before its section toggles.
-    ThemeToggle {
-        /// The section kind.
-        kind: String,
-        /// The loaded themes.
-        #[serde(default)]
-        themes: Vec<RecordedTheme>,
-        /// The loaded extensions.
-        #[serde(default)]
-        extensions: Vec<RecordedExtension>,
-    },
-    /// A listing whose home lookup fails, then succeeds.
-    HomeRoutes(Listing),
-    /// One compact path label.
-    CompactPath {
-        /// The resource path.
-        path: String,
-    },
-    /// One extension's compact label.
-    ExtensionLabel {
-        /// The extension.
-        extension: RecordedExtension,
-    },
-    /// One extension's expanded path.
-    ExtensionPath {
-        /// The extension path.
-        path: String,
-    },
-    /// One package source's compact label.
-    PackageSource {
-        /// Where the extension came from.
-        #[serde(rename = "sourceInfo")]
-        source_info: RecordedSource,
-    },
-}
-
-/// The settings and resources of one listing.
-#[derive(Deserialize, Default, Clone)]
-#[serde(deny_unknown_fields, default)]
-struct Listing {
-    /// Whether tool output is expanded.
-    expanded: bool,
-    /// The loaded themes.
-    themes: Vec<RecordedTheme>,
-    /// The loaded extensions.
-    extensions: Vec<RecordedExtension>,
-}
-
-/// One recorded loaded extension.
-#[derive(Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
-struct RecordedExtension {
-    /// The extension path.
-    path: String,
-    /// Where it came from.
-    #[serde(rename = "sourceInfo")]
-    source_info: RecordedSource,
-}
-
-impl RecordedExtension {
-    /// The extension's path and provenance.
-    fn into_loaded(self) -> (String, SourceInfo) {
-        let source_info = self.source_info.into_source_info(&self.path);
-        (self.path, source_info)
-    }
-}
-
-/// One recorded loaded theme.
-#[derive(Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
-struct RecordedTheme {
-    /// The authored name.
-    name: Option<String>,
-    /// The file it was loaded from.
-    #[serde(rename = "sourcePath")]
-    source_path: Option<String>,
-    /// Where it came from.
-    #[serde(rename = "sourceInfo")]
-    source_info: Option<RecordedSource>,
-}
-
-impl RecordedTheme {
-    /// The recorded theme, without colours of its own.
-    fn into_theme(self) -> Rc<Theme> {
-        let path = self.source_path.clone().unwrap_or_default();
-        let source_info = self
-            .source_info
-            .map(|source| Rc::new(RefCell::new(source.into_source_info(&path))));
-        let options = ThemeOptions {
-            name: self.name,
-            source_path: self.source_path,
-            source_info,
-        };
-        Rc::new(Theme::new([], [], ColorMode::Truecolor, options).unwrap())
-    }
-}
-
-/// The recorded observations.
-#[derive(Deserialize)]
-#[serde(untagged, deny_unknown_fields)]
-enum Expected {
-    /// Transcript rows after the listing, with every section expanded, then collapsed.
-    Listing {
-        /// Rows after the listing.
-        before: Vec<String>,
-        /// Rows with every section expanded.
-        expanded: Vec<String>,
-        /// Rows with every section collapsed.
-        collapsed: Vec<String>,
-        /// The transcript's children.
-        children: usize,
-    },
-    /// Transcript rows around a theme change.
-    Toggle {
-        /// Rows after the listing.
-        before: Vec<String>,
-        /// Rows after the theme change.
-        #[serde(rename = "noToggle")]
-        no_toggle: Vec<String>,
-        /// Rows with the section expanded.
-        expanded: Vec<String>,
-        /// Rows with the section collapsed again.
-        collapsed: Vec<String>,
-    },
-    /// Whether the listing needed the home directory, and its rows.
-    Home {
-        /// Whether a path display looked the home directory up.
-        #[serde(rename = "needsHome")]
-        needs_home: bool,
-        /// Rows after the listing.
-        before: Vec<String>,
-    },
-    /// One label.
-    Value {
-        /// The label.
-        value: String,
-    },
-}
-
-/// The recorded cases of `test`.
-fn cases(test: &str) -> Vec<(Input, Expected)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| (case.input, case.expected))
-        .collect();
-    assert!(!cases.is_empty());
-    cases
-}
-
-/// A mode over the recorded resources of `listing`, its tool output expanded as recorded.
-fn world(directory: &Path, listing: Listing) -> World {
-    let world = Setup {
-        options: InteractiveModeOptions::default(),
-        themes: listing
-            .themes
-            .into_iter()
-            .map(RecordedTheme::into_theme)
-            .collect(),
-        extensions: listing
-            .extensions
-            .into_iter()
-            .map(RecordedExtension::into_loaded)
-            .collect(),
-        ..Setup::default()
-    }
-    .build(directory);
-    world.mode.tool_output_expanded.set(listing.expanded);
-    world
-}
-
-/// Lists `listing` and checks the recorded rows after the listing, with every section
-/// expanded and collapsed again, and the transcript's children.
-fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> World {
-    let Expected::Listing {
-        before,
-        expanded,
-        collapsed,
-        children,
-    } = expected
-    else {
-        panic!("a listing observation");
-    };
-    let world = world(directory, listing);
-    world.mode.show_loaded_resources(false).unwrap();
-    let theme = world.themes.theme().get().unwrap();
-    let chat = &world.mode.chat_container;
-    assert_eq!(chat.render(WIDTH), painted(&theme, &before));
-    assert_eq!(chat.children().borrow().len(), children);
-    expand_all(&world.mode, true);
-    assert_eq!(chat.render(WIDTH), painted(&theme, &expanded));
-    expand_all(&world.mode, false);
-    assert_eq!(chat.render(WIDTH), painted(&theme, &collapsed));
-    world
-}
-
-/// Checks every recorded listing case of `test`.
-fn listings(test: &str) {
-    in_home(test, |directory| {
-        for (input, expected) in cases(test) {
-            let Input::Listing(listing) = input else {
-                panic!("a listing case");
-            };
-            check_listing(directory, listing, expected);
-        }
-    });
-}
 
 #[test]
 fn theme_listing_omits_unlocated_and_keeps_empty_named_theme() {
@@ -305,7 +77,7 @@ fn extension_and_theme_sections_keep_owned_content_across_theme_and_owner_change
                 panic!("a theme change case");
             };
             assert_eq!(kind == "theme", extensions.is_empty());
-            let world = world(
+            let (world, request) = world(
                 directory,
                 Listing {
                     themes,
@@ -313,7 +85,7 @@ fn extension_and_theme_sections_keep_owned_content_across_theme_and_owner_change
                     ..Listing::default()
                 },
             );
-            world.mode.show_loaded_resources(false).unwrap();
+            request.list(&world, &home_directory).unwrap();
             let dark = world.themes.theme().get().unwrap();
             let chat = &world.mode.chat_container;
             assert_eq!(chat.render(TOGGLE_WIDTH), painted(&dark, &before));
@@ -348,18 +120,15 @@ fn resource_home_queries_follow_the_reached_formatting_branch() {
             else {
                 panic!("a home route case");
             };
-            let failing = world(directory, listing.clone());
-            let result = failing.mode.list_loaded_resources(false, &unknown_home);
+            let (failing, request) = world(directory, listing.clone());
+            let result = request.list(&failing, &unknown_home);
             assert_eq!(result.is_err(), needs_home);
             if let Err(error) = result {
                 assert_eq!(error.to_string(), "home directory is unknown");
                 assert!(failing.mode.chat_container.children().borrow().is_empty());
             }
-            let world = world(directory, listing);
-            world
-                .mode
-                .list_loaded_resources(false, &home_directory)
-                .unwrap();
+            let (world, request) = world(directory, listing);
+            request.list(&world, &home_directory).unwrap();
             let theme = world.themes.theme().get().unwrap();
             assert_eq!(
                 world.mode.chat_container.render(WIDTH),
@@ -574,5 +343,341 @@ fn extension_label_work_stays_linear_in_total_path_segments() {
         previous = Some(work.get());
         let control = Cell::new(0);
         assert!(rescanned(&counted(&paths, &control)) > 4 * total);
+    }
+}
+
+/// An index of the recorded paths and their provenance, in insertion order.
+fn indexed(recorded: &[(String, SourceInfo)]) -> SourceInfos<'_> {
+    let mut index = SourceInfos::default();
+    for (path, source_info) in recorded {
+        index.insert(path, SourceInfoRef::Resource(source_info));
+    }
+    index
+}
+
+/// The recorded paths with their provenance.
+fn provenance(recorded: Vec<(String, RecordedSource)>) -> Vec<(String, SourceInfo)> {
+    recorded
+        .into_iter()
+        .map(|(path, source)| {
+            let source_info = source.into_source_info(&path);
+            (path, source_info)
+        })
+        .collect()
+}
+
+#[test]
+fn diagnostic_sources_preserve_local_cli_package_scope_labels() {
+    for (input, expected) in cases("diagnostic_sources_preserve_local_cli_package_scope_labels") {
+        let (Input::Source { source_info }, Expected::Display { value }) = (input, expected) else {
+            panic!("a source label case");
+        };
+        let source_info = source_info.map(|source| source.into_source_info(""));
+        let (label, scope) = get_display_source_info(source_info.as_ref());
+        assert_eq!(
+            (label, scope),
+            (value.label.as_str(), value.scope_label.as_deref())
+        );
+    }
+}
+
+#[test]
+fn diagnostic_source_lookup_selects_exact_then_nearest_forward_slash_parent() {
+    let test = "diagnostic_source_lookup_selects_exact_then_nearest_forward_slash_parent";
+    for (input, expected) in cases(test) {
+        let (Input::Lookup { path, source_infos }, Expected::Found { value }) = (input, expected)
+        else {
+            panic!("a lookup case");
+        };
+        let recorded = provenance(source_infos);
+        let index = indexed(&recorded);
+        let found = index.find(&path).map(|found| match found {
+            SourceInfoRef::Resource(info) => (info.source.clone(), info.scope),
+            SourceInfoRef::Theme(_) => panic!("only resource provenance is indexed"),
+        });
+        let expected = value.as_ref().map(identity);
+        assert_eq!(
+            found
+                .as_ref()
+                .map(|(source, scope)| (source.as_str(), *scope)),
+            expected
+        );
+    }
+}
+
+#[test]
+fn diagnostic_paths_keep_source_scope_and_short_path() {
+    for (input, expected) in cases("diagnostic_paths_keep_source_scope_and_short_path") {
+        let (Input::PathSource { path, source_info }, Expected::Value { value }) =
+            (input, expected)
+        else {
+            panic!("a path source case");
+        };
+        let source_info = source_info.map(|source| source.into_source_info(&path));
+        let source = source_info.as_ref().map(SourceInfoRef::Resource);
+        let shown = format_path_with_source(&path, source.as_ref(), RECORDED_HOME).unwrap();
+        assert_eq!(shown, value);
+    }
+}
+
+/// Checks every recorded diagnostic text case of `test`.
+fn diagnostic_texts(test: &str) {
+    let theme = dark();
+    for (input, expected) in cases(test) {
+        let (
+            Input::Diagnostics {
+                diagnostics: recorded,
+                source_infos,
+            },
+            Expected::Value { value },
+        ) = (input, expected)
+        else {
+            panic!("a diagnostics case");
+        };
+        let recorded = diagnostics(recorded);
+        let borrowed: Vec<&ResourceDiagnostic> = recorded.iter().collect();
+        let provenance = provenance(source_infos);
+        let formatted = format_diagnostics(&borrowed, &indexed(&provenance), &theme, RECORDED_HOME);
+        assert_eq!(formatted.unwrap(), roles(&theme, &value));
+    }
+}
+
+#[test]
+fn resource_collisions_group_before_other_diagnostics() {
+    diagnostic_texts("resource_collisions_group_before_other_diagnostics");
+}
+
+#[test]
+fn resource_diagnostics_keep_path_presence_kind_and_exact_lines() {
+    diagnostic_texts("resource_diagnostics_keep_path_presence_kind_and_exact_lines");
+}
+
+#[test]
+fn resource_diagnostics_remain_visible_when_quiet() {
+    let test = "resource_diagnostics_remain_visible_when_quiet";
+    in_home(test, |directory| {
+        let mut startup = None;
+        for (input, expected) in cases(test) {
+            let Input::Listing(listing) = input else {
+                panic!("a listing case");
+            };
+            let quiet_request = listing.startup.quiet
+                && !listing.startup.verbose
+                && !listing.force
+                && listing.diagnostics;
+            if quiet_request {
+                startup = Some((listing.clone(), expected));
+                continue;
+            }
+            check_listing(directory, listing, expected);
+        }
+        let (mut listing, expected) = startup.expect("a quiet request for diagnostics");
+        let Expected::Listing { before, .. } = expected else {
+            panic!("a listing observation");
+        };
+        listing.diagnostics = false;
+        let (world, _) = world(directory, listing);
+        world.mode.init().unwrap();
+        assert_eq!(
+            *world.loader.calls.borrow(),
+            ["skills", "prompts", "themes", "extensions", "extensions"]
+        );
+        let theme = world.themes.theme().get().unwrap();
+        assert_eq!(
+            world.mode.chat_container.render(WIDTH),
+            painted(&theme, &before)
+        );
+    });
+}
+
+#[test]
+fn empty_extension_override_replaces_loader_listing_but_not_errors() {
+    listings("empty_extension_override_replaces_loader_listing_but_not_errors");
+}
+
+#[test]
+fn extension_override_supplies_own_provenance() {
+    listings("extension_override_supplies_own_provenance");
+}
+
+#[test]
+fn resource_source_index_keeps_snapshot_precedence() {
+    listings("resource_source_index_keeps_snapshot_precedence");
+}
+
+#[test]
+fn diagnostic_sections_keep_static_styles_spacing_and_order() {
+    let test = "diagnostic_sections_keep_static_styles_spacing_and_order";
+    in_home(test, |directory| {
+        for (input, expected) in cases(test) {
+            let Input::Listing(listing) = input else {
+                panic!("a listing case");
+            };
+            let world = check_listing(directory, listing, expected);
+            assert!(sections(&world.mode).is_empty());
+        }
+    });
+}
+
+/// The built-in conflicts of `recorded` registered for real, with the command
+/// diagnostics the runner published before and after resolving them.
+type Resolved = (Vec<ResourceDiagnostic>, Vec<String>, usize);
+
+/// Registers `recorded` on a mode's extensions, publishes a command diagnostic and
+/// resolves the built-in conflicts.
+fn resolve(
+    directory: &std::path::Path,
+    recorded: Vec<super::loaded_support::RecordedCommand>,
+) -> Resolved {
+    let world = Setup {
+        commands: commands(recorded),
+        ..Setup::default()
+    }
+    .build(directory);
+    let runner = world.mode.runtime_host.session().extension_runner();
+    let retained = runner.get_command_diagnostics();
+    retained
+        .write()
+        .unwrap()
+        .push(diagnostics(retained_diagnostic()).remove(0));
+    let conflicts = get_built_in_command_conflict_diagnostics(&runner);
+    let messages = retained
+        .read()
+        .unwrap()
+        .iter()
+        .map(|diagnostic| diagnostic.message.clone())
+        .collect();
+    let current = runner.get_command_diagnostics().read().unwrap().len();
+    (conflicts, messages, current)
+}
+
+/// The command diagnostic the runner published before resolution.
+fn retained_diagnostic() -> Vec<super::loaded_support::RecordedDiagnostic> {
+    serde_json::from_str(r#"[{"type": "warning", "message": "retained command diagnostic"}]"#)
+        .unwrap()
+}
+
+/// Checks `actual` against the recorded diagnostics, field by field.
+fn same_diagnostics(
+    actual: &[ResourceDiagnostic],
+    recorded: Vec<super::loaded_support::RecordedDiagnostic>,
+) {
+    let expected = diagnostics(recorded);
+    assert_eq!(actual.len(), expected.len());
+    for (actual, expected) in actual.iter().zip(&expected) {
+        assert_eq!(actual.r#type, expected.r#type);
+        assert_eq!(actual.message, expected.message);
+        assert_eq!(actual.path, expected.path);
+        assert!(actual.collision.is_none() && expected.collision.is_none());
+    }
+}
+
+#[test]
+fn extension_issues_follow_registration_and_builtin_conflicts() {
+    let test = "extension_issues_follow_registration_and_builtin_conflicts";
+    in_home(test, |directory| {
+        for (input, expected) in cases(test) {
+            match (input, expected) {
+                (
+                    Input::RegisteredBuiltins { commands },
+                    Expected::Registered {
+                        value,
+                        retained,
+                        current,
+                    },
+                ) => {
+                    let (conflicts, messages, now) = resolve(directory, commands);
+                    same_diagnostics(&conflicts, value);
+                    let retained: Vec<_> = diagnostics(retained)
+                        .into_iter()
+                        .map(|diagnostic| diagnostic.message)
+                        .collect();
+                    assert_eq!(messages, retained);
+                    assert_eq!(now, current.len());
+                }
+                (Input::Builtins { commands }, Expected::Conflicts { value }) => {
+                    let (conflicts, ..) = resolve(directory, commands);
+                    same_diagnostics(&conflicts, value);
+                }
+                (Input::Listing(listing), expected) => {
+                    check_listing(directory, listing, expected);
+                }
+                _ => panic!("an extension issue case"),
+            }
+        }
+    });
+}
+
+/// A hasher state counting the bytes hashed into it.
+struct CountingHasher<'a> {
+    /// The standard state the bytes go on to.
+    inner: std::collections::hash_map::DefaultHasher,
+    /// The shared count of bytes hashed.
+    bytes: &'a Cell<usize>,
+}
+
+impl Hasher for CountingHasher<'_> {
+    fn finish(&self) -> u64 {
+        self.inner.finish()
+    }
+    fn write(&mut self, bytes: &[u8]) {
+        self.bytes.set(self.bytes.get() + bytes.len());
+        self.inner.write(bytes);
+    }
+}
+
+/// Builds standard hasher states counting into one shared byte count.
+struct Counting<'a>(RandomState, &'a Cell<usize>);
+
+impl<'a> BuildHasher for Counting<'a> {
+    type Hasher = CountingHasher<'a>;
+    fn build_hasher(&self) -> Self::Hasher {
+        CountingHasher {
+            inner: self.0.build_hasher(),
+            bytes: self.1,
+        }
+    }
+}
+
+/// A path of `count` nested segments below the root.
+fn nested(count: usize) -> String {
+    let segments: Vec<_> = (0..count).map(|index| format!("/s{index}")).collect();
+    segments.concat()
+}
+
+#[test]
+fn diagnostic_lookup_work_stays_linear_in_total_path_bytes() {
+    let source_info = SourceInfo {
+        path: String::new(),
+        source: "near".to_owned(),
+        scope: maestro_app::SourceScope::Project,
+        origin: maestro_app::SourceOrigin::TopLevel,
+        base_dir: None,
+    };
+    let mut previous = None;
+    for count in [32, 64, 128] {
+        let path = nested(count);
+        let parent = nested(count - 1);
+        let bytes = Cell::new(0);
+        let mut index = SourceInfos::with_hasher(Counting(RandomState::new(), &bytes));
+        index.insert(&parent, SourceInfoRef::Resource(&source_info));
+        let found = index.find(&format!("{path}/file"));
+        assert!(matches!(found, Some(SourceInfoRef::Resource(info)) if info.source == "near"));
+        // Each hashed segment adds its parent's position and an end marker; growing the
+        // index hashes its stored segments again, at most doubling the total.
+        let input = parent.len() + path.len() + "/file".len();
+        let bound = 2 * (input + 16 * (2 * count + 2));
+        let hashed = bytes.get();
+        assert!(hashed <= bound, "{hashed} bytes for {input}");
+        if let Some(previous) = previous {
+            assert!(2 * hashed <= 5 * previous, "lookup work grows linearly");
+        }
+        previous = Some(hashed);
+        // Hashing each whole parent prefix, as a lookup keyed by full paths does, exceeds
+        // the bound once paths are long.
+        let prefixes: usize = (1..=count).map(|depth| nested(depth).len()).sum();
+        if count == 128 {
+            assert!(prefixes > bound);
+        }
     }
 }

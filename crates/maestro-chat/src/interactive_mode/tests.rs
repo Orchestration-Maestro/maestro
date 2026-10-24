@@ -16,9 +16,10 @@ use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
     AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, Extension,
-    ExtensionFactory, LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult,
-    Local, PromptTemplate, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill,
-    SourceInfo, create_extension_runtime, load_extension_from_factory,
+    ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
+    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, RegisteredCommand,
+    ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
+    SourceOrigin, SourceScope, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -81,8 +82,8 @@ pub(super) fn isolated_case(
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
-    /// The loaded themes.
-    themes: Vec<Rc<Theme>>,
+    /// The loaded themes and their diagnostics.
+    themes: Rc<LoadThemesResult>,
     /// The settings and theme name selected while the themes are read.
     select: RefCell<Option<(Rc<RefCell<SettingsManager>>, String)>>,
     /// The discovered context files, replaceable after construction.
@@ -93,6 +94,19 @@ pub(super) struct ForwardingLoader {
     prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
     /// The loaded extensions answered instead of the default loader's.
     extensions: Option<Rc<LoadExtensionsResult<Local>>>,
+    /// The getters read, in order.
+    pub(super) calls: RefCell<Vec<&'static str>>,
+}
+
+/// The diagnostics a loader reports beside its skills, prompt templates and themes.
+#[derive(Default)]
+pub(super) struct LoadedDiagnostics {
+    /// The skill diagnostics.
+    pub(super) skills: Vec<ResourceDiagnostic>,
+    /// The prompt template diagnostics of the first read.
+    pub(super) prompts: Vec<ResourceDiagnostic>,
+    /// The theme diagnostics.
+    pub(super) themes: Vec<ResourceDiagnostic>,
 }
 
 /// The resources a loader answers.
@@ -105,8 +119,14 @@ struct Resources {
     prompts: Vec<Vec<PromptTemplate>>,
     /// The loaded themes listed before the dark and light palettes.
     themes: Vec<Rc<Theme>>,
-    /// The loaded extensions by path and provenance; the default loader's when empty.
+    /// The loaded extensions by path and provenance.
     extensions: Vec<(String, SourceInfo)>,
+    /// The paths that failed to load.
+    errors: Vec<ExtensionLoadError>,
+    /// The commands registered, each by its own extension, by name and path.
+    commands: Vec<(String, String)>,
+    /// The diagnostics beside the skills, prompt templates and themes.
+    diagnostics: LoadedDiagnostics,
 }
 
 impl ForwardingLoader {
@@ -120,57 +140,123 @@ impl ForwardingLoader {
         let Resources {
             context,
             skills,
-            prompts,
+            mut prompts,
             mut themes,
             extensions: paths,
+            errors,
+            commands,
+            diagnostics,
         } = resources;
+        if prompts.is_empty() && !diagnostics.prompts.is_empty() {
+            prompts.push(Vec::new());
+        }
+        let mut prompt_diagnostics = Some(diagnostics.prompts);
         let prompts = prompts.into_iter().map(|prompts| {
             Rc::new(LoadPromptsResult {
                 prompts,
-                diagnostics: Vec::new(),
+                diagnostics: prompt_diagnostics.take().unwrap_or_default(),
             })
         });
         themes.extend([dark(), light()]);
+        let fixture_extensions = !(paths.is_empty() && errors.is_empty() && commands.is_empty());
         Self {
             inner,
-            themes,
+            themes: Rc::new(LoadThemesResult {
+                themes,
+                diagnostics: diagnostics.themes,
+            }),
             select: RefCell::default(),
             context: RefCell::new(context.into()),
             skills: Rc::new(LoadSkillsResult {
                 skills,
-                diagnostics: Vec::new(),
+                diagnostics: diagnostics.skills,
             }),
             prompts: RefCell::new(prompts.collect()),
             extensions: extensions.or_else(|| {
-                (!paths.is_empty()).then(|| Rc::new(extensions_from_paths(paths)))
+                fixture_extensions.then(|| Rc::new(load(paths, errors, &commands)))
             }),
+            calls: RefCell::default(),
         }
     }
 }
 
-/// Extensions loaded from `paths` with their provenance, registering nothing.
-fn extensions_from_paths(paths: Vec<(String, SourceInfo)>) -> LoadExtensionsResult<Local> {
-    let extensions = paths.into_iter().map(|(path, source_info)| {
-        let source_info = Arc::new(RwLock::new(source_info));
-        Rc::new(RwLock::new(Extension::new(path.clone(), path, source_info)))
-    });
+/// The command callback a registration stores; the witnesses never invoke it.
+type CommandHandler = Rc<
+    dyn Fn(
+        String,
+        ExtensionCommandContext,
+    )
+        -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>>>>,
+>;
+
+/// One loaded extension at `path` with its provenance, registering nothing.
+fn extension(path: String, source_info: SourceInfo) -> Rc<RwLock<Extension<Local>>> {
+    let source_info = Arc::new(RwLock::new(source_info));
+    Rc::new(RwLock::new(Extension::new(path.clone(), path, source_info)))
+}
+
+/// One local project extension at `path` registering the command `name`, as the
+/// extension registration interface stores it.
+fn commanding(name: &str, path: &str) -> Rc<RwLock<Extension<Local>>> {
+    let source_info = SourceInfo {
+        path: path.to_owned(),
+        source: "local".to_owned(),
+        scope: SourceScope::Project,
+        origin: SourceOrigin::TopLevel,
+        base_dir: None,
+    };
+    let owner = extension(path.to_owned(), source_info);
+    let handler: CommandHandler = Rc::new(|_, _| Box::pin(async { Ok(()) }));
+    let command = {
+        let owner = owner.read().unwrap();
+        RegisteredCommand {
+            name: name.to_owned(),
+            source_info: Arc::clone(&owner.source_info),
+            description: None,
+            get_argument_completions: None,
+            handler,
+        }
+    };
+    let command = Rc::new(RwLock::new(command));
+    owner
+        .write()
+        .unwrap()
+        .commands
+        .insert(name.to_owned(), command);
+    owner
+}
+
+/// Extensions loaded from `paths` with their provenance, then one extension per
+/// command, and the paths that failed.
+fn load(
+    paths: Vec<(String, SourceInfo)>,
+    errors: Vec<ExtensionLoadError>,
+    commands: &[(String, String)],
+) -> LoadExtensionsResult<Local> {
+    let extensions = paths
+        .into_iter()
+        .map(|(path, source_info)| extension(path, source_info))
+        .chain(commands.iter().map(|(name, path)| commanding(name, path)));
     LoadExtensionsResult {
         extensions: extensions.collect(),
-        errors: Vec::new(),
+        errors,
         runtime: create_extension_runtime::<Local>(),
     }
 }
 
 impl ResourceLoader<Local> for ForwardingLoader {
     fn get_extensions(&self) -> Rc<LoadExtensionsResult<Local>> {
+        self.calls.borrow_mut().push("extensions");
         self.extensions
             .clone()
             .unwrap_or_else(|| self.inner.get_extensions())
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
+        self.calls.borrow_mut().push("skills");
         Rc::clone(&self.skills)
     }
     fn get_prompts(&self) -> Rc<LoadPromptsResult> {
+        self.calls.borrow_mut().push("prompts");
         let mut prompts = self.prompts.borrow_mut();
         if prompts.len() > 1 {
             prompts.pop_front().unwrap()
@@ -182,18 +268,17 @@ impl ResourceLoader<Local> for ForwardingLoader {
         }
     }
     fn get_themes(&self) -> Rc<LoadThemesResult> {
+        self.calls.borrow_mut().push("themes");
         if let Some((settings, name)) = self.select.borrow_mut().take() {
             settings.borrow_mut().set_theme(name);
         }
-        Rc::new(LoadThemesResult {
-            themes: self.themes.clone(),
-            diagnostics: Vec::new(),
-        })
+        Rc::clone(&self.themes)
     }
     fn get_contributions(&self) -> Rc<LoadContributionsResult> {
         self.inner.get_contributions()
     }
     fn get_agents_files(&self) -> Rc<[ContextFile]> {
+        self.calls.borrow_mut().push("agents");
         Rc::clone(&self.context.borrow())
     }
     fn get_system_prompt(&self) -> Option<Rc<str>> {
@@ -257,8 +342,15 @@ pub(super) struct Setup {
     pub(super) extension: Option<ExtensionFactory<Local>>,
     /// The loaded themes the loader answers before the dark and light palettes.
     pub(super) themes: Vec<Rc<Theme>>,
-    /// The loaded extensions by path and provenance; the default loader's when empty.
+    /// The loaded extensions by path and provenance; the default loader's when these,
+    /// the failed paths and the commands are all empty.
     pub(super) extensions: Vec<(String, SourceInfo)>,
+    /// The paths that failed to load.
+    pub(super) errors: Vec<ExtensionLoadError>,
+    /// The commands registered, each by its own extension, by name and path.
+    pub(super) commands: Vec<(String, String)>,
+    /// The diagnostics beside the skills, prompt templates and themes.
+    pub(super) diagnostics: LoadedDiagnostics,
 }
 
 impl Default for Setup {
@@ -274,6 +366,9 @@ impl Default for Setup {
             extension: None,
             themes: Vec::new(),
             extensions: Vec::new(),
+            errors: Vec::new(),
+            commands: Vec::new(),
+            diagnostics: LoadedDiagnostics::default(),
         }
     }
 }
@@ -315,6 +410,9 @@ impl Setup {
             prompts: self.prompts,
             themes: self.themes,
             extensions: self.extensions,
+            errors: self.errors,
+            commands: self.commands,
+            diagnostics: self.diagnostics,
         };
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
         let result = session::session(&cwd, None, move |inner| {
