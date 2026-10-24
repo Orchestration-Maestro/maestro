@@ -2,6 +2,7 @@
 //! server writes, with recorded signal delivery and replaceable workspace operations.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::export_fixtures::{Recording, environment, published};
+use crate::support::session_harness::answer;
 use maestro_app::rpc_mode::{
     RpcFuture, RpcInput, RpcLineReader, RpcProcessPort, WorkspaceEventSink, WorkspaceOperations,
 };
@@ -93,6 +94,8 @@ pub struct Client {
     lines: mpsc::UnboundedReceiver<String>,
     /// The running server.
     pub server: tokio::task::JoinHandle<io::Result<RpcConnectionOutcome>>,
+    /// The server's signal registration.
+    signals: Rc<Signals>,
 }
 
 impl Client {
@@ -123,6 +126,19 @@ impl Client {
         serde_json::from_str(&self.next_line().await).unwrap()
     }
 
+    /// Every line written and not yet read, as records.
+    pub fn written(&mut self) -> Vec<Value> {
+        std::iter::from_fn(|| self.lines.try_recv().ok())
+            .map(|line| serde_json::from_str(&line).unwrap())
+            .collect()
+    }
+
+    /// Delivers `signal` to the server.
+    pub fn signal(&self, signal: TerminationSignal) {
+        let deliver = self.signals.deliver.borrow().clone();
+        deliver.unwrap()(signal);
+    }
+
     /// The connection's outcome, once it ends.
     pub async fn outcome(self) -> io::Result<RpcConnectionOutcome> {
         self.server.await.unwrap()
@@ -146,7 +162,7 @@ pub fn serve(
     let signals = Rc::new(Signals::default());
     let options = RpcModeOptions {
         workspace: Rc::new(ClosureWorkspace(workspace)),
-        process: signals,
+        process: Rc::clone(&signals) as Rc<dyn RpcProcessPort>,
         theme,
         export_operations: Rc::new(Recording::default()),
         render_environment: environment(published()),
@@ -161,6 +177,7 @@ pub fn serve(
         inputs: Some(inputs),
         lines,
         server,
+        signals,
     }
 }
 
@@ -253,4 +270,41 @@ pub fn of_type<'a>(records: &'a [Value], kind: &str) -> Vec<&'a Value> {
         .iter()
         .filter(|record| record["type"] == kind)
         .collect()
+}
+
+/// Appends a user message with `text` and its answer to the current session, which writes
+/// the session file; returns the user message's entry.
+pub fn user_entry(runtime: &AgentSessionRuntime, text: &str) -> String {
+    let session = runtime.session();
+    let mut manager = session.session_manager().borrow_mut();
+    let entry = manager
+        .append_message(json!({"role": "user", "content": text, "timestamp": 1}))
+        .unwrap();
+    manager
+        .append_message(serde_json::to_value(answer("answered", None, None)).unwrap())
+        .unwrap();
+    entry
+}
+
+/// The recorded outcome of each selection, or its failure text.
+pub type Outcomes = Rc<RefCell<Vec<Result<Option<String>, String>>>>;
+
+/// An extension whose `session_start` handler asks a selection and records its outcome.
+pub fn startup_select(outcomes: Outcomes) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let outcomes = Rc::clone(&outcomes);
+        let started = api.on::<SessionStartEvent, ()>(
+            "session_start".into(),
+            Rc::new(move |_, ctx| {
+                let outcomes = Rc::clone(&outcomes);
+                Box::pin(async move {
+                    let select = ctx.ui()?.select("start".into(), vec!["a".into()], None);
+                    let outcome = select.await.map_err(|error| error.to_string());
+                    outcomes.borrow_mut().push(outcome);
+                    Ok(None)
+                })
+            }),
+        );
+        Box::pin(std::future::ready(started))
+    })
 }

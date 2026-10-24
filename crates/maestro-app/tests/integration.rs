@@ -119,6 +119,7 @@ mod self_update_native;
 mod self_update_selection;
 mod server_commands;
 mod server_events;
+mod server_lifetime;
 #[cfg(unix)]
 #[path = "support/service_observations.rs"]
 mod service_observations;
