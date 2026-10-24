@@ -3913,6 +3913,7 @@ dependencies = [
  "maestro-theme",
  "maestro-tui",
  "maestro-tui-crossterm",
+ "ryu-js",
  "serde",
  "serde_json",
  "tokio",
