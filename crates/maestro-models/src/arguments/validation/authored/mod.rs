@@ -11,17 +11,9 @@ mod templates;
 
 use crate::SchemaKind;
 use serde_json::Value;
-use std::collections::HashMap;
-use std::collections::HashSet;
 
-/// The keys a schema declares in the named map, as one indexed lookup set.
-fn keys(schema: &Value, member: &str) -> HashSet<String> {
-    schema
-        .get(member)
-        .and_then(Value::as_object)
-        .map(|declared| declared.keys().cloned().collect())
-        .unwrap_or_default()
-}
+use super::coercion;
+use std::collections::HashMap;
 
 /// Whether a value validates against the supplied schema node.
 pub(super) fn validates(schema: &Value, value: &Value) -> bool {
@@ -64,7 +56,7 @@ impl<'a> Context<'a> {
             SchemaKind::Integer => scalars::to_number(value, true),
             SchemaKind::Boolean => scalars::to_boolean(value),
             SchemaKind::Null => scalars::to_null(value),
-            SchemaKind::Array => self.convert_array(value, pointer),
+            SchemaKind::Array => self.convert_array(value, pointer, schema),
             SchemaKind::Tuple => self.convert_tuple(value, pointer, schema),
             SchemaKind::Object => self.convert_object(value, pointer, schema),
             SchemaKind::Record => self.convert_record(value, pointer, schema),
@@ -85,27 +77,24 @@ impl<'a> Context<'a> {
     }
 
     /// Wrap a supplied value into a sequence and convert its items.
-    fn convert_array(&mut self, value: &mut Value, pointer: &str) {
+    fn convert_array(&mut self, value: &mut Value, pointer: &str, schema: &Value) {
         let mut candidate = scalars::to_array(std::mem::take(value));
         if let Some(values) = candidate.as_array_mut() {
-            for member in values {
-                self.convert_child(member, pointer, "items");
-            }
+            coercion::sequence(schema, values, |member, _, place| {
+                self.convert_place(member, pointer, place);
+            });
         }
         *value = candidate;
     }
 
     /// Convert the leading positions of a sequence through their positional nodes.
     fn convert_tuple(&mut self, value: &mut Value, pointer: &str, schema: &Value) {
-        let Some(items) = schema.get("items").and_then(Value::as_array) else {
-            return;
-        };
         let Some(values) = value.as_array_mut() else {
             return;
         };
-        for (index, member) in values.iter_mut().enumerate().take(items.len()) {
-            self.convert_child(member, pointer, &format!("items/{index}"));
-        }
+        coercion::positions(schema, values, |member, _, place| {
+            self.convert_place(member, pointer, place);
+        });
     }
 
     /// Convert present declared members, then declared additional members.
@@ -113,19 +102,22 @@ impl<'a> Context<'a> {
         let Some(object) = value.as_object_mut() else {
             return;
         };
-        let declared = keys(schema, "properties");
-        let present: Vec<String> = object.keys().cloned().collect();
-        for key in &declared {
-            if let Some(member) = object.get_mut(key) {
-                let suffix = format!("properties/{}", collections::escape(key));
-                self.convert_child(member, pointer, &suffix);
+        coercion::members(schema, object, |member, _, place| {
+            self.convert_place(member, pointer, place);
+        });
+    }
+
+    /// Convert one member through the node its place names.
+    fn convert_place(&mut self, value: &mut Value, pointer: &str, place: coercion::Member<'_>) {
+        let suffix = match place {
+            coercion::Member::Property(name) => {
+                format!("properties/{}", collections::escape(name))
             }
-        }
-        let uncovered: Vec<String> = present
-            .into_iter()
-            .filter(|name| !declared.contains(name))
-            .collect();
-        self.convert_additional(object, pointer, schema, uncovered);
+            coercion::Member::Position(index) => format!("items/{index}"),
+            coercion::Member::Item => "items".to_owned(),
+            coercion::Member::Additional => "additionalProperties".to_owned(),
+        };
+        self.convert_child(value, pointer, &suffix);
     }
 
     /// Convert every member that no declared pattern covers.
