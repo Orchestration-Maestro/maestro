@@ -48,6 +48,10 @@ impl SignalPort for NativeSignals {
 }
 
 /// The signals this host delivers: termination everywhere, and a hangup off Windows.
+///
+/// A host that can raise no POSIX signal binds no stream, so this table compiles where
+/// delivery is possible and in the tests that assert it.
+#[cfg(any(unix, test))]
 pub fn signals_for_host() -> Vec<TerminationSignal> {
     #[cfg(unix)]
     {
