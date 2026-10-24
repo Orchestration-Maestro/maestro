@@ -14,6 +14,7 @@ mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod share;
 mod transcript;
 mod transfer;
 mod typed;

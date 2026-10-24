@@ -25,6 +25,7 @@ mod key_display;
 mod queues;
 mod replay;
 mod resources;
+mod share;
 mod startup;
 mod submit;
 
