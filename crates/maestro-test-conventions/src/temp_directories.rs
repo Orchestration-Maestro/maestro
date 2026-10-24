@@ -2,7 +2,7 @@
 
 use syn::visit::Visit;
 
-use crate::source::{Member, Source, inherit_test_context, test_scope, visit_token_identifiers};
+use crate::source::{Member, Source, inherit_test_context, test_scope};
 
 /// Crates whose test directories have moved onto the disposable-directory owner.
 ///
@@ -99,10 +99,7 @@ impl<'ast> Visit<'ast> for References {
 
     fn visit_macro(&mut self, invocation: &'ast syn::Macro) {
         if self.testing || self.importing {
-            let lines = &mut self.lines;
-            visit_token_identifiers(&invocation.tokens, &mut |ident| {
-                lines.extend((ident == PLATFORM_DIRECTORY).then(|| ident.span().start().line));
-            });
+            token_references(&invocation.tokens, &mut self.lines);
         }
         syn::visit::visit_macro(self, invocation);
     }
@@ -110,4 +107,17 @@ impl<'ast> Visit<'ast> for References {
     inherit_test_context!(visit_item, Item, item_attributes);
     inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
     inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
+}
+
+/// Record platform-directory identifiers anywhere inside macro tokens, nesting included.
+fn token_references(tokens: &proc_macro2::TokenStream, lines: &mut Vec<usize>) {
+    for tree in tokens.clone() {
+        match tree {
+            proc_macro2::TokenTree::Ident(ident) if ident == PLATFORM_DIRECTORY => {
+                lines.push(ident.span().start().line);
+            }
+            proc_macro2::TokenTree::Group(group) => token_references(&group.stream(), lines),
+            _ => {}
+        }
+    }
 }

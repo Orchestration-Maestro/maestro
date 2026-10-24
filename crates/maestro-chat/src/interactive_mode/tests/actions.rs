@@ -3,10 +3,11 @@
 use super::{World, dark, isolated, light, native, painted, roles, started};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_app::utils::clipboard_image::ClipboardImage;
-use maestro_app::{DiagnosticErrorInfo, Model, ScopedModel, ThinkingLevel};
+use maestro_app::{DiagnosticErrorInfo, Model, OAuthError, ScopedModel, ThinkingLevel};
 use maestro_tui::{Component, tui::InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
 use std::{
+    cell::RefCell,
     io,
     path::{Path, PathBuf},
     rc::Rc,
@@ -265,7 +266,9 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
                     .editor
                     .handle_input(&format!("\x1b[200~{}\x1b[201~", input.expanded));
                 assert_eq!(world.mode.editor.get_text(), input.stored);
+                let restarted = restart_texts(&world);
                 run_action(&world, "app.editor.external");
+                assert_eq!(restarted.borrow().first(), Some(&expected.text));
                 assert_eq!(world.mode.editor.get_text(), expected.text);
                 assert_eq!(world.terminal.events(), ["start", "stop", "start"]);
                 world.terminal.clear_writes();
@@ -289,6 +292,19 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
             }
         },
     );
+}
+
+/// The editor text at each terminal restart from now on, seen when the restart hides the
+/// cursor, before any frame is written.
+fn restart_texts(world: &World) -> Rc<RefCell<Vec<String>>> {
+    let restarted = Rc::new(RefCell::new(Vec::new()));
+    let (seen, editor) = (Rc::clone(&restarted), Rc::clone(&world.mode.editor));
+    world.terminal.set_tap(move |data| {
+        if data == "\x1b[?25l" {
+            seen.borrow_mut().push(editor.get_text());
+        }
+    });
+    restarted
 }
 
 /// A Wayland paste helper that lists the planned types and prints the planned image.
@@ -450,7 +466,38 @@ fn clipboard_write_failure_is_silent() {
         assert!(!std::env::temp_dir().exists());
         assert_eq!(world.mode.editor.get_text(), "before");
         assert_eq!(world.runtime.pending(), 0);
+        #[cfg(target_os = "linux")]
+        {
+            std::fs::create_dir(std::env::temp_dir()).unwrap();
+            let previous = file_size_limit(None);
+            // One byte fits, so the file is created and the rest of the image fails to write.
+            file_size_limit(Some("1"));
+            let control = std::env::temp_dir().join("control");
+            let error = std::fs::write(&control, "ab").unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::FileTooLarge);
+            std::fs::remove_file(control).unwrap();
+            world.mode.paste_clipboard_result(Ok(Some(image())));
+            file_size_limit(Some(&previous));
+            assert_eq!(temporary_names(), Vec::<String>::new());
+            assert_eq!(world.mode.editor.get_text(), "before");
+            assert_eq!(world.runtime.pending(), 0);
+        }
     });
+}
+
+/// Reads this process's soft file-size limit, after setting it to `soft` when supplied.
+#[cfg(target_os = "linux")]
+fn file_size_limit(soft: Option<&str>) -> String {
+    let mut command = std::process::Command::new("prlimit");
+    command.arg(format!("--pid={}", std::process::id()));
+    if let Some(soft) = soft {
+        command.arg(format!("--fsize={soft}:"));
+    } else {
+        command.args(["--fsize", "--raw", "--noheadings", "--output=SOFT"]);
+    }
+    let output = command.output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }
 
 #[test]
@@ -649,6 +696,17 @@ fn write_model(world: &World, model: Arc<RwLock<Model>>) {
 }
 
 #[test]
+fn isolated_children_carry_no_ambient_credential_inputs() {
+    // The home directory stands for every inherited input: credential files live below it.
+    isolated(
+        "isolated_children_carry_no_ambient_credential_inputs",
+        |_| {
+            assert_eq!(std::env::var_os("HOME"), None);
+        },
+    );
+}
+
+#[test]
 fn model_cycle_distinguishes_scope_and_available_exhaustion() {
     isolated(
         "model_cycle_distinguishes_scope_and_available_exhaustion",
@@ -763,9 +821,15 @@ fn model_cycle_renders_failures_without_success_effects() {
             let selected = world.host.session().model();
             let footer = world.mode.footer.render(WIDTH);
             world
-                .mode
-                .show_model_cycle_result(Err(DiagnosticErrorInfo::error("cycle refused")))
-                .unwrap();
+                .host
+                .services()
+                .auth_storage
+                .set_fallback_resolver(|_| {
+                    Err(OAuthError::from(DiagnosticErrorInfo::error(
+                        "cycle refused",
+                    )))
+                });
+            cycle(&world, Direction::Forward);
             let (rows, expected_rows) = notices(&world, &expected.lines);
             assert_eq!(rows, expected_rows);
             assert!(Arc::ptr_eq(&world.host.session().model(), &selected));
@@ -778,9 +842,40 @@ fn model_cycle_renders_failures_without_success_effects() {
 /// The status a thinking cycle shows when the model cannot reason.
 const NO_THINKING: &str = "Current model does not support thinking";
 
+/// The warning an external edit shows without a configured editor.
+const NO_EDITOR: &str = "No editor configured";
+
+/// The default keys of forward and backward model cycling and image paste, whose work
+/// runs on the terminal runtime.
+const DEFAULT_ASYNCHRONOUS: [&str; 3] = ["\x10", "\x1b[112;6u", "\x16"];
+
 /// Whether the transcript shows `text`.
 fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
     chat.render(WIDTH).concat().contains(text)
+}
+
+/// Presses each action's default key on a fresh mode and observes the action run.
+fn default_keys_run_every_action(directory: &Path) {
+    let world = started(directory);
+    world.mode.editor.handle_input("\x1b[Z");
+    assert!(shows(&world.mode.chat_container, NO_THINKING));
+    world.mode.editor.handle_input("\x07");
+    assert!(shows(&world.mode.chat_container, NO_EDITOR));
+    for (count, default) in (1..).zip(DEFAULT_ASYNCHRONOUS) {
+        world.mode.editor.handle_input(default);
+        assert_eq!(world.runtime.futures(), count);
+    }
+    assert!(world.runtime.drain_futures().is_empty());
+}
+
+/// Presses each action's default key on a mode whose actions are all remapped.
+fn default_keys_do_nothing_once_remapped(world: &World) {
+    for obsolete in ["\x1b[Z", "\x07"].iter().chain(&DEFAULT_ASYNCHRONOUS) {
+        world.mode.editor.handle_input(obsolete);
+    }
+    assert_eq!(world.runtime.futures(), 0);
+    assert!(!shows(&world.mode.chat_container, NO_THINKING));
+    assert!(!shows(&world.mode.chat_container, NO_EDITOR));
 }
 
 #[test]
@@ -788,26 +883,27 @@ fn editor_actions_respect_remapped_keys_and_release_mode() {
     isolated(
         "editor_actions_respect_remapped_keys_and_release_mode",
         |directory| {
-            let world = started(directory);
-            world.mode.editor.handle_input("\x1b[Z");
-            assert!(shows(&world.mode.chat_container, NO_THINKING));
+            default_keys_run_every_action(directory);
             std::fs::write(
                 directory.join("keybindings.json"),
-                r#"{"app.thinking.cycle": "ctrl+y", "app.model.cycleForward": "ctrl+u"}"#,
+                r#"{"app.thinking.cycle": "ctrl+y", "app.editor.external": "ctrl+w",
+                    "app.model.cycleForward": "ctrl+u", "app.model.cycleBackward": "ctrl+k",
+                    "app.clipboard.pasteImage": "ctrl+]"}"#,
             )
             .unwrap();
-            let World { mode, runtime, .. } = started(directory);
+            let world = started(directory);
+            default_keys_do_nothing_once_remapped(&world);
+            let World { mode, runtime, .. } = world;
             let editor = Rc::clone(&mode.editor);
             let chat = Rc::clone(&mode.chat_container);
-            for obsolete in ["\x1b[Z", "\x10"] {
-                editor.handle_input(obsolete);
-            }
-            assert_eq!(runtime.futures(), 0);
-            assert!(!shows(&chat, NO_THINKING));
             editor.handle_input("\x19");
             assert!(shows(&chat, NO_THINKING));
-            editor.handle_input("\x15");
-            assert_eq!(runtime.futures(), 1);
+            editor.handle_input("\x17");
+            assert!(shows(&chat, NO_EDITOR));
+            for (count, remapped) in (1..).zip(["\x15", "\x0b", "\x1d"]) {
+                editor.handle_input(remapped);
+                assert_eq!(runtime.futures(), count);
+            }
             assert!(!shows(&chat, "Only one model available"));
             let weak = Rc::downgrade(&mode);
             drop(mode);
@@ -815,8 +911,9 @@ fn editor_actions_respect_remapped_keys_and_release_mode() {
             assert!(runtime.drain_futures().is_empty());
             assert!(shows(&chat, "Only one model available"));
             assert!(weak.upgrade().is_none());
-            editor.handle_input("\x19");
-            editor.handle_input("\x15");
+            for remapped in ["\x19", "\x17", "\x15", "\x0b", "\x1d"] {
+                editor.handle_input(remapped);
+            }
             assert_eq!(runtime.futures(), 0);
         },
     );

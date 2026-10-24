@@ -6,7 +6,8 @@ use std::{
 };
 
 /// Creates `path` exclusively, readable only by its owner where the platform has modes,
-/// and writes `bytes`; a failed write removes the file it created.
+/// and writes `bytes`; after a failed write, removal of the file it created is attempted
+/// and a failed removal ignored.
 ///
 /// # Errors
 /// Returns the creation failure, including an existing entry or symbolic link at `path`,

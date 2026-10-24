@@ -2,11 +2,12 @@
 
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
-the startup help, the transcript notices, typed input, session replay, the
-expansion and thinking shortcuts, thinking and model cycling, the editor border,
-external editing and image paste. The prompt loop, streaming messages, installed
-custom headers, the terminal title and the other integrations are still to come;
-the mode reads submitted text but does not yet prompt the session.
+the startup help, the loaded-resource listing, the transcript notices, typed
+input, session replay, the expansion and thinking shortcuts, thinking and model
+cycling, the editor border, external editing and image paste. The prompt loop,
+streaming messages, startup messages, installed custom headers, the terminal
+title and the other integrations are still to come; the mode reads submitted text
+but does not yet prompt the session.
 
 ## Construction
 
@@ -34,16 +35,48 @@ header, transcript, pending-messages, status, upper widget, editor and lower wid
 containers and the footer, in that order. It focuses the editor, binds the
 shortcuts and editor actions, installs editor submission and starts the terminal. A
 terminal start failure is returned and leaves the mode uninitialized. After a
-successful start it replays the session (see below). A theme change then
-invalidates the presentation, recolours the editor border and requests a frame,
-and a branch change requests a frame. Neither callback keeps the mode alive.
+successful start, a theme change invalidates the presentation, recolours the
+editor border and requests a frame, and a branch change requests a frame. Neither
+callback keeps the mode alive. Last, it lists the loaded resources in the
+transcript and then replays the session (see below).
 
-`InteractiveModeOptions::verbose` forces the expanded startup help. Without it,
-the `quietStartup` setting leaves the header empty. Otherwise the header shows the
+`InteractiveModeOptions::verbose` forces the expanded startup help, as does
+expanded tool output. Without verbose, the `quietStartup` setting leaves the
+header empty. Otherwise the header shows the
 application name and version, the compact key hints and two onboarding lines. In
 verbose mode it shows the full list of key hints instead. Hints follow the loaded
 bindings: several keys keep their order, and an unbound action shows no key.
 Header text keeps the colours of the theme in effect when it was built.
+
+## Loaded resources
+
+The listing appends one section per kind of loaded resource that has entries, in
+the order `[Context]`, `[Skills]`, `[Prompts]`. Each section is its heading over its
+entries, followed by an empty row; `[Context]` also gets an empty row above it.
+With `quietStartup` set and verbose off, nothing is listed.
+
+`[Context]` lists the context files the session's resource loader discovered, in
+discovery order. The compact form puts them on one row, separated by commas: a file
+inside the working directory shows its relative path (`.` for the directory
+itself), and any other file its absolute path. The expanded form puts each path on
+its own row. Paths resolve lexically, without reading the filesystem. A leading
+home directory is shown as `~`; an empty home directory abbreviates nothing. The home
+directory is looked up only when a full path is shown, so a listing of prompts
+alone needs none. When that lookup fails, the listing reports the failure.
+
+`[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
+templates. The compact form is one row of skill names, or of prompt names with a
+leading `/`, trimmed and sorted for the current locale. The expanded form groups
+entries under `project`, `user` and `path` (command-line and temporary resources).
+Within each scope it lists plain paths first, then each package source with its
+entries, all sorted for the locale. A package entry is shown relative to its
+package root, or else by its path inside the npm or Git package directory. Prompts
+show their `/name`; when several templates share a file, the last one's name is
+shown.
+
+Sections start expanded in verbose mode or when tool output is expanded, and compact
+otherwise. Each section keeps the text it was built with. Expanding or collapsing it
+later repaints only its heading in the current theme.
 
 ## Notices and the editor
 
@@ -108,8 +141,8 @@ the last row, a new status replaces its text; otherwise it starts a new line.
 ## Shortcuts
 
 The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of
-every expandable transcript row: tool rows, shell runs, summaries, skill rows and
-custom messages. The walk uses the transcript's rows as they are when it starts, so
+every expandable transcript row: loaded-resource sections, tool rows, shell runs,
+summaries, skill rows and custom messages. The walk uses the transcript's rows as they are when it starts, so
 a row a renderer appends during the walk is reached, and a row it removes is not.
 
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
@@ -131,8 +164,10 @@ terminal runtime, which keeps the mode until it completes. It then shows
 `Switched to <name>`, using the model id when the name is empty and adding
 ` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
 the footer and editor border. With no other candidate it shows
-`Only one model in scope` or `Only one model available`; a session error is shown as
-an error notice and changes nothing.
+`Only one model in scope` or `Only one model available`. A session error is shown
+as an error notice instead of the switch message. A failed credential lookup leaves
+the selection as it was; a recording or listener failure happens after the new
+model is selected, so that model stays selected.
 
 ## Editor border
 
@@ -161,8 +196,9 @@ rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md`
 the temporary directory. The mode then stops the terminal and runs the editor on
 the inherited terminal. A zero exit replaces the editor text with the file's text
 less one final line feed; a nonzero exit, a signal or a failed launch keep the text.
-The file is removed, and the terminal restarted with a full redraw, after every
-outcome. Other failures are handed to the terminal's runtime host.
+After every outcome the mode tries to remove the file it created, ignoring a failed
+removal, and restarts the terminal with a full redraw. Other failures are handed
+to the terminal's runtime host.
 
 ## Image paste
 

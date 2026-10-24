@@ -5,6 +5,7 @@ use crate::{
     AssistantMessageComponent, ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams,
     ToolExecutionResult,
 };
+use indexmap::IndexMap;
 use maestro_app::agent_session::ToolsManager;
 use maestro_app::{
     ReadonlySessionManager, SessionContext, TextContent, ToolName, ToolRendererBinding,
@@ -12,10 +13,46 @@ use maestro_app::{
 };
 use maestro_tui::Component;
 use serde_json::Value;
-use std::{error::Error, io, rc::Rc, sync::Arc};
+use std::{collections::HashMap, error::Error, io, rc::Rc, sync::Arc};
 
-/// The pending tool rows of one replay, by call id in call order.
-type PendingTools = indexmap::IndexMap<String, Rc<ToolExecutionComponent>>;
+/// The pending tool rows of one replay by call id, in call order. Pairing a result empties
+/// its row's slot instead of shifting the later rows, so a batch's results pair in linear time.
+#[derive(Default)]
+struct PendingTools {
+    /// The slot of each pending call id.
+    slots: HashMap<String, usize>,
+    /// The rows in call order; a paired row leaves its slot empty.
+    rows: Vec<Option<(String, Rc<ToolExecutionComponent>)>>,
+}
+
+impl PendingTools {
+    /// Registers `row` for call `id`; a pending row of the same id is replaced in its place,
+    /// while a paired id registers again after the other rows.
+    fn insert(&mut self, id: String, row: Rc<ToolExecutionComponent>) {
+        let pending = self
+            .slots
+            .get(&id)
+            .and_then(|&slot| self.rows.get_mut(slot));
+        if let Some(Some((_, pending))) = pending {
+            *pending = row;
+        } else {
+            self.slots.insert(id.clone(), self.rows.len());
+            self.rows.push(Some((id, row)));
+        }
+    }
+
+    /// Removes and returns the pending row of call `id`.
+    fn remove(&mut self, id: &str) -> Option<Rc<ToolExecutionComponent>> {
+        let slot = self.slots.remove(id)?;
+        let (_, row) = self.rows.get_mut(slot)?.take()?;
+        Some(row)
+    }
+
+    /// The rows still pending, by call id in call order.
+    fn into_map(self) -> IndexMap<String, Rc<ToolExecutionComponent>> {
+        self.rows.into_iter().flatten().collect()
+    }
+}
 
 /// The effects a replay has besides the transcript rows.
 #[derive(Clone, Copy, Default)]
@@ -79,7 +116,7 @@ impl InteractiveMode {
         options: RenderSessionContextOptions,
     ) -> Result<(), Box<dyn Error>> {
         drop(self.pending_tools.take());
-        let mut rendered = PendingTools::new();
+        let mut rendered = PendingTools::default();
         if options.update_footer {
             self.footer.invalidate();
             self.update_editor_border_color()?;
@@ -94,7 +131,7 @@ impl InteractiveMode {
                 )?,
             }
         }
-        self.pending_tools.replace(rendered);
+        self.pending_tools.replace(rendered.into_map());
         self.ui.request_render(false);
         Ok(())
     }
@@ -133,7 +170,7 @@ impl InteractiveMode {
                     };
                     row.update_result(result, false)?;
                 }
-                None => drop(rendered.insert(id, row)),
+                None => rendered.insert(id, row),
             }
         }
         Ok(())
@@ -224,7 +261,7 @@ impl InteractiveMode {
 /// Returns the failure of a malformed result record or of the row's rendering.
 fn complete_tool_call(record: Value, rendered: &mut PendingTools) -> Result<(), Box<dyn Error>> {
     let id = record.get("toolCallId").and_then(Value::as_str);
-    let Some(row) = id.and_then(|id| rendered.shift_remove(id)) else {
+    let Some(row) = id.and_then(|id| rendered.remove(id)) else {
         return Ok(());
     };
     let result: ToolResultMessage = serde_json::from_value(record)?;
