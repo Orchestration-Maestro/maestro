@@ -238,7 +238,7 @@ fn retained(
     }
     Ok(json!("done"))
 }
-/// Retain, clone, drop or call through an opaque UI owner, by its retained index.
+/// Retain, clone, rebind, drop or call through an opaque UI owner, by its retained index.
 fn retained_ui(
     kept: &RefCell<Kept>,
     request: &Request,
@@ -249,6 +249,13 @@ fn retained_ui(
         "alias" => {
             let ui = kept.borrow().uis.first().cloned().ok_or("missing UI")?;
             kept.borrow_mut().uis.push(ui);
+        }
+        "rebind" => {
+            let fresh = ctx.ui()?;
+            let mut owners = kept.borrow_mut();
+            let bound = owners.uis.first_mut().ok_or("missing UI")?;
+            let displaced = std::mem::replace(bound, fresh);
+            owners.uis.push(displaced);
         }
         "pop" => {
             let old = kept.borrow_mut().uis.pop();
