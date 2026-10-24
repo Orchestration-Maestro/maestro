@@ -85,6 +85,7 @@ mod network_connection_lost_retry_checks;
 #[path = "docx_support/numbering.rs"]
 mod numbering_observation;
 mod output_routing;
+mod package_command_execution;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/package_fixtures.rs"]
 mod package_fixtures;

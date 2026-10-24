@@ -24,24 +24,29 @@ use crate::components::session_selector::list::tests::session_picker::{
 };
 use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
-use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
+use maestro_app::presentation_data::footer_data_provider::{
+    FooterFileStats, FooterOperations, NativeFooterOperations,
+};
 use maestro_app::{
     AgentSessionRuntime, ContextFile, CreateAgentSessionRuntimeFactory, DefaultEventBus,
     DiagnosticErrorInfo, Extension, ExtensionCommandContext, ExtensionFactory, ExtensionLoadError,
     LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
     PromptTemplate, RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader,
     SettingsManager, Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
-    load_extension_from_factory,
+    load_extension_from_factory, strip_ansi,
 };
 use maestro_test_process::TestProcess;
-use maestro_theme::{Theme, ThemeColor, ThemeState};
+use maestro_theme::{
+    Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
+};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
-    EditorComponent, autocomplete as tui_autocomplete,
+    EditorComponent, Text, autocomplete as tui_autocomplete,
 };
 use serde::{Deserialize, de::DeserializeOwned};
+use serde_json::json;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::VecDeque,
     future::Future,
     io,
@@ -49,6 +54,7 @@ use std::{
     pin::Pin,
     rc::Rc,
     sync::{Arc, RwLock},
+    time::Duration,
 };
 
 /// Every recorded presentation case.
@@ -358,8 +364,7 @@ pub(super) struct Setup {
     /// A supplied theme registry for inventory and custom-file observations.
     pub(super) theme_state: Option<Rc<ThemeState>>,
     /// Supplied native effects, when a test drives their local task set.
-    pub(super) operations:
-        Option<Rc<dyn maestro_app::presentation_data::footer_data_provider::FooterOperations>>,
+    pub(super) operations: Option<Rc<dyn FooterOperations>>,
     /// The mode options.
     pub(super) options: InteractiveModeOptions,
     /// Changes the settings before construction.
@@ -1047,6 +1052,240 @@ fn startup_callback_registration_does_not_retain_the_mode() {
             provider.set_cwd(directory.join("gone").to_str().unwrap().to_owned());
             assert_eq!(runtime.pending(), 0);
             drop((terminal, host, loader));
+        },
+    );
+}
+
+/// Footer and theme-watch effects where only the theme watches are observed.
+#[derive(Default)]
+struct Watched {
+    /// Whether each theme watch is still open, in creation order.
+    open: RefCell<Vec<Rc<Cell<bool>>>>,
+}
+
+/// One open theme watch.
+struct Handle {
+    /// Set once the watch closes.
+    closed: Rc<Cell<bool>>,
+}
+
+impl ThemeWatcher for Handle {
+    fn close(&mut self) -> io::Result<()> {
+        self.closed.set(true);
+        Ok(())
+    }
+}
+
+impl Drop for Handle {
+    fn drop(&mut self) {
+        self.closed.set(true);
+    }
+}
+
+/// A scheduled theme reload that never runs.
+struct Pending;
+
+impl ThemeReloadTimer for Pending {
+    fn cancel(&mut self) {}
+}
+
+impl ThemeWatchOperations for Watched {
+    fn watch(
+        &self,
+        _path: &str,
+        _listener: Rc<dyn Fn(Option<String>)>,
+        _on_error: Rc<dyn Fn()>,
+    ) -> io::Result<Box<dyn ThemeWatcher>> {
+        let closed = Rc::new(Cell::new(false));
+        self.open.borrow_mut().push(Rc::clone(&closed));
+        Ok(Box::new(Handle { closed }))
+    }
+
+    fn schedule(
+        &self,
+        _delay: Duration,
+        _callback: Box<dyn FnOnce()>,
+    ) -> Box<dyn ThemeReloadTimer> {
+        Box::new(Pending)
+    }
+}
+
+impl FooterOperations for Watched {
+    fn symbolic_ref_async(
+        &self,
+        _repo_dir: &str,
+        callback: Box<dyn FnOnce(io::Result<Option<String>>)>,
+    ) {
+        callback(Ok(None));
+    }
+
+    fn watch_file(
+        &self,
+        _path: &str,
+        _interval: Duration,
+        _listener: Rc<dyn Fn(FooterFileStats, FooterFileStats)>,
+    ) -> Box<dyn ThemeWatcher> {
+        Box::new(Handle {
+            closed: Rc::new(Cell::new(false)),
+        })
+    }
+
+    fn symbolic_ref_sync(&self, _repo_dir: &str) -> io::Result<Option<String>> {
+        Ok(None)
+    }
+}
+
+/// A mode whose selected custom theme is watched through `watched`, which must first see
+/// one open watch.
+fn watching(directory: &Path, watched: &Rc<Watched>) -> World {
+    let custom = directory.join("themes");
+    std::fs::create_dir_all(&custom).unwrap();
+    // The watcher only needs the entry's file; the registered theme answers the load.
+    std::fs::write(custom.join("watched.json"), "{}").unwrap();
+    let registry = Rc::new(ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: custom.to_str().unwrap().to_owned(),
+    }));
+    Setup {
+        configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
+        themes: vec![published::named(1, Some("watched"))],
+        theme_state: Some(registry),
+        operations: Some(Rc::clone(watched) as Rc<dyn FooterOperations>),
+        ..Setup::default()
+    }
+    .build(directory)
+}
+
+#[test]
+fn fatal_runtime_error_writes_its_notice_before_stopping_the_terminal() {
+    isolated(
+        "fatal_runtime_error_writes_its_notice_before_stopping_the_terminal",
+        |directory| {
+            let watched = Rc::new(Watched::default());
+            let world = watching(directory, &watched);
+            start(&world);
+            world.runtime.settle().unwrap();
+            assert_eq!(watched.open.borrow().len(), 1);
+            assert!(!watched.open.borrow()[0].get());
+            world.terminal.clear_writes();
+            world
+                .mode
+                .report_fatal_runtime_error("Failed to create session", &io::Error::other("boom"));
+            let theme = world.themes.theme().get().unwrap();
+            let notice = theme
+                .fg(&ThemeColor::Error, "Error: Failed to create session: boom")
+                .unwrap();
+            let rows = world.mode.chat_container.render(100);
+            assert!(
+                rows.iter().any(|row| row.contains(&notice)),
+                "the failure notice: {rows:?}"
+            );
+            let writes = world.terminal.writes();
+            let notice_index = writes
+                .iter()
+                .position(|write| {
+                    strip_ansi(write)
+                        .unwrap()
+                        .contains("Error: Failed to create session: boom")
+                })
+                .unwrap_or_else(|| panic!("the failure notice reached the terminal: {writes:?}"));
+            let restore_index = writes
+                .iter()
+                .position(|write| write.contains("\x1b[?25h"))
+                .expect("the cursor is shown");
+            assert!(
+                notice_index < restore_index,
+                "the notice precedes the restore: {writes:?}"
+            );
+            assert!(watched.open.borrow()[0].get(), "the theme watch closes");
+            assert_eq!(world.terminal.events(), ["start", "stop"]);
+        },
+    );
+}
+
+#[test]
+fn fatal_runtime_error_ends_the_process_with_failure_status() {
+    let test = "fatal_runtime_error_ends_the_process_with_failure_status";
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        if selection.runs_case("fatal") {
+            let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
+            let world = Setup::default().build(Path::new(&directory));
+            println!("\nPROBE fatal body started");
+            world
+                .mode
+                .handle_fatal_runtime_error("Failed to create session", &io::Error::other("boom"));
+        }
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let output = TestProcess::current(test)
+        .unwrap()
+        .case("fatal")
+        .current_dir(scratch.0.path())
+        .env(&*ENV_AGENT_DIR, scratch.0.path())
+        .nocapture()
+        .output()
+        .unwrap();
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("PROBE fatal body started"),
+        "the child reached the fatal call: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert_eq!(output.status.code(), Some(1));
+}
+
+#[test]
+fn current_session_state_rendering_clears_stale_rows_and_replays_the_session() {
+    isolated(
+        "current_session_state_rendering_clears_stale_rows_and_replays_the_session",
+        |directory| {
+            let world = started(directory);
+            let session = world.host.session();
+            let mut manager = session.session_manager().borrow_mut();
+            manager
+                .append_message(transcript::user_record("REPLAYED"))
+                .unwrap();
+            manager
+                .append_message(transcript::assistant(
+                    &json!([transcript::call("call", "unknown_tool")]),
+                    "toolUse",
+                    None,
+                ))
+                .unwrap();
+            drop(manager);
+            let stale =
+                crate::ToolExecutionComponent::new(transcript::tool_params(&world, "stale"))
+                    .unwrap();
+            world
+                .mode
+                .pending_tools
+                .borrow_mut()
+                .insert("stale".to_owned(), Rc::new(stale));
+            world
+                .mode
+                .chat_container
+                .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+            world
+                .mode
+                .pending_messages_container
+                .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+            world.mode.render_current_session_state().unwrap();
+            let rows = world.mode.chat_container.render(100);
+            assert!(!rows.iter().any(|row| row.contains("STALE")), "{rows:?}");
+            assert!(rows.iter().any(|row| row.contains("REPLAYED")), "{rows:?}");
+            assert!(
+                world
+                    .mode
+                    .pending_messages_container
+                    .children()
+                    .borrow()
+                    .is_empty()
+            );
+            let pending: Vec<_> = world.mode.pending_tools.borrow().keys().cloned().collect();
+            assert_eq!(pending, ["call"]);
+            maestro_tui::tui::InputHandler::handle_input(world.mode.editor.as_ref(), "\x1b[A");
+            assert_eq!(world.mode.editor.get_text(), "REPLAYED");
         },
     );
 }

@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod capture_lifecycle;
+mod child_status_checks;
 mod helper_launches;
 mod pty_children;
 mod streamed_capture;

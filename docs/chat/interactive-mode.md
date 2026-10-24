@@ -3,7 +3,8 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, session replay, the expansion and thinking shortcuts, thinking
+input, queued input, session replay, the reset of the presentation after a session
+replacement, the fatal-error exit, the expansion and thinking shortcuts, thinking
 and model cycling, model selection and scopes, the editor border, external editing
 and image paste. The prompt loop, streaming messages, startup messages, installed
 custom headers, the terminal title and other integrations are still to come; the
@@ -231,6 +232,23 @@ and a failure in them goes to the terminal runtime's error route.
 
 A status is a dim line in the transcript. When the previous status line is still
 the last row, a new status replaces its text; otherwise it starts a new line.
+
+## Session replacement and fatal errors
+
+`render_current_session_state` clears the transcript and the pending-message rows and
+then replays the current session with the initial replay's effects: it refreshes the
+footer and the editor border, adds each user text to the editor history and shows the
+compaction notice. A transcript row or pending tool row left by the replaced session
+does not survive the call, so the presentation shows only the session it now reads.
+
+`handle_fatal_runtime_error` takes a prefix and the error that ended a session
+operation. It appends `Error: <prefix>: <message>` to the transcript, where the message
+is the error's own text, draws that frame at once, then closes the theme watch and
+stops the terminal, so no theme reload or further frame repaints once the notice is
+drawn. It then ends the process with status 1. A failure while appending or drawing
+the notice, or while stopping the terminal, is ignored, because the process is ending
+either way. The notice is drawn before the terminal stops, because a stop cancels a
+queued frame.
 
 ## Shortcuts
 

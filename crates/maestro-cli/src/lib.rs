@@ -9,3 +9,4 @@ pub mod input;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod model_login;
+pub mod packages;

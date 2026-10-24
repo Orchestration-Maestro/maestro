@@ -2,6 +2,10 @@
 
 use serde::Deserialize;
 
+/// Controlled package command harness.
+#[cfg(unix)]
+pub mod package_commands;
+
 /// One recorded case: its group, its name, its input and its complete expected result.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
