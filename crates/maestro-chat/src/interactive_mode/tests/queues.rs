@@ -1,10 +1,11 @@
 //! Queued steering and follow-up input: snapshots, pending rows, restoration, status lines
 //! and the queue key actions over the mode's real session and editor.
 use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions};
+use super::bash::shelling;
 use super::typed::{poll, recalled, submit};
 use super::{
-    Held, Setup, World, active, border_row, driving, echoing_shell, holding, isolated, on_tasks,
-    painted, rendered_border, scripted, select_level, start_shells, started, streaming,
+    Held, Setup, World, border_row, driving, echoing_shell, holding, isolated, on_tasks, painted,
+    rendered_border, scripted, select_level, start_shells, started, streaming,
     transcript_positions,
 };
 use crate::BashExecutionComponent;
@@ -13,12 +14,11 @@ use crate::interactive_mode::bash::component_address;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{
     AgentSessionEvent, Cancellation, DiagnosticErrorInfo, ExtensionFactory, InputEvent,
-    InputEventResult, Local, RegisteredCommand, SettingsManager, ThinkingLevel,
-    is_whitespace_scalar,
+    InputEventResult, Local, RegisteredCommand, ThinkingLevel, is_whitespace_scalar,
 };
 use maestro_theme::ThemeColor;
 use maestro_tui::editor_component::TextCallback;
-use maestro_tui::tui::InputHandler;
+use maestro_tui::tui::{InputHandler, LocalFuture};
 use maestro_tui::{Component, EditorComponent, KeybindingKeys, Spacer, Text};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -1564,72 +1564,51 @@ impl Interrupt {
     }
 }
 
-/// A started mode whose shell reports its start and waits for the release file.
+/// The file whose creation lets the held shell end.
+const HELD_RELEASE: &str = "held-release";
+
+/// A started mode whose shell waits for the release file.
 fn held_shell(directory: &Path) -> World {
-    let started = directory.join("held-started");
-    let release = directory.join("held-release");
-    for stale in [&started, &release] {
-        let _ = std::fs::remove_file(stale);
-    }
+    let release = directory.join(HELD_RELEASE);
+    let _ = std::fs::remove_file(&release);
     let script = scripted(
         directory,
         "shell",
         &format!(
-            ": > {}\nwhile [ ! -e {} ]; do :; done\nprintf 'held\\n'",
-            started.display(),
+            "while [ ! -e {} ]; do :; done\nprintf 'held\\n'",
             release.display()
         ),
     );
-    let world = Setup {
-        configure: Box::new(move |settings: &mut SettingsManager| {
-            settings.set_shell_path(Some(script));
-        }),
-        ..Setup::default()
-    }
-    .build(directory);
-    world.mode.init().unwrap();
-    world.runtime.settle().unwrap();
-    world
+    shelling(directory, &script)
 }
 
-/// Submits the held shell command and waits until the session runs it.
-async fn start_held(world: &World, directory: &Path) {
+/// Submits the held shell command and returns the command it admitted once the session
+/// runs it.
+fn start_held(world: &World) -> LocalFuture {
     submit(&world.mode, HELD);
-    let started = directory.join("held-started");
-    for _ in 0..10_000 {
-        if world.mode.runtime_host.session().is_bash_running() && started.exists() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("the held shell started");
+    let mut admitted = world.runtime.take_futures();
+    assert_eq!(admitted.len(), 1, "the submission admits one command");
+    let mut command = admitted.pop().unwrap();
+    assert!(
+        poll(&mut command).is_none(),
+        "the held shell waits for its release"
+    );
+    assert!(
+        world.mode.runtime_host.session().is_bash_running(),
+        "the held shell runs"
+    );
+    command
 }
 
-/// Waits until the session no longer runs a shell command, yielding so the cancellation
-/// reaches the command.
-async fn until_stopped(world: &World) {
-    for _ in 0..10_000 {
-        if !world.mode.runtime_host.session().is_bash_running() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("the shell command stopped");
+/// Waits for the held shell's own command to finish, which its release or its cancellation
+/// settles.
+async fn until_settled(command: LocalFuture) {
+    command.await.expect("the held shell settles");
 }
 
-/// Lets the held shell finish and waits for its row to settle.
-async fn release_held(world: &World, directory: &Path) {
-    if !world.mode.runtime_host.session().is_bash_running() {
-        return;
-    }
-    std::fs::write(directory.join("held-release"), "").unwrap();
-    for _ in 0..10_000 {
-        if !world.mode.runtime_host.session().is_bash_running() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("the held shell settled");
+/// Lets the held shell's script end so its command can settle.
+fn release_held(directory: &Path) {
+    std::fs::write(directory.join(HELD_RELEASE), "").unwrap();
 }
 
 /// Presses the interrupt key, recording whether the response was already stopped at each
@@ -1714,16 +1693,19 @@ async fn interrupt_in(
         // A queued text is seeded once the response streams, where the restore can take it
         // back, and before any shell command so both branches see the same queues.
         seed(world, selection.queued());
-        if selection.running {
-            start_held(world, directory).await;
-        }
+        let mut command = selection.running.then(|| start_held(world));
         let stopped = press_interrupt(world, signal.as_ref());
+        // A streaming response outranks the shell, so its release settles the command later;
+        // every other interrupt cancels the command itself, which settles before the checks.
         if selection.running && !selection.streaming {
-            until_stopped(world).await;
+            until_settled(command.take().expect("the running shell holds its command")).await;
         }
         assert_interrupt(world, selection, signal.as_ref(), &stopped);
         assert_border(world, selection);
-        release_held(world, directory).await;
+        if let Some(command) = command {
+            release_held(directory);
+            until_settled(command).await;
+        }
     })
     .await;
     errors
@@ -1832,21 +1814,29 @@ fn pending_shell_rows(world: &World) -> Vec<Rc<BashExecutionComponent>> {
         .collect()
 }
 
-/// Checks that every retained shell keeps its identity and its painted output once, that
-/// each row is retained in `pending_shells`, and that `class`'s text rows follow them.
-fn assert_pending_rows(world: &World, class: QueueClass, shells: usize) {
-    let retained = world.mode.pending_shells.borrow().clone();
-    assert_eq!(retained.len(), shells, "retained shell rows");
-    let shown = pending_shell_rows(world);
-    assert_eq!(shown.len(), shells, "shown shell rows");
-    for (index, (shown, retained)) in shown.iter().zip(retained.iter()).enumerate() {
+/// Checks that every shell saved before the refresh, `original`, is still the retained and
+/// shown row at its position, that it paints its output-only marker once, and that
+/// `class`'s text rows follow them.
+fn assert_pending_rows(world: &World, class: QueueClass, original: &[Rc<BashExecutionComponent>]) {
+    let retained = world.mode.pending_shells.borrow();
+    assert_eq!(retained.len(), original.len(), "retained shell rows");
+    for (index, (retained, saved)) in retained.iter().zip(original.iter()).enumerate() {
         assert!(
-            Rc::ptr_eq(shown, retained),
+            Rc::ptr_eq(retained, saved),
+            "row {index} stays retained through the refresh"
+        );
+    }
+    let shown = pending_shell_rows(world);
+    assert_eq!(shown.len(), original.len(), "shown shell rows");
+    for (index, (shown, saved)) in shown.iter().zip(original.iter()).enumerate() {
+        assert!(
+            Rc::ptr_eq(shown, saved),
             "row {index} keeps its identity through the refresh"
         );
     }
+    assert_painted_output(world, original.len());
     let labels = class.labels();
-    let text_rows = pending_text_rows(world, shells);
+    let text_rows = pending_text_rows(world, original.len());
     let expected = if labels.is_empty() {
         0
     } else {
@@ -1865,11 +1855,16 @@ fn assert_pending_rows(world: &World, class: QueueClass, shells: usize) {
     for row in &text_rows {
         assert!(row.contains(dim), "{row:?} is painted dim");
     }
+}
+
+/// Checks that each of `shells` pending rows paints its output-only marker once: the marker
+/// is absent from the command text, so the command header cannot supply it.
+fn assert_painted_output(world: &World, shells: usize) {
     let rows = world.mode.pending_messages_container.render(80);
     let painted = rows.join("\n");
     for index in 0..shells {
         assert_eq!(
-            painted.matches(&format!("mark{index}")).count(),
+            painted.matches(&format!("printed mark{index}")).count(),
             1,
             "row {index} paints its output once: {painted}"
         );
@@ -1889,10 +1884,10 @@ fn pending_text_rows(world: &World, shells: usize) -> Vec<String> {
     text
 }
 
-/// Refreshes the pending rows once and checks the retained shells and text rows.
-fn refresh(world: &World, class: QueueClass, shells: usize) {
+/// Refreshes the pending rows once and checks the shells saved before the first refresh.
+fn refresh(world: &World, class: QueueClass, original: &[Rc<BashExecutionComponent>]) {
     pending(&world.mode, 80);
-    assert_pending_rows(world, class, shells);
+    assert_pending_rows(world, class, original);
 }
 
 /// One refresh witness: `shells` pending rows under `class`'s queues, refreshed twice, then
@@ -1903,9 +1898,12 @@ fn refresh_case(directory: &Path, shells: usize, class: QueueClass) {
         holding(&world, |_| async {
             let ((), errors) = driving(&world, async {
                 start_shells(&world, shells).await;
+                let original: Vec<Rc<BashExecutionComponent>> =
+                    world.mode.pending_shells.borrow().clone();
+                assert_painted_output(&world, shells);
                 seed(&world, class.queues());
-                refresh(&world, class, shells);
-                refresh(&world, class, shells);
+                refresh(&world, class, &original);
+                refresh(&world, class, &original);
                 seed(
                     &world,
                     Queues {
@@ -1917,9 +1915,9 @@ fn refresh_case(directory: &Path, shells: usize, class: QueueClass) {
                 let retained = world.mode.pending_shells.borrow().len();
                 assert_eq!(retained, shells, "a later enqueue keeps the shells");
                 world.mode.clear_all_queues();
-                refresh(&world, QueueClass::Empty, shells);
+                refresh(&world, QueueClass::Empty, &original);
                 world.mode.flush_pending_bash_components();
-                assert_pending_rows(&world, QueueClass::Empty, 0);
+                assert_pending_rows(&world, QueueClass::Empty, &[]);
                 assert!(
                     world.mode.pending_shells.borrow().is_empty(),
                     "a flushed shell is not pending"
@@ -2113,36 +2111,23 @@ const TEXTS: [(&str, Option<bool>); 6] = [
 /// The waiting input a case observes.
 type Waiting = Pin<Box<dyn Future<Output = String>>>;
 
-/// Waits until `route`'s work reached the session: a shell command recorded its answer and
-/// settled its row, or a steering message joined the queue.
-async fn settle(world: &World, heard: &Heard, route: Route) {
-    for _ in 0..10_000 {
-        let executed = heard
-            .borrow()
-            .iter()
-            .any(|entry| entry[0].as_str() == Some("execute"));
-        let steered = !world
-            .mode
-            .runtime_host
-            .session()
-            .get_steering_messages()
-            .is_empty();
-        let commanded = heard
-            .borrow()
-            .iter()
-            .any(|entry| entry[0].as_str() == Some("command"));
-        let ready = match route {
-            Route::Shell(_) => executed && active(world).is_none(),
-            Route::Steered => steered,
-            Route::Command => commanded,
-            Route::Compacted | Route::Delivered => true,
-        };
-        if ready {
+/// Awaits the work `route`'s submission admitted: each piece completes only once its part
+/// reached the session, and text that changes no queue admits nothing.
+async fn settle(world: &World, route: Route) {
+    if matches!(route, Route::Compacted | Route::Delivered) {
+        return;
+    }
+    loop {
+        let admitted = world.runtime.take_futures();
+        if admitted.is_empty() {
             return;
         }
-        tokio::task::yield_now().await;
+        for piece in admitted {
+            if let Err(error) = piece.await {
+                panic!("the submission fails: {error}");
+            }
+        }
     }
-    panic!("the submission settled: {route:?}");
 }
 
 /// What one admission case expects to find.
@@ -2321,7 +2306,7 @@ fn admission_case(
                 let ((), errors) = driving(&world, async {
                     heard.borrow_mut().clear();
                     press(&world.mode);
-                    settle(&world, &heard, route).await;
+                    settle(&world, route).await;
                 })
                 .await;
                 assert_route(&world, &heard, &mut waiter, &expected);
@@ -2334,7 +2319,7 @@ fn admission_case(
             during_compaction(&world, press);
             on_tasks(async {
                 let ((), errors) = driving(&world, async {
-                    settle(&world, &heard, route).await;
+                    settle(&world, route).await;
                 })
                 .await;
                 errors
@@ -2344,7 +2329,7 @@ fn admission_case(
             let ((), errors) = driving(&world, async {
                 heard.borrow_mut().clear();
                 press(&world.mode);
-                settle(&world, &heard, route).await;
+                settle(&world, route).await;
             })
             .await;
             errors

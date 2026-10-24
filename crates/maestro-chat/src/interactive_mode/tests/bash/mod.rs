@@ -20,7 +20,7 @@ use std::{
 };
 
 /// A started mode whose shell runs `script`.
-fn shelling(directory: &Path, script: &str) -> World {
+pub(super) fn shelling(directory: &Path, script: &str) -> World {
     let script = script.to_owned();
     let world = Setup {
         configure: Box::new(move |settings: &mut SettingsManager| {

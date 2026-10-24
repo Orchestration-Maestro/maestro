@@ -220,9 +220,9 @@ impl InteractiveMode {
     /// Returns the failure of the published theme's dim colour.
     pub(super) fn update_pending_messages_display(&self) -> Result<(), Box<dyn Error>> {
         self.pending_messages_container.clear();
-        let shells = self.pending_shells.borrow().clone();
-        for shell in shells {
-            self.pending_messages_container.add_child(shell);
+        for shell in self.pending_shells.borrow().iter() {
+            let row = Rc::clone(shell);
+            self.pending_messages_container.add_child(row);
         }
         let QueueTexts {
             steering,

@@ -1222,32 +1222,9 @@ fn held_response(world: &World) -> tokio::sync::oneshot::Receiver<Held> {
 }
 
 /// Runs `body` on the started `world` while its session streams a response the controlled
-/// provider holds open; then ends that response and waits for the prompt to settle.
-pub(super) fn streaming<T>(world: &World, body: impl FnOnce(&World, &Held) -> T) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    let tasks = tokio::task::LocalSet::new();
-    tasks.block_on(&runtime, async {
-        let session = world.mode.runtime_host.session();
-        let receiver = held_response(world);
-        let prompted = Rc::clone(&session);
-        let run = tokio::task::spawn_local(async move {
-            prompted.prompt("run", PromptOptions::default()).await
-        });
-        let held = receiver.await.unwrap();
-        assert!(session.is_streaming());
-        let result = body(world, &held);
-        held.stream.end(Some(answer()));
-        run.await.unwrap().unwrap();
-        result
-    })
-}
-
-/// Runs `body` on the started `world` inside the caller's task set while its session
-/// streams a response the controlled provider holds open, handing `body` the response's
-/// cancellation; the response ends afterwards.
-pub(super) async fn holding<T, F>(world: &World, body: impl FnOnce(Cancellation) -> F) -> T
+/// provider holds open, giving it that response; then ends the response and waits for the
+/// prompt to settle.
+pub(super) async fn with_held_response<T, F>(world: &World, body: impl FnOnce(&Held) -> F) -> T
 where
     F: Future<Output = T>,
 {
@@ -1260,10 +1237,28 @@ where
         );
     let held = receiver.await.unwrap();
     assert!(session.is_streaming());
-    let value = body(held.signal.clone()).await;
+    let value = body(&held).await;
     held.stream.end(Some(answer()));
     run.await.unwrap().unwrap();
     value
+}
+
+/// Runs `body` synchronously on the started `world` while its session streams a response
+/// the controlled provider holds open; the response ends afterwards.
+pub(super) fn streaming<T>(world: &World, body: impl FnOnce(&World, &Held) -> T) -> T {
+    on_tasks(with_held_response(world, |held| {
+        std::future::ready(body(world, held))
+    }))
+}
+
+/// Runs `body` on the started `world` inside the caller's task set while its session
+/// streams a response the controlled provider holds open, handing `body` the response's
+/// cancellation; the response ends afterwards.
+pub(super) async fn holding<T, F>(world: &World, body: impl FnOnce(Cancellation) -> F) -> T
+where
+    F: Future<Output = T>,
+{
+    with_held_response(world, |held| body(held.signal.clone())).await
 }
 
 /// The editor's top border row as the recorder's painted probe glyph describes it.
@@ -1289,35 +1284,25 @@ pub(super) fn select_level(world: &World, level: maestro_app::ThinkingLevel) {
         .thinking_level = level;
 }
 
-/// A started mode whose shell prints the command it runs.
+/// A started mode whose shell prints an output-only marker for the command it runs.
 pub(super) fn echoing_shell(directory: &Path) -> World {
-    let script = scripted(directory, "echoing", "printf '%s\\n' \"$1\"");
-    let world = Setup {
-        configure: Box::new(move |settings: &mut SettingsManager| {
-            settings.set_shell_path(Some(script));
-        }),
-        ..Setup::default()
-    }
-    .build(directory);
-    world.mode.init().unwrap();
-    world.runtime.settle().unwrap();
-    world
+    let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
+    bash::shelling(directory, &script)
 }
 
-/// Submits `count` shell commands while the response streams, waiting for each row.
+/// Submits `count` shell commands while the response streams, awaiting each command it
+/// admits so its row settles.
 pub(super) async fn start_shells(world: &World, count: usize) {
     for index in 0..count {
         submit(&world.mode, &format!("!mark{index}"));
-        let mut started = false;
-        for _ in 0..10_000 {
-            let pending = world.mode.pending_shells.borrow().len();
-            if pending == index + 1 && active(world).is_none() {
-                started = true;
-                break;
-            }
-            tokio::task::yield_now().await;
+        for command in world.runtime.take_futures() {
+            command.await.expect("the shell command completes");
         }
-        assert!(started, "shell row {index} settles");
+        assert_eq!(
+            world.mode.pending_shells.borrow().len(),
+            index + 1,
+            "shell row {index} settles"
+        );
     }
 }
 
