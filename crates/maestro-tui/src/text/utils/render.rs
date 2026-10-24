@@ -59,13 +59,6 @@ impl<'p, 'a> Emission<'p, 'a> {
         }
     }
 
-    /// Inserts metadata at a saved output position after a row has been retained.
-    pub(super) fn insert_opaque_events(&mut self, position: usize, range: Range<usize>) {
-        let mut metadata = Self::new(self.parsed);
-        metadata.opaque_events(range);
-        self.out.insert_str(position, &metadata.into_string());
-    }
-
     /// Emits a grapheme with every escape anchored at or inside it.
     pub(super) fn grapheme(&mut self, grapheme: &Grapheme) {
         let leading = self.parsed.leading_events(grapheme);
@@ -87,6 +80,16 @@ impl<'p, 'a> Emission<'p, 'a> {
             .push_str(&self.parsed.visible[position..grapheme.range.end]);
     }
 
+    /// Whether nothing has been emitted.
+    pub(super) const fn is_empty(&self) -> bool {
+        self.out.is_empty()
+    }
+
+    /// Removes the whitespace at the end of the output; an escape ends the removal.
+    pub(super) fn trim_end(&mut self) {
+        trim_end(&mut self.out);
+    }
+
     /// Closes an open hyperlink with its opener's terminator.
     pub(super) fn close_link(&mut self) {
         self.parsed.states[self.state].write_link_close(&mut self.out);
@@ -105,4 +108,10 @@ impl<'p, 'a> Emission<'p, 'a> {
     pub(super) fn into_string(self) -> String {
         self.out
     }
+}
+
+/// Removes the whitespace at the end of `text`; an escape ends the removal.
+pub(super) fn trim_end(text: &mut String) {
+    let kept = text.trim_end_matches(super::is_whitespace_scalar).len();
+    text.truncate(kept);
 }

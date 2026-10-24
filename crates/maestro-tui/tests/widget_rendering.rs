@@ -362,3 +362,20 @@ fn text_keeps_metadata_from_discarded_continuations() {
         );
     }
 }
+
+#[test]
+fn text_pads_after_the_authored_boundary_reset() {
+    let cases = crate::ansi_wrapping::boundary_cases();
+    let actual: Vec<_> = cases
+        .iter()
+        .map(|case| {
+            let text = Text::new(case.text.clone(), 0, 0, None);
+            (case.text.as_str(), text.render(case.width))
+        })
+        .collect();
+    let expected: Vec<_> = cases
+        .iter()
+        .map(|case| (case.text.as_str(), case.rendered.clone()))
+        .collect();
+    assert_eq!(actual, expected);
+}

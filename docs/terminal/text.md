@@ -75,27 +75,30 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
 - Lines break at ASCII spaces and fill greedily. A word wider than `width` breaks
   between whole graphemes, and a non-whitespace grapheme wider than `width` is kept
   whole.
-- Painted blanks keep their wrapped rows. Inverse, underline and background colour
-  make a blank visible; plain whitespace before it in the same run stays too. A run
-  without a painted blank still breaks and drops.
+- Escapes stay where they were written. An escape written before a grapheme that
+  starts a new row ends the row it follows, so a reset or a marker before a break
+  stays on the earlier row.
+- At a break, a run of plain spaces is dropped instead of starting the next row, and
+  so is a run of blanks carrying escapes when none of them is painted. The metadata
+  escapes of a dropped run end the earlier row; its style escapes carry over.
 - Text is split at literal newlines before escapes are read, so no escape reaches
   across a line feed. Empty text, and an empty literal line, return an empty line.
 - A literal line that measures at most `width` is neither broken nor trimmed. A
-  wider one loses trailing whitespace unless underline paints an otherwise blank
-  row or a following style escape protects it. Empty continuation ranges survive
-  when their background or inverse state paints the row; otherwise invisible rows
-  are dropped.
-- A line that ends inside a whitespace run keeps the escapes written before the next
-  blank, so the cells after that line paint as the source does.
-- Every authored line keeps at least one output row. If all its ranges are dropped,
+  wider one loses the whitespace at the end of each row, up to the row's last
+  escape.
+- A row of a wider line that shows nothing is dropped. A row shows something when it
+  has a non-whitespace grapheme, a blank painted by inverse, underline or a
+  background colour, or an inverse or background style left open that paints the
+  cells after it. The metadata escapes of a dropped row move to the next row kept,
+  after its inherited style, or to the end of the last row kept, followed by the
+  escapes written after the line's last grapheme.
+- Every authored line keeps at least one output row. If all its rows are dropped,
   that row holds only its metadata escapes; style escapes alone give an empty line.
-  Metadata transferred onto a dropped row moves to the next retained row, or the
-  end of the last retained row, without duplication.
-- A line that has text starts with the style in effect at its first grapheme, also
-  after a literal newline.
-- A line that has text closes the hyperlink still open at its end, with the
+- A row that has text starts with the style in effect where it starts, also after a
+  literal newline.
+- A row that has text closes the hyperlink still open at its end, with the
   terminator its opener used. It closes underline only when underline is active and
-  another line of the same literal line follows. It closes no other attribute or
+  another row of the same literal line follows. It closes no other attribute or
   colour.
 
 ```rust

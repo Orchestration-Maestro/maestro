@@ -225,11 +225,6 @@ impl<'a> Parsed<'a> {
             && self.states[self.state_after(grapheme)].shows_on_blank()
     }
 
-    /// Whether a range of the escape list holds a style escape.
-    pub(super) fn has_style_escape(&self, range: Range<usize>) -> bool {
-        self.events[range].iter().any(Event::is_style)
-    }
-
     /// Escapes written directly before a grapheme, outside its text.
     pub(super) fn leading_events(&self, grapheme: &Grapheme) -> Range<usize> {
         let start = grapheme.events.start;

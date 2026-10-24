@@ -10,6 +10,78 @@ const UNDERLINE_OFF: &str = "\x1b[24m";
 const RESET: &str = "\x1b[0m";
 const RED: &str = "\x1b[31m";
 const MARKER: &str = "\x1b_maestro:c\x07";
+const PROMPT: &str = "\x1b]133;A\x07";
+
+/// An input whose escapes sit where a long word breaks, the width it wraps at, the rows it wraps
+/// into and the rows `Text` pads them to.
+pub(crate) struct BoundaryCase {
+    /// Text to wrap.
+    pub text: String,
+    /// Width to wrap at.
+    pub width: usize,
+    /// Rows the wrapper returns.
+    pub wrapped: Vec<String>,
+    /// Rows `Text` renders without padding or background.
+    pub rendered: Vec<String>,
+}
+
+/// Escapes written before an overflowing grapheme, after a painted wide blank or between words:
+/// a background, inverse or underline reset with a marker before or after it, two metadata
+/// escapes, and a closed hyperlink.
+pub(crate) fn boundary_cases() -> Vec<BoundaryCase> {
+    let case = |row: String, width: usize, padding: &str| BoundaryCase {
+        text: format!("{row}\u{754c}"),
+        width,
+        rendered: vec![format!("{row} "), format!("\u{754c}{padding}")],
+        wrapped: vec![row, "\u{754c}".to_owned()],
+    };
+    let mut cases = Vec::new();
+    for (on, off) in [
+        ("\x1b[44m", "\x1b[49m"),
+        ("\x1b[7m", "\x1b[27m"),
+        ("\x1b[4m", "\x1b[24m"),
+    ] {
+        for (before, after) in [
+            ("", ""),
+            (MARKER, ""),
+            ("", MARKER),
+            (PROMPT, ""),
+            ("", PROMPT),
+        ] {
+            cases.push(case(
+                format!("ab{on}\u{3000}{before}{off}{after}"),
+                5,
+                "   ",
+            ));
+        }
+    }
+    cases.push(case(format!("ab{PROMPT}{MARKER}"), 3, " "));
+    cases.push(case(
+        "\x1b]8;;https://example.com\x07ab\x1b]8;;\x07".to_owned(),
+        3,
+        " ",
+    ));
+    cases
+}
+
+#[test]
+fn long_word_escapes_precede_the_overflowing_grapheme() {
+    let cases = boundary_cases();
+    let actual: Vec<_> = cases
+        .iter()
+        .map(|case| {
+            (
+                case.text.as_str(),
+                wrap_text_with_ansi(&case.text, case.width),
+            )
+        })
+        .collect();
+    let expected: Vec<_> = cases
+        .iter()
+        .map(|case| (case.text.as_str(), case.wrapped.clone()))
+        .collect();
+    assert_eq!(actual, expected);
+}
 
 #[test]
 fn underline_begins_with_its_content() {
@@ -328,10 +400,13 @@ fn sgr_continuations_keep_canonical_attributes_and_color_spelling() {
         assert_eq!(lines.len(), 3, "{control:?}");
         assert_eq!(lines[2], format!("{state}c"), "{control:?}");
         assert!(
-            lines[1].starts_with(&format!("{base}{control}b")),
-            "{control:?} is written out as spelled"
+            lines[1].starts_with(&format!("{state}b")),
+            "{control:?} reopens the state"
         );
-        assert!(lines[0].starts_with(&format!("{base}a")), "{control:?}");
+        assert!(
+            lines[0].starts_with(&format!("{base}a{control}")),
+            "{control:?} is written out as spelled before the break"
+        );
     }
 }
 
@@ -342,11 +417,11 @@ fn style_follows_the_sgr_nested_in_a_malformed_csi() {
     let cases: &[(&str, &[&str])] = &[
         (
             "\x1b[31ma\x1b[bad\x1b[39mbc",
-            &["\x1b[31ma", "\x1b[31m\x1b[bad\x1b[39mb", "c"],
+            &["\x1b[31ma\x1b[bad\x1b[39m", "b", "c"],
         ),
         (
             "\x1b[1;2ma\x1b[1x\x1b[22mbc",
-            &["\x1b[1;2ma", "\x1b[1;2m\x1b[1x\x1b[22mb", "c"],
+            &["\x1b[1;2ma\x1b[1x\x1b[22m", "b", "c"],
         ),
     ];
     for (text, expected) in cases {
@@ -364,7 +439,7 @@ const LINK_CASES: &[LinkCase] = &[
     ("<O>a\n\nb", 1, &["<O>a<C>", "", "<O>b<C>"]),
     ("<O>a\n\nb", 20, &["<O>a<C>", "", "<O>b<C>"]),
     ("<O>a\x1b[0mb", 20, &["<O>a\x1b[0mb<C>"]),
-    ("<O>a\x1b[0mb", 1, &["<O>a<C>", "<O>\x1b[0mb<C>"]),
+    ("<O>a\x1b[0mb", 1, &["<O>a\x1b[0m<C>", "<O>b<C>"]),
     ("<O>\x1b[4mab", 20, &["<O>\x1b[4mab<C>"]),
     (
         "<O>\x1b[4mab",
