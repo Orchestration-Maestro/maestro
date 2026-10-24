@@ -253,12 +253,20 @@ impl Recorder {
         }
     }
 
-    /// Records the rows of each notice added since the last record.
+    /// Records the rows of each notice added since the last record, skipping the
+    /// resource diagnostics the startup listing appends as a text row and a spacer.
     fn flush(&self) {
         let children = self.chat.children();
         let children = children.borrow();
-        for notice in children[self.recorded.get()..].chunks(2) {
-            self.log.borrow_mut().push(Err(notice[1].render(WIDTH)));
+        let mut index = self.recorded.get();
+        while index + 1 < children.len() {
+            let spacer = children[index].render(WIDTH);
+            if spacer.iter().all(String::is_empty) {
+                self.log
+                    .borrow_mut()
+                    .push(Err(children[index + 1].render(WIDTH)));
+            }
+            index += 2;
         }
         self.recorded.set(children.len());
     }
