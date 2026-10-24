@@ -49,7 +49,7 @@ impl InteractiveMode {
                 mode.submit_shell_command(text, command, exclude_from_context);
                 return;
             }
-            if mode.runs_command(text) {
+            if mode.runs_command(text) || mode.runs_model_command(text) {
                 return;
             }
             match mode.submit_queued_input(text, UserMessageDelivery::Steer) {
@@ -75,6 +75,26 @@ impl InteractiveMode {
         if let Err(error) = self.handle_export_command(text) {
             self.report(Err(error));
         }
+        true
+    }
+
+    /// Runs `/scoped-models`, or `/model` with its search, when `text` is one of them,
+    /// and says whether `text` was handled as a command.
+    fn runs_model_command(self: &Rc<Self>, text: &str) -> bool {
+        if text == "/scoped-models" {
+            self.report(self.show_models_selector());
+            return true;
+        }
+        if text != "/model" && !text.starts_with("/model ") {
+            return false;
+        }
+        let search = text["/model".len()..].trim_matches(is_whitespace_scalar);
+        let search = Some(search.to_owned()).filter(|search| !search.is_empty());
+        let mode = Rc::clone(self);
+        let runtime = Rc::clone(&self.tool_environment.runtime);
+        runtime.spawn_local(Box::pin(
+            async move { mode.handle_model_command(search).await },
+        ));
         true
     }
 }

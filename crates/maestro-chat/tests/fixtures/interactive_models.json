@@ -1,0 +1,3216 @@
+[
+  {
+    "test": "subscription_warning_runs_once_for_a_subscription_key",
+    "input": {
+      "op": "warning-regression",
+      "key": "sk-ant-oat01-test",
+      "provider": "anthropic",
+      "repeats": 2
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "stored_sign_in_warns_without_refreshing",
+    "input": {
+      "op": "warning-regression",
+      "credential": {
+        "type": "oauth"
+      },
+      "authError": true,
+      "provider": "anthropic"
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "other_providers_do_not_query_credentials",
+    "input": {
+      "op": "warning-regression",
+      "provider": "openai"
+    },
+    "expected": {
+      "events": [],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "disabled_subscription_warning_does_not_query_credentials",
+    "input": {
+      "op": "warning-regression",
+      "settings": {
+        "warnings": {
+          "anthropicExtraUsage": false
+        }
+      },
+      "provider": "anthropic"
+    },
+    "expected": {
+      "events": [],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": null,
+      "missing": true
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": null,
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": 0,
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": true,
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": false,
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": {},
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": [],
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": "",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": "sk-ant-oat",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": "sk-ant-oatXYZ",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": "SK-ant-oat",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": " sk-ant-oat",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "subscription_warning_checks_only_the_exact_key_prefix",
+    "input": {
+      "op": "warning-prefix",
+      "key": "sk-ant-api",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "warning_preferences_disable_only_on_false",
+    "input": {
+      "op": "warning-setting",
+      "value": null,
+      "missing": true
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "warning_preferences_disable_only_on_false",
+    "input": {
+      "op": "warning-setting",
+      "value": null,
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "warning_preferences_disable_only_on_false",
+    "input": {
+      "op": "warning-setting",
+      "value": false,
+      "missing": false
+    },
+    "expected": {
+      "events": [],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "warning_preferences_disable_only_on_false",
+    "input": {
+      "op": "warning-setting",
+      "value": true,
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "warning_preferences_disable_only_on_false",
+    "input": {
+      "op": "warning-setting",
+      "value": "false",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "warning_preferences_disable_only_on_false",
+    "input": {
+      "op": "warning-setting",
+      "value": 0,
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "warning_preferences_disable_only_on_false",
+    "input": {
+      "op": "warning-setting",
+      "value": {},
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "warning_preferences_disable_only_on_false",
+    "input": {
+      "op": "warning-setting",
+      "value": [],
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "failed_warning_lookup_leaves_the_check_retryable",
+    "input": {
+      "op": "auth-failure-then-success"
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "stored"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "warning_uses_the_default_model_only_when_not_supplied",
+    "input": {
+      "op": "warning-default",
+      "kind": "missing"
+    },
+    "expected": {
+      "events": [],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "warning_uses_the_default_model_only_when_not_supplied",
+    "input": {
+      "op": "warning-default",
+      "kind": "current"
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "warning_uses_the_default_model_only_when_not_supplied",
+    "input": {
+      "op": "warning-default",
+      "kind": "explicit"
+    },
+    "expected": {
+      "events": [],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "warning_uses_the_default_model_only_when_not_supplied",
+    "input": {
+      "op": "warning-default",
+      "kind": "already-shown"
+    },
+    "expected": {
+      "events": [],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "subscription_warning_overlap_is_shown_once",
+    "input": {
+      "op": "warning-overlap"
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "stored"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "model_candidates_keep_scope_order_and_availability_failure_boundary",
+    "input": {
+      "op": "candidates",
+      "kind": "all"
+    },
+    "expected": {
+      "ids": [
+        "z/shared",
+        "a/alpha",
+        "a/shared",
+        "z/tail"
+      ],
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "model_candidates_keep_scope_order_and_availability_failure_boundary",
+    "input": {
+      "op": "candidates",
+      "kind": "scoped"
+    },
+    "expected": {
+      "ids": [
+        "z/tail",
+        "z/shared",
+        "z/tail"
+      ],
+      "error": null,
+      "events": []
+    }
+  },
+  {
+    "test": "model_candidates_keep_scope_order_and_availability_failure_boundary",
+    "input": {
+      "op": "candidates",
+      "kind": "unavailable"
+    },
+    "expected": {
+      "ids": [],
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "model_candidates_keep_scope_order_and_availability_failure_boundary",
+    "input": {
+      "op": "candidates",
+      "kind": "refresh-error"
+    },
+    "expected": {
+      "ids": null,
+      "error": "refresh refused",
+      "events": [
+        [
+          "refresh"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "model_candidates_keep_scope_order_and_availability_failure_boundary",
+    "input": {
+      "op": "candidates",
+      "kind": "empty"
+    },
+    "expected": {
+      "ids": [],
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "provider_count_deduplicates_providers_without_reordering_candidates",
+    "input": {
+      "op": "provider-count",
+      "scope": []
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "providers",
+          2
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "provider_count_deduplicates_providers_without_reordering_candidates",
+    "input": {
+      "op": "provider-count",
+      "scope": [
+        [
+          "z/tail",
+          null
+        ],
+        [
+          "z/shared",
+          null
+        ],
+        [
+          "z/tail",
+          null
+        ]
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "providers",
+          1
+        ]
+      ],
+      "scope": [
+        [
+          "z/tail",
+          null
+        ],
+        [
+          "z/shared",
+          null
+        ],
+        [
+          "z/tail",
+          null
+        ]
+      ],
+      "count": 1,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": null,
+      "missing": true
+    },
+    "expected": {
+      "events": [
+        [
+          "selector-search",
+          null
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "selector-search",
+          null
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "alpha",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": " A / ALPHA ",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "shared",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "selector-search",
+          "shared"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "z/shared",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "z/shared"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: shared"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "missing",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "selector-search",
+          "missing"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "alp",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "selector-search",
+          "alp"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "﻿alpha﻿",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": " alpha ",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "alpha",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "selector-search",
+          "alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "model-command",
+      "search": "​alpha​",
+      "missing": false
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "selector-search",
+          "​alpha​"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_selection_failure_reports_without_success_effects",
+    "input": {
+      "op": "model-command-failed"
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "error",
+          "selection refused"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_selection_failure_reports_without_success_effects",
+    "input": {
+      "op": "selection-recording-failure-after-state-change"
+    },
+    "expected": {
+      "selected": "alpha",
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "error",
+          "recording refused"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_selection_observes_the_selected_descriptor_after_listeners",
+    "input": {
+      "op": "selection-listener",
+      "edit": "mutate-id"
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: changed"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_selection_observes_the_selected_descriptor_after_listeners",
+    "input": {
+      "op": "selection-listener",
+      "edit": "replace-session"
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_selection_observes_the_selected_descriptor_after_listeners",
+    "input": {
+      "op": "selection-listener",
+      "edit": "change-provider"
+    },
+    "expected": {
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: alpha"
+        ],
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "/model"
+    },
+    "expected": {
+      "events": [
+        [
+          "editor",
+          ""
+        ],
+        [
+          "model-command",
+          null
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "/model "
+    },
+    "expected": {
+      "events": [
+        [
+          "editor",
+          ""
+        ],
+        [
+          "model-command",
+          null
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": " /model alpha\t"
+    },
+    "expected": {
+      "events": [
+        [
+          "editor",
+          ""
+        ],
+        [
+          "model-command",
+          "alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "﻿/model alpha﻿"
+    },
+    "expected": {
+      "events": [
+        [
+          "editor",
+          ""
+        ],
+        [
+          "model-command",
+          "alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": " /model alpha "
+    },
+    "expected": {
+      "events": [
+        [
+          "editor",
+          ""
+        ],
+        [
+          "model-command",
+          "alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "​/model​"
+    },
+    "expected": {
+      "events": [
+        [
+          "unhandled",
+          "​/model​"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "/model\talpha"
+    },
+    "expected": {
+      "events": [
+        [
+          "unhandled",
+          "/model\talpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "/Model"
+    },
+    "expected": {
+      "events": [
+        [
+          "unhandled",
+          "/Model"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "/models"
+    },
+    "expected": {
+      "events": [
+        [
+          "unhandled",
+          "/models"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "/scoped-models"
+    },
+    "expected": {
+      "events": [
+        [
+          "editor",
+          ""
+        ],
+        [
+          "scope-command"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "/scoped-models extra"
+    },
+    "expected": {
+      "events": [
+        [
+          "unhandled",
+          "/scoped-models extra"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_commands_use_the_shared_whitespace_and_exact_tokens",
+    "input": {
+      "op": "submit",
+      "text": "/model"
+    },
+    "expected": {
+      "events": [
+        [
+          "unhandled",
+          "/model"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_selector_selection_restores_editor_before_its_notice",
+    "input": {
+      "op": "selector-select",
+      "failure": false
+    },
+    "expected": {
+      "defaults": [
+        "a",
+        "alpha"
+      ],
+      "events": [
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "editor"
+        ],
+        [
+          "focus",
+          "editor"
+        ],
+        [
+          "status",
+          "Model: alpha"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_selector_selection_restores_editor_before_its_notice",
+    "input": {
+      "op": "selector-select",
+      "failure": true
+    },
+    "expected": {
+      "defaults": [
+        "a",
+        "alpha"
+      ],
+      "events": [
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "editor"
+        ],
+        [
+          "focus",
+          "editor"
+        ],
+        [
+          "error",
+          "selection refused"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_selector_cancel_restores_editor_and_requests_a_frame",
+    "input": {
+      "op": "selector-cancel"
+    },
+    "expected": {
+      "events": [
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "editor"
+        ],
+        [
+          "focus",
+          "editor"
+        ],
+        [
+          "render"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_selector_prefers_session_scope_then_resolved_saved_patterns",
+    "input": {
+      "op": "scope-open",
+      "choice": "session"
+    },
+    "expected": {
+      "installed": true,
+      "enabled": [
+        "z/tail",
+        "z/shared"
+      ],
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [
+        [
+          "z/tail",
+          "high"
+        ],
+        [
+          "z/shared",
+          null
+        ]
+      ],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_selector_prefers_session_scope_then_resolved_saved_patterns",
+    "input": {
+      "op": "scope-open",
+      "choice": "settings"
+    },
+    "expected": {
+      "installed": true,
+      "enabled": [
+        "z/tail",
+        "a/alpha"
+      ],
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_selector_prefers_session_scope_then_resolved_saved_patterns",
+    "input": {
+      "op": "scope-open",
+      "choice": "empty-settings"
+    },
+    "expected": {
+      "installed": true,
+      "enabled": null,
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_selector_prefers_session_scope_then_resolved_saved_patterns",
+    "input": {
+      "op": "scope-open",
+      "choice": "missing-settings"
+    },
+    "expected": {
+      "installed": true,
+      "enabled": null,
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_selector_prefers_session_scope_then_resolved_saved_patterns",
+    "input": {
+      "op": "scope-open",
+      "choice": "all-unmatched"
+    },
+    "expected": {
+      "installed": true,
+      "enabled": [],
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_selector_prefers_session_scope_then_resolved_saved_patterns",
+    "input": {
+      "op": "scope-open",
+      "choice": "empty-catalog"
+    },
+    "expected": {
+      "installed": false,
+      "enabled": null,
+      "error": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "status",
+          "No models available"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_selector_prefers_session_scope_then_resolved_saved_patterns",
+    "input": {
+      "op": "scope-open",
+      "choice": "available-failure"
+    },
+    "expected": {
+      "installed": false,
+      "enabled": null,
+      "error": "availability refused",
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_selector_prefers_session_scope_then_resolved_saved_patterns",
+    "input": {
+      "op": "scope-open",
+      "choice": "refresh-failure"
+    },
+    "expected": {
+      "installed": false,
+      "enabled": null,
+      "error": "refresh refused",
+      "events": [
+        [
+          "refresh"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_changes_apply_live_without_saving_and_refresh_the_footer",
+    "input": {
+      "op": "scope-change",
+      "enabled": null
+    },
+    "expected": {
+      "events": [
+        [
+          "scope",
+          []
+        ],
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "providers",
+          2
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_save_preserves_order_and_distinguishes_none_from_all",
+    "input": {
+      "op": "scope-save",
+      "enabled": null
+    },
+    "expected": {
+      "saved": null,
+      "events": [
+        [
+          "persist",
+          null
+        ],
+        [
+          "status",
+          "Model selection saved to settings"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_changes_apply_live_without_saving_and_refresh_the_footer",
+    "input": {
+      "op": "scope-change",
+      "enabled": []
+    },
+    "expected": {
+      "events": [
+        [
+          "scope",
+          []
+        ],
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "providers",
+          2
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_save_preserves_order_and_distinguishes_none_from_all",
+    "input": {
+      "op": "scope-save",
+      "enabled": []
+    },
+    "expected": {
+      "saved": [],
+      "events": [
+        [
+          "persist",
+          []
+        ],
+        [
+          "status",
+          "Model selection saved to settings"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_changes_apply_live_without_saving_and_refresh_the_footer",
+    "input": {
+      "op": "scope-change",
+      "enabled": [
+        "z/tail"
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "available"
+        ],
+        [
+          "scope",
+          [
+            [
+              "z/tail",
+              null
+            ]
+          ]
+        ],
+        [
+          "providers",
+          1
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [
+        [
+          "z/tail",
+          null
+        ]
+      ],
+      "count": 1,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_save_preserves_order_and_distinguishes_none_from_all",
+    "input": {
+      "op": "scope-save",
+      "enabled": [
+        "z/tail"
+      ]
+    },
+    "expected": {
+      "saved": [
+        "z/tail"
+      ],
+      "events": [
+        [
+          "persist",
+          [
+            "z/tail"
+          ]
+        ],
+        [
+          "status",
+          "Model selection saved to settings"
+        ]
+      ],
+      "scope": [
+        [
+          "z/tail",
+          null
+        ]
+      ],
+      "count": 1,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_changes_apply_live_without_saving_and_refresh_the_footer",
+    "input": {
+      "op": "scope-change",
+      "enabled": [
+        "z/tail",
+        "a/alpha"
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "available"
+        ],
+        [
+          "scope",
+          [
+            [
+              "z/tail",
+              null
+            ],
+            [
+              "a/alpha",
+              null
+            ]
+          ]
+        ],
+        [
+          "providers",
+          2
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [
+        [
+          "z/tail",
+          null
+        ],
+        [
+          "a/alpha",
+          null
+        ]
+      ],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_save_preserves_order_and_distinguishes_none_from_all",
+    "input": {
+      "op": "scope-save",
+      "enabled": [
+        "z/tail",
+        "a/alpha"
+      ]
+    },
+    "expected": {
+      "saved": [
+        "z/tail",
+        "a/alpha"
+      ],
+      "events": [
+        [
+          "persist",
+          [
+            "z/tail",
+            "a/alpha"
+          ]
+        ],
+        [
+          "status",
+          "Model selection saved to settings"
+        ]
+      ],
+      "scope": [
+        [
+          "z/tail",
+          null
+        ],
+        [
+          "a/alpha",
+          null
+        ]
+      ],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_changes_apply_live_without_saving_and_refresh_the_footer",
+    "input": {
+      "op": "scope-change",
+      "enabled": [
+        "z/tail",
+        "z/tail",
+        "missing/x",
+        "missing/y"
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "scope",
+          []
+        ],
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "providers",
+          2
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_save_preserves_order_and_distinguishes_none_from_all",
+    "input": {
+      "op": "scope-save",
+      "enabled": [
+        "z/tail",
+        "z/tail",
+        "missing/x",
+        "missing/y"
+      ]
+    },
+    "expected": {
+      "saved": null,
+      "events": [
+        [
+          "persist",
+          null
+        ],
+        [
+          "status",
+          "Model selection saved to settings"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_changes_apply_live_without_saving_and_refresh_the_footer",
+    "input": {
+      "op": "scope-change",
+      "enabled": [
+        "z/shared",
+        "a/alpha",
+        "a/shared",
+        "z/tail"
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "scope",
+          []
+        ],
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "providers",
+          2
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_save_preserves_order_and_distinguishes_none_from_all",
+    "input": {
+      "op": "scope-save",
+      "enabled": [
+        "z/shared",
+        "a/alpha",
+        "a/shared",
+        "z/tail"
+      ]
+    },
+    "expected": {
+      "saved": null,
+      "events": [
+        [
+          "persist",
+          null
+        ],
+        [
+          "status",
+          "Model selection saved to settings"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_changes_apply_live_without_saving_and_refresh_the_footer",
+    "input": {
+      "op": "scope-change",
+      "enabled": [
+        "z/shared",
+        "a/alpha",
+        "a/shared",
+        "z/tail",
+        "unknown/extra"
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "scope",
+          []
+        ],
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "providers",
+          2
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_save_preserves_order_and_distinguishes_none_from_all",
+    "input": {
+      "op": "scope-save",
+      "enabled": [
+        "z/shared",
+        "a/alpha",
+        "a/shared",
+        "z/tail",
+        "unknown/extra"
+      ]
+    },
+    "expected": {
+      "saved": [
+        "z/shared",
+        "a/alpha",
+        "a/shared",
+        "z/tail",
+        "unknown/extra"
+      ],
+      "events": [
+        [
+          "persist",
+          [
+            "z/shared",
+            "a/alpha",
+            "a/shared",
+            "z/tail",
+            "unknown/extra"
+          ]
+        ],
+        [
+          "status",
+          "Model selection saved to settings"
+        ]
+      ],
+      "scope": [],
+      "count": 2,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_cancel_keeps_live_edits_without_saving",
+    "input": {
+      "op": "scope-cancel-after-edit"
+    },
+    "expected": {
+      "events": [
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "editor"
+        ],
+        [
+          "focus",
+          "editor"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [
+        [
+          "z/tail",
+          null
+        ]
+      ],
+      "count": 1,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": null,
+      "missing": true
+    },
+    "expected": {
+      "error": null,
+      "installed": true,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": null,
+      "missing": false
+    },
+    "expected": {
+      "error": null,
+      "installed": true,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": "alpha",
+      "missing": false
+    },
+    "expected": {
+      "error": null,
+      "installed": true,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": 0,
+      "missing": false
+    },
+    "expected": {
+      "error": null,
+      "installed": true,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": false,
+      "missing": false
+    },
+    "expected": {
+      "error": null,
+      "installed": true,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": {},
+      "missing": false
+    },
+    "expected": {
+      "error": null,
+      "installed": true,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": [],
+      "missing": false
+    },
+    "expected": {
+      "error": null,
+      "installed": true,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": [
+        "a/alpha"
+      ],
+      "missing": false
+    },
+    "expected": {
+      "error": null,
+      "installed": true,
+      "enabled": [
+        "a/alpha"
+      ],
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "available"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "selector"
+        ],
+        [
+          "focus",
+          "selector"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": [
+        null
+      ],
+      "missing": false
+    },
+    "expected": {
+      "error": "model patterns must be strings",
+      "installed": false,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": [
+        3
+      ],
+      "missing": false
+    },
+    "expected": {
+      "error": "model patterns must be strings",
+      "installed": false,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": [
+        false
+      ],
+      "missing": false
+    },
+    "expected": {
+      "error": "model patterns must be strings",
+      "installed": false,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": [
+        {}
+      ],
+      "missing": false
+    },
+    "expected": {
+      "error": "model patterns must be strings",
+      "installed": false,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_preferences_reject_unknown_members_and_default_malformed_roots",
+    "input": {
+      "op": "scope-field-domain",
+      "raw": [
+        []
+      ],
+      "missing": false
+    },
+    "expected": {
+      "error": "model patterns must be strings",
+      "installed": false,
+      "enabled": null,
+      "events": [
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_select_action_uses_the_registered_binding",
+    "input": {
+      "op": "model-select-action"
+    },
+    "expected": {
+      "action": "app.model.select",
+      "events": [
+        [
+          "opened"
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_cycle_reuses_the_subscription_warning_owner",
+    "input": {
+      "op": "warning-callers",
+      "route": "cycle"
+    },
+    "expected": {
+      "events": [
+        [
+          "stored"
+        ],
+        [
+          "key",
+          "anthropic"
+        ],
+        [
+          "warning",
+          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+        ]
+      ],
+      "scope": [],
+      "count": null,
+      "shown": true
+    }
+  },
+  {
+    "test": "selector_completion_restores_editor_and_focus",
+    "input": {
+      "op": "selector-helper-close",
+      "closes": 1
+    },
+    "expected": {
+      "opened": [
+        [
+          "factory"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "panel"
+        ],
+        [
+          "focus",
+          "focus-child"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "closed": [
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "editor"
+        ],
+        [
+          "focus",
+          "editor"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "selector_completion_restores_editor_and_focus",
+    "input": {
+      "op": "selector-helper-close",
+      "closes": 2
+    },
+    "expected": {
+      "opened": [
+        [
+          "factory"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "panel"
+        ],
+        [
+          "focus",
+          "focus-child"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "closed": [
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "editor"
+        ],
+        [
+          "focus",
+          "editor"
+        ],
+        [
+          "clear"
+        ],
+        [
+          "add",
+          "editor"
+        ],
+        [
+          "focus",
+          "editor"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "selector_factory_failure_keeps_the_editor",
+    "input": {
+      "op": "selector-helper-failure"
+    },
+    "expected": {
+      "error": "factory refused",
+      "events": []
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "scoped-exact-match",
+      "scope": [
+        [
+          "z/shared",
+          null
+        ],
+        [
+          "z/shared",
+          null
+        ]
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "selector-search",
+          "z/shared"
+        ]
+      ],
+      "scope": [
+        [
+          "z/shared",
+          null
+        ],
+        [
+          "z/shared",
+          null
+        ]
+      ],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "model_command_applies_unique_exact_references_or_keeps_the_search",
+    "input": {
+      "op": "scoped-exact-match",
+      "scope": [
+        [
+          "z/tail",
+          null
+        ],
+        [
+          "a/alpha",
+          null
+        ]
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "select",
+          "a/alpha"
+        ],
+        [
+          "footer"
+        ],
+        [
+          "border"
+        ],
+        [
+          "status",
+          "Model: alpha"
+        ]
+      ],
+      "scope": [
+        [
+          "z/tail",
+          null
+        ],
+        [
+          "a/alpha",
+          null
+        ]
+      ],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "other_providers_do_not_query_credentials",
+    "input": {
+      "op": "provider-case-boundary",
+      "provider": "Anthropic"
+    },
+    "expected": {
+      "events": [],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "other_providers_do_not_query_credentials",
+    "input": {
+      "op": "provider-case-boundary",
+      "provider": "anthropic-other"
+    },
+    "expected": {
+      "events": [],
+      "scope": [],
+      "count": null,
+      "shown": false
+    }
+  },
+  {
+    "test": "scope_changes_apply_live_without_saving_and_refresh_the_footer",
+    "input": {
+      "op": "scope-change-after-catalog-growth",
+      "opening": 4,
+      "current": 5,
+      "enabled": [
+        "z/tail",
+        "a/alpha",
+        "z/shared",
+        "a/shared"
+      ]
+    },
+    "expected": {
+      "events": [
+        [
+          "scope",
+          []
+        ],
+        [
+          "refresh"
+        ],
+        [
+          "available"
+        ],
+        [
+          "providers",
+          3
+        ],
+        [
+          "render"
+        ]
+      ],
+      "scope": [],
+      "count": 3,
+      "shown": false
+    }
+  }
+]
