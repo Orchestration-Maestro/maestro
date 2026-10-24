@@ -1518,3 +1518,27 @@ fn listener_collection_declarations_stay_with_owner() {
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.contains("duplicate declaration Listeners"), "{error}");
 }
+
+#[test]
+fn input_registration_returns_the_shared_remover() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-listeners", "maestro-tui"]);
+    let accepted = "impl TUI { pub fn add_input_listener(&self, listener: InputListener) -> Box<dyn Fn()> { let listeners = Rc::clone(&self.shared.input.borrow().listeners); Box::new(Listeners::subscribe(&listeners, listener)) } }";
+    source(&workspace, "maestro-tui", "src/input.rs", accepted);
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for rejected in [
+        "impl TUI { pub fn add_input_listener(&self, listener: InputListener) -> Box<dyn Fn()> { self.shared.input.borrow_mut().add(&listener); Box::new(move || {}) } }",
+        "impl TUI { pub fn add_input_listener(&self, listener: InputListener) -> Box<dyn Fn()> { let remover = Box::new(Listeners::subscribe(&listeners, listener)); Box::new(move || drop(remover)) } }",
+        "impl TUI { pub fn add_input_listener(&self, listener: InputListener) -> Box<dyn Fn()> { drop(Listeners::subscribe(&listeners, listener)); Box::new(move || {}) } }",
+        "impl TUI { pub fn add_input_listener(&self, listener: InputListener) -> Box<dyn Fn()> { wrapper!(Box::new(Listeners::subscribe(&listeners, listener))) } }",
+        "impl TUI { pub fn add_input_listener(&self, listener: InputListener) -> Box<dyn Fn()> { let make = || Box::new(Listeners::subscribe(&listeners, listener)); make() } }",
+    ] {
+        source(&workspace, "maestro-tui", "src/input.rs", rejected);
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(
+            error
+                .contains("add_input_listener must return maestro_listeners::Listeners::subscribe"),
+            "{error}"
+        );
+    }
+}

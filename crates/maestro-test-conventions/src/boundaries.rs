@@ -33,6 +33,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 records.scan(tokens);
             }
             check_declarations(member, source, &records, &mut declarations)?;
+            check_input_registration(member, source, &records)?;
             check_session_setup(member, source, &records)?;
             let context = ScanContext {
                 owner: &member.name,
@@ -64,6 +65,13 @@ const FOOTER_SUPPORT: &str = "tests/footer_support";
 /// Source tree holding the interactive mode and its own test modules.
 const INTERACTIVE_MODE: &str = "src/interactive_mode";
 
+/// The terminal toolkit method that registers one input listener.
+const INPUT_REGISTRATION: &str = "add_input_listener";
+
+/// Diagnostic for a registration that builds its own remover.
+const INPUT_REGISTRATION_DIAGNOSTIC: &str =
+    "add_input_listener must return maestro_listeners::Listeners::subscribe";
+
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.
 struct Records {
@@ -73,6 +81,8 @@ struct Records {
     declarations: Vec<(String, String, usize)>,
     /// Interface-generation macro arguments paired with their source lines.
     inputs: Vec<(usize, proc_macro2::TokenStream)>,
+    /// Whether every input registration returns the shared owner's remover.
+    registration_returns_owner: Option<bool>,
 }
 
 impl Records {
@@ -85,6 +95,7 @@ impl Records {
                 TokenTree::Ident(keyword) if !generated => {
                     self.session_configuration(keyword);
                     self.declaration(keyword, &tokens[index + 1..]);
+                    self.registration(keyword, &tokens[index + 1..]);
                     self.wit_macro(&tokens[index..]);
                 }
                 TokenTree::Group(group) if !attribute_group(&tokens[..index]) => {
@@ -119,6 +130,30 @@ impl Records {
             .push((name.unraw().to_string(), kind, keyword.span().start().line));
     }
 
+    /// Record whether an input registration returns the shared owner's remover.
+    fn registration(&mut self, keyword: &proc_macro2::Ident, following: &[TokenTree]) {
+        if keyword != "fn" {
+            return;
+        }
+        let Some(TokenTree::Ident(name)) = following.first() else {
+            return;
+        };
+        if name != INPUT_REGISTRATION {
+            return;
+        }
+        let body = following.iter().find_map(|token| match token {
+            TokenTree::Group(group) if group.delimiter() == proc_macro2::Delimiter::Brace => {
+                Some(group.stream())
+            }
+            _ => None,
+        });
+        if let Some(body) = body {
+            let matches = returns_owner_remover(body);
+            self.registration_returns_owner =
+                Some(self.registration_returns_owner.unwrap_or(true) && matches);
+        }
+    }
+
     /// Record supported interface-generation macro inputs.
     fn wit_macro(&mut self, tokens: &[TokenTree]) {
         if !matches!(tokens.first(), Some(TokenTree::Ident(name)) if name == "wit_bindgen" || name == "wasmtime")
@@ -145,6 +180,39 @@ impl Records {
                 .push((tokens[0].span().start().line, mac.tokens));
         }
     }
+}
+
+/// Whether the last tokens of a body return `Box::new(Listeners::subscribe(..))`.
+fn returns_owner_remover(body: TokenStream) -> bool {
+    let tokens: Vec<TokenTree> = body.into_iter().collect();
+    if tokens.len() < 5 {
+        return false;
+    }
+    let [
+        TokenTree::Ident(caller),
+        TokenTree::Punct(first),
+        TokenTree::Punct(second),
+        TokenTree::Ident(constructor),
+        TokenTree::Group(call),
+    ] = &tokens[tokens.len() - 5..]
+    else {
+        return false;
+    };
+    if caller != "Box" || first.as_char() != ':' || second.as_char() != ':' || constructor != "new"
+    {
+        return false;
+    }
+    let inner: Vec<TokenTree> = call.stream().into_iter().collect();
+    matches!(
+        inner.as_slice(),
+        [
+            TokenTree::Ident(owner),
+            TokenTree::Punct(colon),
+            TokenTree::Punct(second_colon),
+            TokenTree::Ident(subscribe),
+            TokenTree::Group(_),
+        ] if owner == "Listeners" && colon.as_char() == ':' && second_colon.as_char() == ':' && subscribe == "subscribe"
+    )
 }
 
 /// Recognize token groups belonging to an attribute.
@@ -283,6 +351,21 @@ fn check_declarations(
         }
     }
     Ok(())
+}
+
+/// Require the toolkit's registration to return the shared owner's remover.
+fn check_input_registration(
+    member: &Member,
+    source: &Source,
+    records: &Records,
+) -> Result<(), String> {
+    if member.name != "maestro-tui" || records.registration_returns_owner != Some(false) {
+        return Ok(());
+    }
+    Err(format!(
+        "{}: {INPUT_REGISTRATION_DIAGNOSTIC}",
+        source.path.display()
+    ))
 }
 
 /// The crate that owns one declaration, for the names the workspace scopes.
