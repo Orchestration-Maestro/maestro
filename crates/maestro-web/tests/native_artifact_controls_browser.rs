@@ -313,15 +313,46 @@ async fn assert_mime_types(view: &DomView, fixture: &Fixture) {
     }
 }
 
+/// A custom tooltip needs no localization, so refused language reads still construct the control.
+fn assert_tooltip_without_localization(view: &DomView) {
+    let host = crate::support::Host::default();
+    host.fail.replace("get".into());
+    let refusing = DomView {
+        document: view.document.clone(),
+        i18n: Rc::new(maestro_web::I18n::new(Rc::new(host)).unwrap()),
+        highlighter: Rc::clone(&view.highlighter),
+        pack: Rc::clone(&view.pack),
+        mode: view.mode,
+    };
+    let props = shaped(
+        ButtonSize::Sm,
+        ButtonVariant::Ghost,
+        IconSize::Sm,
+        Some("Exact title".into()),
+        false,
+    );
+    let (owner, control) = mounted(&refusing, props);
+    assert_eq!(control.title(), "Exact title");
+    drop(owner);
+    let defaulted = download_button(
+        &refusing,
+        DownloadButtonProps::new(DownloadContent::Text("payload".into()), "file.bin".into()),
+    );
+    assert!(
+        defaulted.is_err(),
+        "a default tooltip is the only consumer of the refused localization"
+    );
+}
 /// Defaults, tooltips, labels, sizes, variants and glyph extents reach their native consumers.
 #[wasm_bindgen]
 pub async fn download_dom_defaults_and_caller_options(import_module: &js_sys::Function) {
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::import(import_module).await;
     assert_default_control(&view);
     assert_filenames(&view, &fixture).await;
     assert_titles(&view);
+    assert_tooltip_without_localization(&view);
     assert_sizes(&view);
     assert_glyph_extents(&view);
     assert_variants(&view);
@@ -332,7 +363,7 @@ pub async fn download_dom_defaults_and_caller_options(import_module: &js_sys::Fu
 pub async fn download_dom_preserves_selected_payload_bytes(import_module: &js_sys::Function) {
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::import(import_module).await;
     assert_text_payloads(&view, &fixture).await;
     assert_byte_payloads(&view, &fixture).await;
     assert_mime_types(&view, &fixture).await;
@@ -343,7 +374,7 @@ pub async fn download_dom_preserves_selected_payload_bytes(import_module: &js_sy
 pub async fn download_dom_activation_uses_one_scoped_download(import_module: &js_sys::Function) {
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::import(import_module).await;
     let form = view.document.create_element("form").unwrap();
     body().append_child(&form).unwrap();
     let submits = Submitting::new(&form);
@@ -395,7 +426,7 @@ pub async fn download_dom_retains_activation_inputs_and_releases_on_drop(
 ) {
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::import(import_module).await;
     let buffer = Uint8Array::from(&[250u8, 1, 2, 249][..]);
     let windowed = buffer.subarray(1, 3);
     let (window_owner, window_control) = mounted(
@@ -489,10 +520,24 @@ struct Recorder {
     _listening: Listening<dyn Fn(CustomEvent)>,
 }
 impl Recorder {
-    /// Record every changed selection dispatched below `listener` for `group`.
-    fn new(listener: &Element, group: &Element) -> Self {
+    /// Record every change of one standalone group, which reports and presents itself.
+    fn group(group: &Element) -> Self {
+        let shown = group.clone();
+        Self::new(group, group, move || Some(shown.clone()))
+    }
+    /// Record the changes an element dispatches, reading the group it presents at that moment.
+    fn element(element: &Element) -> Self {
+        let host = element.clone();
+        Self::new(element, element, move || host.first_element_child())
+    }
+    /// Record every change `origin` dispatches below `listener`, presenting what `current` yields.
+    fn new(
+        listener: &Element,
+        origin: &Element,
+        current: impl Fn() -> Option<Element> + 'static,
+    ) -> Self {
         let seen: Rc<RefCell<Vec<Changed>>> = Rc::default();
-        let (log, watched) = (Rc::clone(&seen), group.clone());
+        let (log, watched) = (Rc::clone(&seen), origin.clone());
         let callback = Closure::<dyn Fn(CustomEvent)>::new(move |event: CustomEvent| {
             assert!(
                 event.bubbles() && !event.composed() && !event.cancelable(),
@@ -502,10 +547,15 @@ impl Recorder {
                 .target()
                 .and_then(|target| target.dyn_into::<Node>().ok())
                 .is_some_and(|target| target.is_same_node(Some(watched.unchecked_ref())));
-            assert!(target, "the event originates at the component's own root");
+            assert!(
+                target,
+                "the event originates at the element the page listens on"
+            );
             log.borrow_mut().push(Changed {
                 detail: event.detail().as_string().unwrap_or_default(),
-                selected: mode_of(&watched).into(),
+                selected: current()
+                    .map(|group| mode_of(&group).to_owned())
+                    .unwrap_or_default(),
             });
         });
         Self {
@@ -612,6 +662,8 @@ pub fn preview_toggle_dom_defaults_and_programmatic_selection(import_module: &js
     let _host = host(&view, import_module);
     assert_typed_defaults(&view);
     assert_element_property(&view);
+    assert_controller_replacement(&view);
+    assert_updated_titles(&view);
     view.i18n.set_language("de").unwrap();
     let (_, group) = element_group(&view);
     let [preview, code] = buttons(&group);
@@ -638,10 +690,14 @@ fn assert_typed_defaults(view: &DomView) {
         "submit"
     );
     assert!(shows(&group, ViewMode::Preview) && !shows(&group, ViewMode::Code));
-    assert_eq!(computed(&group, "height"), "28px");
+    assert_eq!(
+        extent(&group).1,
+        28.,
+        "the group measures the reference's 28-pixel control line"
+    );
     assert_eq!(computed(&group, "overflow"), "hidden");
     assert_eq!(computed(&glyph(&preview), "width"), "16px");
-    let recorder = Recorder::new(&group, &group);
+    let recorder = Recorder::group(&group);
     toggle.set_mode(ViewMode::Code);
     toggle.update(&owner, view).unwrap();
     assert!(
@@ -666,15 +722,74 @@ fn assert_element_property(view: &DomView) {
     let (element, group) = element_group(view);
     assert_eq!(property_mode(&element).as_deref(), Some("preview"));
     assert_eq!(element.get_attribute("mode"), None);
-    let recorder = Recorder::new(&element, &group);
+    let recorder = Recorder::element(&element);
     set_property_mode(&element, "code");
     assert_eq!(property_mode(&element).as_deref(), Some("code"));
-    assert!(shows(&group, ViewMode::Code));
+    assert_eq!(
+        group.class_name(),
+        "maestro-toggle",
+        "a property write keeps the group's own classes"
+    );
+    assert!(
+        shows(&group, ViewMode::Code),
+        "a property write repaints the group's buttons"
+    );
     assert!(
         recorder.observed().is_empty(),
         "a property assignment is silent"
     );
     assert_eq!(element.get_attribute("mode"), None);
+}
+/// A later controller takes over the mounted group and its clicks.
+fn assert_controller_replacement(view: &DomView) {
+    let first = PreviewCodeToggle::new();
+    let (owner, group) = mounted_toggle(view, &first);
+    let recorder = Recorder::group(&group);
+    first.set_mode(ViewMode::Code);
+    first.update(&owner, view).unwrap();
+    assert!(shows(&group, ViewMode::Code));
+    let second = PreviewCodeToggle::new();
+    second.update(&owner, view).unwrap();
+    assert!(
+        shows(&group, ViewMode::Preview),
+        "the later controller shows its own selection"
+    );
+    let [preview, code] = buttons(&group);
+    code.click();
+    assert_eq!(
+        second.mode(),
+        ViewMode::Code,
+        "a click reaches the controller shown last"
+    );
+    assert_eq!(recorder.observed(), [changed("code", "code")]);
+    assert!(shows(&group, ViewMode::Code));
+    let [preview_now, code_now] = buttons(&group);
+    assert!(
+        preview_now.is_same_node(Some(preview.unchecked_ref()))
+            && code_now.is_same_node(Some(code.unchecked_ref())),
+        "a taken-over group keeps its native buttons"
+    );
+    drop(owner);
+}
+/// An update refreshes the mounted titles from the current localization.
+fn assert_updated_titles(view: &DomView) {
+    let toggle = PreviewCodeToggle::new();
+    let (owner, group) = mounted_toggle(view, &toggle);
+    let [preview, code] = buttons(&group);
+    view.i18n.set_language("de").unwrap();
+    toggle.update(&owner, view).unwrap();
+    assert_eq!(
+        (preview.title(), code.title()),
+        ("Vorschau".into(), "Code".into()),
+        "an update localizes the mounted titles"
+    );
+    view.i18n.set_language("en").unwrap();
+    toggle.update(&owner, view).unwrap();
+    assert_eq!(
+        (preview.title(), code.title()),
+        ("Preview".into(), "Code".into())
+    );
+    drop(owner);
 }
 
 /// User transitions report one changed mode with its exact event shape.
@@ -691,7 +806,7 @@ pub fn preview_toggle_dom_emits_only_changed_bubbling_modes(import_module: &js_s
 fn assert_reported_transitions(view: &DomView) {
     let toggle = PreviewCodeToggle::new();
     let (owner, group) = mounted_toggle(view, &toggle);
-    let recorder = Recorder::new(&group, &group);
+    let recorder = Recorder::group(&group);
     let [preview, code] = buttons(&group);
     preview.click();
     assert!(
@@ -714,7 +829,7 @@ fn assert_reported_transitions(view: &DomView) {
 fn assert_retargeting(view: &DomView) {
     let toggle = PreviewCodeToggle::new();
     let (owner, group) = mounted_toggle(view, &toggle);
-    let recorder = Recorder::new(&group, &group);
+    let recorder = Recorder::group(&group);
     let watched = group.clone();
     let retarget = Closure::<dyn Fn(CustomEvent)>::new(move |event: CustomEvent| {
         if event.detail().as_string().as_deref() == Some("code") {
@@ -780,7 +895,7 @@ pub fn preview_toggle_dom_reconnects_without_duplicate_handlers(import_module: &
 /// The element reports once per action across a disconnection.
 fn assert_reconnection(view: &DomView) {
     let (element, group) = element_group(view);
-    let recorder = Recorder::new(&element, &group);
+    let recorder = Recorder::element(&element);
     buttons(&group)[1].click();
     assert_eq!(recorder.len(), 1);
     let detached = element.first_element_child().unwrap();
@@ -815,7 +930,7 @@ fn assert_reconnection(view: &DomView) {
 fn assert_released_root(view: &DomView) {
     let toggle = PreviewCodeToggle::new();
     let (owner, group) = mounted_toggle(view, &toggle);
-    let recorder = Recorder::new(&group, &group);
+    let recorder = Recorder::group(&group);
     drop(owner);
     buttons(&group)[1].click();
     assert!(
@@ -873,13 +988,13 @@ async fn assert_keyboard(view: &DomView) {
     let toggle = PreviewCodeToggle::new();
     let (owner, group) = mounted_toggle(view, &toggle);
     let [preview, code] = buttons(&group);
-    let recorder = Recorder::new(&group, &group);
+    let recorder = Recorder::group(&group);
     driver("driverPress", "Tab").await;
     assert!(focused(view, &preview), "the first control takes focus");
-    assert_ne!(
-        computed(&preview, "box-shadow"),
-        "none",
-        "focus stays visible"
+    let accent = rgb(view.pack.presentation(view.mode).unwrap().colors["accent"]);
+    assert!(
+        computed(&preview, "box-shadow").contains(&accent),
+        "a focused control paints the pack's accent ring"
     );
     driver("driverPress", "Tab").await;
     assert!(focused(view, &code));

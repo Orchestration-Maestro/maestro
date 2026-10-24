@@ -61,15 +61,21 @@ pub struct Fixture {
     module0: crate::browser_fixture_support::FixtureModule,
 }
 impl Fixture {
-    /// Load each namespace before installing controlled host effects.
-    pub async fn load() -> Self {
+    /// Load the namespace through a page's own module import, which its policy allows.
+    pub async fn import(import: &js_sys::Function) -> Self {
         Self {
-            module0: crate::browser_fixture_support::FixtureModule::load(&wasm_bindgen::link_to!(
-                module = "/tests/session_download_support/browser.js"
-            ))
+            module0: crate::browser_fixture_support::FixtureModule::import(
+                import,
+                &wasm_bindgen::link_to!(module = "/tests/session_download_support/browser.js"),
+            )
             .await
             .unwrap(),
         }
+    }
+    /// Load each namespace before installing controlled host effects.
+    pub async fn load() -> Self {
+        let import = js_sys::Function::new_with_args("url", "return import(url)");
+        Self::import(&import).await
     }
     /// Start one controlled native DOM transaction.
     pub fn begin(&self, mode: &str) {

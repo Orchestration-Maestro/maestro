@@ -1,15 +1,20 @@
 //! Native preview/source control group and its page element.
 use super::{PreviewCodeToggle, ViewMode};
 use crate::{
-    browser::{attachment_content::browser::host_error, event_subscription::EventSubscription},
-    dom::{DomContent, DomRoot, DomView},
+    browser::{
+        attachment_content::{AttachmentHostError, browser::host_error},
+        event_subscription::EventSubscription,
+    },
+    dom::{self, DomContent, DomRoot, DomView, Getter, Link, Setter},
     icons,
     tools::types::ToolUiError,
 };
-use js_sys::WeakRef;
-use std::{any::Any, cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
-use web_sys::{CustomEvent, CustomEventInit, Element, HtmlElement, Node};
+use web_sys::{CustomEvent, CustomEventInit, HtmlElement, Node};
 
 /// Element tag of the standalone preview/source control.
 pub(crate) const TAG: &str = "preview-code-toggle";
@@ -26,60 +31,84 @@ const OPTIONS: [(ViewMode, &str, &str); 2] = [
     (ViewMode::Preview, "Eye", "Preview"),
     (ViewMode::Code, "Code", "Code"),
 ];
-/// A weak element reference held by a callback or an element's own state.
-type Link = WeakRef<HtmlElement>;
-/// The clicks of one built group, released with the root that owns them.
-type Clicks = Box<dyn Any>;
-impl DomContent for PreviewCodeToggle {
-    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        let (root, clicks) = build(view, &self.selection, None)?;
-        Ok(DomRoot {
-            node: root.into(),
-            owner: Some(clicks),
+/// The selection a mounted group reports to, replaced when another controller updates it.
+type Selection = Rc<RefCell<Rc<Cell<ViewMode>>>>;
+/// Getter and setter callables of one element property, kept as long as its element's state.
+type Accessors = (Getter, Setter);
+/// One mounted control group and the state its callbacks read.
+struct Mounted {
+    /// Group node holding the two buttons.
+    group: HtmlElement,
+    /// Selection the buttons report to.
+    selection: Selection,
+    /// Clicks released with the group.
+    _clicks: Vec<EventSubscription<Closure<dyn Fn()>>>,
+}
+impl Mounted {
+    /// Build the group for `selection`, reporting changed user selections from `host`.
+    fn build(
+        view: &DomView,
+        selection: &Rc<Cell<ViewMode>>,
+        host: Option<&HtmlElement>,
+    ) -> Result<Self, ToolUiError> {
+        let group = element(view, "div")?;
+        group.set_class_name(GROUP);
+        let host = host.cloned().unwrap_or_else(|| group.clone());
+        let shared = Rc::new(RefCell::new(Rc::clone(selection)));
+        let mut clicks = Vec::with_capacity(OPTIONS.len());
+        for (mode, icon, key) in OPTIONS {
+            let button = element(view, "button")?;
+            button.set_class_name(&classes(mode, selection.get()));
+            button.set_title(&view.i18n.text(key).map_err(ToolUiError::I18n)?);
+            button
+                .append_child(&glyph(icon)?)
+                .map_err(|error| failed(&error))?;
+            let (selection, watched, target) = (Rc::clone(&shared), group.clone(), host.clone());
+            let click = Closure::<dyn Fn()>::new(move || {
+                choose(&selection, &watched, &target, mode);
+            });
+            clicks.push(
+                EventSubscription::new(button.clone().into(), "click", click)
+                    .map_err(|error| failed(&error))?,
+            );
+            group
+                .append_child(&button)
+                .map_err(|error| failed(&error))?;
+        }
+        Ok(Self {
+            group,
+            selection: shared,
+            _clicks: clicks,
         })
     }
-    fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
-        paint(&self.selection, &link(&root.node));
+    /// Show the selection the buttons currently report to.
+    fn paint(&self) {
+        paint(&self.group, self.selection.borrow().get());
+    }
+    /// Take over `selection` and this view: another controller owns the group afterwards.
+    fn show(&self, selection: &Rc<Cell<ViewMode>>, view: &DomView) -> Result<(), ToolUiError> {
+        localize(&self.group, view)?;
+        *self.selection.borrow_mut() = Rc::clone(selection);
+        self.paint();
         Ok(())
     }
 }
-/// Build the control group for `selection`, reporting changes from `host` or from itself.
-fn build(
-    view: &DomView,
-    selection: &Rc<Cell<ViewMode>>,
-    host: Option<&HtmlElement>,
-) -> Result<(Element, Clicks), ToolUiError> {
-    let root: HtmlElement = view
-        .document
-        .create_element("div")
-        .map_err(|error| failed(&error))?
-        .dyn_into()
-        .map_err(|error| failed(&error))?;
-    root.set_class_name(GROUP);
-    let group = WeakRef::new(&root);
-    let host = WeakRef::new(host.unwrap_or(&root));
-    let mut clicks = Vec::with_capacity(OPTIONS.len());
-    for (mode, icon, key) in OPTIONS {
-        let button: HtmlElement = view
-            .document
-            .create_element("button")
-            .map_err(|error| failed(&error))?
-            .dyn_into()
-            .map_err(|error| failed(&error))?;
-        button.set_class_name(&classes(mode, selection.get()));
-        button.set_title(&view.i18n.text(key).map_err(ToolUiError::I18n)?);
-        button
-            .append_child(&glyph(icon)?)
-            .map_err(|error| failed(&error))?;
-        let (selection, group, host) = (Rc::clone(selection), group.clone(), host.clone());
-        let click = Closure::<dyn Fn()>::new(move || choose(&selection, &group, &host, mode));
-        clicks.push(
-            EventSubscription::new(button.clone().into(), "click", click)
-                .map_err(|error| failed(&error))?,
-        );
-        root.append_child(&button).map_err(|error| failed(&error))?;
+impl DomContent for PreviewCodeToggle {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
+        let mounted = Rc::new(Mounted::build(view, &self.selection, None)?);
+        Ok(DomRoot {
+            node: mounted.group.clone().into(),
+            owner: Some(Box::new(mounted)),
+        })
     }
-    Ok((root.into(), Box::new(clicks)))
+    fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
+        let mounted = root
+            .owner
+            .as_ref()
+            .and_then(|owner| owner.downcast_ref::<Rc<Mounted>>())
+            .ok_or_else(missing_group)?;
+        mounted.show(&self.selection, view)
+    }
 }
 /// Classes of one button in `mode` while `selected` is current.
 fn classes(mode: ViewMode, selected: ViewMode) -> String {
@@ -98,57 +127,66 @@ fn glyph(icon: &str) -> Result<Node, ToolUiError> {
         .map(Into::into)
         .map_err(|error| failed(&error))
 }
-/// The element behind `link` while it exists and is connected.
-fn live(link: &Link) -> Option<HtmlElement> {
-    link.deref().filter(|element| element.is_connected())
+/// A new element of `name` in the page.
+fn element(view: &DomView, name: &str) -> Result<HtmlElement, ToolUiError> {
+    view.document
+        .create_element(name)
+        .map_err(|error| failed(&error))?
+        .dyn_into()
+        .map_err(|error| failed(&error))
 }
-/// A weak reference to `node`, which a callback must not keep alive.
-fn link(node: &Node) -> Link {
-    WeakRef::new(node.unchecked_ref::<HtmlElement>())
+/// The group's buttons in native order with their mode, glyph and message key.
+fn buttons(
+    group: &HtmlElement,
+) -> impl Iterator<Item = ((ViewMode, &'static str, &'static str), HtmlElement)> + '_ {
+    let mut next = group.first_element_child();
+    OPTIONS.into_iter().filter_map(move |option| {
+        let button = next.clone()?.unchecked_into::<HtmlElement>();
+        next = button.next_element_sibling();
+        Some((option, button))
+    })
 }
-/// Select `mode` and show it, reporting whether the selection changed.
-fn select(selection: &Rc<Cell<ViewMode>>, group: &Link, mode: ViewMode) -> bool {
+/// Show `selected` on the buttons of `group`.
+fn paint(group: &HtmlElement, selected: ViewMode) {
+    for ((mode, ..), button) in buttons(group) {
+        // The group's own children only fail to carry a class name if the DOM is no longer ours.
+        let _ = button.set_class_name(&classes(mode, selected));
+    }
+}
+/// Refresh the localized button titles of `group` from `view`.
+fn localize(group: &HtmlElement, view: &DomView) -> Result<(), ToolUiError> {
+    for ((_, _, key), button) in buttons(group) {
+        button.set_title(&view.i18n.text(key).map_err(ToolUiError::I18n)?);
+    }
+    Ok(())
+}
+/// Select `mode` in `selection`, reporting whether the selection changed.
+fn select(selection: &Rc<Cell<ViewMode>>, mode: ViewMode) -> bool {
     if selection.get() == mode {
         return false;
     }
     selection.set(mode);
-    paint(selection, group);
     true
 }
 /// Report one changed user selection, keeping any selection made while it dispatched.
-fn choose(selection: &Rc<Cell<ViewMode>>, group: &Link, host: &Link, mode: ViewMode) {
-    if select(selection, group, mode) {
-        // A listener may select again while the event bubbles; its choice stays shown.
-        let _ = dispatch(host, mode);
-        paint(selection, group);
-    }
-}
-/// Show `selection` on the group's own buttons.
-fn paint(selection: &Rc<Cell<ViewMode>>, group: &Link) {
-    let Some(root) = live(group) else {
+fn choose(selection: &Selection, group: &HtmlElement, host: &HtmlElement, mode: ViewMode) {
+    if !select(&selection.borrow(), mode) {
         return;
-    };
-    let mut next = root.first_element_child();
-    for (mode, ..) in OPTIONS {
-        let Some(button) = next else {
-            return;
-        };
-        button.set_class_name(&classes(mode, selection.get()));
-        next = button.next_element_sibling();
     }
+    paint(group, mode);
+    let _ = dispatch(host, mode);
+    // A listener may select again while the event bubbles; its choice stays shown.
+    paint(group, selection.borrow().get());
 }
-/// Dispatch one changed selection from the group's actual root.
-fn dispatch(host: &Link, mode: ViewMode) -> Result<bool, JsValue> {
-    let Some(target) = live(host) else {
-        return Ok(true);
-    };
+/// Dispatch one changed selection from the element a page listens on.
+fn dispatch(host: &HtmlElement, mode: ViewMode) -> Result<bool, JsValue> {
     let init = CustomEventInit::new();
     init.set_detail(&JsValue::from_str(name(mode)));
     init.set_bubbles(true);
     init.set_composed(false);
     init.set_cancelable(false);
     let event = CustomEvent::new_with_event_init_dict(CHANGED, &init)?;
-    target.dispatch_event(&event)
+    host.dispatch_event(&event)
 }
 /// Mode spelling carried by the element property and the changed-selection event.
 fn name(mode: ViewMode) -> &'static str {
@@ -161,6 +199,12 @@ fn name(mode: ViewMode) -> &'static str {
 fn failed(error: &JsValue) -> ToolUiError {
     ToolUiError::Host(host_error(error))
 }
+/// Report an update of a root this control does not own.
+fn missing_group() -> ToolUiError {
+    ToolUiError::Host(AttachmentHostError::Presentation(
+        "Missing preview/source group".into(),
+    ))
+}
 /// One page-defined preview/source control.
 struct ToggleElement {
     /// Element owning this state.
@@ -169,51 +213,53 @@ struct ToggleElement {
     view: Rc<DomView>,
     /// Selected mode, kept across reconnection.
     selection: Rc<Cell<ViewMode>>,
-    /// Mounted group and the clicks that live with it while connected.
-    mounted: Option<(Element, Clicks)>,
+    /// Group mounted while connected, painted by the `mode` setter.
+    mounted: Rc<RefCell<Option<Rc<Mounted>>>>,
     /// Accessors of the unreflected `mode` property.
     _mode: Accessors,
 }
 impl custom_element::CustomElement for ToggleElement {
     fn connected_callback(&mut self) {
-        let Some(root) = live(&self.root) else {
+        let Some(root) = dom::connected(&self.root) else {
             return;
         };
         // Lifecycle callbacks have no error channel; a failed build leaves the element empty.
-        if let Ok((group, clicks)) = build(&self.view, &self.selection, Some(&root)) {
-            let _ = root.append_child(&group);
-            self.mounted = Some((group, clicks));
-        }
+        let Ok(mounted) = Mounted::build(&self.view, &self.selection, Some(&root)) else {
+            return;
+        };
+        let _ = root.append_child(&mounted.group);
+        *self.mounted.borrow_mut() = Some(Rc::new(mounted));
     }
     fn disconnected_callback(&mut self) {
-        if let Some((group, _clicks)) = self.mounted.take() {
-            group.remove();
+        if let Some(mounted) = self.mounted.borrow_mut().take() {
+            mounted.group.remove();
         }
     }
 }
-/// Getter and setter callables of one element property, kept as long as its element's state.
-type Accessors = (Closure<dyn Fn() -> JsValue>, Closure<dyn Fn(JsValue)>);
 /// Install the unreflected `mode` property reading and writing `selection`.
-fn property(root: &HtmlElement, selection: &Rc<Cell<ViewMode>>) -> Accessors {
+fn property(
+    root: &HtmlElement,
+    selection: &Rc<Cell<ViewMode>>,
+    mounted: &Rc<RefCell<Option<Rc<Mounted>>>>,
+) -> Accessors {
     let read = Rc::clone(selection);
-    let get = Closure::<dyn Fn() -> JsValue>::new(move || name(read.get()).into());
-    let (write, group) = (Rc::clone(selection), WeakRef::new(root));
-    let set = Closure::<dyn Fn(JsValue)>::new(move |value: JsValue| {
+    let get = Getter::new(move || name(read.get()).into());
+    let (write, group) = (Rc::clone(selection), Rc::clone(mounted));
+    let set = Setter::new(move |value: JsValue| {
         // Only the declared modes are operands; other assignments leave the selection alone.
         let mode = match value.as_string().as_deref() {
             Some("preview") => ViewMode::Preview,
             Some("code") => ViewMode::Code,
             _ => return,
         };
-        select(&write, &group, mode);
+        if select(&write, mode)
+            && let Some(mounted) = group.borrow().as_ref()
+        {
+            mounted.paint();
+        }
     });
-    let descriptor = js_sys::Object::new();
-    for (key, value) in [("get", get.as_ref()), ("set", set.as_ref())] {
-        let _ = js_sys::Reflect::set(&descriptor, &key.into(), value);
-    }
-    let _ = js_sys::Reflect::set(&descriptor, &"configurable".into(), &JsValue::TRUE);
     // A valid property name on a live element only fails when it already exists unconfigurably.
-    let _ = js_sys::Reflect::define_property(root, &"mode".into(), &descriptor);
+    dom::install(root, "mode", &get, &set);
     (get, set)
 }
 /// Define the preview/source control once for the page.
@@ -221,14 +267,15 @@ fn property(root: &HtmlElement, selection: &Rc<Cell<ViewMode>>) -> Accessors {
 /// Returns the browser's registration failure.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
-    crate::dom::define_element(TAG, Vec::new(), &[], move |root, _| {
+    dom::define_element(TAG, Vec::new(), &[], move |root, _| {
         let selection = Rc::new(Cell::new(ViewMode::Preview));
-        let mode = property(&root, &selection);
+        let mounted = Rc::default();
+        let mode = property(&root, &selection, &mounted);
         ToggleElement {
-            root: WeakRef::new(&root),
+            root: js_sys::WeakRef::new(&root),
             view: Rc::clone(&view),
             selection,
-            mounted: None,
+            mounted,
             _mode: mode,
         }
     })

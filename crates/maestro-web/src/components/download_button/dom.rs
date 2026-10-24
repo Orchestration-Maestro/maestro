@@ -95,9 +95,9 @@ impl Activation {
 /// # Errors
 /// Returns localization, glyph or native creation failures.
 pub fn download_button(view: &DomView, props: DownloadButtonProps) -> Result<DomRoot, ToolUiError> {
-    let label = view.i18n.text(LABEL).map_err(ToolUiError::I18n)?;
     let mut children = vec![glyph(props.icon_size)?];
     if props.show_text {
+        let label = view.i18n.text(LABEL).map_err(ToolUiError::I18n)?;
         let caption = view
             .document
             .create_element("span")
@@ -105,7 +105,11 @@ pub fn download_button(view: &DomView, props: DownloadButtonProps) -> Result<Dom
         caption.set_text_content(Some(&label));
         children.push(caption.into());
     }
-    let title = props.title.unwrap_or(label);
+    // The localized label is read only where the caller uses it: a custom tooltip replaces it.
+    let title = match props.title {
+        Some(title) => title,
+        None => view.i18n.text(LABEL).map_err(ToolUiError::I18n)?,
+    };
     let control = button(
         &view.document,
         &ButtonProps {

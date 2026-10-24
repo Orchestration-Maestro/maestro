@@ -15,7 +15,7 @@ code-block, markdown-block, thinking-block {
   justify-content: center;
   gap: 0.5rem;
   box-sizing: border-box;
-  border: 1px solid transparent;
+  border: 0 solid transparent;
   border-radius: var(--maestro-radii-control);
   outline: none;
   font-family: var(--maestro-type-body-font);
@@ -75,6 +75,7 @@ code-block, markdown-block, thinking-block {
   background: color-mix(in srgb, var(--maestro-color-error) 90%, transparent);
 }
 .maestro-button-outline {
+  border-width: 1px;
   border-color: var(--maestro-color-border);
   background: var(--maestro-color-background);
   color: var(--maestro-color-text);
@@ -167,6 +168,7 @@ code-block, markdown-block, thinking-block {
 .maestro-toggle {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
   height: 1.75rem;
   overflow: hidden;
   border: 1px solid var(--maestro-color-border);

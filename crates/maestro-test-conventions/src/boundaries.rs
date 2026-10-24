@@ -12,6 +12,9 @@ use wit::{ScanContext, WitInputs};
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
+/// Single-owner rule for element property installation.
+mod property_accessors;
+
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
@@ -34,6 +37,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             }
             check_declarations(member, source, &records, &mut declarations)?;
             check_session_setup(member, source, &records)?;
+            property_accessors::check(member, source)?;
             let context = ScanContext {
                 owner: &member.name,
                 directory: &member.directory,
