@@ -1,5 +1,6 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts, editor actions and typed input.
+//! resources, notices, transcript shortcuts, editor actions, typed input and queued
+//! input.
 
 use crate::{BashExecutionComponent, CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
@@ -19,6 +20,8 @@ use std::{
 
 mod actions;
 mod bash;
+mod key_display;
+mod queues;
 mod replay;
 mod resources;
 mod startup;
@@ -92,6 +95,27 @@ pub struct InteractiveMode {
     pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Messages typed while the session compacts, in the order they were typed.
+    compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+}
+
+/// Creates the tool environment every rendered row draws over.
+///
+/// # Errors
+/// Returns the failure that stopped the documentation path or the highlighter.
+fn create_tool_environment(
+    runtime: &Rc<dyn TuiRuntime>,
+    themes: &Rc<ThemeState>,
+) -> Result<ToolRenderEnvironment, Box<dyn Error>> {
+    Ok(ToolRenderEnvironment {
+        runtime: Rc::clone(runtime),
+        readme_path: maestro_app::configuration::config::get_readme_path()?,
+        live_theme: themes.theme(),
+        highlighter: Rc::new(
+            SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
+        ),
+        terminal_image: TerminalImage::default(),
+    })
 }
 
 impl InteractiveMode {
@@ -109,15 +133,7 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
-        let tool_environment = Rc::new(ToolRenderEnvironment {
-            runtime: terminal.1.clone(),
-            readme_path: maestro_app::configuration::config::get_readme_path()?,
-            live_theme: themes.theme(),
-            highlighter: Rc::new(
-                SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
-            ),
-            terminal_image: TerminalImage::default(),
-        });
+        let tool_environment = Rc::new(create_tool_environment(&terminal.1, &themes)?);
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
@@ -138,6 +154,10 @@ impl InteractiveMode {
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let selected_theme = session.settings_manager().borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
+        let hide_thinking_block = session
+            .settings_manager()
+            .borrow()
+            .get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
             options,
@@ -157,13 +177,14 @@ impl InteractiveMode {
             built_in_header: RefCell::default(),
             tool_environment,
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(hides_thinking(&session)),
+            hide_thinking_block: Cell::new(hide_thinking_block),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
             active_shell: RefCell::default(),
             pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
+            compaction_queued_messages: RefCell::default(),
         }))
     }
 
@@ -194,6 +215,7 @@ impl InteractiveMode {
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
         self.setup_key_handlers();
+        self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
@@ -232,14 +254,6 @@ fn create_ui(
     );
     ui.set_clear_on_shrink(settings.get_clear_on_shrink());
     ui
-}
-
-/// Whether the session hides assistant thinking.
-fn hides_thinking(session: &AgentSession) -> bool {
-    session
-        .settings_manager()
-        .borrow()
-        .get_hide_thinking_block()
 }
 
 /// Builds the editor with the configured padding and completion limit.

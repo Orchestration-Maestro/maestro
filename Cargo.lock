@@ -3804,6 +3804,7 @@ dependencies = [
  "maestro-export",
  "maestro-extensions",
  "maestro-json",
+ "maestro-listing",
  "maestro-markdown",
  "maestro-models",
  "maestro-packages",
@@ -3903,6 +3904,7 @@ name = "maestro-cli"
 version = "0.1.0"
 dependencies = [
  "base64 0.23.1",
+ "futures-util",
  "indexmap 2.14.2",
  "maestro-app",
  "maestro-dependencies",

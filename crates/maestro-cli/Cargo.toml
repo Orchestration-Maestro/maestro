@@ -26,6 +26,7 @@ name = "integration"
 path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+futures-util = { workspace = true, features = ["async-await"] }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 maestro-test-terminal.workspace = true

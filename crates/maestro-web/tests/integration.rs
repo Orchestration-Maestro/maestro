@@ -50,6 +50,8 @@ mod message_renderers_browser;
 mod message_tool_arguments;
 mod message_visuals_browser;
 mod messages_browser;
+mod native_markdown_browser;
+mod native_thinking_browser;
 mod pdf_views;
 mod pdf_views_browser;
 mod provider_exports;
