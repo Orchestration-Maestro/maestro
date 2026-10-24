@@ -3,6 +3,7 @@ use super::typed::{recalled, submit};
 use super::{Setup, World, isolated};
 use crate::BashExecutionComponent;
 use crate::components::session_selector::list::tests::session_picker::manual_runtime::ManualRuntime;
+use crate::local_dispatch::{LocalDispatch, local_dispatch};
 use maestro_app::{ReadonlySessionManager, SettingsManager};
 use maestro_tui::tui::LocalFuture;
 use std::{
@@ -1052,9 +1053,9 @@ fn start_command(
 }
 
 #[test]
-fn shell_channel_drains_before_completion_and_closes_with_owner() {
+fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
     isolated(
-        "shell_channel_drains_before_completion_and_closes_with_owner",
+        "shell_paints_streamed_chunks_in_order_before_its_row_completes",
         |directory| {
             let started = directory.join("drain-started");
             let release = directory.join("drain-release");
@@ -1073,11 +1074,8 @@ fn shell_channel_drains_before_completion_and_closes_with_owner() {
                     submit(&world, "!drain");
                     until_exists(&started).await;
                     let row = active(&world).expect("the row produces output");
+                    until_painted(&row, "first").await;
                     let painted = maestro_tui::Component::render(&*row, 80).join("\n");
-                    assert!(
-                        painted.contains("first"),
-                        "the admitted chunk reaches the row: {painted}"
-                    );
                     assert!(
                         !painted.contains("second"),
                         "the command still runs: {painted}"
@@ -1105,6 +1103,140 @@ fn shell_channel_drains_before_completion_and_closes_with_owner() {
             assert_eq!(recorded(&world).len(), 1);
             assert_eq!(recorded(&world)[0]["output"], "first\nsecond\n");
         },
+    );
+}
+
+/// Waits until the row paints `chunk`, yielding so the delivery reaches it.
+async fn until_painted(row: &BashExecutionComponent, chunk: &str) {
+    for _ in 0..10_000 {
+        if painted(row).contains(chunk) {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!("the row paints {chunk}");
+}
+
+/// The painted rows of one shell row at width 80.
+fn painted(row: &BashExecutionComponent) -> String {
+    maestro_tui::Component::render(row, 80).join("\n")
+}
+
+/// A shell row shown without the mode's submission path.
+fn shell_row(world: &World, command: &str) -> Rc<BashExecutionComponent> {
+    Rc::new(BashExecutionComponent::new(
+        command.to_owned(),
+        world.mode.ui.clone(),
+        world.themes.theme(),
+        false,
+    ))
+}
+
+/// The chunk delivery the shell owner builds for one row.
+fn row_dispatch(world: &World, row: &Rc<BashExecutionComponent>) -> LocalDispatch<String> {
+    let row = Rc::clone(row);
+    local_dispatch(
+        &world.mode.tool_environment.runtime,
+        move |chunk: String| row.append_output(&chunk),
+    )
+}
+
+/// Polls `future` until it finishes, yielding so the delivery's receiver runs.
+async fn until_ready<T>(future: &mut (impl Future<Output = T> + Unpin)) -> T {
+    for _ in 0..64 {
+        if let Some(value) = poll_once(future) {
+            return value;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!("the delivery settles");
+}
+
+/// Gives the terminal runtime every chance to apply work it already holds.
+async fn until_quiet() {
+    for _ in 0..8 {
+        tokio::task::yield_now().await;
+    }
+}
+
+#[test]
+fn shell_delivery_drains_before_completion_and_stops_at_close() {
+    isolated(
+        "shell_delivery_drains_before_completion_and_stops_at_close",
+        |directory| {
+            let world = Setup::default().build(directory);
+            world.mode.init().unwrap();
+            world.runtime.settle().unwrap();
+            let errors = on_tasks(async {
+                let ((), errors) = driving(&world, async {
+                    closed_delivery_paints_nothing_more(&world).await;
+                    delivery_paints_before_completion(&world).await;
+                    torn_down_row_is_released(&world).await;
+                })
+                .await;
+                errors
+            });
+            assert!(errors.is_empty(), "{errors:?}");
+        },
+    );
+}
+
+/// A closed delivery refuses the work offered after it while its receiver still runs.
+async fn closed_delivery_paints_nothing_more(world: &World) {
+    let row = shell_row(world, "!close");
+    let dispatch = row_dispatch(world, &row);
+    let mut chunk = dispatch.sender();
+    chunk("first\n".to_owned());
+    until_painted(&row, "first").await;
+    dispatch.close();
+    chunk("after close\n".to_owned());
+    until_quiet().await;
+    let painted = painted(&row);
+    assert!(
+        painted.contains("first") && !painted.contains("after close"),
+        "a closed delivery paints nothing more: {painted}"
+    );
+}
+
+/// A chunk the producer admits as its command finishes is still queued when settling
+/// starts, so the drain owns painting it before the row completes.
+async fn delivery_paints_before_completion(world: &World) {
+    let row = shell_row(world, "!drain");
+    let dispatch = row_dispatch(world, &row);
+    let mut chunk = dispatch.sender();
+    chunk("first\n".to_owned());
+    chunk("late\n".to_owned());
+    let mut settle = Box::pin(dispatch.settle());
+    assert!(until_ready(&mut settle).await.is_ok(), "the drain settles");
+    let drained = painted(&row);
+    assert!(
+        drained.contains("late"),
+        "the drain paints the last admitted chunk: {drained}"
+    );
+    assert!(
+        drained.contains("Running..."),
+        "the row completes after the drain: {drained}"
+    );
+    row.set_complete(Some(0.0), false, None, None);
+    let completed = painted(&row);
+    assert!(
+        !completed.contains("Running..."),
+        "the completed row stops its loader: {completed}"
+    );
+}
+
+/// A row given up with deliveries still admitted is released.
+async fn torn_down_row_is_released(world: &World) {
+    let row = shell_row(world, "!teardown");
+    let released = Rc::downgrade(&row);
+    let dispatch = row_dispatch(world, &row);
+    dispatch.sender()("pending\n".to_owned());
+    drop(dispatch);
+    drop(row);
+    until_quiet().await;
+    assert!(
+        released.upgrade().is_none(),
+        "the torn-down row is released with deliveries still admitted"
     );
 }
 
