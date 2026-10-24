@@ -10,4 +10,5 @@ pub use maestro_request::messages::{
     MessageDelivery, SendMessageOptions, SendUserMessageOptions, UserMessageDelivery,
 };
 /// Host-supplied tool metadata with opaque schema text.
-pub type ToolInfo = maestro_request::tool_info::ToolInfo<String>;
+pub type ToolInfo =
+    maestro_request::tool_info::ToolInfo<maestro_request::parameter_schema::ParameterSchema>;

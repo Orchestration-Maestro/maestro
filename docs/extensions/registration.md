@@ -573,8 +573,8 @@ Serialize-only details use `RegisteredToolInput::from_raw` without a decoder.
 A parameter schema built by a schema builder carries the kind of each node its author
 declared, beside the ordinary JSON Schema value. Argument preparation converts those
 nodes before the plain conversion pass; a schema written as ordinary JSON has no
-declared kinds and is converted as JSON alone. Provider payloads and saved JSON carry
-the ordinary JSON Schema value only.
+declared kinds and is converted as JSON alone. Provider payloads and saved JSON drop
+the declared kinds.
 
 ```rust
 use maestro_extensions::{ExtensionContext, ExtensionFactory, load_extension_from_factory};
