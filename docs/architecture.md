@@ -348,8 +348,9 @@ exempt. The scan reads parsed syntax, so it does not expand macros, resolve
 arbitrary re-exports or follow unparsed fragments.
 
 The root manifest must forbid every protected quality lint; member manifests
-are parsed as TOML and must set the boolean `lints.workspace` to `true`,
-except for the guest-authoring manifest below.
+are parsed as TOML and must set the boolean `lints.workspace` to `true`.
+The only exception is the guest-authoring manifest's exact table below;
+missing lint wiring is rejected for every member, including that guest.
 The compiler rejects protected-lint allowances, including attributes emitted by
 macros and conditional attributes. Lint-group allowances fail because the
 workspace also forbids `forbidden_lint_groups`, which ignores warnings denial.
@@ -372,8 +373,8 @@ top-level module, integration test and example restores the groups with
 `forbid`, nested files inherit it from their parent module, and the crate root
 stays wiring-only.
 
-All other members inherit the workspace lint table, including
-`unsafe_code = "forbid"`. The [terminal emulator](terminal-emulator.md) is pure Rust.
+Every member retains `unsafe_code = "forbid"`.
+The [terminal emulator](terminal-emulator.md) is pure Rust.
 
 The workspace daemon is core design: the root always wires the daemon,
 multiplexer. Required direct edges are root → application and multiplexer,
