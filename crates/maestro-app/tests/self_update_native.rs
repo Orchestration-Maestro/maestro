@@ -205,22 +205,23 @@ fn native_windows_update_access_matches_directory_rule() {
             .open(&file)
             .unwrap(),
     );
-    // A writable directory admits the command.
-    assert!(selects(&package));
-    // A directory whose read-only attribute is set still admits it.
-    let directory_attributes = fs::metadata(&package).unwrap().permissions();
-    let mut readonly = directory_attributes.clone();
-    readonly.set_readonly(true);
-    fs::set_permissions(&package, readonly).unwrap();
-    assert!(selects(&package));
-    fs::set_permissions(&package, directory_attributes).unwrap();
-    // A read-only regular file does not.
-    let file_attributes = fs::metadata(&file).unwrap().permissions();
-    let mut readonly = file_attributes.clone();
-    readonly.set_readonly(true);
-    fs::set_permissions(&file, readonly).unwrap();
-    assert!(!selects(&file));
-    fs::set_permissions(&file, file_attributes).unwrap();
+    // A directory admits the command with or without its read-only attribute; a regular
+    // file admits it only while that attribute is clear.
+    for (path, admitted) in [(&package, [true, true]), (&file, [true, false])] {
+        let attributes = fs::metadata(path).unwrap().permissions();
+        for (state, read_only) in [false, true].into_iter().enumerate() {
+            let mut attributes = attributes.clone();
+            attributes.set_readonly(read_only);
+            fs::set_permissions(path, attributes).unwrap();
+            assert_eq!(
+                selects(path),
+                admitted[state],
+                "{} read-only {read_only}",
+                path.display()
+            );
+        }
+        fs::set_permissions(path, attributes).unwrap();
+    }
     // An absent package selects nothing.
     assert!(!selects(&scratch.path().join("absent")));
     // Qualification created or modified no probe file.
