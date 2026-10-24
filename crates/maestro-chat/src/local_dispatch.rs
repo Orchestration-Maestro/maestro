@@ -2,23 +2,8 @@
 
 use maestro_app::DiagnosticErrorInfo;
 use maestro_tui::tui::TuiRuntime;
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-};
+use std::{cell::RefCell, rc::Rc};
 use tokio::sync::{mpsc, oneshot};
-
-/// One delivery: work the producer admitted, or the caller's explicit end of the delivery.
-enum Delivery<T> {
-    /// Work to apply to the local owners.
-    Work(T),
-    /// The caller closed the delivery; every work item before it is already applied.
-    Finish,
-}
 
 /// The local delivery of one producer's work.
 ///
@@ -26,14 +11,11 @@ enum Delivery<T> {
 /// receiver runs on the terminal runtime and applies each item to the local owners. Nothing
 /// in the type names what the items are, so every caller shares this one delivery.
 ///
-/// [`LocalDispatch::settle`] closes the delivery and waits until every admitted item was
-/// applied, so a producer that keeps its sender alive cannot hold the drain open. An update
-/// that fails ends the delivery and the failure is returned by `settle`.
+/// [`LocalDispatch::settle`] drops the producer side and waits until every admitted item was
+/// applied. An update that fails ends the delivery and the failure is returned by `settle`.
 pub(crate) struct LocalDispatch<T> {
-    /// The owned producer side; dropping it ends the delivery too.
-    sender: mpsc::UnboundedSender<Delivery<T>>,
-    /// Whether the delivery was closed; `sender` refuses work afterwards.
-    closed: Arc<AtomicBool>,
+    /// The owned producer side; dropping it ends the delivery.
+    sender: mpsc::UnboundedSender<T>,
     /// The failure the local update reported, kept for the caller.
     failure: Rc<RefCell<Option<DiagnosticErrorInfo>>>,
     /// Reports that the delivery ended, so the caller can wait for every admitted item.
@@ -45,17 +27,13 @@ pub(crate) fn local_dispatch<T: 'static>(
     runtime: &Rc<dyn TuiRuntime>,
     mut apply: impl FnMut(T) -> Result<(), DiagnosticErrorInfo> + 'static,
 ) -> LocalDispatch<T> {
-    let (sender, mut receiver) = mpsc::unbounded_channel::<Delivery<T>>();
+    let (sender, mut receiver) = mpsc::unbounded_channel::<T>();
     let (drained, delivered) = oneshot::channel::<()>();
     let failure: Rc<RefCell<Option<DiagnosticErrorInfo>>> = Rc::default();
     let reported = Rc::clone(&failure);
     runtime.spawn_local(Box::pin(async move {
-        while let Some(delivery) = receiver.recv().await {
-            let admitted = match delivery {
-                Delivery::Work(item) => deliver(item, &mut apply, &reported),
-                Delivery::Finish => false,
-            };
-            if !admitted {
+        while let Some(item) = receiver.recv().await {
+            if !deliver(item, &mut apply, &reported) {
                 break;
             }
         }
@@ -64,7 +42,6 @@ pub(crate) fn local_dispatch<T: 'static>(
     }));
     LocalDispatch {
         sender,
-        closed: Arc::default(),
         failure,
         delivered,
     }
@@ -86,32 +63,23 @@ fn deliver<T>(
 }
 
 impl<T: Send + 'static> LocalDispatch<T> {
-    /// A sendable producer of further items; once the delivery is closed it admits none.
+    /// A sendable producer of further items; once the local owners are gone it sends nothing.
     pub(crate) fn sender(&self) -> Box<dyn FnMut(T) + Send> {
         let sender = self.sender.clone();
-        let closed = Arc::clone(&self.closed);
         // A closed receiver means the local owners are gone; the item has nowhere to go.
-        Box::new(move |item| {
-            if !closed.load(Ordering::SeqCst) {
-                drop(sender.send(Delivery::Work(item)));
-            }
-        })
+        Box::new(move |item| drop(sender.send(item)))
     }
 
-    /// Stops admitting work: everything already admitted is still applied, and the
-    /// receiver ends once it reaches this point.
-    pub(crate) fn close(&self) {
-        self.closed.store(true, Ordering::SeqCst);
-        drop(self.sender.send(Delivery::Finish));
-    }
-
-    /// Closes the delivery, waits until the receiver ended, and returns the failure of the
-    /// local update it met, if any.
+    /// Ends the delivery, waits until the receiver applied every admitted item, and returns
+    /// the failure of the local update it met, if any.
     pub(crate) async fn settle(self) -> Result<(), DiagnosticErrorInfo> {
-        self.close();
         let Self {
-            failure, delivered, ..
+            sender,
+            failure,
+            delivered,
         } = self;
+        // The producer's own end comes last, so this drop ends the delivery.
+        drop(sender);
         drop(delivered.await);
         match failure.borrow_mut().take() {
             Some(error) => Err(error),
@@ -178,27 +146,6 @@ mod tests {
     }
 
     #[test]
-    fn retained_callback_drain_settles_after_close() {
-        let runtime = ManualRuntime::new();
-        let applied: Rc<RefCell<Vec<u32>>> = Rc::default();
-        let seen = Rc::clone(&applied);
-        let dispatch = local_dispatch(&runtime.handle(), move |item: u32| {
-            seen.borrow_mut().push(item);
-            Ok(())
-        });
-        let mut retained = dispatch.sender();
-        retained(1);
-        retained(2);
-        let mut settle = Box::pin(dispatch.settle());
-        on_tasks(driving(&runtime, async {
-            assert!(settled(&mut settle).await.is_ok(), "the drain settles");
-            // A producer that keeps its callback alive cannot extend the delivery.
-            retained(3);
-        }));
-        assert_eq!(applied.borrow().clone(), [1, 2]);
-    }
-
-    #[test]
     fn presentation_failure_surfaces_at_settle() {
         let runtime = ManualRuntime::new();
         let dispatch = local_dispatch(&runtime.handle(), |item: u32| {
@@ -211,6 +158,7 @@ mod tests {
         send(1);
         send(2);
         send(3);
+        drop(send);
         let mut settle = Box::pin(dispatch.settle());
         let error = on_tasks(driving(&runtime, async { settled(&mut settle).await }))
             .expect_err("the update failure is returned");
@@ -228,6 +176,7 @@ mod tests {
         });
         let mut send = dispatch.sender();
         send(7);
+        drop(send);
         let mut settle = Box::pin(dispatch.settle());
         let outcome = on_tasks(driving(&runtime, async { settled(&mut settle).await }));
         assert!(outcome.is_ok());
