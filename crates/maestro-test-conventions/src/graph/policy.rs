@@ -303,6 +303,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
+    "maestro-cli",
     "maestro-credentials",
     "maestro-daemon",
     "maestro-detection",
@@ -330,6 +331,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
+    "maestro-cli",
     "maestro-credentials",
     "maestro-daemon",
     "maestro-detection",
@@ -356,6 +358,12 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-workspace",
 ];
 
+/// Native owner of the recording terminal and manual runtime every scenario needs.
+pub(crate) const TEST_TERMINAL: &str = "maestro-test-terminal";
+
+/// Declared consumers of the shared terminal scenario effects.
+pub(crate) const TEST_TERMINAL_CALLERS: &[&str] = &["maestro-cli"];
+
 /// Native owner of scoped tracing subscribers that see every callsite.
 pub(crate) const TEST_TRACING: &str = "maestro-test-tracing";
 
@@ -374,6 +382,7 @@ pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str
         TEST_PROCESS => Some(TEST_PROCESS_CALLERS),
         TEST_DIRECTORY => Some(TEST_DIRECTORY_CALLERS),
         TEST_TRACING => Some(TEST_TRACING_CALLERS),
+        TEST_TERMINAL => Some(TEST_TERMINAL_CALLERS),
         _ => None,
     }
 }

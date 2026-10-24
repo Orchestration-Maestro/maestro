@@ -85,7 +85,7 @@ not satisfy a direct requirement. The permitted internal development edges are
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, and the
-native development edges from the twenty-one declared callers to the
+native development edges from the twenty-two declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -98,8 +98,10 @@ exact caller list of its
 [directory contract](specs/maestro-port.md#test-directory-owner) and no outgoing
 domain or utility edge. The tracing owner
 follows the same checks with its own five callers; see the
-[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
-is not a reusable test-support dependency. Both production
+[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness's
+recording terminal and manual runtime are the one shared test-effect owner, with
+`maestro-cli` as their only declared caller under the same native development
+rules. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
 

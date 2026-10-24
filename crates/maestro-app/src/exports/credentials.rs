@@ -9,3 +9,5 @@ pub use maestro_credentials::{
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_credentials::FileAuthStorageBackend;
+
+pub use maestro_credentials::format_no_models_available_message;

@@ -252,13 +252,14 @@ the native-only `maestro-extensions` to `maestro-credentials`, for extension tes
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
 and the native, non-optional dev-dependencies
-of the twenty-one declared callers on `maestro-test-process`, the owner of
+of the twenty-two declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
-the required toolkit/text set. The scenario harness is not a
-general dev-dependency target.
+the required toolkit/text set. The scenario harness's recording terminal and
+manual runtime are the one shared test-effect owner, declared as a native
+development dependency by `maestro-cli` only.
 
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no

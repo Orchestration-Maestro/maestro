@@ -363,3 +363,46 @@ fn toolkit_paint_preserves_missing_and_live_theme_fallbacks() {
     state.set_theme_instance(theme(100)).unwrap();
     assert_eq!((retained.border_color)("x"), "\x1b[38;5;104mx\x1b[39m");
 }
+
+/// One recorded diagnostic foreground case.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DiagnosticCase {
+    /// The recorded case group.
+    operation: String,
+    /// The recorded case name.
+    case: String,
+    /// The recorded style and its text.
+    input: DiagnosticInput,
+    /// The complete recorded output.
+    expected: String,
+}
+
+/// The recorded style kind, text and enablement.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DiagnosticInput {
+    /// The recorded foreground name.
+    kind: String,
+    /// The recorded text.
+    text: String,
+    /// Whether the foreground is enabled.
+    enabled: bool,
+}
+
+#[test]
+fn diagnostic_foregrounds_preserve_resets_and_line_breaks() {
+    let cases: Vec<DiagnosticCase> =
+        serde_json::from_str(include_str!("fixtures/diagnostic_styles.json")).unwrap();
+    for case in &cases {
+        assert_eq!(case.operation, "diagnostic_styles", "{}", case.case);
+        let input = &case.input;
+        let actual = match input.kind.as_str() {
+            "red" => Theme::red(&input.text, input.enabled),
+            "yellow" => Theme::yellow(&input.text, input.enabled),
+            other => panic!("unknown foreground {other}"),
+        };
+        assert_eq!(actual, case.expected, "{}", case.case);
+    }
+    assert_eq!(cases.len(), 20);
+}

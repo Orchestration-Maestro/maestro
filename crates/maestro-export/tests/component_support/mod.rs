@@ -1,7 +1,7 @@
 //! Controlled component callbacks replayed against independently recorded output.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../../maestro-test-terminal/src/manual_runtime.rs"]
 #[allow(dead_code)]
 mod manual_runtime;
 use maestro_export::{

@@ -235,7 +235,7 @@ fn editor_component_facade_shares_retained_operations() {
     exercise_callbacks(&*rig.editor);
     exercise_text(&*rig.editor);
     exercise_completion(&*rig.editor, &rig.provider, &|| {
-        runtime.drain_futures();
+        let _ = runtime.drain_futures();
     });
 }
 

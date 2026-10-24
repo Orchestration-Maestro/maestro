@@ -78,27 +78,32 @@ impl RenderTimer for ManualTimer {
 }
 
 /// Converts whole milliseconds to a duration.
+#[must_use]
 pub fn ms(value: u64) -> Duration {
     Duration::from_millis(value)
 }
 
 impl ManualRuntime {
     /// Take submitted futures to await them in a controlled order.
+    #[must_use]
     pub fn take_futures(&self) -> Vec<maestro_tui::tui::LocalFuture> {
         std::mem::take(&mut self.state.borrow_mut().futures)
     }
 
     /// Creates a host at time zero with an empty environment.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// The host as the writer receives it.
+    #[must_use]
     pub fn handle(&self) -> Rc<dyn TuiRuntime> {
         Rc::new(self.clone())
     }
 
     /// The current time in whole milliseconds.
+    #[must_use]
     pub fn millis(&self) -> u64 {
         u64::try_from(self.state.borrow().now.as_millis()).unwrap_or(u64::MAX)
     }
@@ -112,11 +117,13 @@ impl ManualRuntime {
     }
 
     /// Callbacks that have neither run nor been cancelled.
+    #[must_use]
     pub fn pending(&self) -> usize {
         self.state.borrow().pending.len()
     }
 
     /// Earliest pending deadline, if any.
+    #[must_use]
     pub fn next_deadline(&self) -> Option<Duration> {
         self.state
             .borrow()
@@ -127,6 +134,7 @@ impl ManualRuntime {
     }
 
     /// Log effects in the order requested.
+    #[must_use]
     pub fn files(&self) -> Vec<FileEffect> {
         self.state.borrow().files.clone()
     }
@@ -135,6 +143,7 @@ impl ManualRuntime {
     ///
     /// Callbacks scheduled while running are included once they are due. Returns the
     /// result of each callback in the order it ran.
+    #[must_use]
     pub fn advance_to(&self, target: Duration) -> Vec<io::Result<()>> {
         {
             let mut state = self.state.borrow_mut();
@@ -148,6 +157,7 @@ impl ManualRuntime {
     }
 
     /// Runs the callbacks that are due at the current time.
+    #[must_use]
     pub fn run_due(&self) -> Vec<io::Result<()>> {
         self.advance_to(self.now())
     }
@@ -175,6 +185,7 @@ impl ManualRuntime {
     }
 
     /// Futures handed over that have not finished.
+    #[must_use]
     pub fn futures(&self) -> usize {
         self.state.borrow().futures.len()
     }
@@ -182,6 +193,7 @@ impl ManualRuntime {
     /// Polls every handed-over future, repeating while any finishes or new ones arrive.
     ///
     /// Finished futures are dropped; their errors are returned unchanged in completion order.
+    #[must_use]
     pub fn drain_futures(&self) -> Vec<Box<dyn std::error::Error>> {
         let mut errors = Vec::new();
         let mut context = Context::from_waker(Waker::noop());

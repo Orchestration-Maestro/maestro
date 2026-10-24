@@ -331,3 +331,24 @@ notifications. The required legacy input bridge discards that error without
 inventing a fallback path. List and composed `try_render` propagate theme or
 child failures; legacy render returns no rows on failure, never a partial frame.
 Displayed tabs use the toolkit's [tab expansion](../terminal/text.md#measuring).
+
+# Presented lifecycles
+
+The configuration and session selectors are also run from the command line.
+`maestro-cli` owns `select_config` and `select_session`, which take the prepared
+options, the frame writer and the factory that builds the chat component, so the
+frontend never imports these widgets. The presentation focuses the handle the
+component retains, starts the frame writer, and settles exactly once: a close, a
+cancellation or a failed presentation stops what it already started, which is
+the writer and, for the configuration presentation, the theme watch. The
+explicit-exit notification ends the process after those effects. A repeated
+notification after the first settles nothing.
+
+The records both fronts hand a component live in
+`maestro_app::presentation_data::input_selectors`: the presented handles, the
+configuration options and callbacks with their factory, and the session
+loaders, request, callbacks and factory. `maestro-chat` re-exports the records
+its widgets consume, and `maestro-cli` re-exports `ConfigSelectorOptions` while
+importing the rest from that application path, so one declaration states what
+each caller supplies. The chat widget keeps its own differently shaped
+`ConfigSelectorOptions`, and session discovery keeps its own progress callback.

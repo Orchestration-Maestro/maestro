@@ -50,6 +50,7 @@ pub struct RecordingTerminal {
 
 impl RecordingTerminal {
     /// Creates a terminal of the given size that has recorded nothing.
+    #[must_use]
     pub fn new(columns: usize, rows: usize) -> Self {
         Self {
             state: Rc::new(RefCell::new(State {
@@ -73,6 +74,7 @@ impl RecordingTerminal {
     }
 
     /// The terminal as the writer receives it.
+    #[must_use]
     pub fn handle(&self) -> TerminalHandle {
         Rc::new(RefCell::new(self.clone()))
     }
@@ -83,6 +85,7 @@ impl RecordingTerminal {
     }
 
     /// Writes and cursor visibility escapes in the order requested.
+    #[must_use]
     pub fn writes(&self) -> Vec<String> {
         self.state.borrow().writes.clone()
     }
@@ -103,6 +106,7 @@ impl RecordingTerminal {
     }
 
     /// Lifecycle events (`start`, `stop`) in the order requested.
+    #[must_use]
     pub fn events(&self) -> Vec<&'static str> {
         self.state.borrow().events.clone()
     }
@@ -126,6 +130,7 @@ impl RecordingTerminal {
     }
 
     /// The current size as `(columns, rows)`.
+    #[must_use]
     pub fn size(&self) -> (usize, usize) {
         let state = self.state.borrow();
         (state.columns, state.rows)

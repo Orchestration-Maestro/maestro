@@ -19,7 +19,7 @@ use maestro_tui::{TerminalImage, components::Text, tui::ComponentHandle};
 use serde_json::{Value, json};
 use std::{cell::RefCell, io, rc::Rc};
 
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../maestro-test-terminal/src/manual_runtime.rs"]
 #[allow(dead_code)]
 mod manual_runtime;
 
