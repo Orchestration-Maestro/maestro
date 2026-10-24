@@ -224,11 +224,11 @@ macro_rules! context_methods {
             &mut self,
             this: Resource<$kind>,
         ) -> wasmtime::Result<Result<Resource<super::ui_host::Ui>, String>> {
-            let _ = &this;
             if let Err(e) = self.observed.catalog.check() {
                 return Ok(Err(e));
             }
-            let key = self.observed.ui.acquire();
+            let owner = self.table.get(&this)?.0.cwd.clone();
+            let key = self.observed.ui.acquire(&owner);
             Ok(Ok(self.push(super::ui_host::Ui(key))?))
         }
         fn has_ui(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<bool, String>> {
@@ -1093,6 +1093,37 @@ impl Harness {
             .call_async(&mut self.store, (borrow(rep),))
             .await
     }
+}
+
+/// Emits `data` on `channel` through the host bus operation, reaching every registered
+/// listener of that channel.
+pub fn bus_emit(harness: &mut Harness, channel: &str, data: &str) -> Result<(), String> {
+    let handlers = harness.store.data_mut().observed.bus.emit(channel, data)?;
+    let emitter = harness
+        .store
+        .data_mut()
+        .table
+        .push(super::bus_host::Emitter { key: 0 })
+        .map_err(|error| error.to_string())?;
+    let mut outcome = Ok(());
+    for handler in handlers {
+        outcome = super::block_on(harness.exports.func_invoke_listener().call_async(
+            &mut harness.store,
+            (borrow(handler), data, Resource::new_borrow(emitter.rep())),
+        ))
+        .map_err(|error| error.to_string())
+        .and_then(|received| received.0);
+        if outcome.is_err() {
+            break;
+        }
+    }
+    harness
+        .store
+        .data_mut()
+        .table
+        .delete(emitter)
+        .map_err(|error| error.to_string())?;
+    outcome
 }
 
 /// Cancels the retained tool signal after its entered barrier and releases execution.
