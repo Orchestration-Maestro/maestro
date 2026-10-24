@@ -63,5 +63,135 @@
     "agentEnd": [
       0.123
     ]
+  },
+  "single_file": {
+    "users": [
+      {
+        "text": "Say hello"
+      }
+    ],
+    "beforeFile": true,
+    "result": {
+      "cancelled": false,
+      "selectedText": "Say hello"
+    },
+    "messages": [],
+    "afterFile": true,
+    "exists": false
+  },
+  "single_memory": {
+    "users": [
+      {
+        "text": "Say hi"
+      }
+    ],
+    "beforeFile": false,
+    "result": {
+      "cancelled": false,
+      "selectedText": "Say hi"
+    },
+    "messages": [],
+    "afterFile": false,
+    "exists": false
+  },
+  "middle": {
+    "users": [
+      {
+        "text": "Say one"
+      },
+      {
+        "text": "Say two"
+      },
+      {
+        "text": "Say three"
+      }
+    ],
+    "result": {
+      "cancelled": false,
+      "selectedText": "Say two"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "text": "Say one"
+      },
+      {
+        "role": "assistant",
+        "text": "one"
+      }
+    ]
+  },
+  "at_file": {
+    "result": {
+      "cancelled": false
+    },
+    "changedFile": true,
+    "beforeFile": true,
+    "afterFile": true,
+    "messages": [
+      {
+        "role": "user",
+        "text": "hello"
+      },
+      {
+        "role": "assistant",
+        "text": "one"
+      },
+      {
+        "role": "user",
+        "text": "again"
+      },
+      {
+        "role": "assistant",
+        "text": "two"
+      }
+    ]
+  },
+  "at_memory": {
+    "result": {
+      "cancelled": false
+    },
+    "changedFile": false,
+    "beforeFile": false,
+    "afterFile": false,
+    "messages": [
+      {
+        "role": "user",
+        "text": "hello"
+      },
+      {
+        "role": "assistant",
+        "text": "one"
+      },
+      {
+        "role": "user",
+        "text": "again"
+      },
+      {
+        "role": "assistant",
+        "text": "two"
+      }
+    ]
+  },
+  "destination": {
+    "cwd": "$ROOT/case-11/destination",
+    "managerCwd": "$ROOT/case-11/destination",
+    "model": "faux-2",
+    "thinking": "off",
+    "messages": [
+      {
+        "role": "user",
+        "text": "target"
+      },
+      {
+        "role": "assistant",
+        "text": "target answer"
+      }
+    ]
+  },
+  "missing_cwd": {
+    "called": 0,
+    "name": "MissingSessionCwdError",
+    "message": "Stored session working directory does not exist: $ROOT/missing-cwd\nSession file: $ROOT/missing.jsonl\nCurrent working directory: $ROOT"
   }
 }

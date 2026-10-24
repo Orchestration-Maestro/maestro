@@ -1,11 +1,13 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_session_branching_checks;
 mod agent_session_concurrent_checks;
 mod agent_session_prompt_checks;
 mod agent_session_queue_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
+mod agent_session_runtime_checks;
 mod analysis_cost;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/analysis_fixtures.rs"]
