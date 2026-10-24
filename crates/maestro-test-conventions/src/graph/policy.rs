@@ -290,7 +290,6 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
     ("maestro-rpc", "maestro-theme"),
-    ("maestro-rpc", "maestro-tools"),
     ("maestro-rpc", "maestro-tui-crossterm"),
 ];
 

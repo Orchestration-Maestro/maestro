@@ -576,9 +576,9 @@ lets extension tests and doctests build a real model catalog over in-memory
 credential storage; it permits no normal or build dependency on credentials.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development
 dependency, supplies terminal newline normalization for checked-child tests.
-`maestro-rpc` to `maestro-theme`, `maestro-tools` and `maestro-tui-crossterm`, declared
-as native development dependencies, let the standard-stream child tests build the real
-export rendering environment; the adapter's normal dependency stays `maestro-app` alone.
+`maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
+development dependencies, let the standard-stream child tests build the real export
+rendering environment; the adapter's normal dependency stays `maestro-app` alone.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
