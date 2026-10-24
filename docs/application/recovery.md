@@ -27,6 +27,11 @@ the summarizer reads. The compaction is appended, the agent history is rebuilt
 from the session context, and the entry just stored reaches `session_compact`
 before the result returns.
 
+An extension context starts compaction through `CompactOptions`. If compaction
+fails, or its `on_complete` callback returns an error, the session passes the
+error to `on_error` when supplied. Completion callback errors keep their original
+error value.
+
 Every outcome announces `compaction_end`, and the compaction still counts as
 running while its listeners run. A refusal reports its message after `Compaction
 failed: `, and a cancelled compaction reports `aborted` with no message.
