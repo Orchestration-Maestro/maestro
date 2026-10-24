@@ -122,17 +122,13 @@
               "text": "look"
             },
             {
-              "type": "image",
               "source": {
-                "type": "base64",
                 "mediaType": "image/png",
                 "data": "AA=="
               }
             },
             {
-              "type": "image",
               "source": {
-                "type": "base64",
                 "mediaType": "image/png",
                 "data": "BB=="
               }
