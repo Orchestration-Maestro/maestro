@@ -21,20 +21,30 @@ pub struct Ui(pub(super) usize);
 pub struct Bank {
     /// Identity of the binding acquisitions currently resolve.
     binding: usize,
-    /// Rejection supplied for the next request.
-    error: Option<String>,
+    /// Rejection supplied for the next request it applies to.
+    error: Option<Refusal>,
     /// Method whose next request is rejected instead of the next request overall.
     method: Option<String>,
     /// Message the request of `method` is rejected with.
     message: Option<String>,
 }
 
+/// A supplied refusal and the method it is limited to.
+struct Refusal {
+    /// Method the refusal applies to; absent refuses the next request.
+    method: Option<String>,
+    /// Message the host refuses the request with.
+    message: String,
+}
+
 /// Requested host state; every member is independent.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Control {
-    /// Message the next request is rejected with.
+    /// Message the next request it applies to is refused with.
     error: Option<String>,
+    /// Method the refusal is limited to; absent refuses the next request.
+    method: Option<String>,
     /// Identity of the binding later acquisitions resolve.
     binding: Option<usize>,
 }
@@ -46,7 +56,26 @@ impl Bank {
         if let Some(binding) = control.binding {
             self.binding = binding;
         }
-        self.error = control.error;
+        self.error = control.error.map(|message| Refusal {
+            method: control.method,
+            message,
+        });
+    }
+
+    /// Takes the refusal supplied for `method`, keeping one supplied for another method.
+    fn refusal(&mut self, method: &str) -> Option<String> {
+        let supplied = self
+            .error
+            .as_ref()
+            .is_some_and(|refusal| refusal.method.as_deref().is_none_or(|it| it == method));
+        if supplied {
+            return self.error.take().map(|refusal| refusal.message);
+        }
+        if self.method.as_deref() != Some(method) {
+            return None;
+        }
+        self.method = None;
+        self.message.take()
     }
 
     /// Hands out the identity of the binding current at acquisition time.
@@ -59,15 +88,6 @@ impl Bank {
         self.method = Some(method.to_owned());
         self.message = Some(message.to_owned());
     }
-
-    /// Takes the rejection armed for `method`, once that method's request arrives.
-    fn refusal(&mut self, method: &str) -> Option<String> {
-        if self.method.as_deref() != Some(method) {
-            return None;
-        }
-        self.method = None;
-        self.message.take()
-    }
 }
 
 /// Records one request against the acquisition `key`, then returns its supplied rejection.
@@ -78,9 +98,7 @@ pub fn call(
     operands: &Value,
 ) -> Result<(), String> {
     observed.log(format!("ui {key} {method} {operands}"));
-    let error = observed.ui.error.take();
-    let error = error.or_else(|| observed.ui.refusal(method));
-    error.map_or(Ok(()), Err)
+    observed.ui.refusal(method).map_or(Ok(()), Err)
 }
 
 /// Supplied widget options; an absent record keeps the host default.

@@ -179,11 +179,7 @@ struct ComponentHost {
 impl ComponentHost {
     /// Instantiates the built example and looks up both registrations.
     fn new() -> Result<Self, String> {
-        let path = super::build::example_component("reload_runtime")?;
-        let (engine, component) =
-            super::build::compile(&path).map_err(|error| error.to_string())?;
-        let harness = super::block_on(Harness::from_compiled(&engine, &component))
-            .map_err(|error| error.to_string())?;
+        let harness = super::host::Harness::example("reload_runtime")?;
         let command = harness
             .callback("command reload-runtime")
             .map_err(|error| error.to_string())?;

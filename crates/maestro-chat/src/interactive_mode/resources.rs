@@ -5,16 +5,26 @@ use super::{
     startup::{ExpandableText, TextFactory},
 };
 use crate::components::shorten_home_path;
+use diagnostics::SourceInfos;
 use indexmap::IndexMap;
 use maestro_app::{
-    ContextFile, PromptTemplate, ReadonlySessionManager, Skill, SourceInfo, SourceScope,
-    home_directory, is_whitespace_scalar,
+    ContextFile, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, PromptTemplate,
+    ReadonlySessionManager, Skill, SourceInfo, SourceScope, home_directory, is_whitespace_scalar,
 };
 use maestro_path::{Cwd, is_absolute, relative};
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Spacer;
-use std::{collections::HashMap, error::Error, io, rc::Rc};
+use std::{
+    collections::HashMap,
+    error::Error,
+    io,
+    rc::Rc,
+    sync::{PoisonError, RwLock, RwLockReadGuard},
+};
 
+mod diagnostics;
+mod labels;
+mod listing;
 #[cfg(test)]
 #[cfg(unix)]
 mod tests;
@@ -23,11 +33,32 @@ mod tests;
 type HomeLookup<'a> = dyn Fn() -> io::Result<String> + 'a;
 
 /// One listed resource: its path and, when known, where it came from.
-struct ResourceItem<'a> {
+pub(super) struct ResourceItem<'a> {
     /// The resource file.
-    path: &'a str,
+    pub(super) path: &'a str,
     /// Where the resource came from.
-    source_info: Option<&'a SourceInfo>,
+    pub(super) source_info: Option<&'a SourceInfo>,
+}
+
+/// What one listing call lists.
+#[derive(Default, Clone, Copy)]
+pub(super) struct ShowLoadedResourcesOptions<'a> {
+    /// The extensions listed in place of the loaded ones, even when empty.
+    pub(super) extensions: Option<&'a [ResourceItem<'a>]>,
+    /// Lists the sections even on a quiet startup.
+    pub(super) force: bool,
+    /// Shows the diagnostics even on a quiet startup that lists nothing.
+    pub(super) show_diagnostics_when_quiet: bool,
+}
+
+/// The loader's results one listing reads once.
+struct Snapshots<'a> {
+    /// The skills and their diagnostics.
+    skills: &'a LoadSkillsResult,
+    /// The loader's own prompt templates and their diagnostics.
+    prompts: &'a LoadPromptsResult,
+    /// The themes and their diagnostics.
+    themes: &'a LoadThemesResult,
 }
 
 /// The scope a resource is listed under, in listing order.
@@ -100,6 +131,11 @@ fn build_scope_groups<'a>(
         .into_iter()
         .filter(|group| !group.paths.is_empty() || !group.packages.is_empty())
         .collect()
+}
+
+/// Reads `lock`, whose writers never leave it inconsistent.
+fn read<T>(lock: &RwLock<T>) -> RwLockReadGuard<'_, T> {
+    lock.read().unwrap_or_else(PoisonError::into_inner)
 }
 
 /// Displays `path` with the home prefix abbreviated, looking the home directory up now.
@@ -226,6 +262,26 @@ fn format_scope_groups(
     Ok(lines.join("\n"))
 }
 
+/// Lists resources grouped by scope and package, each plain path with the home prefix
+/// abbreviated and each package path relative to its package.
+///
+/// # Errors
+/// Returns the failure of a path display or of the theme's colours.
+fn format_resource_groups(
+    items: &[ResourceItem<'_>],
+    theme: &Theme,
+    collator: &Collator,
+    home: &HomeLookup<'_>,
+) -> Result<String, Box<dyn Error>> {
+    format_scope_groups(
+        &build_scope_groups(items),
+        theme,
+        collator,
+        |item| Ok(format_display_path(item.path, home)?),
+        |item| get_short_path(item.path, item.source_info, home),
+    )
+}
+
 /// Joins the trimmed nonempty labels as one dimmed row, sorted by locale when a
 /// collator is supplied and in their supplied order otherwise.
 ///
@@ -252,14 +308,20 @@ impl InteractiveMode {
         self.options.verbose || self.tool_output_expanded.get()
     }
 
-    /// Appends the loaded context files, skills and prompt templates as expandable
-    /// transcript sections, unless startup is quiet without verbose and `force` is not set.
+    /// Appends the loaded context files, skills, prompt templates, extensions and themes
+    /// as expandable transcript sections, then the resource diagnostics as static text.
+    ///
+    /// The sections are listed when `force` or verbose is set or startup is not quiet;
+    /// the diagnostics then, or when asked for even on a quiet startup.
     ///
     /// # Errors
     /// Returns the failure of the collator, the home lookup, a path resolution or the
     /// theme's colours.
-    pub(super) fn show_loaded_resources(&self, force: bool) -> Result<(), Box<dyn Error>> {
-        self.list_loaded_resources(force, &home_directory)
+    pub(super) fn show_loaded_resources(
+        &self,
+        options: ShowLoadedResourcesOptions<'_>,
+    ) -> Result<(), Box<dyn Error>> {
+        self.list_loaded_resources(options, &home_directory)
     }
 
     /// Appends the loaded resources as `show_loaded_resources` does, looking the home
@@ -270,25 +332,58 @@ impl InteractiveMode {
     /// theme's colours.
     fn list_loaded_resources(
         &self,
-        force: bool,
+        options: ShowLoadedResourcesOptions<'_>,
         home: &HomeLookup<'_>,
     ) -> Result<(), Box<dyn Error>> {
         let session = self.runtime_host.session();
-        if !force
-            && !self.options.verbose
-            && session.settings_manager().borrow().get_quiet_startup()
-        {
+        let show_listing = options.force
+            || self.options.verbose
+            || !session.settings_manager().borrow().get_quiet_startup();
+        if !show_listing && !options.show_diagnostics_when_quiet {
             return Ok(());
         }
         let theme = self.themes.theme().get()?;
         let collator = Collator::new(&|key| std::env::var(key).ok())?;
         let loader = session.resource_loader();
         let skills = loader.get_skills();
-        // The loader's own prompt read precedes the session's, whose templates are listed.
-        drop(loader.get_prompts());
-        self.show_context_resources(&loader.get_agents_files(), &theme, home)?;
-        self.show_skills(&skills.skills, &theme, &collator, home)?;
-        self.show_prompts(&session.prompt_templates().prompts, &theme, &collator, home)
+        let prompts = loader.get_prompts();
+        let themes = loader.get_themes();
+        let loader_extensions = options
+            .extensions
+            .is_none()
+            .then(|| loader.get_extensions());
+        let owners: Vec<_> = loader_extensions
+            .iter()
+            .flat_map(|result| &result.extensions)
+            .map(|owner| read(owner))
+            .collect();
+        let sources: Vec<_> = owners
+            .iter()
+            .map(|owner| read(&owner.source_info))
+            .collect();
+        let items: Vec<_> = owners
+            .iter()
+            .zip(&sources)
+            .map(|(owner, source)| ResourceItem {
+                path: &owner.path,
+                source_info: Some(source),
+            })
+            .collect();
+        let extensions = options.extensions.unwrap_or(&items);
+        let resources = Snapshots {
+            skills: &skills,
+            prompts: &prompts,
+            themes: &themes,
+        };
+        let source_infos = SourceInfos::new(extensions, &resources);
+        if show_listing {
+            self.show_context_resources(&loader.get_agents_files(), &theme, home)?;
+            self.show_skills(&skills.skills, &theme, &collator, home)?;
+            self.show_prompts(&session.prompt_templates().prompts, &theme, &collator, home)?;
+            self.show_extensions(extensions, &theme, &collator, home)?;
+            self.show_themes(&themes.themes, &theme, &collator, home)?;
+        }
+        self.show_diagnostics(&resources, &source_infos, &theme, home)
     }
 
     /// Appends a spacer and the context section: compact paths in discovery order, or
@@ -352,13 +447,7 @@ impl InteractiveMode {
                 source_info: Some(&skill.source_info),
             })
             .collect();
-        let expanded = format_scope_groups(
-            &build_scope_groups(&items),
-            theme,
-            collator,
-            |item| Ok(format_display_path(item.path, home)?),
-            |item| get_short_path(item.path, item.source_info, home),
-        )?;
+        let expanded = format_resource_groups(&items, theme, collator, home)?;
         let names = skills.iter().map(|skill| skill.name.as_str());
         let compact = format_compact_list(names, theme, Some(collator))?;
         self.add_loaded_section("Skills", compact, expanded)
