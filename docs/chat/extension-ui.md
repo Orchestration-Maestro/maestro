@@ -116,8 +116,8 @@ capability, so the host only calls the bound handles it receives; it never
 obtains an event bus.
 
 This section covers the operations that exist today: editor access, theme
-queries and selection, the terminal title and tool expansion. Extension
-dialogs, notifications, terminal input listeners and custom widgets, headers,
+queries and selection, the terminal title, tool expansion, status text and widgets.
+Extension dialogs, notifications, terminal input listeners, custom headers,
 footers and editors keep their own owners and their published components.
 
 ## Editor access
@@ -161,3 +161,30 @@ failure, and tool expansion keeps the row's diagnostic, so a caller can
 downcast the original error instead of receiving a formatted string. Prior
 effects stay: an expansion sets the flag before a row's formatting can fail, and
 a rejected notice adds no row.
+
+## Status text and widgets
+
+`set_status(key, text)` updates the footer's live status view. Replacing text
+keeps its insertion position; removing and reinserting a key appends it. `None`
+removes the key, while empty keys and empty text remain values. Every call
+requests a frame.
+
+`set_widget` accepts fixed text lines or a bound component factory. Widgets
+appear in insertion order above the editor by default, or below it with
+`WidgetPlacement::BelowEditor`. Each text widget shows at most ten supplied
+strings, followed by the muted `... (widget truncated)` line when more were
+supplied. Embedded newlines and styling remain the Text component's input;
+the cap counts supplied strings, not their wrapped screen rows. An empty list
+is a retained widget, not removal. The above container keeps one leading
+spacer, including when empty; the below container has no spacer.
+
+Replacing a widget calls its old disposer before removing it from either side,
+then builds and appends the new component in the selected placement. Passing
+`None` removes the key from both sides. Factories receive the live terminal
+and theme through their originating callback capability. Disposer and factory
+failures return the original error and keep effects already performed. A
+failed disposer stops before removal; a failed factory leaves the old entry
+removed. Neither failure rebuilds the last painted containers.
+
+Headers, footers, custom editors and custom-view installation are separate
+operations; these setters do not implement session replacement or reset.
