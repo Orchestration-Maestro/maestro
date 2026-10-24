@@ -12,9 +12,6 @@ use wit::{ScanContext, WitInputs};
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
-/// Single-owner rule for the lines a protocol server writes.
-mod rpc_writers;
-
 /// Single-owner rule for work polled once before a task facility takes it.
 mod inline_polls;
 
@@ -52,7 +49,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
-    rpc_writers::check(members)?;
     inline_polls::check(members)?;
     wit.finish()
 }

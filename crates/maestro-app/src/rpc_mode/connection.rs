@@ -2,14 +2,14 @@
 //! until the input ends or the connection shuts down.
 use super::commands::Reply;
 use super::lifecycle::Finish;
+use super::output::write_record;
 use super::ui::RpcUi;
-use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, write_record};
+use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, RpcRecord};
 use crate::agent_session::AgentSession;
 use crate::rpc_types::{RpcCommandBody, RpcCommandRejection, RpcResponse, parse_rpc_command};
 use crate::runtime::agent_session_runtime::AgentSessionRuntime;
 use crate::utils::task::start_now;
 use maestro_json::jsonl::JsonlLineSplitter;
-use serde::Serialize;
 use serde_json::Value;
 use std::{cell::RefCell, collections::VecDeque, future::Future, io, pin::Pin, rc::Rc};
 use tokio::io::{AsyncRead, AsyncReadExt};
@@ -243,11 +243,11 @@ impl Connection {
         match self.reply(record).await {
             Reply::Handled(response) => {
                 if let Some(response) = response {
-                    self.write(&response);
+                    self.write(RpcRecord::Response(&response));
                 }
                 self.check_shutdown_requested().await;
             }
-            Reply::Failed(response) => self.write(&response),
+            Reply::Failed(response) => self.write(RpcRecord::Response(&response)),
         }
     }
 
@@ -293,7 +293,7 @@ impl Connection {
     }
 
     /// Writes `record`; a failed write ends the connection with that failure.
-    pub(super) fn write(self: &Rc<Self>, record: &impl Serialize) {
+    pub(super) fn write(self: &Rc<Self>, record: RpcRecord<'_>) {
         if let Err(error) = write_record(&self.output, record) {
             self.fail(error);
         }

@@ -1,7 +1,8 @@
 //! The extension interface over the protocol: dialogs are requests answered by a matching
 //! response, notices are requests nobody answers, and the terminal-only operations keep
 //! their headless defaults.
-use super::{RpcOutput, write_record};
+use super::output::write_record;
+use super::{RpcOutput, RpcRecord};
 use crate::rpc_types::{RpcExtensionUIMethod, RpcExtensionUIRequest, RpcExtensionUIResponse};
 use futures_util::future::OptionFuture;
 use maestro_extensions::EventError;
@@ -86,7 +87,9 @@ impl RpcUi {
 
     /// Writes `method` as the request `id`.
     fn send(&self, id: String, method: RpcExtensionUIMethod) -> Result<(), EventError> {
-        write_record(&self.output, &RpcExtensionUIRequest { id, method }).map_err(EventError::from)
+        let request = RpcExtensionUIRequest { id, method };
+        write_record(&self.output, RpcRecord::ExtensionUiRequest(&request))
+            .map_err(EventError::from)
     }
 
     /// Writes `method` as a request nobody answers.
