@@ -41,6 +41,18 @@ accounting components and truthy nonstring model/provider identities return
 invalid-data errors. Unused non-assistant content remains unread. Raw fields are
 not narrowed to a second history schema or coerced into numeric/string values.
 
+## Entry timestamps
+
+`format_timestamp` prepares the timestamp of a rendered entry before any browser
+effect. An absent value and every falsy value return the empty string without
+calling the supplied date operation; a truthy value reaches that operation with
+its raw operand unchanged, and a reached failure keeps its own error kind.
+
+The browser operation, `localize_timestamp`, builds a native `Date` from the same
+raw JSON and calls `toLocaleTimeString` with an undefined locale and two-digit
+hour, minute and second options. Neither function parses or formats a date in
+Rust, and neither reads the host clock.
+
 ## JSONL download
 
 Call [`download_session_json(&document, host)`](../../crates/maestro-web/src/export_html/template/download.rs)
