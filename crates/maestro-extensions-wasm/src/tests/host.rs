@@ -167,12 +167,13 @@ macro_rules! context_methods {
         fn ui(
             &mut self,
             this: Resource<$kind>,
-        ) -> wasmtime::Result<Result<Resource<super::catalog_host::Ui>, String>> {
+        ) -> wasmtime::Result<Result<Resource<super::ui_host::Ui>, String>> {
             let _ = &this;
             if let Err(e) = self.observed.catalog.check() {
                 return Ok(Err(e));
             }
-            Ok(Ok(self.push(super::catalog_host::Ui)?))
+            let key = self.observed.ui.acquire();
+            Ok(Ok(self.push(super::ui_host::Ui(key))?))
         }
         fn has_ui(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<bool, String>> {
             let _ = &this;
