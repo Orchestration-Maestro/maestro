@@ -1048,8 +1048,29 @@ struct Watched {
     open: RefCell<Vec<Rc<Cell<bool>>>>,
     /// The listener of each theme watch, in creation order.
     listeners: RefCell<Vec<WatchListener>>,
-    /// How many debounced reloads the watches scheduled.
-    scheduled: Cell<usize>,
+    /// The debounced reload the latest watch timer holds.
+    reload: WatchReload,
+}
+
+impl Watched {
+    /// Deliver `changed` to the latest watch's listener, as the watched directory would.
+    fn announce(&self, changed: Option<&str>) {
+        let listener = self
+            .listeners
+            .borrow()
+            .last()
+            .cloned()
+            .expect("a theme watch is open");
+        listener(changed.map(str::to_owned));
+    }
+
+    /// Run the reload the latest watch timer retained, as the debounce would.
+    fn reload(&self) {
+        let reload = self.reload.borrow_mut().take();
+        if let Some(reload) = reload {
+            reload();
+        }
+    }
 }
 
 /// One open theme watch.
@@ -1074,11 +1095,19 @@ impl Drop for Handle {
     }
 }
 
-/// A scheduled theme reload that never runs.
-struct Pending;
+/// The debounced reload a theme watch timer retains.
+type WatchReload = Rc<RefCell<Option<Box<dyn FnOnce()>>>>;
+
+/// A scheduled theme reload, kept until its watch is cancelled or the test runs it.
+struct Pending {
+    /// The reload this timer owns.
+    reload: WatchReload,
+}
 
 impl ThemeReloadTimer for Pending {
-    fn cancel(&mut self) {}
+    fn cancel(&mut self) {
+        self.reload.borrow_mut().take();
+    }
 }
 
 impl ThemeWatchOperations for Watched {
@@ -1094,13 +1123,11 @@ impl ThemeWatchOperations for Watched {
         Ok(Box::new(Handle { closed }))
     }
 
-    fn schedule(
-        &self,
-        _delay: Duration,
-        _callback: Box<dyn FnOnce()>,
-    ) -> Box<dyn ThemeReloadTimer> {
-        self.scheduled.set(self.scheduled.get() + 1);
-        Box::new(Pending)
+    fn schedule(&self, _delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn ThemeReloadTimer> {
+        *self.reload.borrow_mut() = Some(callback);
+        Box::new(Pending {
+            reload: Rc::clone(&self.reload),
+        })
     }
 }
 

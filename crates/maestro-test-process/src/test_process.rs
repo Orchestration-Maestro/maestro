@@ -94,6 +94,7 @@ pub struct TestProcess {
     /// Literal `--skip` operands in call order.
     skips: Vec<String>,
     /// Shell text run before the test executable replaces the shell.
+    #[cfg(unix)]
     shell: Option<String>,
 }
 
@@ -132,6 +133,7 @@ impl TestProcess {
             stderr: None,
             flags: BTreeSet::new(),
             skips: Vec::new(),
+            #[cfg(unix)]
             shell: None,
         })
     }
@@ -442,15 +444,7 @@ impl TestProcess {
     /// Build the configured command once the test is known to be eligible.
     fn prepare(&mut self) -> Result<Command, TestProcessError> {
         let executable = self.eligible()?;
-        let mut command = match self.shell.take() {
-            Some(setup) => {
-                let mut shell = Command::new(shell_program());
-                shell.args(["-c", &format!("{setup}; exec \"$@\""), "startup"]);
-                shell.arg(executable);
-                shell
-            }
-            None => Command::new(executable),
-        };
+        let mut command = self.command(executable)?;
         command.args(self.arguments());
         self.envs.iter().for_each(|edit| edit.apply(&mut command));
         if let Some(dir) = &self.dir {
@@ -475,18 +469,50 @@ impl TestProcess {
                 .caused_by(error)
         })
     }
+
+    /// The command that runs the selected test, through the setup shell when one is set.
+    ///
+    /// The shell reads this process's own `PATH`, never the child's: a test that replaces
+    /// `PATH` still needs its setup script to run before the test executable does.
+    fn command(&mut self, executable: PathBuf) -> Result<Command, TestProcessError> {
+        #[cfg(unix)]
+        if let Some(setup) = self.shell.take() {
+            let path = std::env::var_os("PATH");
+            let mut shell = Command::new(shell_program(&self.name, path.as_deref())?);
+            shell.args(["-c", &format!("{setup}; exec \"$@\""), "startup"]);
+            shell.arg(executable);
+            return Ok(shell);
+        }
+        Ok(Command::new(executable))
+    }
 }
 
-/// The `bash` that runs a setup script, resolved through this process's own `PATH`.
+/// The `bash` that runs a setup script, resolved through the parent's `PATH`.
 ///
-/// The child's environment is not consulted: a test that replaces `PATH` still needs its
-/// setup script to run before the test executable does.
+/// An unset `path` keeps the search the operating system performs for a bare name; an
+/// explicitly empty one finds no shell. A relative directory entry is anchored to this
+/// process before the child changes directory, so the shell found here is the one that runs.
 #[cfg(unix)]
-fn shell_program() -> PathBuf {
-    std::env::var_os("PATH")
-        .into_iter()
-        .flat_map(|paths| std::env::split_paths(&paths).collect::<Vec<_>>())
-        .map(|directory| directory.join("bash"))
-        .find(|candidate| candidate.is_file())
-        .unwrap_or_else(|| PathBuf::from("bash"))
+fn shell_program(test: &str, path: Option<&OsStr>) -> Result<PathBuf, TestProcessError> {
+    let Some(path) = path else {
+        return Ok(PathBuf::from("bash"));
+    };
+    std::env::split_paths(path)
+        .filter(|directory| !directory.as_os_str().is_empty())
+        .filter_map(|directory| std::path::absolute(directory.join("bash")).ok())
+        .find(|candidate| is_executable(candidate))
+        .ok_or_else(|| TestProcessError::new(test, "cannot find the setup shell on PATH"))
+}
+
+/// Whether `candidate` is a regular file this process may execute.
+#[cfg(unix)]
+fn is_executable(candidate: &Path) -> bool {
+    candidate.is_file()
+        && rustix::fs::accessat(
+            rustix::fs::CWD,
+            candidate,
+            rustix::fs::Access::EXEC_OK,
+            rustix::fs::AtFlags::EACCESS,
+        )
+        .is_ok()
 }

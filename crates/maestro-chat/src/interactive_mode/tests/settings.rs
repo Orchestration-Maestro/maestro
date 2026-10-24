@@ -6,7 +6,7 @@ use super::{Setup, World, complete, isolated, start};
 use crate::SettingsSelectorComponent;
 use maestro_app::presentation_data::footer_data_provider::FooterOperations;
 use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting, strip_ansi};
-use maestro_theme::ThemeDirectories;
+use maestro_theme::{ThemeColor, ThemeDirectories};
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition};
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{Component, SettingsList, TerminalCapabilities};
@@ -1149,50 +1149,129 @@ fn settings_theme_preview_commit_and_failure_keep_distinct_effects() {
     );
 }
 
+/// The shipped dark theme, renamed `name` with its colours reading from `accent`.
+fn theme_document(name: &str, accent: &str) -> String {
+    std::fs::read_to_string(format!("{SHIPPED}/dark.json"))
+        .unwrap()
+        .replace("\"dark\"", &format!("\"{name}\""))
+        .replace("#D9A066", accent)
+}
+
+/// A started mode whose panel reads the theme inventory and whose watches reach `watched`.
+fn watching_settings(directory: &Path, watched: &Rc<super::Watched>) -> World {
+    let world = Setup {
+        directories: Some(registry(directory)),
+        operations: Some(Rc::clone(watched) as Rc<dyn FooterOperations>),
+        ..Setup::default()
+    }
+    .build(directory);
+    start(&world);
+    world.runtime.settle().unwrap();
+    world
+}
+
+/// Move the open theme submenu from the saved `dark` row to `watched`, previewing it.
+fn preview_watched(world: &World, list: &SettingsList) {
+    choose(list, "Theme", 0);
+    let names = world.themes.get_available_themes().unwrap();
+    let previewed = names.iter().position(|name| name == "watched").unwrap();
+    let saved = names.iter().position(|name| name == "dark").unwrap();
+    for _ in 0..(previewed + names.len() - saved) % names.len() {
+        press(list, "\x1b[B");
+    }
+    assert_eq!(
+        published(world).as_deref(),
+        Some("watched"),
+        "the preview publishes the selection"
+    );
+}
+
+/// Rewrite the watched custom theme as `name` with `accent`, then announce and reload it.
+fn edit_watched_theme(directory: &Path, watched: &super::Watched, name: &str, accent: &str) {
+    custom_theme(directory, "watched", &theme_document(name, accent));
+    watched.announce(Some("watched.json"));
+    watched.reload();
+}
+
+/// Settle the frame the theme change requests and check it paints the published accent.
+fn reloaded_frame(world: &World) {
+    assert_eq!(
+        world.runtime.pending(),
+        1,
+        "the theme change requests exactly one frame"
+    );
+    world.terminal.clear_writes();
+    world.runtime.settle().unwrap();
+    let theme = world.themes.theme().get().unwrap();
+    let accent = theme.get_fg_ansi(&ThemeColor::Accent).unwrap();
+    let frame = world.terminal.writes().concat();
+    assert!(frame.contains(accent), "the published accent: {frame:?}");
+}
+
 #[test]
-fn settings_theme_selection_keeps_supplied_watcher_for_custom_refresh() {
+fn settings_theme_preview_reloads_the_edited_file() {
     isolated(
-        "settings_theme_selection_keeps_supplied_watcher_for_custom_refresh",
+        "settings_theme_preview_reloads_the_edited_file",
         |directory| {
-            let document = std::fs::read_to_string(format!("{SHIPPED}/dark.json"))
-                .unwrap()
-                .replace("\"dark\"", "\"watched\"");
-            custom_theme(directory, "watched", &document);
+            custom_theme(directory, "watched", &theme_document("watched", "#010203"));
             let watched = Rc::new(super::Watched::default());
-            let world = Setup {
-                directories: Some(registry(directory)),
-                configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
-                operations: Some(Rc::clone(&watched) as Rc<dyn FooterOperations>),
-                ..Setup::default()
-            }
-            .build(directory);
-            start(&world);
-            world.runtime.settle().unwrap();
-            assert_eq!(published(&world).as_deref(), Some("watched"));
+            let world = watching_settings(directory, &watched);
+            let settings = Rc::clone(world.host.session().settings_manager());
+            let list = open(&world);
+            preview_watched(&world, &list);
             assert_eq!(
-                watched.open.borrow().len(),
-                1,
-                "the selected custom theme is watched through the supplied effects"
+                settings.borrow().get_theme().as_deref(),
+                Some("dark"),
+                "the preview saves nothing"
             );
-            assert!(!watched.open.borrow()[0].get(), "the watch stays open");
-            let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
-            (callbacks.on_theme_change)("watched");
-            world.runtime.settle().unwrap();
+            assert!(!watched.open.borrow()[0].get(), "the preview watch is open");
+            edit_watched_theme(directory, &watched, "edited", "#204060");
             assert_eq!(
-                watched.open.borrow().len(),
-                2,
-                "the selection kept the supplied effects for the next refresh"
+                published(&world).as_deref(),
+                Some("edited"),
+                "the preview reloads the edited file"
             );
-            assert!(watched.open.borrow()[0].get(), "the previous watch closed");
-            assert!(!watched.open.borrow()[1].get());
-            (watched.listeners.borrow()[1])(Some("watched.json".to_owned()));
             assert_eq!(
-                watched.scheduled.get(),
-                1,
-                "a custom theme change schedules its reload through the supplied effects"
+                settings.borrow().get_theme().as_deref(),
+                Some("dark"),
+                "the reload saves nothing"
             );
+            reloaded_frame(&world);
         },
     );
+}
+
+#[test]
+fn settings_theme_commit_reloads_a_later_edit() {
+    isolated("settings_theme_commit_reloads_a_later_edit", |directory| {
+        custom_theme(directory, "watched", &theme_document("watched", "#010203"));
+        let watched = Rc::new(super::Watched::default());
+        let world = watching_settings(directory, &watched);
+        let settings = Rc::clone(world.host.session().settings_manager());
+        let list = open(&world);
+        preview_watched(&world, &list);
+        press(&list, "\r");
+        assert_eq!(settings.borrow().get_theme().as_deref(), Some("watched"));
+        world.runtime.settle().unwrap();
+        assert_eq!(
+            watched.open.borrow().len(),
+            2,
+            "the committed selection starts its own watch"
+        );
+        assert!(watched.open.borrow()[0].get(), "the preview watch closed");
+        assert!(
+            !watched.open.borrow()[1].get(),
+            "the latest watch waits for its edit"
+        );
+        edit_watched_theme(directory, &watched, "edited-after-commit", "#406080");
+        assert_eq!(published(&world).as_deref(), Some("edited-after-commit"));
+        assert_eq!(
+            settings.borrow().get_theme().as_deref(),
+            Some("watched"),
+            "the committed preference stays saved"
+        );
+        reloaded_frame(&world);
+    });
 }
 
 #[test]

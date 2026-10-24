@@ -510,7 +510,10 @@ file. Nonempty files or nonzero cursors are rejected before launch, including
 append-mode files containing earlier output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
 descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
-executable replaces the shell.
+executable replaces the shell, in the `bash` this process's own `PATH` names: a
+candidate must be a regular file this process may execute, a relative entry is
+anchored to this process before the child changes directory, an unset `PATH`
+keeps the operating system's default search, and an empty one finds no shell.
 
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
