@@ -5,9 +5,9 @@ use crate::interactive_mode::autocomplete::{
     get_autocomplete_source_tag, prefix_autocomplete_description,
 };
 use maestro_app::{
-    EventError, ExtensionCommandContext, Local, Model, PromptTemplate, ProviderConfigInput,
-    ProviderModelInput, RegisteredCommand, ResolvedCommand, ScopedModel, SharedHandle, Skill,
-    SourceInfo, SourceOrigin, SourceScope,
+    DiagnosticErrorInfo, EventError, ExtensionCommandContext, Local, Model, PromptTemplate,
+    ProviderConfigInput, ProviderModelInput, RegisteredCommand, ResolvedCommand, ScopedModel,
+    SharedHandle, Skill, SourceInfo, SourceOrigin, SourceScope,
 };
 use maestro_tui::autocomplete::{AutocompleteSuggestions, CompletionOptions, CursorPosition};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, Cancellation};
@@ -645,6 +645,31 @@ fn output_record(called: &Rc<RefCell<Vec<String>>>, outcome: &str) -> ResolvedCo
         source_info: None,
     };
     registered(&record, Some(completions))
+}
+
+#[test]
+fn model_completion_propagates_catalog_credential_failure() {
+    let test = "model_completion_propagates_catalog_credential_failure";
+    isolated(test, |directory| {
+        let world = Setup::default().build(directory);
+        let descriptor = Descriptor {
+            id: "unreachable".to_owned(),
+            provider: "maestro-failing-fallback".to_owned(),
+        };
+        register_models(&world, std::slice::from_ref(&descriptor));
+        let registry = world.mode.runtime_host.session().model_registry().clone();
+        registry.auth_storage().set_fallback_resolver(|_| {
+            Err(DiagnosticErrorInfo::new(None, "Credential fallback failed").into())
+        });
+        let provider = provider(&world, &[]);
+        let observed = suggested(&provider, "/model unreachable");
+        assert!(
+            observed
+                .as_ref()
+                .is_err_and(|error| error.to_string() == "Credential fallback failed"),
+            "{observed:?}"
+        );
+    });
 }
 
 #[test]

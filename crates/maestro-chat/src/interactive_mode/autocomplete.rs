@@ -78,21 +78,24 @@ fn model_argument_completions(runtime: &Rc<AgentSessionRuntime>) -> ArgumentComp
     Rc::new(move |prefix: &str| {
         let runtime = Rc::clone(&runtime);
         let prefix = prefix.to_owned();
-        Box::pin(async move { Ok(model_candidates(&runtime, &prefix)) })
+        Box::pin(async move { model_candidates(&runtime, &prefix) })
     })
 }
 
 /// The candidates the fuzzy `query` selects from the session's scoped or available models.
-fn model_candidates(runtime: &AgentSessionRuntime, query: &str) -> Option<Vec<AutocompleteItem>> {
+fn model_candidates(
+    runtime: &AgentSessionRuntime,
+    query: &str,
+) -> Result<Option<Vec<AutocompleteItem>>, CompletionError> {
     let session = runtime.session();
     let scoped = session.scoped_models();
     let models = if scoped.is_empty() {
-        session.model_registry().get_available().ok()?
+        session.model_registry().get_available()?
     } else {
         scoped.into_iter().map(|scoped| scoped.model).collect()
     };
     if models.is_empty() {
-        return None;
+        return Ok(None);
     }
     let choices: Vec<ModelChoice> = models
         .into_iter()
@@ -107,7 +110,7 @@ fn model_candidates(runtime: &AgentSessionRuntime, query: &str) -> Option<Vec<Au
         })
         .collect();
     let filtered = fuzzy_filter(&choices, query, |choice| choice.text.as_str());
-    (!filtered.is_empty()).then(|| {
+    Ok((!filtered.is_empty()).then(|| {
         filtered
             .into_iter()
             .map(|choice| AutocompleteItem {
@@ -116,7 +119,7 @@ fn model_candidates(runtime: &AgentSessionRuntime, query: &str) -> Option<Vec<Au
                 description: Some(choice.description.clone()),
             })
             .collect()
-    })
+    }))
 }
 
 /// The argument callback of `command` in the provider's borrowed form, keeping its error.
