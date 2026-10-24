@@ -20,11 +20,7 @@ mod tests {
     }
     /// Publish one composed debug frame through the shared reading harness.
     fn draw(surface: &mut Surface, row: &mut ToolMessageDebugView) {
-        let host = surface.host();
-        surface.draw(|ui, frame| {
-            row.render(ui, support::reading_view::view(&host, frame))
-                .unwrap()
-        });
+        surface.draw_reading(|ui, view| row.render(ui, view).unwrap());
     }
     /// Build an empty result with independently selected details.
     fn result(details: Option<Value>) -> maestro_app::ToolResultMessage {

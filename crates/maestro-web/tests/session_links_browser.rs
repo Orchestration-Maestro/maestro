@@ -3,6 +3,7 @@
 #![cfg(target_arch = "wasm32")]
 use crate::reading_slots_support;
 use crate::support;
+use crate::support::pointer::pointer;
 use maestro_web::browser::attachment_content::{AttachmentHost, BrowserAttachmentHost};
 use reading_slots_support::{js, snapshot, unchanged};
 use wasm_bindgen::{JsCast as _, prelude::*};
@@ -220,18 +221,6 @@ pub async fn copy_link_native_slot_composition_preserves_reading_selection() {
     fixture.finish(true);
     assert!(host.upgrade().is_none());
     assert!(!root.is_connected());
-}
-/// Canvas pointer input at a measured native slot coordinate.
-fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
-    vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
 }
 
 /// Reveal the actual native slot on toolkit focus, then activate with the keyboard.

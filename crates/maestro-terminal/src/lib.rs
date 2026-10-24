@@ -82,4 +82,7 @@ pub mod formatter;
 pub mod render;
 
 #[cfg(test)]
+extern crate self as maestro_terminal;
+
+#[cfg(test)]
 mod tests;

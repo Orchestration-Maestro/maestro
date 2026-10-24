@@ -302,7 +302,7 @@ pub fn picker(
         ),
         Kind::Images => Picker::Images(maestro_chat::ShowImagesSelectorComponent::new(
             true,
-            events.images(),
+            events.record("select"),
             events.cancel(),
             state.theme(),
         )),

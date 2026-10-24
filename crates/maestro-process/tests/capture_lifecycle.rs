@@ -1,6 +1,7 @@
 //! Captured native children observed through the public lifecycle interface.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::poll::is_pending;
 use maestro_process::child_process::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
@@ -87,11 +88,6 @@ async fn release(mut socket: TcpStream) {
     let _ = socket.write_all(b"go").await;
     let mut rest = Vec::new();
     let _ = socket.read_to_end(&mut rest).await;
-}
-
-/// Polls `future` once and reports whether it is still pending.
-async fn is_pending<F: Future + Unpin>(future: &mut F) -> bool {
-    std::future::poll_fn(|cx| Poll::Ready(Pin::new(&mut *future).poll(cx).is_pending())).await
 }
 
 /// A stop future that never requests termination.

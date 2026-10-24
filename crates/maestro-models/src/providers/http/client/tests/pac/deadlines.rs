@@ -1,31 +1,15 @@
 //! PAC candidate establishment shares one connect budget; headers do not bound bodies.
 
 use super::{request, routed};
-use crate::providers::http::proxy_agent::tests::socks;
+use crate::providers::http::proxy_agent::tests::{
+    deadlines::{pending, ready},
+    socks,
+};
 use crate::providers::http::{FetchError, Route, collect_body, configured_fetch};
 use crate::tests::loopback;
 use futures_util::FutureExt;
 use std::sync::{Arc, mpsc};
 use std::time::Duration;
-
-/// Poll without allowing the paused runtime to skip to a deadline.
-async fn pending<F: std::future::Future + ?Sized>(future: &mut std::pin::Pin<Box<F>>) -> bool {
-    std::future::poll_fn(|context| {
-        std::task::Poll::Ready(future.as_mut().poll(context).is_pending())
-    })
-    .await
-}
-
-/// Reach a peer-observed boundary while keeping the paused clock runnable.
-async fn ready<F: std::future::Future + ?Sized>(
-    received: &mpsc::Receiver<()>,
-    future: &mut std::pin::Pin<Box<F>>,
-) {
-    while received.try_recv().is_err() {
-        assert!(pending(future).await);
-        tokio::task::yield_now().await;
-    }
-}
 
 /// Supply independent budgets without changing the retained PAC source owner.
 fn timed(script: &str, connect: u64, headers: u64) -> crate::Fetch {

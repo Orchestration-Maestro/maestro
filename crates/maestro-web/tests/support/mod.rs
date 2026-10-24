@@ -67,6 +67,9 @@ pub mod reading_paint;
 #[cfg(target_arch = "wasm32")]
 pub mod reading_view;
 
+/// Primary-button pointer input shared by canvas witnesses.
+pub mod pointer;
+
 /// Shared empty-effects assertion for text-only tool and message fixtures.
 pub mod tool_output;
 

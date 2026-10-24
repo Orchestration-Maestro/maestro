@@ -564,12 +564,7 @@ mod tests {
         row: &mut maestro_web::ToolMessage,
         props: maestro_web::ToolMessageProps<'_, D>,
     ) {
-        let host = surface.host();
-        surface.draw(|ui, frame| {
-            row.render(ui, props, support::reading_view::view(&host, frame))
-                .assert_no_overlays()
-                .unwrap()
-        });
+        surface.draw_reading(|ui, view| row.render(ui, props, view).assert_no_overlays().unwrap());
     }
     /// Check abort precedence and the original envelope independently of the renderer.
     fn assert_envelope(

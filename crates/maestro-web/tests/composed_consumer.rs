@@ -102,11 +102,7 @@ mod tests {
 
     /// Draw the three literal debug children through the production row.
     fn draw_debug(surface: &mut Surface, row: &mut ToolMessageDebugView) {
-        let host = surface.host();
-        surface.draw(|ui, frame| {
-            row.render(ui, support::reading_view::view(&host, frame))
-                .unwrap()
-        });
+        surface.draw_reading(|ui, view| row.render(ui, view).unwrap());
     }
     /// Literal base64, ordered output, absent details and strict overflow reach actual listings.
     /// # Panics
@@ -142,11 +138,7 @@ mod tests {
 
     /// Draw one disclosure with the shared browser frame and syntax engine.
     fn draw_thinking(surface: &mut Surface, row: &mut ThinkingBlock) {
-        let host = surface.host();
-        surface.draw(|ui, frame| {
-            row.render(ui, support::reading_view::view(&host, frame))
-                .unwrap()
-        });
+        surface.draw_reading(|ui, view| row.render(ui, view).unwrap());
     }
     /// One native disclosure callback survives streaming and is revoked on final release.
     /// # Panics
@@ -201,12 +193,7 @@ mod tests {
         row: &mut ToolMessage,
         props: ToolMessageProps<'_, D>,
     ) {
-        let host = surface.host();
-        surface.draw(|ui, frame| {
-            row.render(ui, props, support::reading_view::view(&host, frame))
-                .assert_no_overlays()
-                .unwrap()
-        });
+        surface.draw_reading(|ui, view| row.render(ui, props, view).assert_no_overlays().unwrap());
     }
     /// Model object arguments and synthetic abort policy reach the registered native consumer.
     /// # Panics

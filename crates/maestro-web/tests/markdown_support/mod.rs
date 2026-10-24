@@ -529,6 +529,17 @@ mod tests {
             let size = self.size;
             self.draw_with(&presentation, size, None, draw)
         }
+        /// Draw one frame through the reading projection of this surface's host.
+        ///
+        /// # Panics
+        /// Panics if the test fixture or browser precondition is not satisfied.
+        pub fn draw_reading<R>(
+            &mut self,
+            draw: impl FnOnce(&mut egui::Ui, maestro_web::tools::types::ToolRenderView<'_>) -> R,
+        ) -> R {
+            let host = self.host();
+            self.draw(|ui, frame| draw(ui, support::reading_view::view(&host, frame)))
+        }
         /// Draw one frame with an explicit presentation, available size and modal.
         ///
         /// # Panics
