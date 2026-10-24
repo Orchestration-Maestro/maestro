@@ -1390,11 +1390,6 @@ async fn until(world: &World, captured: &Captured, done: impl Fn() -> bool) {
             return;
         }
         round(world).await;
-        eprintln!(
-            "ROUND futures {} chat {}",
-            world.runtime.futures(),
-            world.mode.chat_container.render(100).len()
-        );
     }
     panic!(
         "the captured batch did not reach the recorded state: {:?}",
