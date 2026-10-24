@@ -104,7 +104,11 @@
     "thinking_dom_disclosure_retains_state_and_exact_header",
     "thinking_dom_streaming_and_instances_are_independent",
     "thinking_dom_reconnect_and_drop_release_listeners",
-    "thinking_dom_paints_brand_roles_and_disclosure_motion"
+    "thinking_dom_paints_brand_roles_and_disclosure_motion",
+    "download_dom_defaults_and_caller_options",
+    "download_dom_preserves_selected_payload_bytes",
+    "download_dom_activation_uses_one_scoped_download",
+    "download_dom_retains_activation_inputs_and_releases_on_drop"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

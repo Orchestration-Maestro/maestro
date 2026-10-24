@@ -66,7 +66,7 @@ test('inventory_rejects_empty_or_invalid_names', () => {
   const selected = runner.validateInventory(inventory);
   assert.equal(selected.execution.length, 26);
   assert.equal(selected.loading.length, 19);
-  assert.equal(selected.contributions.length, 56);
+  assert.equal(selected.contributions.length, 60);
 });
 
 test('inventory_requires_every_callable_export', async t => {
@@ -102,14 +102,14 @@ test('exports_run_serially_in_fresh_pages', async t => {
   assert.equal(seen.length, 2, 'only inventory and the pending first export');
   release();
   const lines = await running;
-  assert.equal(seen.length, 102, 'inventory page plus 101 fresh assertion pages');
-  assert.equal(new Set(seen).size, 102);
+  assert.equal(seen.length, 106, 'inventory page plus 105 fresh assertion pages');
+  assert.equal(new Set(seen).size, 106);
   assert.deepEqual(lines.filter(line => line.startsWith('START ')).map(line => line.split(' ')[2]), all);
   assert.deepEqual(lines.filter(line => line.startsWith('PASS ')).map(line => line.split(' ')[2]), all);
   assert(lines.includes('FAMILY execution 26/26'));
   assert(lines.includes('FAMILY loading 19/19'));
-  assert(lines.includes('FAMILY contributions 56/56'));
-  assert.equal(lines.at(-1), 'COMPLETE 101/101');
+  assert(lines.includes('FAMILY contributions 60/60'));
+  assert.equal(lines.at(-1), 'COMPLETE 105/105');
 });
 
 test('assertion_failures_keep_sync_and_async_errors', async t => {
@@ -134,7 +134,7 @@ test('unexpected_page_errors_fail', async t => {
 
 test('expected_policy_error_matches_once', async t => {
   const root = fixture(t);
-  assert.equal((await execute(root)).at(-1), 'COMPLETE 101/101');
+  assert.equal((await execute(root)).at(-1), 'COMPLETE 105/105');
 });
 
 test('expected_policy_error_is_required', async t => {
@@ -468,7 +468,7 @@ test('sandbox_inspection_ignores_detached_unrelated_frames', async t => {
       assert(lines.includes(`PHASE ${first} waiting for pointer-done ${sandboxId}; frame about:srcdoc`));
       assert(lines.includes(`PHASE ${first} click returned ${sandboxId}`));
     }
-    assert.equal(lines.at(-1), 'COMPLETE 101/101');
+    assert.equal(lines.at(-1), 'COMPLETE 105/105');
   }
 });
 
@@ -721,7 +721,7 @@ window.prepareDelivery = async function(nested, svg) {
     }, setup, {shared, log: line => lines.push(line)});
     if (scenario === 'control') {
       await running;
-      assert.equal(lines.at(-1), 'COMPLETE 101/101');
+      assert.equal(lines.at(-1), 'COMPLETE 105/105');
       assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, 1);
     } else {
       await assert.rejects(running, error => {
@@ -773,7 +773,7 @@ test('sandbox_click_bypasses_containing_page_coordinate_dispatch', async t => {
     });
     assert.equal(parentDispatches, 0, 'isolated target uses its own native input session');
     assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, 1);
-    assert.equal(lines.at(-1), 'COMPLETE 101/101');
+    assert.equal(lines.at(-1), 'COMPLETE 105/105');
   }
 });
 
@@ -807,7 +807,7 @@ test('sandbox_click_cleans_selected_session_after_native_operations', async t =>
       };
       return inspect();
     });
-    if (outcome === 'success') assert.equal((await running).at(-1), 'COMPLETE 101/101');
+    if (outcome === 'success') assert.equal((await running).at(-1), 'COMPLETE 105/105');
     else await assert.rejects(running, error => { assert(error.cause.message.includes(sentinel)); return true; });
     assert.equal(created, outcome === 'create' ? 0 : 1, outcome);
     assert.equal(detached, created, outcome + ' releases every acquired native session');
