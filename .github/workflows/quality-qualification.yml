@@ -1,0 +1,27 @@
+name: AWS quality qualification
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      full-nightly:
+        description: Run the complete nightly quality set on this qualification revision
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  gates:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@2944898ff1734605a42be5ddd93ff4ffdc7310be
+    with:
+      concurrency-key: quality-qualification
+
+  nightly:
+    if: github.event_name == 'workflow_dispatch' && inputs.full-nightly
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/quality-nightly.yml@2944898ff1734605a42be5ddd93ff4ffdc7310be
