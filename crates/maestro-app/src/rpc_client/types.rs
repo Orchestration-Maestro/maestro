@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::{collections::BTreeMap, fmt, rc::Rc};
 
 /// How a client launches its child.
-#[derive(Clone, Debug, Default)]
+#[derive(Default)]
 pub struct RpcClientOptions {
     /// The executable; `dist/maestro` with the platform's executable suffix when absent. A
     /// relative path is resolved against the child's working directory.
