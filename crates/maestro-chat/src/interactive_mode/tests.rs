@@ -1,6 +1,7 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
 mod autocomplete;
+mod models;
 #[allow(
     dead_code,
     unused_imports,
@@ -27,12 +28,12 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterFileStats, FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, Extension,
-    ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
-    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
-    RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager,
-    Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
-    load_extension_from_factory, strip_ansi,
+    AgentSessionRuntime, ContextFile, CreateAgentSessionRuntimeFactory, DefaultEventBus,
+    DiagnosticErrorInfo, Extension, ExtensionCommandContext, ExtensionFactory,
+    ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult,
+    Local, PromptTemplate, RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths,
+    ResourceLoader, SettingsManager, Skill, SourceInfo, SourceOrigin, SourceScope,
+    create_extension_runtime, load_extension_from_factory, strip_ansi,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{
@@ -394,6 +395,8 @@ pub(super) struct Setup {
     pub(super) registry: Option<Rc<ThemeState>>,
     /// The footer and watch effects the mode is built with; native effects when absent.
     pub(super) operations: Option<Rc<dyn FooterOperations>>,
+    /// Creates replacement sessions, when supplied; replacing otherwise fails.
+    pub(super) create: Option<CreateAgentSessionRuntimeFactory>,
 }
 
 impl Default for Setup {
@@ -415,6 +418,7 @@ impl Default for Setup {
             diagnostics: LoadedDiagnostics::default(),
             registry: None,
             operations: None,
+            create: None,
         }
     }
 }
@@ -473,10 +477,10 @@ impl Setup {
             *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
         }
         let loader = loader.borrow().clone().unwrap();
-        let host = Rc::new(AgentSessionRuntime::new(
-            result,
-            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) })),
-        ));
+        let create = self.create.unwrap_or_else(|| {
+            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) }))
+        });
+        let host = Rc::new(AgentSessionRuntime::new(result, create));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
         let themes = self.registry.unwrap_or_else(|| {

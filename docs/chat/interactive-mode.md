@@ -5,11 +5,11 @@ current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
 input, queued input, the export command, session replay, the reset of the
 presentation after a session replacement, the fatal-error exit, the expansion and
-thinking shortcuts, thinking and model cycling, the editor border, external
-editing and image paste. The prompt loop, streaming messages, startup messages,
-installed custom headers, the terminal title and the other integrations are still
-to come; the mode prompts the session only for input queued during a response or
-a compaction.
+thinking shortcuts, thinking and model cycling, model selection and scopes, the
+editor border, external editing and image paste. The prompt loop, streaming
+messages, startup messages, installed custom headers, the terminal title and the
+other integrations are still to come; the mode prompts the session only for input
+queued during a response or a compaction.
 
 ## Construction
 
@@ -284,11 +284,15 @@ the next or previous available model when none are scoped. The cycle runs on the
 terminal runtime, which keeps the mode until it completes. It then shows
 `Switched to <name>`, using the model id when the name is empty and adding
 ` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
-the footer and editor border. With no other candidate it shows
-`Only one model in scope` or `Only one model available`. A session error is shown
-as an error notice instead of the switch message. A failed credential lookup leaves
-the selection as it was; a recording or listener failure happens after the new
-model is selected, so that model stays selected.
+the footer and editor border, then checks the
+[subscription billing notice](commands.md#subscription-billing-notice). With no
+other candidate it shows `Only one model in scope` or `Only one model available`. A
+session error is shown as an error notice instead of the switch message. A failed
+credential lookup leaves the selection as it was; a recording or listener failure
+happens after the new model is selected, so that model stays selected.
+
+`/model`, `/scoped-models` and the model-select key are described in
+[interactive commands](commands.md).
 
 ## Editor border
 

@@ -21,9 +21,11 @@ use std::{
 mod actions;
 mod autocomplete;
 mod key_display;
+mod models;
 mod queues;
 mod replay;
 mod resources;
+mod selectors;
 mod startup;
 mod submit;
 mod toggles;
@@ -92,6 +94,8 @@ pub struct InteractiveMode {
     is_bash_mode: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Whether this mode has shown the subscription billing notice.
+    anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
     /// The selected search program for file completion, absent until startup prepares it.
@@ -139,12 +143,10 @@ impl InteractiveMode {
         );
         let footer = create_footer(&session, &footer_data_provider, themes.theme())?;
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = session.settings_manager().borrow().get_theme();
+        let settings = session.settings_manager();
+        let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
-        let hide_thinking_block = session
-            .settings_manager()
-            .borrow()
-            .get_hide_thinking_block();
+        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
             options,
@@ -170,6 +172,7 @@ impl InteractiveMode {
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
+            anthropic_subscription_warning_shown: Cell::new(false),
             compaction_queued_messages: RefCell::default(),
         }))
     }
@@ -178,11 +181,13 @@ impl InteractiveMode {
     /// container in order, focuses the editor, binds the transcript shortcuts, installs
     /// editor submission, starts the terminal, lists the loaded resources with their
     /// diagnostics and replays the session, once; theme changes then refresh the editor
-    /// border, and theme and branch changes request fresh frames.
+    /// border, and theme and branch changes request fresh frames. Finally the footer
+    /// learns how many providers the model candidates cover.
     ///
     /// # Errors
     /// Returns the failure of the managed binary directory, of the header's theme colours,
-    /// of the terminal start, of the resource listing or of the replay.
+    /// of the terminal start, of the resource listing, of the replay or of the catalog
+    /// refresh.
     pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -226,7 +231,8 @@ impl InteractiveMode {
             show_diagnostics_when_quiet: true,
             ..resources::ShowLoadedResourcesOptions::default()
         })?;
-        self.render_initial_messages()
+        self.render_initial_messages()?;
+        self.update_available_provider_count()
     }
 
     /// Clears the transcript and the pending-message rows, then replays the current session
