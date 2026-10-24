@@ -8,6 +8,7 @@ mod models;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod transcript;
@@ -34,7 +35,7 @@ use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
     EditorComponent, autocomplete,
 };
-use serde::Deserialize;
+use serde::{Deserialize, de::DeserializeOwned};
 use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
 
 /// Every recorded presentation case.
@@ -462,6 +463,35 @@ pub(super) enum Expected {
         /// Frames requested.
         renders: usize,
     },
+}
+
+/// One recorded case, read before its witness gives the input and observation their types.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Recorded {
+    /// The witness the case belongs to.
+    test: String,
+    /// The recorded operation.
+    input: serde_json::Value,
+    /// The recorded observation.
+    expected: serde_json::Value,
+}
+
+/// The cases of `test` recorded in `fixtures`, typed by that witness.
+fn recorded<I: DeserializeOwned, E: DeserializeOwned>(fixtures: &str, test: &str) -> Vec<(I, E)> {
+    let all: Vec<Recorded> = serde_json::from_str(fixtures).unwrap();
+    let cases: Vec<_> = all
+        .into_iter()
+        .filter(|case| case.test == test)
+        .map(|case| {
+            (
+                serde_json::from_value(case.input).unwrap(),
+                serde_json::from_value(case.expected).unwrap(),
+            )
+        })
+        .collect();
+    assert!(!cases.is_empty());
+    cases
 }
 
 /// The recorded cases of `test`.

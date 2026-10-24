@@ -2,6 +2,7 @@
 use super::InteractiveMode;
 use maestro_app::is_whitespace_scalar;
 use maestro_tui::EditorComponent;
+use maestro_app::messages::UserMessageDelivery;
 use std::{
     future::{Future, pending},
     rc::Rc,
@@ -28,9 +29,8 @@ impl InteractiveMode {
     }
 
     /// Installs submission on the editor without keeping the mode alive: trimmed nonempty
-    /// text that is `/scoped-models` or a `/model` command clears the editor and runs the
-    /// command; other text goes to the waiting input, if any, then into the editor's
-    /// history.
+    /// text runs a model command or queues as steering during a compaction or response;
+    /// otherwise it goes to the waiting input, if any, then into history.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_submit(Some(Rc::new(move |text| {
@@ -49,6 +49,10 @@ impl InteractiveMode {
                     Some(search.to_owned()).filter(|search| !search.is_empty()),
                 );
                 return;
+            }
+            match mode.submit_queued_input(text, UserMessageDelivery::Steer) {
+                Ok(false) => {}
+                queued => return mode.report(queued.map(drop)),
             }
             let waiting = mode.on_input_callback.borrow_mut().take();
             if let Some(waiting) = waiting {

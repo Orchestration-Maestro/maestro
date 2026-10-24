@@ -1,5 +1,5 @@
 //! Typed input through the editor's installed submission and the single waiting input.
-use super::{World, isolated, started};
+use super::{World, isolated, recorded, started};
 use crate::{CustomEditor, InteractiveMode};
 use maestro_tui::KeybindingKeys;
 use maestro_tui::tui::InputHandler;
@@ -17,33 +17,9 @@ use std::{
 /// Every recorded input case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_input.json");
 
-/// One recorded case, read before its witness gives the input and observation their types.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: serde_json::Value,
-    /// The recorded observation.
-    expected: serde_json::Value,
-}
-
 /// The recorded cases of `test`, typed by that witness.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| {
-            (
-                serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(case.expected).unwrap(),
-            )
-        })
-        .collect();
-    assert!(!cases.is_empty());
-    cases
+    recorded(FIXTURES, test)
 }
 
 /// Polls `future` once with a waker that observes nothing.

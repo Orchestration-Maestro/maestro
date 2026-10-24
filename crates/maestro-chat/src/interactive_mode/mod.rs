@@ -1,5 +1,5 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts, editor actions and typed input.
+//! resources, notices, transcript shortcuts, editor actions, typed input and queued input.
 
 use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
@@ -18,7 +18,9 @@ use std::{
 };
 
 mod actions;
+mod key_display;
 mod models;
+mod queues;
 mod replay;
 mod resources;
 mod selectors;
@@ -91,6 +93,8 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Whether this mode has shown the subscription billing notice.
     anthropic_subscription_warning_shown: Cell<bool>,
+    /// Messages typed while the session compacts, in the order they were typed.
+    compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
 }
 
 impl InteractiveMode {
@@ -166,6 +170,7 @@ impl InteractiveMode {
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
             anthropic_subscription_warning_shown: Cell::new(false),
+            compaction_queued_messages: RefCell::default(),
         }))
     }
 
@@ -197,6 +202,7 @@ impl InteractiveMode {
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
         self.setup_key_handlers();
+        self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
