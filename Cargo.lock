@@ -4128,6 +4128,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-test-directory",
  "maestro-test-process",
+ "rustix",
 ]
 
 [[package]]
