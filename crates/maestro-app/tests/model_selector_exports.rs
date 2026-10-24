@@ -1,5 +1,5 @@
 //! Application paths retain their model-selection owners.
-use crate::support::session_harness::no_commands;
+use crate::support::no_commands::no_commands;
 use maestro_app::{
     AuthStorage, CatalogError, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput,
     ProviderModelInput, ScopedModel, SettingsManager, SharedHandle, model_id_comparator,

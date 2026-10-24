@@ -26,10 +26,34 @@ impl ModelFileOperations for Text {
 pub fn auth() -> SharedHandle<AuthStorage> {
     SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new()))
 }
-/// Credential commands no recorded catalog test reaches.
+/// Credential commands that answer no value and spawn no process.
+pub struct NoCommands;
+
+impl maestro_credentials::ConfigValueOperations for NoCommands {
+    fn execute(&self, _: &str) -> Option<Vec<u8>> {
+        None
+    }
+}
+
+/// Credential commands that fail the test which requests one.
+pub struct ForbiddenCommands;
+
+impl maestro_credentials::ConfigValueOperations for ForbiddenCommands {
+    fn execute(&self, command: &str) -> Option<Vec<u8>> {
+        panic!("a controlled catalog test requested the configured command {command:?}");
+    }
+}
+
+/// Credential commands that fail every key command with no output.
 #[must_use]
 pub fn values() -> ConfigValues {
-    Arc::new(crate::request_support::Operations::default())
+    SharedHandle::new(NoCommands)
+}
+
+/// Credential commands that must stay unrequested.
+#[must_use]
+pub fn forbidden() -> ConfigValues {
+    SharedHandle::new(ForbiddenCommands)
 }
 /// Offline registry that resolves configured key commands through `values`.
 #[must_use]

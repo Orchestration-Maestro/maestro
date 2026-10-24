@@ -329,17 +329,10 @@ fn defaults_thinking_to_medium() {
         let h = fixture(Auth::Key).await;
         let observed = thinking_case(&h, None, History::New, json!({})).await;
         assert_eq!(observed, expected("thinking_defaults_to_medium"));
-    });
-}
-
-#[test]
-fn appends_the_initial_model_and_thinking_entries() {
-    on_task_set(|_| async {
-        let h = fixture(Auth::Key).await;
-        let observed = thinking_case(&h, None, History::New, json!({})).await;
         assert_eq!(
             observed["entry_types"],
-            json!(["model_change", "thinking_level_change"])
+            json!(["model_change", "thinking_level_change"]),
+            "the creation appends its model and thinking entries"
         );
     });
 }

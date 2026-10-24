@@ -92,6 +92,8 @@ impl Drop for Signal {
 pub struct Update {
     /// Observations shared with the host.
     observed: Rc<RefCell<Observed>>,
+    /// Cancellation flag the host raises on the first recorded update.
+    cancel_on_first: Option<Flag>,
     /// Counts its owned lifetime.
     _lease: Lease,
 }
@@ -224,6 +226,16 @@ impl Controlled {
     pub fn update(&self) -> Update {
         Update {
             observed: Rc::clone(&self.observed),
+            cancel_on_first: None,
+            _lease: Lease::new(&self.observed),
+        }
+    }
+
+    /// A progress resource that raises `flag` on its first recorded update.
+    pub fn aborting_update(&self, flag: &Flag) -> Update {
+        Update {
+            observed: Rc::clone(&self.observed),
+            cancel_on_first: Some(flag.clone()),
             _lease: Lease::new(&self.observed),
         }
     }
@@ -1369,7 +1381,11 @@ impl Imports for Controlled {
         update
             .observed
             .borrow_mut()
-            .update(partial, &value["details"])
+            .update(partial, &value["details"])?;
+        if let Some(flag) = &update.cancel_on_first {
+            flag.abort();
+        }
+        Ok(())
     }
 
     fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()> {

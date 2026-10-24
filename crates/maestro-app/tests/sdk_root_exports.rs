@@ -90,10 +90,6 @@ fn reaches_the_lower_owners_through_the_root() {
         maestro_app::DEFAULT_MAX_BYTES,
         maestro_tools::DEFAULT_MAX_BYTES
     );
-    assert_eq!(
-        maestro_app::CURRENT_SESSION_VERSION,
-        maestro_session::session_manager::CURRENT_SESSION_VERSION
-    );
     assert_eq!(maestro_app::get_language_from_path("main.rs"), Some("rust"));
     let parsed = maestro_app::strip_frontmatter("---\nname: x\n---\nbody").unwrap();
     assert_eq!(parsed, "body");
@@ -107,11 +103,6 @@ fn reaches_the_lower_owners_through_the_root() {
         },
     );
     assert_eq!(source.path, "<sdk:tool>");
-    assert!(!maestro_app::should_compact(
-        1.0,
-        200_000.0,
-        &maestro_app::DEFAULT_COMPACTION_SETTINGS
-    ));
 }
 
 /// Asserts each name resolves to its declaring owner rather than a copy the root

@@ -42,8 +42,9 @@ window. The code-span runs take one pass over the source; the label scan takes o
 forward pass over bracket pairs and one reverse pass over the closers they reach, and
 records the next unescaped `]` at each offset. A reference opener whose window holds
 no such closing bracket therefore skips the caller's reference rules, while an
-admitted window still runs the explicit rule and then the shortcut or collapsed rule
-over its whole window, so admitted openers keep their existing cost and the tokenizer
+admitted window still runs the explicit rule and, on an explicit miss, the shortcut or
+collapsed rule over its whole window, so admitted openers keep their existing cost and
+the tokenizer
 as a whole makes no linearity promise.
 Masks remain local to each window because clipping can reveal syntax hidden by an
 enclosing mask. Label-closer lookup is constant time and code-span lookup is a binary
