@@ -190,6 +190,40 @@ const probe = () => {
       context.font = font || getComputedStyle(element).font;
       return context.measureText(element.textContent).width;
     },
+    // The ink extent of a canvas's bottom text row against the body role, so chart
+    // typography is observed as painted. The chart library's own default size and
+    // weight are named here because a canvas carries no computed style.
+    chartTitle: (name, text) => {
+      const canvas = document.querySelector(name);
+      const {width, height} = canvas;
+      const pixels = canvas.getContext('2d').getImageData(0, 0, width, height).data;
+      const paintedRow = row => {
+        let count = 0;
+        for (let x = 0; x < width; x += 1) {
+          if (pixels[(row * width + x) * 4 + 3] > 0) count += 1;
+        }
+        return count;
+      };
+      let bottom = height - 1;
+      while (bottom >= 0 && paintedRow(bottom) === 0) bottom -= 1;
+      let top = bottom;
+      while (top > 0 && paintedRow(top - 1) > 0) top -= 1;
+      let left = width;
+      let right = -1;
+      for (let y = top; y <= bottom; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          if (pixels[(y * width + x) * 4 + 3] === 0) continue;
+          left = Math.min(left, x);
+          right = Math.max(right, x);
+        }
+      }
+      const measure = document.createElement('canvas').getContext('2d');
+      measure.font = `normal 12px ${role('--maestro-font-body')}`;
+      return {
+        ink: right < left ? 0 : right - left + 1,
+        declared: measure.measureText(text).width * window.devicePixelRatio,
+      };
+    },
     path: () => {
       const code = document.querySelector('main > p > code');
       return {text: code.textContent, images: code.querySelectorAll('img').length};
@@ -322,6 +356,25 @@ async function run(url) {
         colour => window.probe.painted('#toolHistogram', colour, {fromY: 0.75}) > 0,
         roles.muted,
       )),
+      true,
+    );
+    observe(
+      'chart_grid_paints_the_border_colour',
+      // A canvas band holding grid lines and bars, never a DOM border, so only the
+      // chart's own lines can paint the border role there.
+      (await page.evaluate(
+        colour => window.probe.painted('#tokens', colour, {fromY: 0.15, toY: 0.35}) > 100,
+        roles.border,
+      )),
+      true,
+    );
+    const chartTitle = await page.evaluate(() =>
+      window.probe.chartTitle('#toolHistogram', 'estimated tokens/result'));
+    observe(
+      'chart_title_paints_the_body_font',
+      // The axis title row is measured against the role, so a chart drawn at another
+      // size or weight paints a width the role does not explain.
+      Math.abs(chartTitle.ink - chartTitle.declared) <= 4,
       true,
     );
     observe(

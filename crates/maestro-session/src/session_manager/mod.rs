@@ -13,7 +13,8 @@ pub use conversions::migrate_session_entries;
 pub use discovery::SessionListProgress;
 #[cfg(not(target_arch = "wasm32"))]
 pub use files::{
-    find_most_recent_session, get_default_session_dir, load_entries_from_file, sessions_dir,
+    SessionDir, find_most_recent_session, get_default_session_dir, load_entries_from_file,
+    sessions_dir,
 };
 /// Context projection operations.
 pub mod context;

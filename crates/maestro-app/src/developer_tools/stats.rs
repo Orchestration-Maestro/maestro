@@ -80,7 +80,8 @@ pub fn main(
         return Ok(ExitCode::SUCCESS);
     };
     let sessions = maestro_session::sessions_dir(&options.sessions_base, &options.cwd);
-    if !std::path::Path::new(&sessions).exists() {
+    let sessions = sessions.as_str();
+    if !std::path::Path::new(sessions).exists() {
         writeln!(stderr, "Sessions directory not found: {sessions}")?;
         return Ok(ExitCode::from(1));
     }
@@ -90,10 +91,10 @@ pub fn main(
         start: local_midnight(start_date),
         end: local_midnight(days_after(today, 1)),
     };
-    let (days, grand) = collect(&sessions, &window)?;
+    let (days, grand) = collect(sessions, &window)?;
     Report {
         options: &options,
-        sessions: &sessions,
+        sessions,
         start: start_date,
         today,
         days: &days,

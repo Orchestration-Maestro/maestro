@@ -37,12 +37,13 @@ fn journal(with_roles: bool) -> String {
 fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
     let directory =
         maestro_session::sessions_dir(&format!("{base}/home/.maestro/agent/sessions"), cwd);
-    std::fs::create_dir_all(&directory).expect("the fixture directory is creatable");
+    let directory = directory.as_str();
+    std::fs::create_dir_all(directory).expect("the fixture directory is creatable");
     for (name, content) in files {
-        std::fs::write(Path::new(&directory).join(name), content)
+        std::fs::write(Path::new(directory).join(name), content)
             .expect("the fixture file is writable");
     }
-    directory
+    directory.to_owned()
 }
 
 /// A journal whose wrapped transcript is exactly `units` UTF-16 units long.
@@ -86,6 +87,7 @@ fn transcript_arguments_keep_output_and_cwd_selection() {
                         &format!("{base}/home/.maestro/agent/sessions"),
                         &second
                     )
+                    .as_str()
                 )
             );
             let positional = run_transcripts(&["--help", "--output", &first, &project], false)

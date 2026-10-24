@@ -41,7 +41,8 @@ fn analysis_file_readers_keep_their_bom_and_parse_error_policies() {
                 &format!("{base}/home/.maestro/agent/sessions"),
                 &project,
             );
-            std::fs::create_dir_all(&directory).expect("the fixture directory is creatable");
+            let directory = directory.as_str();
+            std::fs::create_dir_all(directory).expect("the fixture directory is creatable");
             // A byte-order mark opens the first line, which the trimming readers parse
             // and the kept-line readers reject.
             std::fs::write(
@@ -63,7 +64,7 @@ fn analysis_file_readers_keep_their_bom_and_parse_error_policies() {
             );
             let tools = run_tools(&[
                 "--sessions-dir",
-                &directory,
+                directory,
                 "--output",
                 &format!("{base}/page.html"),
             ])
@@ -95,7 +96,8 @@ fn decimal_day_parsing_reuses_the_integer_owner() {
                 &format!("{base}/home/.maestro/agent/sessions"),
                 &project,
             );
-            std::fs::create_dir_all(&directory).expect("the fixture directory is creatable");
+            let directory = directory.as_str();
+            std::fs::create_dir_all(directory).expect("the fixture directory is creatable");
             // Sixteen days as an explicit decimal count, a trailing word ignored, a
             // decimal prefix and a hexadecimal prefix read as zero rather than sixteen.
             for (days, expected) in [
@@ -177,6 +179,7 @@ fn session_roots_follow_the_account_home_and_cost_keeps_the_variable() {
                 .to_string();
             let root = format!("{account}/.maestro/agent/sessions");
             let expected = maestro_session::sessions_dir(&root, &project);
+            let expected = expected.as_str();
             // The usage report names the directory it resolved from the account home.
             let transcripts =
                 run_transcripts(&["--output", &format!("{base}/out"), &project], false)

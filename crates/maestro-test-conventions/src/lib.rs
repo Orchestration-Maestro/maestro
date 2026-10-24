@@ -18,8 +18,6 @@ mod generated;
 mod graph;
 /// Single-target integration-test packaging checks.
 mod integration_tests;
-/// Single ownership of the session directory name.
-mod owners;
 /// Source-size and protected-lint checks.
 mod quality;
 /// Repeated documentation and test source layout checks.
@@ -100,7 +98,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     repetition::check(&members)?;
     quality::check(root, &members)?;
     time_limits::check(&members)?;
-    owners::check(&members)?;
     duplicates::check(&members)?;
     example_helpers::check(&members)?;
     temp_directories::check(&members)

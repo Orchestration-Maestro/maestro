@@ -32,14 +32,15 @@ pub async fn main(
     };
     std::fs::create_dir_all(&options.output)?;
     let sessions = maestro_session::sessions_dir(&super::session_base()?, &options.cwd);
-    if !Path::new(&sessions).exists() {
+    let sessions = sessions.as_str();
+    if !Path::new(sessions).exists() {
         writeln!(stderr, "No sessions found for {}", options.cwd)?;
         writeln!(stderr, "Expected: {sessions}")?;
         return Ok(ExitCode::from(1));
     }
-    let files = journals(&sessions)?;
+    let files = journals(sessions)?;
     writeln!(stdout, "Found {} session files in {sessions}", files.len())?;
-    let transcripts = transcripts(&sessions, &files)?;
+    let transcripts = transcripts(sessions, &files)?;
     if transcripts.is_empty() {
         writeln!(stderr, "No transcripts found")?;
         return Ok(ExitCode::from(1));

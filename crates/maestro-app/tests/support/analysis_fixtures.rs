@@ -79,8 +79,9 @@ pub fn run_usage(values: &[&str]) -> std::io::Result<Run> {
 /// The sessions directory of `cwd` beneath `base`'s home, created with the files.
 pub fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
     let directory = maestro_session::sessions_dir(&home(base, "sessions"), cwd);
-    write_files(&directory, files);
-    directory
+    let directory = directory.as_str();
+    write_files(directory, files);
+    directory.to_owned()
 }
 
 /// A directory beneath `base`'s home, created.

@@ -16,13 +16,28 @@ pub(crate) fn encode_session_dir(cwd: &str) -> String {
     format!("--{}--", cwd.replace(['/', '\\', ':'], "-"))
 }
 
-/// The directory beneath `base` that holds the sessions of `cwd`.
+/// The directory beneath a base that holds one working directory's sessions.
 ///
-/// The name comes from this module alone, so no caller can spell a session
-/// directory of its own.
+/// Only this module builds one, so a caller receives a session directory
+/// instead of spelling one:
+///
+/// ```compile_fail,E0603
+/// let _ = maestro_session::SessionDir(String::from("--workspace--"));
+/// ```
+pub struct SessionDir(String);
+
+impl SessionDir {
+    /// The directory path this record names.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// The directory beneath `base` that holds the sessions of `cwd`.
 #[must_use]
-pub fn sessions_dir(base: &str, cwd: &str) -> String {
-    maestro_path::join(&[base, &encode_session_dir(cwd)])
+pub fn sessions_dir(base: &str, cwd: &str) -> SessionDir {
+    SessionDir(maestro_path::join(&[base, &encode_session_dir(cwd)]))
 }
 
 /// Encode the authored cwd into a default directory beneath the resolved agent root.

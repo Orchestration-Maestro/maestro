@@ -4,8 +4,6 @@ pub use messages::convert_to_llm;
 
 /// Session history and selected-branch context.
 pub mod session_manager;
-#[cfg(not(target_arch = "wasm32"))]
-pub use session_manager::sessions_dir;
 pub use session_manager::{
     BranchSummaryEntry, CURRENT_SESSION_VERSION, CompactionEntry, CustomEntry, CustomMessageEntry,
     FileEntry, ModelChangeEntry, NewSessionOptions, SessionContext, SessionEntry, SessionEntryBase,
@@ -13,6 +11,8 @@ pub use session_manager::{
     ThinkingLevelChangeEntry, build_session_context, get_latest_compaction_entry,
     migrate_session_entries, parse_session_entries,
 };
+#[cfg(not(target_arch = "wasm32"))]
+pub use session_manager::{SessionDir, sessions_dir};
 
 /// Missing stored working-directory diagnostics.
 pub mod session_cwd;

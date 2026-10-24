@@ -2,9 +2,9 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::analysis_fixtures::Run;
-use crate::analysis_fixtures::{
-    open_pipe, page_data, read_pipe, root, run_tools, scratch, with_controlled_viewer,
-};
+#[cfg(unix)]
+use crate::analysis_fixtures::{open_pipe, read_pipe};
+use crate::analysis_fixtures::{page_data, root, run_tools, scratch, with_controlled_viewer};
 use serde_json::Value;
 
 /// The shared identity pack the page takes its colors from.

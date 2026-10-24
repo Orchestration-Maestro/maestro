@@ -69,13 +69,14 @@ pub fn main(
         return Ok(ExitCode::from(1));
     };
     let sessions = maestro_session::sessions_dir(&cost_session_base()?, &project);
-    if !std::path::Path::new(&sessions).exists() {
+    let sessions = sessions.as_str();
+    if !std::path::Path::new(sessions).exists() {
         writeln!(stderr, "Sessions directory not found: {sessions}")?;
         return Ok(ExitCode::from(1));
     }
     let today = now().date_naive();
     let cutoff = local_midnight(days_before(today, days));
-    let report = collect(&sessions, cutoff)?;
+    let report = collect(sessions, cutoff)?;
     if report.is_empty() {
         writeln!(
             stdout,
