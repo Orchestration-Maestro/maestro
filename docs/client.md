@@ -93,3 +93,12 @@ client.start().await?;
 let events = client.prompt_and_wait("Summarize the README", None, None).await?;
 client.stop().await?;
 ```
+
+## Example
+
+`crates/maestro-app/examples/rpc_client_demo` is an interactive terminal client
+built on these methods:
+
+```sh
+cargo run -p maestro-app --example rpc_client_demo -- path/to/maestro
+```
