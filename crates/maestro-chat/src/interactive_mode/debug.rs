@@ -1,7 +1,7 @@
 //! The debug capture command and its global key.
 use super::InteractiveMode;
 use maestro_app::configuration::config::{get_agent_dir, paths::get_debug_log_path};
-use maestro_app::{AgentSession, compact_json};
+use maestro_app::{AgentSession, serialize_json_line};
 use maestro_theme::ThemeColor;
 use maestro_tui::{Component, visible_width};
 use std::{error::Error, fmt::Write as _, path::Path, rc::Rc, sync::PoisonError};
@@ -77,8 +77,7 @@ fn debug_data(
     let messages = session.messages();
     let messages = messages.read().unwrap_or_else(PoisonError::into_inner);
     for message in messages.iter() {
-        data += &compact_json(&serde_json::to_value(message)?)?;
-        data.push('\n');
+        data += &serialize_json_line(&serde_json::to_value(message)?)?;
     }
     Ok(data)
 }
