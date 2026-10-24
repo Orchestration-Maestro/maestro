@@ -2,8 +2,8 @@
 
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
-the startup help, the transcript notices, typed input, session replay and the
-expansion and thinking shortcuts. The prompt loop, streaming messages, installed
+the startup help, the transcript notices, typed input, queued input, session replay
+and the expansion and thinking shortcuts. The prompt loop, streaming messages, installed
 custom headers, the terminal title and the other integrations are still to come;
 the mode reads submitted text but does not yet prompt the session.
 
@@ -31,7 +31,8 @@ fallback theme is returned.
 `init` runs once; later calls change nothing. It builds the header, then adds the
 header, transcript, pending-messages, status, upper widget, editor and lower widget
 containers and the footer, in that order. It focuses the editor, binds the
-transcript shortcuts, installs editor submission and starts the terminal. A
+transcript shortcuts and the queue keys, installs editor submission and starts the
+terminal. A
 terminal start failure is returned and leaves the mode uninitialized. After a
 successful start it replays the session (see below). A theme change then
 invalidates the presentation, recolours the editor border and requests a frame,
@@ -98,6 +99,27 @@ The initial replay also recolours the editor border, adds each user text to the
 editor history and, when the session was compacted, shows `Session compacted 1
 time` or `Session compacted N times`. A rebuild after the thinking shortcut replays
 without either effect, so the history is not filled twice.
+
+## Queued input
+
+Messages queued for the running response appear above the editor. Each steering
+message gets a dim `Steering: <text>` row and each follow-up message a dim
+`Follow-up: <text>` row, cut to one line. A last row names the keys bound to
+`app.message.dequeue` (Alt+Up by default) with `to edit all queued messages`. The
+keys are read when the rows are built, each part capitalized, as in `Ctrl+Alt+Q`.
+With nothing queued, the rows are removed.
+
+The dequeue key moves every queued message back into the editor: steering messages
+first, then follow-up messages, separated by blank lines and followed by the current
+draft when that draft is not blank. Duplicates and their order are kept. A status
+line then says `Restored 1 queued message to editor`,
+`Restored <n> queued messages to editor` or `No queued messages to restore`; with
+nothing queued the editor is left as it was.
+
+While a response streams, the interrupt key (Escape by default) restores the queued
+messages the same way and then stops the response, even when nothing was queued. When
+no response streams, the key does nothing. The queue keys do not keep the mode alive,
+and a failure in them goes to the terminal runtime's error route.
 
 ## Status lines
 
