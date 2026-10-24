@@ -69,6 +69,46 @@ const SESSION_EVENT_TYPES: [&str; 17] = [
     "turn_start",
 ];
 
+/// Each streamed event type's members in the order its producer writes them, for the
+/// optional members this exchange produces.
+const MEMBER_ORDER: [(&str, &[&str]); 17] = [
+    ("agent_end", &["type", "messages"]),
+    ("agent_start", &["type"]),
+    ("auto_retry_end", &["type", "success", "attempt"]),
+    (
+        "auto_retry_start",
+        &["type", "attempt", "maxAttempts", "delayMs", "errorMessage"],
+    ),
+    (
+        "compaction_end",
+        &["type", "reason", "result", "aborted", "willRetry"],
+    ),
+    ("compaction_start", &["type", "reason"]),
+    ("message_end", &["type", "message"]),
+    ("message_start", &["type", "message"]),
+    (
+        "message_update",
+        &["type", "assistantMessageEvent", "message"],
+    ),
+    ("queue_update", &["type", "steering", "followUp"]),
+    ("session_info_changed", &["type", "name"]),
+    ("thinking_level_changed", &["type", "level"]),
+    (
+        "tool_execution_end",
+        &["type", "toolCallId", "toolName", "result", "isError"],
+    ),
+    (
+        "tool_execution_start",
+        &["type", "toolCallId", "toolName", "args"],
+    ),
+    (
+        "tool_execution_update",
+        &["type", "toolCallId", "toolName", "args", "partialResult"],
+    ),
+    ("turn_end", &["type", "message", "toolResults"]),
+    ("turn_start", &["type"]),
+];
+
 /// Drives the commands that emit each session event type and returns every record up to
 /// the last one's response.
 async fn stream_every_kind(client: &mut Client) -> Vec<Value> {
@@ -131,6 +171,23 @@ fn session_events_keep_every_payload() {
             .map(|record| record["type"].as_str().unwrap())
             .collect();
         assert_eq!(kinds, BTreeSet::from(SESSION_EVENT_TYPES));
+        // Records keep the written member order, which record equality ignores.
+        for record in &streamed {
+            let members: Vec<&str> = record
+                .as_object()
+                .unwrap()
+                .keys()
+                .map(String::as_str)
+                .collect();
+            let expected = MEMBER_ORDER
+                .iter()
+                .find(|(kind, _)| record["type"] == *kind);
+            assert_eq!(
+                Some(members.as_slice()),
+                expected.map(|(_, order)| *order),
+                "{record}"
+            );
+        }
         let update = streamed
             .iter()
             .find(|record| record["type"] == "tool_execution_update")

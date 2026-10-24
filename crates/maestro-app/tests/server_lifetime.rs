@@ -5,7 +5,7 @@ use crate::support::rpc_connection::{
     Client, Outcomes, connect, replacement_watch, response_to, startup_select, user_entry,
 };
 use crate::support::runtime_fixtures::{runtime_for, stored_in};
-use crate::support::session_harness::{hold_first_answer, on_task_set};
+use crate::support::session_harness::{hold_first_answer, on_paused_task_set, on_task_set};
 use maestro_app::{RpcConnectionOutcome, TerminationSignal};
 use maestro_extensions::{
     ExtensionCommandContext, ExtensionContext, ExtensionFactory, SessionShutdownEvent,
@@ -376,6 +376,35 @@ fn eof_during_disposal_exits_without_wait() {
     });
 }
 
+/// A failed read or write ends the connection with that failure through the same shutdown
+/// as the input's end: the session is disposed and signal delivery stops.
+#[test]
+fn failed_reads_and_writes_still_shut_down() {
+    on_task_set(|_| async {
+        for (label, expected) in [("read", "read failed"), ("write", "write failed")] {
+            let seen = Rc::default();
+            let watch = shutdown_watch(Rc::clone(&seen), None);
+            let (_h, runtime, _) = runtime_for(label, vec![(None, watch)]).await;
+            let mut client = connect(Rc::new(runtime));
+            client.ask(r#"{"type":"get_state"}"#).await;
+            if label == "read" {
+                client.fail_read();
+            } else {
+                client.fail_writes();
+                client.send(r#"{"type":"get_state"}"#);
+            }
+            let stopped = (&mut client.server).await.unwrap().unwrap_err();
+            assert_eq!(stopped.to_string(), expected);
+            assert_eq!(seen.borrow().len(), 1, "{label}: the session was disposed");
+            assert_eq!(
+                client.signals_stopped(),
+                1,
+                "{label}: signal delivery stopped"
+            );
+        }
+    });
+}
+
 /// Disposal does not settle a dialog nobody answered, and once the connection ends nothing
 /// keeps the runtime alive.
 #[test]
@@ -418,6 +447,25 @@ fn startup_dialog_response_finishes_initial_binding() {
         let state = client.ask(r#"{"id":"bound","type":"get_state"}"#).await;
         assert_eq!(state["id"], "bound");
         assert_eq!(*outcomes.borrow(), [Ok(Some("a".to_owned()))]);
+    });
+}
+
+/// The answer to a startup dialog can be the input's unterminated final line: it settles
+/// the dialog, the binding finishes and the connection ends.
+#[test]
+fn startup_dialog_answered_by_final_line() {
+    on_paused_task_set(|_| async {
+        let outcomes: Outcomes = Rc::default();
+        let factory = startup_select(Rc::clone(&outcomes));
+        let (_h, runtime, _) = runtime_for("startup-tail", vec![(None, factory)]).await;
+        let mut client = connect(Rc::new(runtime));
+        let request = client.next().await;
+        let response = json!({"type": "extension_ui_response", "id": request["id"], "value": "a"});
+        client.end(Some(&response.to_string()));
+        // The paused clock moves only once every task is idle.
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        assert_eq!(*outcomes.borrow(), [Ok(Some("a".to_owned()))]);
+        assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
     });
 }
 

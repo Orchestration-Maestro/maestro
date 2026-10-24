@@ -259,6 +259,50 @@ fn dialog_deadline_keeps_zero_and_exact_boundary() {
     });
 }
 
+/// A response that arrives before an abort settles the dialog, however late the dialog is
+/// first awaited.
+#[test]
+fn dialog_response_before_abort_wins_when_awaited_late() {
+    on_task_set(|_| async {
+        let (_h, _runtime, mut client, ui) = bound("response-first").await;
+        // Both settlements are ready when each dialog is first awaited.
+        for _ in 0..16 {
+            let signal = Cancellation::new();
+            let options = ExtensionUIDialogOptions {
+                signal: Some(signal.clone()),
+                timeout: None,
+            };
+            let select = ui.select("t".into(), vec!["a".into()], Some(options));
+            let request = client.next().await;
+            respond(&client, &request, &json!({"value": "a"}));
+            nothing_written(&mut client).await;
+            signal.abort();
+            assert_eq!(select.await.unwrap().as_deref(), Some("a"));
+        }
+    });
+}
+
+/// A response that arrives after the deadline does not count, however late the dialog is
+/// first awaited.
+#[test]
+fn dialog_deadline_before_response_wins_when_awaited_late() {
+    on_paused_task_set(|_| async {
+        let (_h, _runtime, mut client, ui) = bound("deadline-first").await;
+        for _ in 0..16 {
+            let options = ExtensionUIDialogOptions {
+                signal: None,
+                timeout: Some(1000.0),
+            };
+            let input = ui.input("t".into(), None, Some(options));
+            let request = client.next().await;
+            tokio::time::advance(Duration::from_millis(1000)).await;
+            respond(&client, &request, &json!({"value": "late"}));
+            nothing_written(&mut client).await;
+            assert_eq!(input.await.unwrap(), None);
+        }
+    });
+}
+
 /// An editor has no timeout or signal: it waits until the client answers.
 #[test]
 fn editor_has_no_deadline_or_signal() {

@@ -24,18 +24,17 @@ use tokio::sync::mpsc;
 
 /// Lines a test supplies, read in order; a dropped sender ends the input.
 struct MemoryReader {
-    /// The supplied inputs.
-    inputs: mpsc::UnboundedReceiver<RpcInput>,
+    /// The supplied inputs and read failures.
+    inputs: mpsc::UnboundedReceiver<io::Result<RpcInput>>,
 }
 
 impl RpcLineReader for MemoryReader {
     fn next_line(&mut self) -> Pin<Box<dyn Future<Output = io::Result<RpcInput>> + '_>> {
         Box::pin(async move {
-            Ok(self
-                .inputs
+            self.inputs
                 .recv()
                 .await
-                .unwrap_or(RpcInput::End { tail: None }))
+                .unwrap_or(Ok(RpcInput::End { tail: None }))
         })
     }
 
@@ -89,7 +88,9 @@ impl WorkspaceOperations for ClosureWorkspace {
 /// A test's end of a connection.
 pub struct Client {
     /// Supplies the server's input.
-    inputs: Option<mpsc::UnboundedSender<RpcInput>>,
+    inputs: Option<mpsc::UnboundedSender<io::Result<RpcInput>>>,
+    /// Whether the server's writes fail.
+    failing_writes: Rc<std::cell::Cell<bool>>,
     /// Every line the server wrote, in order.
     lines: mpsc::UnboundedReceiver<String>,
     /// The running server.
@@ -113,7 +114,23 @@ impl Client {
 
     /// Supplies `input`.
     fn input(&self, input: RpcInput) {
-        self.inputs.as_ref().unwrap().send(input).unwrap();
+        self.inputs.as_ref().unwrap().send(Ok(input)).unwrap();
+    }
+
+    /// Makes the server's next read fail.
+    pub fn fail_read(&self) {
+        let failure = io::Error::other("read failed");
+        self.inputs.as_ref().unwrap().send(Err(failure)).unwrap();
+    }
+
+    /// Makes every later server write fail.
+    pub fn fail_writes(&self) {
+        self.failing_writes.set(true);
+    }
+
+    /// How often the server stopped signal delivery.
+    pub fn signals_stopped(&self) -> usize {
+        *self.signals.stopped.borrow()
     }
 
     /// The next line the server writes, as written.
@@ -167,7 +184,12 @@ pub fn serve(
         export_operations: Rc::new(Recording::default()),
         render_environment: environment(published()),
     };
+    let failing_writes = Rc::new(std::cell::Cell::new(false));
+    let failing = Rc::clone(&failing_writes);
     let output = Rc::new(move |line: &str| {
+        if failing.get() {
+            return Err(io::Error::other("write failed"));
+        }
         written.send(line.to_owned()).unwrap();
         Ok(())
     });
@@ -175,6 +197,7 @@ pub fn serve(
     let server = tokio::task::spawn_local(run_rpc_connection(runtime, reader, output, options));
     Client {
         inputs: Some(inputs),
+        failing_writes,
         lines,
         server,
         signals,
