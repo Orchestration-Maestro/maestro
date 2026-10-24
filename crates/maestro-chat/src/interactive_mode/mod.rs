@@ -176,9 +176,10 @@ impl InteractiveMode {
 
     /// Builds the header, adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission, starts the terminal, lists the
-    /// loaded resources and replays the session, once; theme changes then refresh the
-    /// editor border, and theme and branch changes request fresh frames. Finally the
-    /// footer learns how many providers the model candidates cover.
+    /// loaded resources with their diagnostics and replays the session, once; theme
+    /// changes then refresh the editor border, and theme and branch changes request
+    /// fresh frames. Finally the footer learns how many providers the model candidates
+    /// cover.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
@@ -220,7 +221,10 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(false)?;
+        self.show_loaded_resources(resources::ShowLoadedResourcesOptions {
+            show_diagnostics_when_quiet: true,
+            ..resources::ShowLoadedResourcesOptions::default()
+        })?;
         self.render_initial_messages()?;
         self.update_available_provider_count()
     }

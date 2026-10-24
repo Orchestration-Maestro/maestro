@@ -2,9 +2,11 @@
 
 mod data;
 mod file;
+mod ftp;
 mod http;
 mod http_error;
 mod https;
+mod listing;
 mod notfound;
 pub(super) mod notmodified;
 
@@ -22,6 +24,8 @@ pub(super) enum Cache {
     Http(Vec<http::Observation>),
     /// Signed epoch side and millisecond magnitude from the opened file.
     File(Result<u128, u128>),
+    /// Modification instant of the last successfully compiled FTP script.
+    Ftp(Option<i64>),
 }
 
 /// Loaded script bytes and their candidate cache observation.
@@ -42,6 +46,7 @@ pub(super) async fn load(
     match uri.scheme() {
         "data" => data::load(uri, cache),
         "file" => file::load(uri, cache).await,
+        "ftp" => ftp::load(uri, cache).await,
         "http" => http::load(uri, cache, fetch).await,
         "https" => https::load(uri, cache, fetch).await,
         protocol => Err(std::io::Error::other(format!(

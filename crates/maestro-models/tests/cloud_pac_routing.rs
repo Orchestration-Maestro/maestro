@@ -186,3 +186,146 @@ fn pac_bypass_and_supplied_fetch_avoid_script_loading() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn pac_ftp_sources_load_and_revalidate_scripts() -> TestResult {
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        return crate::runtime::run(ftp_source_conversations());
+    }
+    let observed = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let body = bedrock::answer("answer")?.concat();
+    let origin = routed_replies(&observed, "origin", body.clone())?;
+    let proxy = routed_replies(&observed, "proxy", body)?;
+    let ftp = crate::ftp_server::serve(ftp_scenarios(&proxy.url))?;
+    let output = ftp_child(&origin.url, &ftp)?;
+    let commands = ftp.commands();
+    let closed = ftp.finish()?;
+    assert!(
+        closed.control && closed.data,
+        "the child closed the FTP control and data connections"
+    );
+    origin.finish()?;
+    proxy.finish()?;
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        *observed
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+        ["origin", "origin", "proxy", "proxy"]
+    );
+    assert_eq!(
+        commands
+            .iter()
+            .filter(|line| line.starts_with("MDTM"))
+            .count(),
+        5,
+        "every send re-validated the source"
+    );
+    Ok(())
+}
+
+/// Run the child that sends four conversations and one through a refused source.
+fn ftp_child(origin: &str, ftp: &crate::ftp_server::Peer) -> TestResult<std::process::Output> {
+    Ok(
+        maestro_test_process::TestProcess::current("pac_ftp_sources_load_and_revalidate_scripts")?
+            .nocapture()
+            .env_clear()
+            .env(
+                "HTTP_PROXY",
+                format!("pac+ftp://{}/script.pac", ftp.address()),
+            )
+            .env("MAESTRO_ORIGIN", origin)
+            .env("AWS_REGION", "us-east-1")
+            .env("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer")
+            .env("AWS_MAX_ATTEMPTS", "1")
+            .case("*")
+            .output()?,
+    )
+}
+
+/// One scripted source per send: an unchanged pair, then a changed pair, then a refusal.
+fn ftp_scenarios(proxy: &str) -> Vec<crate::ftp_server::Scenario> {
+    let mut scenarios: Vec<crate::ftp_server::Scenario> = ["DIRECT", "DIRECT", "PROXY", "PROXY"]
+        .into_iter()
+        .enumerate()
+        .map(|(index, kind)| crate::ftp_server::Scenario {
+            modification: crate::ftp_server::Modification::Instant(if index < 2 {
+                "20240101120000"
+            } else {
+                "20240101120001"
+            }),
+            transfer: crate::ftp_server::Transfer::body(ftp_script(proxy, kind).into_bytes()),
+            ..crate::ftp_server::Scenario::default()
+        })
+        .collect();
+    scenarios.push(crate::ftp_server::Scenario {
+        modification: crate::ftp_server::Modification::MISSING,
+        ..crate::ftp_server::Scenario::default()
+    });
+    scenarios
+}
+
+/// One script selecting the transport every send through it uses.
+fn ftp_script(proxy: &str, kind: &str) -> String {
+    let chosen = if kind == "DIRECT" {
+        "'DIRECT'".to_owned()
+    } else {
+        format!("'PROXY {}'", &proxy[7..])
+    };
+    format!(
+        "function FindProxyForURL(url,host){{if(!url.endsWith('/converse-stream'))throw Error('lost URL');return {chosen}}}"
+    )
+}
+
+/// A loopback server that answers cloud frames and records each admitted request's role.
+fn routed_replies(
+    observed: &std::sync::Arc<std::sync::Mutex<Vec<&'static str>>>,
+    role: &'static str,
+    body: Vec<u8>,
+) -> TestResult<loopback::Routed> {
+    let recorded = std::sync::Arc::clone(observed);
+    loopback::serve_routed(move |_| {
+        recorded
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(role);
+        loopback::Reply {
+            status: 200,
+            content_type: "application/vnd.amazon.eventstream",
+            headers: &[],
+            body: body.clone(),
+            close: false,
+        }
+    })
+}
+
+/// Four sends over an FTP-held script, then a refused source that ends the send.
+async fn ftp_source_conversations() -> TestResult {
+    use maestro_models::providers::cloud::amazon_bedrock::stream_bedrock;
+    let origin = std::env::var("MAESTRO_ORIGIN")?;
+    for _ in 0..4 {
+        let stream = stream_bedrock(
+            bedrock::model(&origin)?,
+            bedrock::context("question")?,
+            None,
+        );
+        let (labels, message) = crate::transport::drain(&stream).await?;
+        cloud_proxy_transports::completed(&labels, &message)?;
+    }
+    let stream = stream_bedrock(
+        bedrock::model(&origin)?,
+        bedrock::context("question")?,
+        None,
+    );
+    let (labels, message) = crate::transport::drain(&stream).await?;
+    assert_eq!(labels.last().map(String::as_str), Some("error"));
+    let failure = message
+        .error_message
+        .ok_or("the refused source still answered")?;
+    assert!(
+        failure.contains("does not exist at the specified endpoint"),
+        "{failure}"
+    );
+    Ok(())
+}

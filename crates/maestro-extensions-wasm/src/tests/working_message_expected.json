@@ -1,0 +1,365 @@
+{
+  "requests": [
+    {
+      "name": "startup",
+      "steps": [
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "startup"
+          },
+          "binding": 1,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "reload",
+      "steps": [
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "reload"
+          },
+          "binding": 2,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "new",
+      "steps": [
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "new"
+          },
+          "binding": 3,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "resume",
+      "steps": [
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "resume"
+          },
+          "binding": 4,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fork",
+      "steps": [
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "fork"
+          },
+          "binding": 5,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "repeat-callback-new-context",
+      "steps": [
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "startup"
+          },
+          "binding": 6,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "reload"
+          },
+          "binding": 7,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "new"
+          },
+          "binding": 8,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "messageRejection": [
+    {
+      "name": "message-rejection-recovery",
+      "steps": [
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "startup"
+          },
+          "binding": 9,
+          "reject": "setWorkingMessage",
+          "error": "working text refused 雪",
+          "outcome": "rejected",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            }
+          ]
+        },
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "reload"
+          },
+          "binding": 10,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "indicatorRejection": [
+    {
+      "name": "indicator-rejection-recovery",
+      "steps": [
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "startup"
+          },
+          "binding": 11,
+          "reject": "setWorkingIndicator",
+          "error": "indicator refused ●",
+          "outcome": "rejected",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "event": {
+            "type": "session_start",
+            "reason": "reload"
+          },
+          "binding": 12,
+          "outcome": "returned",
+          "requests": [
+            {
+              "method": "setWorkingMessage",
+              "operands": [
+                "\u001b[38;2;155;86;63mWorking... (custom)\u001b[39m"
+              ]
+            },
+            {
+              "method": "setWorkingIndicator",
+              "operands": [
+                {
+                  "frames": [
+                    "\u001b[38;2;155;86;63m●\u001b[39m"
+                  ],
+                  "intervalMs": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

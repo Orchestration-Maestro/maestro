@@ -170,10 +170,7 @@ fn with_deps_ignores_unused_invocation_handles() -> Result<(), String> {
 /// The built single-copy example registers and executes across the component interface.
 #[test]
 fn with_deps_component_uses_its_parsing_dependency() -> Result<(), String> {
-    let path = super::build::example_component("with_deps")?;
-    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
-    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
-        .map_err(|error| error.to_string())?;
+    let mut harness = super::host::Harness::example("with_deps")?;
     let recorded = corpus();
     assert_metadata(&harness.observed().tools, &recorded["metadata"]);
     let key = harness
