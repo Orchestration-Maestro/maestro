@@ -1,6 +1,7 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod transcript;
 mod typed;
 
 use crate::{InteractiveMode, InteractiveModeOptions};
@@ -13,9 +14,10 @@ use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DiagnosticErrorInfo, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, ResourceExtensionPaths, ResourceLoader,
-    SettingsManager,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, ExtensionFactory,
+    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
+    ResourceExtensionPaths, ResourceLoader, SettingsManager, create_extension_runtime,
+    load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -56,11 +58,15 @@ struct ForwardingLoader {
     themes: Vec<Rc<Theme>>,
     /// The settings and theme name selected while the themes are read.
     select: RefCell<Option<(Rc<RefCell<SettingsManager>>, String)>>,
+    /// The loaded extensions answered instead of the default loader's.
+    extensions: Option<Rc<LoadExtensionsResult<Local>>>,
 }
 
 impl ResourceLoader<Local> for ForwardingLoader {
     fn get_extensions(&self) -> Rc<LoadExtensionsResult<Local>> {
-        self.inner.get_extensions()
+        self.extensions
+            .clone()
+            .unwrap_or_else(|| self.inner.get_extensions())
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
         self.inner.get_skills()
@@ -130,6 +136,8 @@ struct Setup {
     configure: Box<dyn FnOnce(&mut SettingsManager)>,
     /// The theme name selected inside the loader's theme getter.
     select: Option<String>,
+    /// The inline extension the session loads, when supplied.
+    extension: Option<ExtensionFactory<Local>>,
 }
 
 impl Default for Setup {
@@ -138,8 +146,32 @@ impl Default for Setup {
             options: InteractiveModeOptions::default(),
             configure: Box::new(|_| {}),
             select: None,
+            extension: None,
         }
     }
+}
+
+/// Loads `factory` as the session's only extension; its initialization must finish at once.
+fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResult<Local>> {
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let bus = <Local as DefaultEventBus>::default_event_bus(&local);
+    let runtime = create_extension_runtime::<Local>();
+    let loading = std::pin::pin!(load_extension_from_factory(
+        factory,
+        cwd.to_owned(),
+        bus.for_extension(),
+        Rc::clone(&runtime),
+        None,
+    ));
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
+        panic!("the inline extension initializes at once");
+    };
+    Rc::new(LoadExtensionsResult {
+        extensions: vec![owner.unwrap()],
+        errors: Vec::new(),
+        runtime,
+    })
 }
 
 impl Setup {
@@ -148,11 +180,13 @@ impl Setup {
         let cwd = directory.to_str().unwrap();
         let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
+        let extensions = self.extension.map(|factory| loaded(cwd, factory));
         let result = session::session(cwd, None, move |inner| {
             let themes = Rc::new(ForwardingLoader {
                 inner,
                 themes: vec![dark(), light()],
                 select: RefCell::default(),
+                extensions,
             });
             *created.borrow_mut() = Some(Rc::clone(&themes));
             themes
@@ -354,7 +388,7 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                 let world = Setup {
                     options: InteractiveModeOptions { verbose },
                     configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
-                    select: None,
+                    ..Setup::default()
                 }
                 .build(directory);
                 world.mode.init().unwrap();

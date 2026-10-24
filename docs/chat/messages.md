@@ -26,8 +26,12 @@ Visible blocks retain
 their order, with a leading spacer and a gap after thinking only when another
 visible block follows. Hidden thinking uses the literal label instead of Markdown.
 
-`update_content` replaces the retained shared handle and rebuilds the inner
-content. Both thinking setters and `invalidate` rebuild from that handle, observing
+`AssistantMessageComponent::from_record` builds the same widget from a stored
+assistant record. It reads only the content blocks and the stop reason and error
+text it displays, so tool-call arguments keep whatever JSON value was stored.
+
+`update_content` replaces the retained shared handle, releasing a stored record,
+and rebuilds the inner content. Both thinking setters and `invalidate` rebuild from that handle, observing
 edits through a surviving message alias. Any tool-call block suppresses prompt
 markers and failure notices. Without tools, aborted/error messages append their
 notice, and nonempty rendering receives the same markers as a user message.
