@@ -14,5 +14,5 @@ pub(crate) fn from_enum<'a>(
 ) -> Option<Value> {
     let constants = view.raw.get("enum").and_then(Value::as_array)?;
     let alternatives = enum_to_union(constants);
-    from_union(converter, &alternatives, value)
+    from_union(converter, &alternatives, None, value)
 }

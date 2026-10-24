@@ -26,7 +26,7 @@ pub(crate) fn from_record<'a>(
         let Some(child) = patterns.get(*source) else {
             continue;
         };
-        let child = Node::Leaf(converter.child(view, child));
+        let child = Node::Leaf(converter.view(child));
         for (name, member) in object.iter_mut() {
             if expression.find(name).is_some()
                 && let Some(replacement) = from_type(converter, &child, member)
@@ -40,7 +40,7 @@ pub(crate) fn from_record<'a>(
         .get("additionalProperties")
         .filter(|schema| schema.is_object())
     {
-        let additional = Node::Leaf(converter.child(view, additional));
+        let additional = Node::Leaf(converter.view(additional));
         from_additional(converter, object, &entries, &additional);
     }
     None

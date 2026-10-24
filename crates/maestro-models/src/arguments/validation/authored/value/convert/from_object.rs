@@ -29,8 +29,8 @@ pub(crate) fn from_object_view<'a>(
 ) -> Option<Value> {
     let object = value.as_object_mut()?;
     coercion::members(view.raw, object, |member, child| {
-        let child = converter.child(view, child);
-        convert_member(converter, &Node::Leaf(child), member);
+        let child = Node::Leaf(converter.view(child));
+        convert_member(converter, &child, member);
     });
     None
 }
@@ -42,9 +42,9 @@ fn from_composed<'a>(
     value: &mut Value,
 ) -> Option<Value> {
     let members = value.as_object_mut()?;
-    for (name, member) in &object.properties {
-        if let Some(supplied) = members.get_mut(name.as_ref())
-            && let Some(replacement) = from_type(converter, member, supplied)
+    for member in &object.properties {
+        if let Some(supplied) = members.get_mut(member.name.as_ref())
+            && let Some(replacement) = from_type(converter, &member.node, supplied)
         {
             *supplied = replacement;
         }

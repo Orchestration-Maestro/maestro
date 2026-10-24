@@ -95,6 +95,11 @@ primitive conversion over the plain schema. A schema supplied as ordinary JSON c
 no declared kinds, so only the primitive conversion applies: `null` for a required
 string member stays `""` there, while the same member of an authored schema becomes
 `"null"`. Schema text never implies author intent; rebuilding it needs the builder.
+A cyclic node's definitions are visible only while its reference converts, so a
+sibling member sees the enclosing definitions again. A reference names the innermost
+definition visible at the point where conversion reaches it. Union alternatives are
+checked against those same definitions, and a composed alternative keeps the constraints
+and optional members its author declared.
 
 Checking converts declared primitive values before evaluating the original schema.
 Objects and arrays are traversed only when their type is explicitly declared.

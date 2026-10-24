@@ -13,7 +13,9 @@ use crate::arguments::validation::authored::schema_view::{Converter, Node, View}
 /// Convert a supplied value through one schema node.
 ///
 /// `Some` is the replacement the reference converter returns for this node; `None` means the
-/// supplied value is already the conversion result, after any in-place effects.
+/// supplied value is already the conversion result, after any in-place effects. A sequence
+/// converts through the authored node it was instantiated from; only structural comparison
+/// builds a sequence without one, and conversion never meets it.
 pub(crate) fn from_type<'a>(
     converter: &mut Converter<'a>,
     node: &Node<'a>,
@@ -24,10 +26,16 @@ pub(crate) fn from_type<'a>(
         Node::Constant(constant) => from_literal::from_literal(constant, value),
         Node::Null => from_null::from_null(value),
         Node::Object(object) => from_object::from_object(converter, object, value),
-        Node::Array(item) => Some(from_array::from_array(converter, item, value)),
-        Node::Tuple(items) => from_tuple::from_tuple(converter, items, value),
-        Node::Union(alternatives) => from_union::from_union(converter, alternatives, value),
-        Node::Intersect(members) => from_intersect::from_intersect(converter, members, value),
+        Node::Array(_, source) => {
+            source.and_then(|view| from_array::from_array(converter, view, value))
+        }
+        Node::Tuple(_, source) => {
+            source.and_then(|view| from_tuple::from_tuple(converter, view, value))
+        }
+        Node::Union(alternatives, source) => {
+            from_union::from_union(converter, alternatives, *source, value)
+        }
+        Node::Intersect(members, _) => from_intersect::from_intersect(converter, members, value),
         Node::Never | Node::Any | Node::Unknown => None,
     }
 }
@@ -44,8 +52,8 @@ fn from_leaf<'a>(
         Some(SchemaKind::Integer) => from_integer::from_integer(value),
         Some(SchemaKind::Boolean) => from_boolean::from_boolean(value),
         Some(SchemaKind::Null) => from_null::from_null(value),
-        Some(SchemaKind::Array) => from_array::from_array_view(converter, view, value),
-        Some(SchemaKind::Tuple) => from_tuple::from_tuple_view(converter, view, value),
+        Some(SchemaKind::Array) => from_array::from_array(converter, view, value),
+        Some(SchemaKind::Tuple) => from_tuple::from_tuple(converter, view, value),
         Some(SchemaKind::Object) => from_object::from_object_view(converter, view, value),
         Some(SchemaKind::Record) => from_record::from_record(converter, view, value),
         Some(SchemaKind::Literal) => from_literal::from_literal_view(view, value),

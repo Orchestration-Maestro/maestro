@@ -6,7 +6,7 @@
 
 use serde_json::Value;
 
-use super::super::super::references::Location;
+use super::super::super::references::{Location, children};
 
 /// Search a resource for the node a pointer fragment addresses.
 ///
@@ -47,16 +47,4 @@ pub(crate) fn pointer<'a>(start: &Location<'a>, fragment: &str) -> Option<Locati
         location = location.child(next);
     }
     Some(location)
-}
-
-/// Child nodes of an object or array in canonical traversal order.
-fn children(schema: &Value) -> Vec<&Value> {
-    match schema {
-        Value::Object(object) => super::super::super::diagnostics::entries(object)
-            .into_iter()
-            .map(|(_, child)| child)
-            .collect(),
-        Value::Array(array) => array.iter().collect(),
-        _ => Vec::new(),
-    }
 }

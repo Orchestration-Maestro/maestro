@@ -15,49 +15,25 @@ pub(crate) fn extends_tuple<'a>(
 ) -> bool {
     match right.kind() {
         Some(SchemaKind::Tuple) => {
-            let (Some(left), Some(right)) = (items(left), items(right)) else {
+            let (Some(left), Some(right)) = (left.parts(converter), right.parts(converter)) else {
                 return false;
             };
             left.len() == right.len()
                 && left
                     .iter()
-                    .zip(&right)
+                    .zip(right.iter())
                     .all(|(left, right)| extends_left(converter, left, right))
         }
         Some(SchemaKind::Array) => {
-            let Some(left) = items(left) else {
+            let Some(left) = left.parts(converter) else {
                 return false;
             };
-            let Some(item) = super::array::item(right) else {
+            let Some(item) = super::array::item(converter, right) else {
                 return false;
             };
             left.iter()
                 .all(|member| extends_left(converter, member, &item))
         }
         _ => extends_right(converter, left, right),
-    }
-}
-
-/// The position nodes a tuple declares.
-fn items<'a>(node: &Rc<Node<'a>>) -> Option<Vec<Rc<Node<'a>>>> {
-    match &**node {
-        Node::Tuple(items) => Some(items.clone()),
-        Node::Leaf(view) => Some(
-            view.raw
-                .get("items")
-                .and_then(serde_json::Value::as_array)?
-                .iter()
-                .map(|item| {
-                    Rc::new(Node::Leaf(
-                        crate::arguments::validation::authored::schema_view::View {
-                            raw: item,
-                            kind: None,
-                            visible: view.visible,
-                        },
-                    ))
-                })
-                .collect(),
-        ),
-        _ => None,
     }
 }

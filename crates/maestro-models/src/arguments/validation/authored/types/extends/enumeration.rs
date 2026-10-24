@@ -13,7 +13,7 @@ pub(crate) fn extends_enum<'a>(
     right: &Rc<Node<'a>>,
 ) -> bool {
     match enumeration(left) {
-        Some(constants) => extends_left(converter, &enum_union(&constants), right),
+        Some(constants) => extends_left(converter, &enum_union(constants), right),
         None => false,
     }
 }
@@ -25,24 +25,24 @@ pub(crate) fn extends_enum_values<'a>(
     right: &Rc<Node<'a>>,
 ) -> bool {
     match enumeration(right) {
-        Some(constants) => extends_left(converter, left, &enum_union(&constants)),
+        Some(constants) => extends_left(converter, left, &enum_union(constants)),
         None => false,
     }
 }
 
 /// The constants an enumerated node declares.
-fn enumeration(node: &Rc<Node<'_>>) -> Option<Vec<serde_json::Value>> {
-    match &**node {
+fn enumeration<'a>(node: &Node<'a>) -> Option<&'a [serde_json::Value]> {
+    match node {
         Node::Leaf(view) => view
             .raw
             .get("enum")
             .and_then(serde_json::Value::as_array)
-            .cloned(),
+            .map(Vec::as_slice),
         _ => None,
     }
 }
 
 /// The union node a constant list stands for.
 pub(crate) fn enum_union(constants: &[serde_json::Value]) -> Rc<Node<'_>> {
-    Rc::new(Node::Union(enum_to_union(constants)))
+    Rc::new(Node::Union(enum_to_union(constants), None))
 }

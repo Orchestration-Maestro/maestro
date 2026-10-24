@@ -49,7 +49,8 @@ pub fn validate_tool_arguments(
     let mut candidate = Value::Object(tool_call.arguments.clone());
     authored::convert(&mut candidate, schema, tool.parameters.conversions());
     coercion::coerce(&mut candidate, schema);
-    let errors = check::check(schema, &candidate).map_err(|error| diagnostic(error.to_string()))?;
+    let errors =
+        check::check(schema, &[], &candidate).map_err(|error| diagnostic(error.to_string()))?;
     if errors.is_empty()
         && let Value::Object(arguments) = candidate
     {
@@ -68,7 +69,7 @@ pub fn validate_tool_arguments(
 /// # Errors
 /// Returns the existing diagnostic when schema preparation fails.
 pub fn validate_schema(schema: &Value, value: &Value) -> Result<Vec<String>, DiagnosticErrorInfo> {
-    check::check(schema, value).map_err(|error| diagnostic(error.to_string()))
+    check::check(schema, &[], value).map_err(|error| diagnostic(error.to_string()))
 }
 
 /// Wrap a corrective message in the existing error record.

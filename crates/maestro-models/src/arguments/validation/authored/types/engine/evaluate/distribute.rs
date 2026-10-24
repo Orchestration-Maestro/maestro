@@ -85,7 +85,7 @@ fn is_object_like(node: &Rc<Node<'_>>) -> bool {
 /// The alternatives of a union node.
 fn alternatives<'a, 'b>(node: &'b Rc<Node<'a>>) -> &'b [Rc<Node<'a>>] {
     match &**node {
-        Node::Union(alternatives) => alternatives,
+        Node::Union(alternatives, _) => alternatives,
         _ => &[],
     }
 }

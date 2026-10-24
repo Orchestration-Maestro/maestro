@@ -14,7 +14,7 @@ pub(crate) fn extends_array<'a>(
     right: &Rc<Node<'a>>,
 ) -> bool {
     if right.kind() == Some(SchemaKind::Array) {
-        return match (item(left), item(right)) {
+        return match (item(converter, left), item(converter, right)) {
             (Some(left), Some(right)) => extends_left(converter, &left, &right),
             _ => false,
         };
@@ -23,16 +23,10 @@ pub(crate) fn extends_array<'a>(
 }
 
 /// The item node a sequence declares.
-pub(crate) fn item<'a>(node: &Rc<Node<'a>>) -> Option<Rc<Node<'a>>> {
+pub(crate) fn item<'a>(converter: &Converter<'a>, node: &Rc<Node<'a>>) -> Option<Rc<Node<'a>>> {
     match &**node {
-        Node::Array(item) => Some(Rc::clone(item)),
-        Node::Leaf(view) => Some(Rc::new(Node::Leaf(
-            crate::arguments::validation::authored::schema_view::View {
-                raw: view.raw.get("items")?,
-                kind: None,
-                visible: view.visible,
-            },
-        ))),
+        Node::Array(item, _) => Some(Rc::clone(item)),
+        Node::Leaf(view) => Some(Rc::new(Node::Leaf(converter.keyword(*view, "items")?))),
         _ => None,
     }
 }

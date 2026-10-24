@@ -27,10 +27,10 @@ pub(crate) fn from_intersect_view<'a>(
     view: View<'a>,
     value: &mut Value,
 ) -> Option<Value> {
-    let members = view.raw.get("allOf").and_then(Value::as_array)?;
-    let members: Vec<Rc<Node<'a>>> = members
-        .iter()
-        .map(|member| instantiate(converter, converter.child(view, member)))
+    let members: Vec<Rc<Node<'a>>> = converter
+        .children(view, "allOf")?
+        .into_iter()
+        .map(|member| instantiate(converter, member))
         .collect();
     from_intersect(converter, &members, value)
 }

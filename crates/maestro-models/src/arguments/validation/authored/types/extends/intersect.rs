@@ -12,7 +12,7 @@ pub(crate) fn extends_intersect<'a>(
     left: &Rc<Node<'a>>,
     right: &Rc<Node<'a>>,
 ) -> bool {
-    match members(left) {
+    match left.parts(converter) {
         Some(members) => extends_left(converter, &evaluate_intersect(converter, &members), right),
         None => false,
     }
@@ -24,34 +24,10 @@ pub(crate) fn extends_right_intersect<'a>(
     left: &Rc<Node<'a>>,
     right: &Rc<Node<'a>>,
 ) -> bool {
-    match members(right) {
+    match right.parts(converter) {
         Some(members) => members
             .iter()
             .all(|member| extends_left(converter, left, member)),
         None => false,
-    }
-}
-
-/// The members an intersected node declares.
-fn members<'a>(node: &Rc<Node<'a>>) -> Option<Vec<Rc<Node<'a>>>> {
-    match &**node {
-        Node::Intersect(members) => Some(members.clone()),
-        Node::Leaf(view) => Some(
-            view.raw
-                .get("allOf")
-                .and_then(serde_json::Value::as_array)?
-                .iter()
-                .map(|member| {
-                    Rc::new(Node::Leaf(
-                        crate::arguments::validation::authored::schema_view::View {
-                            raw: member,
-                            kind: None,
-                            visible: view.visible,
-                        },
-                    ))
-                })
-                .collect(),
-        ),
-        _ => None,
     }
 }

@@ -9,7 +9,7 @@ pub(crate) fn flatten<'a>(types: &[Rc<Node<'a>>]) -> Vec<Rc<Node<'a>>> {
     let mut result = Vec::new();
     for node in types {
         match &**node {
-            Node::Union(alternatives) => result.extend(alternatives.iter().map(Rc::clone)),
+            Node::Union(alternatives, _) => result.extend(alternatives.iter().map(Rc::clone)),
             _ => result.push(Rc::clone(node)),
         }
     }

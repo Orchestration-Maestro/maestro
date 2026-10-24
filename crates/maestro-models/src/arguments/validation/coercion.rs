@@ -270,7 +270,7 @@ fn union(value: &mut Value, schemas: &[Value]) {
         let mut candidate = value.clone();
         coerce(&mut candidate, child);
         if child.is_object()
-            && super::check::check(child, &candidate).is_ok_and(|errors| errors.is_empty())
+            && super::check::check(child, &[], &candidate).is_ok_and(|errors| errors.is_empty())
         {
             *value = candidate;
             break;

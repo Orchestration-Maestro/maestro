@@ -1027,3 +1027,43 @@ fn nested_container_edits_survive_a_returned_sequence() {
         serde_json::json!({"value": [[{"value": "null"}]]}),
     );
 }
+
+/// Assert every recorded scope case of one group, failing when the group is missing.
+#[track_caller]
+fn run_scope(group: &str, count: usize) {
+    let parsed: serde_json::Result<Vec<Case>> =
+        serde_json::from_str(include_str!("fixtures/tool_argument_scope.json"));
+    assert!(parsed.is_ok(), "recorded scope corpus");
+    let cases: Vec<Case> = parsed
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|case| case.group == group)
+        .collect();
+    assert_eq!(cases.len(), count, "recorded {group} cases");
+    let failed: Vec<&str> = cases
+        .iter()
+        .filter(|case| std::panic::catch_unwind(|| assert_case(case)).is_err())
+        .map(|case| case.label.as_str())
+        .collect();
+    assert!(failed.is_empty(), "{group} cases differ: {failed:?}");
+}
+
+/// A union alternative is checked through the definitions its conversion sees, so a
+/// reference alternative selects the candidate its definition accepts.
+#[test]
+fn union_candidates_check_through_the_converting_definitions() {
+    run_scope("candidate checking", 2);
+}
+
+/// A definition block entered by one member stays out of its sibling's scope, and a
+/// reference reads the definitions of the conversion that reaches it.
+#[test]
+fn sibling_definitions_keep_the_enclosing_scope() {
+    run_scope("definition scope", 3);
+}
+
+/// A composed candidate keeps its members' optionality and its declared constraints.
+#[test]
+fn composed_candidates_keep_declared_constraints() {
+    run_scope("composed candidates", 6);
+}

@@ -2,20 +2,20 @@
 
 use std::rc::Rc;
 
-use super::super::instantiate::instantiate_ref;
+use super::super::{cyclic::check::cyclic_check, instantiate::instantiate};
 use crate::arguments::validation::authored::schema_view::{Converter, Node, View};
 
-/// Substitute a reference whose definition is visible, keeping a cyclic one in place.
-pub(crate) fn ref_instantiate<'a>(
-    converter: &Converter<'a>,
-    view: View<'a>,
-    _stack: &mut Vec<&'a str>,
-) -> Rc<Node<'a>> {
-    let Some(name) = view.raw.get("$ref").and_then(serde_json::Value::as_str) else {
-        return Rc::new(Node::Leaf(view));
-    };
-    if converter.definition(view, name).is_none() {
-        return Rc::new(Node::Leaf(view));
+/// Substitute a reference by its visible definition, keeping one that recurses in place.
+pub(crate) fn ref_instantiate<'a>(converter: &Converter<'a>, view: View<'a>) -> Rc<Node<'a>> {
+    let target = view
+        .raw
+        .get("$ref")
+        .and_then(serde_json::Value::as_str)
+        .and_then(|name| Some((name, converter.definition(name)?)));
+    match target {
+        Some((name, target)) if !cyclic_check(converter, &mut vec![name], target) => {
+            instantiate(converter, target)
+        }
+        _ => Rc::new(Node::Leaf(view)),
     }
-    instantiate_ref(converter, view, name)
 }

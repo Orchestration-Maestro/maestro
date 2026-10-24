@@ -1,15 +1,17 @@
 //! Composition of two object-like members into one object.
 
-use std::{borrow::Cow, rc::Rc};
+use std::rc::Rc;
 
 use super::evaluate_intersect;
-use crate::arguments::validation::authored::schema_view::{Converter, Node, ObjectNode};
+use crate::arguments::validation::authored::schema_view::{
+    Converter, Member, Members, Node, ObjectNode,
+};
 
 /// Compose the members both object-like nodes declare.
 ///
 /// Members keep the reference's composition order: the right operand's names first, then the
 /// names only the left operand declares. A name both operands declare is narrowed to their
-/// intersection; a name neither declares belongs to neither.
+/// intersection and stays optional only when both operands leave it optional.
 pub(crate) fn composite<'a>(
     converter: &Converter<'a>,
     left: &Rc<Node<'a>>,
@@ -17,37 +19,93 @@ pub(crate) fn composite<'a>(
 ) -> Option<Rc<Node<'a>>> {
     let left_members = left.members()?;
     let right_members = right.members()?;
-    let mut names: Vec<Cow<'a, str>> = right_members.iter().map(|(name, _)| name.clone()).collect();
-    for (name, _) in &left_members {
-        if !names.contains(name) {
-            names.push(name.clone());
-        }
-    }
-    let mut properties = Vec::with_capacity(names.len());
-    for name in names {
-        let member = match (find(&left_members, &name), find(&right_members, &name)) {
-            (Some(left), Some(right)) => {
-                evaluate_intersect(converter, &[Rc::clone(left), Rc::clone(right)])
-            }
-            (Some(left), None) => Rc::clone(left),
-            (None, Some(right)) => Rc::clone(right),
-            (None, None) => Rc::new(Node::Never),
-        };
-        properties.push((name, member));
-    }
+    let left_index = Members::new(&left_members);
+    let right_index = Members::new(&right_members);
+    let mut properties: Vec<Member<'a>> = right_members
+        .iter()
+        .map(|right| match left_index.get(&right.name) {
+            Some(left) => Member {
+                name: right.name.clone(),
+                node: evaluate_intersect(
+                    converter,
+                    &[Rc::clone(&left.node), Rc::clone(&right.node)],
+                ),
+                optional: left.optional && right.optional,
+            },
+            None => right.clone(),
+        })
+        .collect();
+    properties.extend(
+        left_members
+            .iter()
+            .filter(|left| right_index.get(&left.name).is_none())
+            .cloned(),
+    );
     Some(Rc::new(Node::Object(ObjectNode {
         properties,
         source: None,
     })))
 }
 
-/// The member the supplied name declares.
-fn find<'a, 'b>(
-    members: &'b [(Cow<'a, str>, Rc<Node<'a>>)],
-    name: &str,
-) -> Option<&'b Rc<Node<'a>>> {
-    members
-        .iter()
-        .find(|(member, _)| member.as_ref() == name)
-        .map(|(_, node)| node)
+#[cfg(test)]
+pub(crate) mod tests {
+    use std::collections::HashMap;
+
+    use serde_json::{Map, Value};
+
+    use super::composite;
+    use crate::SchemaKind;
+    use crate::arguments::validation::authored::schema_view::{Converter, MEMBER_LOOKUPS, Node};
+    use crate::arguments::validation::authored::types::engine::instantiate::instantiate;
+
+    /// Two objects of the supplied width with disjoint member names, and their kinds.
+    pub(crate) fn operands(width: usize) -> (Value, HashMap<String, SchemaKind>) {
+        let mut kinds = HashMap::new();
+        let operands: Vec<Value> = ["left", "right"]
+            .into_iter()
+            .enumerate()
+            .map(|(operand, side)| {
+                kinds.insert(format!("/{operand}"), SchemaKind::Object);
+                let properties: Map<String, Value> = (0..width)
+                    .map(|index| {
+                        kinds.insert(
+                            format!("/{operand}/properties/{side}{index}"),
+                            SchemaKind::String,
+                        );
+                        (
+                            format!("{side}{index}"),
+                            serde_json::json!({"type": "string"}),
+                        )
+                    })
+                    .collect();
+                serde_json::json!({"type": "object", "properties": properties})
+            })
+            .collect();
+        (Value::Array(operands), kinds)
+    }
+
+    /// Composing two objects looks each member name up a bounded number of times.
+    #[test]
+    fn composition_looks_each_member_up_once_per_operand() {
+        for width in [16, 32, 64] {
+            let (schema, kinds) = operands(width);
+            let converter = Converter::new(&schema, &kinds);
+            let left = instantiate(&converter, converter.view(&schema[0]));
+            let right = instantiate(&converter, converter.view(&schema[1]));
+            MEMBER_LOOKUPS.with(|count| count.set(0));
+            let composed = composite(&converter, &left, &right);
+            let lookups = MEMBER_LOOKUPS.with(std::cell::Cell::get);
+            assert_eq!(
+                composed
+                    .as_deref()
+                    .and_then(Node::members)
+                    .map(|members| members.len()),
+                Some(2 * width)
+            );
+            assert!(
+                lookups <= 2 * width,
+                "{lookups} lookups for {width} members per operand"
+            );
+        }
+    }
 }

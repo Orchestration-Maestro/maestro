@@ -21,7 +21,7 @@ pub(crate) fn decode<'a>(pattern: &str) -> Option<Rc<Node<'a>>> {
     }
     let mut alternatives = vec![first];
     alternatives.extend(rest);
-    Some(Rc::new(Node::Union(alternatives)))
+    Some(Rc::new(Node::Union(alternatives, None)))
 }
 
 /// Expand a pattern into the literal texts it accepts, when that set is finite.

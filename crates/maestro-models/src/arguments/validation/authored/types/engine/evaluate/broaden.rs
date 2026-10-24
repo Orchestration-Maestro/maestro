@@ -17,7 +17,7 @@ pub(crate) fn broaden<'a>(converter: &Converter<'a>, types: &[Rc<Node<'a>>]) -> 
     match flattened.len() {
         0 => Rc::new(Node::Never),
         1 => Rc::clone(&flattened[0]),
-        _ => Rc::new(Node::Union(flattened)),
+        _ => Rc::new(Node::Union(flattened, None)),
     }
 }
 

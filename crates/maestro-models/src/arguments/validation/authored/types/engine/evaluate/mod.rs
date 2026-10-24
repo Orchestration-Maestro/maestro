@@ -15,8 +15,8 @@ pub(crate) mod narrow;
 /// Evaluate one node: an intersection distributes and broadens, a union broadens.
 pub(crate) fn evaluate_type<'a>(converter: &Converter<'a>, node: &Rc<Node<'a>>) -> Rc<Node<'a>> {
     match &**node {
-        Node::Intersect(members) => evaluate_intersect(converter, members),
-        Node::Union(alternatives) => broadening::broaden(converter, alternatives),
+        Node::Intersect(members, _) => evaluate_intersect(converter, members),
+        Node::Union(alternatives, _) => broadening::broaden(converter, alternatives),
         _ => Rc::clone(node),
     }
 }

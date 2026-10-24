@@ -38,7 +38,7 @@ fn decoded<'a>(node: &Rc<Node<'a>>) -> Option<Rc<Node<'a>>> {
             .get("pattern")
             .and_then(serde_json::Value::as_str)
             .and_then(decode),
-        Node::Union(alternatives) => Some(Rc::new(Node::Union(alternatives.clone()))),
+        Node::Union(..) => Some(Rc::clone(node)),
         _ => None,
     }
 }
