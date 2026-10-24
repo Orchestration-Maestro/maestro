@@ -100,7 +100,6 @@ impl InteractiveMode {
             .settings_manager()
             .borrow_mut()
             .set_hide_thinking_block(hide);
-        self.chat_container.clear();
         self.rebuild_chat_from_messages()?;
         let state = if hide { "hidden" } else { "visible" };
         self.show_status(&format!("Thinking blocks: {state}"))
