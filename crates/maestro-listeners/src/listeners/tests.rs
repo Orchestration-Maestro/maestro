@@ -121,7 +121,8 @@ fn live_remove(log: &Log) -> Registry {
     let registrar = Rc::clone(&registry);
     let removed = Rc::clone(&skipped);
     registry.borrow_mut().add(recording(1, log, move |_| {
-        drop(registrar.borrow_mut().remove(Rc::as_ptr(&removed)));
+        let removed = registrar.borrow_mut().remove(Rc::as_ptr(&removed));
+        drop(removed);
     }));
     registry.borrow_mut().add(skipped);
     registry
@@ -132,7 +133,8 @@ fn self_removing(log: &Log) -> (Registry, Rc<RefCell<Option<Callback>>>) {
     let registry: Registry = Rc::default();
     let registrar = Rc::clone(&registry);
     let (holder, callback) = self_referencing(1, log, move |this| {
-        drop(registrar.borrow_mut().remove(Rc::as_ptr(this)));
+        let removed = registrar.borrow_mut().remove(Rc::as_ptr(this));
+        drop(removed);
     });
     registry.borrow_mut().add(callback);
     registry.borrow_mut().add(plain(3, log));
@@ -249,7 +251,8 @@ fn removers_follow_identity_and_release_outside_borrows() {
     let value = Rc::new(5);
     let old = subscribe(&registry, &value);
     assert_eq!(walk(&registry), [5]);
-    drop(registry.borrow_mut().remove(Rc::as_ptr(&value)));
+    let removed = registry.borrow_mut().remove(Rc::as_ptr(&value));
+    drop(removed);
     drop(subscribe(&registry, &value));
     old();
     assert_eq!(walk(&registry), Vec::<usize>::new());
@@ -376,7 +379,8 @@ fn early_exit_releases_cursor_and_preserves_first_error() {
     assert_eq!(outcome, Err("stop"));
     assert_eq!(seen, [1, 2]);
     assert_eq!(registry.borrow().active.load(Ordering::Relaxed), 0);
-    drop(registry.borrow_mut().remove(Rc::as_ptr(&values[2])));
+    let removed = registry.borrow_mut().remove(Rc::as_ptr(&values[2]));
+    drop(removed);
     reset_visits();
     assert_eq!(walk(&registry), [1, 2]);
     assert!(visits() <= 3);
