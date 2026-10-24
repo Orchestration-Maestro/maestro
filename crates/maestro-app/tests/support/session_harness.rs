@@ -1968,7 +1968,8 @@ pub fn echo_tools(
         definition: Tool {
             name: "echo".into(),
             description: "Echo back".into(),
-            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}})
+                .into(),
         },
         description: None,
         label: "Echo".into(),
