@@ -3772,6 +3772,7 @@ version = "0.1.0"
 dependencies = [
  "futures-util",
  "maestro-dependencies",
+ "maestro-listeners",
  "maestro-models",
  "maestro-test-process",
  "maestro-text",
@@ -3804,6 +3805,7 @@ dependencies = [
  "maestro-export",
  "maestro-extensions",
  "maestro-json",
+ "maestro-listeners",
  "maestro-listing",
  "maestro-markdown",
  "maestro-models",
@@ -4109,6 +4111,7 @@ dependencies = [
  "maestro-catalog",
  "maestro-credentials",
  "maestro-dependencies",
+ "maestro-listeners",
  "maestro-models",
  "maestro-path",
  "maestro-resources",
@@ -4161,6 +4164,13 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "maestro-listeners"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
 ]
 
 [[package]]
@@ -4599,6 +4609,7 @@ dependencies = [
  "getrandom 0.4.3",
  "maestro-cancellation",
  "maestro-dependencies",
+ "maestro-listeners",
  "maestro-listing",
  "maestro-markdown",
  "maestro-path",
