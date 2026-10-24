@@ -282,18 +282,19 @@ the loader and empties its row. It then shows what the compaction ended with:
 
 `auto_retry_start` shows `Retrying (<attempt>/<limit>) in <seconds>s... (escape to
 cancel)` in the status container, where the same key aborts the retry. The
-seconds are the wait rounded up; the existing countdown timer then reports each
-whole second left, and the label is rebuilt on every tick so it reads the keys bound
-then. The attempt limit keeps its numeric spelling, so a fractional limit reads
-`2.5`. `auto_retry_end` stops the countdown and the loader, empties their row,
-restores the interrupt callback, and shows `Retry failed after <attempt> attempts:
-<error>` only when the retries are exhausted, with `Unknown error` for an absent or
-empty failure.
+seconds are the wait rounded up, which the existing countdown timer writes on its
+first report; it then reports each whole second left, and the label is rebuilt on
+every tick so it reads the keys bound then. The attempt limit keeps its numeric
+spelling, so a fractional limit reads `2.5`. `auto_retry_end` stops the countdown
+and the loader, empties their row, restores the interrupt callback, and shows
+`Retry failed after <attempt> attempts: <error>` only when the retries are
+exhausted, with `Unknown error` for an absent or empty failure.
 
 A started response clears the retry row and its countdown before the working
 presentation resumes, and turns the terminal's progress on. Because the
 retry's own row is removed there, a retry end that arrives afterwards removes
-nothing.
+nothing. When the response ends, the terminal's progress is turned off again, and
+both ends read the setting as their event arrives.
 
 Input queued during a compaction is not delivered yet. The mode keeps it in
 order until an owner captures it at the end of a compaction, refreshes the pending
