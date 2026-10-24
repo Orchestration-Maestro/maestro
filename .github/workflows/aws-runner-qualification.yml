@@ -1,0 +1,14 @@
+name: AWS runner qualification
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  qualification:
+    name: AWS Linux qualification
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@c09ea4288a609905d15b0cf0501ee45d1701cec2
+    with:
+      concurrency-key: aws-qualification
