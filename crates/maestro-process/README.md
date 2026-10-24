@@ -69,9 +69,9 @@ Joining observes completion after normal reaping; dropping the handle does not
 cancel or join it. Startup errors return before a handle is delivered.
 
 `exit_signal_name` names the signal that ended a child, returning `None` for a
-numeric exit and for a signal this host does not name. `needs_windows_shell`
-reports a `.cmd` or `.bat` shim and a package manager command, which callers run
-through `windows_shell_launch` instead of spawning directly.
+numeric exit and for a signal this host does not name. `windows_shell_launch`
+builds a Windows shell launch for callers that must run through one, without
+parsing their command text.
 
 The application re-exports these original launch interfaces plus the tools
 owner's [asynchronous execution](../../docs/tools-process.md#running-a-command),

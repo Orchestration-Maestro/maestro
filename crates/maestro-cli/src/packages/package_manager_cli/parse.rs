@@ -245,12 +245,7 @@ impl Scan {
             }
             return UpdateTarget::Extensions(Some(extension));
         }
-        if let Some(source) = self
-            .source
-            .as_deref()
-            .filter(|source| !source.is_empty())
-            .map(str::to_owned)
-        {
+        if let Some(source) = self.source.as_deref().filter(|source| !source.is_empty()) {
             if source == "self" || source == "maestro" {
                 return self.application_target();
             }
@@ -260,7 +255,7 @@ impl Scan {
                     "positional update targets cannot be combined with --self or --extensions",
                 );
             }
-            return UpdateTarget::Extensions(Some(source));
+            return UpdateTarget::Extensions(Some(source.to_owned()));
         }
         match (
             self.flags.contains(&Flag::SelfOnly),

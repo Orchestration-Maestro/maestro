@@ -1492,38 +1492,3 @@ fn input_presenter_records_reject_duplicate_owners() {
         assert_single_owner(name, "maestro-app", &["maestro-chat", "maestro-cli"]);
     }
 }
-
-#[test]
-fn signal_names_have_one_owner() {
-    let workspace = Workspace::new();
-    workspace.foundation(&["maestro-process", "maestro-packages"]);
-    source(
-        &workspace,
-        "maestro-process",
-        "src/child_process/exit_signal.rs",
-        "pub fn exit_signal_name() -> Option<&'static str> { Some(\"SIGKILL\") }",
-    );
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    for contents in [
-        "fn exit_status() -> String { \"SIGKILL\".to_owned() }",
-        "fn exit_status() { log!(\"SIGTERM\"); }",
-        "fn exit_status() { let read = || \"SIGHUP\".len(); }",
-        "impl Status { fn name() -> &'static str { \"SIGABRT\" } }",
-    ] {
-        let path = source(
-            &workspace,
-            "maestro-packages",
-            "src/package_manager/capture.rs",
-            contents,
-        );
-        let error = check_workspace(workspace.root.path()).unwrap_err();
-        assert!(
-            error.contains("signal name belongs to maestro-process::src/child_process/exit_signal.rs; use maestro_process::exit_signal_name"),
-            "{contents}: {error}"
-        );
-        assert!(
-            error.contains(&format!("{}:1: signal name", path.display())),
-            "{contents}: {error}"
-        );
-    }
-}

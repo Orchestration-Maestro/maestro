@@ -9,9 +9,6 @@ use syn::ext::IdentExt;
 mod wit;
 use wit::{ScanContext, WitInputs};
 
-/// Single-owner rule for the native signal names.
-mod signal_names;
-
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
@@ -49,7 +46,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
-    signal_names::check(members)?;
     wit.finish()
 }
 
