@@ -207,6 +207,7 @@ mod support {
 }
 mod theme_selection;
 mod tree_interface;
+mod tree_traversal_checks;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/watching.rs"]
 mod watching;

@@ -66,6 +66,15 @@ pub fn expected(name: &str) -> Value {
     corpus("prompt_queue")[name].clone()
 }
 
+/// The recorded case `name` of the keyed corpus file `file`.
+pub fn recorded(file: &str, name: &str) -> Value {
+    let cases = corpus(file);
+    cases
+        .get(name)
+        .unwrap_or_else(|| panic!("no recorded case {name}"))
+        .clone()
+}
+
 /// How the scripted provider's credentials are configured.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Auth {
@@ -1964,6 +1973,18 @@ pub fn waiting_tool(
         execution_mode: None,
     };
     Rc::new(RwLock::new(tool))
+}
+
+/// Prompts `text` and waits until the session has delivered the run's end.
+pub async fn prompt_to_end(
+    h: &Harness,
+    text: &str,
+    options: maestro_app::agent_session::PromptOptions,
+) {
+    let ended = session_run_ended(h);
+    h.session.prompt(text, options).await.unwrap();
+    h.session.agent().wait_for_idle().await;
+    ended.notified().await;
 }
 
 /// The echo tool, in place of the built-in tools: it marks `executed` and answers `echoed`.
