@@ -4,6 +4,7 @@ use crate::types::{AgentMessage, CustomAgentMessages, QueueMode, StreamFn};
 use crate::{
     AfterToolCall, BeforeToolCall, ConvertToLlm, GetApiKey, ToolExecutionMode, TransformContext,
 };
+use maestro_listeners::Listeners;
 use maestro_models::{OnPayload, OnResponse, ThinkingBudgets, Transport};
 use std::sync::Mutex;
 /// Prompt normalization and owned execution.
@@ -116,7 +117,7 @@ pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecu
     /// Reserved run and independent completion observers.
     active: Mutex<Option<execution::ActiveRun>>,
     /// Live callback registrations.
-    listeners: Mutex<maestro_models::records::listeners::Listeners<listeners::AgentListener<C, E>>>,
+    listeners: Mutex<Listeners<listeners::AgentListener<C, E>>>,
     /// Replacement stream captured at run admission.
     pub stream_fn: RwLock<Option<StreamFn<E>>>,
     /// Caller execution facility that retains submitted work independently.
@@ -160,7 +161,7 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
             get_api_key: RwLock::new(options.get_api_key),
             thinking_budgets: RwLock::new(options.thinking_budgets),
             active: Mutex::new(None),
-            listeners: Mutex::new(maestro_models::records::listeners::Listeners::default()),
+            listeners: Mutex::new(Listeners::default()),
             stream_fn: RwLock::new(options.stream_fn),
             spawn: RwLock::new(options.spawn),
             follow_up: RwLock::new(VecDeque::new()),

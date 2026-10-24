@@ -1,7 +1,10 @@
 //! Routing of terminal input: live listeners, cell-size replies, the debug key and focus.
 
+use std::cell::RefCell;
 use std::io;
 use std::rc::Rc;
+
+use maestro_listeners::Listeners;
 
 use crate::images::terminal_image::CellDimensions;
 use crate::keys::{is_key_release, matches_key};
@@ -32,25 +35,12 @@ const DEBUG_KEY: &str = "shift+ctrl+d";
 /// Listeners, focus and the debug callback.
 #[derive(Default)]
 pub(super) struct Input {
-    /// Listeners in insertion order; a removed one leaves a gap until no dispatch is
-    /// walking the list, so indexes stay valid.
-    listeners: Vec<Option<InputListener>>,
-    /// How many dispatches are walking `listeners`.
-    dispatching: usize,
+    /// Input listeners in registration order, shared with their removers.
+    pub(super) listeners: Rc<RefCell<Listeners<InputListener>>>,
     /// The component that receives input.
     pub(super) focused: Focus,
     /// Called when the debug key is pressed.
     on_debug: Option<Rc<dyn Fn()>>,
-}
-
-/// One position of the listener list.
-enum Slot {
-    /// Past the last position.
-    End,
-    /// A listener that was removed.
-    Removed,
-    /// A listener to run.
-    Live(InputListener),
 }
 
 /// A chunk of input read as a reply to the cell-size query.
@@ -61,50 +51,6 @@ enum CellReply {
     Unusable,
     /// A reply carrying a size.
     Size(CellDimensions),
-}
-
-impl Input {
-    /// Appends `listener` unless the same one is already present.
-    fn add(&mut self, listener: &InputListener) {
-        let present = self
-            .listeners
-            .iter()
-            .flatten()
-            .any(|existing| Rc::ptr_eq(existing, listener));
-        if !present {
-            self.listeners.push(Some(Rc::clone(listener)));
-        }
-    }
-
-    /// Removes `listener` and hands it back so it is dropped without a borrow held.
-    fn remove(&mut self, listener: &InputListener) -> Option<InputListener> {
-        let slot = self.listeners.iter_mut().find(|slot| {
-            slot.as_ref()
-                .is_some_and(|existing| Rc::ptr_eq(existing, listener))
-        })?;
-        let removed = slot.take();
-        if self.dispatching == 0 {
-            self.listeners.retain(Option::is_some);
-        }
-        removed
-    }
-
-    /// The position `index` of the listener list.
-    fn slot(&self, index: usize) -> Slot {
-        match self.listeners.get(index) {
-            None => Slot::End,
-            Some(None) => Slot::Removed,
-            Some(Some(listener)) => Slot::Live(Rc::clone(listener)),
-        }
-    }
-
-    /// Ends one dispatch and closes the gaps once none is left.
-    fn finish_dispatch(&mut self) {
-        self.dispatching -= 1;
-        if self.dispatching == 0 {
-            self.listeners.retain(Option::is_some);
-        }
-    }
 }
 
 /// The focus flag of `component`, when it can hold focus.
@@ -179,18 +125,14 @@ impl TUI {
     /// Adds a listener unless the same one is present; the returned function removes it
     /// and may be called again harmlessly. Dropping that function does not remove it.
     pub fn add_input_listener(&self, listener: InputListener) -> Box<dyn Fn()> {
-        self.shared.input.borrow_mut().add(&listener);
-        let weak = Rc::downgrade(&self.shared);
-        Box::new(move || {
-            if let Some(shared) = weak.upgrade() {
-                TUI { shared }.remove_input_listener(&listener);
-            }
-        })
+        let listeners = Rc::clone(&self.shared.input.borrow().listeners);
+        Box::new(Listeners::subscribe(&listeners, listener))
     }
 
     /// Removes a listener; one that is not present is ignored.
     pub fn remove_input_listener(&self, listener: &InputListener) {
-        let removed = self.shared.input.borrow_mut().remove(listener);
+        let listeners = Rc::clone(&self.shared.input.borrow().listeners);
+        let removed = listeners.borrow_mut().remove(Rc::as_ptr(listener));
         drop(removed);
     }
 
@@ -243,43 +185,29 @@ impl TUI {
         self.forward_to_focus(&data)
     }
 
-    /// Lets each listener, in insertion order, consume or rewrite `data`. The list is
-    /// walked live: a listener added meanwhile is visited, one removed is skipped.
-    /// Returns the text to route on, or `None` when it was consumed or rewritten to
-    /// nothing.
+    /// Lets each listener, in registration order, consume or rewrite `data`. The
+    /// collection is walked live: a listener added meanwhile is visited, one removed
+    /// before it is reached is skipped. Returns the text to route on, or `None` when it
+    /// was consumed or rewritten to nothing.
     fn run_listeners(&self, data: &str) -> Option<String> {
-        if self
-            .shared
-            .input
-            .borrow()
-            .listeners
-            .iter()
-            .all(Option::is_none)
-        {
-            return Some(data.to_owned());
-        }
-        self.shared.input.borrow_mut().dispatching += 1;
+        let listeners = Rc::clone(&self.shared.input.borrow().listeners);
         let mut current = data.to_owned();
-        let mut consumed = false;
-        let mut index = 0;
-        loop {
-            let slot = self.shared.input.borrow().slot(index);
-            match slot {
-                Slot::End => break,
-                Slot::Removed => {}
-                Slot::Live(listener) => match listener(&current) {
-                    InputListenerResult::Pass => {}
-                    InputListenerResult::Consume => {
-                        consumed = true;
-                        break;
-                    }
-                    InputListenerResult::Replace(text) => current = text,
-                },
+        let mut visited = false;
+        let outcome = Listeners::try_for_each_live(&listeners, |listener| {
+            visited = true;
+            match listener(&current) {
+                InputListenerResult::Pass => Ok(()),
+                InputListenerResult::Consume => Err(()),
+                InputListenerResult::Replace(text) => {
+                    current = text;
+                    Ok(())
+                }
             }
-            index += 1;
+        });
+        if !visited {
+            return Some(current);
         }
-        self.shared.input.borrow_mut().finish_dispatch();
-        (!consumed && !current.is_empty()).then_some(current)
+        (outcome.is_ok() && !current.is_empty()).then_some(current)
     }
 
     /// Applies a cell-size reply to the shared image state; true when `data` was one.
