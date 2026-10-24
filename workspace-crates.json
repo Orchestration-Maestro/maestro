@@ -28,6 +28,7 @@
   "maestro-protocol": "core",
   "maestro-request": "core",
   "maestro-resources": "core",
+  "maestro-rpc": "core",
   "maestro-session": "core",
   "maestro-settings": "core",
   "maestro-terminal": "core",

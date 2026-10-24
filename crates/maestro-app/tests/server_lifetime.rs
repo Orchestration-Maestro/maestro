@@ -263,8 +263,9 @@ fn stored_name(path: &str) -> Option<Value> {
         .map(|entry| entry["name"].clone())
 }
 
-/// A final line without its LF is answered while the connection shuts down: its effect is
-/// saved, its reply is written, the session is disposed and the input's end returns.
+/// Lines read before the input's end are answered, and a final line without its LF is
+/// answered while the connection shuts down: its effect is saved, its reply is written,
+/// the session is disposed and the input's end returns.
 #[test]
 fn eof_tail_keeps_effects_and_correlated_reply() {
     on_task_set(|_| async {
@@ -276,22 +277,29 @@ fn eof_tail_keeps_effects_and_correlated_reply() {
         .await;
         let mut client = connect(Rc::new(runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
+        // A command read just before the end is answered too.
+        client.send(r#"{"id":"before","type":"get_state"}"#);
         client.end(Some(r#"{"id":"t","type":"get_state"}"#));
-        let reply = client.next().await;
-        assert_eq!(
-            (&reply["id"], &reply["success"]),
-            (&json!("t"), &json!(true))
-        );
+        for id in ["before", "t"] {
+            let reply = client.next().await;
+            assert_eq!(
+                (&reply["id"], &reply["success"]),
+                (&json!(id), &json!(true))
+            );
+        }
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
         assert_eq!(seen.borrow().len(), 1, "the session was disposed");
         let (_h, runtime, _) = runtime_for("tail-name", Vec::new()).await;
         let file = runtime.session().session_file().unwrap();
         user_entry(&runtime, "saved");
         let mut client = connect(Rc::new(runtime));
-        client.ask(r#"{"type":"get_state"}"#).await;
+        // The input ends while the session is still being bound: what came before is
+        // answered once the binding finishes.
+        client.send(r#"{"id":"early","type":"get_state"}"#);
         client.end(Some(
             r#"{"id":"n","type":"set_session_name","name":" tail "}"#,
         ));
+        assert_eq!(client.next().await["id"], "early");
         assert_eq!(
             client.next().await,
             json!({"id": "n", "type": "response", "command": "set_session_name",

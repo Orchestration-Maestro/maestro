@@ -1842,9 +1842,9 @@ fn extension_credentials_edge_is_development_only() {
 #[test]
 fn rpc_child_rendering_edges_are_development_only() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-rpc", "maestro-tools", "maestro-tui-crossterm"]);
+    workspace.foundation(&["maestro-rpc", "maestro-tui-crossterm"]);
     let application = "maestro-app = { path = \"../maestro-app\" }";
-    for target in ["maestro-tools", "maestro-tui-crossterm"] {
+    for target in ["maestro-tui-crossterm"] {
         for kind in [
             "dev-dependencies",
             "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies",

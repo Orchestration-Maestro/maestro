@@ -58,6 +58,7 @@ impl Connection {
             output,
             options,
             early: RefCell::new(Some(Vec::new())),
+            bound: tokio::sync::Notify::new(),
             lifecycle: RefCell::new(Lifecycle {
                 finish: Some(finish),
                 ..Lifecycle::default()
@@ -97,6 +98,7 @@ impl Connection {
         for record in early.into_iter().flatten() {
             self.spawn(record);
         }
+        self.bound.notify_one();
     }
 
     /// Binds the current session's extensions to the protocol, then replaces the event
