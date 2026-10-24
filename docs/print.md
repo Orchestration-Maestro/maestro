@@ -1,9 +1,9 @@
 # Print mode
 
-`print::print_mode::run_print_mode` runs one session to completion and presents
-its result: the final answer alone in text mode, or every session event as a
-JSON line in JSON mode. The caller supplies the `AgentSessionRuntime` it already
-owns, so no executor, input source or second session is created here.
+`run_print_mode` runs one session to completion and presents its result: the
+final answer alone in text mode, or every session event as a JSON line in JSON
+mode. The caller supplies the `AgentSessionRuntime` it already owns, so no
+executor, input source or second session is created here.
 
 ## Options
 
@@ -28,6 +28,9 @@ JSON mode writes the session's existing header once before the extensions are
 bound, then one compact record for every subscribed session event through the
 shared JSON line writer. Events that arrive during the first binding are not yet
 subscribed. A represented assistant error or abort still returns 0 in this mode.
+An event record the run cannot encode or write is kept and reported through the
+ordinary error path: the run writes that message to standard error and returns 1
+rather than letting a truncated stream look successful.
 
 ## Errors and cleanup
 
@@ -43,14 +46,17 @@ settles; a repeated signal exits without waiting for the one already pending.
 Normal completion and a caught error remove those handlers, dispose the runtime
 once and flush raw standard output.
 
-## Adapters
+## Internals
 
-`run_print_mode_with` takes the same options over replaceable adapters: the
-`PrintRuntime` and `PrintSession` operations a run drives, `PrintEffects` for
-standard output, standard error, the flush, tracked-child cleanup and signal
-delivery. `PrintEffects::native` and the application runtime are the adapters a
-command-line run uses, and a test supplies its own to observe the same runner. A
-frontend that presents a run keeps no output global of its own; protocol and
+The run drives the application runtime through adapter traits: the session and
+runtime operations it needs, and the output, signal and child-process effects it
+performs. These adapters are crate-private, so callers present a run only through
+`run_print_mode`; the module's own tests supply their own to observe the same
+runner. The six command operations are not bound here: the run asks the
+application runtime for them, so one owner builds the operations a command
+context receives.
+
+A frontend that presents a run keeps no output global of its own; protocol and
 final bytes go through the application's output guard.
 
 ## Exports

@@ -23,13 +23,12 @@ impl SignalPort for NativeSignals {
     fn register(&self, callback: Rc<dyn Fn(TerminationSignal)>) -> io::Result<Box<dyn Fn()>> {
         let mut handles = Vec::new();
         for signal in signals_for_host() {
-            let mut stream = tokio::signal::unix::signal(kind(signal))?;
-            let callback = Rc::clone(&callback);
-            handles.push(tokio::task::spawn_local(async move {
-                while stream.recv().await.is_some() {
-                    callback(signal);
-                }
-            }));
+            let stream = tokio::signal::unix::signal(kind(signal))?;
+            handles.push(tokio::task::spawn_local(deliver(
+                stream,
+                signal,
+                Rc::clone(&callback),
+            )));
         }
         Ok(Box::new(move || {
             handles.iter().for_each(tokio::task::JoinHandle::abort);
@@ -57,6 +56,18 @@ pub fn signals_for_host() -> Vec<TerminationSignal> {
     #[cfg(not(unix))]
     {
         vec![TerminationSignal::Terminate]
+    }
+}
+
+/// Delivers every signal the stream reports to `callback`.
+#[cfg(unix)]
+async fn deliver(
+    mut stream: tokio::signal::unix::Signal,
+    signal: TerminationSignal,
+    callback: Rc<dyn Fn(TerminationSignal)>,
+) {
+    while stream.recv().await.is_some() {
+        callback(signal);
     }
 }
 

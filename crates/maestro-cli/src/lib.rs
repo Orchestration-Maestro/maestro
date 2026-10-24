@@ -6,9 +6,6 @@
 //! as its final text or as event records.
 
 pub mod input;
-pub mod print;
+mod print;
 
-pub use print::print_mode::{
-    FinalMessage, NativeSignals, PrintEffects, PrintFuture, PrintMode, PrintModeOptions,
-    PrintRebind, PrintRuntime, PrintSession, SignalPort, run_print_mode, run_print_mode_with,
-};
+pub use print::print_mode::{PrintMode, PrintModeOptions, run_print_mode};

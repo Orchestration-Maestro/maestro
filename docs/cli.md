@@ -60,7 +60,7 @@ See [selectors](chat/selectors.md) for the widgets.
 
 ## Print mode
 
-`print::print_mode::run_print_mode` runs one session to completion over a
-caller-owned runtime and presents the result as its final text or as session
-event records. See [print mode](print.md) for the options, the exact output and
-the cleanup and error boundary.
+`run_print_mode` runs one session to completion over a caller-owned runtime and
+presents the result as its final text or as session event records. See [print
+mode](print.md) for the options, the exact output and the cleanup and error
+boundary.
