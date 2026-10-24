@@ -197,3 +197,46 @@ fn protected_paths_keeps_host_errors_catchable() -> Result<(), String> {
         Ok(())
     })
 }
+
+/// The built single-copy hook executes the same policy across the component interface.
+#[test]
+fn protected_paths_component_matches_the_hook() -> Result<(), String> {
+    let path = super::build::example_component("protected_paths")?;
+    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
+    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
+        .map_err(|error| error.to_string())?;
+    let key = harness
+        .callback("event tool_call")
+        .map_err(|error| error.to_string())?;
+    let rows = corpus();
+    for row in rows["rows"].as_array().unwrap() {
+        harness.observed().catalog.data.has_ui = row["hasUI"].as_bool().unwrap();
+        let start = harness.observed().transcript.len();
+        let capabilities = super::host_family::guest::Capabilities {
+            ctx: harness
+                .ordinary("/controlled")
+                .map_err(|error| error.to_string())?,
+            signal: None,
+        };
+        let exports = harness.exports.clone();
+        let event = row["event"].to_string();
+        let outcome = super::block_on(harness.store.run_concurrent(async |accessor| {
+            exports
+                .call_invoke_event(accessor, super::host::borrow(key), event, capabilities)
+                .await
+        }))
+        .map_err(|error| error.to_string())?
+        .map_err(|error| error.to_string())??;
+        let name = row["name"].as_str().unwrap();
+        assert_eq!(
+            Answer::of(super::host_family::delivery(outcome))?,
+            expected_answer(row),
+            "{name}"
+        );
+        let lines = harness.observed().transcript[start..].to_vec();
+        assert_eq!(notifications(&lines), expected_notifications(row), "{name}");
+    }
+    super::block_on(harness.release(key)).map_err(|error| error.to_string())?;
+    assert_eq!(harness.observed().live, 0);
+    Ok(())
+}
