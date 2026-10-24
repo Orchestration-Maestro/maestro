@@ -2,6 +2,8 @@
 
 use crate::support;
 
+use std::path::Path;
+
 use maestro_test_conventions::check_workspace;
 use support::{Workspace, source};
 
@@ -13,6 +15,20 @@ const DECLARATIONS: &[(&str, &str)] = &[
     ("target.'cfg(target_os = \"none\")'.dependencies", ""),
     ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
     ("target.'cfg(target_os = \"none\")'.dev-dependencies", ""),
+];
+
+/// A duplicate interactive session setup outside its shared owner.
+const DUPLICATE_SETUP: &str = "fn f() { let value = AgentSessionConfig { agent: owner() }; }";
+
+/// Spellings of a duplicate setup the token walk must still catch.
+const DUPLICATE_SETUP_SPELLINGS: &[&str] = &[
+    DUPLICATE_SETUP,
+    "fn f() { check!(AgentSessionConfig { agent: owner() }); }",
+    "fn f() { let make = || AgentSessionConfig { agent: owner() }; }",
+    "impl Example { fn make() { drop(AgentSessionConfig { agent: owner() }); } }",
+    "fn f() { let _ = session(cwd, None); drop(AgentSessionConfig { agent: owner() }); }",
+    "use maestro_app::AgentSessionConfig as Config;\nfn f() { let x = Config { agent: owner() }; }",
+    "fn f() { let x = r#AgentSessionConfig { agent: owner() }; }",
 ];
 
 #[test]
@@ -1339,26 +1355,24 @@ fn interactive_session_setup_rejects_bypasses() {
         "tests/footer_support/session.rs",
         "fn session() -> Result { AgentSession::new(AgentSessionConfig { agent: owner() }) }",
     );
-    for bypass in [
-        "fn f() { let value = AgentSessionConfig { agent: owner() }; }",
-        "fn f() { check!(AgentSessionConfig { agent: owner() }); }",
-        "fn f() { let make = || AgentSessionConfig { agent: owner() }; }",
-        "impl Example { fn make() { drop(AgentSessionConfig { agent: owner() }); } }",
-        "fn f() { let _ = session(cwd, None); drop(AgentSessionConfig { agent: owner() }); }",
-        "use maestro_app::AgentSessionConfig as Config;\nfn f() { let x = Config { agent: owner() }; }",
-        "fn f() { let x = r#AgentSessionConfig { agent: owner() }; }",
+    for relative in [
+        "tests/footer_support/mod.rs",
+        "tests/footer_support/corpus.rs",
+        "src/interactive_mode/tests.rs",
+        "src/interactive_mode/startup/tests.rs",
     ] {
-        source(
+        let path = source(&workspace, "maestro-chat", relative, DUPLICATE_SETUP);
+        assert_setup_rejected(&workspace, &path, relative);
+        std::fs::remove_file(&path).unwrap();
+    }
+    for spelling in DUPLICATE_SETUP_SPELLINGS {
+        let path = source(
             &workspace,
             "maestro-chat",
             "tests/footer_support/mod.rs",
-            bypass,
+            spelling,
         );
-        let error = check_workspace(workspace.root.path()).unwrap_err();
-        assert!(
-            error.contains("tests/footer_support/mod.rs:1: session setup belongs in tests/footer_support/session.rs"),
-            "{bypass}: {error}"
-        );
+        assert_setup_rejected(&workspace, &path, spelling);
     }
     for accepted in [
         "fn f() -> CreateAgentSessionRuntimeResult { session(cwd, None) }",
@@ -1372,4 +1386,31 @@ fn interactive_session_setup_rejects_bypasses() {
         );
         assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{accepted}");
     }
+    source(
+        &workspace,
+        "maestro-chat",
+        "tests/session_picker_support/mod.rs",
+        DUPLICATE_SETUP,
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+/// Assert the checker names `path` and the shared owner when it rejects a second setup.
+///
+/// Both sides are canonicalized, because a host may spell the scratch root differently
+/// from the workspace metadata that the checker walks.
+fn assert_setup_rejected(workspace: &Workspace, path: &Path, detail: &str) {
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    let Some((reported, owner)) = error.split_once(":1: session setup belongs in ") else {
+        panic!("{detail}: {error}");
+    };
+    assert_eq!(
+        owner, "tests/footer_support/session.rs",
+        "{detail}: {error}"
+    );
+    assert_eq!(
+        std::fs::canonicalize(reported).unwrap(),
+        std::fs::canonicalize(path).unwrap(),
+        "{detail}"
+    );
 }

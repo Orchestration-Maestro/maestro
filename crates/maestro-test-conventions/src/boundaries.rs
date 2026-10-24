@@ -58,6 +58,12 @@ const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
 /// The one owner of the interactive-mode test session setup.
 const SESSION_SETUP: &str = "tests/footer_support/session.rs";
 
+/// Footer support tree shared by the footer and interactive startup tests.
+const FOOTER_SUPPORT: &str = "tests/footer_support";
+
+/// Source tree holding the interactive mode and its own test modules.
+const INTERACTIVE_MODE: &str = "src/interactive_mode";
+
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.
 struct Records {
@@ -162,21 +168,22 @@ fn union_body(token: Option<&TokenTree>) -> bool {
     }
 }
 
+/// Whether a chat source is a test module of its owning crate.
+fn test_module(relative: &Path) -> bool {
+    relative.file_name().is_some_and(|name| name == "tests.rs")
+        || relative
+            .components()
+            .any(|component| component.as_os_str() == "tests")
+}
+
 /// Interactive-mode chat test sources that build their sessions through the shared setup.
+///
+/// Paths compare by component, so native separators never change the answer.
 fn migrated(relative: &Path) -> bool {
-    matches!(
-        relative.to_str(),
-        Some("tests/footer_support/mod.rs" | "tests/interactive_startup.rs")
-    ) || [
-        "src/interactive_mode/tests",
-        "tests/interactive_startup_support",
-    ]
-    .iter()
-    .any(|prefix| {
-        relative
-            .to_str()
-            .is_some_and(|path| path.starts_with(prefix))
-    })
+    if relative.starts_with(FOOTER_SUPPORT) {
+        return relative != Path::new(SESSION_SETUP);
+    }
+    relative.starts_with(INTERACTIVE_MODE) && test_module(relative)
 }
 
 /// Reject a second interactive-mode session setup outside its extracted owner.

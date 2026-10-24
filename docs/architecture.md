@@ -249,10 +249,12 @@ scratch workspaces, not certified as delivered capabilities.
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in
 `crates/maestro-chat/tests/footer_support/session.rs`. A second construction of the
-session configuration in that tree is rejected with its file and line, so the tests
-share one session and its services. The rule covers the footer support module, the
-interactive startup tests and the interactive mode's own test modules. It reads the
-shared token walk, so macro arguments, closures and impl bodies are included.
+session configuration in these test sources is rejected with its file and line, so
+they share one setup, which returns a session with its services. The rule covers the
+footer support tree, except the setup itself, and the test modules below
+`crates/maestro-chat/src/interactive_mode/`. Paths compare by component, so a native
+separator changes nothing, and the shared token walk includes macro arguments,
+closures and impl bodies.
 
 ## Quality checks
 

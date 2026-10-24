@@ -121,13 +121,16 @@ pub fn class(name: &str) -> &'static str {
 
 /// Write one authored source under a member's directory, creating its parents, and return
 /// its path.
+///
+/// The authored relative path is written with slashes and returned with the native
+/// separators the file system reports, so a diagnostic comparison matches on every host.
 pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &str) -> PathBuf {
     let path = workspace
         .root
         .path()
         .join("crates")
         .join(member)
-        .join(relative);
+        .join(relative.split('/').collect::<PathBuf>());
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(&path, contents).unwrap();
     path
