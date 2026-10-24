@@ -1,6 +1,9 @@
 //! Editor actions through the mode's installed callbacks, its rendered editor and the
 //! native editor, clipboard helper and temporary files of an isolated child.
-use super::{World, dark, isolated, light, native, painted, roles, started};
+use super::{
+    World, border_row, dark, isolated, light, native, painted, rendered_border, select_level,
+    started,
+};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_app::utils::clipboard_image::ClipboardImage;
 use maestro_app::{DiagnosticErrorInfo, Model, OAuthError, ScopedModel, ThinkingLevel};
@@ -23,29 +26,6 @@ const WIDTH: usize = 80;
 /// The recorded cases of `test`, typed by that witness.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
     decode_cases(FIXTURES, test)
-}
-
-/// The editor's top border row as the recorder's painted probe glyph describes it.
-fn border_row(world: &World, recorded: &str) -> String {
-    let theme = world.themes.theme().get().unwrap();
-    roles(&theme, &recorded.replace('━', "─")).repeat(WIDTH)
-}
-
-/// The editor's rendered top border row.
-fn rendered_border(world: &World) -> String {
-    world.mode.editor.render(WIDTH).swap_remove(0)
-}
-
-/// Selects `level` on the session as its agent state, whatever the model supports.
-fn select_level(world: &World, level: ThinkingLevel) {
-    world
-        .host
-        .session()
-        .agent()
-        .state()
-        .write()
-        .unwrap()
-        .thinking_level = level;
 }
 
 /// Editor text delivered to the change callback in one shell mode.

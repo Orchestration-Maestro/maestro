@@ -2,13 +2,13 @@
 mod lifecycle;
 
 use super::typed::{recalled, submit};
-use super::{Setup, World, isolated};
+use super::{
+    Setup, World, active, driving, isolated, on_tasks, scripted, until_complete, until_exists,
+};
 use crate::BashExecutionComponent;
-use crate::components::session_selector::list::tests::session_picker::manual_runtime::ManualRuntime;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
-use maestro_tui::tui::LocalFuture;
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     error::Error,
     future::Future,
     path::Path,
@@ -16,101 +16,6 @@ use std::{
     rc::Rc,
     task::{Context, Poll, Waker},
 };
-
-/// The failures the mode's work reported.
-type Failures = Rc<RefCell<Vec<Box<dyn Error>>>>;
-
-/// Runs the work the mode handed its terminal runtime beside `body`, collecting the
-/// failures that work reported.
-///
-/// The mode's own futures are awaited to completion, so the session's shell execution and
-/// its chunk delivery interleave with `body`, which stops the driver when it is done.
-async fn driving<T>(world: &World, body: impl Future<Output = T>) -> (T, Vec<Box<dyn Error>>) {
-    let runtime = world.runtime.clone();
-    let finished = Rc::new(Cell::new(false));
-    let errors: Failures = Rc::default();
-    let driver = {
-        let finished = Rc::clone(&finished);
-        let errors = Rc::clone(&errors);
-        tokio::task::spawn_local(async move { drive(&runtime, &finished, &errors).await })
-    };
-    let value = body.await;
-    finished.set(true);
-    driver.await.unwrap();
-    let errors = Rc::try_unwrap(errors).unwrap().into_inner();
-    (value, errors)
-}
-
-/// Drives the mode's futures until the caller reports it is done.
-async fn drive(runtime: &ManualRuntime, finished: &Rc<Cell<bool>>, errors: &Failures) {
-    loop {
-        dispatch(runtime, errors);
-        if finished.get() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-}
-
-/// Hands every future the mode admitted to the task set running beside the caller.
-fn dispatch(runtime: &ManualRuntime, errors: &Failures) {
-    for future in runtime.take_futures() {
-        let errors = Rc::clone(errors);
-        tokio::task::spawn_local(async move { await_work(future, &errors).await });
-    }
-}
-
-/// Awaits one future the mode admitted, recording its failure.
-async fn await_work(future: LocalFuture, errors: &Failures) {
-    if let Err(error) = future.await {
-        errors.borrow_mut().push(error);
-    }
-}
-
-/// Runs `body` inside a current-thread runtime and task set, where the mode's work and the
-/// session's own tasks make progress.
-fn on_tasks<T>(body: impl Future<Output = T>) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, body)
-}
-
-/// Waits until `path` exists, yielding so the work that creates it runs.
-async fn until_exists(path: &Path) {
-    for _ in 0..10_000 {
-        if path.exists() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("{} appeared", path.display());
-}
-
-/// Waits until no shell row is producing output and the transcript holds `rows` children.
-async fn until_complete(world: &World, rows: usize) {
-    for _ in 0..10_000 {
-        if active(world).is_none() && world.mode.chat_container.children().borrow().len() == rows {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!(
-        "the shell command completed: active={} rows={}",
-        active(world).is_some(),
-        world.mode.chat_container.children().borrow().len()
-    );
-}
-
-/// Writes an executable shell script answering every command with `body`.
-fn scripted(directory: &Path, name: &str, body: &str) -> String {
-    use std::os::unix::fs::PermissionsExt;
-    let path = directory.join(name);
-    std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
-    path.to_str().unwrap().to_owned()
-}
 
 /// A started mode whose shell runs `script`.
 fn shelling(directory: &Path, script: &str) -> World {
@@ -125,11 +30,6 @@ fn shelling(directory: &Path, script: &str) -> World {
     world.mode.init().unwrap();
     world.runtime.settle().unwrap();
     world
-}
-
-/// The shell row the mode still reports as producing output.
-fn active(world: &World) -> Option<Rc<BashExecutionComponent>> {
-    world.mode.active_shell.borrow().clone()
 }
 
 /// Polls `future` once with a waker that observes nothing.

@@ -1,14 +1,17 @@
 //! Queued steering and follow-up input: snapshots, pending rows, restoration, status lines
 //! and the queue key actions over the mode's real session and editor.
 use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions};
-use super::typed::recalled;
-use super::{Setup, World, isolated, painted, started};
+use super::typed::{recalled, submit};
+use super::{
+    Held, Setup, World, border_row, driving, holding, isolated, on_tasks, painted, rendered_border,
+    scripted, select_level, started, streaming,
+};
 use crate::InteractiveMode;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{
-    AgentSessionEvent, AssistantMessage, AssistantMessageEventStream, Cancellation,
-    DiagnosticErrorInfo, ExtensionFactory, InputEvent, InputEventResult, Local, PromptOptions,
-    RegisteredCommand, StopReason, Usage, is_whitespace_scalar,
+    AgentSessionEvent, Cancellation, DiagnosticErrorInfo, ExtensionFactory, InputEvent,
+    InputEventResult, Local, RegisteredCommand, SettingsManager, ThinkingLevel,
+    is_whitespace_scalar,
 };
 use maestro_tui::editor_component::TextCallback;
 use maestro_tui::tui::InputHandler;
@@ -274,78 +277,6 @@ fn settled(world: &World) -> Vec<String> {
             }
         })
         .collect()
-}
-
-/// The response the controlled provider holds open, and the cancellation of its turn.
-struct Held {
-    /// The open response.
-    stream: AssistantMessageEventStream,
-    /// The turn's cancellation.
-    signal: Cancellation,
-}
-
-impl Held {
-    /// How many times the turn was stopped.
-    fn aborts(&self) -> usize {
-        usize::from(self.signal.is_aborted())
-    }
-}
-
-/// A finished answer of the controlled provider.
-fn answer() -> Arc<RwLock<AssistantMessage>> {
-    Arc::new(RwLock::new(AssistantMessage {
-        content: Vec::new(),
-        api: "unknown".into(),
-        provider: "unknown".into(),
-        model: "unknown".into(),
-        response_model: None,
-        response_id: None,
-        diagnostics: None,
-        usage: Usage::default(),
-        stop_reason: StopReason::Stop,
-        error_message: None,
-        timestamp: 0.0,
-    }))
-}
-
-/// Runs `body` on the started `world` while its session streams a response the controlled
-/// provider holds open; then ends that response and waits for the prompt to settle.
-fn streaming<T>(world: &World, body: impl FnOnce(&World, &Held) -> T) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    let tasks = tokio::task::LocalSet::new();
-    tasks.block_on(&runtime, async {
-        let session = world.mode.runtime_host.session();
-        world
-            .host
-            .services()
-            .auth_storage
-            .set_runtime_api_key("unknown", "key");
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        let sender = RefCell::new(Some(sender));
-        *session.agent().stream_fn.write().unwrap() = Some(Rc::new(move |_, _, options, _| {
-            let stream = AssistantMessageEventStream::new();
-            match sender.borrow_mut().take() {
-                Some(sender) => drop(sender.send(Held {
-                    stream: stream.clone(),
-                    signal: options.common.signal.unwrap(),
-                })),
-                None => stream.end(Some(answer())),
-            }
-            Box::pin(std::future::ready(Ok(stream)))
-        }));
-        let prompted = Rc::clone(&session);
-        let run = tokio::task::spawn_local(async move {
-            prompted.prompt("run", PromptOptions::default()).await
-        });
-        let held = receiver.await.unwrap();
-        assert!(session.is_streaming());
-        let result = body(world, &held);
-        held.stream.end(Some(answer()));
-        run.await.unwrap().unwrap();
-        result
-    })
 }
 
 /// Queues `s, s`, `f` and the compaction messages `lf`, `ls`.
@@ -1532,6 +1463,271 @@ fn queue_callbacks_release_the_mode_after_active_work_settles() {
                 assert!(matches!(polled, std::task::Poll::Ready(Ok(()))));
             }
             assert!(weak.upgrade().is_none(), "settled work releases the mode");
+        },
+    );
+}
+
+/// The draft an interrupt witness holds in the editor.
+const DRAFT: &str = "draft";
+
+/// The draft the interrupt key restores a queued message above.
+const QUEUED_DRAFT: &str = "queued\n\ndraft";
+
+/// The draft that selects shell mode, which the interrupt key can clear.
+const SHELL_DRAFT: &str = "!draft";
+
+/// The shell command that keeps running until its release file appears.
+const HELD: &str = "!hold";
+
+/// The interrupt key's selection: whether a response streams, whether a shell runs and
+/// whether the editor holds a shell command.
+#[derive(Clone, Copy, Debug)]
+struct Interrupt {
+    /// Whether the session streams a held response.
+    streaming: bool,
+    /// Whether a shell command runs.
+    running: bool,
+    /// Whether the editor holds a shell command.
+    mode: bool,
+}
+
+impl Interrupt {
+    /// The editor text this selection starts with.
+    fn draft(self) -> &'static str {
+        if self.mode { SHELL_DRAFT } else { DRAFT }
+    }
+
+    /// The queued text this selection starts with: one steering message where the restore
+    /// is observable and none where it would replace the shell draft.
+    fn queued(self) -> Queues {
+        if !self.streaming || self.mode {
+            return Queues::default();
+        }
+        Queues {
+            steering: vec!["queued".into()],
+            ..Queues::default()
+        }
+    }
+
+    /// The editor text the interrupt key leaves behind.
+    fn text(self) -> &'static str {
+        match (self.streaming, self.running, self.mode) {
+            // A streaming response restores the queued text before the draft.
+            (true, _, false) => QUEUED_DRAFT,
+            (true, _, true) | (false, true, _) => self.draft(),
+            (false, false, true) => "",
+            (false, false, false) => DRAFT,
+        }
+    }
+}
+
+/// A started mode whose shell reports its start and waits for the release file.
+fn held_shell(directory: &Path) -> World {
+    let started = directory.join("held-started");
+    let release = directory.join("held-release");
+    for stale in [&started, &release] {
+        let _ = std::fs::remove_file(stale);
+    }
+    let script = scripted(
+        directory,
+        "shell",
+        &format!(
+            ": > {}\nwhile [ ! -e {} ]; do :; done\nprintf 'held\\n'",
+            started.display(),
+            release.display()
+        ),
+    );
+    let world = Setup {
+        configure: Box::new(move |settings: &mut SettingsManager| {
+            settings.set_shell_path(Some(script));
+        }),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().unwrap();
+    world.runtime.settle().unwrap();
+    world
+}
+
+/// Submits the held shell command and waits until the session runs it.
+async fn start_held(world: &World, directory: &Path) {
+    submit(&world.mode, HELD);
+    let started = directory.join("held-started");
+    for _ in 0..10_000 {
+        if world.mode.runtime_host.session().is_bash_running() && started.exists() {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!("the held shell started");
+}
+
+/// Waits until the session no longer runs a shell command, yielding so the cancellation
+/// reaches the command.
+async fn until_stopped(world: &World) {
+    for _ in 0..10_000 {
+        if !world.mode.runtime_host.session().is_bash_running() {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!("the shell command stopped");
+}
+
+/// Lets the held shell finish and waits for its row to settle.
+async fn release_held(world: &World, directory: &Path) {
+    if !world.mode.runtime_host.session().is_bash_running() {
+        return;
+    }
+    std::fs::write(directory.join("held-release"), "").unwrap();
+    for _ in 0..10_000 {
+        if !world.mode.runtime_host.session().is_bash_running() {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!("the held shell settled");
+}
+
+/// Presses the interrupt key, recording whether the response was already stopped at each
+/// editor change it made.
+fn press_interrupt(world: &World, signal: Option<&Cancellation>) -> Vec<bool> {
+    let stopped = Rc::new(RefCell::new(Vec::new()));
+    if let Some(signal) = signal {
+        let (seen, signal) = (Rc::clone(&stopped), signal.clone());
+        world.mode.editor.set_on_change(Some(Rc::new(move |_| {
+            seen.borrow_mut().push(signal.is_aborted());
+        })));
+    }
+    world.mode.editor.handle_input("\x1b");
+    world.mode.editor.set_on_change(None);
+    stopped.borrow().clone()
+}
+
+/// Checks what the interrupt key left after running `selection`.
+fn assert_interrupt(
+    world: &World,
+    selection: Interrupt,
+    signal: Option<&Cancellation>,
+    stopped: &[bool],
+) {
+    let session = world.mode.runtime_host.session();
+    // The interrupt key clears shell mode when nothing outranks it; a cancelled shell also
+    // clears it once its submission settles, as the reference's own post-await assignment
+    // does, so only a streaming response leaves the shell draft in shell mode.
+    let shell_mode = selection.mode && selection.streaming;
+    assert_eq!(
+        world.mode.is_bash_mode.get(),
+        shell_mode,
+        "shell mode after {selection:?}"
+    );
+    assert_eq!(
+        world.mode.editor.get_text().as_str(),
+        selection.text(),
+        "editor text after {selection:?}"
+    );
+    assert_eq!(
+        session.is_bash_running(),
+        selection.running && selection.streaming,
+        "shell running after {selection:?}"
+    );
+    if selection.streaming {
+        assert!(
+            signal.unwrap().is_aborted(),
+            "the response is stopped: {selection:?}"
+        );
+        assert!(
+            stopped.iter().all(|stopped| !stopped),
+            "the queued text is restored before the turn stops: {stopped:?}"
+        );
+    }
+}
+
+/// Checks the editor border: clearing shell mode restores the thinking border, and a shell
+/// branch that leaves the shell draft keeps the shell border.
+fn assert_border(world: &World, selection: Interrupt) {
+    let expected = match (selection.streaming, selection.running, selection.mode) {
+        (true, _, true) => Some("@bashMode@━\x1b[39m"),
+        (false, false, true) => Some("@thinkingHigh@━\x1b[39m"),
+        _ => None,
+    };
+    if let Some(expected) = expected {
+        assert_eq!(
+            rendered_border(world),
+            border_row(world, expected),
+            "{selection:?}"
+        );
+    }
+}
+
+/// Runs the interrupt selection in `world`, returning the mode's work failures.
+async fn interrupt_in(
+    world: &World,
+    directory: &Path,
+    selection: Interrupt,
+    signal: Option<Cancellation>,
+) -> Vec<Box<dyn std::error::Error>> {
+    let ((), errors) = driving(world, async {
+        // A queued text is seeded once the response streams, where the restore can take it
+        // back, and before any shell command so both branches see the same queues.
+        seed(world, selection.queued());
+        if selection.running {
+            start_held(world, directory).await;
+        }
+        let stopped = press_interrupt(world, signal.as_ref());
+        if selection.running && !selection.streaming {
+            until_stopped(world).await;
+        }
+        assert_interrupt(world, selection, signal.as_ref(), &stopped);
+        assert_border(world, selection);
+        release_held(world, directory).await;
+    })
+    .await;
+    errors
+}
+
+/// Runs one interrupt selection over a fresh mode and checks its outcome.
+fn interrupt_case(directory: &Path, selection: Interrupt) {
+    let world = held_shell(directory);
+    select_level(&world, ThinkingLevel::High);
+    world.mode.editor.set_text(selection.draft());
+    let errors = if selection.streaming {
+        on_tasks(async {
+            holding(&world, |signal| {
+                interrupt_in(&world, directory, selection, Some(signal))
+            })
+            .await
+        })
+    } else {
+        on_tasks(async { interrupt_in(&world, directory, selection, None).await })
+    };
+    assert!(errors.is_empty(), "{errors:?}");
+}
+
+#[test]
+fn shell_escape_keeps_streaming_priority_and_live_mode_border() {
+    isolated(
+        "shell_escape_keeps_streaming_priority_and_live_mode_border",
+        |directory| {
+            for (streaming, running, mode) in [
+                (false, false, false),
+                (false, false, true),
+                (false, true, false),
+                (false, true, true),
+                (true, false, false),
+                (true, false, true),
+                (true, true, false),
+                (true, true, true),
+            ] {
+                interrupt_case(
+                    directory,
+                    Interrupt {
+                        streaming,
+                        running,
+                        mode,
+                    },
+                );
+            }
         },
     );
 }

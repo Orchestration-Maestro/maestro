@@ -179,10 +179,13 @@ line then says `Restored 1 queued message to editor`,
 `Restored <n> queued messages to editor` or `No queued messages to restore`; with
 nothing queued the editor is left as it was.
 
-While a response streams, the interrupt key (Escape by default) restores the queued
-messages the same way and then stops the response, even when nothing was queued. When
-no response streams, the key does nothing. The queue keys do not keep the mode alive,
-and a failure in them goes to the terminal runtime's error route.
+The interrupt key (Escape by default) takes the first case that applies: while a
+response streams it restores the queued messages the same way and then stops the
+response, even when nothing was queued; while a shell command runs it cancels that
+command and keeps the editor text; while the editor holds a shell command it empties the
+editor, leaves shell mode and repaints the border for the current thinking level. With
+none of those it does nothing. The queue keys do not keep the mode alive, and a failure
+in them goes to the terminal runtime's error route.
 
 ## Status lines
 

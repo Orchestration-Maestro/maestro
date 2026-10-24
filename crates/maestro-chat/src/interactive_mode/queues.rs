@@ -29,20 +29,29 @@ pub(super) struct RestoreQueuedMessagesOptions<'a> {
 
 impl InteractiveMode {
     /// Installs the queue actions on the editor without keeping the mode alive: the
-    /// interrupt key restores the queued text and stops a streaming response, the
-    /// follow-up key sends the editor's text as a follow-up, and the dequeue key restores
-    /// the queued text.
+    /// interrupt key restores the queued text and stops a streaming response, cancels a
+    /// running shell, or else clears a shell command from the editor and restores the
+    /// thinking border; the follow-up key sends the editor's text as a follow-up, and the
+    /// dequeue key restores the queued text.
     pub(super) fn setup_queue_key_handlers(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_escape(Some(Rc::new(move || {
-            if let Some(mode) = mode.upgrade()
-                && mode.runtime_host.session().is_streaming()
-            {
+            let Some(mode) = mode.upgrade() else {
+                return;
+            };
+            let session = mode.runtime_host.session();
+            if session.is_streaming() {
                 let options = RestoreQueuedMessagesOptions {
                     abort: true,
                     current_text: None,
                 };
                 mode.report(mode.restore_queued_messages_to_editor(options).map(drop));
+            } else if session.is_bash_running() {
+                session.abort_bash();
+            } else if mode.is_bash_mode.get() {
+                mode.editor.set_text("");
+                mode.is_bash_mode.set(false);
+                mode.report(mode.update_editor_border_color().map_err(Into::into));
             }
         })));
         let mode = Rc::downgrade(self);
