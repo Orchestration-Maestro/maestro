@@ -1,7 +1,4 @@
 //! Native presentation witnesses through the interactive mode's own interface.
-#[allow(dead_code, reason = "The terminal records effects other tests read.")]
-#[path = "../../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 
@@ -9,6 +6,7 @@ use crate::{InteractiveMode, InteractiveModeOptions};
 // The controlled host, disposable directory and palettes are compiled once in the library tests.
 use crate::components::session_selector::list::tests::session_picker::{
     manual_runtime::ManualRuntime, native_child as child, published,
+    recording_terminal::RecordingTerminal,
 };
 use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
@@ -24,7 +22,6 @@ use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
     EditorComponent, autocomplete,
 };
-use recording_terminal::RecordingTerminal;
 use serde::Deserialize;
 use std::{cell::RefCell, future::Future, io, path::Path, pin::Pin, rc::Rc};
 
