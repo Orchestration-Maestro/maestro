@@ -1,12 +1,38 @@
 //! Cargo-resolved boundaries for opt-in test helpers.
 use cargo_metadata::{DependencyKind, Metadata, Package};
 
-use super::metadata::members;
+use super::{Edge, Kind, metadata::members};
+
+/// A development declaration only activates helpers on an existing production edge.
+pub(super) fn activates_existing(metadata: &Metadata, edge: &Edge) -> bool {
+    edge.kind == Kind::Development
+        && members(metadata).any(|package| {
+            package.name.as_str() == edge.from
+                && package.dependencies.iter().any(|dependency| {
+                    dependency.name == edge.to
+                        && dependency.kind == DependencyKind::Development
+                        && dependency
+                            .features
+                            .iter()
+                            .any(|feature| feature == "test-support")
+                })
+                && package.dependencies.iter().any(|dependency| {
+                    dependency.name == edge.to && dependency.kind == DependencyKind::Normal
+                })
+        })
+}
 
 /// Validate activation independently of dependency spelling or target predicates.
 pub(super) fn check(metadata: &Metadata) -> Result<(), String> {
     for package in members(metadata) {
         for dependency in &package.dependencies {
+            if package.name.as_str() == "maestro-chat"
+                && dependency.name == "maestro-credentials"
+                && dependency.kind == DependencyKind::Development
+                && (dependency.features != ["test-support"] || dependency.optional)
+            {
+                return Err("maestro-chat: credential test helpers require non-optional test-support development activation".into());
+            }
             if dependency.kind != DependencyKind::Development
                 && dependency
                     .features

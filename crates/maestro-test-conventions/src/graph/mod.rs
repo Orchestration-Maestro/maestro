@@ -262,7 +262,9 @@ fn validate(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
         }
     }
     for edge in edges {
-        if edge.from != edge.to || edge.kind != Kind::Development {
+        if (edge.from != edge.to || edge.kind != Kind::Development)
+            && !test_support::activates_existing(metadata, edge)
+        {
             validate_edge(edge)?;
         }
     }

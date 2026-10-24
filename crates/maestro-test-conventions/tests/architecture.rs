@@ -3329,3 +3329,35 @@ fn test_support_forwarding_stays_opt_in_and_one_hop() {
     workspace.member("maestro-tools", "maestro-tools", "[dependencies]\nmaestro-agent = { path = \"../maestro-agent\" }\n[features]\ntest-support = [\"maestro-agent/test-support\"]");
     assert_eq!(check_workspace(workspace.root.path()), Err("maestro-tools: test-support may only be enabled by development dependencies or dedicated test libraries".into()));
 }
+
+#[test]
+fn development_features_activate_an_existing_type_owner_edge() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    workspace.member(
+        "maestro-tui",
+        "maestro-tui",
+        "[features]\ntest-support = []",
+    );
+    workspace.member("maestro-tools", "maestro-tools", "[dependencies]\nkit = { package = \"maestro-tui\", path = \"../maestro-tui\" }\n[dev-dependencies]\nkit = { package = \"maestro-tui\", path = \"../maestro-tui\", features = [\"test-support\"] }");
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn chat_credentials_helpers_require_opt_in_development_activation() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-credentials"]);
+    workspace.member(
+        "maestro-credentials",
+        "maestro-credentials",
+        "[features]\ntest-support = []",
+    );
+    workspace.member("maestro-chat", "maestro-chat", "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n[dev-dependencies]\nmaestro-credentials = { path = \"../maestro-credentials\", features = [\"test-support\"] }");
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    workspace.member(
+        "maestro-chat",
+        "maestro-chat",
+        "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n[dev-dependencies]\nmaestro-credentials = { path = \"../maestro-credentials\" }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Err("maestro-chat: credential test helpers require non-optional test-support development activation".into()));
+}

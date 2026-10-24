@@ -355,8 +355,6 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-entry"
     } else if name == "Listeners" {
         "maestro-listeners"
-    } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
-        "maestro-test-terminal"
     } else if input_presenter_record(name) {
         "maestro-app"
     } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {

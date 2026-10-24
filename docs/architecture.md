@@ -102,10 +102,11 @@ exact caller list of its
 [directory contract](specs/maestro-port.md#test-directory-owner) and no outgoing
 domain or utility edge. The tracing owner
 follows the same checks with its own five callers; see the
-[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness's
-recording terminal and manual runtime are the one shared test-effect owner, with
-`maestro-cli` as their only declared caller under the same native development
-rules. The portable fixture owner has the eight exact development callers in its
+[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
+reexports the recording terminal and manual runtime from
+`maestro-tui::test_support`; the harness itself admits only `maestro-cli` under
+the same native development rules. The portable fixture owner has the eight
+exact development callers in its
 [fixture contract](specs/maestro-port.md#test-fixture-owner). Its declarations may
 be portable or target-specific; normal/build edges and outgoing domain or utility
 edges are forbidden. The policy admits the owner before its member exists.

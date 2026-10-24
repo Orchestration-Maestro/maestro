@@ -1504,32 +1504,6 @@ fn cli_configuration_wrapper_does_not_own_chat_widgets() {
 }
 
 #[test]
-fn terminal_effect_recorders_have_one_owner() {
-    let workspace = Workspace::new();
-    workspace.foundation(&["maestro-cli", "maestro-test-terminal"]);
-    source(
-        &workspace,
-        "maestro-test-terminal",
-        "src/recording_terminal.rs",
-        "pub struct RecordingTerminal;\npub struct ManualRuntime;",
-    );
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    for (path, contents) in [
-        ("src/support.rs", "struct RecordingTerminal;"),
-        ("tests/support.rs", "struct ManualRuntime;"),
-    ] {
-        source(&workspace, "maestro-cli", path, contents);
-        assert!(
-            check_workspace(workspace.root.path())
-                .unwrap_err()
-                .contains("belongs to maestro-test-terminal"),
-            "{path}"
-        );
-        source(&workspace, "maestro-cli", path, "");
-    }
-}
-
-#[test]
 fn input_presenter_records_reject_duplicate_owners() {
     for name in [
         "PresentedSelector",

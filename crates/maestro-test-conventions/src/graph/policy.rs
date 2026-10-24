@@ -298,6 +298,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
 
 /// Internal development edges permitted beyond the production table on any target.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-chat", "maestro-credentials"),
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
     ("maestro-rpc", "maestro-theme"),

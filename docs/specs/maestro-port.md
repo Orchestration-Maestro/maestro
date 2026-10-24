@@ -633,7 +633,8 @@ that calls this same entry. The test-process leaf does not depend on process.
 
 `maestro-test-process` is a dedicated, unpublished, native, std-only test-support
 leaf that starts one named libtest child and proves the child started exactly that
-test. It has no workspace dependencies except the native feature unifier and one
+test. Its native helpers also provide loopback servers, completed child probes,
+executable installation and child-build toolchain selection. It has no workspace dependencies except the native feature unifier and one
 native development edge to the disposable directory owner for its own child
 fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
@@ -760,8 +761,8 @@ consumers; the utility is delivered before its first consumer.
 ### Terminal scenario owner
 
 `maestro-test-terminal` is a dedicated, unpublished, native crate that drives the
-toolkit through its public interface. Its library owns the recording terminal and
-the manual runtime a controlled terminal scenario needs; its integration tests own
+toolkit through its public interface. Its library reexports the recording terminal
+and manual runtime from `maestro-tui::test_support`; its integration tests own
 the virtual terminal and the written scenarios. It requires `maestro-tui` and
 nothing else from the workspace, and it is excluded from the foundation utility
 permission. Its only incoming edge is a non-optional native development
@@ -951,3 +952,10 @@ feature must not itself forward to another product's test-support feature.
 Normal/build dependency feature lists and other product features, including
 `default`, may not enable test-support. Cargo-metadata conventions enforce these
 boundaries independently of dependency aliases and target predicates.
+
+Chat may declare a portable, non-optional development dependency on credentials
+solely with `features = ["test-support"]` for shared selector diagnostics. This
+edge does not authorize a production dependency or a pass-through helper in the
+application. Other type-owner activation on existing production edges adds no
+new crate relationship; the conventions checker validates those declarations
+without requiring a second development-policy row.
