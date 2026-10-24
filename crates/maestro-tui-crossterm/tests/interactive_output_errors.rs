@@ -59,17 +59,19 @@ impl Notices {
 
 #[test]
 fn synchronous_stdout_failure_notifies_once_without_reborrow() {
-    let rig = Rig::paused();
-    let output = pipe_output();
-    drop(output);
-    let mut terminal = ProcessTerminal::new(rig.local());
-    let notices = Notices::default();
-    notices.remove_during_call(terminal.on_output_error(notices.handler()));
-    let error = terminal
-        .write("late output")
-        .expect_err("the pipe has no reader");
-    assert_eq!(error.kind(), io::ErrorKind::BrokenPipe);
-    assert_eq!(notices.count(), 1);
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        drop(output);
+        let mut terminal = ProcessTerminal::new(rig.local());
+        let notices = Notices::default();
+        notices.remove_during_call(terminal.on_output_error(notices.handler()));
+        let error = terminal
+            .write("late output")
+            .expect_err("the pipe has no reader");
+        assert_eq!(error.kind(), io::ErrorKind::BrokenPipe);
+        assert_eq!(notices.count(), 1);
+    });
 }
 
 #[test]
