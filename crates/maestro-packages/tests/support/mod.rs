@@ -155,6 +155,9 @@ impl PackageOperations for Controlled {
 }
 /// Completes one owned operation on a fresh current-thread runtime that admitted its workers,
 /// then closes that runtime.
+///
+/// Only the unix manager tests consume it, so other hosts would see it unused.
+#[cfg(unix)]
 pub fn drive<T>(effects: &Rc<Effects>, operation: impl std::future::Future<Output = T>) -> T {
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
