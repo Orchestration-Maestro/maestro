@@ -75,12 +75,12 @@ impl Bank {
         });
     }
 
-    /// Takes the refusal supplied for `method`, keeping one supplied for another method.
+    /// Takes a refusal supplied for exactly `method`, keeping one armed for every method.
     fn refusal(&mut self, method: &str) -> Option<String> {
         let supplied = self
             .error
             .as_ref()
-            .is_some_and(|refusal| refusal.method.as_deref().is_none_or(|it| it == method));
+            .is_some_and(|refusal| refusal.method.as_deref() == Some(method));
         if supplied {
             return self.error.take().map(|refusal| refusal.message);
         }
@@ -109,20 +109,14 @@ impl Bank {
         self.message = Some(message.to_owned());
     }
 
-    /// Takes the rejection armed for `method`, once that method's request arrives.
-    fn refusal(&mut self, method: &str) -> Option<String> {
-        if self.method.as_deref() != Some(method) {
-            return None;
-        }
-        self.method = None;
-        self.message.take()
-    }
-
     /// Rejects the next request after `index` accepted ones with `error`, once.
     pub fn reject_at(&mut self, index: usize, error: &str) {
         self.rules.reject_after = Some(index);
         self.rules.accepted = 0;
-        self.error = Some(error.to_owned());
+        self.error = Some(Refusal {
+            method: None,
+            message: error.to_owned(),
+        });
     }
 
     /// Resolves the binding `binding` for acquisitions after the next accepted request.
@@ -130,15 +124,19 @@ impl Bank {
         self.rules.switch_after = Some(binding);
     }
 
-    /// Applies the armed rules to the request recorded next.
+    /// Applies the armed rules to the request recorded next, taking a refusal armed for every method.
     fn settle(&mut self) -> Result<(), String> {
         let reject = self
             .rules
             .reject_after
             .is_none_or(|index| index == self.rules.accepted);
-        if reject && let Some(error) = self.error.take() {
+        let general = self.error.as_ref().is_some_and(|it| it.method.is_none());
+        if reject
+            && general
+            && let Some(refusal) = self.error.take()
+        {
             self.rules.reject_after = None;
-            return Err(error);
+            return Err(refusal.message);
         }
         self.rules.accepted += 1;
         if let Some(binding) = self.rules.switch_after.take() {

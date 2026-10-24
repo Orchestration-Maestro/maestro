@@ -47,17 +47,11 @@ struct ControlledHost {
 }
 
 impl ControlledHost {
-    /// A controlled host with fresh exports.
-    fn new() -> Self {
-        let host = Controlled::default();
-        let exports = Exports::new(host.clone());
-        Self { host, exports }
-    }
-
-    /// Runs the factory and reports the handler it registered for session starts.
-    async fn register(&mut self) -> Result<u32, String> {
-        self.exports.start::<WidgetPlacement>().await?;
-        self.host.observed().callback("event session_start")
+    /// The started factory with the handler it registered for session starts.
+    async fn started() -> Result<(Self, u32), String> {
+        let (host, handler, exports) =
+            super::example_support::registered::<WidgetPlacement>("event session_start").await?;
+        Ok((Self { host, exports }, handler))
     }
 
     /// Releases `handler` and asserts the host keeps nothing lent.
@@ -347,8 +341,7 @@ fn widget_placement_stops_on_host_rejection() -> Result<(), String> {
 /// Runs the named corpus cases on a controlled host and releases its handler.
 fn run_controlled(names: &[&str]) -> Result<(), String> {
     super::block_on(async {
-        let mut host = ControlledHost::new();
-        let handler = host.register().await?;
+        let (mut host, handler) = ControlledHost::started().await?;
         run(&mut host, handler, names).await?;
         host.finish(handler);
         Ok(())
