@@ -1,4 +1,4 @@
-//! A turn hook and a command that request compaction when context usage crosses a threshold.
+//! A turn hook that requests compaction above a usage threshold and a command that requests it immediately.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

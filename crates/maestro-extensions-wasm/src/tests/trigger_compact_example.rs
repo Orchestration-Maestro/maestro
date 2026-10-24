@@ -1,7 +1,6 @@
 //! The shipped compaction-trigger example exercised through both hosts.
 use serde::Deserialize;
 use serde_json::{Value, json};
-use wasmtime::component::Resource;
 
 use super::catalog_host::Usage;
 use super::controlled::Controlled;
@@ -57,7 +56,7 @@ struct Row {
     name: String,
     /// The group whose test replays this case.
     group: String,
-    /// Whether the host offers a UI for the whole case.
+    /// The UI availability the recorded case starts with.
     #[serde(rename = "initialUi")]
     initial_ui: bool,
     /// The input operations, in order.
@@ -284,8 +283,8 @@ fn observed_effects(lines: &[String]) -> Vec<Value> {
 
 /// The effect one host line records, if it records one.
 fn effect(line: &str) -> Option<Value> {
-    if let Some(rest) = line.strip_prefix("compact admission ") {
-        let request: Value = serde_json::from_str(rest).ok()?;
+    if let Some(request) = line.strip_prefix("compact admission ") {
+        let request: Value = serde_json::from_str(request).ok()?;
         let instructions = match &request["instructions"] {
             instructions if instructions["present"] == true => instructions["value"].clone(),
             _ => Value::Null,
@@ -296,13 +295,15 @@ fn effect(line: &str) -> Option<Value> {
             "error":request["error"],
         }}));
     }
-    let rest = line.strip_prefix("ui ")?;
-    let (_, rest) = rest.split_once(' ')?;
-    let (method, operands) = rest.split_once(' ')?;
-    if method != "notify" {
+    notification(&super::ui_host::receipt(line)?)
+}
+
+/// The notification effect a recorded UI request carries; other requests record none.
+fn notification(receipt: &super::ui_host::Receipt) -> Option<Value> {
+    if receipt.method != "notify" {
         return None;
     }
-    let operands: Value = serde_json::from_str(operands).ok()?;
+    let operands = &receipt.operands;
     Some(json!({"notify":{
         "message":operands[0],
         "kind":operands[1].as_str().unwrap_or_default().to_lowercase(),
@@ -487,43 +488,17 @@ impl ComponentHost {
         complete: bool,
     ) -> Result<(), String> {
         let kind = if complete { "complete" } else { "error" };
-        let key = self.instances[instance]
+        let started = &mut self.instances[instance];
+        let key = started
             .harness
             .callback(&format!("compact {request} {kind}"))
             .map_err(|error| error.to_string())?;
-        let harness = &mut self.instances[instance].harness;
-        super::block_on(async {
-            let emitter = harness
-                .store
-                .data_mut()
-                .table
-                .push(super::bus_host::Emitter { key: 0 })
-                .map_err(|error| error.to_string())?;
-            let function = if complete {
-                harness.exports.func_invoke_compaction_complete()
-            } else {
-                harness.exports.func_invoke_compaction_error()
-            };
-            let result = function
-                .call_async(
-                    &mut harness.store,
-                    (
-                        super::host::borrow(key),
-                        payload,
-                        Resource::new_borrow(emitter.rep()),
-                    ),
-                )
-                .await
-                .map_err(|error| error.to_string())?
-                .0;
-            harness
-                .store
-                .data_mut()
-                .table
-                .delete(emitter)
-                .map_err(|error| error.to_string())?;
-            result
-        })
+        super::block_on(super::host::notify_compaction(
+            &mut started.harness,
+            key,
+            payload,
+            complete,
+        ))
     }
 }
 
