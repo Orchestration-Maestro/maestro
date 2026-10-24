@@ -3,9 +3,9 @@ use serde_json::{Value, json};
 
 use super::controlled::Controlled;
 use super::documents::Answer;
-use super::example_support::{registered, release_all};
+use super::example_support::{registered, release_all, start};
 use super::ui_host;
-use crate::component_adapter::{Capabilities, Exports};
+use crate::component_adapter::Capabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture, NotificationType};
 
 #[path = "../../../../examples/extensions/protected_paths.rs"]
@@ -103,9 +103,7 @@ fn protected_paths_registers_one_hook() -> Result<(), String> {
 #[test]
 fn protected_paths_matches_authored_paths() -> Result<(), String> {
     super::block_on(async {
-        let host = Controlled::default();
-        let exports = Exports::new(host.clone());
-        exports.start::<ProtectedPaths>().await?;
+        let (host, exports) = start::<ProtectedPaths>().await?;
         let key = host.observed().callback("event tool_call")?;
         let rows = corpus();
         let rows = rows["rows"].as_array().unwrap();
@@ -146,9 +144,7 @@ fn protected_paths_matches_authored_paths() -> Result<(), String> {
 #[test]
 fn protected_paths_keeps_host_errors_catchable() -> Result<(), String> {
     super::block_on(async {
-        let host = Controlled::default();
-        let exports = Exports::new(host.clone());
-        exports.start::<ProtectedPaths>().await?;
+        let (host, exports) = start::<ProtectedPaths>().await?;
         let key = host.observed().callback("event tool_call")?;
         let probes = corpus();
         let probes = probes["host_errors"].as_array().unwrap();

@@ -96,6 +96,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-test-conventions", &["maestro-markdown"]),
     ("maestro-test-process", &[]),
     ("maestro-test-directory", &[]),
+    ("maestro-test-fixtures", &[]),
     ("maestro-test-tracing", &[]),
     ("maestro-tooling", &[]),
     (
@@ -403,10 +404,26 @@ pub(crate) const TEST_TRACING_CALLERS: &[&str] = &[
     "maestro-workspace",
 ];
 
+/// Portable owner of cross-package test fixture operations.
+pub(crate) const TEST_FIXTURES: &str = "maestro-test-fixtures";
+
+/// Declared consumers of portable fixture support.
+pub(crate) const TEST_FIXTURE_CALLERS: &[&str] = &[
+    "maestro-agent",
+    "maestro-models",
+    "maestro-request",
+    "maestro-catalog",
+    "maestro-chat",
+    "maestro-credentials",
+    "maestro-tools",
+    "maestro-export",
+];
+
 /// Resolve one named support owner without granting a crate-name pattern.
 pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str]> {
     match owner {
         TEST_PROCESS => Some(TEST_PROCESS_CALLERS),
+        TEST_FIXTURES => Some(TEST_FIXTURE_CALLERS),
         TEST_DIRECTORY => Some(TEST_DIRECTORY_CALLERS),
         TEST_TRACING => Some(TEST_TRACING_CALLERS),
         TEST_TERMINAL => Some(TEST_TERMINAL_CALLERS),
@@ -459,6 +476,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
                 | "maestro-test-conventions"
                 | "maestro-test-process"
                 | "maestro-test-directory"
+                | "maestro-test-fixtures"
                 | "maestro-test-terminal"
                 | "maestro-test-tracing"
                 | "maestro-tooling"

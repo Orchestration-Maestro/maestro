@@ -19,6 +19,7 @@ pub use maestro_extensions::types::events::*;
 pub use maestro_extensions::types::SessionChangeResult;
 
 pub use maestro_extensions::types::{ExtensionFlag, FlagType};
+
 /// The option records of the session-changing command operations.
 pub use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 pub use maestro_extensions::{
