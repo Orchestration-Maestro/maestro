@@ -18,9 +18,6 @@ mod rpc_writers;
 /// Single-owner rule for work polled once before a task facility takes it.
 mod inline_polls;
 
-/// Single-owner rule for native output-failure registration.
-mod output_errors;
-
 /// Imports of one use tree, shared by the single-owner rules.
 mod imports;
 
@@ -58,7 +55,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
-    output_errors::check(members)?;
     rpc_writers::check(members)?;
     inline_polls::check(members)?;
     wit.finish()
