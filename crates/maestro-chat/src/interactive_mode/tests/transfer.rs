@@ -568,6 +568,7 @@ fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
                 runtime,
                 themes,
                 host,
+                loader,
             } = exportable(directory);
             std::fs::write(directory.join("blocked"), "").unwrap();
             let mut waiter = waiting(&mode);
@@ -585,7 +586,7 @@ fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
             assert!(!directory.join("released.html").exists());
             assert_eq!(poll(&mut waiter), None);
             assert!(recalled(&editor).is_empty());
-            drop((terminal, runtime, themes, host));
+            drop((terminal, runtime, themes, host, loader));
         },
     );
 }

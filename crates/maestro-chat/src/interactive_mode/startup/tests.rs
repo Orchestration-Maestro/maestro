@@ -21,9 +21,16 @@ fn expandable_startup_text_replaces_both_rendered_variants() {
         else {
             panic!("an expandable case");
         };
-        let text = ExpandableText::new(collapsed, expanded, initial, 1, 0);
+        let text = ExpandableText::new(
+            Box::new(move || Ok(collapsed.clone())),
+            Box::new(move || Ok(expanded.clone())),
+            initial,
+            1,
+            0,
+        )
+        .unwrap();
         assert_eq!(text.render(width), before);
-        text.set_expanded(!initial);
+        text.set_expanded(!initial).unwrap();
         assert_eq!(text.render(width), after);
     }
 }
