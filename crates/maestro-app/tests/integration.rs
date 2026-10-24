@@ -4,6 +4,8 @@
 mod agent_session_concurrent_checks;
 mod agent_session_prompt_checks;
 mod agent_session_queue_checks;
+mod agent_session_retry_checks;
+mod agent_session_retry_events_checks;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
@@ -78,6 +80,7 @@ mod model_selector_exports;
 #[cfg(unix)]
 #[path = "support/native.rs"]
 mod native;
+mod network_connection_lost_retry_checks;
 #[path = "docx_support/numbering.rs"]
 mod numbering_observation;
 mod output_routing;

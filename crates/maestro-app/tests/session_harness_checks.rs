@@ -200,28 +200,31 @@ fn observes_error_response() {
 fn observes_retry_on_transient_error() {
     let expected = expected("retry_on_transient_error");
     on_paused_task_set(|_| async {
-        let failure = Scripted {
-            error: Some("overloaded_error".into()),
-            ..Scripted::default()
-        };
-        let h = harness(HarnessOptions {
-            responses: Some(vec![failure, Scripted::text("recovered")]),
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
-            ..HarnessOptions::default()
-        })
-        .await;
-        let events = delivered_events(&h.session);
-        prompt(&h, "hi").await;
-        let events = events.borrow();
-        let starts = of_type(&events, "auto_retry_start");
-        let ends = of_type(&events, "auto_retry_end");
-        assert_eq!(json!(h.requests.0.borrow().len()), expected["call_count"]);
-        assert_eq!(json!(starts.len()), expected["retry_start_count"]);
-        assert_eq!(starts[0]["attempt"], expected["retry_start_attempt"]);
-        assert_eq!(starts[0]["delayMs"], expected["retry_start_delay_ms"]);
-        assert_eq!(json!(ends.len()), expected["retry_end_count"]);
-        assert_eq!(ends[0]["success"], expected["retry_end_success"]);
-        assert_eq!(json!(assistant_texts(&h)), expected["assistant_texts"]);
+        for answer in ["Success", "recovered"] {
+            let h = harness(HarnessOptions {
+                responses: Some(vec![
+                    Scripted::failure("overloaded_error"),
+                    Scripted::text(answer),
+                ]),
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
+                ..HarnessOptions::default()
+            })
+            .await;
+            let events = delivered_events(&h.session);
+            prompt(&h, "hi").await;
+            let events = events.borrow();
+            let starts = of_type(&events, "auto_retry_start");
+            let ends = of_type(&events, "auto_retry_end");
+            assert_eq!(json!(h.requests.0.borrow().len()), expected["call_count"]);
+            assert_eq!(json!(starts.len()), expected["retry_start_count"]);
+            assert_eq!(starts[0]["attempt"], expected["retry_start_attempt"]);
+            assert_eq!(starts[0]["delayMs"], expected["retry_start_delay_ms"]);
+            assert_eq!(json!(ends.len()), expected["retry_end_count"]);
+            assert_eq!(ends[0]["success"], expected["retry_end_success"]);
+            assert_eq!(json!(assistant_texts(&h)), json!([answer]));
+            assert!(!h.session.is_retrying(), "no retry is left in flight");
+            assert!(!h.session.is_streaming(), "the response settled");
+        }
     });
 }
 

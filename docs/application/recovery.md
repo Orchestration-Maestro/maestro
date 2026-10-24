@@ -85,6 +85,9 @@ prompt never aborts the retry. `is_retrying()` reports a retry in flight and
 `set_auto_retry_enabled`, `auto_compaction_enabled()` and
 `set_auto_compaction_enabled` read and write the saved preferences.
 
+[Retry settlement and delivered events](retries.md) follows a prompt through the
+retry, the tool loop and the event order its listeners observe.
+
 ## Events
 
 Both state machines announce through the session's listeners, in subscription

@@ -1666,6 +1666,14 @@ impl Scripted {
             ..Self::default()
         }
     }
+
+    /// A failed answer reporting `error`.
+    pub fn failure(error: &str) -> Self {
+        Self {
+            error: Some(error.into()),
+            ..Self::default()
+        }
+    }
 }
 
 /// The requests the scripted stream received, in order.

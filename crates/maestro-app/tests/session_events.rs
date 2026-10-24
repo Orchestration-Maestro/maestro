@@ -447,57 +447,65 @@ fn reports_extension_handler_failures_without_stopping_the_queue() {
     });
 }
 
+/// Notifies `ended` once a run ends, recording whether a retry was already in flight.
+fn observe_retry_at_run_end(h: &Harness, observed: Rc<RefCell<Option<bool>>>, ended: Rc<Notify>) {
+    let session = Rc::downgrade(&h.session);
+    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
+        let ending = matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. });
+        if ending && observed.borrow().is_none() {
+            let session = session
+                .upgrade()
+                .expect("the session outlives its listener");
+            *observed.borrow_mut() = Some(session.is_retrying());
+            ended.notify_one();
+        }
+        Box::pin(std::future::ready(Ok(())))
+    })));
+}
+
 #[test]
 fn creates_the_retry_observation_synchronously() {
     on_paused_task_set(|_| async {
-        let (reached, release) = (Rc::new(Notify::new()), Rc::new(Notify::new()));
-        let log = Rc::new(RefCell::new(Vec::new()));
-        let busy = gated::<MessageEndEvent, MessageEndEventResult<NativeAgentMessage>>(
-            "message_end",
-            Rc::clone(&reached),
-            Rc::clone(&release),
-            Rc::clone(&log),
-        );
-        let failure = Scripted {
-            error: Some("503 service unavailable".into()),
-            ..Scripted::default()
-        };
-        let h = harness(HarnessOptions {
-            factories: vec![busy],
-            responses: Some(vec![failure, Scripted::text("recovered")]),
-            settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
-            ..HarnessOptions::default()
-        })
-        .await;
-        let session = Rc::downgrade(&h.session);
-        let observed = Rc::new(RefCell::new(None));
-        let ended = Rc::new(Notify::new());
-        let (at_end, notify) = (Rc::clone(&observed), Rc::clone(&ended));
-        drop(h.session.agent().subscribe(Rc::new(move |event, _| {
-            let ending = matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. });
-            if ending && at_end.borrow().is_none() {
-                let session = session
-                    .upgrade()
-                    .expect("the session outlives its listener");
-                *at_end.borrow_mut() = Some(session.is_retrying());
-                notify.notify_one();
-            }
-            Box::pin(std::future::ready(Ok(())))
-        })));
-        let running = start_prompt(&h, "question");
-        reached.notified().await;
-        ended.notified().await;
-        assert_eq!(
-            *observed.borrow(),
-            Some(true),
-            "the agent end found the retry open"
-        );
-        assert!(
-            log.borrow().is_empty(),
-            "the queued processing still waited"
-        );
-        release.notify_one();
-        running.await.unwrap().unwrap();
+        for (error, retries) in [("503 service unavailable", 1), ("overloaded_error", 3)] {
+            let (reached, release) = (Rc::new(Notify::new()), Rc::new(Notify::new()));
+            let log = Rc::new(RefCell::new(Vec::new()));
+            let busy = gated::<MessageEndEvent, MessageEndEventResult<NativeAgentMessage>>(
+                "message_end",
+                Rc::clone(&reached),
+                Rc::clone(&release),
+                Rc::clone(&log),
+            );
+            let h = harness(HarnessOptions {
+                factories: vec![busy],
+                responses: Some(vec![Scripted::failure(error), Scripted::text("recovered")]),
+                settings: json!({"retry": {"enabled": true, "maxRetries": retries, "baseDelayMs": 1}}),
+                ..HarnessOptions::default()
+            })
+            .await;
+            let observed = Rc::new(RefCell::new(None));
+            let ended = Rc::new(Notify::new());
+            observe_retry_at_run_end(&h, Rc::clone(&observed), Rc::clone(&ended));
+            let running = start_prompt(&h, "question");
+            reached.notified().await;
+            ended.notified().await;
+            assert_eq!(
+                *observed.borrow(),
+                Some(true),
+                "the agent end found the retry open"
+            );
+            assert!(
+                log.borrow().is_empty(),
+                "the queued processing still waited"
+            );
+            assert!(
+                !running.is_finished(),
+                "the prompt still waits for the queued handler"
+            );
+            release.notify_one();
+            running.await.unwrap().unwrap();
+            assert_eq!(h.requests.0.borrow().len(), 2);
+            assert!(!h.session.is_retrying(), "the retry settled");
+        }
     });
 }
 
