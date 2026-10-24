@@ -4,9 +4,8 @@
 
 use crate::{
     AssistantMessageComponent, AssistantMessageOptions, BashExecutionComponent, CustomEditor,
-    FooterComponent, ToolExecutionComponent,
+    FooterComponent,
 };
-use indexmap::IndexMap;
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
@@ -110,7 +109,7 @@ pub struct InteractiveMode {
     /// The spacer and text of the latest status line.
     last_status: RefCell<Option<StatusLine>>,
     /// Tool rows waiting for their results, by call id in call order.
-    pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
+    pending_tools: RefCell<replay::PendingTools>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
     /// The shell row that is still producing output, when one is attached.

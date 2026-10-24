@@ -12,7 +12,13 @@ use maestro_app::{
 };
 use maestro_tui::Component;
 use serde_json::Value;
-use std::{error::Error, io, rc::Rc, sync::Arc, sync::PoisonError};
+use std::{
+    error::Error,
+    io,
+    rc::Rc,
+    sync::Arc,
+    sync::{PoisonError, RwLockReadGuard},
+};
 
 impl InteractiveMode {
     /// Registers the one listener that delivers session events synchronously and keeps no
@@ -58,9 +64,19 @@ impl InteractiveMode {
             }
             AgentSessionEvent::ThinkingLevelChanged { .. } => self.update_editor_border_color()?,
             AgentSessionEvent::Agent(event) => {
-                // The guard is released before any row runs a renderer.
-                let event = event.read().unwrap_or_else(PoisonError::into_inner).clone();
-                self.handle_agent_event(event)?;
+                let event = event.read().unwrap_or_else(PoisonError::into_inner);
+                match &*event {
+                    AgentEvent::MessageStart {
+                        message: AgentMessage::ToolResult(_),
+                    }
+                    | AgentEvent::MessageEnd {
+                        message: AgentMessage::User(_),
+                    } => {}
+                    AgentEvent::MessageEnd {
+                        message: AgentMessage::Custom(_) | AgentMessage::ToolResult(_),
+                    } => self.ui.request_render(false),
+                    _ => self.handle_agent_event(event)?,
+                }
             }
             _ => {}
         }
@@ -74,26 +90,55 @@ impl InteractiveMode {
     /// rendering.
     fn handle_agent_event(
         &self,
-        event: AgentEvent<CustomAgentMessages>,
+        event: RwLockReadGuard<'_, AgentEvent<CustomAgentMessages>>,
     ) -> Result<(), Box<dyn Error>> {
-        match event {
-            AgentEvent::AgentStart => self.handle_agent_start()?,
-            AgentEvent::MessageStart { message } => self.handle_message_start(&message)?,
-            AgentEvent::MessageUpdate { message, .. } => self.handle_message_update(&message)?,
-            AgentEvent::MessageEnd { message } => self.handle_message_end(&message)?,
+        // Copy only consumed operands, releasing the guard before any renderer runs.
+        match &*event {
+            AgentEvent::AgentStart => {
+                drop(event);
+                self.handle_agent_start()?;
+            }
+            AgentEvent::MessageStart { message } => {
+                let message = message.clone();
+                drop(event);
+                self.handle_message_start(&message)?;
+            }
+            AgentEvent::MessageUpdate { message, .. } => {
+                let message = Arc::clone(message);
+                drop(event);
+                self.handle_message_update(&message)?;
+            }
+            AgentEvent::MessageEnd { message } => {
+                let message = message.clone();
+                drop(event);
+                self.handle_message_end(&message)?;
+            }
             AgentEvent::ToolExecutionStart { tool_call } => {
-                self.handle_tool_execution_start(tool_call)?;
+                let call = tool_call.clone();
+                drop(event);
+                self.handle_tool_execution_start(call)?;
             }
             AgentEvent::ToolExecutionUpdate {
                 tool_call,
                 partial_result,
-            } => self.show_tool_result(&tool_call.id, partial_result, None)?,
+            } => {
+                let (id, result) = (tool_call.id.clone(), partial_result.clone());
+                drop(event);
+                self.show_tool_result(&id, result, None)?;
+            }
             AgentEvent::ToolExecutionEnd {
                 tool_call,
                 result,
                 is_error,
-            } => self.show_tool_result(&tool_call.id, result, Some(is_error))?,
-            AgentEvent::AgentEnd { .. } => self.handle_agent_end()?,
+            } => {
+                let (id, result, failed) = (tool_call.id.clone(), result.clone(), *is_error);
+                drop(event);
+                self.show_tool_result(&id, result, Some(failed))?;
+            }
+            AgentEvent::AgentEnd { .. } => {
+                drop(event);
+                self.handle_agent_end()?;
+            }
             AgentEvent::TurnStart | AgentEvent::TurnEnd { .. } => {}
         }
         Ok(())
@@ -281,7 +326,7 @@ impl InteractiveMode {
         };
         row.update_result(result, failed.is_none())?;
         if failed.is_some() {
-            drop(self.pending_tools.borrow_mut().shift_remove(id));
+            drop(self.pending_tools.borrow_mut().remove(id));
         }
         self.ui.request_render(false);
         Ok(())

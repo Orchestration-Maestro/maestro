@@ -1442,11 +1442,90 @@ fn events_stream_work_is_linear() {
             let renders = rendered.borrow().len();
             assert!(renders <= 4 * calls);
             work.push(renders);
+            complete_without_shifting(&world, &ids);
+            retain_one_across_turns(&world, calls);
         }
         // Doubling the calls doubles the renderer work: each update visits each call once.
         assert_eq!(work[1], 2 * work[0]);
         assert_eq!(work[2], 2 * work[1]);
     });
+}
+
+/// Completes calls in encounter order, observing movement of retained entries rather than
+/// elapsed time, and checks that their final output remains in the transcript.
+fn complete_without_shifting(world: &World, ids: &[String]) {
+    let mut moved = 0;
+    for id in ids {
+        let before: Vec<_> = world
+            .mode
+            .pending_tools
+            .borrow()
+            .values()
+            .map(std::ptr::from_ref)
+            .collect();
+        dispatch(
+            world,
+            AgentEvent::ToolExecutionEnd {
+                tool_call: tool_call(id, "counted", &json!({})),
+                result: tool_result("COMPLETED", None),
+                is_error: false,
+            },
+        );
+        let pending = world.mode.pending_tools.borrow();
+        moved += before
+            .iter()
+            .skip(1)
+            .zip(pending.values())
+            .filter(|(previous, row)| **previous != std::ptr::from_ref(*row))
+            .count();
+    }
+    assert!(pending(world).is_empty());
+    assert!(
+        world
+            .mode
+            .chat_container
+            .render(100)
+            .join("\n")
+            .contains("COMPLETED")
+    );
+    assert!(
+        moved <= ids.len(),
+        "completion relocated {moved} retained rows for {} calls",
+        ids.len()
+    );
+}
+
+/// Keeps one unresolved call across assistant ends, bounding the backing-slot work of the
+/// actual pending-row traversal even after many other calls have completed.
+fn retain_one_across_turns(world: &World, turns: usize) {
+    stale(world, "retained");
+    let mut scanned = 0;
+    for _ in 0..turns {
+        end_streamed(world, "toolUse", None);
+        let bound = world
+            .mode
+            .pending_tools
+            .borrow()
+            .values()
+            .size_hint()
+            .1
+            .unwrap();
+        scanned += bound;
+        dispatch(
+            world,
+            AgentEvent::ToolExecutionEnd {
+                tool_call: tool_call("z", "unknown_tool", &json!({})),
+                result: tool_result("COMPLETED", None),
+                is_error: false,
+            },
+        );
+        assert_eq!(pending(world), ["retained"]);
+        assert!(
+            bound <= 4,
+            "assistant end scans up to {bound} slots for two live calls"
+        );
+    }
+    assert!(scanned <= 4 * turns);
 }
 
 /// Sets the working row's visibility while a response streams through `world`'s real

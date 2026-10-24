@@ -5,7 +5,6 @@ use crate::{
     AssistantMessageComponent, ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams,
     ToolExecutionResult,
 };
-use indexmap::IndexMap;
 use maestro_app::agent_session::ToolsManager;
 use maestro_app::{
     ReadonlySessionManager, SessionContext, TextContent, ToolName, ToolRendererBinding,
@@ -15,10 +14,10 @@ use maestro_tui::Component;
 use serde_json::Value;
 use std::{collections::HashMap, error::Error, io, rc::Rc, sync::Arc};
 
-/// The pending tool rows of one replay by call id, in call order. Pairing a result empties
-/// its row's slot instead of shifting the later rows, so a batch's results pair in linear time.
+/// The pending tool rows of replay or live events by call id, in call order. Pairing a
+/// result retires its slot; reclaiming at half occupancy keeps total pairing work linear.
 #[derive(Default)]
-struct PendingTools {
+pub(super) struct PendingTools {
     /// The slot of each pending call id.
     slots: HashMap<String, usize>,
     /// The rows in call order; a paired row leaves its slot empty.
@@ -28,7 +27,7 @@ struct PendingTools {
 impl PendingTools {
     /// Registers `row` for call `id`; a pending row of the same id is replaced in its place,
     /// while a paired id registers again after the other rows.
-    fn insert(&mut self, id: String, row: Rc<ToolExecutionComponent>) {
+    pub(super) fn insert(&mut self, id: String, row: Rc<ToolExecutionComponent>) {
         let pending = self
             .slots
             .get(&id)
@@ -42,15 +41,48 @@ impl PendingTools {
     }
 
     /// Removes and returns the pending row of call `id`.
-    fn remove(&mut self, id: &str) -> Option<Rc<ToolExecutionComponent>> {
+    pub(super) fn remove(&mut self, id: &str) -> Option<Rc<ToolExecutionComponent>> {
         let slot = self.slots.remove(id)?;
         let (_, row) = self.rows.get_mut(slot)?.take()?;
+        self.compact();
         Some(row)
     }
 
-    /// The rows still pending, by call id in call order.
-    fn into_map(self) -> IndexMap<String, Rc<ToolExecutionComponent>> {
-        self.rows.into_iter().flatten().collect()
+    /// Reclaims retired slots once at least half are retired, bounding later traversal
+    /// work by the pending rows and spreading reclamation work over completed calls.
+    fn compact(&mut self) {
+        let live = self.slots.len();
+        if live > self.rows.len() - live {
+            return;
+        }
+        let mut index = 0;
+        self.rows.retain(|entry| {
+            let Some((id, _)) = entry else {
+                return false;
+            };
+            if let Some(slot) = self.slots.get_mut(id) {
+                *slot = index;
+            }
+            index += 1;
+            true
+        });
+    }
+
+    /// The pending row of call `id`.
+    pub(super) fn get(&self, id: &str) -> Option<&Rc<ToolExecutionComponent>> {
+        let slot = *self.slots.get(id)?;
+        self.rows.get(slot)?.as_ref().map(|(_, row)| row)
+    }
+
+    /// The pending rows in call order.
+    pub(super) fn values(&self) -> impl Iterator<Item = &Rc<ToolExecutionComponent>> {
+        self.rows.iter().flatten().map(|(_, row)| row)
+    }
+
+    /// The pending call ids in call order.
+    #[cfg(all(test, unix))]
+    pub(super) fn keys(&self) -> impl Iterator<Item = &String> {
+        self.rows.iter().flatten().map(|(id, _)| id)
     }
 }
 
@@ -131,7 +163,7 @@ impl InteractiveMode {
                 )?,
             }
         }
-        self.pending_tools.replace(rendered.into_map());
+        self.pending_tools.replace(rendered);
         self.ui.request_render(false);
         Ok(())
     }
@@ -161,10 +193,10 @@ impl InteractiveMode {
             calls.filter(|block| block.get("type").and_then(Value::as_str) == Some("toolCall"))
         {
             let (id, name) = (call_field(call, "id")?, call_field(call, "name")?);
-            let row = self.render_tool_call(&id, &name, call.get("arguments").cloned())?;
+            let row = self.render_tool_call(id, name, call.get("arguments").cloned())?;
             match &failure {
                 Some(text) => row.update_result(failure_result(text), false)?,
-                None => rendered.insert(id, row),
+                None => rendered.insert(id.to_owned(), row),
             }
         }
         Ok(())
@@ -255,16 +287,13 @@ fn complete_tool_call(record: Value, rendered: &mut PendingTools) -> Result<(), 
 ///
 /// # Errors
 /// Returns the field as invalid data when it is missing or not a string.
-fn call_field(call: &Value, key: &str) -> io::Result<String> {
-    call.get(key)
-        .and_then(Value::as_str)
-        .map(str::to_owned)
-        .ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("tool call {key} is not a string"),
-            )
-        })
+fn call_field<'a>(call: &'a Value, key: &str) -> io::Result<&'a str> {
+    call.get(key).and_then(Value::as_str).ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("tool call {key} is not a string"),
+        )
+    })
 }
 
 /// The failed result a tool call of a failed message shows: `text` as its only block.

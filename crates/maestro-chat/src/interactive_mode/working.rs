@@ -93,8 +93,7 @@ impl InteractiveMode {
         let label =
             label.unwrap_or_else(|| AssistantMessageOptions::default().hidden_thinking_label);
         self.hidden_thinking_label.replace(label.clone());
-        let children = self.chat_container.children().borrow().clone();
-        for child in &children {
+        for child in self.chat_container.walk() {
             let child: &dyn Any = child.as_ref();
             if let Some(row) = child.downcast_ref::<AssistantMessageComponent>() {
                 row.set_hidden_thinking_label(label.clone());
