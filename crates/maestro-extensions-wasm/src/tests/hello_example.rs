@@ -29,7 +29,6 @@ pub(super) fn assert_metadata(metadata: &[String], expected: &Value) {
     assert_eq!(metadata.len(), 1);
     assert_eq!(decoded(&metadata[0], "parameters"), *expected);
 }
-
 /// Register once and assert the declared required string without optional metadata.
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {
