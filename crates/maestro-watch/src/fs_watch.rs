@@ -6,7 +6,7 @@ mod native;
 mod tests;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use native::NativeWatchOperations;
+pub use native::{NativeTimer, NativeWatchOperations};
 use std::io;
 use std::rc::Rc;
 use std::time::Duration;
