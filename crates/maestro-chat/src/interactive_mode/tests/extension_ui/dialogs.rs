@@ -10,10 +10,7 @@ use maestro_app::{
 use maestro_tui::{Component, Focusable};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{
-    rc::Rc,
-    task::{Context, Poll, Waker},
-};
+use std::rc::Rc;
 
 /// The editor text every recorded case starts from.
 const RETAINED: &str = "retained text";
@@ -161,13 +158,7 @@ enum Expected {
 
 /// The settled result of `future`, polled once, or `None` while it waits.
 fn settled<T>(future: &mut ExtensionUIFuture<T>) -> Option<T> {
-    match future
-        .as_mut()
-        .poll(&mut Context::from_waker(Waker::noop()))
-    {
-        Poll::Ready(result) => Some(result.unwrap()),
-        Poll::Pending => None,
-    }
+    super::super::typed::poll(future).map(Result::unwrap)
 }
 
 /// A started mode whose editor holds the retained text, with its writes cleared.
