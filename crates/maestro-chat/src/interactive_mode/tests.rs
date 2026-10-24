@@ -1,4 +1,12 @@
 //! Native presentation witnesses through the interactive mode's own interface.
+mod actions;
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Only executable installation is shared."
+)]
+#[path = "../../../maestro-app/tests/support/native.rs"]
+mod native;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
@@ -36,15 +44,19 @@ pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
 fn isolated(test: &str, body: impl FnOnce(&Path)) {
-    isolated_case(test, "child", (&[], &[]), body);
+    isolated_case(test, "child", &[], body);
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
-/// directory, with the environment changes `(set, removed)` applied.
+/// directory, with no inherited environment apart from the command path and `envs`, so
+/// no developer credential reaches it. The child's temporary directory is that root's
+/// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
+/// Wayland one. The file-size signal is ignored, so a write over a lowered limit fails
+/// instead of ending the child.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
-    (envs, removed): (&[(&str, &str)], &[&str]),
+    envs: &[(&str, &str)],
     body: impl FnOnce(&Path),
 ) {
     let selection = maestro_test_process::selection();
@@ -56,14 +68,31 @@ pub(super) fn isolated_case(
         return;
     }
     let scratch = child::Scratch::new();
-    let directory = scratch.0.path().to_str().unwrap();
-    let mut all = vec![(ENV_AGENT_DIR.as_str(), directory)];
+    let root = scratch.0.path();
+    for name in ["bin", "tmp"] {
+        std::fs::create_dir(root.join(name)).unwrap();
+    }
+    let path = format!(
+        "{}:{}",
+        root.join("bin").display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let mut all = vec![
+        (ENV_AGENT_DIR.as_str(), root.to_str().unwrap()),
+        ("PATH", &path),
+        ("WAYLAND_DISPLAY", "maestro-test"),
+    ];
     all.extend_from_slice(envs);
     child::probe(
-        TestProcess::current(test).unwrap().case(case),
-        scratch.0.path(),
+        TestProcess::current(test)
+            .unwrap()
+            .env_clear()
+            .case(case)
+            .shell_setup("trap '' XFSZ")
+            .temp_dir(root.join("tmp")),
+        root,
         &all,
-        removed,
+        &[],
     );
 }
 
@@ -325,6 +354,13 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),
         ("@warning@", ThemeColor::Warning),
+        ("@thinkingOff@", ThemeColor::ThinkingOff),
+        ("@thinkingMinimal@", ThemeColor::ThinkingMinimal),
+        ("@thinkingLow@", ThemeColor::ThinkingLow),
+        ("@thinkingMedium@", ThemeColor::ThinkingMedium),
+        ("@thinkingHigh@", ThemeColor::ThinkingHigh),
+        ("@thinkingXhigh@", ThemeColor::ThinkingXhigh),
+        ("@bashMode@", ThemeColor::BashMode),
         ("@mdHeading@", ThemeColor::MdHeading),
         ("@mdLink@", ThemeColor::MdLink),
     ] {
