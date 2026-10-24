@@ -1,8 +1,8 @@
 //! Editor submission and the single waiting input operation.
 use super::InteractiveMode;
 use maestro_app::is_whitespace_scalar;
-use maestro_tui::EditorComponent;
 use maestro_app::messages::UserMessageDelivery;
+use maestro_tui::EditorComponent;
 use std::{
     future::{Future, pending},
     rc::Rc,

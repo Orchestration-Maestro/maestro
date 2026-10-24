@@ -1474,7 +1474,7 @@ fn model_selection_observes_the_selected_descriptor_after_listeners() {
                 ..Setup::default()
             }
             .build(directory);
-            world.mode.init().unwrap();
+            super::start(&world);
             let tail = Arc::clone(&catalog(&world)[1]);
             let session = world.host.session();
             *replacement.borrow_mut() = Some(Box::new(move || {
@@ -1601,7 +1601,7 @@ fn replaceable(directory: &Path) -> World {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    super::start(&world);
     world.runtime.settle().unwrap();
     world
 }

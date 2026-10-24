@@ -369,7 +369,7 @@ fn transcript_registered_toggle_actions_release_the_mode() {
                 ..
             } = recorded(directory, Setup::default());
             let world_theme = |_: &Rc<crate::InteractiveMode>| Rc::clone(&themes);
-            mode.init().unwrap();
+            super::complete(mode.init()).unwrap();
             runtime.settle().unwrap();
             terminal.send_input("\x0f");
             assert!(mode.tool_output_expanded.get());
@@ -974,7 +974,7 @@ fn transcript_thinking_toggle_rebuilds_pending_rows_and_keeps_streaming_tail() {
                 &world,
                 vec![user_record("HISTORY"), assistant(&content, "toolUse", None)],
             );
-            world.mode.init().unwrap();
+            super::start(&world);
             world.runtime.settle().unwrap();
             let before = history(&world);
             world.terminal.send_input("\x14");

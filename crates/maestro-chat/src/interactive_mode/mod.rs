@@ -18,6 +18,7 @@ use std::{
 };
 
 mod actions;
+mod autocomplete;
 mod key_display;
 mod models;
 mod queues;
@@ -95,6 +96,8 @@ pub struct InteractiveMode {
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The selected search program for file completion, absent until startup prepares it.
+    fd_path: RefCell<Option<String>>,
 }
 
 impl InteractiveMode {
@@ -163,6 +166,7 @@ impl InteractiveMode {
             is_initialized: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
+            fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking_block),
             last_status: RefCell::default(),
@@ -174,7 +178,7 @@ impl InteractiveMode {
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, binds the
+    /// Prepares search programs and completion, builds the header, adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission, starts the terminal, lists the
     /// loaded resources and replays the session, once; theme changes then refresh the
     /// editor border, and theme and branch changes request fresh frames. Finally the
@@ -183,10 +187,12 @@ impl InteractiveMode {
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
     /// resource listing, of the replay or of the catalog refresh.
-    pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+    pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
+        self.prepare_search_tools().await?;
+        self.setup_autocomplete_provider();
         self.build_header()?;
         for child in [
             &self.header_container,
@@ -220,7 +226,10 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(false)?;
+        self.show_loaded_resources(resources::ShowLoadedResourcesOptions {
+            show_diagnostics_when_quiet: true,
+            ..resources::ShowLoadedResourcesOptions::default()
+        })?;
         self.render_initial_messages()?;
         self.update_available_provider_count()
     }

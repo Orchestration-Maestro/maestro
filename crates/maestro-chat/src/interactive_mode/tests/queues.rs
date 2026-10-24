@@ -963,7 +963,7 @@ fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    super::start(&world);
     world.runtime.settle().unwrap();
     let session = world.mode.runtime_host.session();
     let extension = Rc::clone(&session.resource_loader().get_extensions().extensions[0]);
