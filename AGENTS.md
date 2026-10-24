@@ -338,7 +338,9 @@ library is a dependency.
 Native proxy scripts use `boa_engine =0.22.0` (defaults off, `system-time-zone`,
 MIT), `tracing =0.1.44` (defaults off, `std`, MIT) for authored alerts, and
 `if-addrs =0.15.0` (defaults off, `link-local`, MIT OR BSD-3-Clause) for the
-local IPv4 fallback. These dependencies do not enter browser targets.
+local IPv4 fallback. FTP script sources use Maestro's own native client over the
+locked Tokio, regex and chrono facilities instead of an FTP dependency. These
+dependencies do not enter browser targets.
 Native SOCKS connections use `tokio-socks =0.5.3` (MIT, defaults off, `tokio`) and its
 `thiserror =1.0.69` closure, beside reqwest. Native connector support directly reuses locked
 `hyper =1.11.1`, `hyper-util =0.1.21`, `hyper-rustls =0.27.10`, `rustls =0.23.45`,
