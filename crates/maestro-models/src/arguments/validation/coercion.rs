@@ -152,25 +152,12 @@ fn numeric(value: &Value, kind: Kind<'_>) -> Option<Value> {
     serde_json::Number::from_f64(number).map(Value::Number)
 }
 
-/// Where one converted member sits below the node that declares it.
-#[derive(Clone, Copy)]
-pub(super) enum Member<'a> {
-    /// A member declared under `properties`, by its exact name.
-    Property(&'a str),
-    /// A sequence position with its own declared item node.
-    Position(usize),
-    /// A sequence member the single declared item node covers.
-    Item,
-    /// A member no declared property covers.
-    Additional,
-}
-
 /// Convert present declared members and schema-valued additional members.
 fn object(value: &mut Value, schema: &Value) {
     let Some(object) = value.as_object_mut() else {
         return;
     };
-    members(schema, object, |member, child, _| coerce(member, child));
+    members(schema, object, coerce);
 }
 
 /// Convert homogeneous or positional items without extending the array.
@@ -180,10 +167,10 @@ fn array(value: &mut Value, schema: &Value) {
     };
     match schema.get("items") {
         Some(Value::Array(_)) => {
-            positions(schema, values, |member, child, _| coerce(member, child));
+            positions(schema, values, coerce);
         }
         Some(Value::Object(_)) => {
-            sequence(schema, values, |member, child, _| coerce(member, child));
+            sequence(schema, values, coerce);
         }
         _ => {}
     }
@@ -193,16 +180,16 @@ fn array(value: &mut Value, schema: &Value) {
 ///
 /// A declared member is visited once, by its exact name; an additional member only when no
 /// declared member names it and the declaration supplies a schema for it.
-pub(super) fn members(
-    schema: &Value,
+pub(super) fn members<'a>(
+    schema: &'a Value,
     object: &mut serde_json::Map<String, Value>,
-    mut visit: impl FnMut(&mut Value, &Value, Member<'_>),
+    mut visit: impl FnMut(&mut Value, &'a Value),
 ) {
     let properties = schema.get("properties").and_then(Value::as_object);
     if let Some(properties) = properties {
         for (key, child) in super::diagnostics::entries(properties) {
             if let Some(member) = object.get_mut(key) {
-                visit(member, child, Member::Property(key));
+                visit(member, child);
             }
         }
     }
@@ -212,37 +199,37 @@ pub(super) fn members(
     {
         for (key, member) in object {
             if !properties.is_some_and(|properties| properties.contains_key(key)) {
-                visit(member, additional, Member::Additional);
+                visit(member, additional);
             }
         }
     }
 }
 
 /// Visit the sequence positions the declared positional item nodes cover.
-pub(super) fn positions(
-    schema: &Value,
+pub(super) fn positions<'a>(
+    schema: &'a Value,
     values: &mut [Value],
-    mut visit: impl FnMut(&mut Value, &Value, Member<'_>),
+    mut visit: impl FnMut(&mut Value, &'a Value),
 ) {
     let Some(schemas) = schema.get("items").and_then(Value::as_array) else {
         return;
     };
-    for (index, (member, child)) in values.iter_mut().zip(schemas).enumerate() {
-        visit(member, child, Member::Position(index));
+    for (member, child) in values.iter_mut().zip(schemas) {
+        visit(member, child);
     }
 }
 
 /// Visit every sequence member through the single declared item node.
-pub(super) fn sequence(
-    schema: &Value,
+pub(super) fn sequence<'a>(
+    schema: &'a Value,
     values: &mut [Value],
-    mut visit: impl FnMut(&mut Value, &Value, Member<'_>),
+    mut visit: impl FnMut(&mut Value, &'a Value),
 ) {
     let Some(items) = schema.get("items").filter(|items| items.is_object()) else {
         return;
     };
     for member in values {
-        visit(member, items, Member::Item);
+        visit(member, items);
     }
 }
 

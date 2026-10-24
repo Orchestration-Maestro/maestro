@@ -9,6 +9,7 @@ mod formats;
 mod prepare;
 mod references;
 mod scalars;
+mod schema;
 
 use crate::{DiagnosticErrorInfo, JsonObject, Tool, ToolCall};
 use serde_json::Value;

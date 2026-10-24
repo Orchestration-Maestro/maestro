@@ -724,3 +724,306 @@ fn prepare(
     };
     validate_tool_arguments(&tool, &call).map_err(|error| error.message)
 }
+
+/// Declared kinds and their JSON pointer addresses.
+fn declared(entries: &[(&str, SchemaKind)]) -> Vec<(String, SchemaKind)> {
+    entries
+        .iter()
+        .map(|(pointer, kind)| ((*pointer).to_owned(), kind.clone()))
+        .collect()
+}
+
+/// Assert the prepared arguments one authored schema yields.
+#[track_caller]
+fn assert_prepared(
+    entries: &[(&str, SchemaKind)],
+    schema: Value,
+    arguments: impl Into<Value>,
+    expected: impl Into<Value>,
+) {
+    let arguments: Value = arguments.into();
+    let outcome = prepare(
+        ParameterSchema::authored(schema, declared(entries)),
+        arguments.as_object().cloned().unwrap_or_default(),
+    );
+    assert!(outcome.is_ok(), "prepared arguments: {:?}", outcome.err());
+    assert_eq!(Value::Object(outcome.unwrap_or_default()), expected.into());
+}
+
+/// Assert the diagnostic one authored schema rejects its arguments with.
+#[track_caller]
+fn assert_rejected(
+    entries: &[(&str, SchemaKind)],
+    schema: Value,
+    arguments: impl Into<Value>,
+    expected: &str,
+) {
+    let arguments: Value = arguments.into();
+    let outcome = prepare(
+        ParameterSchema::authored(schema, declared(entries)),
+        arguments.as_object().cloned().unwrap_or_default(),
+    );
+    assert_eq!(outcome.err().as_deref(), Some(expected));
+}
+
+/// Assert the prepared arguments one plain schema yields.
+#[track_caller]
+fn assert_plain_prepared(schema: Value, arguments: impl Into<Value>, expected: impl Into<Value>) {
+    let arguments: Value = arguments.into();
+    let prepared = prepared(
+        ParameterSchema::from(schema),
+        arguments.as_object().cloned().unwrap_or_default(),
+    );
+    assert_eq!(Value::Object(prepared), expected.into());
+}
+
+/// An intersection keeps every operand's own member identity.
+///
+/// A member declared beside the converted one shares no kind with it, however their names
+/// relate: the evaluated object keeps the exact keys and the child kinds its operands
+/// declared, so a plain `a` stays plain beside a converted `ab`.
+#[test]
+fn intersection_composition_keeps_member_identity() {
+    let number = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {"allOf": [
+            {"type": "object", "required": ["a", "ab"],
+             "properties": {"a": {"type": "string"}, "ab": {"type": "number"}}},
+            {"type": "object"},
+        ]}},
+    });
+    assert_prepared(
+        &[
+            ("", SchemaKind::Object),
+            ("/properties/value", SchemaKind::Intersect),
+            ("/properties/value/allOf/0", SchemaKind::Object),
+            (
+                "/properties/value/allOf/0/properties/ab",
+                SchemaKind::Number,
+            ),
+            ("/properties/value/allOf/1", SchemaKind::Object),
+        ],
+        number,
+        serde_json::json!({"value": {"a": null, "ab": 1}}),
+        serde_json::json!({"value": {"a": "", "ab": 1}}),
+    );
+    let text = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {"allOf": [
+            {"type": "object", "required": ["a", "ab"],
+             "properties": {"a": {"type": "string"}, "ab": {"type": "string"}}},
+            {"type": "object"},
+        ]}},
+    });
+    assert_prepared(
+        &[
+            ("", SchemaKind::Object),
+            ("/properties/value", SchemaKind::Intersect),
+            ("/properties/value/allOf/0", SchemaKind::Object),
+            (
+                "/properties/value/allOf/0/properties/ab",
+                SchemaKind::String,
+            ),
+            ("/properties/value/allOf/1", SchemaKind::Object),
+        ],
+        text,
+        serde_json::json!({"value": {"a": null, "ab": 1}}),
+        serde_json::json!({"value": {"a": "", "ab": "1"}}),
+    );
+}
+
+/// An intersection's operands keep the definitions their cyclic node declared.
+///
+/// A reference operand that cannot recurse becomes the definition it names; a recursive one
+/// keeps its definition until it is converted. Neither loses the kinds the definition carries.
+#[test]
+fn intersection_operands_keep_cyclic_definitions() {
+    let scalar = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {
+            "$defs": {
+                "S": {"type": "string", "$id": "S"},
+                "R": {"allOf": [{"$ref": "S"}, {}], "$id": "R"},
+            },
+            "$ref": "R",
+        }},
+    });
+    assert_prepared(
+        &[
+            ("", SchemaKind::Object),
+            ("/properties/value", SchemaKind::Cyclic),
+            ("/properties/value/$defs/S", SchemaKind::String),
+            ("/properties/value/$defs/R", SchemaKind::Intersect),
+            ("/properties/value/$defs/R/allOf/0", SchemaKind::Ref),
+            ("/properties/value/$defs/R/allOf/1", SchemaKind::Unknown),
+        ],
+        scalar,
+        serde_json::json!({"value": null}),
+        serde_json::json!({"value": "null"}),
+    );
+    let object = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {
+            "$defs": {
+                "S": {"type": "string", "$id": "S"},
+                "R": {"allOf": [
+                    {"type": "object", "required": ["a"], "properties": {"a": {"$ref": "S"}}},
+                    {},
+                ], "$id": "R"},
+            },
+            "$ref": "R",
+        }},
+    });
+    assert_prepared(
+        &[
+            ("", SchemaKind::Object),
+            ("/properties/value", SchemaKind::Cyclic),
+            ("/properties/value/$defs/S", SchemaKind::String),
+            ("/properties/value/$defs/R", SchemaKind::Intersect),
+            ("/properties/value/$defs/R/allOf/0", SchemaKind::Object),
+            (
+                "/properties/value/$defs/R/allOf/0/properties/a",
+                SchemaKind::Ref,
+            ),
+            ("/properties/value/$defs/R/allOf/1", SchemaKind::Object),
+        ],
+        object,
+        serde_json::json!({"value": {"a": null}}),
+        serde_json::json!({"value": {"a": "null"}}),
+    );
+}
+
+/// A recursive definition converts every member it reaches again.
+#[test]
+fn recursive_definitions_convert_nested_members() {
+    let schema = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {
+            "$defs": {
+                "S": {"type": "object", "required": ["a"],
+                      "properties": {"a": {"type": "string"}, "next": {"$ref": "S"}},
+                      "$id": "S"},
+                "R": {"allOf": [{"$ref": "S"}, {}], "$id": "R"},
+            },
+            "$ref": "R",
+        }},
+    });
+    assert_prepared(
+        &[
+            ("", SchemaKind::Object),
+            ("/properties/value", SchemaKind::Cyclic),
+            ("/properties/value/$defs/S", SchemaKind::Object),
+            ("/properties/value/$defs/S/properties/a", SchemaKind::String),
+            ("/properties/value/$defs/S/properties/next", SchemaKind::Ref),
+            ("/properties/value/$defs/R", SchemaKind::Intersect),
+            ("/properties/value/$defs/R/allOf/0", SchemaKind::Ref),
+            ("/properties/value/$defs/R/allOf/1", SchemaKind::Unknown),
+        ],
+        schema,
+        serde_json::json!({"value": {"a": null, "next": {"a": null}}}),
+        serde_json::json!({"value": {"a": "null", "next": {"a": "null"}}}),
+    );
+}
+
+/// A plain reference keeps the last matching subtree below its resource root.
+///
+/// The root's own definitions win; without one, the last sibling subtree that declares the
+/// pointer answers, so a later declaration is never shadowed by an earlier one.
+#[test]
+fn plain_reference_selection_uses_the_last_subtree() {
+    let nested = serde_json::json!({
+        "type": "object",
+        "required": ["value"],
+        "properties": {"value": {"$ref": "#/$defs/S"}},
+        "left": {"$defs": {"S": {"type": "number", "$id": "S"}}},
+        "right": {"$defs": {"S": {"type": "string", "$id": "S"}}},
+    });
+    let diagnostic = "Validation failed for tool \"echo\":\n  - value: must be string\n\nReceived arguments:\n{\n  \"value\": 1\n}";
+    assert_rejected(&[], nested, serde_json::json!({"value": 1}), diagnostic);
+    let rooted = serde_json::json!({
+        "type": "object",
+        "required": ["value"],
+        "properties": {"value": {"$ref": "#/$defs/S"}},
+        "$defs": {"S": {"type": "number", "$id": "S"}},
+        "left": {"$defs": {"S": {"type": "string", "$id": "S"}}},
+    });
+    assert_plain_prepared(
+        rooted,
+        serde_json::json!({"value": 1}),
+        serde_json::json!({"value": 1}),
+    );
+}
+
+/// A sequence root returns a converted sequence while its own members stay as supplied.
+///
+/// The reference converter maps a sequence into a new one and keeps nested container edits in
+/// the sequence it was given, so the later plain pass sees the members it had.
+#[test]
+fn sequence_roots_keep_returned_and_retained_effects_apart() {
+    let text = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {"type": "string"}},
+    });
+    assert_plain_prepared(
+        text,
+        serde_json::json!({"value": null}),
+        serde_json::json!({"value": ""}),
+    );
+    let array = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {"type": "array", "items": {"type": "string"}}},
+    });
+    assert_plain_prepared(
+        array,
+        serde_json::json!({"value": [null]}),
+        serde_json::json!({"value": [""]}),
+    );
+}
+
+/// A converted nested tuple edits the containers the supplied value already holds.
+#[test]
+fn nested_container_edits_survive_a_returned_sequence() {
+    let tuple = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {
+            "type": "array",
+            "items": {"type": "array", "items": [{"type": "string"}]},
+        }},
+    });
+    assert_prepared(
+        &[
+            ("", SchemaKind::Object),
+            ("/properties/value", SchemaKind::Array),
+            ("/properties/value/items", SchemaKind::Tuple),
+            ("/properties/value/items/items/0", SchemaKind::String),
+        ],
+        tuple,
+        serde_json::json!({"value": [[null]]}),
+        serde_json::json!({"value": [["null"]]}),
+    );
+    let object = serde_json::json!({
+        "type": "object", "required": ["value"],
+        "properties": {"value": {
+            "type": "array",
+            "items": {"type": "array", "items": {
+                "type": "object", "required": ["value"],
+                "properties": {"value": {"type": "string"}},
+            }},
+        }},
+    });
+    assert_prepared(
+        &[
+            ("", SchemaKind::Object),
+            ("/properties/value", SchemaKind::Array),
+            ("/properties/value/items", SchemaKind::Array),
+            ("/properties/value/items/items", SchemaKind::Object),
+            (
+                "/properties/value/items/items/properties/value",
+                SchemaKind::String,
+            ),
+        ],
+        object,
+        serde_json::json!({"value": [[{"value": null}]]}),
+        serde_json::json!({"value": [[{"value": "null"}]]}),
+    );
+}

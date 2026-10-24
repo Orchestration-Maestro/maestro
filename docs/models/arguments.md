@@ -120,8 +120,10 @@ without crossing a nested `$id`. Following a reference keeps the caller's live
 anchors, enters the target's enclosing resources that are not yet entered, then
 enters the target. The outermost binding of a name wins, a sibling property
 never sees bindings added for another, and a pointer fragment never takes a
-dynamic binding. Array pointer segments use exact unsigned index names: `0` and
-`1` resolve, while `+0`, `+1` and `01` do not.
+dynamic binding. A pointer fragment resolves at the resource root first; when
+that root does not hold it, the child subtrees answer in declaration order and
+the last one that declares the pointer wins. Array pointer segments use exact
+unsigned index names: `0` and `1` resolve, while `+0`, `+1` and `01` do not.
 Known string formats are asserted, unknown format names remain annotations, and
 string lengths count extended grapheme clusters.
 

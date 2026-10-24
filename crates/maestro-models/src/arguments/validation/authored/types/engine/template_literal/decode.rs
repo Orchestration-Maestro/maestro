@@ -3,32 +3,29 @@
 //! A pattern that names a finite set of literal texts converts through those literals; any
 //! other pattern, including one this decoder cannot read, stands for text itself.
 
+use std::{borrow::Cow, rc::Rc};
+
 use serde_json::Value;
 
-use super::scalars;
+use crate::arguments::validation::authored::schema_view::Node;
 
-/// Convert a supplied value through the literals a template pattern names.
-pub(super) fn convert(value: &mut Value, schema: &Value) {
-    let Some(pattern) = schema.get("pattern").and_then(Value::as_str) else {
-        return;
-    };
-    match decode(pattern) {
-        Some(literals) => select(value, &literals),
-        None => scalars::to_string(value),
+/// Decode a pattern into the node its alternatives stand for, when that set is finite.
+pub(crate) fn decode<'a>(pattern: &str) -> Option<Rc<Node<'a>>> {
+    let mut literals = variants(pattern)?
+        .into_iter()
+        .map(|literal| Rc::new(Node::Constant(Cow::Owned(Value::String(literal)))));
+    let first = literals.next()?;
+    let rest: Vec<Rc<Node<'a>>> = literals.collect();
+    if rest.is_empty() {
+        return Some(first);
     }
-}
-
-/// Select the literal a supplied value converts to, in declaration order.
-fn select(value: &mut Value, literals: &[String]) {
-    let mut candidate = value.clone();
-    scalars::to_string(&mut candidate);
-    if literals.iter().any(|literal| *literal == candidate) {
-        *value = candidate;
-    }
+    let mut alternatives = vec![first];
+    alternatives.extend(rest);
+    Some(Rc::new(Node::Union(alternatives)))
 }
 
 /// Expand a pattern into the literal texts it accepts, when that set is finite.
-fn decode(pattern: &str) -> Option<Vec<String>> {
+fn variants(pattern: &str) -> Option<Vec<String>> {
     let body = pattern.strip_prefix('^')?.strip_suffix('$')?;
     if body.is_empty() {
         return None;
@@ -184,13 +181,13 @@ fn join(left: &[String], right: &[String]) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::decode;
+    use super::variants;
 
     /// Alternatives name every alternative, not their concatenation.
     #[test]
     fn alternatives_stay_separate() {
         assert_eq!(
-            decode("^(null|true)$").unwrap_or_default(),
+            variants("^(null|true)$").unwrap_or_default(),
             ["null", "true"]
         );
     }
@@ -198,7 +195,7 @@ mod tests {
     /// A finite pattern names every text it accepts, however many there are.
     #[test]
     fn finite_patterns_expand_without_a_bound() {
-        let literals = decode("^(a|b){11}$").unwrap_or_default();
+        let literals = variants("^(a|b){11}$").unwrap_or_default();
         assert_eq!(literals.len(), 2_048);
         assert!(literals.iter().all(|literal| literal.len() == 11));
     }
@@ -207,7 +204,7 @@ mod tests {
     #[test]
     fn unbounded_repetition_stays_unbounded() {
         for pattern in ["^(a|b)+$", "^(a|b)*$"] {
-            assert!(decode(pattern).is_none(), "{pattern} is unbounded");
+            assert!(variants(pattern).is_none(), "{pattern} is unbounded");
         }
     }
 }
