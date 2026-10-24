@@ -18,8 +18,8 @@ const ENTRY: &str = "register_signals";
 /// Native facility only the owner may name.
 const RAW_FACILITY: &str = "signal_hook";
 
-/// Tokio signal kinds that deliver termination events.
-const TERMINATION_KINDS: &[&str] = &["terminate", "hangup", "interrupt"];
+/// Tokio signal kinds that deliver termination events, including the raw-number constructor.
+const TERMINATION_KINDS: &[&str] = &["terminate", "hangup", "interrupt", "from_raw"];
 
 /// Files outside the owner that re-export the entry point.
 const EXPORTS: &[(&str, &str)] = &[("maestro-app", "src/exports/process.rs")];

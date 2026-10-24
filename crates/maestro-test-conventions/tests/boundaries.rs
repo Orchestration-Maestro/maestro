@@ -1539,6 +1539,11 @@ const TERMINATION_BYPASSES: &[TerminationBypass] = &[
         "raw signal_hook belongs to maestro-process",
     ),
     (
+        "raw_kind.rs",
+        "//! Raw kind.\n/// Item.\npub fn watch() -> std::io::Result<()> {\n    let _kind = tokio::signal::unix::SignalKind::from_raw(15);\n    Ok(())\n}\n",
+        "native termination delivery belongs to maestro-process",
+    ),
+    (
         "kind.rs",
         "//! Kind.\n/// Item.\npub fn watch() -> std::io::Result<()> {\n    let _kind = tokio::signal::unix::SignalKind::terminate();\n    Ok(())\n}\n",
         "native termination delivery belongs to maestro-process",
