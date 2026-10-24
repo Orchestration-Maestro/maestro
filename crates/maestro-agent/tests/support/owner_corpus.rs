@@ -239,7 +239,7 @@ fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
         definition: maestro_models::Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: json!({"type":"object","properties":{}}),
+            parameters: json!({"type":"object","properties":{}}).into(),
         },
         label: "Echo".into(),
         prepare_arguments: None,

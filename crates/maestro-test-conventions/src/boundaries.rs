@@ -12,14 +12,8 @@ use wit::{ScanContext, WitInputs};
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
-/// Single-owner rule for the lines a protocol server writes.
-mod rpc_writers;
-
 /// Single-owner rule for work polled once before a task facility takes it.
 mod inline_polls;
-
-/// Imports of one use tree, shared by the single-owner rules.
-mod imports;
 
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
@@ -55,13 +49,15 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
-    rpc_writers::check(members)?;
     inline_polls::check(members)?;
     wit.finish()
 }
 
 /// Rust declaration keywords whose following identifiers are inspected.
 const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type", "mod"];
+
+/// Shared protocol functions whose declarations have one owner.
+const OWNED_FUNCTIONS: &[&str] = &["serialize_json_line", "serialize_rpc_response"];
 
 /// Session configuration record that only the shared interactive test setup constructs.
 const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
@@ -75,9 +71,6 @@ const FOOTER_SUPPORT: &str = "tests/footer_support";
 /// Source tree holding the interactive mode and its own test modules.
 const INTERACTIVE_MODE: &str = "src/interactive_mode";
 
-/// Shared protocol functions whose declarations have one owner.
-const OWNED_FUNCTIONS: &[&str] = &["serialize_json_line", "serialize_rpc_response"];
-
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.
 struct Records {
@@ -87,6 +80,8 @@ struct Records {
     declarations: Vec<(String, String, usize)>,
     /// Interface-generation macro arguments paired with their source lines.
     inputs: Vec<(usize, proc_macro2::TokenStream)>,
+    /// Declared name, source line and head tokens of every struct, up to its body.
+    struct_heads: Vec<(String, usize, proc_macro2::TokenStream)>,
 }
 
 impl Records {
@@ -131,8 +126,18 @@ impl Records {
         if kind == "union" && !union_body(following.get(1)) {
             return;
         }
+        let line = keyword.span().start().line;
+        if kind == "struct" {
+            let head: TokenStream = following
+                .iter()
+                .take_while(|token| !matches!(token, TokenTree::Group(_)))
+                .cloned()
+                .collect();
+            self.struct_heads
+                .push((name.unraw().to_string(), line, head));
+        }
         self.declarations
-            .push((name.unraw().to_string(), kind, keyword.span().start().line));
+            .push((name.unraw().to_string(), kind, line));
     }
 
     /// Record supported interface-generation macro inputs.
@@ -302,6 +307,26 @@ fn check_declarations(
     Ok(())
 }
 
+/// Rejects a protocol record declared outside the application and the protocol crate.
+fn foreign_rpc_record(
+    member: &Member,
+    source: &Source,
+    name: &str,
+    line: usize,
+) -> Result<(), String> {
+    let record = name
+        .strip_prefix("Rpc")
+        .is_some_and(|rest| rest.starts_with(char::is_uppercase));
+    if record && !["maestro-app", "maestro-protocol"].contains(&member.name.as_str()) {
+        return Err(format!(
+            "{}:{line}: {name} declaration belongs to maestro-app or maestro-protocol, not {}",
+            source.path.display(),
+            member.name
+        ));
+    }
+    Ok(())
+}
+
 /// The crate that owns one declaration, for the names the workspace scopes.
 fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     let owner = if selector(name) {
@@ -314,6 +339,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     } else if matches!(
         name,
         "ToolInfo"
+            | "ParameterSchema"
+            | "SchemaKind"
             | "SlashCommandInfo"
             | "SlashCommandSource"
             | "MessageRenderOptions"
@@ -330,12 +357,12 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-listeners"
     } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
         "maestro-test-terminal"
+    } else if input_presenter_record(name) {
+        "maestro-app"
     } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {
         "maestro-json"
     } else if name == "serialize_rpc_response" {
         "maestro-protocol"
-    } else if input_presenter_record(name) {
-        "maestro-app"
     } else {
         return None;
     };
@@ -355,26 +382,6 @@ fn input_presenter_record(name: &str) -> bool {
             | "SessionsFuture"
             | "SessionsLoader"
     )
-}
-
-/// Rejects a protocol record declared outside the application and the protocol crate.
-fn foreign_rpc_record(
-    member: &Member,
-    source: &Source,
-    name: &str,
-    line: usize,
-) -> Result<(), String> {
-    let record = name
-        .strip_prefix("Rpc")
-        .is_some_and(|rest| rest.starts_with(char::is_uppercase));
-    if record && !["maestro-app", "maestro-protocol"].contains(&member.name.as_str()) {
-        return Err(format!(
-            "{}:{line}: {name} declaration belongs to maestro-app or maestro-protocol, not {}",
-            source.path.display(),
-            member.name
-        ));
-    }
-    Ok(())
 }
 
 /// Shared schema declarations whose specialization aliases remain owner-local.

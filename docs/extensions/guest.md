@@ -618,6 +618,22 @@ the supplied `systemPrompt` only while the boolean is set and otherwise returns
 no override. A refused notification leaves the flip in place. Loading it into an
 application is opt-in, and `examples/extensions/README.md` gives the build and
 controlled-run commands.
+
+### A system prompt status header
+
+[`examples/extensions/system_prompt_header.rs`](../../examples/extensions/system_prompt_header.rs)
+registers `agent_start` to read the prompt the host supplies at that moment and
+set the `system-prompt` status to `System: N chars`, where `N` counts UTF-16 code
+units of that prompt. Whitespace, a byte order mark and combining sequences keep
+the width the string stores, and nothing is trimmed, rebuilt or cached.
+`session_shutdown` removes the status under the same key, including when no start
+came first, so the handler keeps no state between invocations.
+
+A host rejection from the getter or the status request reaches the host
+unchanged, and no fallback status is written. Loading the component into an
+application is opt-in, and `examples/extensions/README.md` gives the build and
+controlled-run commands.
+
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses
@@ -699,6 +715,68 @@ It is opt-in like the greeting tool: its crate's tests run the built component i
 controlled host, and `examples/extensions/README.md` holds the build and
 controlled-run commands. Compacting a running application is not part of that
 controlled run.
+
+### Entry bookmarks
+
+[`examples/extensions/bookmark.rs`](../../examples/extensions/bookmark.rs) labels
+session entries, which is what the tree view shows beside an entry. `/bookmark`
+labels the newest assistant message: with the argument text when it has any, and
+with `bookmark-<epoch milliseconds>` when the argument is blank. `/unbookmark`
+removes the newest label from any entry kind and ignores its arguments.
+
+The example reads the complete entry list once per invocation, walks it from the
+newest entry and stops at the first match, so a bookmark never scans the list
+twice. It keeps no label store of its own: `set_label` and `get_label` reach the
+host's session, and a label it removes keeps the entry it was written on.
+
+Entry identity comes from the entry `message`, `thinking_level_change`,
+`model_change`, `compaction`, `branch_summary`, `custom`, `custom_message`,
+`label` and `session_info` all carry, so removal covers every kind. Both commands
+return host failures unchanged, and a command that writes a label before
+notifying writes nothing when the label write itself fails.
+
+It is opt-in like the other shipped extensions: its crate's tests run the built
+component in a controlled host with a supplied wall clock, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
+
+### A custom working message on session start
+
+[`examples/extensions/working_message_test.rs`](../../examples/extensions/working_message_test.rs)
+registers one `session_start` handler. It acquires the context's UI and sends
+`set_working_message` with the authored text, then `set_working_indicator` with
+one authored frame and no interval, and returns no event result. Both requests
+keep every authored byte, including the colour and reset sequences. A refusal the
+host returns ends the callback with the host's message, so a refused working-text
+request leaves the indicator unsent.
+
+The controlled run asserts the ordered requests the guest sends; it does not show
+that an interactive host keeps them across agent turns or loader recreation, which
+belongs to the host's own working-loader operations. Loading the component into an
+application is opt-in and needs that application's component runtime.
+
+### User message delivery
+
+[`examples/extensions/send_user_message.rs`](../../examples/extensions/send_user_message.rs)
+sends user messages the way a user types them. `/ask` sends an ordinary message,
+which starts a turn, and reports `Agent is busy. Use /steer or /followup
+instead.` while the agent is working. `/steer` sends an ordinary message while
+idle and a steering message while the agent is working, so that message reaches
+the request in flight. `/followup` sends an ordinary message while idle and
+otherwise queues a follow-up, reporting `Follow-up queued` once the host admitted
+it. `/askwith` sends two text blocks, `User request: <arguments>` and `Please
+respond concisely.`, so the second instruction arrives with the request.
+
+A command with no message reports its own usage warning before it reads the idle
+flag or sends anything: `Usage: /ask <message>` and its three siblings. Message
+text is sent exactly as it arrived, whitespace included, even
+though the same text decides whether the argument is blank. Each command returns
+a host failure unchanged, and a queued follow-up acknowledges only a send the host
+admitted.
+
+It is opt-in like the other shipped extensions: its crate's tests run the built
+component in a controlled host and `examples/extensions/README.md` holds the build
+and controlled-run commands. Delivering those requests from a running
+application is part of the queue the application owns, not of this controlled run.
 
 ### A user-request summary handler
 

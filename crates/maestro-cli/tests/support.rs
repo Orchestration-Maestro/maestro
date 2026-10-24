@@ -9,6 +9,9 @@ pub mod package_commands;
 /// Presenter harness shared by the selector and configuration command tests.
 pub mod presenters;
 
+/// Controlled settings, catalogs and stored histories of the startup tests.
+pub mod startup;
+
 /// One recorded case: its group, its name, its input and its complete expected result.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]

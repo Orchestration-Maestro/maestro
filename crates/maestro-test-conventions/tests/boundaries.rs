@@ -193,6 +193,58 @@ fn check_tool_fragment_owner(workspace: &Workspace, name: &str) {
 }
 
 #[test]
+fn parameter_schema_records_have_one_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-request", "maestro-models", "maestro-tui"]);
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        "\npub(crate) struct\nParameterSchema { }",
+    );
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        error.contains("maestro-tui/src/lib.rs:2:") && error.contains("maestro-request"),
+        "{error}"
+    );
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        "pub use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};\n\
+         fn use_schema(_: ParameterSchema, _: SchemaKind) {}",
+    );
+    source(
+        &workspace,
+        "maestro-request",
+        "src/lib.rs",
+        "pub struct ParameterSchema { }\npub enum SchemaKind { String }\n\
+         pub struct Tool { parameters: ParameterSchema }\n\
+         pub struct ToolInfo<P = ParameterSchema> { parameters: P }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    source(
+        &workspace,
+        "maestro-request",
+        "src/lib.rs",
+        "pub struct ParameterSchema { }\npub enum SchemaKind { String }",
+    );
+    source(
+        &workspace,
+        "maestro-models",
+        "src/lib.rs",
+        "pub struct ParameterSchema { }",
+    );
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        error.contains("maestro-models/src/lib.rs:1:")
+            && error.contains("ParameterSchema")
+            && error.contains("maestro-request"),
+        "{error}"
+    );
+}
+
+#[test]
 fn application_selectors_stay_in_chat() {
     let declarations: Vec<_> = [
         ("ConfigSelectorComponent", "config_selector"),
@@ -1189,7 +1241,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
         &workspace,
         "maestro-request",
         "src/lib.rs",
-        "pub struct ToolInfo<P> { parameters: P }",
+        "pub struct ToolInfo<P = ParameterSchema> { parameters: P }",
     );
     source(
         &workspace,

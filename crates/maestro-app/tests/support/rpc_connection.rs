@@ -4,7 +4,8 @@
 use crate::support::export_fixtures::{Recording, environment, published};
 use crate::support::session_harness::answer;
 use maestro_app::rpc_mode::{
-    RpcFuture, RpcInput, RpcLineReader, RpcProcessPort, WorkspaceEventSink, WorkspaceOperations,
+    RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcProcessPort, WorkspaceEventSink,
+    WorkspaceOperations,
 };
 use maestro_app::rpc_types::{workspace, workspace_schema};
 use maestro_app::{
@@ -24,18 +25,17 @@ use tokio::sync::mpsc;
 
 /// Lines a test supplies, read in order; a dropped sender ends the input.
 struct MemoryReader {
-    /// The supplied inputs.
-    inputs: mpsc::UnboundedReceiver<RpcInput>,
+    /// The supplied inputs and read failures.
+    inputs: mpsc::UnboundedReceiver<io::Result<RpcInput>>,
 }
 
 impl RpcLineReader for MemoryReader {
     fn next_line(&mut self) -> Pin<Box<dyn Future<Output = io::Result<RpcInput>> + '_>> {
         Box::pin(async move {
-            Ok(self
-                .inputs
+            self.inputs
                 .recv()
                 .await
-                .unwrap_or(RpcInput::End { tail: None }))
+                .unwrap_or(Ok(RpcInput::End { tail: None }))
         })
     }
 
@@ -86,19 +86,48 @@ impl WorkspaceOperations for ClosureWorkspace {
     }
 }
 
-/// A test's end of a connection.
-pub struct Client {
+/// A test's end of a connection, whoever drives the server.
+pub struct Peer {
     /// Supplies the server's input.
-    inputs: Option<mpsc::UnboundedSender<RpcInput>>,
+    inputs: Option<mpsc::UnboundedSender<io::Result<RpcInput>>>,
+    /// Whether the server's writes fail.
+    failing_writes: Rc<std::cell::Cell<bool>>,
     /// Every line the server wrote, in order.
     lines: mpsc::UnboundedReceiver<String>,
-    /// The running server.
-    pub server: tokio::task::JoinHandle<io::Result<RpcConnectionOutcome>>,
     /// The server's signal registration.
     signals: Rc<Signals>,
 }
 
+/// A test's end of a connection whose server runs on its own task.
+pub struct Client {
+    /// The test's end.
+    peer: Peer,
+    /// The running server.
+    pub server: tokio::task::JoinHandle<io::Result<RpcConnectionOutcome>>,
+}
+
+impl std::ops::Deref for Client {
+    type Target = Peer;
+
+    fn deref(&self) -> &Peer {
+        &self.peer
+    }
+}
+
+impl std::ops::DerefMut for Client {
+    fn deref_mut(&mut self) -> &mut Peer {
+        &mut self.peer
+    }
+}
+
 impl Client {
+    /// The connection's outcome, once it ends.
+    pub async fn outcome(self) -> io::Result<RpcConnectionOutcome> {
+        self.server.await.unwrap()
+    }
+}
+
+impl Peer {
     /// Writes `line` to the server.
     pub fn send(&self, line: &str) {
         self.input(RpcInput::Line(line.to_owned()));
@@ -113,7 +142,23 @@ impl Client {
 
     /// Supplies `input`.
     fn input(&self, input: RpcInput) {
-        self.inputs.as_ref().unwrap().send(input).unwrap();
+        self.inputs.as_ref().unwrap().send(Ok(input)).unwrap();
+    }
+
+    /// Makes the server's next read fail.
+    pub fn fail_read(&self) {
+        let failure = io::Error::other("read failed");
+        self.inputs.as_ref().unwrap().send(Err(failure)).unwrap();
+    }
+
+    /// Makes every later server write fail.
+    pub fn fail_writes(&self) {
+        self.failing_writes.set(true);
+    }
+
+    /// How often the server stopped signal delivery.
+    pub fn signals_stopped(&self) -> usize {
+        *self.signals.stopped.borrow()
     }
 
     /// The next line the server writes, as written.
@@ -138,11 +183,6 @@ impl Client {
         let deliver = self.signals.deliver.borrow().clone();
         deliver.unwrap()(signal);
     }
-
-    /// The connection's outcome, once it ends.
-    pub async fn outcome(self) -> io::Result<RpcConnectionOutcome> {
-        self.server.await.unwrap()
-    }
 }
 
 /// Serves `runtime` over memory with `workspace` answering workspace commands.
@@ -157,6 +197,21 @@ pub fn serve(
     workspace: WorkspaceAnswer,
     theme: LiveTheme,
 ) -> Client {
+    let (peer, server) = unspawned(runtime, workspace, theme);
+    let server = tokio::task::spawn_local(server);
+    Client { peer, server }
+}
+
+/// The connection's server future, before anything polls it.
+pub type Server = Pin<Box<dyn Future<Output = io::Result<RpcConnectionOutcome>>>>;
+
+/// The test's end of a connection serving `runtime` over memory, and its server future,
+/// which the test polls itself.
+pub fn unspawned(
+    runtime: Rc<AgentSessionRuntime>,
+    workspace: WorkspaceAnswer,
+    theme: LiveTheme,
+) -> (Peer, Server) {
     let (inputs, received) = mpsc::unbounded_channel();
     let (written, lines) = mpsc::unbounded_channel::<String>();
     let signals = Rc::new(Signals::default());
@@ -167,18 +222,24 @@ pub fn serve(
         export_operations: Rc::new(Recording::default()),
         render_environment: environment(published()),
     };
-    let output = Rc::new(move |line: &str| {
-        written.send(line.to_owned()).unwrap();
+    let failing_writes = Rc::new(std::cell::Cell::new(false));
+    let failing = Rc::clone(&failing_writes);
+    let output = Rc::new(move |line: &RpcLine| {
+        if failing.get() {
+            return Err(io::Error::other("write failed"));
+        }
+        written.send(line.as_str().to_owned()).unwrap();
         Ok(())
     });
     let reader = Box::new(MemoryReader { inputs: received });
-    let server = tokio::task::spawn_local(run_rpc_connection(runtime, reader, output, options));
-    Client {
+    let peer = Peer {
         inputs: Some(inputs),
+        failing_writes,
         lines,
-        server,
         signals,
-    }
+    };
+    let server = Box::pin(run_rpc_connection(runtime, reader, output, options));
+    (peer, server)
 }
 
 /// Serves `runtime` over memory; a workspace command fails as unsupported.
@@ -235,7 +296,7 @@ pub fn replacement_watch(
     })
 }
 
-impl Client {
+impl Peer {
     /// Reads records up to and including the first that `last` accepts.
     pub async fn until(&mut self, last: impl Fn(&Value) -> bool) -> Vec<Value> {
         let mut records = Vec::new();
@@ -291,20 +352,30 @@ pub type Outcomes = Rc<RefCell<Vec<Result<Option<String>, String>>>>;
 
 /// An extension whose `session_start` handler asks a selection and records its outcome.
 pub fn startup_select(outcomes: Outcomes) -> ExtensionFactory<Local> {
+    select_on::<SessionStartEvent>("session_start", "start", outcomes)
+}
+
+/// An extension whose handler of `event`, carrying `V`, asks the selection `title` and
+/// records its outcome.
+pub fn select_on<V: 'static>(
+    event: &'static str,
+    title: &'static str,
+    outcomes: Outcomes,
+) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let outcomes = Rc::clone(&outcomes);
-        let started = api.on::<SessionStartEvent, ()>(
-            "session_start".into(),
+        let registered = api.on::<V, ()>(
+            event.into(),
             Rc::new(move |_, ctx| {
                 let outcomes = Rc::clone(&outcomes);
                 Box::pin(async move {
-                    let select = ctx.ui()?.select("start".into(), vec!["a".into()], None);
+                    let select = ctx.ui()?.select(title.into(), vec!["a".into()], None);
                     let outcome = select.await.map_err(|error| error.to_string());
                     outcomes.borrow_mut().push(outcome);
                     Ok(None)
                 })
             }),
         );
-        Box::pin(std::future::ready(started))
+        Box::pin(std::future::ready(registered))
     })
 }

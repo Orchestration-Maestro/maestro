@@ -13,8 +13,8 @@ an optional shared `SettingsManager` and `ResourceLoaderOptions`. The options
 require the caller's `LocalSet` and the module loader that turns a resolved
 extension path into a factory. Everything else is optional: the event bus,
 additional paths per kind, inline extension factories, disabled kinds, the system
-prompt, appended texts and one override per result. Every result is empty until
-the first reload.
+prompt, appended texts, one override per result and the offline selection its
+package manager uses. Every result is empty until the first reload.
 Getters return the current snapshot; a later reload replaces snapshots and
 never changes one already handed out.
 

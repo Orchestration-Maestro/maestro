@@ -13,6 +13,12 @@ is used. Ordinary captured spawning and synchronous probes do not install the ho
 Tools use the existing `indexmap =2.14.2` (MIT OR Apache-2.0) to retain native
 environment entry order and detached-PID insertion order.
 
+`Launch::with_context` overlays the pairs the caller supplies in order, so a
+startup default placed first is replaced by any later caller pair.
+`clear_environment` replaces the inherited environment, and a caller editing a
+native command keeps its own removals. This owner never adds a variable of its
+own, so an explicit caller choice always reaches the child.
+
 Synchronous bounded capture uses the existing Tokio 1.53.3 `sync` feature for
 one-shot termination requests through the shared waiter. The byte bound covers
 combined retained stdout and stderr; it adds no separate process lifecycle.
@@ -22,6 +28,10 @@ features disabled and `process` enabled, for the caller-built command accepted b
 the application's inherited-terminal process bridge. This reuses the existing
 locked Tokio process dependency closure; it adds no runtime or deadline policy.
 Tokio is MIT licensed.
+
+Native `maestro-chat` names pasted clipboard images with `uuid =1.27.0`, defaults
+off with `std` and `v4`, the version and features the application already locks.
+uuid is licensed MIT OR Apache-2.0.
 
 Linux pane terminals use the existing `rustix =1.1.5` (Apache-2.0 WITH
 LLVM-exception OR Apache-2.0 OR MIT), with defaults off and `std`, `process`,

@@ -33,9 +33,9 @@ rustup, not mise. `mise.lock` records the tool downloads and checksums.
 
 Before each commit, prek formats the code with `cargo fmt`, re-stages the
 staged files and runs `just check`, then the full conventions suite when a
-staged path is under `crates/maestro-test-conventions/`. It also rejects merge-conflict markers and
-invalid TOML or YAML. Commit messages require a conventional header and lines
-of at most 80 columns.
+staged path is under `crates/maestro-test-conventions/`. It also rejects
+merge-conflict markers, invalid TOML or YAML, and a secret in the staged change.
+Commit messages require a conventional header and lines of at most 80 columns.
 
 ## Documentation rules
 

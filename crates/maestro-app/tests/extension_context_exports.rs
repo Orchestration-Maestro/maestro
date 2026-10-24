@@ -182,7 +182,7 @@ fn runtime_tool() -> maestro_app::ToolInfo {
     maestro_app::ToolInfo {
         name: "inspect".into(),
         description: "Inspect data".into(),
-        parameters: serde_json::json!({"type":"object"}),
+        parameters: serde_json::json!({"type":"object"}).into(),
         source_info: source,
     }
 }
@@ -296,7 +296,7 @@ fn sdk_registered_definition() -> maestro_app::ToolDefinition<
         definition: maestro_models::Tool {
             name: "sdk".into(),
             description: "SDK".into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         label: "SDK".into(),
         prompt_snippet: None,

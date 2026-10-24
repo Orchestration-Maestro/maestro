@@ -1,7 +1,7 @@
 //! Each command, run against the current session or runtime and answered in its declared
 //! shape.
-use super::connection::Connection;
-use super::write_record;
+use super::RpcRecord;
+use super::connection::{Connection, write_to};
 use crate::agent_session::{AgentSession, BashRunOptions, CycleDirection, PromptOptions};
 use crate::rpc_types::{
     RpcAvailableModels, RpcCancelled, RpcCommandList, RpcData, RpcExportPath, RpcForkMessages,
@@ -68,14 +68,15 @@ impl Connection {
     /// Runs a workspace command through the caller's operations, its events written on this
     /// connection's output.
     pub(super) async fn run_workspace_command(
-        &self,
+        self: &Rc<Self>,
         id: Option<String>,
         command: String,
         workspace_command: workspace::RpcCommand,
     ) -> RpcResponse {
-        let output = Rc::clone(&self.output);
-        let events =
-            Rc::new(move |event: workspace_schema::EventData| write_record(&output, &event));
+        let connection = Rc::downgrade(self);
+        let events = Rc::new(move |event: workspace_schema::EventData| {
+            write_to(&connection, RpcRecord::WorkspaceEvent(&event))
+        });
         let result = self
             .options
             .workspace
@@ -168,11 +169,11 @@ impl Connection {
             preflight_result: Some(Rc::new(move |succeeded| {
                 if succeeded {
                     accepting.set(true);
-                    connection.write(&RpcResponse::Success {
+                    drop(connection.write(RpcRecord::Response(&RpcResponse::Success {
                         id: success_id.clone(),
                         command: "prompt".into(),
                         data: RpcData::Empty,
-                    });
+                    })));
                 }
             })),
             expand_prompt_templates: None,
@@ -182,11 +183,11 @@ impl Connection {
             if let Err(error) = session.prompt(&message, options).await
                 && !accepted.get()
             {
-                connection.write(&RpcResponse::Error {
+                drop(connection.write(RpcRecord::Response(&RpcResponse::Error {
                     id,
                     command: Some("prompt".into()),
                     error: error.to_string(),
-                });
+                })));
             }
         }));
         Answer::Later

@@ -310,7 +310,7 @@ fn tool(
         definition: Tool {
             name: name.into(),
             description: description.into(),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         label: name.into(),
         prompt_snippet: None,

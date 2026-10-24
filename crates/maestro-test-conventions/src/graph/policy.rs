@@ -96,6 +96,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-test-conventions", &["maestro-markdown"]),
     ("maestro-test-process", &[]),
     ("maestro-test-directory", &[]),
+    ("maestro-test-fixtures", &[]),
     ("maestro-test-tracing", &[]),
     ("maestro-tooling", &[]),
     (
@@ -300,18 +301,27 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// Internal development edges permitted beyond the production table.
+/// Internal development edges permitted beyond the production table on any target.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
-    ("maestro-detection", "maestro-text"),
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
     ("maestro-rpc", "maestro-theme"),
     ("maestro-rpc", "maestro-tui-crossterm"),
+];
+
+/// Permitted development edges that only a native, non-optional declaration may use.
+pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-detection", "maestro-text"),
+    ("maestro-chat", "maestro-models"),
     ("maestro-chat", "maestro-tui-crossterm"),
 ];
 
-/// The interactive frontend's witness of the native adapter: native and non-optional only.
-pub(crate) const NATIVE_WITNESS: (&str, &str) = ("maestro-chat", "maestro-tui-crossterm");
+/// Whether the policy permits this internal development edge between the two crates.
+pub(crate) fn permitted_development(from: &str, to: &str) -> bool {
+    [DEVELOPMENT, NATIVE_DEVELOPMENT]
+        .iter()
+        .any(|edges| edges.contains(&(from, to)))
+}
 
 /// Foundation utility that native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";
@@ -400,10 +410,26 @@ pub(crate) const TEST_TRACING_CALLERS: &[&str] = &[
     "maestro-workspace",
 ];
 
+/// Portable owner of cross-package test fixture operations.
+pub(crate) const TEST_FIXTURES: &str = "maestro-test-fixtures";
+
+/// Declared consumers of portable fixture support.
+pub(crate) const TEST_FIXTURE_CALLERS: &[&str] = &[
+    "maestro-agent",
+    "maestro-models",
+    "maestro-request",
+    "maestro-catalog",
+    "maestro-chat",
+    "maestro-credentials",
+    "maestro-tools",
+    "maestro-export",
+];
+
 /// Resolve one named support owner without granting a crate-name pattern.
 pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str]> {
     match owner {
         TEST_PROCESS => Some(TEST_PROCESS_CALLERS),
+        TEST_FIXTURES => Some(TEST_FIXTURE_CALLERS),
         TEST_DIRECTORY => Some(TEST_DIRECTORY_CALLERS),
         TEST_TRACING => Some(TEST_TRACING_CALLERS),
         TEST_TERMINAL => Some(TEST_TERMINAL_CALLERS),
@@ -456,6 +482,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
                 | "maestro-test-conventions"
                 | "maestro-test-process"
                 | "maestro-test-directory"
+                | "maestro-test-fixtures"
                 | "maestro-test-terminal"
                 | "maestro-test-tracing"
                 | "maestro-tooling"

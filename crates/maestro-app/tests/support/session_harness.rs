@@ -392,7 +392,7 @@ pub fn tool_definition(
         definition: Tool {
             name: name.into(),
             description: format!("{name} tool"),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         label: name.into(),
         prompt_snippet: snippet.map(str::to_owned),
@@ -775,6 +775,12 @@ pub fn on_paused_task_set<F: std::future::Future>(
         .build()
         .unwrap();
     runtime.block_on(local.run_until(body(Rc::clone(&local))))
+}
+
+/// Returns once every task of an [`on_paused_task_set`] runtime waits: the paused clock
+/// moves only then.
+pub async fn until_idle() {
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 }
 
 /// The text of a message record: plain content, joined text blocks, or its summary.
@@ -1936,7 +1942,7 @@ pub fn waiting_tool(
         definition: Tool {
             name: "wait".into(),
             description: "Wait for release".into(),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         description: None,
         label: "Wait".into(),
@@ -1968,7 +1974,8 @@ pub fn echo_tools(
         definition: Tool {
             name: "echo".into(),
             description: "Echo back".into(),
-            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}})
+                .into(),
         },
         description: None,
         label: "Echo".into(),

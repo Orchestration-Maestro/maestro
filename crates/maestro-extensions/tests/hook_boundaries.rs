@@ -21,7 +21,7 @@ fn tool_call_edits_reach_next_handler_and_execution_without_revalidation() {
         let bus = support::LocalBus::new();
         let loaded = support::loaded("tool", bus.controller.for_extension());
         let mut definition = tool_support::definition("echo", "Echo");
-        definition.definition.parameters = json!({"type":"string"});
+        definition.definition.parameters = json!({"type":"string"}).into();
         loaded.api.register_tool(definition).unwrap();
         let runner = Rc::new(support::runner(&loaded.owners));
         loaded

@@ -8,6 +8,7 @@ use maestro_models::{Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLev
 mod account_message_routing;
 mod account_tool_names;
 mod assistant_publication;
+mod authored_tool_arguments;
 #[path = "support/azure_cases.rs"]
 mod azure_cases;
 #[path = "support/azure_endpoint.rs"]
@@ -92,6 +93,12 @@ mod environment_children;
 mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
+#[allow(
+    dead_code,
+    reason = "Each test binary uses part of the scripted FTP peer."
+)]
+#[path = "support/ftp_server.rs"]
+mod ftp_server;
 mod handoff_tool_ids;
 #[path = "history_handoffs.rs"]
 mod history_handoffs;

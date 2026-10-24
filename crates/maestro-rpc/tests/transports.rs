@@ -2,7 +2,7 @@
 //! with managed output, workspace commands and framing.
 #![cfg(unix)]
 use crate::support::{Child, Served, options, runtime, serve};
-use maestro_app::rpc_mode::{JsonlLineReader, RpcOutput};
+use maestro_app::rpc_mode::{JsonlLineReader, RpcLine, RpcOutput};
 use maestro_app::rpc_types::workspace_schema::{ErrorBody, EventData, ResponseResult};
 use maestro_app::{ExtensionFactory, Local, RpcConnectionOutcome, run_rpc_connection};
 use maestro_test_directory::Scratch;
@@ -39,8 +39,8 @@ fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
         let runtime = runtime(&local, Vec::new()).await;
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
-        let output: RpcOutput = Rc::new(move |line: &str| {
-            written.borrow_mut().push(line.to_owned());
+        let output: RpcOutput = Rc::new(move |line: &RpcLine| {
+            written.borrow_mut().push(line.as_str().to_owned());
             Ok(())
         });
         let mut options = options(Rc::clone(&local), Served::default().workspace);

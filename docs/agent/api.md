@@ -650,7 +650,8 @@ let tool = AgentTool::typed(
             "type": "object",
             "properties": {"text": {"type": "string"}},
             "required": ["text"]
-        }),
+        })
+        .into(),
     },
     "Echo".into(),
     Arc::new(|_id, params: Echo, _signal, _progress| -> BoxFuture<_> {

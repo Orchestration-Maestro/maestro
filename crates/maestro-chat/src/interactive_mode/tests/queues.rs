@@ -2,7 +2,7 @@
 //! and the queue key actions over the mode's real session and editor.
 use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions};
 use super::typed::recalled;
-use super::{Setup, World, isolated, painted, recorded, started};
+use super::{Setup, World, isolated, painted, started};
 use crate::InteractiveMode;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{
@@ -32,7 +32,7 @@ const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_queues.
 
 /// The recorded cases of `test`, typed by that witness.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
-    recorded(FIXTURES, test)
+    super::cases(FIXTURES, test)
 }
 
 /// A recorded delivery.
@@ -965,6 +965,8 @@ fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
     .build(directory);
     world.mode.init().unwrap();
     world.runtime.settle().unwrap();
+    // The recorded transcripts start after the startup resource listing.
+    world.mode.chat_container.clear();
     let session = world.mode.runtime_host.session();
     let extension = Rc::clone(&session.resource_loader().get_extensions().extensions[0]);
     let source_info = Arc::clone(&extension.read().unwrap().source_info);

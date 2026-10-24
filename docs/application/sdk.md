@@ -3,8 +3,9 @@
 A program embeds Maestro through `maestro_app`. The crate root re-exports the
 session, its creation and replacement operations, and the records of the
 compaction, history, resource, settings, tool and theme owners they use. Frontend
-modes, the RPC client and the interactive components stay with their own
-crates.
+modes and the interactive components stay with their own crates; the RPC client,
+which drives Maestro as a child process, lives here in `rpc_client`
+([RPC client](../client.md)).
 
 ## Creating a session
 
@@ -22,6 +23,10 @@ input with its default:
   the working and agent directories from the given `ResourceLoaderOptions` and
   loads it first. A caller that supplied no loader passes its task set and
   extension module loader there.
+- `offline` is the session's own offline selection for search programs. It is
+  separate from `ResourceLoaderOptions::offline`, which stays with configured
+  packages; neither overwrites the other. Sessions created from retained
+  [`AgentSessionServices`] inherit the selection those services were created with.
 - A catalog created here runs the commands that configured credentials name as
   child processes; a supplied catalog keeps its own handle. `theme` is the
   published theme extensions see while no user interface is bound; the default

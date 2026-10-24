@@ -1,8 +1,21 @@
 //! Native presentation witnesses through the interactive mode's own interface.
+mod actions;
+mod bash;
+mod events;
+mod extension_ui;
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Only executable installation is shared."
+)]
+#[path = "../../../maestro-app/tests/support/native.rs"]
+mod native;
+mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod transcript;
+mod transfer;
 mod typed;
 
 use crate::{InteractiveMode, InteractiveModeOptions};
@@ -13,12 +26,15 @@ use crate::components::session_selector::list::tests::session_picker::{
 };
 use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
-use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
+use maestro_app::presentation_data::footer_data_provider::{
+    FooterOperations, NativeFooterOperations,
+};
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, ExtensionFactory,
-    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
-    PromptTemplate, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill,
-    create_extension_runtime, load_extension_from_factory,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, Extension, ExtensionCommandContext,
+    ExtensionFactory, ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult,
+    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, RegisteredCommand,
+    ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
+    SourceOrigin, SourceScope, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -27,23 +43,36 @@ use maestro_tui::{
     EditorComponent, autocomplete,
 };
 use serde::{Deserialize, de::DeserializeOwned};
-use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    future::Future,
+    io,
+    path::Path,
+    pin::Pin,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 /// Every recorded presentation case.
-const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
+pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
 fn isolated(test: &str, body: impl FnOnce(&Path)) {
-    isolated_case(test, "child", (&[], &[]), body);
+    isolated_case(test, "child", &[], body);
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
-/// directory, with the environment changes `(set, removed)` applied.
+/// directory, with no inherited environment apart from the command path and `envs`, so
+/// no developer credential reaches it. The child's temporary directory is that root's
+/// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
+/// Wayland one. The file-size signal is ignored, so a write over a lowered limit fails
+/// instead of ending the child.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
-    (envs, removed): (&[(&str, &str)], &[&str]),
+    envs: &[(&str, &str)],
     body: impl FnOnce(&Path),
 ) {
     let selection = maestro_test_process::selection();
@@ -55,25 +84,42 @@ pub(super) fn isolated_case(
         return;
     }
     let scratch = child::Scratch::new();
-    let directory = scratch.0.path().to_str().unwrap();
-    let mut all = vec![(ENV_AGENT_DIR.as_str(), directory)];
+    let root = scratch.0.path();
+    for name in ["bin", "tmp"] {
+        std::fs::create_dir(root.join(name)).unwrap();
+    }
+    let path = format!(
+        "{}:{}",
+        root.join("bin").display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let mut all = vec![
+        (ENV_AGENT_DIR.as_str(), root.to_str().unwrap()),
+        ("PATH", &path),
+        ("WAYLAND_DISPLAY", "maestro-test"),
+    ];
     all.extend_from_slice(envs);
     child::probe(
-        TestProcess::current(test).unwrap().case(case),
-        scratch.0.path(),
+        TestProcess::current(test)
+            .unwrap()
+            .env_clear()
+            .case(case)
+            .shell_setup("trap '' XFSZ")
+            .temp_dir(root.join("tmp")),
+        root,
         &all,
-        removed,
+        &[],
     );
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
-/// successive prompt templates and context files, and changing the configured theme
-/// while its themes are read.
+/// successive prompt templates, context files and loaded extensions, and changing the
+/// configured theme while its themes are read.
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
-    /// The loaded themes.
-    themes: Vec<Rc<Theme>>,
+    /// The loaded themes and their diagnostics.
+    themes: Rc<LoadThemesResult>,
     /// The settings and theme name selected while the themes are read.
     select: RefCell<Option<(Rc<RefCell<SettingsManager>>, String)>>,
     /// The discovered context files, replaceable after construction.
@@ -82,52 +128,170 @@ pub(super) struct ForwardingLoader {
     skills: Rc<LoadSkillsResult>,
     /// The prompt templates of each read; the last answers every later read.
     prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
-    /// The loaded extensions answered instead of the default loader's.
+    /// The loaded extensions, the default loader's when absent.
     extensions: Option<Rc<LoadExtensionsResult<Local>>>,
+    /// The getters read, in order.
+    pub(super) calls: RefCell<Vec<&'static str>>,
 }
 
-/// The context files, skills and successive prompt templates a loader answers.
-type Resources = (Vec<ContextFile>, Vec<Skill>, Vec<Vec<PromptTemplate>>);
+/// The diagnostics a loader reports beside its skills, prompt templates and themes.
+#[derive(Default)]
+pub(super) struct LoadedDiagnostics {
+    /// The skill diagnostics.
+    pub(super) skills: Vec<ResourceDiagnostic>,
+    /// The prompt template diagnostics of the first read.
+    pub(super) prompts: Vec<ResourceDiagnostic>,
+    /// The theme diagnostics.
+    pub(super) themes: Vec<ResourceDiagnostic>,
+}
+
+/// The resources a loader answers.
+struct Resources {
+    /// The context files.
+    context: Vec<ContextFile>,
+    /// The skills.
+    skills: Vec<Skill>,
+    /// The prompt templates of each read; the last answers every later read.
+    prompts: Vec<Vec<PromptTemplate>>,
+    /// The loaded themes listed before the dark and light palettes.
+    themes: Vec<Rc<Theme>>,
+    /// The loaded extensions by path and provenance.
+    extensions: Vec<(String, SourceInfo)>,
+    /// The paths that failed to load.
+    errors: Vec<ExtensionLoadError>,
+    /// The commands registered, each by its own extension, by name and path.
+    commands: Vec<(String, String)>,
+    /// The diagnostics beside the skills, prompt templates and themes.
+    diagnostics: LoadedDiagnostics,
+}
 
 impl ForwardingLoader {
-    /// A loader over `inner` answering the dark and light palettes, `resources` and the
-    /// supplied `extensions`.
+    /// A loader over `inner` answering `resources`, then the dark and light palettes, and
+    /// the supplied `extensions` before the listed ones.
     fn new(
         inner: Rc<dyn ResourceLoader<Local>>,
-        (context, skills, prompts): Resources,
+        resources: Resources,
         extensions: Option<Rc<LoadExtensionsResult<Local>>>,
     ) -> Self {
+        let Resources {
+            context,
+            skills,
+            mut prompts,
+            mut themes,
+            extensions: paths,
+            errors,
+            commands,
+            diagnostics,
+        } = resources;
+        if prompts.is_empty() && !diagnostics.prompts.is_empty() {
+            prompts.push(Vec::new());
+        }
+        let mut prompt_diagnostics = Some(diagnostics.prompts);
         let prompts = prompts.into_iter().map(|prompts| {
             Rc::new(LoadPromptsResult {
                 prompts,
-                diagnostics: Vec::new(),
+                diagnostics: prompt_diagnostics.take().unwrap_or_default(),
             })
         });
+        themes.extend([dark(), light()]);
+        let loaded = !(paths.is_empty() && errors.is_empty() && commands.is_empty());
         Self {
             inner,
-            themes: vec![dark(), light()],
+            themes: Rc::new(LoadThemesResult {
+                themes,
+                diagnostics: diagnostics.themes,
+            }),
             select: RefCell::default(),
             context: RefCell::new(context.into()),
             skills: Rc::new(LoadSkillsResult {
                 skills,
-                diagnostics: Vec::new(),
+                diagnostics: diagnostics.skills,
             }),
             prompts: RefCell::new(prompts.collect()),
-            extensions,
+            extensions: extensions
+                .or_else(|| loaded.then(|| Rc::new(load(paths, errors, &commands)))),
+            calls: RefCell::default(),
         }
+    }
+}
+
+/// The command callback a registration stores; the witnesses never invoke it.
+type CommandHandler = Rc<
+    dyn Fn(
+        String,
+        ExtensionCommandContext,
+    )
+        -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>>>>,
+>;
+
+/// One loaded extension at `path` with its provenance, registering nothing.
+fn extension(path: String, source_info: SourceInfo) -> Rc<RwLock<Extension<Local>>> {
+    let source_info = Arc::new(RwLock::new(source_info));
+    Rc::new(RwLock::new(Extension::new(path.clone(), path, source_info)))
+}
+
+/// One local project extension at `path` registering the command `name`, as the
+/// extension registration interface stores it.
+fn commanding(name: &str, path: &str) -> Rc<RwLock<Extension<Local>>> {
+    let source_info = SourceInfo {
+        path: path.to_owned(),
+        source: "local".to_owned(),
+        scope: SourceScope::Project,
+        origin: SourceOrigin::TopLevel,
+        base_dir: None,
+    };
+    let owner = extension(path.to_owned(), source_info);
+    let handler: CommandHandler = Rc::new(|_, _| Box::pin(async { Ok(()) }));
+    let command = {
+        let owner = owner.read().unwrap();
+        RegisteredCommand {
+            name: name.to_owned(),
+            source_info: Arc::clone(&owner.source_info),
+            description: None,
+            get_argument_completions: None,
+            handler,
+        }
+    };
+    let command = Rc::new(RwLock::new(command));
+    owner
+        .write()
+        .unwrap()
+        .commands
+        .insert(name.to_owned(), command);
+    owner
+}
+
+/// Extensions loaded from `paths` with their provenance, then one extension per
+/// command, and the paths that failed.
+fn load(
+    paths: Vec<(String, SourceInfo)>,
+    errors: Vec<ExtensionLoadError>,
+    commands: &[(String, String)],
+) -> LoadExtensionsResult<Local> {
+    let extensions = paths
+        .into_iter()
+        .map(|(path, source_info)| extension(path, source_info))
+        .chain(commands.iter().map(|(name, path)| commanding(name, path)));
+    LoadExtensionsResult {
+        extensions: extensions.collect(),
+        errors,
+        runtime: create_extension_runtime::<Local>(),
     }
 }
 
 impl ResourceLoader<Local> for ForwardingLoader {
     fn get_extensions(&self) -> Rc<LoadExtensionsResult<Local>> {
+        self.calls.borrow_mut().push("extensions");
         self.extensions
             .clone()
             .unwrap_or_else(|| self.inner.get_extensions())
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
+        self.calls.borrow_mut().push("skills");
         Rc::clone(&self.skills)
     }
     fn get_prompts(&self) -> Rc<LoadPromptsResult> {
+        self.calls.borrow_mut().push("prompts");
         let mut prompts = self.prompts.borrow_mut();
         if prompts.len() > 1 {
             prompts.pop_front().unwrap()
@@ -139,18 +303,17 @@ impl ResourceLoader<Local> for ForwardingLoader {
         }
     }
     fn get_themes(&self) -> Rc<LoadThemesResult> {
+        self.calls.borrow_mut().push("themes");
         if let Some((settings, name)) = self.select.borrow_mut().take() {
             settings.borrow_mut().set_theme(name);
         }
-        Rc::new(LoadThemesResult {
-            themes: self.themes.clone(),
-            diagnostics: Vec::new(),
-        })
+        Rc::clone(&self.themes)
     }
     fn get_contributions(&self) -> Rc<LoadContributionsResult> {
         self.inner.get_contributions()
     }
     fn get_agents_files(&self) -> Rc<[ContextFile]> {
+        self.calls.borrow_mut().push("agents");
         Rc::clone(&self.context.borrow())
     }
     fn get_system_prompt(&self) -> Option<Rc<str>> {
@@ -212,6 +375,25 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// Starts each replacement with fresh services instead of reusing the current ones.
+    pub(super) replacing: bool,
+    /// Creates the session history under a file in this directory when supplied.
+    pub(super) session_history: Option<std::path::PathBuf>,
+    /// The directories the theme registry reads, when it records themes on disk.
+    pub(super) directories: Option<maestro_theme::ThemeDirectories>,
+    /// The loaded themes the loader answers before the dark and light palettes.
+    pub(super) themes: Vec<Rc<Theme>>,
+    /// The loaded extensions by path and provenance; the default loader's when these,
+    /// the failed paths and the commands are all empty.
+    pub(super) extensions: Vec<(String, SourceInfo)>,
+    /// The paths that failed to load.
+    pub(super) errors: Vec<ExtensionLoadError>,
+    /// The commands registered, each by its own extension, by name and path.
+    pub(super) commands: Vec<(String, String)>,
+    /// The diagnostics beside the skills, prompt templates and themes.
+    pub(super) diagnostics: LoadedDiagnostics,
+    /// The watch, timer and Git effects the mode uses; the native ones when absent.
+    pub(super) watcher: Option<Rc<dyn FooterOperations>>,
 }
 
 impl Default for Setup {
@@ -224,7 +406,16 @@ impl Default for Setup {
             context: Vec::new(),
             skills: Vec::new(),
             prompts: Vec::new(),
+            directories: None,
             extension: None,
+            replacing: false,
+            session_history: None,
+            themes: Vec::new(),
+            extensions: Vec::new(),
+            errors: Vec::new(),
+            commands: Vec::new(),
+            diagnostics: LoadedDiagnostics::default(),
+            watcher: None,
         }
     }
 }
@@ -260,34 +451,50 @@ impl Setup {
             .unwrap_or_else(|| directory.to_str().unwrap().to_owned());
         let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
-        let resources = (self.context, self.skills, self.prompts);
+        let resources = Resources {
+            context: self.context,
+            skills: self.skills,
+            prompts: self.prompts,
+            themes: self.themes,
+            extensions: self.extensions,
+            errors: self.errors,
+            commands: self.commands,
+            diagnostics: self.diagnostics,
+        };
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
-        let result = session::session(&cwd, None, move |inner| {
-            let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
-            *created.borrow_mut() = Some(Rc::clone(&loader));
-            loader
-        });
+        let history = self
+            .session_history
+            .as_ref()
+            .map(|d| d.to_str().unwrap().to_owned());
+        let result = session::session_over(
+            &cwd,
+            None,
+            move |inner| {
+                let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
+                *created.borrow_mut() = Some(Rc::clone(&loader));
+                loader
+            },
+            history.as_deref(),
+        );
         let settings = Rc::clone(result.session.settings_manager());
-        settings.borrow_mut().set_theme("dark".to_owned());
-        (self.configure)(&mut settings.borrow_mut());
-        if let Some(name) = self.select {
-            *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
-        }
+        prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
+        let services = Rc::clone(&result.services);
         let host = Rc::new(AgentSessionRuntime::new(
             result,
-            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) })),
+            create(services, self.replacing),
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(published::unpublished());
+        let themes = registry(self.directories);
         let local = Rc::new(tokio::task::LocalSet::new());
         let mode = InteractiveMode::new(
             Rc::clone(&host),
             self.options,
             (terminal.handle(), runtime.handle()),
             Rc::clone(&themes),
-            Rc::new(NativeFooterOperations::new(local)),
+            self.watcher
+                .unwrap_or_else(|| Rc::new(NativeFooterOperations::new(local))),
         )
         .unwrap();
         World {
@@ -299,6 +506,43 @@ impl Setup {
             loader,
         }
     }
+}
+
+/// Applies the settings the caller changes and the theme name read while it answers.
+fn prepare_settings(
+    settings: Rc<RefCell<SettingsManager>>,
+    configure: Box<dyn FnOnce(&mut SettingsManager)>,
+    select: Option<String>,
+    loader: &Rc<RefCell<Option<Rc<ForwardingLoader>>>>,
+) {
+    settings.borrow_mut().set_theme("dark".to_owned());
+    (configure)(&mut settings.borrow_mut());
+    if let Some(name) = select {
+        *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
+    }
+}
+
+/// The theme registry the mode selects from, unpublished without supplied directories.
+fn registry(directories: Option<maestro_theme::ThemeDirectories>) -> Rc<ThemeState> {
+    Rc::new(match directories {
+        Some(directories) => ThemeState::new(directories),
+        None => published::unpublished(),
+    })
+}
+
+/// The replacement factory, reusing `services` unless fresh services are selected.
+fn create(
+    services: Rc<maestro_app::AgentSessionServices<Local>>,
+    fresh: bool,
+) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    Rc::new(move |options| {
+        let replacement = if fresh {
+            session::session(&options.cwd, None, |inner| inner)
+        } else {
+            session::over(&options.cwd, &services)
+        };
+        Box::pin(async { Ok(replacement) })
+    })
 }
 
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
@@ -318,8 +562,16 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),
         ("@warning@", ThemeColor::Warning),
+        ("@thinkingOff@", ThemeColor::ThinkingOff),
+        ("@thinkingMinimal@", ThemeColor::ThinkingMinimal),
+        ("@thinkingLow@", ThemeColor::ThinkingLow),
+        ("@thinkingMedium@", ThemeColor::ThinkingMedium),
+        ("@thinkingHigh@", ThemeColor::ThinkingHigh),
+        ("@thinkingXhigh@", ThemeColor::ThinkingXhigh),
+        ("@bashMode@", ThemeColor::BashMode),
         ("@mdHeading@", ThemeColor::MdHeading),
         ("@mdLink@", ThemeColor::MdLink),
+        ("@success@", ThemeColor::Success),
     ] {
         text = text.replace(marker, theme.get_fg_ansi(&role).unwrap());
     }
@@ -331,16 +583,16 @@ pub(super) fn painted(theme: &Theme, rows: &[String]) -> Vec<String> {
     rows.iter().map(|row| roles(theme, row)).collect()
 }
 
-/// One recorded case of this module's witnesses.
+/// One recorded case, read before its witness gives the input and observation their types.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Case {
+pub(super) struct Case {
     /// The witness the case belongs to.
     test: String,
     /// The recorded operation.
-    input: Input,
+    input: serde_json::Value,
     /// The recorded observation.
-    expected: Expected,
+    expected: serde_json::Value,
 }
 
 /// The recorded operations.
@@ -429,21 +681,12 @@ pub(super) enum Expected {
     },
 }
 
-/// One recorded case, read before its witness gives the input and observation their types.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Recorded {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: serde_json::Value,
-    /// The recorded observation.
-    expected: serde_json::Value,
-}
-
-/// The cases of `test` recorded in `fixtures`, typed by that witness.
-fn recorded<I: DeserializeOwned, E: DeserializeOwned>(fixtures: &str, test: &str) -> Vec<(I, E)> {
-    let all: Vec<Recorded> = serde_json::from_str(fixtures).unwrap();
+/// The recorded cases of `test` in `fixtures`, typed by that witness.
+pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
+    fixtures: &str,
+    test: &str,
+) -> Vec<(I, E)> {
+    let all: Vec<Case> = serde_json::from_str(fixtures).unwrap();
     let cases: Vec<_> = all
         .into_iter()
         .filter(|case| case.test == test)
@@ -458,26 +701,15 @@ fn recorded<I: DeserializeOwned, E: DeserializeOwned>(fixtures: &str, test: &str
     cases
 }
 
-/// The recorded cases of `test`.
-pub(super) fn cases(test: &str) -> Vec<(Input, Expected)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| (case.input, case.expected))
-        .collect();
-    assert!(!cases.is_empty());
-    cases
-}
-
 #[test]
 fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
     isolated(
         "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
         |directory| {
-            for (input, expected) in
-                cases("startup_header_keeps_quiet_verbose_and_configured_hints_distinct")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
+            ) {
                 let (
                     Input::Header {
                         quiet,
@@ -494,7 +726,10 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                 assert!(!expanded, "tool output starts collapsed");
                 std::fs::write(directory.join("keybindings.json"), config.to_string()).unwrap();
                 let world = Setup {
-                    options: InteractiveModeOptions { verbose },
+                    options: InteractiveModeOptions {
+                        verbose,
+                        ..InteractiveModeOptions::default()
+                    },
                     configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
                     ..Setup::default()
                 }
@@ -518,8 +753,10 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
     isolated(
         "startup_notices_keep_labels_styles_padding_and_redraw",
         |directory| {
-            for (input, expected) in cases("startup_notices_keep_labels_styles_padding_and_redraw")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_notices_keep_labels_styles_padding_and_redraw",
+            ) {
                 let (Input::Notice { kind, text, width }, Expected::Notice { lines, renders }) =
                     (input, expected)
                 else {
@@ -550,9 +787,12 @@ fn clear_editor_changes_text_and_requests_a_frame() {
         "clear_editor_changes_text_and_requests_a_frame",
         |directory| {
             let [(Input::Clear, Expected::Clear { text, renders })] =
-                <[_; 1]>::try_from(cases("clear_editor_changes_text_and_requests_a_frame"))
-                    .ok()
-                    .unwrap()
+                <[_; 1]>::try_from(cases::<Input, Expected>(
+                    FIXTURES,
+                    "clear_editor_changes_text_and_requests_a_frame",
+                ))
+                .ok()
+                .unwrap()
             else {
                 panic!("one clear case");
             };

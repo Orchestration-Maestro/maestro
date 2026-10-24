@@ -8,8 +8,7 @@ use crate::support::rpc_connection::{
 use crate::support::runtime_fixtures::runtime_for;
 use crate::support::session_harness::{Harness, on_paused_task_set, on_task_set};
 use maestro_app::{
-    AgentSessionRuntime, Extension, ExtensionAPI, SourceInfo, SourceOrigin, SourceScope, Threaded,
-    create_event_bus, create_extension_runtime,
+    AgentSessionRuntime, Extension, ExtensionAPI, Local, SourceInfo, SourceOrigin, SourceScope,
 };
 use maestro_extensions::types::{
     AutocompleteProviderFactory, ComponentFactory, CustomComponentFactory, EditorFactory,
@@ -40,24 +39,25 @@ async fn bound(label: &str) -> (Harness, Rc<AgentSessionRuntime>, Client, Extens
     (h, runtime, client, ui)
 }
 
-/// A facade that binds the callbacks handed to the protocol's extension interface.
-fn facade() -> ExtensionAPI<Threaded> {
-    let source = SourceInfo {
-        path: "ui".into(),
-        source: "ui".into(),
+/// A facade whose UI callbacks are handed to the protocol's interface.
+fn facade() -> ExtensionAPI<Local> {
+    let source = Arc::new(RwLock::new(SourceInfo {
+        path: "test".into(),
+        source: "test".into(),
         scope: SourceScope::Temporary,
         origin: SourceOrigin::TopLevel,
         base_dir: None,
-    };
-    let owner = Arc::new(RwLock::new(Extension::new(
-        "ui".into(),
-        "ui".into(),
-        Arc::new(RwLock::new(source)),
+    }));
+    let owner = Rc::new(RwLock::new(Extension::<Local>::new(
+        "test".into(),
+        "test".into(),
+        source,
     )));
-    let events = create_event_bus(Arc::new(drop), Arc::new(|_| {})).for_extension();
+    let events = maestro_app::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}))
+        .for_extension();
     ExtensionAPI::new(
         &owner,
-        create_extension_runtime::<Threaded>(),
+        maestro_app::create_extension_runtime::<Local>(),
         events,
         ".".into(),
     )
@@ -293,6 +293,50 @@ fn dialog_deadline_keeps_zero_and_exact_boundary() {
     });
 }
 
+/// A response that arrives before an abort settles the dialog, however late the dialog is
+/// first awaited.
+#[test]
+fn dialog_response_before_abort_wins_when_awaited_late() {
+    on_task_set(|_| async {
+        let (_h, _runtime, mut client, ui) = bound("response-first").await;
+        // Both settlements are ready when each dialog is first awaited.
+        for _ in 0..16 {
+            let signal = Cancellation::new();
+            let options = ExtensionUIDialogOptions {
+                signal: Some(signal.clone()),
+                timeout: None,
+            };
+            let select = ui.select("t".into(), vec!["a".into()], Some(options));
+            let request = client.next().await;
+            respond(&client, &request, &json!({"value": "a"}));
+            nothing_written(&mut client).await;
+            signal.abort();
+            assert_eq!(select.await.unwrap().as_deref(), Some("a"));
+        }
+    });
+}
+
+/// A response that arrives after the deadline does not count, however late the dialog is
+/// first awaited.
+#[test]
+fn dialog_deadline_before_response_wins_when_awaited_late() {
+    on_paused_task_set(|_| async {
+        let (_h, _runtime, mut client, ui) = bound("deadline-first").await;
+        for _ in 0..16 {
+            let options = ExtensionUIDialogOptions {
+                signal: None,
+                timeout: Some(1000.0),
+            };
+            let input = ui.input("t".into(), None, Some(options));
+            let request = client.next().await;
+            tokio::time::advance(Duration::from_millis(1000)).await;
+            respond(&client, &request, &json!({"value": "late"}));
+            nothing_written(&mut client).await;
+            assert_eq!(input.await.unwrap(), None);
+        }
+    });
+}
+
 /// An editor has no timeout or signal: it waits until the client answers.
 #[test]
 fn editor_has_no_deadline_or_signal() {
@@ -394,10 +438,9 @@ fn widgets_keep_lines_and_ignore_factories() {
 fn unsupported_ui_methods_keep_each_default() {
     on_task_set(|_| async {
         let (_h, _runtime, mut client, ui) = bound("defaults").await;
+        let api = facade();
         let unsubscribe = ui
-            .on_terminal_input(
-                facade().ui_callback(|_: String, _| panic!("terminal input was delivered")),
-            )
+            .on_terminal_input(api.ui_callback(|_, _| panic!("terminal input was delivered")))
             .unwrap();
         unsubscribe().unwrap();
         ui.set_working_message(Some("working".into())).unwrap();
@@ -405,7 +448,6 @@ fn unsupported_ui_methods_keep_each_default() {
         ui.set_working_indicator(Some(WorkingIndicatorOptions::default()))
             .unwrap();
         ui.set_hidden_thinking_label(Some("hidden".into())).unwrap();
-        let api = facade();
         let footer: FooterFactory = api.ui_callback(|_, _| panic!("a footer was built"));
         ui.set_footer(Some(footer)).unwrap();
         let header: ComponentFactory = api.ui_callback(|_, _| panic!("a header was built"));

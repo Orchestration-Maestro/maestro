@@ -16,6 +16,17 @@ pub struct Reply {
     /// Optional raw selected-record payload.
     #[serde(default)]
     pub raw: Option<String>,
+    /// Failure this one reply reports after the query is recorded.
+    #[serde(default)]
+    pub error: Option<String>,
+}
+/// One query the guest made, in call order.
+#[derive(Clone, Debug)]
+pub struct Query {
+    /// Public query spelling.
+    pub method: String,
+    /// Literal operands the guest supplied.
+    pub args: Vec<Value>,
 }
 /// A flat fixture node; children are indexes, not recursively decoded nodes.
 #[derive(Clone, Deserialize)]
@@ -55,6 +66,9 @@ pub struct Data {
     /// Query failure captured by newly returned nodes.
     #[serde(default)]
     pub node_error: Option<String>,
+    /// Queries the guest made, recorded by the host and never supplied by a fixture.
+    #[serde(skip)]
+    pub queries: Vec<Query>,
 }
 /// Host state changes synchronously acknowledged by append-entry.
 #[derive(Deserialize)]
@@ -73,15 +87,28 @@ pub struct Reader(pub Arc<Mutex<Data>>);
 impl Reader {
     /// Look up the actual route and operands, rejecting unintended calls.
     pub fn reply(&self, method: &str, args: &[Value]) -> Result<Reply, String> {
-        let data = self.0.lock().unwrap();
+        let mut data = self.0.lock().unwrap();
+        data.queries.push(Query {
+            method: method.to_owned(),
+            args: args.to_vec(),
+        });
         if let Some(error) = &data.error {
             return Err(error.clone());
         }
-        data.replies
+        let reply = data
+            .replies
             .iter()
             .find(|reply| reply.method == method && reply.args == args)
             .cloned()
-            .ok_or_else(|| format!("unexpected reader query: {method}"))
+            .ok_or_else(|| format!("unexpected reader query: {method}"))?;
+        match reply.error {
+            Some(error) => Err(error),
+            None => Ok(reply),
+        }
+    }
+    /// The queries the guest made, in call order.
+    pub fn queries(&self) -> Vec<Query> {
+        self.0.lock().unwrap().queries.clone()
     }
     /// Read a string scalar without normalization.
     pub fn string(&self, method: &str) -> Result<String, String> {

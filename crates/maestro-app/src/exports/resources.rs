@@ -3,7 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_resources::{
     SourceOrigin, SourceScope,
-    paths::{home_directory, resolve},
+    paths::{home_directory, is_local_path, resolve},
 };
 
 pub use maestro_resources::{
@@ -27,7 +27,7 @@ pub use maestro_extensions::{
     ExtensionLoadError, LoadExtensionsResult, ModuleLoader, types::FlagValue,
 };
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_resources::LoadSkillsResult;
+pub use maestro_resources::{DiagnosticType, LoadSkillsResult};
 
 pub use maestro_resources::{
     LoadSkillsFromDirOptions, PromptTemplate, Skill, SkillFrontmatter, SourceInfo,

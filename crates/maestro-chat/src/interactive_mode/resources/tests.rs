@@ -1,7 +1,7 @@
 //! The loaded-resource listing through the mode's startup and retained sections.
 use super::{
-    HomeLookup, ResourceItem, build_scope_groups, format_context_path, format_display_path,
-    format_scope_groups, get_short_path,
+    HomeLookup, ResourceItem, ShowLoadedResourcesOptions, build_scope_groups, format_context_path,
+    format_display_path, format_scope_groups, get_short_path,
 };
 use crate::interactive_mode::startup::ExpandableText;
 use crate::interactive_mode::tests::{Setup, World, isolated_case, light, painted, roles};
@@ -13,6 +13,9 @@ use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Component;
 use serde::Deserialize;
 use std::{any::Any, cell::Cell, io, path::Path, rc::Rc};
+
+mod loaded;
+mod loaded_support;
 
 /// Every recorded listing case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_resources.json");
@@ -113,7 +116,7 @@ struct Listing {
 }
 
 /// How the mode starts.
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Clone, Copy)]
 #[serde(deny_unknown_fields, default)]
 struct Startup {
     /// Whether startup is quiet.
@@ -133,7 +136,7 @@ struct Located {
 }
 
 /// One recorded skill or prompt template.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 struct Recorded {
     /// The resource file.
@@ -147,7 +150,7 @@ struct Recorded {
 }
 
 /// Where a recorded resource came from.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 struct RecordedSource {
     /// The source label.
@@ -280,12 +283,7 @@ fn context_files(located: Vec<Located>) -> Vec<ContextFile> {
 /// Runs `body` in a fresh child whose home directory and locale are the recorded ones.
 fn in_home(test: &str, body: impl FnOnce(&Path)) {
     let environment = [("HOME", HOME), ("LANG", "C.UTF-8")];
-    isolated_case(
-        test,
-        "child",
-        (&environment, &["LC_ALL", "LC_MESSAGES"]),
-        body,
-    );
+    isolated_case(test, "child", &environment, body);
 }
 
 /// The retained expandable sections of the transcript.
@@ -333,7 +331,10 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
         .collect();
     prompts.push(templates(listing.templates));
     let world = Setup {
-        options: InteractiveModeOptions { verbose },
+        options: InteractiveModeOptions {
+            verbose,
+            ..InteractiveModeOptions::default()
+        },
         configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
         cwd: listing.cwd,
         context: context_files(listing.context),
@@ -345,7 +346,11 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
     world.mode.tool_output_expanded.set(tool_output_expanded);
     // A forced listing is a later call; startup's own listing goes through `init`.
     if listing.force {
-        world.mode.show_loaded_resources(true).unwrap();
+        let options = ShowLoadedResourcesOptions {
+            force: true,
+            ..ShowLoadedResourcesOptions::default()
+        };
+        world.mode.show_loaded_resources(options).unwrap();
     } else {
         world.mode.init().unwrap();
     }
@@ -549,10 +554,10 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
         else {
             panic!("a native home case");
         };
-        let environment: (&[(&str, &str)], &[&str]) = match mode.as_str() {
-            "absent" => (&[], &["HOME"]),
-            "supplied" => (&[("HOME", "/tmp/supplied-home")], &[]),
-            "empty" => (&[("HOME", "")], &[]),
+        let environment: &[(&str, &str)] = match mode.as_str() {
+            "absent" => &[],
+            "supplied" => &[("HOME", "/tmp/supplied-home")],
+            "empty" => &[("HOME", "")],
             other => panic!("an unknown home mode {other}"),
         };
         isolated_case(test, &mode, environment, |directory| {
@@ -586,7 +591,13 @@ fn listed(directory: &Path, setup: Setup, home: &HomeLookup<'_>) -> Result<Vec<S
     world.mode.tool_output_expanded.set(true);
     world
         .mode
-        .list_loaded_resources(true, home)
+        .list_loaded_resources(
+            ShowLoadedResourcesOptions {
+                force: true,
+                ..ShowLoadedResourcesOptions::default()
+            },
+            home,
+        )
         .map(|()| world.mode.chat_container.render(WIDTH))
         .map_err(|error| error.to_string())
 }

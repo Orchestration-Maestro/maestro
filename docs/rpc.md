@@ -7,7 +7,9 @@ dialogs.
 
 The protocol has one connection runner, `maestro_app::run_rpc_connection`. It serves a
 local session runtime over a caller's line reader and writer and returns how the
-connection ended; it never exits the process. `maestro_rpc::run_rpc_mode` is its
+connection ended; it never exits the process. The writer receives each record as an
+`RpcLine`, already framed, and `rpc_mode::stdout_output` writes those lines to standard
+output. `maestro_rpc::run_rpc_mode` is its
 standard-stream adapter: it reserves standard output for protocol records, serves the
 runtime and exits with the connection's code.
 
@@ -125,7 +127,7 @@ The server streams these session events as they happen, without an `id`:
 | `turn_start` | |
 | `turn_end` | `message`, `toolResults` |
 | `message_start` | `message` |
-| `message_update` | `message`, `assistantMessageEvent` |
+| `message_update` | `assistantMessageEvent`, `message` |
 | `message_end` | `message` |
 | `tool_execution_start` | `toolCallId`, `toolName`, `args` |
 | `tool_execution_update` | `toolCallId`, `toolName`, `args`, `partialResult` |
@@ -168,11 +170,15 @@ settled or malformed `id` is ignored.
 
 A dialog with a positive `timeout` settles with its default after that many milliseconds; a
 zero or absent timeout waits. An `editor` has no timeout. A dialog whose signal already
-aborted writes nothing and returns its default.
+aborted writes nothing and returns its default. A dialog settles with whatever came first:
+a response that arrives after the abort or the deadline is ignored.
 
 Dialogs work while the first session is still binding: a `session_start` handler can ask
-one, and its answer finishes the binding. Other commands that arrive meanwhile wait and
-then run in arrival order.
+one, and its answer finishes the binding, even when it is the input's final line. When the
+input ends or fails before the answer, no answer can arrive: the dialog settles as cancelled,
+any dialog the binding asks after that settles as cancelled and writes no request, and the
+binding finishes. Other commands that arrive meanwhile wait and then run in arrival
+order.
 
 Widget factories, custom components, footers, headers, editor components and
 autocomplete providers need a terminal: they are never built here. Theme selection
@@ -185,5 +191,7 @@ or SIGHUP. At the end of input the server stops streaming events, starts disposi
 session and answers a final line without its LF; the process exits 0. A shutdown an
 extension requests takes effect after the next command's response. The first signal kills
 the shell commands still running, disposes the session and exits with 143 or 129. Once
-shutdown has started, a second signal kills the process by that signal, and the end of
-input exits 0 at once.
+shutdown has started, a second signal kills the process by that signal; once the session
+is disposing, the end of input exits 0 at once. A failed read, or a failed write of any
+record, also disposes the session, and the connection returns that first failure however
+it then ends.
