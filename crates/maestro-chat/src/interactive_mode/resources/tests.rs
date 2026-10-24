@@ -1,13 +1,18 @@
 //! The loaded-resource listing through the mode's startup and retained sections.
-use super::{format_context_path, format_display_path};
+use super::{
+    ResourceItem, build_scope_groups, format_context_path, format_display_path,
+    format_scope_groups, get_short_path,
+};
 use crate::interactive_mode::startup::ExpandableText;
 use crate::interactive_mode::tests::{Setup, World, isolated_case, light, painted, roles};
 use crate::{InteractiveMode, InteractiveModeOptions};
-use maestro_app::{ContextFile, home_directory};
-use maestro_theme::{Theme, ThemeColor};
+use maestro_app::{
+    ContextFile, PromptTemplate, Skill, SourceInfo, SourceOrigin, SourceScope, home_directory,
+};
+use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Component;
 use serde::Deserialize;
-use std::{any::Any, path::Path, rc::Rc};
+use std::{any::Any, cell::Cell, path::Path, rc::Rc};
 
 /// Every recorded listing case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_resources.json");
@@ -39,7 +44,11 @@ enum Input {
     /// A listing whose theme changes before its sections toggle.
     ThemeToggle {
         /// The context files.
+        #[serde(default)]
         context: Vec<Located>,
+        /// The skills.
+        #[serde(default)]
+        skills: Vec<Recorded>,
         /// The render width.
         width: usize,
     },
@@ -49,6 +58,16 @@ enum Input {
         cwd: String,
         /// The context path.
         path: String,
+        /// The home directory.
+        home: String,
+    },
+    /// One package resource path displayed with a supplied home directory.
+    Short {
+        /// The path.
+        path: String,
+        /// Where the resource came from.
+        #[serde(rename = "sourceInfo")]
+        source_info: Option<RecordedSource>,
         /// The home directory.
         home: String,
     },
@@ -80,6 +99,15 @@ struct Listing {
     cwd: Option<String>,
     /// The context files.
     context: Vec<Located>,
+    /// The skills.
+    skills: Vec<Recorded>,
+    /// The prompt templates the session lists.
+    templates: Vec<Recorded>,
+    /// The prompt templates of the loader's first read, when they differ.
+    #[serde(rename = "loaderTemplates")]
+    loader_templates: Option<Vec<Recorded>>,
+    /// Whether a quiet startup was asked for diagnostics, which this listing omits.
+    diagnostics: bool,
     /// The render width.
     width: Option<usize>,
 }
@@ -102,6 +130,94 @@ struct Startup {
 struct Located {
     /// The path.
     path: String,
+}
+
+/// One recorded skill or prompt template.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Recorded {
+    /// The resource file.
+    #[serde(rename = "filePath")]
+    file_path: String,
+    /// The name.
+    name: String,
+    /// Where the resource came from, local project material when absent.
+    #[serde(rename = "sourceInfo")]
+    source_info: Option<RecordedSource>,
+}
+
+/// Where a recorded resource came from.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RecordedSource {
+    /// The source label.
+    source: String,
+    /// The scope.
+    scope: SourceScope,
+    /// The package root.
+    #[serde(rename = "baseDir")]
+    base_dir: Option<String>,
+}
+
+impl RecordedSource {
+    /// The source of the resource at `path`.
+    fn into_source_info(self, path: &str) -> SourceInfo {
+        SourceInfo {
+            path: path.to_owned(),
+            source: self.source,
+            scope: self.scope,
+            origin: SourceOrigin::TopLevel,
+            base_dir: self.base_dir,
+        }
+    }
+}
+
+impl Recorded {
+    /// The recorded source, local project material when absent.
+    fn source_info(&mut self) -> SourceInfo {
+        self.source_info
+            .take()
+            .unwrap_or_else(|| RecordedSource {
+                source: "local".to_owned(),
+                scope: SourceScope::Project,
+                base_dir: None,
+            })
+            .into_source_info(&self.file_path)
+    }
+
+    /// The recorded skill.
+    fn into_skill(mut self) -> Skill {
+        Skill {
+            source_info: self.source_info(),
+            name: self.name,
+            description: String::new(),
+            file_path: self.file_path,
+            base_dir: String::new(),
+            disable_model_invocation: false,
+        }
+    }
+
+    /// The recorded prompt template.
+    fn into_template(mut self) -> PromptTemplate {
+        PromptTemplate {
+            source_info: self.source_info(),
+            name: self.name,
+            description: String::new(),
+            argument_hint: None,
+            content: String::new(),
+            file_path: self.file_path,
+        }
+    }
+}
+
+/// The recorded skills.
+fn skills(recorded: Vec<Recorded>) -> Vec<Skill> {
+    recorded.into_iter().map(Recorded::into_skill).collect()
+}
+
+/// The recorded prompt templates.
+fn templates(recorded: Vec<Recorded>) -> Vec<PromptTemplate> {
+    recorded.into_iter().map(Recorded::into_template).collect()
 }
 
 /// The recorded observations.
@@ -161,9 +277,15 @@ fn context_files(located: Vec<Located>) -> Vec<ContextFile> {
         .collect()
 }
 
-/// Runs `body` in a fresh child whose home directory is the recorded one.
+/// Runs `body` in a fresh child whose home directory and locale are the recorded ones.
 fn in_home(test: &str, body: impl FnOnce(&Path)) {
-    isolated_case(test, "child", (&[("HOME", HOME)], &[]), body);
+    let environment = [("HOME", HOME), ("LANG", "C.UTF-8")];
+    isolated_case(
+        test,
+        "child",
+        (&environment, &["LC_ALL", "LC_MESSAGES"]),
+        body,
+    );
 }
 
 /// The retained expandable sections of the transcript.
@@ -200,18 +322,32 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
         verbose,
         expanded: tool_output_expanded,
     } = listing.startup;
+    assert!(
+        quiet || !listing.diagnostics,
+        "diagnostics are asked of quiet startup"
+    );
+    let mut prompts: Vec<_> = listing
+        .loader_templates
+        .into_iter()
+        .map(templates)
+        .collect();
+    prompts.push(templates(listing.templates));
     let world = Setup {
         options: InteractiveModeOptions { verbose },
         configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
         cwd: listing.cwd,
         context: context_files(listing.context),
+        skills: skills(listing.skills),
+        prompts,
         ..Setup::default()
     }
     .build(directory);
     world.mode.tool_output_expanded.set(tool_output_expanded);
-    world.mode.init().unwrap();
+    // A forced listing is a later call; startup's own listing goes through `init`.
     if listing.force {
         world.mode.show_loaded_resources(true).unwrap();
+    } else {
+        world.mode.init().unwrap();
     }
     let width = listing.width.unwrap_or(WIDTH);
     let theme = world.themes.theme().get().unwrap();
@@ -240,13 +376,15 @@ fn listings(test: &str, extra: impl Fn(&World)) {
 #[test]
 fn loaded_resources_use_compact_defaults() {
     listings("loaded_resources_use_compact_defaults", |world| {
-        let children = world.mode.chat_container.children().borrow().len();
-        assert_eq!(sections(&world.mode).len(), children / 2);
-        world.mode.init().unwrap();
+        let chat = &world.mode.chat_container;
         assert_eq!(
-            world.mode.chat_container.children().borrow().len(),
-            children
+            sections(&world.mode).len(),
+            chat.children().borrow().len() / 2
         );
+        world.mode.init().unwrap();
+        let children = chat.children().borrow().len();
+        world.mode.init().unwrap();
+        assert_eq!(chat.children().borrow().len(), children);
         assert_eq!(world.terminal.events(), ["start"]);
     });
 }
@@ -298,6 +436,7 @@ fn loaded_resource_sections_retain_content_across_redraws() {
                 panic!("a listing case");
             };
             let width = listing.width.unwrap();
+            let leading = usize::from(!listing.context.is_empty());
             let world = check_listing(directory, listing, expected);
             let rows = world.mode.chat_container.render(width);
             world.mode.chat_container.invalidate();
@@ -313,7 +452,7 @@ fn loaded_resource_sections_retain_content_across_redraws() {
             let released = Rc::downgrade(&mode);
             drop(mode);
             assert!(released.upgrade().is_none());
-            assert_eq!(section.render(width), rows[1..rows.len() - 1]);
+            assert_eq!(section.render(width), rows[leading..rows.len() - 1]);
         }
     });
 }
@@ -332,7 +471,11 @@ fn resource_section_heading_refreshes_on_toggle_without_restyling_body() {
     in_home(test, |directory| {
         for (input, expected) in cases(test) {
             let (
-                Input::ThemeToggle { context, width },
+                Input::ThemeToggle {
+                    context,
+                    skills: recorded,
+                    width,
+                },
                 Expected::Toggle {
                     before,
                     no_toggle,
@@ -343,8 +486,10 @@ fn resource_section_heading_refreshes_on_toggle_without_restyling_body() {
             else {
                 panic!("a theme case");
             };
+            let heading = usize::from(!context.is_empty());
             let world = Setup {
                 context: context_files(context),
+                skills: skills(recorded),
                 ..Setup::default()
             }
             .build(directory);
@@ -356,9 +501,15 @@ fn resource_section_heading_refreshes_on_toggle_without_restyling_body() {
             world.themes.set_theme_instance(Rc::clone(&light)).unwrap();
             assert_eq!(chat.render(width), painted(&dark, &no_toggle));
             expand_all(&world.mode, true);
-            assert_eq!(chat.render(width), repainted(&dark, &light, &expanded, 1));
+            assert_eq!(
+                chat.render(width),
+                repainted(&dark, &light, &expanded, heading)
+            );
             expand_all(&world.mode, false);
-            assert_eq!(chat.render(width), repainted(&dark, &light, &collapsed, 1));
+            assert_eq!(
+                chat.render(width),
+                repainted(&dark, &light, &collapsed, heading)
+            );
         }
     });
 }
@@ -415,5 +566,105 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
             let row = theme.fg(&ThemeColor::Dim, &format!("  {value}")).unwrap();
             assert_eq!(world.mode.chat_container.render(WIDTH)[2].trim_end(), row);
         });
+    }
+}
+
+#[test]
+fn loaded_resources_expand_each_retained_section() {
+    listings("loaded_resources_expand_each_retained_section", |_| {});
+}
+
+#[test]
+fn resource_scopes_keep_project_user_path_order() {
+    listings("resource_scopes_keep_project_user_path_order", |_| {});
+}
+
+#[test]
+fn resource_groups_keep_stable_locale_order() {
+    listings("resource_groups_keep_stable_locale_order", |_| {});
+}
+
+#[test]
+fn compact_resource_labels_use_ecmascript_space_rules() {
+    listings("compact_resource_labels_use_ecmascript_space_rules", |_| {});
+}
+
+#[test]
+fn prompt_resources_use_session_templates_and_last_path_lookup() {
+    listings(
+        "prompt_resources_use_session_templates_and_last_path_lookup",
+        |world| {
+            let rows = world.mode.chat_container.render(WIDTH).join("\n");
+            assert!(!rows.contains("NOT_SELECTED"));
+        },
+    );
+}
+
+#[test]
+fn package_resources_shorten_from_roots_before_legacy_fallbacks() {
+    for (input, expected) in cases("package_resources_shorten_from_roots_before_legacy_fallbacks") {
+        let (
+            Input::Short {
+                path,
+                source_info,
+                home,
+            },
+            Expected::Value { value },
+        ) = (input, expected)
+        else {
+            panic!("a package path case");
+        };
+        let source_info = source_info.map(|source| source.into_source_info(&path));
+        let short = get_short_path(&path, source_info.as_ref(), Some(&home)).unwrap();
+        assert_eq!(short, value);
+    }
+}
+
+/// The paths visited while grouping `count` resources and the paths emitted, and the
+/// lookups a formatter that rescans every resource per emitted path would make.
+fn traversal(count: usize) -> (usize, usize, usize) {
+    let paths: Vec<_> = (0..count)
+        .rev()
+        .map(|index| format!("/r/{index:04}"))
+        .collect();
+    let items: Vec<_> = paths
+        .iter()
+        .map(|path| ResourceItem {
+            path,
+            source_info: None,
+        })
+        .collect();
+    let visited = Cell::new(0);
+    let groups = build_scope_groups(items.iter().inspect(|_| visited.set(visited.get() + 1)));
+    let emitted = Cell::new(0);
+    let rescanned = Cell::new(0);
+    let theme = crate::interactive_mode::tests::dark();
+    let collator = Collator::new(&|_| None).unwrap();
+    format_scope_groups(
+        &groups,
+        &theme,
+        &collator,
+        |item| {
+            emitted.set(emitted.get() + 1);
+            let position = items
+                .iter()
+                .position(|other| other.path == item.path)
+                .unwrap();
+            rescanned.set(rescanned.get() + count - position);
+            Ok(item.path.to_owned())
+        },
+        |_| unreachable!("no package resources"),
+    )
+    .unwrap();
+    (visited.get(), emitted.get(), rescanned.get())
+}
+
+#[test]
+fn resource_listing_reads_each_input_once_before_ordering() {
+    for count in [64, 128, 256] {
+        let (visited, emitted, rescanned) = traversal(count);
+        assert_eq!((visited, emitted), (count, count));
+        assert_eq!(rescanned, count * (count + 1) / 2);
+        assert!(rescanned > 2 * count);
     }
 }

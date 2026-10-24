@@ -14,8 +14,8 @@ use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
     AgentSessionRuntime, ContextFile, DiagnosticErrorInfo, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, ResourceExtensionPaths, ResourceLoader,
-    SettingsManager,
+    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, ResourceExtensionPaths,
+    ResourceLoader, SettingsManager, Skill,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -24,7 +24,7 @@ use maestro_tui::{
     EditorComponent, autocomplete,
 };
 use serde::Deserialize;
-use std::{cell::RefCell, future::Future, io, path::Path, pin::Pin, rc::Rc};
+use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
 
 /// Every recorded presentation case.
 const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
@@ -63,8 +63,9 @@ pub(super) fn isolated_case(
     );
 }
 
-/// A resource loader that forwards to the default one, answering supplied themes and
-/// context files and changing the configured theme while its themes are read.
+/// A resource loader that forwards to the default one, answering supplied themes, skills,
+/// successive prompt templates and context files, and changing the configured theme
+/// while its themes are read.
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
@@ -74,6 +75,36 @@ pub(super) struct ForwardingLoader {
     select: RefCell<Option<(Rc<RefCell<SettingsManager>>, String)>>,
     /// The discovered context files, replaceable after construction.
     pub(super) context: RefCell<Rc<[ContextFile]>>,
+    /// The loaded skills.
+    skills: Rc<LoadSkillsResult>,
+    /// The prompt templates of each read; the last answers every later read.
+    prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
+}
+
+/// The context files, skills and successive prompt templates a loader answers.
+type Resources = (Vec<ContextFile>, Vec<Skill>, Vec<Vec<PromptTemplate>>);
+
+impl ForwardingLoader {
+    /// A loader over `inner` answering the dark and light palettes and `resources`.
+    fn new(inner: Rc<dyn ResourceLoader<Local>>, (context, skills, prompts): Resources) -> Self {
+        let prompts = prompts.into_iter().map(|prompts| {
+            Rc::new(LoadPromptsResult {
+                prompts,
+                diagnostics: Vec::new(),
+            })
+        });
+        Self {
+            inner,
+            themes: vec![dark(), light()],
+            select: RefCell::default(),
+            context: RefCell::new(context.into()),
+            skills: Rc::new(LoadSkillsResult {
+                skills,
+                diagnostics: Vec::new(),
+            }),
+            prompts: RefCell::new(prompts.collect()),
+        }
+    }
 }
 
 impl ResourceLoader<Local> for ForwardingLoader {
@@ -81,10 +112,18 @@ impl ResourceLoader<Local> for ForwardingLoader {
         self.inner.get_extensions()
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
-        self.inner.get_skills()
+        Rc::clone(&self.skills)
     }
     fn get_prompts(&self) -> Rc<LoadPromptsResult> {
-        self.inner.get_prompts()
+        let mut prompts = self.prompts.borrow_mut();
+        if prompts.len() > 1 {
+            prompts.pop_front().unwrap()
+        } else {
+            prompts
+                .front()
+                .cloned()
+                .unwrap_or_else(|| self.inner.get_prompts())
+        }
     }
     fn get_themes(&self) -> Rc<LoadThemesResult> {
         if let Some((settings, name)) = self.select.borrow_mut().take() {
@@ -154,6 +193,10 @@ pub(super) struct Setup {
     pub(super) cwd: Option<String>,
     /// The context files the loader answers.
     pub(super) context: Vec<ContextFile>,
+    /// The skills the loader answers.
+    pub(super) skills: Vec<Skill>,
+    /// The prompt templates of each loader read; the last answers every later read.
+    pub(super) prompts: Vec<Vec<PromptTemplate>>,
 }
 
 impl Default for Setup {
@@ -164,6 +207,8 @@ impl Default for Setup {
             select: None,
             cwd: None,
             context: Vec::new(),
+            skills: Vec::new(),
+            prompts: Vec::new(),
         }
     }
 }
@@ -176,16 +221,11 @@ impl Setup {
             .unwrap_or_else(|| directory.to_str().unwrap().to_owned());
         let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
-        let context = self.context.into();
+        let resources = (self.context, self.skills, self.prompts);
         let result = session::session(&cwd, None, move |inner| {
-            let themes = Rc::new(ForwardingLoader {
-                inner,
-                themes: vec![dark(), light()],
-                select: RefCell::default(),
-                context: RefCell::new(context),
-            });
-            *created.borrow_mut() = Some(Rc::clone(&themes));
-            themes
+            let loader = Rc::new(ForwardingLoader::new(inner, resources));
+            *created.borrow_mut() = Some(Rc::clone(&loader));
+            loader
         });
         let settings = Rc::clone(result.session.settings_manager());
         settings.borrow_mut().set_theme("dark".to_owned());

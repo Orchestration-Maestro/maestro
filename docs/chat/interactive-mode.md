@@ -46,10 +46,10 @@ Header text keeps the colours of the theme in effect when it was built.
 
 ## Loaded resources
 
-The listing appends one section per kind of loaded resource that has entries. Each
-section is a `[Context]` heading over its entries, followed by an empty row. The
-first section also gets an empty row above it. With `quietStartup` set and verbose
-off, nothing is listed.
+The listing appends one section per kind of loaded resource that has entries, in
+the order `[Context]`, `[Skills]`, `[Prompts]`. Each section is its heading over its
+entries, followed by an empty row; `[Context]` also gets an empty row above it.
+With `quietStartup` set and verbose off, nothing is listed.
 
 `[Context]` lists the context files the session's resource loader discovered, in
 discovery order. The compact form puts them on one row, separated by commas: a file
@@ -57,6 +57,16 @@ inside the working directory shows its relative path (`.` for the directory
 itself), and any other file its absolute path. The expanded form puts each path on
 its own row. Paths resolve lexically, without reading the filesystem. A leading
 home directory is shown as `~`; an empty home directory abbreviates nothing.
+
+`[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
+templates. The compact form is one row of skill names, or of prompt names with a
+leading `/`, trimmed and sorted for the current locale. The expanded form groups
+entries under `project`, `user` and `path` (command-line and temporary resources).
+Within each scope it lists plain paths first, then each package source with its
+entries, all sorted for the locale. A package entry is shown relative to its
+package root, or else by its path inside the npm or Git package directory. Prompts
+show their `/name`; when several templates share a file, the last one's name is
+shown.
 
 Sections start expanded in verbose mode or when tool output is expanded, and compact
 otherwise. Each section keeps the text it was built with. Expanding or collapsing it
