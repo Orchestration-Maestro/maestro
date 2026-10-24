@@ -439,6 +439,7 @@ fn setup(listing: &mut Listing) -> Setup {
     Setup {
         options: InteractiveModeOptions {
             verbose: startup.verbose,
+            ..InteractiveModeOptions::default()
         },
         configure: Box::new(move |settings| settings.set_quiet_startup(startup.quiet)),
         skills: skills(take(&mut listing.skills)),
