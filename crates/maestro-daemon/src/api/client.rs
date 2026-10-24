@@ -2,7 +2,7 @@
 
 use crate::instances::Selection;
 use maestro_ipc::local_socket::connect_local_stream;
-use maestro_json::jsonl::serialize_json_line;
+use maestro_json::jsonl::serialize_native_json_line;
 use maestro_protocol::rpc_types::Request;
 use std::{
     fmt,
@@ -62,7 +62,7 @@ impl DaemonClient {
     /// error when the peer supplies no nonblank line.
     pub fn request_value(&self, request: &Request) -> Result<serde_json::Value, ApiClientError> {
         let mut stream = connect_local_stream(self.target.path())?;
-        let line = serialize_json_line(&serde_json::to_value(request)?)?;
+        let line = serialize_native_json_line(&serde_json::to_value(request)?)?;
         stream.write_all(line.as_bytes())?;
         stream.flush()?;
         let mut line = String::new();

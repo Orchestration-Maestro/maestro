@@ -138,3 +138,34 @@ fn raw_client_failures_keep_native_causes() {
     assert!(error.source().unwrap().is::<std::io::Error>());
     assert_eq!(error.to_string(), cause.to_string());
 }
+
+#[test]
+fn client_request_keeps_large_metadata_sequence() {
+    let root = Scratch::new().unwrap();
+    let path = root.path().join("sequence.sock");
+    let listener = UnixListener::bind(&path).unwrap();
+    let peer = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut line = String::new();
+        BufReader::new(&mut stream).read_line(&mut line).unwrap();
+        stream.write_all(b"{\"success\":true}\n").unwrap();
+        serde_json::from_str::<serde_json::Value>(&line).unwrap()
+    });
+    let request = Request {
+        id: Some("sequence".into()),
+        command: RpcCommand::WorkspaceReportMetadata(
+            maestro_protocol::schema::WorkspaceReportMetadataParams {
+                workspace_id: "workspace".into(),
+                source: "hook".into(),
+                tokens: std::collections::HashMap::new(),
+                seq: Some(9_007_199_254_740_993),
+                ttl_ms: None,
+            },
+        ),
+    };
+    let client = DaemonClient::for_target(ConnectionTarget::SocketPath(path));
+    let response = client.request_value(&request).unwrap();
+    let received = peer.join().unwrap();
+    assert_eq!(response["success"], true);
+    assert_eq!(received["seq"], 9_007_199_254_740_993_u64);
+}
