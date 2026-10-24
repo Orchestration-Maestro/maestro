@@ -2,6 +2,10 @@
 #![cfg(test)]
 
 mod agent_session_concurrent_checks;
+mod agent_session_prompt_checks;
+mod agent_session_queue_checks;
+mod agent_session_retry_checks;
+mod agent_session_retry_events_checks;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
@@ -77,6 +81,7 @@ mod model_selector_exports;
 #[cfg(unix)]
 #[path = "support/native.rs"]
 mod native;
+mod network_connection_lost_retry_checks;
 #[path = "docx_support/numbering.rs"]
 mod numbering_observation;
 mod output_routing;
@@ -88,6 +93,7 @@ mod pdf_attachments;
 mod pdf_pages;
 mod pptx_attachments;
 mod prompt_templates_checks;
+mod queued_slash_command_followup_checks;
 mod resource_extension_loading;
 #[cfg(unix)]
 #[path = "support/resource_fixtures.rs"]
@@ -158,6 +164,7 @@ mod support {
     pub mod export_fixtures;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod javascript_execution;
+    pub mod no_commands;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod pdf;
     #[cfg(not(target_arch = "wasm32"))]

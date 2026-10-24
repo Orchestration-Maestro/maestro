@@ -86,8 +86,8 @@ native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
-child tests, and the native development edges from the twenty-two declared
-callers to the
+child tests, and the native development edges from the twenty-three declared callers to
+the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -100,8 +100,10 @@ exact caller list of its
 [directory contract](specs/maestro-port.md#test-directory-owner) and no outgoing
 domain or utility edge. The tracing owner
 follows the same checks with its own five callers; see the
-[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
-is not a reusable test-support dependency. Both production
+[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness's
+recording terminal and manual runtime are the one shared test-effect owner, with
+`maestro-cli` as their only declared caller under the same native development
+rules. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
 
@@ -248,6 +250,16 @@ application coupling, no application policy in frontends, a wiring-only binary,
 and complete WIT code-generation evidence. Current absent owners are tested with
 scratch workspaces, not certified as delivered capabilities.
 
+The chat tests that drive the interactive frontend build their session,
+credentials, catalog and resource loader in
+`crates/maestro-chat/tests/footer_support/session.rs`. A second construction of the
+session configuration in these test sources is rejected with its file and line, so
+they share one setup, which returns a session with its services. The rule covers the
+footer support tree, except the setup itself, and the test modules below
+`crates/maestro-chat/src/interactive_mode/`. Paths compare by component, so a native
+separator changes nothing, and the shared token walk includes macro arguments,
+closures and impl bodies.
+
 ## Quality checks
 
 Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just check`
@@ -286,6 +298,26 @@ exact generated guest binding file are excluded. Macro definitions are not
 expanded, but authored invocation tokens inside functions are compared.
 Unparsed fragments produce no candidates; compound configurations are not
 evaluated. There is no baseline, allowlist or suppression attribute.
+
+The shipped extension example tests share their document decoding and
+registration release in `src/tests/example_support.rs`. That release also asserts
+the names the caller expects the host to have admitted and that nothing stays
+lent. A per-example test beside it that writes the decode or the release walk
+inline is rejected with its file and line, wherever the copy sits: a bare call, a
+macro argument, a closure or a method.
+
+Conventions reject a platform temporary directory that migrated-crate test code
+names itself. Test-owned code is a test file layout and every item inside an
+inherited `cfg(test)` context, closures and macro arguments included; the
+`temp_dir` spelling is rejected there as a call, as a value or inside macro
+tokens, and its import is rejected anywhere in the crate, whatever the alias.
+The check follows no bindings or data flow. Tests that observe the platform
+directory, name an uncreated socket path under it or pass it as the owner's
+parent read it through `maestro_test_directory::temporary_root`, and directory
+creation and removal go through `Scratch`. The check covers the crates the
+migration onto `maestro-test-directory` has reached, and each batch adds its
+crates until the last one removes the scope. The diagnostic names
+`TEST_DIRECTORY_CALLERS`, where a new crate asks for the owner.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.

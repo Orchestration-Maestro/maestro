@@ -10,11 +10,17 @@ pub(crate) mod bindings;
     dead_code,
     reason = "The controlled host supports other terminal effects."
 )]
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../../maestro-test-terminal/src/manual_runtime.rs"]
 pub(crate) mod manual_runtime;
 #[allow(dead_code, reason = "Only theme publication helpers are shared.")]
 #[path = "../../../maestro-theme/tests/published/mod.rs"]
 pub(crate) mod published;
+#[allow(
+    dead_code,
+    reason = "Shared terminal support exposes controls used by other crates."
+)]
+#[path = "../../../maestro-test-terminal/src/recording_terminal.rs"]
+pub(crate) mod recording_terminal;
 #[path = "registry.rs"]
 pub(crate) mod registry;
 use bindings::Binding;

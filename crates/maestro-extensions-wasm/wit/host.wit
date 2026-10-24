@@ -95,8 +95,33 @@ interface host {
         /// Supplied percentage, or an unknown estimate.
         percent: option<f64>,
     }
+    /// Severity of a notification; absent means an ordinary message.
+    enum notification-type { info, warning, error }
+    /// Vertical position of a fixed widget.
+    enum widget-placement { above-editor, below-editor }
+    /// Options of a fixed widget; the host chooses the default placement.
+    record extension-widget-options {
+        /// Omitted keeps the host's default placement.
+        placement: option<widget-placement>,
+    }
+    /// Options of the working indicator; the host owns animation and defaults.
+    record working-indicator-options {
+        /// Omitted keeps the host's default frames; an empty list hides the indicator.
+        frames: option<list<string>>,
+        /// Omitted keeps the host's default interval.
+        interval-ms: option<f64>,
+    }
     /// Independently retained opaque UI capability.
-    resource extension-ui-context;
+    resource extension-ui-context {
+        notify: func(message: string, kind: option<notification-type>) -> result<_, string>;
+        set-status: func(key: string, text: option<string>) -> result<_, string>;
+        set-working-message: func(message: option<string>) -> result<_, string>;
+        set-working-visible: func(visible: bool) -> result<_, string>;
+        set-working-indicator: func(options: option<working-indicator-options>) -> result<_, string>;
+        set-hidden-thinking-label: func(label: option<string>) -> result<_, string>;
+        set-widget: func(key: string, content: option<list<string>>, options: option<extension-widget-options>) -> result<_, string>;
+        set-title: func(title: string) -> result<_, string>;
+    }
     /// Resolved credentials, retaining key and header presence.
     record request-auth {
         api-key: option<string>,

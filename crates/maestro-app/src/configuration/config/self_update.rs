@@ -37,23 +37,15 @@ pub struct SelfUpdateContext<'a> {
     pub installation: &'a Installation,
     /// Package directory selected by the caller.
     pub package_dir: &'a str,
-    /// Replaceable filesystem, environment and query observations.
+    /// Replaceable path flavor and read-only query capture.
     pub operations: &'a dyn SelfUpdateOperations,
 }
-/// Synchronous effects needed to establish global installation ownership.
+/// Replaceable path flavor and read-only query capture.
+///
+/// Home and write-access observations are the native ones.
 pub trait SelfUpdateOperations {
     /// Whether authored paths use Windows semantics.
     fn is_windows(&self) -> bool;
-    /// Observe the home directory.
-    ///
-    /// # Errors
-    /// Returns the native lookup cause.
-    fn home_dir(&self) -> io::Result<String>;
-    /// Check write access without creating a file.
-    ///
-    /// # Errors
-    /// Returns the native access cause.
-    fn check_write_access(&self, path: &str) -> io::Result<()>;
     /// Capture a read-only package-manager query.
     ///
     /// # Errors
@@ -347,17 +339,12 @@ fn managed(
 }
 /// Check the authored package path before its immediate parent.
 fn writable(context: &SelfUpdateContext<'_>) -> bool {
-    context
-        .operations
-        .check_write_access(context.package_dir)
+    check_write_access(context.package_dir).is_ok()
+        && check_write_access(&dirname(
+            context.package_dir,
+            context.operations.is_windows(),
+        ))
         .is_ok()
-        && context
-            .operations
-            .check_write_access(&dirname(
-                context.package_dir,
-                context.operations.is_windows(),
-            ))
-            .is_ok()
 }
 /// Select an owned automatic update only for a writable global installation.
 ///
@@ -439,7 +426,7 @@ fn bun_roots(context: &SelfUpdateContext<'_>, output: Option<String>) -> io::Res
     let windows = context.operations.is_windows();
     let mut roots = vec![join(
         &[
-            &context.operations.home_dir()?,
+            &maestro_tools::expand_path("~")?,
             ".bun",
             "install",
             "global",
@@ -483,4 +470,24 @@ fn npm_program(npm: Option<&[String]>) -> (&str, Vec<String>) {
         || ("npm", Vec::new()),
         |(command, args)| (command.as_str(), args.to_vec()),
     )
+}
+
+/// Use the OS access operation rather than creating or truncating a probe file.
+#[cfg(unix)]
+fn check_write_access(path: &str) -> io::Result<()> {
+    Ok(rustix::fs::access(path, rustix::fs::Access::WRITE_OK)?)
+}
+
+/// Match native Windows directory and regular-file attribute access results.
+///
+/// Windows observes existence and read-only attributes, not directory ACLs, so an
+/// attempted update can still fail with a permissions error.
+#[cfg(not(unix))]
+fn check_write_access(path: &str) -> io::Result<()> {
+    let metadata = std::fs::metadata(path)?;
+    if metadata.is_dir() || !metadata.permissions().readonly() {
+        Ok(())
+    } else {
+        Err(io::Error::from(io::ErrorKind::PermissionDenied))
+    }
 }

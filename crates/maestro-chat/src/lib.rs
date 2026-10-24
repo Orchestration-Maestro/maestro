@@ -69,3 +69,9 @@ pub use components::footer::FooterComponent;
 pub use components::tool_execution::{
     ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams, ToolExecutionResult,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod interactive_mode;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use interactive_mode::{InteractiveMode, InteractiveModeOptions};

@@ -268,6 +268,7 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
     assert_eq!(host.terminal.events(), ["start"]);
     #[cfg(unix)]
     {
+        use std::os::unix::fs::PermissionsExt;
         use std::os::unix::fs::symlink;
         let target = std::env::temp_dir().join("unrelated-target");
         std::fs::write(&target, b"unrelated target bytes").unwrap();
@@ -287,14 +288,12 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
         std::fs::remove_file(&path).unwrap();
         install_script(
             "inspect-mode",
-            "#!/bin/sh\nfor file; do :; done\n/usr/bin/stat -c '%a' \"$file\" > \"${0%/*}/mode\"\nexit 1\n",
+            "#!/bin/sh\nfor file; do :; done\n/bin/cp -p \"$file\" \"${0%/*}/mode\"\nexit 1\n",
         );
         host.spy.clock.set_environment("VISUAL", "inspect-mode");
         host.dialog.handle_input("\x07").unwrap();
-        assert_eq!(
-            std::fs::read_to_string(std::env::temp_dir().join("mode")).unwrap(),
-            "600\n"
-        );
+        let copied = std::fs::metadata(std::env::temp_dir().join("mode")).unwrap();
+        assert_eq!(copied.permissions().mode() & 0o7777, 0o600);
         assert!(!path.exists());
     }
 }

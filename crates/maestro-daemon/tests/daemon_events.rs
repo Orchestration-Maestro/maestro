@@ -17,6 +17,7 @@ use maestro_daemon::{
     settings::model::Config,
 };
 use maestro_detection::agents::{Agent, AgentState};
+use maestro_test_directory::temporary_root;
 use maestro_test_process::{TestProcess, run_alone};
 use maestro_workspace::layout::PaneId;
 
@@ -436,7 +437,7 @@ fn daemon_pane_died_respawns_shell_and_clears_restored_agent_session() {
 
 /// A launch-command exit keeps its pane but replaces its process and clears agent ownership.
 async fn check_respawn(args: &[String]) {
-    let mut app = context_app(std::env::temp_dir(), false);
+    let mut app = context_app(temporary_root(), false);
     let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests));
     app.launch = launch;
     app.event_rx = event_rx;
@@ -557,7 +558,7 @@ async fn assert_shell_identity(
         }
         app.launch.render_notify.notified().await;
     }
-    assert_eq!(runtime.cwd(), Some(std::env::temp_dir()));
+    assert_eq!(runtime.cwd(), Some(temporary_root()));
     assert_eq!(runtime.current_size(), app.state.estimate_pane_size());
     assert!(
         !app.event_hub
@@ -572,7 +573,7 @@ async fn assert_shell_identity(
 
 #[test]
 fn failed_shell_respawn_keeps_normal_pane_exit() {
-    let mut app = context_app(std::env::temp_dir(), false);
+    let mut app = context_app(temporary_root(), false);
     app.config.terminal.default_shell = "/missing-maestro-shell-fixture/bin/sh".into();
     app.config.terminal.shell_mode = maestro_daemon::settings::model::ShellModeConfig::Login;
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
@@ -602,7 +603,7 @@ fn failed_shell_respawn_keeps_normal_pane_exit() {
 
 #[test]
 fn daemon_clipboard_write_event_shows_feedback_toast() {
-    let mut app = context_app(std::env::temp_dir(), false);
+    let mut app = context_app(temporary_root(), false);
     app.handle_internal_event(AppEvent::ClipboardWrite {
         content: b"copied".to_vec(),
     });
@@ -616,7 +617,7 @@ fn daemon_clipboard_write_event_shows_feedback_toast() {
 
 #[test]
 fn daemon_clipboard_feedback_can_be_disabled() {
-    let mut app = context_app(std::env::temp_dir(), false);
+    let mut app = context_app(temporary_root(), false);
     app.state.toast_config.clipboard.enabled = false;
     app.handle_internal_event(AppEvent::ClipboardWrite {
         content: b"copied".to_vec(),
@@ -627,7 +628,7 @@ fn daemon_clipboard_feedback_can_be_disabled() {
 
 #[test]
 fn daemon_clipboard_feedback_does_not_replace_notification_toast() {
-    let mut app = context_app(std::env::temp_dir(), false);
+    let mut app = context_app(temporary_root(), false);
     app.state.toast = Some(maestro_daemon::app::state::ToastNotification {
         kind: maestro_daemon::app::state::ToastKind::NeedsAttention,
         title: "agent needs attention".into(),
@@ -651,7 +652,7 @@ fn daemon_clipboard_feedback_does_not_replace_notification_toast() {
 
 #[test]
 fn clipboard_feedback_expires_at_its_deadline_and_disabling_clears_it() {
-    let mut app = context_app(std::env::temp_dir(), false);
+    let mut app = context_app(temporary_root(), false);
     app.handle_internal_event(AppEvent::ClipboardWrite {
         content: b"copied".to_vec(),
     });
@@ -680,7 +681,7 @@ fn clipboard_feedback_expires_at_its_deadline_and_disabling_clears_it() {
 
 #[test]
 fn daemon_internal_event_drain_limits_work_per_tick() {
-    let mut app = context_app(std::env::temp_dir(), false);
+    let mut app = context_app(temporary_root(), false);
     let (sender, receiver) = mpsc::channel(65);
     app.launch.events = sender;
     app.event_rx = receiver;
@@ -725,7 +726,7 @@ async fn check_workspace_creation(args: &[String]) {
     let mut config = Config::default();
     config.terminal.default_shell = "/bin/sh".into();
     config.terminal.new_cwd = maestro_daemon::settings::model::NewTerminalCwdConfig::Path(
-        std::env::temp_dir().display().to_string(),
+        temporary_root().display().to_string(),
     );
     let (launch, receiver) = launch_inputs(args, support::manifest_cache());
     let mut app = App::new(
@@ -749,7 +750,7 @@ async fn check_workspace_creation(args: &[String]) {
     app.config.terminal.default_shell = "/missing-maestro-shell-fixture/bin/sh".into();
     app.state.session_dirty = false;
     assert!(
-        app.create_workspace_with_options(std::env::temp_dir(), false)
+        app.create_workspace_with_options(temporary_root(), false)
             .is_err()
     );
     assert_eq!(app.state.topology.workspaces.len(), 1);

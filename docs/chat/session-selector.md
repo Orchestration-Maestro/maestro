@@ -8,7 +8,10 @@ session records, a live theme and host observations; storage stays caller-owned.
 ## Discovery
 
 `SessionSelectorComponent::new` takes Current/All `SessionsLoader` factories,
-`SessionSelectorCallbacks` and `SessionSelectorOptions`. It returns an
+`SessionSelectorCallbacks` and `SessionSelectorOptions`. The loader, progress,
+future and callback records are declared once in
+`maestro_app::presentation_data::input_selectors` and re-exported here; the
+options stay with this widget. It returns an
 `io::Result`, resolving the optional key manager before starting Current
 discovery. Configuration-root errors return before discovery begins. Factories receive an owned `SessionListProgress`
 callback and return a fallible owned `SessionsFuture`; the supplied runtime drives

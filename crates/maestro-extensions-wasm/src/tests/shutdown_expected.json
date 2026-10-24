@@ -1,9 +1,4 @@
 {
-  "command": {
-    "name": "quit",
-    "description": "Exit Maestro cleanly",
-    "completions": false
-  },
   "commandArguments": [
     "",
     "ignored Ω"

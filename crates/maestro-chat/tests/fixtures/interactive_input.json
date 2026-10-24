@@ -1,0 +1,1137 @@
+[
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [],
+      "history": [],
+      "waiting": true
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\t\n\u000b\f\r                  　﻿",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\t\n\u000b\f\r                  　﻿",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [],
+      "history": [],
+      "waiting": true
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "  hello  world  ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "hello  world"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "  hello  world  ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "hello  world"
+      ],
+      "history": [
+        "hello  world"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "﻿界 é\nsecond﻿",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "界 é\nsecond"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "﻿界 é\nsecond﻿",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "界 é\nsecond"
+      ],
+      "history": [
+        "界 é\nsecond"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "0",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "0"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "0",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "0"
+      ],
+      "history": [
+        "0"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "x",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "x",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "​x​",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "​x​"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "​x​",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "​x​"
+      ],
+      "history": [
+        "​x​"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "᠎x᠎",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "᠎x᠎"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "᠎x᠎",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "᠎x᠎"
+      ],
+      "history": [
+        "᠎x᠎"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "⁠x⁠",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "⁠x⁠"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "⁠x⁠",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "⁠x⁠"
+      ],
+      "history": [
+        "⁠x⁠"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\tx\t",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\tx\t",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\nx\n",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\nx\n",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\u000bx\u000b",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\u000bx\u000b",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\fx\f",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\fx\f",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\rx\r",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "\rx\r",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": " x ",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "　x　",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "　x　",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "﻿x﻿",
+      "waiting": false
+    },
+    "expected": {
+      "delivered": [],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_submission_trims_ecmascript_whitespace_and_records_history",
+    "input": {
+      "value": "﻿x﻿",
+      "waiting": true
+    },
+    "expected": {
+      "delivered": [
+        "x"
+      ],
+      "history": [
+        "x"
+      ],
+      "waiting": false
+    }
+  },
+  {
+    "test": "typed_waiter_is_one_shot_without_buffering_early_submissions",
+    "input": {
+      "op": "early-empty-one-shot-next"
+    },
+    "expected": {
+      "delivered": [
+        "one"
+      ],
+      "second": "two",
+      "history": [
+        "two",
+        "after",
+        "one",
+        "early"
+      ],
+      "cleared": true
+    }
+  },
+  {
+    "test": "typed_waiter_is_one_shot_without_buffering_early_submissions",
+    "input": {
+      "op": "replace"
+    },
+    "expected": {
+      "oldDone": false,
+      "newValue": "replacement",
+      "history": [
+        "replacement"
+      ],
+      "cleared": true
+    }
+  },
+  {
+    "test": "typed_delivery_precedes_history_and_accepts_reentrant_registration",
+    "input": {
+      "op": "callback-reentry"
+    },
+    "expected": {
+      "observations": [
+        {
+          "text": "selected",
+          "cleared": true,
+          "history": [
+            "older"
+          ]
+        }
+      ],
+      "first": "selected",
+      "second": "next",
+      "history": [
+        "next",
+        "selected",
+        "older"
+      ]
+    }
+  },
+  {
+    "test": "typed_input_obeys_the_live_submit_binding",
+    "input": {
+      "binding": "enter",
+      "keys": [
+        "\r"
+      ]
+    },
+    "expected": {
+      "steps": [
+        {
+          "key": "\r",
+          "received": "through terminal",
+          "text": ""
+        }
+      ],
+      "historyRecall": "through terminal"
+    }
+  },
+  {
+    "test": "typed_input_obeys_the_live_submit_binding",
+    "input": {
+      "binding": "ctrl+x",
+      "keys": [
+        "\r",
+        "\u0018"
+      ]
+    },
+    "expected": {
+      "steps": [
+        {
+          "key": "\r",
+          "received": null,
+          "text": " through terminal "
+        },
+        {
+          "key": "\u0018",
+          "received": "through terminal",
+          "text": ""
+        }
+      ],
+      "historyRecall": "through terminal"
+    }
+  },
+  {
+    "test": "typed_input_obeys_the_live_submit_binding",
+    "input": {
+      "binding": "live-change-both-directions"
+    },
+    "expected": {
+      "steps": [
+        {
+          "binding": "enter",
+          "wrong": "\u0018",
+          "right": "\r",
+          "before": " live registry ",
+          "delivered": "live registry",
+          "after": ""
+        },
+        {
+          "binding": "ctrl+x",
+          "wrong": "\r",
+          "right": "\u0018",
+          "before": " live registry ",
+          "delivered": "live registry",
+          "after": ""
+        }
+      ]
+    }
+  }
+]

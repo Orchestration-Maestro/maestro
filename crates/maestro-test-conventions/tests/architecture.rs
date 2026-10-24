@@ -1015,7 +1015,7 @@ fn terminal_adapter_and_harness_require_toolkit() {
         }
     }
     for &(from, _) in support::policy::POLICY {
-        if from == "maestro-test-terminal" {
+        if from == "maestro-test-terminal" || TERMINAL_CALLERS.contains(&from) {
             continue;
         }
         let workspace = Workspace::new();
@@ -2394,6 +2394,12 @@ const DIRECTORY: &str = "maestro-test-directory";
 /// The scoped test tracing owner.
 const TRACING: &str = "maestro-test-tracing";
 
+/// The recording-terminal and manual-runtime owner.
+const TERMINAL: &str = "maestro-test-terminal";
+
+/// Independently declared terminal scenario consumers.
+const TERMINAL_CALLERS: &[&str] = &["maestro-cli"];
+
 /// Independently declared native tracing consumers.
 const TRACING_CALLERS: &[&str] = &[
     "maestro-daemon",
@@ -2408,6 +2414,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
+    "maestro-cli",
     "maestro-credentials",
     "maestro-daemon",
     "maestro-detection",
@@ -2443,6 +2450,11 @@ fn directory_support_edges_are_native_development_only() {
 #[test]
 fn tracing_support_edges_are_native_development_only() {
     support_edges_are_native_development_only(TRACING, TRACING_CALLERS);
+}
+
+#[test]
+fn terminal_support_edges_are_native_development_only() {
+    support_edges_are_native_development_only(TERMINAL, TERMINAL_CALLERS);
 }
 
 /// Each of `callers` may declare `owner` only as a native, non-optional development dependency.
@@ -2556,7 +2568,6 @@ fn support_permissions_are_exact(owner: &str, callers: &[&str]) {
         );
     }
     assert!(support::policy::test_support_callers("maestro-test-other").is_none());
-    assert!(support::policy::test_support_callers("maestro-test-terminal").is_none());
     let workspace = Workspace::new();
     workspace.foundation(&[callers[0], owner]);
     assert_eq!(caller_declares(&workspace, callers[0], &native), Ok(()));
@@ -2571,34 +2582,32 @@ fn support_permissions_are_exact(owner: &str, callers: &[&str]) {
 #[test]
 fn directory_support_edges_keep_cycle_checks() {
     support_edges_keep_cycle_checks(DIRECTORY, "maestro-models");
-    for (owner, helper) in [
-        ("maestro-tui", "maestro-test-terminal"),
-        ("maestro-models", "maestro-agent"),
-    ] {
-        let workspace = Workspace::new();
-        workspace.foundation(&[owner, helper]);
-        if helper == "maestro-agent" {
-            workspace.member(
-                helper,
-                helper,
-                "[dependencies]\nmaestro-models = { path = \"../maestro-models\" }",
-            );
-        }
-        let declaration = format!(
-            "[dev-dependencies]\nsupport = {{ package = {helper:?}, path = \"../{helper}\" }}"
-        );
-        assert_eq!(
-            caller_declares(&workspace, owner, &declaration),
-            Err(format!(
-                "test dependency cycle: {helper} -> {owner} -> {helper}"
-            ))
-        );
-    }
+    let (owner, helper) = ("maestro-models", "maestro-agent");
+    let workspace = Workspace::new();
+    workspace.foundation(&[owner, helper]);
+    workspace.member(
+        helper,
+        helper,
+        "[dependencies]\nmaestro-models = { path = \"../maestro-models\" }",
+    );
+    let declaration =
+        format!("[dev-dependencies]\nsupport = {{ package = {helper:?}, path = \"../{helper}\" }}");
+    assert_eq!(
+        caller_declares(&workspace, owner, &declaration),
+        Err(format!(
+            "test dependency cycle: {helper} -> {owner} -> {helper}"
+        ))
+    );
 }
 
 #[test]
 fn tracing_support_edges_keep_cycle_checks() {
     support_edges_keep_cycle_checks(TRACING, "maestro-daemon");
+}
+
+#[test]
+fn terminal_support_edges_keep_cycle_checks() {
+    support_edges_keep_cycle_checks(TERMINAL, "maestro-cli");
 }
 
 /// A native development edge from `caller` to `owner` still meets the test-graph cycle check.
@@ -2630,6 +2639,22 @@ fn directory_support_inventory_matches_contract() {
         ))
         .collect::<Vec<_>>();
     support_inventory_matches_contract(DIRECTORY, DIRECTORY_CALLERS, &documented);
+}
+
+#[test]
+fn terminal_support_inventory_matches_contract() {
+    assert_eq!(
+        support::policy::test_support_callers(TERMINAL),
+        Some(TERMINAL_CALLERS)
+    );
+    assert_eq!(TERMINAL_CALLERS, support::policy::TEST_TERMINAL_CALLERS);
+    let documented = std::iter::once("maestro-cli")
+        .chain(specification_names(
+            "from\n`maestro-cli`",
+            "; a caller\ndeclares it only when it uses it",
+        ))
+        .collect::<Vec<_>>();
+    support_inventory_matches_contract(TERMINAL, TERMINAL_CALLERS, &documented);
 }
 
 #[test]

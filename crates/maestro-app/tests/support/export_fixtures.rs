@@ -7,7 +7,7 @@ use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::TerminalImage;
 use std::{cell::RefCell, io, rc::Rc};
 
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../../maestro-test-terminal/src/manual_runtime.rs"]
 #[allow(dead_code)]
 mod manual_runtime;
 

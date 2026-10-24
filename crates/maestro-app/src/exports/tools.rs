@@ -44,6 +44,16 @@ pub use maestro_tools::output::render_utils::num;
 
 pub use maestro_tools::utils::image_convert::{ConvertedImage, convert_to_png};
 
+/// Image fitting and the file effects the command-line input needs.
+pub use maestro_tools::utils::image_resize::{
+    ImageResizeOptions, ResizedImage, format_dimension_note, resize_image,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::utils::mime::detect_supported_image_mime_type_from_file;
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{expand_path, path_utils::resolve_read_path};
+
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
     EditToolOptions, ReadToolOptions, WriteToolOptions, create_edit_tool_definition,

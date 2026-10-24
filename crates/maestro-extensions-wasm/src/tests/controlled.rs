@@ -92,6 +92,8 @@ impl Drop for Signal {
 pub struct Update {
     /// Observations shared with the host.
     observed: Rc<RefCell<Observed>>,
+    /// Cancellation flag the host raises on the first recorded update.
+    cancel_on_first: Option<Flag>,
     /// Counts its owned lifetime.
     _lease: Lease,
 }
@@ -224,6 +226,16 @@ impl Controlled {
     pub fn update(&self) -> Update {
         Update {
             observed: Rc::clone(&self.observed),
+            cancel_on_first: None,
+            _lease: Lease::new(&self.observed),
+        }
+    }
+
+    /// A progress resource that raises `flag` on its first recorded update.
+    pub fn aborting_update(&self, flag: &Flag) -> Update {
+        Update {
+            observed: Rc::clone(&self.observed),
+            cancel_on_first: Some(flag.clone()),
             _lease: Lease::new(&self.observed),
         }
     }
@@ -251,8 +263,20 @@ impl Controlled {
 
 /// Retained opaque UI owner with a counted lifetime.
 pub struct Ui {
+    /// Host identity of this acquisition.
+    key: usize,
     /// Counted owner.
     _lease: Lease,
+}
+
+/// Records one retained UI request through the controlled host.
+fn ui_call(
+    observed: &Rc<RefCell<Observed>>,
+    key: usize,
+    method: &str,
+    operands: &serde_json::Value,
+) -> ExtensionResult<()> {
+    super::ui_host::call(&mut observed.borrow_mut(), key, method, operands)
 }
 impl Controlled {
     /// Probe the consumed slot while its owning command still retains the identity.
@@ -837,6 +861,97 @@ impl Imports for Controlled {
     }
 
     type Ui = Ui;
+    fn ui_notify(
+        &self,
+        resource: &Ui,
+        message: &str,
+        kind: Option<crate::NotificationType>,
+    ) -> ExtensionResult<()> {
+        let seen = kind.map(super::ui_host::variant);
+        ui_call(
+            &self.observed,
+            resource.key,
+            "notify",
+            &super::ui_host::notify(message, seen.as_deref()),
+        )
+    }
+    fn ui_set_status(&self, resource: &Ui, key: &str, text: Option<&str>) -> ExtensionResult<()> {
+        ui_call(
+            &self.observed,
+            resource.key,
+            "setStatus",
+            &super::ui_host::status(key, text),
+        )
+    }
+    fn ui_set_working_message(&self, resource: &Ui, message: Option<&str>) -> ExtensionResult<()> {
+        ui_call(
+            &self.observed,
+            resource.key,
+            "setWorkingMessage",
+            &super::ui_host::working_message(message),
+        )
+    }
+    fn ui_set_working_visible(&self, resource: &Ui, visible: bool) -> ExtensionResult<()> {
+        ui_call(
+            &self.observed,
+            resource.key,
+            "setWorkingVisible",
+            &super::ui_host::working_visible(visible),
+        )
+    }
+    fn ui_set_working_indicator(
+        &self,
+        resource: &Ui,
+        options: Option<crate::WorkingIndicatorOptions>,
+    ) -> ExtensionResult<()> {
+        let options = options.map(|options| super::ui_host::IndicatorOptions {
+            frames: options.frames,
+            interval_ms: options.interval_ms,
+        });
+        ui_call(
+            &self.observed,
+            resource.key,
+            "setWorkingIndicator",
+            &super::ui_host::indicator(options),
+        )
+    }
+    fn ui_set_hidden_thinking_label(
+        &self,
+        resource: &Ui,
+        label: Option<&str>,
+    ) -> ExtensionResult<()> {
+        ui_call(
+            &self.observed,
+            resource.key,
+            "setHiddenThinkingLabel",
+            &super::ui_host::hidden_thinking_label(label),
+        )
+    }
+    fn ui_set_widget(
+        &self,
+        resource: &Ui,
+        key: &str,
+        content: Option<&[String]>,
+        options: Option<crate::ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()> {
+        let options = options.map(|options| super::ui_host::WidgetOptions {
+            placement: options.placement.map(super::ui_host::variant),
+        });
+        ui_call(
+            &self.observed,
+            resource.key,
+            "setWidget",
+            &super::ui_host::widget(key, content, options),
+        )
+    }
+    fn ui_set_title(&self, resource: &Ui, title: &str) -> ExtensionResult<()> {
+        ui_call(
+            &self.observed,
+            resource.key,
+            "setTitle",
+            &super::ui_host::title(title),
+        )
+    }
     type Registry = Reader;
     type Reader = Reader;
     type Writer = Reader;
@@ -955,7 +1070,9 @@ impl Imports for Controlled {
     fn ui(&self, context: &Context) -> ExtensionResult<Ui> {
         let _ = context;
         self.observed.borrow().catalog.check()?;
+        let key = self.observed.borrow_mut().ui.acquire();
         Ok(Ui {
+            key,
             _lease: Lease::new(&self.observed),
         })
     }
@@ -1036,7 +1153,9 @@ impl Imports for Controlled {
     fn command_ui(&self, context: &CommandContext) -> ExtensionResult<Ui> {
         let _ = context;
         self.observed.borrow().catalog.check()?;
+        let key = self.observed.borrow_mut().ui.acquire();
         Ok(Ui {
+            key,
             _lease: Lease::new(&self.observed),
         })
     }
@@ -1262,7 +1381,11 @@ impl Imports for Controlled {
         update
             .observed
             .borrow_mut()
-            .update(partial, &value["details"])
+            .update(partial, &value["details"])?;
+        if let Some(flag) = &update.cancel_on_first {
+            flag.abort();
+        }
+        Ok(())
     }
 
     fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()> {

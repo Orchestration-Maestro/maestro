@@ -61,7 +61,7 @@ mod module_loader;
 use display_context::manual_runtime;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
+#[path = "../../maestro-test-terminal/src/recording_terminal.rs"]
 #[allow(dead_code, reason = "Shared terminal fixture.")]
 mod recording_terminal;
 

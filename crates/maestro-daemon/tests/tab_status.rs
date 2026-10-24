@@ -12,6 +12,7 @@ use maestro_daemon::{
     events::AppEvent,
     settings::{model::Config, tab_bar::TabBarRightEntryConfig},
 };
+use maestro_test_directory::temporary_root;
 use std::time::Instant;
 use tokio::sync::mpsc;
 
@@ -30,7 +31,7 @@ fn test_app() -> TestApp {
     );
     app.state
         .topology
-        .new_with_tab(std::env::temp_dir(), None, |_, _| Ok(()))
+        .new_with_tab(temporary_root(), None, |_, _| Ok(()))
         .unwrap();
     support::populate_terminals(&mut app.state);
     app.state.active = Some(0);

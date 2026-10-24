@@ -87,6 +87,11 @@ expansions and unparsed fragments are not checked, and compound configurations
 are not evaluated. There are no suppressions or baseline. See
 [quality checks](docs/architecture.md#quality-checks) for matching and diagnostics.
 Duplicate assertions are a review judgement.
+Conventions reject a platform temporary directory that test code in a migrated
+crate names itself through `std::env::temp_dir()`, as a call, a value, a macro
+argument or an import under any alias; tests that observe it use
+`maestro-test-directory::temporary_root`, and the diagnostic names
+`TEST_DIRECTORY_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 `MessageRenderer`, `CallbackEmitter`, `EventBus`, `get_message_renderer` or
 `invoke_callback` identifiers in chat production syntax, whatever the import form:
@@ -249,13 +254,14 @@ to `maestro-text` edge for terminal newline normalization in checked-child tests
 the native `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges
 for its standard-stream child tests,
 and the native, non-optional dev-dependencies
-of the twenty-two declared callers on `maestro-test-process`, the owner of
+of the twenty-three declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
-the required toolkit/text set. The scenario harness is not a
-general dev-dependency target.
+the required toolkit/text set. The scenario harness's recording terminal and
+manual runtime are the one shared test-effect owner, declared as a native
+development dependency by `maestro-cli` only.
 
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no

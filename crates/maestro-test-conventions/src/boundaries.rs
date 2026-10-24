@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
+use std::path::Path;
 
-use crate::source::{Member, Source};
+use crate::source::{Member, Source, test_layout};
 use proc_macro2::{TokenStream, TokenTree};
 use syn::ext::IdentExt;
 
@@ -38,6 +39,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 records.scan(tokens);
             }
             check_declarations(member, source, &records, &mut declarations)?;
+            check_session_setup(member, source, &records)?;
             let context = ScanContext {
                 owner: &member.name,
                 directory: &member.directory,
@@ -61,9 +63,23 @@ const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type",
 /// Shared protocol functions whose declarations have one owner.
 const OWNED_FUNCTIONS: &[&str] = &["serialize_json_line", "serialize_rpc_response"];
 
+/// Session configuration record that only the shared interactive test setup constructs.
+const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
+
+/// The one owner of the interactive-mode test session setup.
+const SESSION_SETUP: &str = "tests/footer_support/session.rs";
+
+/// Footer support tree shared by the footer and interactive startup tests.
+const FOOTER_SUPPORT: &str = "tests/footer_support";
+
+/// Source tree holding the interactive mode and its own test modules.
+const INTERACTIVE_MODE: &str = "src/interactive_mode";
+
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.
 struct Records {
+    /// First line naming the shared interactive session configuration.
+    session_configuration_line: Option<usize>,
     /// Declaration names paired with their source lines.
     declarations: Vec<(String, String, usize)>,
     /// Interface-generation macro arguments paired with their source lines.
@@ -78,6 +94,7 @@ impl Records {
             let generated = matches!(tokens[..index].last(), Some(TokenTree::Punct(punctuation)) if punctuation.as_char() == '$');
             match token {
                 TokenTree::Ident(keyword) if !generated => {
+                    self.session_configuration(keyword);
                     self.declaration(keyword, &tokens[index + 1..]);
                     self.wit_macro(&tokens[index..]);
                 }
@@ -86,6 +103,14 @@ impl Records {
                 }
                 _ => {}
             }
+        }
+    }
+
+    /// Record the first line that names the shared interactive session configuration.
+    fn session_configuration(&mut self, keyword: &proc_macro2::Ident) {
+        if keyword.unraw() == SESSION_CONFIGURATION {
+            self.session_configuration_line
+                .get_or_insert(keyword.span().start().line);
         }
     }
 
@@ -156,6 +181,35 @@ fn union_body(token: Option<&TokenTree>) -> bool {
     }
 }
 
+/// Interactive-mode chat test sources that build their sessions through the shared setup.
+///
+/// Paths compare by component, so native separators never change the answer.
+fn migrated(relative: &Path) -> bool {
+    if relative.starts_with(FOOTER_SUPPORT) {
+        return relative != Path::new(SESSION_SETUP);
+    }
+    relative.starts_with(INTERACTIVE_MODE) && test_layout(relative, Path::new(""))
+}
+
+/// Reject a second interactive-mode session setup outside its extracted owner.
+fn check_session_setup(member: &Member, source: &Source, records: &Records) -> Result<(), String> {
+    let Some(line) = records.session_configuration_line else {
+        return Ok(());
+    };
+    let in_scope = member.name == "maestro-chat"
+        && source
+            .path
+            .strip_prefix(&member.directory)
+            .is_ok_and(migrated);
+    if !in_scope {
+        return Ok(());
+    }
+    Err(format!(
+        "{}:{line}: session setup belongs in {SESSION_SETUP}",
+        source.path.display()
+    ))
+}
+
 /// Recognize selector declarations owned by the chat frontend.
 fn selector(name: &str) -> bool {
     matches!(
@@ -188,6 +242,14 @@ fn selector(name: &str) -> bool {
     )
 }
 
+/// Recognize the command-line wrapper module that carries no widget declarations.
+fn cli_configuration_wrapper(member: &Member, source: &Source, name: &str, kind: &str) -> bool {
+    name == "config_selector"
+        && kind == "mod"
+        && member.name == "maestro-cli"
+        && source.path == member.directory.join("src/input/mod.rs")
+}
+
 /// Reject declarations outside their owning crate or duplicate tool contracts.
 fn check_declarations(
     member: &Member,
@@ -197,33 +259,7 @@ fn check_declarations(
 ) -> Result<(), String> {
     for (name, kind, line) in &records.declarations {
         foreign_rpc_record(member, source, name, *line)?;
-        let owner = if selector(name) {
-            "maestro-chat"
-        } else if matches!(
-            name.as_str(),
-            "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
-        ) {
-            "maestro-tools"
-        } else if matches!(
-            name.as_str(),
-            "ToolInfo"
-                | "SlashCommandInfo"
-                | "SlashCommandSource"
-                | "MessageRenderOptions"
-                | "MessageDelivery"
-                | "UserMessageDelivery"
-                | "SendMessageOptions"
-                | "SendUserMessageOptions"
-        ) || (shared_event_record(name) && kind != "type")
-        {
-            "maestro-request"
-        } else if matches!(name.as_str(), "ForkPosition" | "NavigateTreeOptions") {
-            "maestro-entry"
-        } else if matches!(name.as_str(), "serialize_json_line" | "JsonlLineSplitter") {
-            "maestro-json"
-        } else if name == "serialize_rpc_response" {
-            "maestro-protocol"
-        } else {
+        let Some(owner) = declaration_owner(name, kind) else {
             continue;
         };
         let guest_tool = name == "ToolDefinition"
@@ -237,15 +273,18 @@ fn check_declarations(
             && kind == "type"
             && member.name == "maestro-extensions"
             && source.path == member.directory.join("src/types/registration.rs");
-        if member.name != owner && !guest_tool && !guest_metadata && !extension_tool {
+        let wrapper = cli_configuration_wrapper(member, source, name, kind);
+        if member.name != owner && !guest_tool && !guest_metadata && !extension_tool && !wrapper {
             return Err(format!(
                 "{}:{line}: {name} declaration belongs to {owner}, not {}",
                 source.path.display(),
                 member.name
             ));
         }
-        if matches!(owner, "maestro-tools" | "maestro-request" | "maestro-entry")
-            && !declarations.insert(format!("{}::{name}", member.name))
+        if matches!(
+            owner,
+            "maestro-tools" | "maestro-request" | "maestro-entry" | "maestro-app"
+        ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
                 "{}:{line}: duplicate declaration {name}",
@@ -274,6 +313,59 @@ fn foreign_rpc_record(
         ));
     }
     Ok(())
+}
+
+/// The crate that owns one declaration, for the names the workspace scopes.
+fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
+    let owner = if selector(name) {
+        "maestro-chat"
+    } else if matches!(
+        name,
+        "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
+    ) {
+        "maestro-tools"
+    } else if matches!(
+        name,
+        "ToolInfo"
+            | "SlashCommandInfo"
+            | "SlashCommandSource"
+            | "MessageRenderOptions"
+            | "MessageDelivery"
+            | "UserMessageDelivery"
+            | "SendMessageOptions"
+            | "SendUserMessageOptions"
+    ) || (shared_event_record(name) && kind != "type")
+    {
+        "maestro-request"
+    } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
+        "maestro-entry"
+    } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
+        "maestro-test-terminal"
+    } else if input_presenter_record(name) {
+        "maestro-app"
+    } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {
+        "maestro-json"
+    } else if name == "serialize_rpc_response" {
+        "maestro-protocol"
+    } else {
+        return None;
+    };
+    Some(owner)
+}
+
+/// Presenter records the application shares with both command-line and interactive callers.
+fn input_presenter_record(name: &str) -> bool {
+    matches!(
+        name,
+        "PresentedSelector"
+            | "ConfigSelectorCallbacks"
+            | "ConfigSelectorFactory"
+            | "SessionSelectorCallbacks"
+            | "SessionSelectorRequest"
+            | "SessionSelectorFactory"
+            | "SessionsFuture"
+            | "SessionsLoader"
+    )
 }
 
 /// Shared schema declarations whose specialization aliases remain owner-local.

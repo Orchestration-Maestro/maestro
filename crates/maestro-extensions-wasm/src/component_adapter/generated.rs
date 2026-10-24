@@ -11,7 +11,10 @@ use crate::bindings::maestro::extension::host;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::loader::Extension;
 use crate::types::{ExtensionFuture, ExtensionResult};
-use crate::{AutocompleteItem, FlagOptions, FlagValue};
+use crate::{
+    AutocompleteItem, ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType,
+    WorkingIndicatorOptions,
+};
 
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
@@ -71,6 +74,14 @@ impl Imports for Generated {
         registry_get_available(resource: &Self::Registry) -> ExtensionResult<String> => get_available();
         registry_find(resource: &Self::Registry, provider: &str, model_id: &str) -> ExtensionResult<Option<String>> => find(provider, model_id);
         ui(context: &Self::Context) -> ExtensionResult<Self::Ui> => ui();
+        ui_notify(resource: &Self::Ui, message: &str, kind: Option<NotificationType>) -> ExtensionResult<()> => notify(message, kind);
+        ui_set_status(resource: &Self::Ui, key: &str, text: Option<&str>) -> ExtensionResult<()> => set_status(key, text);
+        ui_set_working_message(resource: &Self::Ui, message: Option<&str>) -> ExtensionResult<()> => set_working_message(message);
+        ui_set_working_visible(resource: &Self::Ui, visible: bool) -> ExtensionResult<()> => set_working_visible(visible);
+        ui_set_working_indicator(resource: &Self::Ui, options: Option<WorkingIndicatorOptions>) -> ExtensionResult<()> => set_working_indicator(options.as_ref());
+        ui_set_hidden_thinking_label(resource: &Self::Ui, label: Option<&str>) -> ExtensionResult<()> => set_hidden_thinking_label(label);
+        ui_set_widget(resource: &Self::Ui, key: &str, content: Option<&[String]>, options: Option<ExtensionWidgetOptions>) -> ExtensionResult<()> => set_widget(key, content, options);
+        ui_set_title(resource: &Self::Ui, title: &str) -> ExtensionResult<()> => set_title(title);
         has_ui(context: &Self::Context) -> ExtensionResult<bool> => has_ui();
         model_registry(context: &Self::Context) -> ExtensionResult<Self::Registry> => model_registry();
         model(context: &Self::Context) -> ExtensionResult<Option<String>> => model();

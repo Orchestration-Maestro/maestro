@@ -43,6 +43,8 @@ use super::registration_fixture;
 mod shell_author;
 #[path = "tool_author.rs"]
 mod tool_author;
+#[path = "ui_author.rs"]
+pub(crate) mod ui_author;
 
 /// Reports its label to the host when this guard is dropped.
 struct Released {
@@ -420,11 +422,11 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                     if let Some(result) = capture_registration(&api, &args, &ctx) {
                         return result;
                     }
-                    if args == "catalog" {
-                        return catalog_author::register(&api);
-                    }
-                    if args == "reader" {
-                        return reader_author::register(&api);
+                    match args.as_str() {
+                        "catalog" => return catalog_author::register(&api),
+                        "reader" => return reader_author::register(&api),
+                        "ui" => return ui_author::register(&api),
+                        _ => {}
                     }
                     if let Some(config) = args.strip_prefix("tools ") {
                         return tool_author::register(&api, config, Rc::clone(&captured));

@@ -299,6 +299,18 @@ pub trait Driver {
     }
 }
 
+/// Reads the answer an event route returned as its input transformation.
+pub fn transformed(decision: Decision) -> Result<serde_json::Value, String> {
+    let Decision::Returned(Ok(Some(text))) = decision else {
+        return Err("missing event answer".into());
+    };
+    let transform: serde_json::Value =
+        serde_json::from_str(&text).map_err(|error| error.to_string())?;
+    assert_eq!(transform["action"], "transform");
+    serde_json::from_str(transform["text"].as_str().ok_or("missing text")?)
+        .map_err(|error| error.to_string())
+}
+
 /// Writes the outcome of a delivery to the transcript as `label -> description`, or as
 /// `label failed: message`.
 fn report(driver: &mut impl Driver, label: &str, outcome: Result<String, String>) {

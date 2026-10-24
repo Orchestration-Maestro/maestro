@@ -1,0 +1,68 @@
+[
+  {
+    "operation": "thinking",
+    "case": "thinking-116",
+    "input": "off",
+    "expected": true
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-117",
+    "input": "minimal",
+    "expected": true
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-118",
+    "input": "low",
+    "expected": true
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-119",
+    "input": "medium",
+    "expected": true
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-120",
+    "input": "high",
+    "expected": true
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-121",
+    "input": "xhigh",
+    "expected": true
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-122",
+    "input": "max",
+    "expected": false
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-123",
+    "input": "",
+    "expected": false
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-124",
+    "input": "HIGH",
+    "expected": false
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-125",
+    "input": " high",
+    "expected": false
+  },
+  {
+    "operation": "thinking",
+    "case": "thinking-126",
+    "input": "high ",
+    "expected": false
+  }
+]

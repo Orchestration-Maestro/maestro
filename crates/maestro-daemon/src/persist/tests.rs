@@ -1,20 +1,15 @@
 //! Snapshot effects and their ordered diagnostic events.
 use super::*;
 use crate::logging::tests::capture;
+use maestro_test_directory::{Scratch, temporary_root};
 use maestro_workspace::persist::snapshot::{SNAPSHOT_VERSION, SessionHistorySnapshot};
 use std::fs;
 
 #[test]
 fn daemon_snapshot_wrappers_preserve_save_and_clear_order() {
-    let root = std::env::temp_dir().join(format!(
-        "maestro-snapshot-{}-{}",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
-    let paths = DaemonPaths::new(root.to_str().unwrap(), Some("work")).unwrap();
+    // Windows runs this too: DaemonPaths joins with '/', which a canonical `\\?\` root refuses.
+    let scratch = Scratch::new_in(&temporary_root()).unwrap();
+    let paths = DaemonPaths::new(scratch.path().to_str().unwrap(), Some("work")).unwrap();
     let snapshot: SessionSnapshot = serde_json::from_value(serde_json::json!({
         "version":SNAPSHOT_VERSION,"workspaces":[],"active":null,"selected":0
     }))
@@ -47,7 +42,6 @@ fn daemon_snapshot_wrappers_preserve_save_and_clear_order() {
     assert!(!std::path::Path::new(&paths.history_path()).exists());
     assert!(capture(|| clear_history(&paths)).1.is_empty());
     failure_order(&paths, &snapshot, &history);
-    fs::remove_dir_all(root).unwrap();
 }
 
 /// Fail topology and history independently through the real filesystem owner.

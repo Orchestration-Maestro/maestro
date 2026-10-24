@@ -53,15 +53,7 @@ pub struct ConfigSelectorOptions {
     /// Live policy sampled for bold text.
     pub styles_enabled: Rc<dyn Fn() -> bool>,
 }
-/// Initial list notifications.
-pub struct ConfigSelectorCallbacks {
-    /// Cancel notification.
-    pub on_close: Rc<dyn Fn()>,
-    /// Literal interrupt notification unless claimed by an earlier binding.
-    pub on_exit: Rc<dyn Fn()>,
-    /// Successful-toggle render notification.
-    pub request_render: Rc<dyn Fn()>,
-}
+pub use maestro_app::presentation_data::input_selectors::ConfigSelectorCallbacks;
 /// Configuration chrome with an independently retained focus/list handle.
 pub struct ConfigSelectorComponent {
     /// Sole child-array owner.

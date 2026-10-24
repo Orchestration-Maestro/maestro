@@ -3898,6 +3898,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-cli"
+version = "0.1.0"
+dependencies = [
+ "base64 0.23.1",
+ "indexmap 2.14.2",
+ "maestro-app",
+ "maestro-dependencies",
+ "maestro-test-directory",
+ "maestro-test-process",
+ "maestro-test-terminal",
+ "maestro-theme",
+ "maestro-tui",
+ "maestro-tui-crossterm",
+ "ryu-js",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "maestro-credentials"
 version = "0.1.0"
 dependencies = [

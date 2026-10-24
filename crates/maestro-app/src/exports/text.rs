@@ -6,7 +6,7 @@ pub use maestro_text::is_whitespace_scalar;
 
 pub use maestro_text::number_format::LocaleNumberFormat;
 
-pub use maestro_text::decode_utf8;
+pub use maestro_text::{decode_utf8, lossy_string};
 
 /// Shared with the terminal frontend.
 pub use maestro_text::truncate_utf16;

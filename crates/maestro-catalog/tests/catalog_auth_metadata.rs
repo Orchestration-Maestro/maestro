@@ -89,10 +89,10 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
         (helper.as_str(), AuthSource::ModelsJsonCommand, None),
         ("ENV", AuthSource::Environment, Some("ENV")),
     ] {
-        let registry = support::registry(&request_support::document(
-            &format!(r#""apiKey":"{field}""#),
-            "",
-        ));
+        let registry = support::registry_with(
+            &request_support::document(&format!(r#""apiKey":"{field}""#), ""),
+            crate::support::forbidden(),
+        );
         assert_eq!(
             registry.get_provider_auth_status("p").unwrap(),
             AuthStatus {

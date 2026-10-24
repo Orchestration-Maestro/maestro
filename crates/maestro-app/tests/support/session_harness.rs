@@ -11,7 +11,7 @@ use maestro_app::resources::resource_loader::{
 };
 use maestro_app::{AgentSession, AgentSessionConfig, AgentSessionEvent};
 use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput, ScopedModel};
-use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData, ConfigValueOperations};
+use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
 use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionContext, ExtensionExecution,
@@ -59,6 +59,11 @@ pub fn case(file: &str, name: &str) -> Value {
     found
         .unwrap_or_else(|| panic!("no recorded case {name}"))
         .clone()
+}
+
+/// The recorded prompt and queue case `name`.
+pub fn expected(name: &str) -> Value {
+    corpus("prompt_queue")[name].clone()
 }
 
 /// How the scripted provider's credentials are configured.
@@ -163,6 +168,7 @@ pub struct Harness {
 
 impl Drop for Harness {
     fn drop(&mut self) {
+        self.session.dispose();
         self.faux.unregister();
     }
 }
@@ -210,19 +216,8 @@ pub fn model_view(model: &Arc<RwLock<Model>>) -> String {
     format!("{}/{}", model.provider, model.id)
 }
 
-/// Commands that never produce a value, as a failing shell command does.
-pub struct FailingCommands;
-
-impl ConfigValueOperations for FailingCommands {
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        None
-    }
-}
-
-/// Configured-value commands no application test reaches.
-pub fn no_commands() -> maestro_catalog::ConfigValues {
-    Arc::new(FailingCommands)
-}
+/// Configured-value commands for native tests, shared with the browser-safe fixture.
+pub use super::no_commands::no_commands;
 
 /// A loader returning the supplied extensions and no other resources.
 pub struct TestResourceLoader {
@@ -534,6 +529,10 @@ fn agent(
     Rc::new(Agent::new_local(AgentOptions {
         spawn,
         stream_fn,
+        convert_to_llm: Some(Rc::new(|history| {
+            let messages = maestro_session::convert_to_llm(&history.read().unwrap());
+            Box::pin(std::future::ready(Ok(messages)))
+        })),
         initial_state: AgentInitialState {
             model: Some(Arc::new(RwLock::new(initial))),
             system_prompt: Some("base".into()),
@@ -822,6 +821,65 @@ pub fn get_assistant_texts(harness: &Harness) -> Vec<String> {
     })
 }
 
+/// The message fields the prompt and queue checks compare: the role and text, a custom
+/// message's own fields, a tool result's error flag and, for a message with images, its
+/// content blocks in order.
+pub fn delivery_message_view(record: &Value) -> Value {
+    let mut view = json!({"role": record["role"], "text": get_message_text(record)});
+    if record["role"] == "custom" {
+        for key in ["customType", "display", "details"] {
+            view[key] = record[key].clone();
+        }
+    }
+    if record["role"] == "toolResult" {
+        view["isError"] = record["isError"].clone();
+    }
+    if let Some(content) = record["content"].as_array()
+        && content.iter().any(|part| part["type"] == "image")
+    {
+        view["content"] = json!(content);
+    }
+    view
+}
+
+/// The delivered history and queue mirrors of `h`.
+pub fn delivery_view(h: &Harness) -> Value {
+    let messages: Vec<Value> = {
+        let messages = h.session.messages();
+        let messages = messages.read().unwrap();
+        messages
+            .iter()
+            .map(|message| delivery_message_view(&serde_json::to_value(message).unwrap()))
+            .collect()
+    };
+    json!({
+        "users": get_user_texts(h),
+        "assistants": get_assistant_texts(h),
+        "messages": messages,
+        "pending": h.session.pending_message_count(),
+        "steering": h.session.get_steering_messages(),
+        "followUp": h.session.get_follow_up_messages(),
+    })
+}
+
+/// The contexts the scripted stream received, as delivery messages, in request order.
+pub fn delivery_requests(h: &Harness) -> Value {
+    let requests: Vec<Vec<Value>> = h
+        .requests
+        .0
+        .borrow()
+        .iter()
+        .map(|context| {
+            context
+                .messages
+                .iter()
+                .map(|message| delivery_message_view(&serde_json::to_value(message).unwrap()))
+                .collect()
+        })
+        .collect();
+    json!(requests)
+}
+
 /// The text of each history message `keep` selects, in order.
 fn texts_matching(harness: &Harness, keep: fn(&NativeAgentMessage) -> bool) -> Vec<String> {
     let messages = harness.session.messages();
@@ -981,6 +1039,14 @@ pub fn of_kinds(values: &[Value], kinds: &[&str]) -> Vec<Value> {
         .iter()
         .filter(|value| kinds.iter().any(|kind| value["type"] == *kind))
         .cloned()
+        .collect()
+}
+
+/// The input sources the session's handlers saw, in order.
+pub fn input_sources(transcript: &Transcript) -> Vec<Value> {
+    of_kinds(&transcript.extension.borrow(), &["input"])
+        .iter()
+        .map(|event| event["source"].clone())
         .collect()
 }
 
@@ -1243,23 +1309,32 @@ pub fn hold_first_answer(
     notifiers
 }
 
-/// `value` with the scratch root spelled `$ROOT`, as the recorded cases spell it.
-pub fn with_placeholders(value: Value, h: &Harness) -> Value {
-    let root = h.scratch.path().display().to_string();
+/// `value` with every `(from, to)` spelling replaced, in order, in its strings.
+pub fn substituting(value: Value, paths: &[(&str, &str)]) -> Value {
     match value {
-        Value::String(text) => json!(text.replace(&root, "$ROOT")),
+        Value::String(text) => json!(
+            paths
+                .iter()
+                .fold(text, |text, (from, to)| text.replace(from, to))
+        ),
         Value::Array(items) => items
             .into_iter()
-            .map(|item| with_placeholders(item, h))
+            .map(|item| substituting(item, paths))
             .collect(),
         Value::Object(fields) => Value::Object(
             fields
                 .into_iter()
-                .map(|(key, item)| (key, with_placeholders(item, h)))
+                .map(|(key, item)| (key, substituting(item, paths)))
                 .collect(),
         ),
         other => other,
     }
+}
+
+/// `value` with the scratch root spelled `$ROOT`, as the recorded cases spell it.
+pub fn with_placeholders(value: Value, h: &Harness) -> Value {
+    let root = h.scratch.path().display().to_string();
+    substituting(value, &[(&root, "$ROOT")])
 }
 
 /// The agent run and message events, as the session's listeners would see them.
@@ -1517,6 +1592,23 @@ pub fn bash_result_view(result: &maestro_tools::BashResult) -> Value {
     view
 }
 
+/// Notified once the session has delivered the end of an agent run to its listeners.
+pub fn session_run_ended(h: &Harness) -> Rc<tokio::sync::Notify> {
+    let ended = Rc::new(tokio::sync::Notify::new());
+    let notify = Rc::clone(&ended);
+    drop(h.session.subscribe(Rc::new(move |event| {
+        if let AgentSessionEvent::Agent(event) = event
+            && matches!(
+                *event.read().unwrap(),
+                maestro_agent::AgentEvent::AgentEnd { .. }
+            )
+        {
+            notify.notify_one();
+        }
+    })));
+    ended
+}
+
 /// Notified once an agent run ends.
 pub fn agent_ended(h: &Harness) -> Rc<tokio::sync::Notify> {
     let ended = Rc::new(tokio::sync::Notify::new());
@@ -1531,6 +1623,19 @@ pub fn agent_ended(h: &Harness) -> Rc<tokio::sync::Notify> {
         Box::pin(std::future::ready(Ok(())))
     })));
     ended
+}
+
+/// The retry observations among the delivered events, in the order they arrived:
+/// `start:<attempt>` when a retry opens and `end:<success>` when it settles.
+pub fn retry_order(events: &[Value]) -> Vec<String> {
+    events
+        .iter()
+        .filter_map(|event| match event["type"].as_str() {
+            Some("auto_retry_start") => Some(format!("start:{}", event["attempt"])),
+            Some("auto_retry_end") => Some(format!("end:{}", event["success"])),
+            _ => None,
+        })
+        .collect()
 }
 
 /// Starts `operation` with one poll and drops it unfinished, as a caller that stops
@@ -1572,6 +1677,14 @@ impl Scripted {
     pub fn text(text: &str) -> Self {
         Self {
             text: Some(text.into()),
+            ..Self::default()
+        }
+    }
+
+    /// A failed answer reporting `error`.
+    pub fn failure(error: &str) -> Self {
+        Self {
+            error: Some(error.into()),
             ..Self::default()
         }
     }
@@ -1812,6 +1925,39 @@ fn delivered_agent_event(event: &maestro_agent::AgentEvent<CustomAgentMessages>)
         view["delta"] = update.get("delta").cloned().unwrap_or(Value::Null);
     }
     view
+}
+
+/// An executable tool that reports its entry and answers `released` once released.
+pub fn waiting_tool(
+    started: Rc<tokio::sync::Notify>,
+    release: Rc<tokio::sync::Notify>,
+) -> maestro_agent::SharedAgentTool<Local> {
+    let tool = maestro_agent::AgentToolRecord::<Local> {
+        definition: Tool {
+            name: "wait".into(),
+            description: "Wait for release".into(),
+            parameters: json!({"type": "object", "properties": {}}),
+        },
+        description: None,
+        label: "Wait".into(),
+        prepare_arguments: None,
+        execute: Rc::new(move |_, _, _, _| {
+            started.notify_one();
+            let release = Rc::clone(&release);
+            Box::pin(async move {
+                release.notified().await;
+                Ok(maestro_agent::AgentToolResult {
+                    content: vec![maestro_models::UserBlock::Text(
+                        maestro_models::TextContent::new("released".into()),
+                    )],
+                    details: Some(json!({})),
+                    terminate: None,
+                })
+            })
+        }),
+        execution_mode: None,
+    };
+    Rc::new(RwLock::new(tool))
 }
 
 /// The echo tool, in place of the built-in tools: it marks `executed` and answers `echoed`.

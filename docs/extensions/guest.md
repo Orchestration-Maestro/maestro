@@ -290,8 +290,7 @@ contexts inherit these methods. Getter and action failures are recoverable
 `ExtensionUIContext`, `ModelRegistry` and `AbortSignal` retain their acquired host
 resource independently of the context. Cloning shares the owner; its final alias
 drops that resource. A later acquisition can return a different resource. Whether
-an acquisition or retained query is allowed remains the host's decision. The UI
-capability currently has no author methods.
+an acquisition or retained query is allowed remains the host's decision.
 
 `ModelRegistry::get_all`, `get_available` and `find` forward the host's results;
 `find` passes literal provider and model identifiers. The guest does not filter,
@@ -306,6 +305,42 @@ outer host-call failure.
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from
 usage whose two estimates are unknown.
+
+## Retained UI requests
+
+`ExtensionUIContext` sends eight synchronous requests to the installed host and
+returns its rejection as a recoverable `ExtensionResult` error:
+
+| Method | Request |
+| --- | --- |
+| `notify` | A literal message with an optional `NotificationType`. |
+| `set_status` | Text for one status key, or that key's clearing. |
+| `set_working_message` | Literal working text, or the host default. |
+| `set_working_visible` | Show or hide the working loader row. |
+| `set_working_indicator` | `WorkingIndicatorOptions` with independent optional `frames` and `interval_ms`, or the host default. |
+| `set_hidden_thinking_label` | Literal collapsed-thinking text, or the host default. |
+| `set_widget` | Fixed ordered lines for one key with optional `WidgetPlacement`, or that widget's removal. |
+| `set_title` | A literal terminal title. |
+
+The four option types are generated from the same interface file and re-exported at
+the author root. `None` and a present empty value stay different requests. The text
+methods forward what the caller supplied, so `Some("")` is an empty string the host
+keeps, while `None` means what its method says: `set_status` clears that key's text,
+`set_widget` removes the keyed widget, and `set_working_message`,
+`set_working_indicator` and `set_hidden_thinking_label` ask the host to restore its
+own default. `notify` without a severity leaves the notification's kind to the host.
+Inside the option records, an absent `placement` or an absent `frames` or
+`interval_ms` member stays absent, so the host applies its own default. Literal text
+crosses unchanged, including whitespace, Unicode and styling bytes. Indicator frames
+are supplied verbatim and `interval_ms` crosses as `f64` without serialization,
+clamping or a guest timer. An empty frame list hides the indicator while `None`
+restores the animated default; both the animation and the placement defaults stay
+with the host.
+
+A request borrows its text and lines only for the synchronous call; the host owns
+anything it retains. Clones of the facade share the acquired resource, so a handle
+kept past its callback keeps reading that resource, and a second acquisition stays
+independent. Widget factories remain outside this interface.
 
 The component example's controlled compaction handler reads the supplied preparation
 and branch entries, queries the session reader and catalog, and returns compaction
@@ -577,6 +612,25 @@ runtime, so the extension stays opt-in. The extension crate's tests instantiate
 the built component in a controlled host and compare every recorded duration
 text; `examples/extensions/README.md` gives the build and controlled-run
 commands.
+
+### A runtime reload command
+
+[`examples/extensions/reload_runtime.rs`](../../examples/extensions/reload_runtime.rs)
+registers a `reload-runtime` command whose handler is its awaited
+`ExtensionCommandContext::reload` request, so the command ends when the host
+finishes reloading. The same factory registers a `reload_runtime` tool that
+queues `/reload-runtime` as a follow-up user message and then answers
+`Queued /reload-runtime as a follow-up command.` with present empty details.
+
+The tool does not reload on its own. Tools run with an `ExtensionContext`, which
+has no reload method, so the queued follow-up is how a model-triggered tool
+reaches a command-only operation. The rustdoc example on the ordinary context
+rejects that call at compile time.
+
+The example is opt-in like the greeting tool: its crate's tests run the built
+component in a controlled host, and `examples/extensions/README.md` holds the
+build and controlled-run commands. Reloading a running application is not part
+of that controlled run.
 
 ### A user-request summary handler
 

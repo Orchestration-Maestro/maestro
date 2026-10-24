@@ -2,6 +2,8 @@
 
 pub mod footer_data_provider;
 
+pub mod input_selectors;
+
 pub mod keybindings;
 
 pub use maestro_models::get_oauth_providers;

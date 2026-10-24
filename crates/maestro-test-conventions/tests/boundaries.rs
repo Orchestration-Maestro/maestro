@@ -2,6 +2,8 @@
 
 use crate::support;
 
+use std::path::Path;
+
 use maestro_test_conventions::check_workspace;
 use support::{Workspace, source};
 
@@ -13,6 +15,20 @@ const DECLARATIONS: &[(&str, &str)] = &[
     ("target.'cfg(target_os = \"none\")'.dependencies", ""),
     ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
     ("target.'cfg(target_os = \"none\")'.dev-dependencies", ""),
+];
+
+/// A duplicate interactive session setup outside its shared owner.
+const DUPLICATE_SETUP: &str = "fn f() { let value = AgentSessionConfig { agent: owner() }; }";
+
+/// Spellings of a duplicate setup the token walk must still catch.
+const DUPLICATE_SETUP_SPELLINGS: &[&str] = &[
+    DUPLICATE_SETUP,
+    "fn f() { check!(AgentSessionConfig { agent: owner() }); }",
+    "fn f() { let make = || AgentSessionConfig { agent: owner() }; }",
+    "impl Example { fn make() { drop(AgentSessionConfig { agent: owner() }); } }",
+    "fn f() { let _ = session(cwd, None); drop(AgentSessionConfig { agent: owner() }); }",
+    "use maestro_app::AgentSessionConfig as Config;\nfn f() { let x = Config { agent: owner() }; }",
+    "fn f() { let x = r#AgentSessionConfig { agent: owner() }; }",
 ];
 
 #[test]
@@ -1327,4 +1343,152 @@ fn registered_definition_alias_keeps_tools_ownership() {
             .unwrap_err()
             .contains("ToolDefinition declaration belongs to maestro-tools")
     );
+}
+
+#[test]
+fn interactive_session_setup_rejects_bypasses() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat"]);
+    source(
+        &workspace,
+        "maestro-chat",
+        "tests/footer_support/session.rs",
+        "fn session() -> Result { AgentSession::new(AgentSessionConfig { agent: owner() }) }",
+    );
+    for relative in [
+        "tests/footer_support/mod.rs",
+        "tests/footer_support/corpus.rs",
+        "src/interactive_mode/tests.rs",
+        "src/interactive_mode/startup/tests.rs",
+    ] {
+        let path = source(&workspace, "maestro-chat", relative, DUPLICATE_SETUP);
+        assert_setup_rejected(&workspace, &path, relative);
+        std::fs::remove_file(&path).unwrap();
+    }
+    for spelling in DUPLICATE_SETUP_SPELLINGS {
+        let path = source(
+            &workspace,
+            "maestro-chat",
+            "tests/footer_support/mod.rs",
+            spelling,
+        );
+        assert_setup_rejected(&workspace, &path, spelling);
+    }
+    for accepted in [
+        "fn f() -> CreateAgentSessionRuntimeResult { session(cwd, None) }",
+        "// AgentSessionConfig\nfn f() { let _ = \"AgentSessionConfig\"; }",
+    ] {
+        source(
+            &workspace,
+            "maestro-chat",
+            "tests/footer_support/mod.rs",
+            accepted,
+        );
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{accepted}");
+    }
+    source(
+        &workspace,
+        "maestro-chat",
+        "tests/session_picker_support/mod.rs",
+        DUPLICATE_SETUP,
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+/// Assert the checker names `path` and the shared owner when it rejects a second setup.
+///
+/// Both sides are canonicalized, because a host may spell the scratch root differently
+/// from the workspace metadata that the checker walks.
+fn assert_setup_rejected(workspace: &Workspace, path: &Path, detail: &str) {
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    let Some((reported, owner)) = error.split_once(":1: session setup belongs in ") else {
+        panic!("{detail}: {error}");
+    };
+    assert_eq!(
+        owner, "tests/footer_support/session.rs",
+        "{detail}: {error}"
+    );
+    assert_eq!(
+        std::fs::canonicalize(reported).unwrap(),
+        std::fs::canonicalize(path).unwrap(),
+        "{detail}"
+    );
+}
+
+#[test]
+fn cli_configuration_wrapper_does_not_own_chat_widgets() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-cli"]);
+    source(
+        &workspace,
+        "maestro-chat",
+        "src/components/mod.rs",
+        "mod config_selector;",
+    );
+    source(
+        &workspace,
+        "maestro-cli",
+        "src/input/mod.rs",
+        "mod config_selector;",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for (path, contents) in [
+        (
+            "src/input/config_selector.rs",
+            "pub struct ConfigSelectorComponent;",
+        ),
+        ("src/other/mod.rs", "mod config_selector;"),
+        ("src/input/session_picker.rs", "mod config_selector;"),
+    ] {
+        source(&workspace, "maestro-cli", path, contents);
+        assert!(
+            check_workspace(workspace.root.path())
+                .unwrap_err()
+                .contains("belongs to maestro-chat"),
+            "{path}"
+        );
+        source(&workspace, "maestro-cli", path, "");
+    }
+}
+
+#[test]
+fn terminal_effect_recorders_have_one_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-cli", "maestro-test-terminal"]);
+    source(
+        &workspace,
+        "maestro-test-terminal",
+        "src/recording_terminal.rs",
+        "pub struct RecordingTerminal;\npub struct ManualRuntime;",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for (path, contents) in [
+        ("src/support.rs", "struct RecordingTerminal;"),
+        ("tests/support.rs", "struct ManualRuntime;"),
+    ] {
+        source(&workspace, "maestro-cli", path, contents);
+        assert!(
+            check_workspace(workspace.root.path())
+                .unwrap_err()
+                .contains("belongs to maestro-test-terminal"),
+            "{path}"
+        );
+        source(&workspace, "maestro-cli", path, "");
+    }
+}
+
+#[test]
+fn input_presenter_records_reject_duplicate_owners() {
+    for name in [
+        "PresentedSelector",
+        "ConfigSelectorCallbacks",
+        "ConfigSelectorFactory",
+        "SessionSelectorCallbacks",
+        "SessionSelectorRequest",
+        "SessionSelectorFactory",
+        "SessionsFuture",
+        "SessionsLoader",
+    ] {
+        assert_single_owner(name, "maestro-app", &["maestro-chat", "maestro-cli"]);
+    }
 }

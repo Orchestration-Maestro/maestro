@@ -1,19 +1,8 @@
 //! File rotation behavior.
 use super::writer::*;
+use maestro_test_directory::{Scratch, temporary_root};
 use std::{fs, io::Write, path::PathBuf};
 use tracing_subscriber::fmt::writer::MakeWriter;
-fn temp_log_path(name: &str) -> PathBuf {
-    let unique = format!(
-        "maestro-logging-tests-{}-{}-{}",
-        name,
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    );
-    std::env::temp_dir().join(unique).join("maestro.log")
-}
 
 #[test]
 fn log_generation_suffix_follows_the_filename() {
@@ -26,8 +15,8 @@ fn log_generation_suffix_follows_the_filename() {
 
 #[test]
 fn log_rotation_shifts_generations_in_order() {
-    let path = temp_log_path("rotate");
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    let dir = Scratch::new().unwrap();
+    let path = dir.path().join("maestro.log");
     fs::write(&path, "current").unwrap();
     fs::write(rotated_log_path(&path, 1), "older").unwrap();
 
@@ -50,17 +39,14 @@ fn log_rotation_shifts_generations_in_order() {
         "older"
     );
     assert!(!path.exists());
-
-    let _ = fs::remove_dir_all(path.parent().unwrap());
 }
 
 #[test]
 fn log_limit_replaces_without_retained_generations() {
-    let path = temp_log_path("replace");
-    let dir = path.parent().unwrap().to_path_buf();
-    fs::create_dir_all(&dir).unwrap();
+    let dir = Scratch::new().unwrap();
+    let path = dir.path().join("maestro.log");
 
-    let writer = RotatingFileMakeWriter::new(&dir, "maestro.log", 8, 0).unwrap();
+    let writer = RotatingFileMakeWriter::new(dir.path(), "maestro.log", 8, 0).unwrap();
     {
         let mut guard = writer.make_writer();
         guard.write_all(b"12345678").unwrap();
@@ -70,8 +56,6 @@ fn log_limit_replaces_without_retained_generations() {
 
     assert_eq!(fs::read_to_string(&path).unwrap(), "abc");
     assert!(!rotated_log_path(&path, 1).exists());
-
-    let _ = fs::remove_dir_all(dir);
 }
 
 #[test]
@@ -240,7 +224,9 @@ fn emit_lifecycle_events() {
 
 #[test]
 fn log_roles_filters_and_failures_use_one_writer() {
-    let root = temp_log_path("roles").parent().unwrap().to_path_buf();
+    // Windows runs this too: DaemonPaths joins with '/', which a canonical `\\?\` root refuses.
+    let scratch = Scratch::new_in(&temporary_root()).unwrap();
+    let root = scratch.path();
     let paths = crate::paths::DaemonPaths::new(root.to_str().unwrap(), Some("work")).unwrap();
     for (role, filter, has_debug, has_info, has_warn) in [
         ("in-process", None, false, true, true),
@@ -276,8 +262,7 @@ fn log_roles_filters_and_failures_use_one_writer() {
     assert!(super::file_subscriber(&invalid, "daemon", None).is_err());
     super::init_file_logging(&invalid, "daemon", None);
     assert_eq!(fs::read_to_string(&blocked).unwrap(), "keep");
-    shared_writer_and_rotation_failure(&root);
-    fs::remove_dir_all(root).unwrap();
+    shared_writer_and_rotation_failure(root);
 }
 
 /// Shared guards append to the same output and filesystem failure is swallowed once.
