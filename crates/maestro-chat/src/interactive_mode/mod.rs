@@ -71,8 +71,6 @@ pub struct InteractiveMode {
     options: InteractiveModeOptions,
     /// The terminal user interface this mode owns.
     ui: TUI,
-    /// The terminal host: log time, log file effects and failure reports.
-    runtime: Rc<dyn TuiRuntime>,
     /// The theme registry and its published theme.
     themes: Rc<ThemeState>,
     /// The startup header container.
@@ -169,7 +167,6 @@ impl InteractiveMode {
             runtime_host,
             options,
             ui,
-            runtime,
             themes,
             header_container: Rc::new(Container::new()),
             chat_container: Rc::new(Container::new()),

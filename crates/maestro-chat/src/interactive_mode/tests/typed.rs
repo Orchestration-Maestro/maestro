@@ -486,21 +486,26 @@ fn typed_input_obeys_the_live_submit_binding() {
     });
 }
 
-/// Submits `text` with a waiting input and checks that a command consumed it: the input
-/// keeps waiting, the editor is empty and the history records nothing.
+/// Types `text` into the editor through the terminal and submits it with Enter.
+fn enter(world: &World, text: &str) {
+    world.terminal.send_input(text);
+    world.terminal.send_input("\r");
+}
+
+/// Types `text` with Enter and a waiting input, then checks that a command consumed it: the
+/// input keeps waiting, the editor is empty and the history records nothing.
 fn consumed(world: &World, text: &str) {
     let mut waiter = waiting(&world.mode);
-    world.mode.editor.set_text(text);
-    submit(world, text);
+    enter(world, text);
     assert_eq!(poll(&mut waiter), None);
     assert_eq!(world.mode.editor.get_text(), "");
     assert!(recalled(&world.mode.editor).is_empty());
 }
 
-/// Submits `text` with a waiting input and checks that it arrives as ordinary input.
+/// Types `text` with Enter and a waiting input, then checks that it arrives as ordinary input.
 fn ordinary(world: &World, text: &str) {
     let mut waiter = waiting(&world.mode);
-    submit(world, text);
+    enter(world, text);
     assert_eq!(poll(&mut waiter).as_deref(), Some(text.trim()));
     assert_eq!(recalled(&world.mode.editor)[0], text.trim());
 }
@@ -547,17 +552,16 @@ fn debug_submission_records_then_clears_editor() {
     isolated("debug_submission_records_then_clears_editor", |directory| {
         let world = started(directory);
         consumed(&world, "/debug");
-        assert!(only_log(&world).contains("/debug"));
+        assert!(only_log(&world).starts_with("Debug output at "));
         assert!(transcript(&world).contains("Debug log written"));
         world
             .runtime
             .set_write_error(Some(std::io::ErrorKind::PermissionDenied));
         let notices = world.mode.chat_container.children().borrow().len();
         let mut waiter = waiting(&world.mode);
-        world.mode.editor.set_text("/debug");
-        submit(&world, "/debug");
+        enter(&world, "/debug");
         assert_eq!(poll(&mut waiter), None);
-        assert_eq!(world.mode.editor.get_text(), "/debug");
+        assert_eq!(world.mode.editor.get_text(), "");
         assert_eq!(world.mode.chat_container.children().borrow().len(), notices);
         assert_eq!(world.runtime.drain_futures().len(), 1);
         ordinary(&world, "/debug now");
