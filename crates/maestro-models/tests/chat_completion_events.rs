@@ -1663,3 +1663,39 @@ fn maestro_chat_emits_carriage_delimited_events() -> TestResult {
         Ok(())
     })
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A streamed tool call keeps every root kind it spells, and a partial literal is not a
+/// completed null.
+#[test]
+fn chat_argument_roots_survive_delta_and_finish() -> TestResult {
+    crate::runtime::run(async {
+        assert_calls(
+            &[
+                ("0", "a", "lookup", "42"),
+                ("1", "b", "lookup", "null"),
+                ("2", "c", "lookup", "[1,1]"),
+                ("3", "d", "lookup", "false"),
+                ("4", "e", "lookup", "\"text\""),
+                ("5", "f", "lookup", r#"{"q":"#),
+                ("5", "", "", r#""held"}"#),
+            ],
+            &[
+                ("a", "lookup", json!(42)),
+                ("b", "lookup", Value::Null),
+                ("c", "lookup", json!([1, 1])),
+                ("d", "lookup", json!(false)),
+                ("e", "lookup", json!("text")),
+                ("f", "lookup", json!({"q": "held"})),
+            ],
+        )
+        .await?;
+        assert_calls(&[("0", "a", "lookup", "n")], &[("a", "lookup", json!({}))]).await?;
+        assert_calls(&[("0", "a", "lookup", "nu")], &[("a", "lookup", json!({}))]).await?;
+        assert_calls(
+            &[("0", "a", "lookup", "null")],
+            &[("a", "lookup", Value::Null)],
+        )
+        .await
+    })
+}

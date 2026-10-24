@@ -1649,6 +1649,76 @@ mod tests {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
+    /// A scripted call keeps every root kind through its streamed bytes and its final call.
+    fn scripted_calls_retain_scalar_and_array_roots() {
+        let _serial = crate::bundled::registry();
+        let registration = fixed(None);
+        for (arguments, encoded) in [
+            (serde_json::json!(42), "42"),
+            (serde_json::Value::Null, "null"),
+            (serde_json::json!([1, 1]), "[1,1]"),
+            (serde_json::json!(false), "false"),
+            (serde_json::json!("text"), "\"text\""),
+        ] {
+            registration.set_responses(vec![FauxResponseStep::Message(Box::new(
+                faux_assistant_message(
+                    faux_tool_call(
+                        "t",
+                        arguments.clone(),
+                        FauxToolCallOptions {
+                            id: Some("call".into()),
+                        },
+                    ),
+                    FauxAssistantMessageOptions::default(),
+                ),
+            ))]);
+            let stream = stream(model(&registration), context("hello"), None)
+                .expect("the scripted provider streams");
+            let observed = crate::runtime::run(observe_tool(stream));
+            assert!(observed.started, "{arguments}");
+            assert_eq!(observed.streamed, encoded, "{arguments}");
+            let ended = observed.ended.expect("the call ends");
+            assert_eq!(ended.id, "call");
+            assert_eq!(ended.name, "t");
+            assert_eq!(ended.arguments, arguments);
+        }
+        registration.unregister();
+    }
+
+    /// What one scripted tool-call stream published.
+    struct Observed {
+        /// Whether the call started.
+        started: bool,
+        /// Concatenated delta text.
+        streamed: String,
+        /// The final call.
+        ended: Option<maestro_models::ToolCall>,
+    }
+
+    /// Consume one scripted stream and record its tool-call events.
+    async fn observe_tool(stream: maestro_models::AssistantMessageEventStream) -> Observed {
+        let mut observed = Observed {
+            started: false,
+            streamed: String::new(),
+            ended: None,
+        };
+        while let Some(event) = stream.next().await {
+            match event {
+                AssistantMessageEvent::ToolcallStart { .. } => observed.started = true,
+                AssistantMessageEvent::ToolcallDelta { delta, .. } => {
+                    observed.streamed.push_str(&delta);
+                }
+                AssistantMessageEvent::ToolcallEnd { tool_call, .. } => {
+                    observed.ended = Some(tool_call);
+                }
+                _ => {}
+            }
+        }
+        observed
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
     /// Exercise serialization retains native values through the public invocation boundary.
     fn maestro_serialization_retains_native_values() {
         let _serial = crate::bundled::registry();
