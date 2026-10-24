@@ -8,6 +8,7 @@ mod events;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
@@ -461,9 +462,13 @@ impl Setup {
             *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
         }
         let loader = loader.borrow().clone().unwrap();
+        let services = Rc::clone(&result.services);
         let host = Rc::new(AgentSessionRuntime::new(
             result,
-            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) })),
+            Rc::new(move |options| {
+                let replacement = session::over(&options.cwd, &services);
+                Box::pin(async { Ok(replacement) })
+            }),
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
@@ -672,7 +677,10 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                 assert!(!expanded, "tool output starts collapsed");
                 std::fs::write(directory.join("keybindings.json"), config.to_string()).unwrap();
                 let world = Setup {
-                    options: InteractiveModeOptions { verbose },
+                    options: InteractiveModeOptions {
+                        verbose,
+                        ..InteractiveModeOptions::default()
+                    },
                     configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
                     ..Setup::default()
                 }
