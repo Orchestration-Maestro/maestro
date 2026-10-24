@@ -171,7 +171,11 @@ fn show(shared: &Shared) -> Result<(), ToolUiError> {
         (
             expanded,
             view,
-            state.content.clone(),
+            if expanded {
+                state.content.clone()
+            } else {
+                String::new()
+            },
             state.root.clone(),
             state.body.take(),
         )

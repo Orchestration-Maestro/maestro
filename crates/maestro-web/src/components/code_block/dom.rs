@@ -5,10 +5,11 @@ use crate::{
         AttachmentHostError,
         browser::{append, host_error},
     },
+    components::copy_button::dom::{self as copy_button, Localization},
     dom::{DomView, Property, Reflected},
 };
 use js_sys::WeakRef;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 use web_sys::{Element, HtmlElement};
 
@@ -63,9 +64,9 @@ impl CodeElement {
             .text("Copy code")
             .map_err(|error| presentation(&error))?;
         if let Some(listing) = &self.shown {
-            return listing.update(&prepared, &title);
+            return listing.update(&self.view, &prepared, &title);
         }
-        let (node, listing) = Listing::build(&self.view.document, &prepared, &title)?;
+        let (node, listing) = Listing::build(&self.view, &prepared, &title)?;
         root.replace_children_with_node_1(&node);
         self.shown = Some(listing);
         Ok(())
@@ -77,18 +78,20 @@ pub(crate) struct Listing {
     mounted: browser::Mounted,
     /// Copy control receiving the listing text and title.
     copy: Element,
+    /// Localization of the copy control's labels.
+    i18n: Localization,
 }
 impl Listing {
     /// Build `prepared` with a copy control titled `title`; the caller places the returned node.
     pub(crate) fn build(
-        document: &web_sys::Document,
+        view: &DomView,
         prepared: &Prepared,
         title: &str,
     ) -> Result<(Element, Self), AttachmentHostError> {
-        let built = browser::build(document, prepared)?;
-        let copy = document
-            .create_element(crate::components::copy_button::dom::TAG)
-            .map_err(|error| host_error(&error))?;
+        let built = browser::build(&view.document, prepared)?;
+        let i18n = Rc::new(RefCell::new(Rc::clone(&view.i18n)));
+        let copy =
+            copy_button::create(&view.document, &i18n).map_err(|error| host_error(&error))?;
         for (name, value) in [
             ("text", prepared.text.as_str()),
             ("title", title),
@@ -101,16 +104,21 @@ impl Listing {
         let listing = Self {
             mounted: built.mounted,
             copy,
+            i18n,
         };
         Ok((built.root, listing))
     }
     /// Change only the label, body, text and title that differ, retaining selection and feedback.
+    ///
+    /// The copy control's labels follow `view`'s localization from now on.
     pub(crate) fn update(
         &self,
+        view: &DomView,
         prepared: &Prepared,
         title: &str,
     ) -> Result<(), AttachmentHostError> {
         self.mounted.update(prepared);
+        self.i18n.replace(Rc::clone(&view.i18n));
         for (name, value) in [("text", prepared.text.as_str()), ("title", title)] {
             if self.copy.get_attribute(name).as_deref() != Some(value) {
                 self.copy

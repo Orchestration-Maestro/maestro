@@ -12,6 +12,9 @@ use wit::{ScanContext, WitInputs};
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
+/// Single owners of browser element connection checks and copy-control creation.
+mod web_elements;
+
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
@@ -46,6 +49,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
+    web_elements::check(members)?;
     wit.finish()
 }
 

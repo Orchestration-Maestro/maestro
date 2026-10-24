@@ -27,8 +27,8 @@ const PROPERTIES: &[Property] = &[
 struct Shown {
     /// Source and escaping the document was prepared from.
     key: (String, bool),
-    /// Listing sources in document order.
-    sources: Rc<[render::Code]>,
+    /// Prepared listings in document order.
+    codes: Vec<Code>,
     /// Mounted listings in document order.
     listings: Vec<Listing>,
 }
@@ -55,21 +55,13 @@ impl DomContent for MarkdownBlock {
             .ok_or_else(|| ToolUiError::Presentation("Missing Markdown state".into()))?;
         let node: &Element = root.node.unchecked_ref();
         let title = view.i18n.text("Copy code")?;
-        let unchanged = published
-            .borrow()
-            .as_ref()
+        let mut published = published.borrow_mut();
+        match published
+            .as_mut()
             .filter(|shown| shown.key.0 == self.content && shown.key.1 == self.escape_html)
-            .map(|shown| Rc::clone(&shown.sources));
-        if let Some(sources) = unchanged {
-            let code = highlight(view, &sources)?;
-            let shown = published.borrow();
-            let listings = shown.as_ref().map_or(&[][..], |shown| &shown.listings);
-            for (listing, code) in listings.iter().zip(&code) {
-                listing.update(code, &title)?;
-            }
-        } else {
-            let shown = self.publish(node, view, &title)?;
-            *published.borrow_mut() = Some(shown);
+        {
+            Some(shown) => refresh(shown, view, &title)?,
+            None => *published = Some(self.publish(node, view, &title)?),
         }
         node.set_class_name(if self.is_thinking {
             "maestro-markdown maestro-thinking"
@@ -82,26 +74,30 @@ impl DomContent for MarkdownBlock {
 impl MarkdownBlock {
     /// Prepare the whole document detached, then replace the root's children with it.
     fn publish(&self, root: &Element, view: &DomView, title: &str) -> Result<Shown, ToolUiError> {
-        let mut prepared = render::prepare(&self.content, self.escape_html);
-        let sources: Rc<[render::Code]> = std::mem::take(&mut prepared.code).into();
-        let code = highlight(view, &sources)?;
+        let prepared = render::prepare(&self.content, self.escape_html);
+        let codes = prepared
+            .code
+            .into_iter()
+            .map(|code| Code::new(&*view.highlighter, code.code, code.language))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(ToolUiError::reading)?;
         let document = element(&view.document, "div", "")?;
         document.set_inner_html(&prepared.html);
         let slots = document
             .query_selector_all(&format!("[{}]", prepared.slot_attribute))
             .map_err(|error| host_error(&error))?;
-        if slots.length() as usize != code.len() {
+        if slots.length() as usize != codes.len() {
             return Err(AttachmentHostError::Host("Missing code slot".into()).into());
         }
         // One enumeration of the generated slots, walked in document order.
         let listings = js_sys::Array::from(&slots)
             .iter()
-            .zip(&code)
+            .zip(&codes)
             .map(|(slot, code)| {
                 let slot: Element = slot.unchecked_into();
                 slot.set_attribute("class", "maestro-code-wrap")
                     .map_err(|error| host_error(&error))?;
-                let (node, listing) = Listing::build(&view.document, code, title)?;
+                let (node, listing) = Listing::build(view, code, title)?;
                 append(&slot, &node)?;
                 Ok(listing)
             })
@@ -109,7 +105,7 @@ impl MarkdownBlock {
         root.replace_children_with_node(&js_sys::Array::from(&document.child_nodes()));
         Ok(Shown {
             key: (self.content.clone(), self.escape_html),
-            sources,
+            codes,
             listings,
         })
     }
@@ -130,13 +126,21 @@ impl MarkdownBlock {
         .map_err(|error| host_error(&error).into())
     }
 }
-/// Highlight every listing with the supplied engine before anything is published.
-fn highlight(view: &DomView, sources: &[render::Code]) -> Result<Vec<Code>, ToolUiError> {
-    sources
+/// Re-highlight every retained listing with the supplied engine, then refresh them in place.
+///
+/// A highlighting failure changes nothing.
+fn refresh(shown: &mut Shown, view: &DomView, title: &str) -> Result<(), ToolUiError> {
+    let html = shown
+        .codes
         .iter()
-        .map(|code| Code::new(&*view.highlighter, code.code.clone(), code.language.clone()))
-        .collect::<Result<_, _>>()
-        .map_err(ToolUiError::reading)
+        .map(|code| Code::highlight(&*view.highlighter, &code.text, &code.language))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(ToolUiError::reading)?;
+    for ((code, html), listing) in shown.codes.iter_mut().zip(html).zip(&shown.listings) {
+        code.html = html;
+        listing.update(view, code, title)?;
+    }
+    Ok(())
 }
 
 /// One `markdown-block` element showing its attributes' document.
