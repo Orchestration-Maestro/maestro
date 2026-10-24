@@ -13,8 +13,8 @@ mod unix {
     use maestro_tui::{
         Image, ImageOptions, ImageTheme, Spacer, TUI, TerminalImage, Text,
         images::terminal_image::{ImageDimensions, get_image_dimensions},
+        interface::InputListenerResult,
         keys::matches_key,
-        tui::InputListenerResult,
     };
     use std::{
         io::{self, Write},

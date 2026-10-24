@@ -6,10 +6,10 @@ use crate::{
         event_subscription::EventSubscription,
     },
     components::{
-        button::{ButtonProps, ButtonSize, ButtonVariant, button},
+        controls::{ButtonProps, ButtonSize, ButtonVariant, button},
         markdown_block::MarkdownBlock,
     },
-    dom::{DomContent, DomRoot, DomView, Link, Property, Reflected},
+    page::{DomContent, DomRoot, DomView, Link, Property, Reflected},
     tools::types::ToolUiError,
 };
 use std::{
@@ -124,7 +124,7 @@ impl ThinkingBlock {
     pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
         let view = Rc::clone(view);
         let observed = ["content", "is-streaming"].map(String::from);
-        crate::dom::define_element(TAG, observed.into(), PROPERTIES, move |root, properties| {
+        crate::page::define_element(TAG, observed.into(), PROPERTIES, move |root, properties| {
             ThinkingElement {
                 root: Link::new(&root),
                 view: Rc::clone(&view),
@@ -232,7 +232,7 @@ impl custom_element::CustomElement for ThinkingElement {
         }
     }
     fn attribute_changed_callback(&mut self, _: &str, _: JsValue, _: JsValue) {
-        if crate::dom::connected(&self.root).is_some() {
+        if crate::page::connected(&self.root).is_some() {
             let _ = self.render();
         }
     }
@@ -240,7 +240,7 @@ impl custom_element::CustomElement for ThinkingElement {
 impl ThinkingElement {
     /// Show the attributes' disclosure inside the element, reattaching its toggle.
     fn render(&mut self) -> Result<(), ToolUiError> {
-        let Some(element) = crate::dom::connected(&self.root) else {
+        let Some(element) = crate::page::connected(&self.root) else {
             return Ok(());
         };
         let block = ThinkingBlock {

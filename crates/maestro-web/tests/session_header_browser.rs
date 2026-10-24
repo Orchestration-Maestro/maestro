@@ -744,7 +744,7 @@ fn reading_candidate_setup_failures_keep_the_published_root() {
 /// A direct-child input replacement clears reading markers without losing its own class.
 fn reading_input_transition_keeps_caller_class_and_native_events() {
     use maestro_web::browser::attachment_content::{AttachmentContent, AttachmentSurface};
-    use maestro_web::components::input::InputProps;
+    use maestro_web::components::fields::InputProps;
     let slots = Slots::new();
     slots.publish(egui::vec2(300., 40.), &[]);
     let old = slots.root();

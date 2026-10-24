@@ -124,7 +124,7 @@ returned with its markers as one frame, even when its terminator arrives in piec
 An incomplete paste is not released by a timeout.
 
 ```rust
-use maestro_tui::stdin_buffer::RawInputByteFramer;
+use maestro_tui::input_buffer::RawInputByteFramer;
 
 let mut input = RawInputByteFramer::default();
 assert!(input.push(&[0xc3]).is_empty());
@@ -171,7 +171,7 @@ button byte and release terminator for projection without a wire dependency.
 
 ## Daemon event projection
 
-`maestro_daemon::input::raw_input::RawInputFramer` projects the toolkit's complete
+`maestro_daemon::input::framing::RawInputFramer` projects the toolkit's complete
 frames into the daemon's existing key, paste, mouse, focus and host-reply events.
 `parse_raw_input_bytes_sync` decodes a supplied buffer with one idle flush.
 Neither function reads the terminal. The multiplexer input loop supplies bytes

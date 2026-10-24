@@ -13,7 +13,7 @@ use maestro_app::{Model, ScopedModel, SettingsManager, SharedHandle};
 use maestro_chat::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
 use maestro_tui::{
     Component, TUI, TerminalImage,
-    tui::{Focusable, InputHandler},
+    interface::{Focusable, InputHandler},
 };
 use model_selector_support::*;
 use std::{

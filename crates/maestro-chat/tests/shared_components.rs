@@ -762,7 +762,7 @@ fn loader_container_mutations_keep_shared_child_identity() {
     )
     .unwrap();
     let alias = loader.children();
-    let child: maestro_tui::tui::ComponentHandle = Rc::new(Tail);
+    let child: maestro_tui::interface::ComponentHandle = Rc::new(Tail);
     loader.add_child(child.clone());
     assert_eq!(loader.render(30).last(), Some(&expected.added));
     loader.clear();
@@ -1081,14 +1081,14 @@ impl maestro_tui::AutocompleteProvider for Completion {
     fn get_suggestions<'a>(
         &'a self,
         _lines: &'a [String],
-        _cursor: maestro_tui::autocomplete::CursorPosition,
-        _options: maestro_tui::autocomplete::CompletionOptions<'a, Self::Signal>,
+        _cursor: maestro_tui::candidates::CursorPosition,
+        _options: maestro_tui::candidates::CompletionOptions<'a, Self::Signal>,
     ) -> std::pin::Pin<
         Box<
             dyn std::future::Future<
                     Output = Result<
                         Option<maestro_tui::AutocompleteSuggestions>,
-                        maestro_tui::autocomplete::CompletionError,
+                        maestro_tui::candidates::CompletionError,
                     >,
                 > + 'a,
         >,
@@ -1109,11 +1109,11 @@ impl maestro_tui::AutocompleteProvider for Completion {
     fn apply_completion(
         &self,
         _lines: &[String],
-        _cursor: maestro_tui::autocomplete::CursorPosition,
+        _cursor: maestro_tui::candidates::CursorPosition,
         item: &maestro_tui::AutocompleteItem,
         _prefix: &str,
-    ) -> maestro_tui::autocomplete::CompletionResult {
-        maestro_tui::autocomplete::CompletionResult {
+    ) -> maestro_tui::candidates::CompletionResult {
+        maestro_tui::candidates::CompletionResult {
             lines: vec![item.value.clone()],
             cursor_line: 0,
             cursor_col: item.value.len(),

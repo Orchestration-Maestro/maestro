@@ -2,7 +2,7 @@
 use super::{DefaultRenderer, Listing, format_params, prepare, status};
 use crate::{
     browser::attachment_content::browser::{element, host_error},
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     tools::{
         renderer_registry::{ToolHeaderState, get_text_output},
         types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
@@ -66,7 +66,7 @@ impl DomContent for DefaultDomContent {
             self.state,
             &no_output,
         )?;
-        let header = crate::tools::renderer_registry::header::dom::render_header(
+        let header = crate::tools::renderer_registry::heading::dom::render_header(
             &view.document,
             self.state,
             "Code",
@@ -105,7 +105,7 @@ fn find(root: &Element, name: &str) -> Result<Option<Element>, ToolUiError> {
 /// Point a section's listing at `listing`, encoded so its text always shows literally.
 fn show_listing(section: &Element, listing: &Listing) -> Result<(), ToolUiError> {
     let code = section
-        .query_selector(crate::components::code_block::dom::TAG)
+        .query_selector(crate::components::source::dom::TAG)
         .map_err(|error| host_error(&error))?
         .ok_or_else(|| ToolUiError::Presentation("Missing listing".into()))?;
     let encoded = base64::engine::general_purpose::STANDARD.encode(&listing.code);
@@ -132,7 +132,7 @@ fn section(
     let caption = element(document, "div", "maestro-tool-section-label")?;
     caption.set_text_content(Some(label));
     let code = document
-        .create_element(crate::components::code_block::dom::TAG)
+        .create_element(crate::components::source::dom::TAG)
         .map_err(|error| host_error(&error))?;
     section
         .append_with_node_2(&caption, &code)

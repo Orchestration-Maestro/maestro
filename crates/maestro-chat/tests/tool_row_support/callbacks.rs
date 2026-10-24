@@ -1,7 +1,7 @@
 //! Controlled callbacks capture the complete source-visible context and component identity.
 use super::records::Input;
 use maestro_app::{ToolRenderContext, ToolRenderShell, ToolRendererBinding, ToolRendererState};
-use maestro_tui::{Container, Text, tui::ComponentHandle};
+use maestro_tui::{Container, Text, interface::ComponentHandle};
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 /// Shared callbacks and their ordered transcript.

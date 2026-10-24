@@ -43,7 +43,7 @@ fn sgr_report_requires_complete_numeric_fields() {
 #[test]
 fn fractional_host_pixels_reach_pane_edges() {
     let geometry = HostGeometry::new(211, 57, 2537, 1429).unwrap();
-    let inner = maestro_workspace::layout::Rect::new(157, 7, 53, 49);
+    let inner = maestro_workspace::tiling::Rect::new(157, 7, 53, 49);
     for (x, y, expected) in [
         (1888, 176, Position::Pixels { x: 1, y: 1 }),
         (2524, 1403, Position::Pixels { x: 636, y: 1225 }),
@@ -82,7 +82,7 @@ fn host_pixels_reject_outside_and_map_cells() {
 #[test]
 fn mouse_geometry_requires_nonzero_dimensions() {
     let good = HostGeometry::new(80, 24, 800, 480).unwrap();
-    let inner = maestro_workspace::layout::Rect::new(0, 0, 1, 1);
+    let inner = maestro_workspace::tiling::Rect::new(0, 0, 1, 1);
     assert_eq!(good.cell(1, 1), Some((0, 0)));
     for (cols, rows, width_px, height_px) in [
         (0, 24, 800, 480),
@@ -113,7 +113,7 @@ fn mouse_geometry_requires_nonzero_dimensions() {
 /// Pane mapping rejects invalid rectangles, outside pixels and empty targets.
 #[test]
 fn pane_pixel_mapping_rejects_invalid_rectangles() {
-    use maestro_workspace::layout::Rect;
+    use maestro_workspace::tiling::Rect;
     let geometry = HostGeometry::new(80, 24, 800, 480).unwrap();
     let point = HostPixels {
         x: 101,
@@ -205,7 +205,7 @@ fn mouse_report_relocation_preserves_button_and_terminator() {
 
 /// Fractional cell boundaries scale after selecting the pane pixel span.
 fn assert_fractional_scaling() {
-    use maestro_workspace::layout::Rect;
+    use maestro_workspace::tiling::Rect;
     let geometry = HostGeometry::new(3, 2, 10, 7).unwrap();
     assert_eq!(
         HostPixels {

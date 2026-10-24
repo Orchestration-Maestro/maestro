@@ -3,13 +3,13 @@
 use super::state::thrown;
 use super::tools::RefreshToolRegistryOptions;
 use super::{AgentSession, ExtensionBindings};
-use crate::resources::resource_loader::{
+use crate::resources::loading::{
     ResourceExtensionPath, ResourceExtensionPaths, ResourceLoader, report,
 };
 use crate::utils::lock::write;
 use indexmap::IndexMap;
 use maestro_catalog::ModelRegistry;
-use maestro_extensions::runner::{
+use maestro_extensions::execution::{
     ExtensionRunnerSession, ResourcePath, emit_session_shutdown_event,
 };
 use maestro_extensions::{

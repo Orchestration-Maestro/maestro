@@ -2,7 +2,7 @@
 //! with managed output, workspace commands and framing.
 #![cfg(unix)]
 use crate::support::{Child, Served, options, runtime, serve};
-use maestro_app::rpc_mode::{JsonlLineReader, RpcLine, RpcOutput};
+use maestro_app::connection_runner::{JsonlLineReader, RpcLine, RpcOutput};
 use maestro_app::rpc_types::workspace_schema::{ErrorBody, EventData, ResponseResult};
 use maestro_app::{ExtensionFactory, Local, RpcConnectionOutcome, run_rpc_connection};
 use maestro_test_directory::Scratch;
@@ -59,7 +59,7 @@ fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
 /// Signal registration that delivers nothing, for a connection inside the test process.
 struct NoSignals;
 
-impl maestro_app::rpc_mode::RpcProcessPort for NoSignals {
+impl maestro_app::connection_runner::RpcProcessPort for NoSignals {
     fn register_signals(
         &self,
         _callback: Rc<dyn Fn(maestro_app::TerminationSignal)>,

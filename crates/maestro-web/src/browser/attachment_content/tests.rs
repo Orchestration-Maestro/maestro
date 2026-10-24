@@ -38,7 +38,7 @@ fn native_content_borders_belong_to_visible_owners() {
     }
     let record = std::rc::Rc::new(std::cell::RefCell::new(crate::Attachment {
         id: "id".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
         file_name: "file".into(),
         mime_type: "application/pdf".into(),
         size: 0,
@@ -102,7 +102,7 @@ fn placements_write_once_and_modal_changes_refresh_siblings_once() {
 fn input_focus_and_error_rings_keep_three_css_pixels_inside_parent_clip() {
     let context = egui::Context::default();
     for error in ["", "Invalid address"] {
-        let props = crate::components::input::InputProps {
+        let props = crate::components::fields::InputProps {
             error: error.into(),
             ..Default::default()
         };

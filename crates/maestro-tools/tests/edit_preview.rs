@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::read_support;
 use crate::runtime::run;
-use maestro_tools::edit_diff::{Edit, EditDiffResult, compute_edit_diff, compute_edits_diff};
+use maestro_tools::previews::{Edit, EditDiffResult, compute_edit_diff, compute_edits_diff};
 use read_support::{Fixture, Scratch, isolated};
 use serde::Deserialize;
 use std::{
@@ -339,7 +339,7 @@ fn binding_preview(
     path: &str,
     cwd: &str,
 ) -> io::Result<
-    maestro_models::BoxFuture<Result<EditDiffResult, maestro_tools::edit_diff::EditDiffError>>,
+    maestro_models::BoxFuture<Result<EditDiffResult, maestro_tools::previews::EditDiffError>>,
 > {
     if single {
         compute_edit_diff(path, "right", "RIGHT", cwd)

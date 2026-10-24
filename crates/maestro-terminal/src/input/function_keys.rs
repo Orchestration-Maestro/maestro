@@ -1,8 +1,8 @@
 //! PC-style function-key and application-keypad sequences.
 
-use super::key::Key;
 use super::key_encode::KeyEncoder;
 use super::key_mods::Mods;
+use super::keyboard::Key;
 use crate::modes::Mode;
 
 /// Encode the binding modifiers in shift, alt, control, super order, plus one.

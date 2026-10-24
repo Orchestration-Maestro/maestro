@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::export_fixtures::{Recording, environment, published};
 use crate::support::session_harness::answer;
-use maestro_app::rpc_mode::{
+use maestro_app::connection_runner::{
     RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcProcessPort, WorkspaceEventSink,
     WorkspaceOperations,
 };

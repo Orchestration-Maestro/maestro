@@ -2,7 +2,7 @@
 
 use crate::support::startup;
 use maestro_app::{Model, ModelRegistry, NoTools, ScopedModel, ThinkingLevel};
-use maestro_cli::startup::main::options::{
+use maestro_cli::startup::main::configuration::{
     BuiltSessionOptions, SessionOptionInputs, build_session_options, resolve_cli_paths,
 };
 use serde_json::json;

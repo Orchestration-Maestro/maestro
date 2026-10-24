@@ -1,13 +1,13 @@
 //! Tool definitions: the executable declaration plus prompt and render capabilities.
-use crate::renderer_state::ToolRendererState;
 pub use crate::result_renderer::{ToolRenderResult, ToolRenderResultCallback};
+use crate::retained::ToolRendererState;
 
 use maestro_agent::{
     AgentToolResult, AgentToolUpdateCallback, PrepareArguments, ToolExecutionMode,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Threaded, Tool};
 use maestro_theme::{LiveTheme, SyntaxHighlighter};
-use maestro_tui::{TerminalImage, tui::ComponentHandle};
+use maestro_tui::{TerminalImage, interface::ComponentHandle};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 
@@ -43,7 +43,7 @@ pub struct ToolRenderPhase {
 /// Existing host effects supplied to tool renderers.
 pub struct ToolRenderEnvironment {
     /// The caller's terminal runtime, which owns submitted preview futures.
-    pub runtime: Rc<dyn maestro_tui::tui::TuiRuntime>,
+    pub runtime: Rc<dyn maestro_tui::interface::TuiRuntime>,
     /// Absolute path of the documentation README, supplied by the application.
     pub readme_path: String,
     /// The published theme, read on every use by renderers, key hints and images.

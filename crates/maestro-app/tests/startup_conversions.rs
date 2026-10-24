@@ -149,7 +149,7 @@ fn session_destinations_reuse_the_session_directory_owner() {
 
 #[cfg(windows)]
 fn windows_basename() {
-    use maestro_app::configuration::migrations::migrate_sessions_from_agent_root;
+    use maestro_app::configuration::conversion::migrate_sessions_from_agent_root;
     use std::fs;
     if std::env::var_os("STARTUP_WINDOWS_CHILD").is_some() {
         migrate_sessions_from_agent_root().unwrap();
@@ -243,7 +243,7 @@ fn session_links_follow_relocated_referents_referent_first() {
 fn relocated_referent(name: &str, alias_first: bool) {
     use std::{fs, os::unix::fs::symlink};
     if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
         println!("PROBE done");
         return;
     }
@@ -306,7 +306,7 @@ fn relative_session_link_replaces_a_dangling_destination() {
     use std::{fs, os::unix::fs::symlink};
     let name = "relative_session_link_replaces_a_dangling_destination";
     if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
         println!("PROBE done");
         return;
     }
@@ -361,7 +361,7 @@ fn unchanged_absolute_session_link_moves_by_rename() {
     };
     let name = "unchanged_absolute_session_link_moves_by_rename";
     if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
         println!("PROBE done");
         return;
     }
@@ -403,7 +403,7 @@ fn unchanged_absolute_session_link_moves_by_rename() {
 #[cfg(unix)]
 fn session_link_resolution_matrix() {
     if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
         println!("PROBE done");
         return;
     }
@@ -571,7 +571,7 @@ fn check_resolution_chain(
 fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
     use std::fs;
     if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
         return;
     }
     let (scratch, paths) = resolution_chain(2, "absolute", "blocked", 0);

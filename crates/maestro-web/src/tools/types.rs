@@ -88,7 +88,7 @@ impl<'a> ToolRenderView<'a> {
 /// Rendered content and outer-card choice.
 ///
 /// `C` selects the content representation. Its canvas default exists only while the
-/// canvas renderer family remains; page content uses [`crate::dom::DomContent`].
+/// canvas renderer family remains; page content uses [`crate::page::DomContent`].
 pub struct ToolRenderResult<C = Box<dyn ToolContent>> {
     /// Owned content, independent of call-scoped operands.
     pub content: C,

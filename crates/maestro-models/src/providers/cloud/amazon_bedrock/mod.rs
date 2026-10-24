@@ -31,9 +31,9 @@ use crate::providers::assistant_output::fail;
 use crate::providers::assistant_output::initial_message_for_api;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::providers::assistant_output::start_producer_for;
+use crate::providers::messages::endpoint::AnthropicThinkingDisplay;
 #[cfg(target_arch = "wasm32")]
-use crate::providers::http::RequestFailure;
-use crate::providers::messages::anthropic::AnthropicThinkingDisplay;
+use crate::providers::transport::RequestFailure;
 use crate::{
     AssistantMessageEventStream, Context, Local, Model, ProviderCall, ProviderExecution,
     ProviderInvocation, ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily,
@@ -268,7 +268,7 @@ mod native {
     use super::request::{payload, prepare};
     use crate::providers::assistant_output::conclude;
     use crate::providers::assistant_output::{callback_failure, fail};
-    use crate::providers::http::{Raced, RequestFailure, race};
+    use crate::providers::transport::{Raced, RequestFailure, race};
     use crate::{
         AssistantMessageEventStream, Cancellation, Context, Model, ProviderResponse,
         SharedAssistantMessage,

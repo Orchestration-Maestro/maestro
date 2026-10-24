@@ -2,7 +2,7 @@
 #![cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
 use crate::browser_storage_support as storage;
-use maestro_app::browser::storage::SessionsStore;
+use maestro_app::browser::persistence::SessionsStore;
 use serde_json::json;
 
 #[test]
@@ -71,8 +71,8 @@ use crate::support::run_io;
 use maestro_agent::{Agent, AgentOptions, CustomAgentMessages};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::{
-    components::messages::{CustomAgentMessages as BrowserCustom, default_convert_to_llm},
-    storage::{SessionData, SessionMetadata},
+    components::records::{CustomAgentMessages as BrowserCustom, default_convert_to_llm},
+    persistence::{SessionData, SessionMetadata},
 };
 #[cfg(not(target_arch = "wasm32"))]
 use serde::{Deserialize, Serialize};
@@ -281,7 +281,7 @@ fn session_quota_and_persistence_delegate_without_policy() {
 }
 #[cfg(not(target_arch = "wasm32"))]
 /// Observe adapter quota without recalculating it.
-fn quota_json(q: &maestro_app::browser::storage::QuotaInfo) -> Value {
+fn quota_json(q: &maestro_app::browser::persistence::QuotaInfo) -> Value {
     json!({"usage":q.usage,"quota":q.quota,"percent":q.percent})
 }
 
@@ -425,9 +425,9 @@ fn latest_session_propagates_index_failure() {
     latest("latest_session_propagates_index_failure");
 }
 
-use maestro_app::browser::storage::get_app_storage;
+use maestro_app::browser::persistence::get_app_storage;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_app::browser::storage::{
+use maestro_app::browser::persistence::{
     AppStorage, CustomProvidersStore, ProviderKeysStore, SettingsStore, StorageBackend,
     set_app_storage,
 };
@@ -482,7 +482,7 @@ fn app_storage_replacement_keeps_old_retained_handles() {
         let new = storage::Backend::new();
         for (backend, key) in [(&old, "old"), (&new, "replacement")] {
             let value = row.input[key].as_f64().unwrap();
-            *backend.quota.borrow_mut() = Some(maestro_app::browser::storage::QuotaInfo {
+            *backend.quota.borrow_mut() = Some(maestro_app::browser::persistence::QuotaInfo {
                 usage: value,
                 quota: 100.0,
                 percent: value,

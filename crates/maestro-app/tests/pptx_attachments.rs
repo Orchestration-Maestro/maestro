@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::document_attachments::{PRESENTATION, suite};
-use maestro_app::browser::utils::attachment_utils::{
+use maestro_app::browser::utils::attachments::{
     Attachment, AttachmentError, AttachmentSource, load_attachment,
 };
 use maestro_models::Fetch;

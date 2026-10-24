@@ -168,7 +168,7 @@ pub async fn fields() {
 /// # Panics
 /// Panics if a native observation differs from its recorded value.
 pub fn diffs() {
-    use maestro_web::components::diff::{DiffProps, diff};
+    use maestro_web::components::changes::{DiffProps, diff};
     let mut surface = Surface::new();
     let cases = super::diff_cases();
     assert_eq!(cases.len(), 48);

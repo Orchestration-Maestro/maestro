@@ -132,7 +132,7 @@ impl<'a> Shape<'a> {
             .map(|entry| {
                 let instant = entry["timestamp"]
                     .as_str()
-                    .map(crate::messages::timestamp_millis);
+                    .map(crate::message_records::timestamp_millis);
                 instant
                     .filter(|time| !time.is_nan())
                     .unwrap_or(f64::INFINITY)

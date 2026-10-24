@@ -1,6 +1,6 @@
 //! Retained frames written through the public terminal and runtime interfaces.
 
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use maestro_tui::{Component, KittyOptions, TUI, TerminalImage, delete_kitty_image, encode_kitty};
 use serde::Deserialize;
 

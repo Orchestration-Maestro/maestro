@@ -4,7 +4,7 @@
 use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of, poll_once};
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcEventListener};
-use maestro_process::child_process::process_exists;
+use maestro_process::children::process_exists;
 use serde_json::{Value, json};
 use std::{cell::RefCell, pin::pin, rc::Rc, task::Poll, time::Duration};
 

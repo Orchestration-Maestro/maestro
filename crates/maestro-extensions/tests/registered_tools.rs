@@ -538,7 +538,7 @@ fn render_raw_result(
     result: &maestro_agent::AgentToolResult,
     env: &display_context::Env,
     row: &maestro_tools::ToolRenderContext<'_, ToolRendererState>,
-) -> maestro_tui::tui::ComponentHandle {
+) -> maestro_tui::interface::ComponentHandle {
     binding
         .render_result
         .as_ref()

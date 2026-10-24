@@ -13,11 +13,13 @@ use crate::{
 use maestro_models::{Execution, Local, SharedHandle, Threaded};
 use maestro_models::{Model, ModelThinkingLevel as ThinkingLevel, ToolInfo, UserContent};
 use maestro_resources::SlashCommandInfo;
-use maestro_session::messages::{CustomMessage, MessageRenderOptions};
-use maestro_session::messages::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions};
+use maestro_session::message_records::{CustomMessage, MessageRenderOptions};
+use maestro_session::message_records::{
+    CustomMessageInput, SendMessageOptions, SendUserMessageOptions,
+};
 use maestro_theme::LiveTheme;
 use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
-use maestro_tui::{AutocompleteItem, tui::ComponentHandle};
+use maestro_tui::{AutocompleteItem, interface::ComponentHandle};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{
@@ -281,7 +283,7 @@ macro_rules! family {
                 channel: String,
                 events: EventBus<Self>,
             ) -> Self::Future<'static, ()> {
-                Box::pin(crate::event_bus::settle_tail::<Self>(tail, channel, events))
+                Box::pin(crate::events::settle_tail::<Self>(tail, channel, events))
             }
         }
     };

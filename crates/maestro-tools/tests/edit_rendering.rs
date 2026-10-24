@@ -15,7 +15,7 @@ use maestro_tools::{
     EditRenderState, EditToolDetails, EditToolInput, EditToolOptions, ToolDefinition,
     ToolRenderContext, ToolRenderResultOptions, create_edit_tool_definition,
 };
-use maestro_tui::{Text, tui::ComponentHandle};
+use maestro_tui::{Text, interface::ComponentHandle};
 use read_support::{Fixture, Scratch};
 use serde::Deserialize;
 use serde_json::{Value, json};

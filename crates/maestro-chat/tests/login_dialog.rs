@@ -92,7 +92,7 @@ fn browser_launcher_receives_literal_url_without_shell_expansion() {
 }
 use crate::recording_terminal;
 use maestro_chat::{LoginDialogComponent, LoginDialogOptions, LoginDialogPlatform};
-use maestro_tui::{Component, Focusable, tui::InputHandler};
+use maestro_tui::{Component, Focusable, interface::InputHandler};
 use std::{
     cell::Cell,
     rc::Rc,

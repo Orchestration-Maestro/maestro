@@ -3,15 +3,15 @@
 #![cfg(target_os = "linux")]
 
 use maestro_daemon::{
-    app::state::DaemonState,
+    app::model::DaemonState,
     persist::capture,
     settings::model::Config,
-    terminal::{runtime_registry::TerminalRuntimeRegistry, state::TerminalState},
+    terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_workspace::{
-    layout::{PaneId, SplitRequest},
-    persist::snapshot::{LayoutSnapshot, SessionSnapshot},
-    workspace::WorktreeSpaceMembership,
+    persist::records::{LayoutSnapshot, SessionSnapshot},
+    spaces::WorktreeSpaceMembership,
+    tiling::{PaneId, SplitRequest},
 };
 use std::{
     collections::HashMap,
@@ -25,7 +25,7 @@ fn state(names: &[&str]) -> DaemonState<fn() -> u128> {
         &Config::default(),
         (|| 0) as fn() -> u128,
         Arc::new(RwLock::new(
-            maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+            maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
         )),
     );
     for name in names {
@@ -194,10 +194,10 @@ fn capture_keeps_focus_navigation() {
     let second = split(&mut state);
     let layout = &mut state.topology.workspaces[0].tabs[0].layout;
     layout.focus_pane(root);
-    let panes = layout.panes(maestro_workspace::layout::Rect::new(0, 0, 106, 20));
-    let next = maestro_workspace::layout::find_in_direction(
+    let panes = layout.panes(maestro_workspace::tiling::Rect::new(0, 0, 106, 20));
+    let next = maestro_workspace::tiling::find_in_direction(
         panes.iter().find(|pane| pane.id == root).unwrap(),
-        maestro_workspace::layout::NavDirection::Right,
+        maestro_workspace::tiling::NavDirection::Right,
         &panes,
     )
     .unwrap();
@@ -215,9 +215,9 @@ fn capture_keeps_resize_ratio_changes() {
     state.topology.workspaces[0].tabs[0].layout.focus_pane(root);
     let before = snapshot(&state);
     state.topology.workspaces[0].tabs[0].layout.resize_focused(
-        maestro_workspace::layout::NavDirection::Right,
+        maestro_workspace::tiling::NavDirection::Right,
         0.05,
-        maestro_workspace::layout::Rect::new(0, 0, 106, 20),
+        maestro_workspace::tiling::Rect::new(0, 0, 106, 20),
     );
     let after = snapshot(&state);
     let LayoutSnapshot::Split { ratio: first, .. } = before.workspaces[0].tabs[0].layout else {
@@ -312,7 +312,7 @@ fn capture_keeps_workspace_identity_and_pane_cwds() {
 
 #[test]
 fn daemon_managed_agent_snapshot_omits_pending_and_persists_active_ownership() {
-    use maestro_daemon::terminal::state::{DetectedStateUpdate, ManagedAgentLaunch};
+    use maestro_daemon::terminal::model::{DetectedStateUpdate, ManagedAgentLaunch};
     use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
     let mut state = state(&["one"]);
     let root = state.topology.workspaces[0].tabs[0].root_pane;
@@ -358,8 +358,8 @@ fn daemon_managed_agent_snapshot_omits_pending_and_persists_active_ownership() {
 #[test]
 fn capture_keeps_hook_authority_agent_session() {
     use maestro_daemon::{
-        agent_resume::{AgentSessionRef, AgentSessionRefKind, PersistedAgentSession},
-        terminal::state::HookReport,
+        resume::{AgentSessionRef, AgentSessionRefKind, PersistedAgentSession},
+        terminal::model::HookReport,
     };
     let mut state = state(&["one"]);
     let root = state.topology.workspaces[0].tabs[0].root_pane;
@@ -401,9 +401,7 @@ fn capture_keeps_hook_authority_agent_session() {
 
 #[test]
 fn capture_retains_restored_agent_session() {
-    use maestro_daemon::agent_resume::{
-        AgentSessionRef, AgentSessionRefKind, PersistedAgentSession,
-    };
+    use maestro_daemon::resume::{AgentSessionRef, AgentSessionRefKind, PersistedAgentSession};
     let mut state = state(&["one"]);
     let root = state.topology.workspaces[0].tabs[0].root_pane;
     let id = state.topology.workspaces[0]
@@ -437,7 +435,7 @@ mod launch;
 #[test]
 #[cfg(unix)]
 fn setup_entry() {
-    if maestro_process::pty::setup_entry().is_some() {
+    if maestro_process::terminal::setup_entry().is_some() {
         std::process::exit(1);
     }
 }
@@ -480,9 +478,9 @@ fn with_history(name: &str, count: usize) {
 async fn check_history(args: &[String], count: usize) {
     use maestro_daemon::{
         events::AppEvent,
-        pane::{
-            launch_env::PaneLaunchEnv,
-            runtime::{AgentDetection, PaneRuntime},
+        panes::{
+            launch::PaneLaunchEnv,
+            lifecycle::{AgentDetection, PaneRuntime},
         },
         persist::capture_history,
     };
@@ -534,7 +532,7 @@ async fn check_history(args: &[String], count: usize) {
 #[cfg(unix)]
 fn assert_history(
     encoded: &str,
-    history: &maestro_workspace::persist::snapshot::SessionHistorySnapshot,
+    history: &maestro_workspace::persist::records::SessionHistorySnapshot,
     panes: &[PaneId],
     markers: &[&str],
 ) {

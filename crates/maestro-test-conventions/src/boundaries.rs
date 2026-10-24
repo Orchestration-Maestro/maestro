@@ -69,7 +69,7 @@ const SESSION_SETUP: &str = "tests/footer_support/session.rs";
 const FOOTER_SUPPORT: &str = "tests/footer_support";
 
 /// Source tree holding the interactive mode and its own test modules.
-const INTERACTIVE_MODE: &str = "src/interactive_mode";
+const INTERACTIVE_MODE: &str = "src/interaction";
 
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.

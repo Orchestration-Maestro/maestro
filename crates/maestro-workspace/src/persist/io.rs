@@ -1,5 +1,5 @@
 //! Supplied-path snapshot storage and load diagnostics.
-use super::snapshot::{SessionHistorySnapshot, SessionSnapshot};
+use super::records::{SessionHistorySnapshot, SessionSnapshot};
 use maestro_lock::{Replace, replace};
 use std::{fs, io, path::Path};
 
@@ -42,7 +42,7 @@ pub fn clear_path(path: &Path) -> io::Result<()> {
         result => result,
     }
 }
-use super::snapshot::{
+use super::records::{
     SNAPSHOT_VERSION, parse_history_snapshot, parse_snapshot, snapshot_file_version,
 };
 use tracing::warn;

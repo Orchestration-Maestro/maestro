@@ -9,10 +9,10 @@ use maestro_models::{
     AssistantMessage, Cancellation, DiagnosticErrorInfo, StopReason, is_context_overflow,
 };
 use maestro_session::CompactionResult;
-use maestro_session::compaction::{
+use maestro_session::session_manager::{ReadonlySessionManager, get_latest_compaction_entry};
+use maestro_session::summarization::{
     CompactionSettings, calculate_context_tokens, estimate_context_tokens, should_compact,
 };
-use maestro_session::session_manager::{ReadonlySessionManager, get_latest_compaction_entry};
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -245,7 +245,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Whether `timestamp` is at or before the latest compaction boundary.
     fn started_before_boundary(timestamp: f64, boundary: Option<&str>) -> bool {
         boundary
-            .and_then(maestro_session::messages::parse_timestamp_millis)
+            .and_then(maestro_session::message_records::parse_timestamp_millis)
             .and_then(num_traits::cast::cast::<i64, f64>)
             .is_some_and(|boundary| timestamp <= boundary)
     }

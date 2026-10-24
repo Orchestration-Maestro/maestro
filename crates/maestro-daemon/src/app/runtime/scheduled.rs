@@ -2,9 +2,9 @@
 
 use super::super::{
     App,
-    state::{ToastKind, ToastNotification},
+    model::{ToastKind, ToastNotification},
 };
-use crate::paths::DaemonPaths;
+use crate::locations::DaemonPaths;
 use std::time::{Duration, Instant};
 
 impl<C: FnMut() -> u128> App<C> {

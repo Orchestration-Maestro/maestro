@@ -1,6 +1,6 @@
 //! Native corpus replay; only the operation runs under restricted filesystem access.
 use super::{Case, cases, child};
-use maestro_app::configuration::migrations::{MigrationStyle, run_migrations};
+use maestro_app::configuration::conversion::{MigrationStyle, run_migrations};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -362,7 +362,7 @@ pub fn run_order(name: &str) {
             let input: ConverterInput = serde_json::from_value(case.input).unwrap();
             let expected: ConverterExpected = serde_json::from_value(case.expected).unwrap();
             let (config, migrated) =
-                maestro_app::presentation_data::keybindings::migrate_keybindings_config(&input.raw);
+                maestro_app::presentation_data::bindings::migrate_keybindings_config(&input.raw);
             assert_eq!(config, expected.config);
             assert_eq!(config.keys().cloned().collect::<Vec<_>>(), expected.order);
             assert_eq!(migrated, expected.migrated);

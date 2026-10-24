@@ -14,7 +14,7 @@ pub(in crate::tools) enum Caption {
     /// Localized artifact label followed by an optional captured filename.
     Artifact(
         &'static str,
-        Option<crate::tools::artifacts::artifact_pill::Pill>,
+        Option<crate::tools::documents::artifact_pill::Pill>,
     ),
     /// Translated key followed by a literal suffix.
     Localized(&'static str, String),
@@ -141,9 +141,9 @@ struct ArtifactCaption {
     /// Already localized caption text.
     text: String,
     /// Optional owned filename/panel recipe.
-    pill: Option<crate::tools::artifacts::artifact_pill::Pill>,
+    pill: Option<crate::tools::documents::artifact_pill::Pill>,
     /// Existing containing disclosure activation.
-    actions: Rc<crate::tools::renderer_registry::header::InlineActions>,
+    actions: Rc<crate::tools::renderer_registry::heading::InlineActions>,
 }
 /// Independent native roots within a rich caption.
 #[derive(Default)]
@@ -158,7 +158,7 @@ impl Caption {
     pub(super) fn header(
         &self,
         i18n: &I18n,
-        actions: Rc<crate::tools::renderer_registry::header::InlineActions>,
+        actions: Rc<crate::tools::renderer_registry::heading::InlineActions>,
     ) -> Result<ToolHeaderText, ToolUiError> {
         if let Self::Artifact(_, pill) = self {
             let mut pill = pill.clone();
@@ -191,7 +191,7 @@ impl ArtifactCaption {
                 .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)));
             label.render(ui, (&self.text, TextKind::InlineCaption), view)?;
             label.set_action(Some(
-                crate::tools::renderer_registry::header::InlineActions::action(&self.actions),
+                crate::tools::renderer_registry::heading::InlineActions::action(&self.actions),
             ));
             if let Some(pill) = &self.pill {
                 pill.render(ui, view, &retained.pill).collect(overlays)?;

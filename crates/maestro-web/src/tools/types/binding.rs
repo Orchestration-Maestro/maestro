@@ -36,7 +36,7 @@ impl ToolRendererBinding {
     /// Retain a page-content renderer for these native operand types.
     #[must_use]
     pub fn from_dom<P: 'static, D: 'static>(
-        renderer: Rc<dyn ToolRenderer<P, D, Box<dyn crate::dom::DomContent>>>,
+        renderer: Rc<dyn ToolRenderer<P, D, Box<dyn crate::page::DomContent>>>,
     ) -> Self {
         let binding = Self {
             owner: ToolRendererState::default(),

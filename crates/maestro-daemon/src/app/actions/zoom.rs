@@ -1,6 +1,6 @@
 //! Zoom changes for the active topology tab.
 
-use crate::app::state::DaemonState;
+use crate::app::model::DaemonState;
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Toggles zoom for a split active tab, leaving single-pane tabs unchanged.
@@ -8,7 +8,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         let Some(tab) = self
             .active
             .and_then(|index| self.topology.workspaces.get_mut(index))
-            .and_then(maestro_workspace::workspace::Workspace::active_tab_mut)
+            .and_then(maestro_workspace::spaces::Workspace::active_tab_mut)
         else {
             return;
         };

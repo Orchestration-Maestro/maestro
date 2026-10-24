@@ -140,7 +140,7 @@ assert!(spacer.render(80).is_empty());
 
 ```rust
 use std::{cell::RefCell, rc::Rc};
-use maestro_tui::{Input, tui::InputHandler};
+use maestro_tui::{Input, interface::InputHandler};
 
 let input = Input::new();
 input.set_value("initial".into());
@@ -209,7 +209,7 @@ finite representable delay animate; positive delays below the native quantum use
 without a finite tick. The loader uses the writer's existing runtime and ordinary
 render requests. Dropping the last handle cancels its animation timer.
 
-`maestro_tui::tui::RepeatingTimer` owns repeated callbacks on `TuiRuntime::schedule`.
+`maestro_tui::interface::RepeatingTimer` owns repeated callbacks on `TuiRuntime::schedule`.
 Construction schedules the first callback after the supplied interval. Each tick
 rearms before invoking caller code; dropping the non-cloneable handle cancels the
 pending continuation, including during its callback. Loader and countdown policy
@@ -326,8 +326,8 @@ no-ellipsis clipping.
 
 ```rust
 use std::rc::Rc;
-use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme, tui::InputHandler};
-use maestro_tui::components::settings_list::SettingsListOptions;
+use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme, interface::InputHandler};
+use maestro_tui::components::preferences::SettingsListOptions;
 
 let settings = SettingsList::new(
     vec![SettingItem {

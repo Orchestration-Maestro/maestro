@@ -17,7 +17,7 @@ pub fn child() -> TestResult<bool> {
         assert_eq!(find_env_keys(&provider), names);
         assert_eq!(get_env_api_key(&provider), value);
         assert_eq!(
-            maestro_models::records::stream::get_env_api_key(&provider),
+            maestro_models::records::invocation::get_env_api_key(&provider),
             value
         );
     }

@@ -4,7 +4,7 @@ use crate::artifact_support;
 use crate::attachment_support;
 use crate::session_header_support;
 use base64::Engine as _;
-use maestro_web::tools::artifacts::create_artifact_element;
+use maestro_web::tools::documents::create_artifact_element;
 use std::rc::Rc;
 
 #[test]
@@ -21,7 +21,7 @@ fn pdf_factory_installs_only_the_pdf_specialization() {
 
 #[test]
 fn pdf_artifact_fields_start_empty_and_retain_owned_edits() {
-    use maestro_web::{ArtifactElement, tools::artifacts::pdf_artifact::PdfArtifact};
+    use maestro_web::{ArtifactElement, tools::documents::pdf_artifact::PdfArtifact};
     let host = Rc::new(session_header_support::Host::default());
     let mut view = PdfArtifact::new(host.clone());
     assert_eq!((view.filename(), view.content()), ("", ""));
@@ -190,7 +190,7 @@ fn pdf_download_preserves_name_mime_and_save_failures() {
     host.fail_download.set(true);
     assert!(matches!(
         frame.click(view.as_mut()),
-        Err(maestro_web::tools::artifacts::ArtifactUiError::Host(_))
+        Err(maestro_web::tools::documents::ArtifactUiError::Host(_))
     ));
     host.fail_download.set(false);
     frame.click(view.as_mut()).unwrap();
@@ -382,7 +382,7 @@ fn pdf_reading_publication_failures_preserve_owned_surface() {
 #[test]
 fn pdf_local_application_tool_updates_the_real_pdf_view() {
     use artifact_support::presentation::{Presentation, ready};
-    use maestro_app::browser::tools::artifacts::LocalArtifactsPanel;
+    use maestro_app::browser::tools::documents::LocalArtifactsPanel;
     use serde_json::json;
     use std::cell::{Cell, RefCell};
     let host = Rc::new(session_header_support::Host::default());

@@ -3,11 +3,11 @@ use super::{Listing, prepare};
 use crate::browser::attachment_content;
 use crate::tools::types::ToolUiError;
 use crate::{
-    components::code_block::{CodeBlock, CodeBlockView},
+    components::source::{CodeBlock, CodeBlockView},
     tools::{
         renderer_registry::{
             ToolHeaderState, ToolHeaderText,
-            header::browser::{NativeText, TextKind},
+            heading::browser::{NativeText, TextKind},
             render_header,
         },
         types::ToolRenderView,

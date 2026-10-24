@@ -2,8 +2,8 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::sandbox_loading_support;
 use maestro_app::SharedHandle;
-use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
-use maestro_web::browser::sandbox_value::BrowserSandboxValue;
+use maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider;
+use maestro_web::browser::values::BrowserSandboxValue;
 use sandbox_loading_support::*;
 
 /// Native values retain their stringify semantics at the public preparation boundary.

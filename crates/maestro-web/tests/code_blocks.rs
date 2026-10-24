@@ -7,7 +7,7 @@ mod tests {
         CodeRow, Surface, check, code_rows, first_slot_center, publish, settle,
     };
     use maestro_theme::{SyntaxHighlighter, SyntaxSpan};
-    use maestro_web::components::code_block::CodeBlock;
+    use maestro_web::components::source::CodeBlock;
     use std::{cell::RefCell, rc::Rc};
     use wasm_bindgen::prelude::*;
 

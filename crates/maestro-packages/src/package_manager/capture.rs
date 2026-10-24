@@ -1,6 +1,6 @@
 //! Native stdout capture through child exit, pipe EOFs and an optional deadline.
 use super::{CommandCaptureOptions, NativePackageOperations};
-use maestro_process::child_process::{Termination, WaitOptions, wait_for_child_process};
+use maestro_process::children::{Termination, WaitOptions, wait_for_child_process};
 use std::{cell::Cell, io, process::ExitStatus};
 
 impl NativePackageOperations {

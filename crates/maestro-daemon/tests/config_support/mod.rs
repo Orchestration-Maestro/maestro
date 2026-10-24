@@ -17,7 +17,7 @@ pub fn put(storage: &dyn SettingsStorage, text: &str) {
 /// Constructs a daemon and independently editable global settings storage.
 pub fn fixture() -> (TestApp, SettingsManager, Arc<InMemorySettingsStorage>) {
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = super::launch::launch_inputs(&[], manifests);
     let app = App::new(

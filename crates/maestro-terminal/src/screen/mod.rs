@@ -18,8 +18,8 @@ use crate::{
     PageList,
     ansi::ProtectedMode,
     charsets::{Charset, Slots},
-    hyperlink::Hyperlink,
     kitty::KeyFlagStack,
+    links::Hyperlink,
     page::cell::SemanticContent as CellContent,
     page_list::TrackedPin,
     style::{self, Style},
@@ -31,7 +31,7 @@ pub use crate::page_list::Scroll;
 /// Page storage and protocol state for one terminal screen.
 pub struct Screen {
     /// Screen-local image payloads, placements and transmission state.
-    pub kitty_images: crate::kitty::graphics::storage::ImageStorage,
+    pub kitty_images: crate::kitty::graphics::images::ImageStorage,
     /// Retained content and tracked positions.
     pub pages: PageList,
     /// Disable history even when the active-area storage budget has spare room.
@@ -75,7 +75,7 @@ pub struct Cursor {
     /// Active style identity in the cursor's page.
     pub style_id: style::Id,
     /// Active hyperlink identity in the cursor's page.
-    pub hyperlink_id: crate::hyperlink::Id,
+    pub hyperlink_id: crate::links::Id,
     /// Wrapping counter for hyperlinks without explicit identities.
     pub hyperlink_implicit_id: u32,
     /// Owned identity retained across page replacement and cursor copying.
@@ -206,7 +206,7 @@ impl Screen {
     pub fn init(opts: Options) -> Self {
         let mut pages = PageList::init(opts.cols, opts.rows, Some(opts.max_scrollback));
         let page_pin = pages.track_origin();
-        let mut kitty_images = crate::kitty::graphics::storage::ImageStorage::default();
+        let mut kitty_images = crate::kitty::graphics::images::ImageStorage::default();
         kitty_images.total_limit = 0;
         Self {
             kitty_images,

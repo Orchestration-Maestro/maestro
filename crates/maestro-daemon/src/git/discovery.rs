@@ -2,11 +2,11 @@
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
 use std::path::Path;
 
-pub use maestro_workspace::workspace::git::discovery::{
+pub use maestro_workspace::spaces::repository::discovery::{
     GitSpaceMetadata, GitWorktreeInfo, automatic_workspace_label, derive_label_from_cwd,
     fallback_label_from_cwd, git_repo_root, git_space_metadata, git_worktree_info,
 };
-pub use maestro_workspace::workspace::git::native::{
+pub use maestro_workspace::spaces::repository::native::{
     GitPaths, discover_git_paths, git_ref_storage_is_reftable, read_text, trim,
 };
 

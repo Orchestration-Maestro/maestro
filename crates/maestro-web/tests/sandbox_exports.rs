@@ -1,12 +1,12 @@
 //! WebAssembly signature witnesses, not executed browser observations.
 #![cfg(target_arch = "wasm32")]
-use maestro_app::browser::components::sandbox::sandbox_runtime_provider::{
+use maestro_app::browser::components::sandbox::providers::{
     SandboxRespond, SandboxRuntimeProvider,
 };
 use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
 use maestro_app::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
-use maestro_web::browser::sandbox_value::BrowserSandboxValue;
-use maestro_web::components::sandbox::runtime_message_bridge::{
+use maestro_web::browser::values::BrowserSandboxValue;
+use maestro_web::components::sandbox::routing::{
     MessageType, RuntimeMessageBridgeOptions, RuntimeMessageContext,
 };
 use maestro_web::components::sandbox::runtime_message_router::{
@@ -120,7 +120,7 @@ fn concrete_providers_keep_native_browser_handles() {
 #[test]
 fn artifact_storage_provider_serves_local_panels() {
     use maestro_app::browser::components::sandbox::artifacts_runtime_provider::AgentLike;
-    use maestro_app::browser::tools::artifacts::{
+    use maestro_app::browser::tools::documents::{
         ArtifactsPanelState, LocalArtifactPresentation, LocalArtifactsPanel,
     };
     use maestro_web::ArtifactsRuntimeProvider;

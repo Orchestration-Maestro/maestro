@@ -133,8 +133,8 @@ fn launch_native(
     common: maestro_models::StreamOptions,
 ) -> chat::TestResult<maestro_models::AssistantMessageEventStream> {
     use maestro_models::providers::{
-        chat::openai_completions::*, messages::anthropic::*,
-        response_sessions::openai_codex_responses::*, responses::openai_responses::*,
+        chat::endpoint::*, messages::endpoint::*, response_sessions::codex::*,
+        responses_api::openai::*,
     };
     let model = chat::model(
         &serde_json::json!({"api": api, "provider":"fixture", "baseUrl":"https://fixture.invalid"}),
@@ -185,8 +185,8 @@ fn launch_other(
     common: maestro_models::StreamOptions,
 ) -> maestro_models::AssistantMessageEventStream {
     use maestro_models::providers::{
-        cloud::amazon_bedrock::*, content::google::*, reasoning::mistral::*,
-        responses::azure_openai_responses::*,
+        cloud::amazon_bedrock::*, content::generative::*, reasoning::endpoint::*,
+        responses_api::azure_transport::*,
     };
     match model.api.as_str() {
         "mistral-conversations" => stream_mistral(
@@ -398,8 +398,8 @@ fn identity_stream(
 ) -> chat::TestResult<maestro_models::AssistantMessageEventStream> {
     use maestro_models::providers::{
         cloud::amazon_bedrock::*,
-        content::{google::*, google_vertex::*},
-        responses::azure_openai_responses::*,
+        content::{generative::*, managed::*},
+        responses_api::azure_transport::*,
     };
     let context = chat::context(
         &serde_json::json!({"messages": [{"role":"user", "content":"question", "timestamp":1}]}),

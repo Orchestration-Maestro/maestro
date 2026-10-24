@@ -5,7 +5,7 @@ use crate::default_configuration as fixture;
 use fixture::{Group, child};
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, paths};
 use maestro_resources::SourceScope;
-use maestro_resources::prompt_templates::{LoadPromptTemplatesOptions, load_prompt_templates};
+use maestro_resources::prompts::{LoadPromptTemplatesOptions, load_prompt_templates};
 use serde::Deserialize;
 
 /// Markdown discovery operands.
@@ -89,9 +89,7 @@ struct LiteralExpected {
 }
 /// Exercise direct substitution and loaded-command expansion together.
 fn literals() {
-    use maestro_resources::prompt_templates::{
-        expand_prompt_template, parse_command_args, substitute_args,
-    };
+    use maestro_resources::prompts::{expand_prompt_template, parse_command_args, substitute_args};
     for case in
         fixture::cases::<LiteralInput, LiteralExpected>(Group::DiscoveredPromptArgumentsStayLiteral)
     {

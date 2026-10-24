@@ -3,8 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::run;
 use maestro_app::browser::components::sandbox::{
-    console_runtime_provider::ConsoleRuntimeProvider,
-    sandbox_runtime_provider::SandboxRuntimeProvider,
+    console_runtime_provider::ConsoleRuntimeProvider, providers::SandboxRuntimeProvider,
 };
 
 #[test]
@@ -300,7 +299,7 @@ fn provider_response_failure_keeps_prior_collection() {
 }
 
 use maestro_app::browser::components::sandbox::attachments_runtime_provider::AttachmentsRuntimeProvider;
-use maestro_app::browser::utils::attachment_utils::{Attachment, AttachmentType};
+use maestro_app::browser::utils::attachments::{Attachment, AttachmentType};
 use std::sync::RwLock;
 
 /// Source attachments with duplicate identifiers and distinct selected fields.
@@ -493,9 +492,9 @@ use maestro_app::browser::components::sandbox::artifacts_runtime_provider::{
 };
 use maestro_app::browser::components::sandbox::console_runtime_provider::ConsoleLog;
 use maestro_app::browser::components::sandbox::file_download_runtime_provider::DownloadableFile;
-use maestro_app::browser::components::sandbox::sandbox_runtime_provider::RuntimeProviderValue;
+use maestro_app::browser::components::sandbox::providers::RuntimeProviderValue;
 use maestro_app::browser::components::sandboxed_iframe::{SandboxError, SandboxFile, SandboxValue};
-use maestro_app::browser::tools::artifacts::{
+use maestro_app::browser::tools::documents::{
     ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanel, ArtifactsPanelState,
 };
 use maestro_models::DiagnosticErrorInfo;

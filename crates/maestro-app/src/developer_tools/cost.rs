@@ -240,7 +240,7 @@ fn cost_of(value: &Value, field: &str) -> f64 {
 fn instant(value: &Value) -> Option<i64> {
     match value {
         Value::Number(number) => number.as_f64().and_then(|millis| millis.to_i64()),
-        Value::String(text) => maestro_session::messages::parse_timestamp_millis(text),
+        Value::String(text) => maestro_session::message_records::parse_timestamp_millis(text),
         _ => None,
     }
 }

@@ -142,7 +142,7 @@ create another manager or read another configuration file. See the
 
 ## Daemon paths
 
-`maestro_daemon::paths::DaemonPaths` retains the supplied agent directory and a
+`maestro_daemon::locations::DaemonPaths` retains the supplied agent directory and a
 validated optional daemon name. Construction creates no files and does not
 normalize the root. The reserved `default` name uses the agent root; other names
 use `<agent dir>/daemons/<name>/`.

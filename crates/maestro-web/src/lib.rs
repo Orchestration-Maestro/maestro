@@ -2,12 +2,12 @@
 
 pub mod browser;
 pub mod components;
-pub mod contributions;
 pub mod dialogs;
 pub mod docx_preview;
-pub mod dom;
+pub mod page;
+pub mod runtime_contributions;
 pub use components::attachment_tile::AttachmentTile;
-pub use components::input::Input;
+pub use components::fields::Input;
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
 };
@@ -23,20 +23,20 @@ pub mod storage;
 #[cfg(target_arch = "wasm32")]
 pub use storage::backends::indexeddb_storage_backend::IndexedDBStorageBackend;
 pub mod utils;
-pub use utils::format::{format_cost, format_model_cost, format_token_count, format_usage};
+pub use utils::formatting::{format_cost, format_model_cost, format_token_count, format_usage};
 #[cfg(target_arch = "wasm32")]
-pub use utils::i18n::BrowserLanguageHost;
-pub use utils::i18n::{
+pub use utils::localization::BrowserLanguageHost;
+pub use utils::localization::{
     I18n, I18nDiagnostic, I18nError, I18nMessages, LanguageCode, LanguageHost, TranslationFunction,
     TranslationValue, Translations,
 };
 
-pub use maestro_app::browser::components::messages::{
+pub use maestro_app::browser::components::records::{
     ArtifactMessage, UserMessageWithAttachments, convert_attachments, default_convert_to_llm,
     is_artifact_message, is_user_message_with_attachments,
 };
-pub use maestro_app::browser::utils::attachment_utils::{Attachment, load_attachment};
-pub use maestro_app::browser::utils::proxy_utils::{
+pub use maestro_app::browser::utils::attachments::{Attachment, load_attachment};
+pub use maestro_app::browser::utils::proxy::{
     apply_proxy_if_needed, create_stream_fn, is_cors_error, should_use_proxy_for_provider,
 };
 
@@ -47,11 +47,11 @@ pub use maestro_app::{
     Store, StoreConfig, get_app_storage, set_app_storage,
 };
 
-pub use maestro_app::browser::storage::{
+pub use maestro_app::browser::persistence::{
     IndexDirection, QuotaInfo, StorageOperation, TransactionMode,
 };
 
-pub use components::sandbox::runtime_message_bridge::RuntimeMessageBridge;
+pub use components::sandbox::routing::RuntimeMessageBridge;
 
 #[cfg(target_arch = "wasm32")]
 pub use components::sandbox::runtime_message_router::RUNTIME_MESSAGE_ROUTER;
@@ -63,12 +63,12 @@ pub use maestro_app::browser::components::sandbox::{
     file_download_runtime_provider::{DownloadableFile, FileDownloadRuntimeProvider},
 };
 pub mod tools;
-pub use tools::artifacts::artifact_element::ArtifactElement;
+pub use tools::documents::artifact_element::ArtifactElement;
 
 #[cfg(target_arch = "wasm32")]
 pub use components::sandboxed_iframe::{BrowserSandboxHost, SandboxIframe};
 /// Retained tabbed artifact views using the application-selected filename.
-pub use tools::artifacts::ArtifactsPanel;
+pub use tools::documents::ArtifactsPanel;
 
 pub use maestro_app::{
     SandboxFile, SandboxResult, SandboxRuntimeProvider, SandboxUrlProvider,
@@ -77,10 +77,10 @@ pub use maestro_app::{
 #[cfg(target_arch = "wasm32")]
 pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;
 
-pub use tools::artifacts::{image_artifact::ImageArtifact, text_artifact::TextArtifact};
+pub use tools::documents::{image_artifact::ImageArtifact, text_artifact::TextArtifact};
 
 /// Editable document artifact views.
-pub use tools::artifacts::{markdown_artifact::MarkdownArtifact, svg_artifact::SvgArtifact};
+pub use tools::documents::{markdown_artifact::MarkdownArtifact, svg_artifact::SvgArtifact};
 pub use tools::renderer_registry::{render_collapsible_header, render_header};
 pub use tools::renderers::default_renderer::DefaultRenderer;
 pub use tools::types::{ToolRenderResult, ToolRenderer};
@@ -93,8 +93,6 @@ pub use tools::renderers::bash_renderer::BashRenderer;
 pub use tools::renderers::calculate_renderer::CalculateRenderer;
 pub use tools::renderers::get_current_time_renderer::GetCurrentTimeRenderer;
 
-pub use tools::artifacts::{
-    artifact_pill::artifact_pill, artifacts_tool_renderer::ArtifactsToolRenderer,
-};
+pub use tools::documents::{artifact_pill::artifact_pill, rendering::ArtifactsToolRenderer};
 
 mod ui_error;

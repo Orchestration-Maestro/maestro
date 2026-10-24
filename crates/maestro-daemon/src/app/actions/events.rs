@@ -2,12 +2,12 @@
 
 use super::PaneStateUpdate;
 use crate::{
-    app::state::DaemonState,
+    app::model::DaemonState,
     events::AppEvent,
-    terminal::state::{DetectedStateUpdate, HookReport, TerminalState},
+    terminal::model::{DetectedStateUpdate, HookReport, TerminalState},
 };
 use maestro_detection::agents::AgentVisibility;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Applies background state observations; host bell and clipboard effects stay with the loop.
@@ -56,7 +56,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
                 agent_label,
                 seq,
                 ..
-            } if !crate::agent_resume::is_official_agent_source(&source, &agent_label) => self
+            } if !crate::resume::is_official_agent_source(&source, &agent_label) => self
                 .update_terminal_state(pane_id, |terminal| {
                     terminal.release_agent_with_mutation(&source, &agent_label, seq)
                 }),
@@ -112,10 +112,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     /// Reserves native state ownership while still accepting its session identity.
     fn update_hook_state(&mut self, pane: PaneId, report: HookReport) -> Option<PaneStateUpdate> {
         self.update_terminal_state(pane, |terminal| {
-            if crate::agent_resume::is_reserved_native_state_source(
-                &report.source,
-                &report.agent_label,
-            ) {
+            if crate::resume::is_reserved_native_state_source(&report.source, &report.agent_label) {
                 terminal.set_agent_session_ref(
                     report.source,
                     report.agent_label,

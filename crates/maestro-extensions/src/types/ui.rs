@@ -1,13 +1,13 @@
 //! Terminal UI capabilities offered to extension callbacks.
 mod callbacks;
-use crate::{EventError, footer_data_provider::ReadonlyFooterDataProvider};
+use crate::{EventError, footer::ReadonlyFooterDataProvider};
 pub use callbacks::UIHostCall;
 use maestro_models::{Cancellation, Execution, Local};
 use maestro_theme::{LiveTheme, Theme, ThemeInfo};
 use maestro_tui::{
     AutocompleteProvider, EditorComponent, EditorTheme, KeybindingsManager, OverlayHandle,
     OverlayOptions, TUI,
-    tui::{ComponentHandle, InputListenerResult},
+    interface::{ComponentHandle, InputListenerResult},
 };
 use std::{
     cell::{Cell, RefCell},

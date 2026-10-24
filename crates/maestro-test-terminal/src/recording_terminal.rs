@@ -8,7 +8,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use maestro_tui::Terminal;
-use maestro_tui::tui::TerminalHandle;
+use maestro_tui::interface::TerminalHandle;
 
 /// Callback that receives the bytes of each recorded effect.
 type Tap = Box<dyn FnMut(&str)>;

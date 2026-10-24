@@ -44,7 +44,7 @@ fn retained_ui_owned_host_example() -> Result<(), EventError> {
 #       }
 #   }
 #   let no_commands = maestro_models::SharedHandle::new(NoCommands);
-#   let session = maestro_extensions::runner::ExtensionRunnerSession {
+#   let session = maestro_extensions::execution::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
 #       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
@@ -111,7 +111,7 @@ Every UI callback is bound to the extension facade that authored it:
 use maestro_extensions::types::{TerminalInputHandler, UIHostCall};
 use maestro_extensions::ExtensionAPI;
 use maestro_models::Local;
-use maestro_tui::tui::InputListenerResult;
+use maestro_tui::interface::InputListenerResult;
 
 fn bind(api: &ExtensionAPI<Local>) {
     let handler: TerminalInputHandler = api.ui_callback(|data: String, events| {

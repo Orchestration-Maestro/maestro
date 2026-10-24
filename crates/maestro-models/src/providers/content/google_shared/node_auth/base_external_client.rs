@@ -345,5 +345,5 @@ fn identity_fetch(identity: reqwest::Identity) -> Result<Fetch, CredentialsError
     let client = identity_client(identity)
         .build()
         .map_err(|_| certificate_error())?;
-    Ok(crate::providers::http::supplied_fetch(client))
+    Ok(crate::providers::transport::supplied_fetch(client))
 }

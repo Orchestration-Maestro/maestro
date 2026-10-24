@@ -1,6 +1,6 @@
 //! Sidebar rows, identity, bounds and occurrence styles.
 
-use super::super::sidebar::{AgentSidebarToken, SidebarConfig, SpaceSidebarToken};
+use super::super::navigation::{AgentSidebarToken, SidebarConfig, SpaceSidebarToken};
 use maestro_detection::agents::{Agent, agent_label};
 use serde_json::{Value, json};
 
@@ -66,7 +66,7 @@ macro_rules! assert_projection {
             let plain = $plain;
             assert!(std::ptr::eq(plain.parts().0, &plain));
             assert_eq!(plain.parts().1, Default::default());
-            let style = super::super::sidebar::SidebarTokenStyle {
+            let style = super::super::navigation::SidebarTokenStyle {
                 bold: Some(false),
                 dim: Some(true),
                 ..Default::default()

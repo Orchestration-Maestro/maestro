@@ -121,8 +121,8 @@ fn listen(
     let (shutdown, peers) = tokio::sync::watch::channel(());
     tokio::spawn(async move {
         loop {
-            let crate::providers::http::Raced::Done(accepted) =
-                crate::providers::http::race(accept(&listener), None, Some(&stop)).await
+            let crate::providers::transport::Raced::Done(accepted) =
+                crate::providers::transport::race(accept(&listener), None, Some(&stop)).await
             else {
                 break;
             };

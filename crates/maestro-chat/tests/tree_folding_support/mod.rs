@@ -10,7 +10,7 @@ use crate::registry;
 use crate::tree;
 use bindings::Binding;
 use filter_mode::mode;
-use maestro_app::{compact_json, presentation_data::keybindings::KEYBINDINGS};
+use maestro_app::{compact_json, presentation_data::bindings::KEYBINDINGS};
 use maestro_chat::TreeList;
 use maestro_tui::{KeybindingKeys, KeybindingsManager, get_keybindings, set_keybindings};
 use recorded_registry::{Operation, apply_operation};

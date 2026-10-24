@@ -1,7 +1,7 @@
 //! Successful path resolution binds polling and Git query paths before the caller drives their task set.
 #![cfg(unix)]
 #![cfg(test)]
-use maestro_app::presentation_data::footer_data_provider::{
+use maestro_app::presentation_data::status_line::{
     FooterFileStats, FooterOperations, NativeFooterOperations,
 };
 use std::{path::PathBuf, rc::Rc, time::Duration};

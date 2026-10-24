@@ -1,11 +1,11 @@
 use maestro_terminal::{
     input::{
         key_mods::Mods,
-        mouse::{MouseAction, MouseButton, MouseEvent, Pos},
         mouse_encode::{
             MouseEncoder,
-            size::{CellSize, Padding, ScreenSize, Size},
+            dimensions::{CellSize, Padding, ScreenSize, Size},
         },
+        pointer::{MouseAction, MouseButton, MouseEvent, Pos},
     },
     mouse::{Event, Format},
 };

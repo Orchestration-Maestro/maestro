@@ -1,7 +1,7 @@
 //! Recorded browser messages through public conversion boundaries.
 #![cfg(test)]
 use crate::support;
-use maestro_app::browser::components::messages::{
+use maestro_app::browser::components::records::{
     ArtifactAction, ArtifactMessage, CustomAgentMessages, UserMessageWithAttachments,
     convert_attachments, default_convert_to_llm, is_artifact_message,
     is_user_message_with_attachments,

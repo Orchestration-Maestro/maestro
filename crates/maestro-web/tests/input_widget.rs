@@ -10,7 +10,7 @@ use maestro_web::{
     browser::attachment_content::{
         AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
     },
-    components::input::{InputProps, InputSize, InputType},
+    components::fields::{InputProps, InputSize, InputType},
 };
 use std::{cell::Cell, rc::Rc};
 
@@ -358,7 +358,7 @@ fn input_native_properties_keep_name_autocomplete_and_numeric_bounds() {
 
 #[test]
 fn input_events_preserve_callback_identity_and_optional_noops() {
-    use maestro_web::components::input::{EventCallback, KeyCallback};
+    use maestro_web::components::fields::{EventCallback, KeyCallback};
     let events: [EventCallback; 2] = [Rc::new(|_| {}), Rc::new(|_| {})];
     let keys: [KeyCallback; 2] = [Rc::new(|_| {}), Rc::new(|_| {})];
     let expected_events = events.clone();
@@ -707,7 +707,7 @@ fn input_stacks_in_horizontal_parent_without_changing_caller_spacing() {
 
 #[test]
 fn input_localization_failures_retain_the_original_cause() {
-    use maestro_web::{I18nError, TranslationValue, components::input::InputUiError};
+    use maestro_web::{I18nError, TranslationValue, components::fields::InputUiError};
     use std::error::Error as _;
     let publications = Rc::new(Cell::new(0));
     let observed = publications.clone();

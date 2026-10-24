@@ -50,7 +50,7 @@ transport returns a finite response without contacting an external service.
 ```rust,no_run
 use std::sync::Arc;
 use maestro_models::{Context, Fetch, HttpResponse, OpenAIResponsesOptions, StreamOptions, get_model};
-use maestro_models::providers::responses::openai_responses::stream_openai_responses;
+use maestro_models::providers::responses_api::openai::stream_openai_responses;
 
 async fn controlled() {
     let fetch: Fetch = Arc::new(|_| {
@@ -139,7 +139,7 @@ transport does not contact an external service.
 ```rust,no_run
 use std::sync::Arc;
 use maestro_models::{AzureOpenAIResponsesOptions, Context, Fetch, HttpResponse, Model, StreamOptions};
-use maestro_models::providers::responses::azure_openai_responses::stream_azure_openai_responses;
+use maestro_models::providers::responses_api::azure_transport::stream_azure_openai_responses;
 
 async fn controlled_cloud(model: Model, context: Context) {
     let fetch: Fetch = Arc::new(|_| {

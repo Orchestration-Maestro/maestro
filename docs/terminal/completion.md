@@ -7,7 +7,7 @@ Callers await the suggestion future; the provider does not schedule editor updat
 
 ```rust
 use maestro_cancellation::Cancellation;
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::{
     Command, CompletionError, CompletionOptions, CursorPosition,
     NativeAutocompleteOperations,
 };
@@ -94,7 +94,7 @@ Polling a native attachment search requires an entered Tokio runtime with I/O
 enabled; without it, process spawning or pipe registration can panic rather than
 return a caught search error. The other native host operations are synchronous.
 The runnable example in
-[`NativeAutocompleteOperations`](../../crates/maestro-tui/src/autocomplete/operations.rs)
+[`NativeAutocompleteOperations`](../../crates/maestro-tui/src/candidates/operations.rs)
 drives an attachment request with `Builder::new_current_thread().enable_io()` and
 `block_on`; callers supply the runtime, not a new runtime per request.
 

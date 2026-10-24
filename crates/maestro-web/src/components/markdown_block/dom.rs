@@ -5,8 +5,8 @@ use crate::{
         AttachmentHostError,
         browser::{append, element, host_error},
     },
-    components::code_block::{Prepared as Code, dom::Listing},
-    dom::{DomContent, DomRoot, DomView, Link, MountedContent, Property, Reflected},
+    components::source::{Prepared as Code, dom::Listing},
+    page::{DomContent, DomRoot, DomView, Link, MountedContent, Property, Reflected},
     tools::types::ToolUiError,
 };
 use std::{cell::RefCell, rc::Rc};
@@ -114,7 +114,7 @@ impl MarkdownBlock {
     pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
         let view = Rc::clone(view);
         let observed = ["content", "is-thinking", "unescaped-html"].map(String::from);
-        crate::dom::define_element(TAG, observed.into(), PROPERTIES, move |root, properties| {
+        crate::page::define_element(TAG, observed.into(), PROPERTIES, move |root, properties| {
             MarkdownElement {
                 root: Link::new(&root),
                 view: Rc::clone(&view),
@@ -159,7 +159,7 @@ impl custom_element::CustomElement for MarkdownElement {
         let _ = self.render();
     }
     fn attribute_changed_callback(&mut self, _: &str, _: JsValue, _: JsValue) {
-        if crate::dom::connected(&self.root).is_some() {
+        if crate::page::connected(&self.root).is_some() {
             let _ = self.render();
         }
     }
@@ -167,7 +167,7 @@ impl custom_element::CustomElement for MarkdownElement {
 impl MarkdownElement {
     /// Show the attributes' document inside the element.
     fn render(&mut self) -> Result<(), ToolUiError> {
-        let Some(root) = crate::dom::connected(&self.root) else {
+        let Some(root) = crate::page::connected(&self.root) else {
             return Ok(());
         };
         let mut block = MarkdownBlock::default();

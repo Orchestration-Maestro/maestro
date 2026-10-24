@@ -3,7 +3,7 @@ use super::types::{ToolRenderer, ToolRendererBinding, ToolResultMessageView};
 use maestro_app::{
     JsonObject,
     browser::tools::{
-        extract_document::{ExtractDocumentParams, ExtractDocumentResult},
+        extraction::{ExtractDocumentParams, ExtractDocumentResult},
         javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
     },
 };
@@ -17,7 +17,7 @@ thread_local! {
 fn default_renderers() -> indexmap::IndexMap<String, ToolRendererBinding> {
     let mut renderers = indexmap::IndexMap::new();
     let repl = Rc::new(super::javascript_repl::JAVASCRIPT_REPL_RENDERER);
-    let extract = Rc::new(super::extract_document::EXTRACT_DOCUMENT_RENDERER);
+    let extract = Rc::new(super::extraction::EXTRACT_DOCUMENT_RENDERER);
     renderers.insert(
         "javascript_repl".into(),
         ToolRendererBinding::from_typed::<JsonObject, Value>(repl.clone())
@@ -45,13 +45,13 @@ pub fn register_tool_renderer(tool_name: &str, renderer: ToolRendererBinding) {
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn unregister_tool_renderer<P: 'static, D: 'static>(
     tool_name: &str,
-    renderer: &Rc<dyn ToolRenderer<P, D, Box<dyn crate::dom::DomContent>>>,
+    renderer: &Rc<dyn ToolRenderer<P, D, Box<dyn crate::page::DomContent>>>,
 ) -> bool {
     let removed = TOOL_RENDERERS.with(|all| {
         let mut all = all.borrow_mut();
         let current = all
             .get(tool_name)
-            .and_then(ToolRendererBinding::slot::<P, D, Box<dyn crate::dom::DomContent>>);
+            .and_then(ToolRendererBinding::slot::<P, D, Box<dyn crate::page::DomContent>>);
         let owned = current.is_some_and(|current| Rc::ptr_eq(&current, renderer));
         owned.then(|| all.shift_remove(tool_name)).flatten()
     });
@@ -86,5 +86,5 @@ pub(crate) fn get_text_output<D>(result: Option<&ToolResultMessageView<'_, D>>) 
 }
 
 /// Shared tool header content.
-pub mod header;
-pub use header::{ToolHeaderText, render_collapsible_header, render_header};
+pub mod heading;
+pub use heading::{ToolHeaderText, render_collapsible_header, render_header};

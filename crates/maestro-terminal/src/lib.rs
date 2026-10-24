@@ -12,8 +12,8 @@ pub mod ansi;
 pub mod cursor;
 pub mod screen;
 pub use screen::{Cursor, CursorStyle, Screen};
-pub mod screen_set;
-pub use screen_set::ScreenSet;
+pub mod screens;
+pub use screens::ScreenSet;
 
 pub mod kitty;
 
@@ -33,7 +33,7 @@ mod hash_map;
 
 pub mod size;
 
-pub mod hyperlink;
+pub mod links;
 
 mod charsets;
 
@@ -76,10 +76,10 @@ pub mod stream_terminal;
 pub mod selection;
 
 /// Text output from terminal-owned pages.
-pub mod formatter;
+pub mod formatting;
 
 /// Retained incremental viewport rendering.
-pub mod render;
+pub mod painting;
 
 #[cfg(test)]
 mod tests;

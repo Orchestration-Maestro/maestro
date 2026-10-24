@@ -78,7 +78,7 @@ requirements live in [Typography and spacing](docs/identity.md#typography-and-sp
 
 The OAuth page currently resolves those font families, but keeps its established
 heading/paragraph/details metrics in
-[oauth_page.rs](crates/maestro-models/src/oauth/oauth_page.rs). This document
+[oauth_page.rs](crates/maestro-models/src/oauth/pages.rs). This document
 does not claim it already consumes the type or spacing scales.
 
 Terminal font selection remains the user's. Bold carries heading/selection

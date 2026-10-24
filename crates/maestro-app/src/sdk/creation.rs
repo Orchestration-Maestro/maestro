@@ -11,7 +11,7 @@ use crate::configuration::config::{
     get_agent_dir, get_docs_path,
     paths::{get_auth_path, get_bin_dir, get_models_path},
 };
-use crate::runtime::agent_session_services::{default_resource_loader, native_config_values};
+use crate::runtime::session_dependencies::{default_resource_loader, native_config_values};
 use crate::utils::lock::{read, write};
 use maestro_catalog::{
     DEFAULT_THINKING_LEVEL, FindInitialModelOptions, ModelRegistry, find_initial_model,
@@ -245,7 +245,12 @@ type ResolvedModel = (Option<Arc<RwLock<Model>>>, Option<String>);
 
 /// An agent with its runner slot and the model fallback message.
 type PreparedAgent = (
-    Rc<maestro_agent::Agent<maestro_session::messages::CustomAgentMessages, maestro_models::Local>>,
+    Rc<
+        maestro_agent::Agent<
+            maestro_session::message_records::CustomAgentMessages,
+            maestro_models::Local,
+        >,
+    >,
     ExtensionRunnerRef,
     Option<String>,
 );

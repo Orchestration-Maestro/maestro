@@ -1,11 +1,11 @@
 //! Session interchange records checked against recorded wire documents.
 #![cfg(test)]
-use maestro_entry::compaction::{CompactionPreparation, CompactionSettings};
 use maestro_entry::session_manager::{
     BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, LabelEntry,
     ModelChangeEntry, SessionContext, SessionContextModel, SessionHeader, SessionInfoEntry,
     SessionMessageEntry, ThinkingLevelChangeEntry,
 };
+use maestro_entry::summarization::{CompactionPreparation, CompactionSettings};
 use maestro_request::presence::Presence;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -254,7 +254,7 @@ fn native_contexts() -> [(&'static str, SessionContext<Value, Presence<Value>>);
 
 #[test]
 fn compaction_result_keeps_optional_details_and_member_order() {
-    use maestro_entry::compaction::CompactionResult;
+    use maestro_entry::summarization::CompactionResult;
     #[derive(Debug, serde::Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Detail {

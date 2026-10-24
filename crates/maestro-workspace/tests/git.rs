@@ -3,7 +3,9 @@
 
 #[test]
 fn labels_use_supplied_home_checkout_and_path_fallback() {
-    use maestro_workspace::workspace::git::{automatic_workspace_label, fallback_label_from_cwd};
+    use maestro_workspace::spaces::repository::{
+        automatic_workspace_label, fallback_label_from_cwd,
+    };
     use std::path::Path;
     let home = Path::new("/home/member");
     assert_eq!(fallback_label_from_cwd(home, Some(home)), "~");
@@ -37,7 +39,7 @@ fn labels_use_supplied_home_checkout_and_path_fallback() {
 #[test]
 fn native_discovery_preserves_footer_and_workspace_metadata_rules() {
     use super::support::snapshot::Directory;
-    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     for scenario in ["unspaced", "empty", "unreadable-common", "directory-head"] {
         let dir = Directory::new();
         let root = dir.path().join("repo");
@@ -90,7 +92,7 @@ fn native_discovery_preserves_footer_and_workspace_metadata_rules() {
 #[test]
 fn native_worktree_unreadable_common_metadata_keeps_workspace_identity() {
     use super::support::snapshot::Directory;
-    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     let dir = Directory::new();
     let root = dir.path().join("repo");
     let metadata = dir.path().join("store");

@@ -66,7 +66,7 @@ callbacks. Each bundled invocation selects the current pair before calling it, w
 its slot lock. A retained registry handle selects the new pair on its next invocation; an
 already-started invocation keeps its selected stream. Registry clear, registration and reset
 do not clear the pair. The factory
-[`bedrock_provider::bedrock_provider_module`](../../crates/maestro-models/src/bedrock_provider.rs)
+[`native::bedrock_provider_module`](../../crates/maestro-models/src/native.rs)
 returns the default adapter pair for restoring it. A replacement receives open options and
 typed objects unchanged; only the default pair decodes the extras below. Setup errors from
 either replacement callback settle into error streams, including under a pre-aborted signal.

@@ -1,7 +1,7 @@
 //! Invocation settings with retained adapter hooks.
 use super::{Cancellation, JsonObject, OnPayload, OnResponse};
 use super::{ProviderExecution, ThinkingLevel, Threaded};
-use crate::providers::http::Fetch;
+use crate::providers::transport::Fetch;
 use indexmap::IndexMap;
 use serde::de::IntoDeserializer;
 use serde::ser::SerializeStruct;

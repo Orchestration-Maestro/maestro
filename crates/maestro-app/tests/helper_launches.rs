@@ -29,7 +29,7 @@ fn application_launches_use_the_shared_process_interfaces() {
     assert!(output.stderr.is_empty());
     spawn(Command::new("true"), None).unwrap().join().unwrap();
     let runtime = crate::support::io_runtime();
-    let options: maestro_tools::process::exec::ExecOptions<'_> = ExecOptions::default();
+    let options: maestro_tools::process::commands::ExecOptions<'_> = ExecOptions::default();
     let output: ExecResult = runtime
         .block_on(exec_command(
             "sh",
@@ -41,7 +41,7 @@ fn application_launches_use_the_shared_process_interfaces() {
             options,
         ))
         .unwrap();
-    let output: maestro_tools::process::exec::ExecResult = output;
+    let output: maestro_tools::process::commands::ExecResult = output;
     assert_eq!(output.stdout, "async-out");
     assert_eq!(output.stderr, "async-err");
     assert_eq!(output.code, 7);

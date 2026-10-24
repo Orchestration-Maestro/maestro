@@ -5,9 +5,9 @@ use std::cmp::Ordering;
 use std::io;
 use std::rc::Rc;
 
-use maestro_tui::autocomplete::CursorPosition;
-use maestro_tui::autocomplete::NativeAutocompleteOperations;
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::CursorPosition;
+use maestro_tui::candidates::NativeAutocompleteOperations;
+use maestro_tui::candidates::{
     ArgumentCompletions, AutocompleteOperations, Command, DirectoryEntry, DirectoryEntryKind,
 };
 use maestro_tui::{AutocompleteItem, SlashCommand};
@@ -218,7 +218,7 @@ pub fn commands(trace: &Trace) -> Vec<Command> {
 /// # Panics
 /// Panics when the observed result or effects differ.
 pub fn run_suggestions(cases: &[SuggestionCase]) {
-    use maestro_tui::autocomplete::{CompletionOptions, CursorPosition};
+    use maestro_tui::candidates::{CompletionOptions, CursorPosition};
     use maestro_tui::{
         AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
     };

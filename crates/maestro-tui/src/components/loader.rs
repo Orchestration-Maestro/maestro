@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use super::Text;
-use crate::tui::{RepeatingTimer, TuiRuntime};
+use crate::interface::{RepeatingTimer, TuiRuntime};
 use crate::{Component, TUI};
 
 /// Optional frames and their animation interval.

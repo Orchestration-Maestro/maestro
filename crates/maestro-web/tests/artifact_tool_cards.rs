@@ -192,7 +192,7 @@ fn assert_unused_diffs() {
 
 #[test]
 fn artifact_recipes_own_selected_inputs_and_panel_handles() {
-    use maestro_app::browser::tools::artifacts::{
+    use maestro_app::browser::tools::documents::{
         ArtifactCommand, ArtifactsParams, LocalArtifactsPanel,
     };
     use maestro_web::{ArtifactsToolRenderer, ToolRenderer, tools::types::ToolRenderState};

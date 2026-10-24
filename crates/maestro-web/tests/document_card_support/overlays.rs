@@ -226,7 +226,7 @@ pub fn user_and_tool() {
     };
     let mut receiver = Vec::new();
     let mut draw = |ui: &mut egui::Ui,
-                    frame: maestro_web::components::code_block::CodeBlockView<
+                    frame: maestro_web::components::source::CodeBlockView<
         '_,
         maestro_web::TranslationFunction,
     >| {

@@ -1,7 +1,7 @@
 //! Pane cells into frame buffers, frame records and terminal bytes.
 
 pub mod ansi;
-pub mod frame;
+pub mod conversion;
 pub mod pane;
 
 /// Whether a symbol is one halfwidth katakana followed by its voiced or

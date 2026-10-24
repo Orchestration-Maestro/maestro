@@ -3,7 +3,7 @@
 use super::workspace;
 use maestro_agent::QueueMode;
 use maestro_models::{ImageContent, ModelThinkingLevel};
-use maestro_session::messages::UserMessageDelivery;
+use maestro_session::message_records::UserMessageDelivery;
 use serde::{Deserialize, Deserializer, Serialize, de};
 use serde_json::Value;
 

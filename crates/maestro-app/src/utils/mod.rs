@@ -1,12 +1,12 @@
 //! Application utility operations.
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod changelog;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod clipboard;
-pub mod clipboard_image;
-#[cfg(not(target_arch = "wasm32"))]
 pub mod clipboard_native;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod copying;
+pub mod image_clipboard;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod release_notes;
 
 pub(crate) mod lock;
 pub(crate) mod numbers;

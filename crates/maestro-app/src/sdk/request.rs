@@ -3,7 +3,7 @@
 use super::conversion::convert_to_llm_with_block_images;
 use super::creation::Services;
 use crate::agent_session::{ExtensionRunnerRef, local_spawner, thrown};
-use crate::configuration::telemetry::is_install_telemetry_enabled;
+use crate::configuration::installation::is_install_telemetry_enabled;
 use crate::utils::lock::read;
 use indexmap::IndexMap;
 use maestro_agent::{
@@ -16,7 +16,7 @@ use maestro_models::{
     Transport,
 };
 use maestro_session::{
-    SessionManager, messages::CustomAgentMessages, session_manager::ReadonlySessionManager,
+    SessionManager, message_records::CustomAgentMessages, session_manager::ReadonlySessionManager,
 };
 use maestro_settings::{MessageDeliveryMode, SettingsManager, TransportSetting};
 use std::{

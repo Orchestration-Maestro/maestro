@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::response_support::failure as error;
-    use maestro_models::records::session_resources::{
+    use maestro_models::records::sessions::{
         cleanup_session_resources, register_session_resource_cleanup,
     };
     use maestro_models::{DiagnosticErrorInfo, SharedHandle};
@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn maestro_dispatch_preserves_registration_order() {
         use maestro_models::records::api_registry::*;
-        use maestro_models::records::stream::{stream, stream_simple};
+        use maestro_models::records::invocation::{stream, stream_simple};
         let _serial = crate::bundled::registry();
         clear_api_providers();
         for (api, stamp) in [("10", 10.0), ("2", 20.0), ("01", 30.0)] {
@@ -326,7 +326,7 @@ mod tests {
     }
 
     fn assert_missing_api() {
-        use maestro_models::records::stream::*;
+        use maestro_models::records::invocation::*;
         assert_missing_api_for::<maestro_models::Local>(std::rc::Rc::new(|_| {
             panic!("missing API must not submit")
         }));
@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn maestro_dispatch_reports_missing_api() {
         use maestro_models::records::api_registry::*;
-        use maestro_models::records::stream::*;
+        use maestro_models::records::invocation::*;
         let _serial = crate::bundled::registry();
         clear_api_providers();
         assert_missing_api();
@@ -547,7 +547,7 @@ mod tests {
     #[test]
     fn maestro_completion_observes_without_consuming() {
         use maestro_models::records::api_registry::*;
-        use maestro_models::records::stream::{complete, complete_simple};
+        use maestro_models::records::invocation::{complete, complete_simple};
         use maestro_models::records::types::*;
         let _serial = crate::bundled::registry();
         clear_api_providers();
@@ -663,7 +663,7 @@ mod tests {
     #[test]
     fn maestro_hooks_keep_replacements_and_failures() {
         use maestro_models::records::api_registry::*;
-        use maestro_models::records::stream::stream;
+        use maestro_models::records::invocation::stream;
         use maestro_models::records::types::*;
         let _serial = crate::bundled::registry();
         clear_api_providers();
@@ -729,7 +729,7 @@ mod tests {
     #[test]
     fn maestro_callback_destruction_can_reenter() {
         use maestro_models::records::api_registry::*;
-        use maestro_models::records::stream::stream;
+        use maestro_models::records::invocation::stream;
         let _serial = crate::bundled::registry();
         clear_api_providers();
         let drops = Arc::new(std::sync::atomic::AtomicUsize::new(0));

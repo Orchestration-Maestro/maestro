@@ -7,7 +7,7 @@ pub fn occurrences(
 ) -> Vec<Option<maestro_chat::SessionTreeNode>> {
     let restore = super::registry::Restore(maestro_tui::get_keybindings());
     maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
+        maestro_app::presentation_data::bindings::KEYBINDINGS.clone(),
         vec![],
     ));
     let mut observed = Vec::new();

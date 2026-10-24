@@ -22,12 +22,12 @@ mod unix {
     use maestro_tui::{
         Editor, EditorOptions, Loader, Markdown, MarkdownOptions, MarkdownTheme, TUI,
         TerminalImage, Text,
-        autocomplete::{
+        candidates::{
             CombinedAutocompleteProvider, Command, NativeAutocompleteOperations, SlashCommand,
         },
+        interface::{ChildArray, ComponentHandle, InputListenerResult},
         keys::matches_key,
         text::utils::is_whitespace_char,
-        tui::{ChildArray, ComponentHandle, InputListenerResult},
     };
     use std::{
         cell::{Cell, RefCell},

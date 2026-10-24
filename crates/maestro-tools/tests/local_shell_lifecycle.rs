@@ -356,7 +356,7 @@ async fn settle_child(witness: &mut ChildWitness, operation: &mut Operation<'_>,
             && error.kind() != std::io::ErrorKind::AlreadyExists
             && let Some(pid) = witness.pid
         {
-            maestro_tools::utils::shell::kill_process_tree(pid);
+            maestro_tools::utils::environment::kill_process_tree(pid);
         }
     }
     while witness.settled.is_none() {

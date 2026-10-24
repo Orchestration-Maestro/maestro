@@ -1,9 +1,7 @@
 //! Raw streaming through the captured-child lifecycle.
 #![cfg(unix)]
 #![cfg(test)]
-use maestro_process::child_process::{
-    CapturedChild, OutputMode, WaitOptions, wait_for_child_process,
-};
+use maestro_process::children::{CapturedChild, OutputMode, WaitOptions, wait_for_child_process};
 
 #[test]
 fn streamed_wait_delivers_chunks_without_retaining_them() {
@@ -112,7 +110,7 @@ fn streamed_wait_continues_after_external_tree_kill() {
                 WaitOptions::default(),
                 async {
                     rx.await.unwrap();
-                    maestro_process::child_process::kill_process_group(pid).unwrap();
+                    maestro_process::children::kill_process_group(pid).unwrap();
                     std::future::pending().await
                 },
                 Some(&mut sink),
@@ -141,7 +139,7 @@ fn streamed_wait_delivers_stderr_even_when_capture_discards_it() {
             let output = wait_for_child_process(
                 &mut child,
                 WaitOptions {
-                    stderr: maestro_process::child_process::OutputMode::Discard,
+                    stderr: maestro_process::children::OutputMode::Discard,
                     ..WaitOptions::default()
                 },
                 std::future::pending(),
@@ -178,7 +176,7 @@ fn assert_sync_session(parent_session: i32, parent_group: i32) {
 
 #[test]
 fn streamed_wait_tags_streams_without_reordering() {
-    use maestro_process::child_process::OutputStream;
+    use maestro_process::children::OutputStream;
     use std::io::{Read, Write};
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
@@ -205,7 +203,7 @@ fn streamed_wait_tags_streams_without_reordering() {
 
 #[test]
 fn local_process_sink_keeps_descriptor_delivery() {
-    use maestro_process::child_process::{OutputStream, wait_for_child_process_with_sink};
+    use maestro_process::children::{OutputStream, wait_for_child_process_with_sink};
     use std::{cell::RefCell, io::Write, rc::Rc};
     #[derive(serde::Deserialize)]
     #[serde(deny_unknown_fields)]

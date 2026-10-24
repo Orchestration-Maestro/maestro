@@ -1,19 +1,19 @@
 //! Owned topology and separate terminal-history snapshots.
 
 use crate::{
-    app::state::DaemonState,
-    terminal::{runtime_registry::TerminalRuntimeRegistry, state::TerminalState},
+    app::model::DaemonState,
+    terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_workspace::{
     pane_state::PaneState,
-    persist::snapshot::{
+    persist::records::{
         PaneAgentSessionSnapshot, PaneHistorySnapshot, PaneSnapshot, SNAPSHOT_VERSION,
         SessionHistorySnapshot, SessionSnapshot, TabHistorySnapshot, TabSnapshot,
         WorkspaceHistorySnapshot, WorkspaceSnapshot, capture_node,
     },
+    spaces::Workspace,
     tab::Tab,
     terminal_id::TerminalId,
-    workspace::Workspace,
 };
 use std::{collections::HashMap, path::PathBuf};
 

@@ -1,7 +1,7 @@
 //! Work a sendable producer hands to the local owners it updates.
 
 use maestro_app::DiagnosticErrorInfo;
-use maestro_tui::tui::TuiRuntime;
+use maestro_tui::interface::TuiRuntime;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::{mpsc, oneshot};
 
@@ -92,7 +92,7 @@ impl<T: Send + 'static> LocalDispatch<T> {
 #[cfg(unix)]
 mod tests {
     use super::local_dispatch;
-    use crate::components::session_selector::list::tests::session_picker::manual_runtime::ManualRuntime;
+    use crate::components::session_picker::list::tests::session_picker::manual_runtime::ManualRuntime;
     use maestro_app::DiagnosticErrorInfo;
     use std::{
         cell::RefCell,

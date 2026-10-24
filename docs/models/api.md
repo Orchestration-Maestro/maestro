@@ -350,7 +350,7 @@ Do not copy these session policies to other adapters.
 that handle does not remove the registration. `cleanup_session_resources`
 invokes the live registered callbacks and collects failures in order. Call it
 for the owned session or all sessions as appropriate. See
-[cleanup declarations](../../crates/maestro-models/src/records/session_resources.rs),
+[cleanup declarations](../../crates/maestro-models/src/records/sessions.rs),
 `maestro_cleanup_collects_failures_in_order` in
 [invocation tests](../../crates/maestro-models/tests/model_invocation.rs) and
 `maestro_cleanup_observes_live_changes` in

@@ -224,7 +224,7 @@ struct DirectionInput {
 }
 #[test]
 fn index_direction_selects_native_cursor_order() {
-    use maestro_app::browser::storage::IndexDirection;
+    use maestro_app::browser::persistence::IndexDirection;
     assert_eq!(IndexDirection::default(), IndexDirection::Asc);
     for (id, input, expected) in
         adapter_cases::<DirectionInput, String>("index_direction_selects_native_cursor_order")

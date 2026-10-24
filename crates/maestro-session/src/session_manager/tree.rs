@@ -1,8 +1,8 @@
 #![doc = include_str!("../../../../docs/tree.md")]
 use super::{
     FileEntry, LabelEntry, ReadonlySessionManager, SessionEntry, SessionManager, SessionTreeNode,
-    context::{self, ecma_whitespace, truthy},
     conversions::invalid,
+    history::{self as context, ecma_whitespace, truthy},
 };
 use maestro_request::presence::Presence;
 use serde_json::{Map, Value};

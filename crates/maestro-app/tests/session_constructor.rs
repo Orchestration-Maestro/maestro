@@ -568,10 +568,8 @@ fn reload_keeps_extension_flag_values() {
         });
         let module_loader: maestro_extensions::ModuleLoader<Local> =
             Rc::new(|_| Box::pin(std::future::ready(Ok(None))));
-        let mut resources = maestro_app::resources::resource_loader::ResourceLoaderOptions::new(
-            local,
-            module_loader,
-        );
+        let mut resources =
+            maestro_app::resources::loading::ResourceLoaderOptions::new(local, module_loader);
         resources.extension_factories = vec![flagged];
         let settings =
             maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());

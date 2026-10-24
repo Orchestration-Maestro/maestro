@@ -1437,7 +1437,7 @@ fn native_one_chunk_wait_restores_without_terminal_modes() {
             let saved = (terminal.then(stdin_attributes), stdin_flags());
             rig.run(async {
                 for chunk in [b"x".as_slice(), b"\x1b[?1u", &[0xff, 0x00]] {
-                    let wait = maestro_tui_crossterm::terminal::wait_for_input();
+                    let wait = maestro_tui_crossterm::adapter::wait_for_input();
                     let mut wait = std::pin::pin!(wait);
                     poll_pending(wait.as_mut()).await;
                     if terminal {
@@ -1475,7 +1475,7 @@ fn native_one_chunk_wait_preserves_preexisting_raw_mode() {
         fcntl_setfl(stdin(), stdin_flags() | OFlags::NONBLOCK).unwrap();
         let saved = (stdin_attributes(), stdin_flags());
         rig.run(async {
-            let mut wait = std::pin::pin!(maestro_tui_crossterm::terminal::wait_for_input());
+            let mut wait = std::pin::pin!(maestro_tui_crossterm::adapter::wait_for_input());
             poll_pending(wait.as_mut()).await;
             input.send(b"key");
             wait.await.unwrap();
@@ -1491,7 +1491,7 @@ fn native_one_chunk_wait_drop_restores_pending_acquisition() {
         let _input = pty_input();
         let saved = (stdin_attributes(), stdin_flags());
         rig.run(async {
-            let mut wait = Box::pin(maestro_tui_crossterm::terminal::wait_for_input());
+            let mut wait = Box::pin(maestro_tui_crossterm::adapter::wait_for_input());
             poll_pending(wait.as_mut()).await;
             assert_raw(&attributes(stdin()));
             drop(wait);
@@ -1499,7 +1499,7 @@ fn native_one_chunk_wait_drop_restores_pending_acquisition() {
             let input = pipe_input();
             let saved_flags = stdin_flags();
             input.close();
-            let mut eof = Box::pin(maestro_tui_crossterm::terminal::wait_for_input());
+            let mut eof = Box::pin(maestro_tui_crossterm::adapter::wait_for_input());
             poll_pending(eof.as_mut()).await;
             tokio::task::yield_now().await;
             poll_pending(eof.as_mut()).await;
@@ -1513,7 +1513,7 @@ fn native_one_chunk_wait_drop_restores_pending_acquisition() {
 #[test]
 fn native_one_chunk_wait_failures_restore_acquisition() {
     isolated!(&[], || {
-        use maestro_tui_crossterm::terminal::wait_for_input;
+        use maestro_tui_crossterm::adapter::wait_for_input;
         let _input = pty_input();
         let saved = (stdin_attributes(), stdin_flags());
         let mut outside = Box::pin(wait_for_input());
@@ -1560,11 +1560,11 @@ fn native_one_chunk_wait_leaves_later_input_for_the_next_wait() {
         let rig = Rig::paused();
         let input = pipe_input();
         rig.run(async {
-            let mut first = std::pin::pin!(maestro_tui_crossterm::terminal::wait_for_input());
+            let mut first = std::pin::pin!(maestro_tui_crossterm::adapter::wait_for_input());
             poll_pending(first.as_mut()).await;
             input.send(b"first");
             first.await.unwrap();
-            let mut second = std::pin::pin!(maestro_tui_crossterm::terminal::wait_for_input());
+            let mut second = std::pin::pin!(maestro_tui_crossterm::adapter::wait_for_input());
             poll_pending(second.as_mut()).await;
             input.send(b"second");
             second.await.unwrap();

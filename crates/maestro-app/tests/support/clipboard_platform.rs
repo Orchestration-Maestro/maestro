@@ -1,6 +1,6 @@
 //! Platform spellings shared by clipboard fixtures.
 #![cfg(test)]
-use maestro_app::utils::clipboard::ClipboardPlatform;
+use maestro_app::utils::copying::ClipboardPlatform;
 
 /// Platform conversion for the recorded host observations.
 pub fn platform(name: &str) -> ClipboardPlatform {

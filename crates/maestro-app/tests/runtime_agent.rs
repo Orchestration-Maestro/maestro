@@ -1,7 +1,7 @@
 //! Native runtime identification.
 #![cfg(test)]
 
-use maestro_app::configuration::maestro_user_agent::get_maestro_user_agent;
+use maestro_app::configuration::identification::get_maestro_user_agent;
 use serde::Deserialize;
 
 #[derive(Deserialize)]

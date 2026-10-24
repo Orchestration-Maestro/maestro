@@ -84,7 +84,7 @@ UTF-8 with replacement characters and lists a directory through the shared direc
 listing (`maestro-listing`): by name, in byte order of the names, without filtering
 by entry kind. Browser builds have no file system, so every read fails there and no
 directory is listed.
-Inventories sort with a stable locale collator (`maestro_theme::Collator`, a pure re-export of the text crate's comparator, also at `maestro_theme::theme::Collator` outside browser targets) built once per call; locale selection and fallback are
+Inventories sort with a stable locale collator (`maestro_theme::Collator`, a pure re-export of the text crate's comparator, also at `maestro_theme::palette::Collator` outside browser targets) built once per call; locale selection and fallback are
 decided by the [text collator](text.md).
 
 `Collator` (not built for browsers) is that comparison on its own: `Collator::new` takes an
@@ -309,7 +309,7 @@ joined with the authored relative path ([lexical path joining](../crates/maestro
 
 `BrandMode`, `BrandFont`, `BrandType`, `BrandMark`, `BrandGlyph` and
 `BrandPresentation` remain re-exported through `maestro_theme` and
-`maestro_theme::theme`. Their [pure projections](brand.md#projection) belong to
+`maestro_theme::palette`. Their [pure projections](brand.md#projection) belong to
 `maestro-brand`.
 
 - `BrandPack::presentation` delegates to the shared pack's selected-mode projection.

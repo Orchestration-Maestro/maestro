@@ -9,7 +9,7 @@ use maestro_chat::components::{ModelsCallbacks, ModelsConfig, ScopedModelsSelect
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
 use maestro_tui::{
     Component, Focusable,
-    tui::{InputHandler, LocalFuture},
+    interface::{InputHandler, LocalFuture},
 };
 use serde::Deserialize;
 use serde_json::{Value, json};

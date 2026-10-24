@@ -15,7 +15,7 @@ use maestro_theme::{
     ThemeDirectories, ThemeOptions, ThemeState,
 };
 use maestro_tools::{ToolRenderContext, ToolRenderPhase};
-use maestro_tui::{ImageProtocol, TerminalCapabilities, TerminalImage, tui::ComponentHandle};
+use maestro_tui::{ImageProtocol, TerminalCapabilities, TerminalImage, interface::ComponentHandle};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 

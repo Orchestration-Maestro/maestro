@@ -1,5 +1,5 @@
 //! Semantic character preparation without a physical key-name table.
-use super::super::key::{KeyAction, KeyEvent, Mods};
+use super::super::keyboard::{KeyAction, KeyEvent, Mods};
 
 /// Normalize explicitly shifted letters without inferring a keyboard layout.
 pub(super) fn prepare(event: &KeyEvent) -> KeyEvent {

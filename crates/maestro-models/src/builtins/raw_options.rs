@@ -1,13 +1,13 @@
 //! Decoding of the JSON extras each bundled raw protocol accepts.
 
 use crate::providers::nullable::Nullable;
-use crate::providers::response_sessions::openai_codex_responses::{
+use crate::providers::response_sessions::codex::{
     OpenAICodexReasoningSummary, OpenAICodexTextVerbosity,
 };
 use crate::providers::{
-    messages::anthropic::{AnthropicClient, AnthropicEffort, AnthropicThinkingDisplay},
-    reasoning::mistral::{MistralPromptMode, MistralReasoningEffort},
-    responses::openai_responses::{OpenAIResponsesReasoningSummary, OpenAIResponsesServiceTier},
+    messages::endpoint::{AnthropicClient, AnthropicEffort, AnthropicThinkingDisplay},
+    reasoning::endpoint::{MistralPromptMode, MistralReasoningEffort},
+    responses_api::openai::{OpenAIResponsesReasoningSummary, OpenAIResponsesServiceTier},
 };
 use crate::records::types::{FunctionName, FunctionTag, Literal};
 use crate::{
@@ -451,7 +451,7 @@ fn google_fields<E: ProviderExecution>(
             .filter(|choice| !choice.is_empty())
             .map(crate::providers::content::google_shared::map_tool_choice),
         thinking: thinking.map(
-            |thinking| crate::providers::content::google::GoogleThinking {
+            |thinking| crate::providers::content::generative::GoogleThinking {
                 enabled: thinking.enabled,
                 budget_tokens: thinking.budget_tokens,
                 level: thinking.level,

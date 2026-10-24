@@ -1,6 +1,6 @@
 //! Workspace removal preserves logical active selection.
 
-use crate::app::state::{DaemonState, Mode};
+use crate::app::model::{DaemonState, Mode};
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Closes the focused pane, returning whether confirmation deferred the close.

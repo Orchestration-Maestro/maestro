@@ -3,10 +3,10 @@
 use super::support::*;
 use maestro_protocol::schema::SplitDirection;
 use maestro_workspace::{
-    layout::{PaneId, TileLayout},
     pane_state::PaneState,
+    spaces::WorktreeSpaceMembership,
     terminal_id::TerminalId,
-    workspace::WorktreeSpaceMembership,
+    tiling::{PaneId, TileLayout},
 };
 
 #[test]

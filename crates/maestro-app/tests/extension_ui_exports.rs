@@ -1,14 +1,12 @@
 //! Extension UI and renderer records through the application root.
-use maestro_app::presentation_data::footer_data_provider::{
-    ExtensionStatusIter, ExtensionStatuses,
-};
+use maestro_app::presentation_data::status_line::{ExtensionStatusIter, ExtensionStatuses};
 use maestro_app::{
     AutocompleteProviderFactory, Cancellation, Extension, ExtensionAPI, ExtensionUIContext,
     ExtensionUIDialogOptions, ExtensionWidgetOptions, Local, MessageRenderOptions, MessageRenderer,
     ReadonlyFooterDataProvider, SharedHandle, SourceInfo, SourceOrigin, SourceScope,
     TerminalInputHandler, Threaded, UIHostCall, WidgetPlacement, WorkingIndicatorOptions,
 };
-use maestro_tui::tui::InputListenerResult;
+use maestro_tui::interface::InputListenerResult;
 use std::{rc::Rc, sync::Arc, sync::RwLock};
 
 /// Returns its operand as the extension owner's declaration.
@@ -19,7 +17,7 @@ fn native_ui(ui: ExtensionUIContext) -> maestro_extensions::ExtensionUIContext {
 /// Returns the footer view the application provider implements.
 fn extension_footer(
     provider: &dyn ReadonlyFooterDataProvider,
-) -> &dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider {
+) -> &dyn maestro_extensions::footer::ReadonlyFooterDataProvider {
     provider
 }
 
@@ -51,7 +49,7 @@ fn source() -> Arc<RwLock<SourceInfo>> {
 #[test]
 fn native_ui_exports_share_the_existing_records() {
     let options = MessageRenderOptions { expanded: true };
-    let session: maestro_session::messages::MessageRenderOptions = options;
+    let session: maestro_session::message_records::MessageRenderOptions = options;
     let _: maestro_extensions::MessageRenderOptions = session;
     let renderer: MessageRenderer = SharedHandle::new(|_, _, _, _| Ok(None));
     let _: maestro_extensions::MessageRenderer = renderer;
@@ -72,8 +70,7 @@ fn native_ui_exports_share_the_existing_records() {
     };
     let _: maestro_extensions::WorkingIndicatorOptions = indicator;
     let _ = (native_ui, extension_footer, native_input, native_wrapper);
-    let statuses: maestro_extensions::footer_data_provider::ExtensionStatuses =
-        ExtensionStatuses::new();
+    let statuses: maestro_extensions::footer::ExtensionStatuses = ExtensionStatuses::new();
     statuses.insert("build".into(), "passing".into());
     let walk: ExtensionStatusIter = statuses.iter();
     assert_eq!(

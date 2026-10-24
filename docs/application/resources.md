@@ -1,7 +1,7 @@
 # Application resources
 
 `maestro_app::resources` discovers the resources of one working directory and
-assembles the system prompt. `maestro_app::runtime::agent_session_services`
+assembles the system prompt. `maestro_app::runtime::session_dependencies`
 binds credentials, settings, the model catalog and those resources to one
 session directory. Both are native-only. The SDK root exports the loader,
 its options and records, `load_project_context_files` and the services.

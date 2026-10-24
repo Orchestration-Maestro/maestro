@@ -29,7 +29,7 @@ pub async fn tool_output_uses_literal_listing_without_changing_encoded_listings(
     settle().await;
     assert_eq!(&*surface.effects.copies.borrow(), &["YWJj"]);
     drop(row);
-    let mut encoded = maestro_web::components::code_block::CodeBlock::new(surface.host());
+    let mut encoded = maestro_web::components::source::CodeBlock::new(surface.host());
     encoded.code = "YWJj".into();
     surface.draw(|ui, view| encoded.render(ui, view).unwrap());
     check("document.querySelector('.maestro-code code').textContent === 'abc'");

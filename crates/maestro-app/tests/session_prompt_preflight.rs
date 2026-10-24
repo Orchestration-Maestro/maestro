@@ -17,7 +17,9 @@ use maestro_extensions::{
 };
 use maestro_models::{ImageContent, Local};
 use maestro_session::Presence;
-use maestro_session::messages::{CustomMessageInput, SendMessageOptions, UserMessageDelivery};
+use maestro_session::message_records::{
+    CustomMessageInput, SendMessageOptions, UserMessageDelivery,
+};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
@@ -307,7 +309,7 @@ fn accepted_prompt_sends_user_then_next_turn_then_hook_messages() {
         };
         let next_turn = SendMessageOptions {
             trigger_turn: None,
-            deliver_as: Some(maestro_session::messages::MessageDelivery::NextTurn),
+            deliver_as: Some(maestro_session::message_records::MessageDelivery::NextTurn),
         };
         let queued = h.session.send_custom_message(note, next_turn).await;
         let result = h.session.prompt("question", PromptOptions::default()).await;
@@ -645,7 +647,7 @@ fn abandoned_prompt_still_delivers_its_next_turn_messages() {
         };
         let next_turn = SendMessageOptions {
             trigger_turn: None,
-            deliver_as: Some(maestro_session::messages::MessageDelivery::NextTurn),
+            deliver_as: Some(maestro_session::message_records::MessageDelivery::NextTurn),
         };
         h.session
             .send_custom_message(note, next_turn)

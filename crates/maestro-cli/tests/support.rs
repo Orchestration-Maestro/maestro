@@ -61,7 +61,7 @@ pub fn argv(case: &Recorded) -> Vec<String> {
 
 /// Parse one case's authored arguments and compare the whole retained result.
 pub fn assert_argv(case: &Recorded) {
-    let actual = serde_json::to_value(maestro_cli::input::args::parse_args(&argv(case)))
+    let actual = serde_json::to_value(maestro_cli::input::arguments::parse_args(&argv(case)))
         .expect("serializable arguments");
     assert_eq!(actual, case.expected, "{}", case.case);
 }

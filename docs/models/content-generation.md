@@ -141,7 +141,7 @@ signature are read together; unknown members and later candidates are never deco
 
 ## Request preparation
 
-`build_params` in `maestro_models::providers::content::google` prepares the parameters of a
+`build_params` in `maestro_models::providers::content::generative` prepares the parameters of a
 content-generation request. It sends nothing, calls no hook and never reads a retained timeout,
 retry or transport setting; `GoogleOptions` is also exported at the crate root. Two operations compose:
 
@@ -150,7 +150,7 @@ retry or transport setting; `GoogleOptions` is also exported at the crate root. 
   [converted](#content-generation-conversion) context and raw options.
 
 ```rust
-use maestro_models::providers::content::google::{build_params, build_simple_options};
+use maestro_models::providers::content::generative::{build_params, build_simple_options};
 use maestro_models::{Context, Model, SimpleStreamOptions, StreamOptions, ThinkingLevel};
 use serde_json::json;
 
@@ -298,7 +298,7 @@ assert_eq!(projected.body["generationConfig"]["modelConfig"]["preference"], "qua
 
 ## Request transport
 
-[`create_client`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-models/src/providers/content/google.rs)
+[`create_client`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-models/src/providers/content/generative.rs)
 captures the supplied endpoint, key and headers without environment lookup or validation.
 [`ApiClient::prepare_request`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-models/src/providers/content/google_shared/api_client.rs)
 consumes a projected body and borrows the selected HTTP options, returning a POST request
@@ -312,7 +312,7 @@ and emits no console diagnostics.
 
 ```rust
 use maestro_models::Model;
-use maestro_models::providers::content::google::create_client;
+use maestro_models::providers::content::generative::create_client;
 use maestro_models::providers::content::google_shared::project_content_request;
 use serde_json::{Value, json};
 
@@ -346,7 +346,7 @@ assert!(prepared.request.signal.is_none());
 Assistant output uses `google-generative-ai` even when the supplied model names another
 API; request processing and payload hooks still receive the original descriptor.
 
-[`stream_google`](../../crates/maestro-models/src/providers/content/google.rs) takes
+[`stream_google`](../../crates/maestro-models/src/providers/content/generative.rs) takes
 `GoogleOptions` and returns an independently produced event stream. Default native callers need a
 running Tokio runtime. Dropping the event reader does not cancel the producer; its retained
 result still observes completion. The module's `stream_simple_google` first selects
@@ -393,7 +393,7 @@ while an empty streamed 200 completes normally. Failure statuses consume their c
 body before `start`: a case-sensitive `application/json` substring selects whole JSON,
 otherwise text is wrapped with status and reason phrase. Body/JSON failures win at admission.
 
-The [shared HTTP framing owner](../../crates/maestro-models/src/providers/http/server_sent_events.rs)
+The [shared HTTP framing owner](../../crates/maestro-models/src/providers/transport/server_sent_events.rs)
 selects whole data segments for this protocol; other callers retain field framing. Ordered
 items feed the existing [response reducer](#response-reduction); a JSON null root becomes
 an empty response before reduction. A non-whitespace EOF tail
@@ -410,7 +410,7 @@ retain the effects preceding their failing conversion. Clean EOF uses the shared
 Assistant output uses `google-vertex` even when the supplied model names another API;
 request processing and payload hooks still receive the original descriptor.
 
-[`google_vertex`](../../crates/maestro-models/src/providers/content/google_vertex/mod.rs)
+[`google_vertex`](../../crates/maestro-models/src/providers/content/managed/mod.rs)
 exports `GoogleVertexOptions`, `stream_google_vertex`, `stream_simple_google_vertex`
 and their `_for` variants, also available at the crate root. Raw options add optional
 `project` and `location` to common controls, tool choice and the existing `GoogleThinking`.

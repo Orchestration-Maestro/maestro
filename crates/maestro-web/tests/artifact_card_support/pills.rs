@@ -5,7 +5,7 @@ use crate::{
     support::{reading_view::view, tool_output::TextOnlyOutput as _},
     tool_renderer_browser as drawing,
 };
-use maestro_app::browser::tools::artifacts::LocalArtifactsPanel;
+use maestro_app::browser::tools::documents::LocalArtifactsPanel;
 use maestro_web::{
     ArtifactsToolRenderer, ToolRenderer,
     tools::types::{ToolRenderResult, ToolRenderState},
@@ -34,7 +34,7 @@ impl Card {
             panel.artifacts().write().unwrap().insert(
                 filename.into(),
                 std::sync::Arc::new(std::sync::RwLock::new(
-                    maestro_app::browser::tools::artifacts::Artifact {
+                    maestro_app::browser::tools::documents::Artifact {
                         filename: filename.into(),
                         content: "stored".into(),
                         created_at: now,

@@ -241,7 +241,7 @@ fn provider_stored_and_subscription_paths_skip_failing_metadata() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn provider_trait_reports_input_failure_once_without_render() {
-    use maestro_tui::tui::InputHandler;
+    use maestro_tui::interface::InputHandler;
     use provider_auth_support::failures::{Rig, providers};
     use std::rc::Rc;
     let _keys = keybindings::bindings_guard();
@@ -280,7 +280,7 @@ fn provider_host_routes(
     panel: &std::rc::Rc<maestro_chat::OAuthSelectorComponent>,
     rig: &provider_auth_support::failures::Rig,
 ) {
-    use maestro_tui::{Component, TUI, TerminalImage, tui::InputHandler};
+    use maestro_tui::{Component, TUI, TerminalImage, interface::InputHandler};
     let terminal = recording_terminal::RecordingTerminal::new(100, 24);
     let writer_runtime = manual_runtime::ManualRuntime::new();
     let tui = TUI::new(

@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_tools::edit_diff::{
+use maestro_tools::previews::{
     Edit, FuzzyMatchResult, LineEnding, apply_edits_to_normalized_content, detect_line_ending,
     fuzzy_find_text, normalize_for_fuzzy_match, restore_line_endings, strip_bom,
 };

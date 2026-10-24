@@ -131,25 +131,25 @@ fn bundled_tool_schemas_keep_authored_nodes() {
     let ls = maestro_tools::create_ls_tool_definition::<()>(cwd.clone(), LsToolOptions::default());
     assert_declaration("ls", &ls.definition.parameters);
 
-    let local_read = maestro_tools::read::local::create_read_tool_definition::<()>(
+    let local_read = maestro_tools::reading::local::create_read_tool_definition::<()>(
         cwd.clone(),
         ReadToolOptions::default(),
     );
     assert_declaration("read", &local_read.definition.parameters);
-    let local_edit = maestro_tools::edit::local::create_edit_tool_definition::<()>(
+    let local_edit = maestro_tools::editing::local::create_edit_tool_definition::<()>(
         cwd.clone(),
         EditToolOptions::default(),
     );
     assert_declaration("edit", &local_edit.definition.parameters);
-    let local_write = maestro_tools::write::local::create_write_tool_definition::<()>(
+    let local_write = maestro_tools::writing::local::create_write_tool_definition::<()>(
         cwd.clone(),
         WriteToolOptions::default(),
     );
     assert_declaration("write", &local_write.definition.parameters);
-    let local_bash = maestro_tools::process::bash::local::create_bash_tool_definition::<()>(
+    let local_bash = maestro_tools::process::command::local::create_bash_tool_definition::<()>(
         cwd,
         String::new(),
-        maestro_tools::process::bash::local::BashToolOptions::default(),
+        maestro_tools::process::command::local::BashToolOptions::default(),
     );
     assert_declaration("bash", &local_bash.definition.parameters);
 }

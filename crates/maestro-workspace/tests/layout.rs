@@ -1,7 +1,7 @@
 //! Split layout behaviour.
 #![cfg(test)]
 use maestro_protocol::schema::SplitDirection;
-use maestro_workspace::layout::*;
+use maestro_workspace::tiling::*;
 fn pane(id: u32) -> PaneId {
     PaneId::from_raw(id)
 }

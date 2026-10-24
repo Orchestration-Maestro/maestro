@@ -3,11 +3,12 @@
 use crate::completion_rig as rig;
 use crate::editor_host as support;
 use maestro_cancellation::Cancellation;
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::{
     ArgumentCompletions, AutocompleteOperations, Command, DirectoryEntry,
 };
 use maestro_tui::{
-    AutocompleteItem, AutocompleteSuggestions, Component, Editor, EditorOptions, tui::InputHandler,
+    AutocompleteItem, AutocompleteSuggestions, Component, Editor, EditorOptions,
+    interface::InputHandler,
 };
 use maestro_tui::{
     CURSOR_MARKER, CombinedAutocompleteProvider, KeybindingKeys, KeybindingsManager, SlashCommand,

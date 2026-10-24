@@ -113,7 +113,7 @@ converts topology rectangles to frame rectangles with free functions.
 
 ### Daemon state, view state and the render surface
 
-- **Daemon state.** `maestro-daemon::app::state::DaemonState` holds every field that daemon code reads or
+- **Daemon state.** `maestro-daemon::app::model::DaemonState` holds every field that daemon code reads or
   writes, directly or through a state method. Examples are sizes, popup geometry, persisted sidebar values,
   toasts, the mode, copy mode, selection, focus records, notification delivery and the worktree-open dialog.
   It is shared by every client of one daemon.
@@ -132,13 +132,13 @@ converts topology rectangles to frame rectangles with free functions.
 
 ### Interfaces
 
-- **JSONL framing.** `maestro_json::jsonl::{serialize_json_line, JsonlLineSplitter}`: synchronous, bytes in
+- **JSONL framing.** `maestro_json::lines::{serialize_json_line, JsonlLineSplitter}`: synchronous, bytes in
   and lines out. Callers own their async glue.
 - **Spawning in topology.** `FnOnce(PaneId, SpawnRequest) -> io::Result<T>` is passed to every topology
   operation that creates a pane. The operation returns `(PaneId, T)` and removes the new leaf when the spawn
   fails.
 - **Atomic replacement.** `maestro_lock::replace(path, bytes, Replace { through_symlinks })`.
-- **Paths and names.** `maestro_daemon::paths::DaemonPaths` and `maestro_daemon::environment::NAMES`.
+- **Paths and names.** `maestro_daemon::locations::DaemonPaths` and `maestro_daemon::variables::NAMES`.
 - **Server.** `maestro_daemon::server::run::run_server` starts the API socket and runs the daemon loop. The
   executable's `server` arm and the in-process tests call it.
 - **Daemon client.** `maestro_app::daemon::client::{DaemonClient, ensure_running}`.
@@ -192,7 +192,7 @@ need `unsafe` to hand its descriptor to the async runtime.
   identities are allocated afresh. Counters survive workspace removal and are independent between owners.
 - **Runtimes.** The daemon passes the spawn closure and inserts the runtime into its one registry.
 - **Repository identity.** Native discovery belongs to the existing
-  `maestro-workspace::workspace::git` owner. The daemon and application footer use
+  `maestro-workspace::spaces::repository` owner. The daemon and application footer use
   the same directory walk for ordinary, linked, bare and embedded-bare layouts.
   Native path bytes survive traversal and metadata-link resolution. Shared Unicode
   trimming applies to link text. Workspace discovery climbs past markers without a
@@ -205,7 +205,7 @@ need `unsafe` to hand its descriptor to the async runtime.
 
 ### One pane runtime over the concrete emulator
 
-- **Ownership.** `maestro_daemon::pane::PaneRuntime` is the only runtime type for a pane terminal. It owns
+- **Ownership.** `maestro_daemon::panes::PaneRuntime` is the only runtime type for a pane terminal. It owns
   the PTY child, the emulator's `Terminal` and the agent detection task, and it keeps behaviour only.
 - **No forwarding layers.** Types that only delegate are not built. The registry stores `PaneRuntime`
   directly.
@@ -239,9 +239,9 @@ The snapshot, the detection catalog and the announcements store use it.
 ### Foreground process facts
 
 - **Location.** Foreground jobs, process trees, argv, working directories and environment values are read in
-  the Linux-only `maestro-process::pty::foreground`. Its `ForegroundJob` and
+  the Linux-only `maestro-process::terminal::jobs`. Its `ForegroundJob` and
   `ForegroundProcess` records live in the platform-independent
-  `maestro-process::foreground` module, with re-exports at their Linux paths.
+  `maestro-process::jobs` module, with re-exports at their Linux paths.
 - **Environment hint.** It is returned as the raw value, and the daemon parses it with the agent catalogue.
   That removes the cycle between process facts and agent recognition.
 
@@ -288,7 +288,7 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
 
 | Defect | Fix | Delivery |
 |---|---|---|
-| Six POSIX shell quoters, one with a different safe set, plus five other quoters | one quoter in `maestro-process::shell`; the others become its callers | 2 |
+| Six POSIX shell quoters, one with a different safe set, plus five other quoters | one quoter in `maestro-process::commands`; the others become its callers | 2 |
 | The peer-closed probe consumes a byte and treats data as a disconnect | full-duplex lines and end of input | 1, 13 |
 | Two run loops with duplicated scheduling, deferred requests, repeat plans and key handling | one loop | 12, 29, 34 |
 | Three atomic JSON writers with different durability | one replacement owner | 6, 7, 27 |

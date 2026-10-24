@@ -7,7 +7,9 @@ use maestro_models::{
     Model, ModelThinkingLevel as ThinkingLevel, SharedHandle, ToolInfo, UserContent,
 };
 use maestro_resources::SlashCommandInfo;
-use maestro_session::messages::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions};
+use maestro_session::message_records::{
+    CustomMessageInput, SendMessageOptions, SendUserMessageOptions,
+};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_tools::{ExecOptions, ExecResult, exec_command};
 use serde_json::Value;

@@ -3,7 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use maestro_tui::tui::InputHandler;
+use maestro_tui::interface::InputHandler;
 use maestro_tui::{CURSOR_MARKER, Component, FocusFlag, Focusable};
 
 /// Called at the start of each render with the render count.

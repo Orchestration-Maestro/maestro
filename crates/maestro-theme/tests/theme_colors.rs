@@ -1,5 +1,5 @@
 //! Terminal color construction and byte-level output.
-use crate::live::per_environment;
+use crate::live::with_observations;
 use crate::support;
 
 use maestro_theme::{
@@ -178,7 +178,7 @@ fn theme_detects_color_mode_with_exact_precedence() {
         ),
     ];
     let test = "theme_detects_color_mode_with_exact_precedence";
-    for (env, expected) in per_environment(test, cases, |(env, _)| env).unwrap_or_default() {
+    for (env, expected) in with_observations(test, cases, |(env, _)| env).unwrap_or_default() {
         let theme = load_theme_from_path(DARK_PATH, None).unwrap();
         assert_eq!(theme.get_color_mode(), expected, "{env:?}");
     }

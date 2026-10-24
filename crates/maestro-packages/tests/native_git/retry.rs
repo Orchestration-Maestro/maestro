@@ -10,7 +10,7 @@ use serde_json::json;
 use std::{cell::RefCell, io, rc::Rc};
 
 /// A live repository and its caller-owned execution context.
-pub struct RetryFixture {
+pub struct Fixture {
     /// Native history retained until all operations settle.
     pub repo: Repository,
     /// The manager under test.
@@ -28,7 +28,7 @@ pub struct RetryFixture {
     /// Runtime that drives admitted children to completion.
     runtime: tokio::runtime::Runtime,
 }
-impl RetryFixture {
+impl Fixture {
     /// Creates one of the four supported native repository layouts.
     pub fn new(layout: &str) -> Self {
         let mut repo = Repository::new();
@@ -259,5 +259,5 @@ fn configure_run(
 #[test]
 #[should_panic(expected = "unsupported native repository layout")]
 fn unknown_layout_does_not_silently_create_an_ordinary_clone() {
-    RetryFixture::new("unknown");
+    Fixture::new("unknown");
 }

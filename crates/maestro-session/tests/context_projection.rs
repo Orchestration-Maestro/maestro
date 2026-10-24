@@ -240,7 +240,7 @@ fn typed_record_views_cover_each_entry_kind() {
         .unwrap();
     assert_eq!(case.operation, "parse");
     let entries = maestro_session::parse_session_entries(case.args[0].as_str().unwrap());
-    support::session_context::assert_value(
+    support::session_context::assert_equal(
         &Value::Array(entries.clone()),
         &case.expected["ok"],
         &case.id,
@@ -302,7 +302,7 @@ fn assert_typed_fields(entry: &serde_json::Value, view: &serde_json::Value) {
     };
     assert_eq!(view.as_object().unwrap().len(), fields.len());
     for field in fields {
-        support::session_context::assert_value(
+        support::session_context::assert_equal(
             view.get(field).unwrap(),
             entry.get(field).unwrap(),
             field,
@@ -403,7 +403,7 @@ fn optional_entry_fields() {
                 "{kind}: {field}"
             );
             if let Some(state) = &state {
-                support::session_context::assert_value(view.get(field).unwrap(), state, field);
+                support::session_context::assert_equal(view.get(field).unwrap(), state, field);
             }
         }
     }

@@ -5,8 +5,8 @@
 mod support;
 use support::{assert_identity_invariants, populate_terminals};
 
-use maestro_daemon::{app::state::DaemonState, settings::model::Config};
-use maestro_workspace::layout::{Borders, PaneId, PaneInfo, Rect};
+use maestro_daemon::{app::model::DaemonState, settings::model::Config};
+use maestro_workspace::tiling::{Borders, PaneId, PaneInfo, Rect};
 
 #[test]
 fn daemon_pane_size_estimate_uses_headless_size_before_first_view() {
@@ -58,7 +58,7 @@ fn daemon_adversarial_identity_state_satisfies_app_invariants_after_mutation() {
         .topology
         .split_pane_with_runtime(
             0,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target: root,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: Some(0.5),

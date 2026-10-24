@@ -5,7 +5,9 @@
 //! and never enter this conversion.
 use super::{IndexedDBStorageBackend, IndexedDBStorageTransaction, browser_error};
 use crate::browser::json::encode_json;
-use maestro_app::browser::storage::{IndexDirection, QuotaInfo, StorageOperation, TransactionMode};
+use maestro_app::browser::persistence::{
+    IndexDirection, QuotaInfo, StorageOperation, TransactionMode,
+};
 use serde_json::Value;
 use std::{future::Future, io, pin::Pin};
 use wasm_bindgen::{JsCast, JsValue};

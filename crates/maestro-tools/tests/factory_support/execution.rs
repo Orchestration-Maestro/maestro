@@ -167,20 +167,20 @@ fn shell_operation(
     fail: bool,
     command: &str,
     cwd: &str,
-    options: process::bash::BashExecOptions<'_>,
-) -> Result<process::bash::BashExecResult, process::bash::BashError> {
-    let process::bash::BashExecOptions {
+    options: process::command::BashExecOptions<'_>,
+) -> Result<process::command::BashExecResult, process::command::BashError> {
+    let process::command::BashExecOptions {
         on_data, signal, ..
     } = options;
     if signal.is_some_and(Cancellation::is_aborted) {
-        return Err(process::bash::BashError::Aborted);
+        return Err(process::command::BashError::Aborted);
     }
     log.lock().unwrap().push(json!(["exec", command, cwd]));
     if fail {
         return Err(std::io::Error::other("shell denied").into());
     }
     on_data(b"bash-operations");
-    Ok(process::bash::BashExecResult {
+    Ok(process::command::BashExecResult {
         exit_code: Some(0.0),
     })
 }
