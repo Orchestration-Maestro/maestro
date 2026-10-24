@@ -57,3 +57,11 @@ live in `maestro_app::presentation_data::input_selectors`; this library
 re-exports `ConfigSelectorOptions` from there and imports the rest from that
 application path, so the interactive frontend and this library name one owner.
 See [selectors](chat/selectors.md) for the widgets.
+
+## Account commands
+
+`model_login::cli` presents the standalone `help`, `list` and `login` commands
+over an ordered provider snapshot, a live resolver and a console the caller
+supplies. It keeps its own argument grammar and writes the caller-relative
+account file, not the session credential store. See
+[standalone account commands](model_login.md).

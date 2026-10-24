@@ -1,5 +1,5 @@
-//! The interactive terminal mode: its retained containers, startup help, notices,
-//! transcript shortcuts, typed input and queued input.
+//! The interactive terminal mode: its retained containers, startup help, loaded
+//! resources, notices, transcript shortcuts, typed input and queued input.
 
 use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
@@ -20,6 +20,7 @@ use std::{
 mod key_display;
 mod queues;
 mod replay;
+mod resources;
 mod startup;
 mod submit;
 mod toggles;
@@ -75,7 +76,7 @@ pub struct InteractiveMode {
     built_in_header: RefCell<Option<Rc<startup::ExpandableText>>>,
     /// The runtime, theme, highlighter and image support shared by transcript rows.
     tool_environment: Rc<ToolRenderEnvironment>,
-    /// Whether tool output and summaries are expanded.
+    /// Whether tool output and summaries, and with them the startup text, are expanded.
     tool_output_expanded: Cell<bool>,
     /// Whether assistant thinking is replaced by its label.
     hide_thinking_block: Cell<bool>,
@@ -168,14 +169,13 @@ impl InteractiveMode {
     }
 
     /// Builds the header, adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission, starts the terminal and replays
-    /// the session, once; theme
-    /// changes then refresh the editor border, and theme and branch changes request fresh
-    /// frames.
+    /// transcript shortcuts, installs editor submission, starts the terminal, lists the
+    /// loaded resources and replays the session, once; theme changes then refresh the
+    /// editor border, and theme and branch changes request fresh frames.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start or of the
-    /// replay.
+    /// Returns the failure of the header's theme colours, of the terminal start, of the
+    /// resource listing or of the replay.
     pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -199,7 +199,6 @@ impl InteractiveMode {
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
-        self.render_initial_messages()?;
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
@@ -214,7 +213,8 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        Ok(())
+        self.show_loaded_resources(false)?;
+        self.render_initial_messages()
     }
 }
 

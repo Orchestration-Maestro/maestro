@@ -1,6 +1,6 @@
 //! The expansion and thinking shortcuts, and the editor border that follows the mode.
 
-use super::InteractiveMode;
+use super::{InteractiveMode, startup::ExpandableText};
 use crate::components::thinking_selector::thinking_text;
 use crate::{
     BashExecutionComponent, BranchSummaryMessageComponent, CompactionSummaryMessageComponent,
@@ -44,21 +44,21 @@ impl InteractiveMode {
     /// Flips the expansion of tool output and summaries.
     ///
     /// # Errors
-    /// Returns the failure of a tool row's native formatting.
+    /// Returns the failure of a tool row's native formatting or of a text rendering.
     fn toggle_tool_output_expansion(&self) -> Result<(), Box<dyn Error>> {
         self.set_tools_expanded(!self.tool_output_expanded.get())
     }
 
-    /// Applies `expanded` to the startup help and every expandable transcript row, walking
+    /// Applies `expanded` to the startup help and every expandable chat row, walking
     /// the child array held when the walk starts, then requests a frame.
     ///
     /// # Errors
-    /// Returns the failure of a tool row's native formatting.
+    /// Returns the failure of a tool row's native formatting or of a text rendering.
     pub(super) fn set_tools_expanded(&self, expanded: bool) -> Result<(), Box<dyn Error>> {
         self.tool_output_expanded.set(expanded);
         let header = self.built_in_header.borrow().clone();
         if let Some(header) = header {
-            header.set_expanded(expanded);
+            header.set_expanded(expanded)?;
         }
         for child in self.chat_container.walk() {
             set_expanded(child.as_ref(), expanded)?;
@@ -100,20 +100,21 @@ impl InteractiveMode {
             .settings_manager()
             .borrow_mut()
             .set_hide_thinking_block(hide);
-        self.chat_container.clear();
         self.rebuild_chat_from_messages()?;
         let state = if hide { "hidden" } else { "visible" };
         self.show_status(&format!("Thinking blocks: {state}"))
     }
 }
 
-/// Expands or collapses `child` when it is one of the expandable transcript rows.
+/// Expands or collapses `child` when it is one of the expandable chat rows.
 ///
 /// # Errors
-/// Returns the failure of a tool row's native formatting.
+/// Returns the failure of a tool row's native formatting or of a text rendering.
 fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), Box<dyn Error>> {
     let child: &dyn Any = child;
     if let Some(row) = child.downcast_ref::<ToolExecutionComponent>() {
+        row.set_expanded(expanded)?;
+    } else if let Some(row) = child.downcast_ref::<ExpandableText>() {
         row.set_expanded(expanded)?;
     } else if let Some(row) = child.downcast_ref::<BashExecutionComponent>() {
         row.set_expanded(expanded);

@@ -481,6 +481,19 @@ pub fn with_environment(test: &str, variables: &[(&str, &str)], body: impl FnOnc
     }
 }
 
+/// The standard error lines of `stderr` that are warnings.
+pub fn warnings(stderr: &str) -> Vec<&str> {
+    stderr
+        .lines()
+        .filter(|line| line.starts_with("Warning:"))
+        .collect()
+}
+
+/// The native error of reading a directory, which a read failure reports.
+pub fn directory_read_error() -> std::io::Error {
+    std::fs::read(env!("CARGO_MANIFEST_DIR")).unwrap_err()
+}
+
 /// Names the scratch base a standard-error child works in.
 const CHILD_BASE: &str = "MAESTRO_RESOURCE_TEST_BASE";
 

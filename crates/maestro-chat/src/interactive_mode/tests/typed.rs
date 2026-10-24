@@ -230,6 +230,7 @@ fn typed_callback_does_not_retain_the_mode() {
             runtime,
             themes,
             host,
+            loader,
         } = started(directory);
         let editor = Rc::clone(&mode.editor);
         let callback = editor.on_submit().unwrap();
@@ -243,7 +244,7 @@ fn typed_callback_does_not_retain_the_mode() {
         assert_eq!(poll(&mut waiter), None);
         assert_eq!(poll(&mut unpolled), None);
         assert!(recalled(&editor).is_empty());
-        drop((terminal, runtime, themes, host));
+        drop((terminal, runtime, themes, host, loader));
     });
 }
 
