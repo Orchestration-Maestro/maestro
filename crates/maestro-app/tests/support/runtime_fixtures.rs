@@ -2,9 +2,10 @@
 //! a runtime, and a runtime over a persisted session with chosen extensions.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, TestResourceLoader, create_test_extensions_result,
+    Auth, Harness, HarnessOptions, TestResourceLoader, answer, create_test_extensions_result,
     create_test_resource_loader, harness,
 };
+use maestro_app::resources::resource_loader::LoadPromptsResult;
 use maestro_app::{
     AgentSessionRuntime, AgentSessionServices, CreateAgentSessionOptions,
     CreateAgentSessionRuntimeFactory, CreateAgentSessionRuntimeOptions,
@@ -14,6 +15,7 @@ use maestro_app::{
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::{ExtensionFactory, LoadExtensionsResult};
 use maestro_models::Local;
+use maestro_resources::LoadSkillsResult;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_settings::SettingsManager;
 use serde_json::{Value, json};
@@ -37,20 +39,39 @@ pub fn start_event_view(event: &maestro_extensions::SessionStartEvent) -> Value 
     view
 }
 
-/// The factory creating each runtime over the fixture's catalog with `extensions` loaded.
+/// The resources every session of a runtime loads.
+#[derive(Clone)]
+pub struct Resources {
+    /// The loaded extensions.
+    pub extensions: Rc<LoadExtensionsResult<Local>>,
+    /// The loaded skills.
+    pub skills: Rc<LoadSkillsResult>,
+    /// The loaded prompt templates.
+    pub prompts: Rc<LoadPromptsResult>,
+}
+
+impl Resources {
+    /// Only `extensions`.
+    pub fn of(extensions: &Rc<LoadExtensionsResult<Local>>) -> Self {
+        Self {
+            extensions: Rc::clone(extensions),
+            skills: Rc::default(),
+            prompts: Rc::default(),
+        }
+    }
+}
+
+/// The factory creating each runtime over the fixture's catalog with `resources` loaded.
 pub fn factory(
     h: &Harness,
-    extensions: &Rc<LoadExtensionsResult<Local>>,
+    resources: &Resources,
     recorded: &Recorded,
 ) -> CreateAgentSessionRuntimeFactory {
     let (registry, model) = (Arc::clone(&h.registry), h.model("faux-1"));
-    let (extensions, calls) = (Rc::clone(extensions), Rc::clone(&recorded.factory_calls));
+    let (resources, calls) = (resources.clone(), Rc::clone(&recorded.factory_calls));
     Rc::new(move |options: CreateAgentSessionRuntimeOptions| {
-        let (registry, model, extensions) = (
-            Arc::clone(&registry),
-            Arc::clone(&model),
-            Rc::clone(&extensions),
-        );
+        let (registry, model, resources) =
+            (Arc::clone(&registry), Arc::clone(&model), resources.clone());
         calls.borrow_mut().push(json!({
             "cwd": options.cwd,
             "session_file": options.session_manager.borrow().get_session_file(),
@@ -62,7 +83,9 @@ pub fn factory(
             )));
             let loader: Rc<dyn maestro_app::resources::resource_loader::ResourceLoader<Local>> =
                 Rc::new(TestResourceLoader {
-                    extensions,
+                    extensions: resources.extensions,
+                    skills: resources.skills,
+                    prompts: resources.prompts,
                     ..create_test_resource_loader(None)
                 });
             let created = create_agent_session(CreateAgentSessionOptions {
@@ -102,26 +125,78 @@ pub fn factory(
     })
 }
 
+/// What a test runtime loads besides the scripted provider.
+pub struct RuntimeOptions {
+    /// Inline extensions, each at its supplied path or `<inline:N>`.
+    pub factories: Vec<(Option<&'static str>, ExtensionFactory<Local>)>,
+    /// Scripted models as identity and reasoning support; `faux-1` is selected.
+    pub models: Vec<(&'static str, bool)>,
+    /// The scripted provider's credentials.
+    pub auth: Auth,
+    /// The loaded skills.
+    pub skills: Vec<maestro_resources::Skill>,
+    /// The loaded prompt templates.
+    pub prompts: Vec<maestro_resources::PromptTemplate>,
+}
+
+impl Default for RuntimeOptions {
+    fn default() -> Self {
+        Self {
+            factories: Vec::new(),
+            models: vec![("faux-1", true)],
+            auth: Auth::Key,
+            skills: Vec::new(),
+            prompts: Vec::new(),
+        }
+    }
+}
+
 /// A runtime over a persisted session at `<root>/<label>` with `factories` loaded, and what
 /// it records.
 pub async fn runtime_for(
     label: &str,
-    factories: Vec<(Option<&str>, ExtensionFactory<Local>)>,
+    factories: Vec<(Option<&'static str>, ExtensionFactory<Local>)>,
+) -> (Harness, AgentSessionRuntime, Recorded) {
+    runtime_with(
+        label,
+        RuntimeOptions {
+            factories,
+            ..RuntimeOptions::default()
+        },
+    )
+    .await
+}
+
+/// A runtime over a persisted session at `<root>/<label>` loading `options`, and what it
+/// records.
+pub async fn runtime_with(
+    label: &str,
+    options: RuntimeOptions,
 ) -> (Harness, AgentSessionRuntime, Recorded) {
     let h = harness(HarnessOptions {
-        models: vec![("faux-1", true)],
-        auth: Auth::Key,
+        models: options.models,
+        auth: options.auth,
         ..HarnessOptions::default()
     })
     .await;
     let root = h.scratch.path().display().to_string();
     let cwd = format!("{root}/{label}");
     std::fs::create_dir_all(&cwd).unwrap();
-    let extensions = Rc::new(create_test_extensions_result(factories, &cwd).await);
+    let resources = Resources {
+        extensions: Rc::new(create_test_extensions_result(options.factories, &cwd).await),
+        skills: Rc::new(LoadSkillsResult {
+            skills: options.skills,
+            diagnostics: Vec::new(),
+        }),
+        prompts: Rc::new(LoadPromptsResult {
+            prompts: options.prompts,
+            diagnostics: Vec::new(),
+        }),
+    };
     let recorded = Recorded::default();
     let manager = SessionManager::create(&cwd, Some(&format!("{cwd}/sessions")), &root).unwrap();
     let manager = Rc::new(RefCell::new(manager));
-    let create = factory(&h, &extensions, &recorded);
+    let create = factory(&h, &resources, &recorded);
     let options = |manager: &Rc<RefCell<SessionManager>>| CreateAgentSessionRuntimeOptions {
         cwd: cwd.clone(),
         agent_dir: root.clone(),
@@ -135,4 +210,16 @@ pub async fn runtime_for(
         .await
         .unwrap();
     (h, runtime, recorded)
+}
+
+/// A session stored in `sessions` for `cwd`, holding one exchange.
+pub fn stored_in(cwd: &str, sessions: &str, root: &str) -> SessionManager {
+    let mut manager = SessionManager::create(cwd, Some(sessions), root).unwrap();
+    manager
+        .append_message(json!({"role": "user", "content": "kept", "timestamp": 0}))
+        .unwrap();
+    manager
+        .append_message(serde_json::to_value(answer("stored", None, None)).unwrap())
+        .unwrap();
+    manager
 }

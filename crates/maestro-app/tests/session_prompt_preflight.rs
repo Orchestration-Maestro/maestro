@@ -4,15 +4,16 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Auth, Harness, HarnessOptions, Transcript, agent_ended, answer, assert_transcript, assistant,
-    case, command_extension, entries_view, harness, history_view, hold_first_answer, labelled,
+    case, command_extension, entries_view, harness, history_view, hold_first_answer,
+    input_extension, labelled,
     load_history, messages_view, observed_preflight, of_kinds, on_task_set, outcome, queue_view,
     recorded_skills, script_responses, shell_entries, start_and_abandon, start_prompt,
     supplied_failure, template, transcribed, usage, user, with_placeholders,
 };
 use maestro_app::agent_session::PromptOptions;
 use maestro_extensions::{
-    BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionFactory, InputEvent,
-    InputEventResult, InputTransform,
+    BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionFactory, InputEventResult,
+    InputTransform,
 };
 use maestro_models::{ImageContent, Local};
 use maestro_session::Presence;
@@ -41,24 +42,6 @@ fn image() -> ImageContent {
         data: "AAAA".into(),
         mime_type: "image/png".into(),
     }
-}
-
-/// The extension whose input handler answers every input with `answer`.
-fn input_extension(
-    answer: impl Fn(&InputEvent) -> Result<Option<InputEventResult>, &'static str> + 'static,
-) -> ExtensionFactory<Local> {
-    let answer = Rc::new(answer);
-    Rc::new(move |api| {
-        let answer = Rc::clone(&answer);
-        let registered = api.on::<InputEvent, InputEventResult>(
-            "input".into(),
-            Rc::new(move |event, _| {
-                let result = answer(event).map_err(Into::into);
-                Box::pin(std::future::ready(result))
-            }),
-        );
-        Box::pin(std::future::ready(registered.map(drop)))
-    })
 }
 
 /// The extension whose before-agent-start handler answers each prompt with `answer`.

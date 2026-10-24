@@ -1986,3 +1986,21 @@ pub fn echo_tools(
     };
     IndexMap::from([("echo".to_owned(), Rc::new(RwLock::new(tool)))])
 }
+
+/// The extension whose input handler answers every input with `answer`.
+pub fn input_extension(
+    answer: impl Fn(&InputEvent) -> Result<Option<InputEventResult>, &'static str> + 'static,
+) -> ExtensionFactory<Local> {
+    let answer = Rc::new(answer);
+    Rc::new(move |api| {
+        let answer = Rc::clone(&answer);
+        let registered = api.on::<InputEvent, InputEventResult>(
+            "input".into(),
+            Rc::new(move |event, _| {
+                let result = answer(event).map_err(Into::into);
+                Box::pin(std::future::ready(result))
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
+}

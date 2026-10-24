@@ -2,7 +2,7 @@
 //! re-checked switch, forks before and at an entry, imports and the final shutdown,
 //! compared with the recorded runtime cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::runtime_fixtures::{Recorded, factory, runtime_for};
+use crate::support::runtime_fixtures::{Recorded, Resources, factory, runtime_for, stored_in};
 use crate::support::session_harness::{
     Harness, HarnessOptions, answer, create_test_extensions_result, harness, on_task_set,
     script_responses,
@@ -47,18 +47,6 @@ fn stored_elsewhere(root: &str, sessions: &str) -> SessionManager {
     std::fs::create_dir_all(&gone).unwrap();
     let manager = stored_in(&gone, &format!("{root}/{sessions}"), root);
     std::fs::remove_dir_all(&gone).unwrap();
-    manager
-}
-
-/// A session stored in `sessions` for `cwd`, holding one exchange.
-fn stored_in(cwd: &str, sessions: &str, root: &str) -> SessionManager {
-    let mut manager = SessionManager::create(cwd, Some(sessions), root).unwrap();
-    manager
-        .append_message(json!({"role": "user", "content": "kept", "timestamp": 0}))
-        .unwrap();
-    manager
-        .append_message(serde_json::to_value(answer("stored", None, None)).unwrap())
-        .unwrap();
     manager
 }
 
@@ -109,7 +97,7 @@ fn refuses_a_first_runtime_whose_stored_directory_is_gone() {
         let recorded = Recorded::default();
         let extensions = Rc::new(create_test_extensions_result(Vec::new(), &root).await);
         let created = create_agent_session_runtime(
-            factory(&h, &extensions, &recorded),
+            factory(&h, &Resources::of(&extensions), &recorded),
             CreateAgentSessionRuntimeOptions {
                 cwd: root.clone(),
                 agent_dir: root,
