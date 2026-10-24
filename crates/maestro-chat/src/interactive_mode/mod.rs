@@ -29,6 +29,7 @@ mod startup;
 mod submit;
 mod toggles;
 mod transcript;
+mod transfer;
 
 #[cfg(test)]
 #[cfg(unix)]

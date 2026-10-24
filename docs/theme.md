@@ -173,7 +173,8 @@ wrapped in the style's opening escape and its own closing escape (`22`, `23`, `2
 Each matching closing escape inside the text is followed by the opening escape again, and each
 LF or CRLF is preceded by the closing and followed by the opening escape. Other escapes,
 including reset `0`, and a lone CR stay literal. `fg` and `bg` keep their literal
-prefix, unchanged text and plane reset.
+prefix, unchanged text and plane reset. `red`, `yellow`, `green` and `gray` take the same flag
+and close with the foreground reset `39`, and `dim` closes with `22`.
 
 `get_thinking_border_color` maps `off`, `minimal`, `low`, `medium`, `high` and `xhigh` to
 their `thinking*` keys and any other level to `thinkingOff`; `get_bash_mode_border_color`

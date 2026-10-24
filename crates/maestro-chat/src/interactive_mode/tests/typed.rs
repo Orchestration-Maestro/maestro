@@ -1,9 +1,9 @@
 //! Typed input through the editor's installed submission and the single waiting input.
-use super::{World, isolated, recorded, started};
+use super::{World, cases as recorded_cases, isolated, started};
 use crate::{CustomEditor, InteractiveMode};
 use maestro_tui::KeybindingKeys;
 use maestro_tui::tui::InputHandler;
-use serde::{Deserialize, de::DeserializeOwned};
+use serde::Deserialize;
 use std::{
     cell::RefCell,
     future::Future,
@@ -16,11 +16,6 @@ use std::{
 
 /// Every recorded input case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_input.json");
-
-/// The recorded cases of `test`, typed by that witness.
-fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
-    recorded(FIXTURES, test)
-}
 
 /// Polls `future` once with a waker that observes nothing.
 pub(super) fn poll<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
@@ -55,8 +50,8 @@ pub(super) fn recalled(editor: &CustomEditor) -> Vec<String> {
 }
 
 /// Submits `text` through the callback the mode installed on its editor.
-pub(super) fn submit(world: &World, text: &str) {
-    let callback = world.mode.editor.on_submit().unwrap();
+pub(super) fn submit(mode: &InteractiveMode, text: &str) {
+    let callback = mode.editor.on_submit().unwrap();
     callback(text);
 }
 
@@ -86,10 +81,10 @@ struct Selected {
 fn typed_submission_trims_ecmascript_whitespace_and_records_history() {
     const TEST: &str = "typed_submission_trims_ecmascript_whitespace_and_records_history";
     isolated(TEST, |directory| {
-        for (input, expected) in cases::<Selection, Selected>(TEST) {
+        for (input, expected) in recorded_cases::<Selection, Selected>(FIXTURES, TEST) {
             let world = started(directory);
             let mut waiter = input.waiting.then(|| waiting(&world.mode));
-            submit(&world, &input.value);
+            submit(&world.mode, &input.value);
             let delivered: Vec<String> = waiter.as_mut().and_then(poll).into_iter().collect();
             assert_eq!(delivered, expected.delivered, "{:?}", input.value);
             assert_eq!(
@@ -140,17 +135,17 @@ enum Waited {
 
 /// Early, empty, accepted, later and fresh-waiter submissions.
 fn one_shot(world: &World) -> (Vec<String>, String) {
-    submit(world, " early ");
+    submit(&world.mode, " early ");
     let mut first = waiting(&world.mode);
-    submit(world, "   ");
+    submit(&world.mode, "   ");
     assert!(world.mode.on_input_callback.borrow().is_some());
     assert_eq!(poll(&mut first), None);
-    submit(world, " one ");
+    submit(&world.mode, " one ");
     let delivered = vec![poll(&mut first).unwrap()];
     assert!(world.mode.on_input_callback.borrow().is_none());
-    submit(world, " after ");
+    submit(&world.mode, " after ");
     let mut second = waiting(&world.mode);
-    submit(world, " two ");
+    submit(&world.mode, " two ");
     (delivered, poll(&mut second).unwrap())
 }
 
@@ -159,11 +154,11 @@ fn replace(world: &World) -> (bool, String, Vec<String>) {
     let mut old = waiting(&world.mode);
     let mut latest = waiting(&world.mode);
     assert_eq!(poll(&mut old), None);
-    submit(world, " replacement ");
+    submit(&world.mode, " replacement ");
     let old_done = poll(&mut old).is_some();
     let new_value = poll(&mut latest).unwrap();
     let history = recalled(&world.mode.editor);
-    submit(world, " later ");
+    submit(&world.mode, " later ");
     assert_eq!(poll(&mut old), None);
     (old_done, new_value, history)
 }
@@ -172,7 +167,7 @@ fn replace(world: &World) -> (bool, String, Vec<String>) {
 fn typed_waiter_is_one_shot_without_buffering_early_submissions() {
     const TEST: &str = "typed_waiter_is_one_shot_without_buffering_early_submissions";
     isolated(TEST, |directory| {
-        for (input, expected) in cases::<Sequence, Waited>(TEST) {
+        for (input, expected) in recorded_cases::<Sequence, Waited>(FIXTURES, TEST) {
             let world = started(directory);
             let cleared = |world: &World| world.mode.on_input_callback.borrow().is_none();
             match (input.op.as_str(), expected) {
@@ -206,13 +201,13 @@ fn typed_waiter_is_one_shot_without_buffering_early_submissions() {
         }
         let world = started(directory);
         let mut unpolled = Box::pin(world.mode.get_user_input());
-        submit(&world, " unclaimed ");
+        submit(&world.mode, " unclaimed ");
         assert!(world.mode.on_input_callback.borrow().is_none());
         assert_eq!(poll(&mut unpolled), None);
-        submit(&world, " claimed ");
+        submit(&world.mode, " claimed ");
         assert_eq!(poll(&mut unpolled).as_deref(), Some("claimed"));
         drop(waiting(&world.mode));
-        submit(&world, " abandoned ");
+        submit(&world.mode, " abandoned ");
         assert!(world.mode.on_input_callback.borrow().is_none());
         assert_eq!(
             recalled(&world.mode.editor),
@@ -297,9 +292,10 @@ struct Reentered {
 fn typed_delivery_precedes_history_and_accepts_reentrant_registration() {
     const TEST: &str = "typed_delivery_precedes_history_and_accepts_reentrant_registration";
     isolated(TEST, |directory| {
-        let [(input, expected)] = <[(Sequence, Reentered); 1]>::try_from(cases(TEST))
-            .ok()
-            .unwrap();
+        let [(input, expected)] =
+            <[(Sequence, Reentered); 1]>::try_from(recorded_cases(FIXTURES, TEST))
+                .ok()
+                .unwrap();
         assert_eq!(input.op, "callback-reentry");
         let world = started(directory);
         world.mode.editor.add_to_history("older");
@@ -330,13 +326,13 @@ fn typed_delivery_precedes_history_and_accepts_reentrant_registration() {
             *next.borrow_mut() = Some(waiting(&mode));
             mode.editor.set_text("alternate editor text");
         })));
-        submit(&world, " selected ");
+        submit(&world.mode, " selected ");
         assert!(ON_WAKE.with_borrow(Option::is_none));
         assert_eq!(*observations.borrow(), expected.observations);
         assert_eq!(observations.borrow()[0].text, expected.first);
         assert_eq!(world.mode.editor.get_text(), "alternate editor text");
         assert_eq!(recalled(&world.mode.editor)[0], expected.first);
-        submit(&world, " next ");
+        submit(&world.mode, " next ");
         let mut waiter = second.borrow_mut().take().unwrap();
         assert_eq!(poll(&mut waiter), Some(expected.second));
         assert_eq!(recalled(&world.mode.editor), expected.history);
@@ -465,7 +461,7 @@ fn live_binding(directory: &Path, steps: &[LiveStep]) {
 fn typed_input_obeys_the_live_submit_binding() {
     const TEST: &str = "typed_input_obeys_the_live_submit_binding";
     isolated(TEST, |directory| {
-        for (input, expected) in cases::<Binding, Routed>(TEST) {
+        for (input, expected) in recorded_cases::<Binding, Routed>(FIXTURES, TEST) {
             match (input, expected) {
                 (
                     Binding::Keys { binding, keys },

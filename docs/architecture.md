@@ -84,8 +84,10 @@ not satisfy a direct requirement. The permitted internal development edges are
 `maestro-tui-crossterm` to `maestro-brand` for the terminal examples, the
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
-`maestro-text` edge for terminal newline normalization in checked-child tests, and the
-native development edges from the twenty-two declared callers to the
+`maestro-text` edge for terminal newline normalization in checked-child tests, the native
+`maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
+child tests, and the native development edges from the twenty-three declared callers to
+the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -147,6 +149,15 @@ name decoding and any further ordering.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.
+
+The listener leaf `maestro-listeners` is declared core below layer 0 with no
+workspace dependencies. It owns one job: retaining callbacks in live registration
+order, admitting one per identity and returning removed ownership to the caller.
+Models, the toolkit, the agent, the application and the extension runtime may
+depend on it and keep their own borrowing, locking, delivery and settlement
+policy. Retired registrations are reclaimed while no traversal runs, so one
+removal costs expected constant work and clearing every registration costs work
+proportional to their number.
 
 ## Authored paths and the foundation utility
 
@@ -441,11 +452,13 @@ target at `tests/integration.rs`.
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps
 its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
-session listeners and extension error delivery reuse it. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
-registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
+listeners, extension error delivery and terminal input listeners reuse it. For
+shared `Rc` callbacks it also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 Extension runner sessions and context catalog getters retain one direct shared
 `ModelRegistry` holder; its internal synchronization stays catalog-owned.

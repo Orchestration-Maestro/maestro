@@ -543,6 +543,43 @@ fn catalog_pattern_edge_is_scoped() {
 }
 
 #[test]
+fn listener_leaf_edges_are_scoped() {
+    for from in [
+        "maestro-models",
+        "maestro-tui",
+        "maestro-agent",
+        "maestro-app",
+        "maestro-extensions",
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[from, "maestro-listeners"]);
+        check_permitted_declarations(&workspace, from, &["maestro-listeners"]);
+    }
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-session", "maestro-listeners"]);
+    workspace.member(
+        "maestro-session",
+        "maestro-session",
+        "[dependencies]\nlisteners = { package = \"maestro-listeners\", path = \"../maestro-listeners\" }",
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("forbidden production dependency: maestro-session -> maestro-listeners".into())
+    );
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-listeners", "maestro-text"]);
+    workspace.member(
+        "maestro-listeners",
+        "maestro-listeners",
+        "[dependencies]\ntext = { package = \"maestro-text\", path = \"../maestro-text\" }",
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("maestro-listeners must not depend on workspace crate maestro-text".into())
+    );
+}
+
+#[test]
 fn process_capture_consumers_may_declare_the_owner() {
     for from in [
         "maestro-app",
@@ -1840,6 +1877,48 @@ fn extension_credentials_edge_is_development_only() {
 }
 
 #[test]
+fn rpc_child_rendering_edges_are_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-rpc", "maestro-tui-crossterm"]);
+    let application = "maestro-app = { path = \"../maestro-app\" }";
+    for target in ["maestro-tui-crossterm"] {
+        for kind in [
+            "dev-dependencies",
+            "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies",
+        ] {
+            workspace.member(
+                "maestro-rpc",
+                "maestro-rpc",
+                &format!(
+                    "[dependencies]\n{application}\n[{kind}]\n{target} = {{ path = \"../{target}\" }}"
+                ),
+            );
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Ok(()),
+                "{kind} {target}"
+            );
+        }
+        for (kind, extra) in DECLARATIONS {
+            let declared = format!("{target} = {{ path = \"../{target}\"{extra} }}");
+            let manifest = if *kind == "dependencies" {
+                format!("[dependencies]\n{application}\n{declared}")
+            } else {
+                format!("[dependencies]\n{application}\n[{kind}]\n{declared}")
+            };
+            workspace.member("maestro-rpc", "maestro-rpc", &manifest);
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!(
+                    "forbidden production dependency: maestro-rpc -> {target}"
+                )),
+                "{kind}{extra} {target}"
+            );
+        }
+    }
+}
+
+#[test]
 fn terminal_example_brand_edge_keeps_required_runtime_dependencies() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-tui-crossterm", "maestro-brand"]);
@@ -2385,6 +2464,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
+    "maestro-rpc",
     "maestro-session",
     "maestro-settings",
     "maestro-terminal",

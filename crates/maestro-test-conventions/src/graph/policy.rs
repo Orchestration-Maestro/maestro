@@ -14,6 +14,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-lock", &[]),
     ("maestro-process", &[]),
     ("maestro-listing", &[]),
+    ("maestro-listeners", &[]),
     ("maestro-protocol", &[]),
     ("maestro-ipc", &[]),
     ("maestro-terminal", &["maestro-text"]),
@@ -75,6 +76,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-json",
             "maestro-brand",
+            "maestro-listeners",
         ],
     ),
     (
@@ -105,11 +107,17 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-markdown",
             "maestro-listing",
             "maestro-resources",
+            "maestro-listeners",
         ],
     ),
     (
         "maestro-agent",
-        &["maestro-models", "maestro-text", "maestro-tool"],
+        &[
+            "maestro-models",
+            "maestro-text",
+            "maestro-tool",
+            "maestro-listeners",
+        ],
     ),
     (
         "maestro-credentials",
@@ -210,6 +218,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-theme",
             "maestro-tui",
             "maestro-resources",
+            "maestro-listeners",
         ],
     ),
     (
@@ -238,6 +247,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-json",
             "maestro-process",
             "maestro-listing",
+            "maestro-listeners",
         ],
     ),
     ("maestro-extensions-wasmtime", &["maestro-extensions"]),
@@ -290,6 +300,8 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-detection", "maestro-text"),
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
+    ("maestro-rpc", "maestro-theme"),
+    ("maestro-rpc", "maestro-tui-crossterm"),
 ];
 
 /// Foundation utility that native crates may use beyond their table row.
@@ -314,6 +326,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
+    "maestro-rpc",
     "maestro-session",
     "maestro-settings",
     "maestro-test-conventions",
@@ -345,6 +358,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
+    "maestro-rpc",
     "maestro-session",
     "maestro-settings",
     "maestro-terminal",

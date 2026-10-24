@@ -183,6 +183,12 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session and the application may depend on it, on native targets; callers keep
   kind filtering, name decoding and further ordering.
+- `maestro-listeners` is a declared core leaf below layer 0 with no workspace
+  dependencies. It retains callbacks in live registration order: one admission per
+  identity, removal that returns ownership to the caller, and traversal that sees
+  the collection as it is. Models, the toolkit, agent, application and extensions
+  may depend on it; they keep their own borrowing, locking and settlement policy.
+  Its storage reclaims retired registrations while no traversal runs.
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
@@ -251,8 +257,10 @@ edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
 the native-only `maestro-extensions` to `maestro-credentials`, for extension tests
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
+the native `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges
+for its standard-stream child tests,
 and the native, non-optional dev-dependencies
-of the twenty-two declared callers on `maestro-test-process`, the owner of
+of the twenty-three declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
@@ -298,10 +306,14 @@ code-generation evidence and framework/highlighting equivalents. See
 [architecture checks](docs/architecture.md) for commands, diagnostics and limits.
 Publish reusable adapter conformance from the owning leaf, not a forwarding test crate.
 
-`maestro-protocol` owns the shared RPC records, binary screen channel and generated
-JSON Schema, with no domain dependencies. Session and workspace operations use one
-contract across stdio and daemon sockets; JSONL framing belongs to
-`maestro-json::jsonl`. Native input, rendering and notification conversions stay with their runtime adapters. See
+`maestro-protocol` owns the generic RPC envelopes, the workspace records, binary
+screen channel and generated JSON Schema, with no domain dependencies.
+`maestro-app::rpc_types` owns the session records and `maestro-app::rpc_mode` the one
+connection runner; `maestro-rpc` is its standard-stream adapter. Session and workspace
+operations use one contract across stdio and daemon sockets; JSONL framing belongs to
+`maestro-json::jsonl`. Conventions keep protocol records in the application and the
+protocol crate. The connection output accepts only an `RpcLine`, which only an
+`RpcRecord` builds, so protocol output has one writer by type. Native input, rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).
 
 The workspace daemon is core design: the root always wires the daemon and the
@@ -520,11 +532,13 @@ target at `tests/integration.rs`.
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps
 its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
-session listeners and extension error delivery reuse it. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
-registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
+listeners, extension error delivery and terminal input listeners reuse it. For
+shared `Rc` callbacks it also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 
 Shared extension event/result schemas and assembled prompt records belong to

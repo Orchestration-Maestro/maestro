@@ -30,6 +30,7 @@ mod agent_events;
 mod application_messages;
 mod author;
 mod basic_ui;
+mod bookmark_example;
 mod build;
 mod bus_callbacks;
 pub(crate) mod bus_host;
@@ -83,6 +84,7 @@ mod shutdown_example;
 mod stream_events;
 mod tool_callbacks;
 mod tool_events;
+mod trigger_compact_example;
 pub(crate) mod ui_host;
 mod with_deps_example;
 

@@ -68,6 +68,7 @@ impl<C: CustomAgentMessages + serde::Serialize + 'static> ContributionHost<C> {
             crate::components::markdown_block::MarkdownBlock::define(view)
                 .and_then(|()| crate::ThinkingBlock::define(view))
                 .map_err(|error| JsValue::from_str(&error.to_string()))?;
+            crate::components::preview_code_toggle::dom::define(view)?;
             super::slot::define(view)?;
         }
         Ok(Self {

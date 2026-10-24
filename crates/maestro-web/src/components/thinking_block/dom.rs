@@ -9,10 +9,9 @@ use crate::{
         button::{ButtonProps, ButtonSize, ButtonVariant, button},
         markdown_block::MarkdownBlock,
     },
-    dom::{DomContent, DomRoot, DomView, Property, Reflected},
+    dom::{DomContent, DomRoot, DomView, Link, Property, Reflected},
     tools::types::ToolUiError,
 };
-use js_sys::WeakRef;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -127,7 +126,7 @@ impl ThinkingBlock {
         let observed = ["content", "is-streaming"].map(String::from);
         crate::dom::define_element(TAG, observed.into(), PROPERTIES, move |root, properties| {
             ThinkingElement {
-                root: WeakRef::new(&root),
+                root: Link::new(&root),
                 view: Rc::clone(&view),
                 shown: None,
                 _properties: properties,
@@ -213,7 +212,7 @@ fn show(shared: &Shared) -> Result<(), ToolUiError> {
 /// One `thinking-block` element showing its attributes' disclosure.
 struct ThinkingElement {
     /// Element owning this state.
-    root: WeakRef,
+    root: Link,
     /// Page operands.
     view: Rc<DomView>,
     /// The mounted disclosure, kept with its expansion while the element is detached.

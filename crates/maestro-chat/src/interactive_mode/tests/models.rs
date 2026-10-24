@@ -1507,11 +1507,13 @@ struct Submission {
     text: String,
 }
 
-/// Submits `text` exactly through the editor's installed submission, with the editor
-/// holding it, and runs the work it hands over; typed text would have its tabs widened.
+/// Submits `text` exactly through the editor's installed submission, after the editor
+/// empties itself as it does before calling back, and runs the work it hands over; typed
+/// text would have its tabs widened.
 fn submit_held(world: &World, text: &str) {
     world.mode.editor.set_text(text);
-    submit(world, text);
+    world.mode.editor.set_text("");
+    submit(&world.mode, text);
     assert!(world.runtime.drain_futures().is_empty());
 }
 
