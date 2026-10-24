@@ -68,10 +68,7 @@ pub fn main(
         stderr.write_all(REQUIRED.as_bytes())?;
         return Ok(ExitCode::from(1));
     };
-    let sessions = maestro_path::join(&[
-        &cost_session_base()?,
-        &maestro_session::encode_session_dir(&project),
-    ]);
+    let sessions = maestro_session::sessions_dir(&cost_session_base()?, &project);
     if !std::path::Path::new(&sessions).exists() {
         writeln!(stderr, "Sessions directory not found: {sessions}")?;
         return Ok(ExitCode::from(1));

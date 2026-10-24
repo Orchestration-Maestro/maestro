@@ -11,10 +11,18 @@ use std::{
 ///
 /// Strips one leading separator and replaces separators and drive colons with
 /// dashes. Performs no I/O and does not normalize the authored path.
-#[must_use]
-pub fn encode_session_dir(cwd: &str) -> String {
+pub(crate) fn encode_session_dir(cwd: &str) -> String {
     let cwd = cwd.strip_prefix(['/', '\\']).unwrap_or(cwd);
     format!("--{}--", cwd.replace(['/', '\\', ':'], "-"))
+}
+
+/// The directory beneath `base` that holds the sessions of `cwd`.
+///
+/// The name comes from this module alone, so no caller can spell a session
+/// directory of its own.
+#[must_use]
+pub fn sessions_dir(base: &str, cwd: &str) -> String {
+    maestro_path::join(&[base, &encode_session_dir(cwd)])
 }
 
 /// Encode the authored cwd into a default directory beneath the resolved agent root.

@@ -5,7 +5,7 @@ pub use messages::convert_to_llm;
 /// Session history and selected-branch context.
 pub mod session_manager;
 #[cfg(not(target_arch = "wasm32"))]
-pub use session_manager::encode_session_dir;
+pub use session_manager::sessions_dir;
 pub use session_manager::{
     BranchSummaryEntry, CURRENT_SESSION_VERSION, CompactionEntry, CustomEntry, CustomMessageEntry,
     FileEntry, ModelChangeEntry, NewSessionOptions, SessionContext, SessionEntry, SessionEntryBase,

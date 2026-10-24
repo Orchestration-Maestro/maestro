@@ -2,7 +2,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::analysis_fixtures::{
-    ZONE, root, run_cost, run_tools, run_transcripts, run_usage, scratch,
+    ZONE, page_data, root, run_cost, run_tools, run_transcripts, run_usage, scratch,
+    with_controlled_viewer, with_controlled_viewer_and,
 };
 use crate::isolated_home::with_environment;
 use crate::isolated_home::with_environment_without;
@@ -30,15 +31,15 @@ fn tool_result(units: usize) -> String {
 
 #[test]
 fn analysis_file_readers_keep_their_bom_and_parse_error_policies() {
-    with_environment(
+    with_controlled_viewer_and(
         "analysis_file_readers_keep_their_bom_and_parse_error_policies",
         &[("TZ", "America/New_York")],
         |base| {
             let project = format!("{base}/project");
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
-            let directory = format!(
-                "{base}/home/.maestro/agent/sessions/{}",
-                maestro_session::encode_session_dir(&project)
+            let directory = maestro_session::sessions_dir(
+                &format!("{base}/home/.maestro/agent/sessions"),
+                &project,
             );
             std::fs::create_dir_all(&directory).expect("the fixture directory is creatable");
             // A byte-order mark opens the first line, which the trimming readers parse
@@ -90,9 +91,9 @@ fn decimal_day_parsing_reuses_the_integer_owner() {
         |base| {
             let project = format!("{base}/project");
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
-            let directory = format!(
-                "{base}/home/.maestro/agent/sessions/{}",
-                maestro_session::encode_session_dir(&project)
+            let directory = maestro_session::sessions_dir(
+                &format!("{base}/home/.maestro/agent/sessions"),
+                &project,
             );
             std::fs::create_dir_all(&directory).expect("the fixture directory is creatable");
             // Sixteen days as an explicit decimal count, a trailing word ignored, a
@@ -116,43 +117,49 @@ fn decimal_day_parsing_reuses_the_integer_owner() {
 
 #[test]
 fn analysis_large_reports_keep_every_selected_record() {
-    for count in [32_usize, 64, 128] {
-        let scratch = scratch();
-        let base = root(&scratch);
-        let directory = format!("{base}/sessions");
-        std::fs::create_dir_all(&directory).expect("the fixture directory is creatable");
-        let entries = (0..count)
-            .map(|index| {
-                tool_result(index).replace(
-                    "\"toolCallId\":\"1\"",
-                    &format!("\"toolCallId\":\"{index}\""),
-                )
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-        std::fs::write(format!("{directory}/a.jsonl"), entries)
-            .expect("the fixture file is writable");
-        let page = format!("{base}/page.html");
-        let run = run_tools(&["--sessions-dir", &directory, "--output", &page])
-            .expect("the tool report runs");
-        assert!(run.succeeded());
-        let data = crate::analysis_fixtures::page_data(&std::fs::read_to_string(&page).unwrap());
-        assert_eq!(data["files"], serde_json::json!(1));
-        let read = &data["tools"][0];
-        assert_eq!(read["results"], serde_json::json!(count));
-        assert_eq!(
-            read["samples"].as_array().map(Vec::len),
-            Some(count),
-            "{count} samples"
-        );
-        let summed = read["samples"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|value| value.as_u64().unwrap())
-            .sum::<u64>();
-        assert_eq!(read["estimatedTokens"], serde_json::json!(summed));
-    }
+    with_controlled_viewer(
+        "analysis_large_reports_keep_every_selected_record",
+        |_base| {
+            for count in [32_usize, 64, 128] {
+                let scratch = scratch();
+                let base = root(&scratch);
+                let directory = format!("{base}/sessions");
+                std::fs::create_dir_all(&directory).expect("the fixture directory is creatable");
+                let entries = (0..count)
+                    .map(|index| {
+                        tool_result(index).replace(
+                            "\"toolCallId\":\"1\"",
+                            &format!("\"toolCallId\":\"{index}\""),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                std::fs::write(format!("{directory}/a.jsonl"), entries)
+                    .expect("the fixture file is writable");
+                let page = format!("{base}/page.html");
+                let run = run_tools(&["--sessions-dir", &directory, "--output", &page])
+                    .expect("the tool report runs");
+                assert!(run.succeeded());
+                let data =
+                    crate::analysis_fixtures::page_data(&std::fs::read_to_string(&page).unwrap());
+                assert_eq!(data["files"], serde_json::json!(1));
+                let read = &data["tools"][0];
+                assert_eq!(read["results"], serde_json::json!(count));
+                assert_eq!(
+                    read["samples"].as_array().map(Vec::len),
+                    Some(count),
+                    "{count} samples"
+                );
+                let summed = read["samples"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|value| value.as_u64().unwrap())
+                    .sum::<u64>();
+                assert_eq!(read["estimatedTokens"], serde_json::json!(summed));
+            }
+        },
+    );
 }
 
 #[test]
@@ -169,14 +176,8 @@ fn session_roots_follow_the_account_home_and_cost_keeps_the_variable() {
                 .display()
                 .to_string();
             let root = format!("{account}/.maestro/agent/sessions");
-            let expected = format!("{root}/{}", maestro_session::encode_session_dir(&project));
-            // The report names the directory it resolved, which follows the account home.
-            let tools = run_tools(&["--output", &format!("{base}/page.html")])
-                .expect_err("the account home holds no sessions");
-            assert_eq!(
-                tools.to_string(),
-                format!("Sessions directory not found: {root}")
-            );
+            let expected = maestro_session::sessions_dir(&root, &project);
+            // The usage report names the directory it resolved from the account home.
             let transcripts =
                 run_transcripts(&["--output", &format!("{base}/out"), &project], false)
                     .expect("the transcript command reads its directory");
@@ -198,4 +199,21 @@ fn session_roots_follow_the_account_home_and_cost_keeps_the_variable() {
             assert_eq!(cost.to_string(), "no home directory");
         },
     );
+}
+
+#[test]
+fn tool_report_defaults_to_the_home_session_root() {
+    with_controlled_viewer("tool_report_defaults_to_the_home_session_root", |base| {
+        let root = format!("{base}/home/.maestro/agent/sessions");
+        std::fs::create_dir_all(&root).expect("the fixture directory is creatable");
+        std::fs::write(format!("{root}/a.jsonl"), tool_result(4))
+            .expect("the fixture file is writable");
+        let page = format!("{base}/page.html");
+        let run = run_tools(&["--output", &page]).expect("the tool report reads its directory");
+        assert!(run.succeeded(), "{run:?}");
+        let data = page_data(&std::fs::read_to_string(&page).expect("the page is readable"));
+        // Without `--sessions-dir` the report reads the home session root.
+        assert_eq!(data["sessionsDir"], serde_json::json!(root));
+        assert_eq!(data["files"], serde_json::json!(1));
+    });
 }

@@ -3095,18 +3095,11 @@ fn explicit_instruction_paths_share_their_resolver() {
 }
 
 /// The owner module that defines the session directory encoder.
-const ENCODER_OWNER: &str = "pub fn encode_session_dir(cwd: &str) -> String {\n    cwd.to_owned()\n}\n\npub fn default_dir(cwd: &str) -> String {\n    maestro_path::join(&[cwd, &encode_session_dir(cwd)]).concat()\n}\n";
-/// A caller that names the owner directly.
-const CALLER: &str =
-    "pub fn directory(cwd: &str) -> String {\n    maestro_session::encode_session_dir(cwd)\n}\n";
-/// A caller that reaches the owner through a renamed module import.
-const RENAMED_CALLER: &str = "use maestro_session as session;\n\npub fn directory(cwd: &str) -> String {\n    session::encode_session_dir(cwd)\n}\n";
-/// A caller that spells the directory name itself beside its companion call.
-const COPIED: &str = "pub fn directory(cwd: &str) -> String {\n    let _ = maestro_session::encode_session_dir(cwd);\n    format!(\"--{}--\", cwd.replace('/', \"-\"))\n}\n";
-/// A caller that throws the owner's result away and returns something else.
-const DISCARDED: &str = "pub fn directory(cwd: &str) -> String {\n    let _ = maestro_session::encode_session_dir(cwd);\n    cwd.to_owned()\n}\n";
-/// A caller that only mentions the owner name in a comment.
-const COMMENTED: &str = "// maestro_session::encode_session_dir(cwd)\npub fn directory(cwd: &str) -> String {\n    cwd.to_owned()\n}\n";
+const ENCODER_OWNER: &str = "pub(crate) fn encode_session_dir(cwd: &str) -> String {\n    cwd.to_owned()\n}\n\npub fn sessions_dir(base: &str, cwd: &str) -> String {\n    maestro_path::join(&[base, &encode_session_dir(cwd)]).concat()\n}\n";
+/// A caller that spells the directory name itself.
+const COPIED: &str = "pub fn directory(cwd: &str) -> String {\n    format!(\"--{}--\", cwd.replace('/', \"-\"))\n}\n";
+/// A caller that reaches the owner instead of spelling the name.
+const DELEGATING: &str = "pub fn directory(base: &str, cwd: &str) -> String {\n    maestro_session::sessions_dir(base, cwd)\n}\n";
 
 /// Write `source` as the crate file at `relative`.
 fn source(workspace: &Workspace, member: &str, relative: &str, source: &str) {
@@ -3132,7 +3125,7 @@ fn crate_path(workspace: &Workspace, member: &str, relative: &str) -> String {
         .to_string()
 }
 
-/// A workspace holding the encoder owner and the three native selectors.
+/// A workspace holding the encoder owner and one of its callers.
 fn encoder_workspace() -> Workspace {
     let workspace = Workspace::new();
     workspace.member("maestro-session", "maestro-session", "");
@@ -3144,29 +3137,20 @@ fn encoder_workspace() -> Workspace {
         "src/session_manager/files.rs",
         ENCODER_OWNER,
     );
-    for file in SELECTORS {
-        source(&workspace, "maestro-app", file, CALLER);
-    }
+    source(
+        &workspace,
+        "maestro-app",
+        "src/developer_tools/cost.rs",
+        DELEGATING,
+    );
     workspace
 }
-
-/// The production files that must reach the encoder.
-const SELECTORS: [&str; 3] = [
-    "src/developer_tools/cost.rs",
-    "src/developer_tools/stats.rs",
-    "src/developer_tools/session_transcripts/mod.rs",
-];
 
 #[test]
 fn session_directory_encoding_has_one_owner() {
     assert_eq!(check_workspace(encoder_workspace().root.path()), Ok(()));
     assert_second_definition_is_rejected();
     assert_copies_are_rejected();
-    assert_missing_selector_is_reported();
-    assert_unreached_owner_is_reported();
-    assert_renamed_import_is_accepted();
-    assert_discarded_result_is_rejected();
-    assert_comment_is_not_a_call();
     assert_renamed_owner_is_rejected();
 }
 
@@ -3185,7 +3169,7 @@ fn assert_second_definition_is_rejected() {
     );
 }
 
-/// A local copy is rejected inside a selector, a sibling module and another owner.
+/// A local copy is rejected inside a caller, a sibling module and another crate.
 fn assert_copies_are_rejected() {
     for (member, relative) in [
         ("maestro-app", "src/developer_tools/cost.rs"),
@@ -3197,7 +3181,7 @@ fn assert_copies_are_rejected() {
         assert_eq!(
             check_workspace(workspace.root.path()),
             Err(format!(
-                "{}:3: session directory encoding belongs to maestro-session::encode_session_dir",
+                "{}:2: session directory encoding belongs to maestro-session::encode_session_dir",
                 crate_path(&workspace, member, relative)
             )),
             "{relative}"
@@ -3205,77 +3189,7 @@ fn assert_copies_are_rejected() {
     }
 }
 
-/// A selector that is absent from its own file is reported.
-fn assert_missing_selector_is_reported() {
-    let workspace = encoder_workspace();
-    std::fs::remove_file(
-        workspace
-            .root
-            .path()
-            .join("crates/maestro-app/src/developer_tools/stats.rs"),
-    )
-    .unwrap();
-    assert_eq!(
-        check_workspace(workspace.root.path()),
-        Err("maestro-app: missing session directory selector src/developer_tools/stats.rs".into())
-    );
-}
-
-/// A selector that never reaches the owner is reported.
-fn assert_unreached_owner_is_reported() {
-    let workspace = encoder_workspace();
-    source(
-        &workspace,
-        "maestro-app",
-        "src/developer_tools/stats.rs",
-        "pub fn directory(cwd: &str) -> String {\n    cwd.to_owned()\n}\n",
-    );
-    assert_eq!(
-        check_workspace(workspace.root.path()),
-        Err(format!(
-            "{}: session directory selector does not call encode_session_dir",
-            crate_path(&workspace, "maestro-app", "src/developer_tools/stats.rs")
-        ))
-    );
-}
-
-/// A caller that keeps the owner's result is accepted, while one that drops it is not.
-fn assert_discarded_result_is_rejected() {
-    let workspace = encoder_workspace();
-    source(
-        &workspace,
-        "maestro-app",
-        "src/developer_tools/cost.rs",
-        DISCARDED,
-    );
-    assert_eq!(
-        check_workspace(workspace.root.path()),
-        Err(format!(
-            "{}: session directory selector discards the encode_session_dir result",
-            crate_path(&workspace, "maestro-app", "src/developer_tools/cost.rs")
-        ))
-    );
-}
-
-/// A comment naming the owner does not satisfy the selector check.
-fn assert_comment_is_not_a_call() {
-    let workspace = encoder_workspace();
-    source(
-        &workspace,
-        "maestro-app",
-        "src/developer_tools/stats.rs",
-        COMMENTED,
-    );
-    assert_eq!(
-        check_workspace(workspace.root.path()),
-        Err(format!(
-            "{}: session directory selector does not call encode_session_dir",
-            crate_path(&workspace, "maestro-app", "src/developer_tools/stats.rs")
-        ))
-    );
-}
-
-/// Renaming the owner leaves no published encoder to delegate to.
+/// Renaming the owner leaves no encoder to delegate to.
 fn assert_renamed_owner_is_rejected() {
     let workspace = encoder_workspace();
     source(
@@ -3288,16 +3202,4 @@ fn assert_renamed_owner_is_rejected() {
         check_workspace(workspace.root.path()),
         Err("maestro-session::encode_session_dir must have exactly one definition, found 0".into())
     );
-}
-
-/// A caller reaching the owner through a renamed module import passes.
-fn assert_renamed_import_is_accepted() {
-    let workspace = encoder_workspace();
-    source(
-        &workspace,
-        "maestro-app",
-        "src/developer_tools/cost.rs",
-        RENAMED_CALLER,
-    );
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }

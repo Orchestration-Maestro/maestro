@@ -35,10 +35,8 @@ fn journal(with_roles: bool) -> String {
 
 /// The session directory of `cwd` under `base`'s home, holding `files`.
 fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
-    let directory = format!(
-        "{base}/home/.maestro/agent/sessions/{}",
-        maestro_session::encode_session_dir(cwd)
-    );
+    let directory =
+        maestro_session::sessions_dir(&format!("{base}/home/.maestro/agent/sessions"), cwd);
     std::fs::create_dir_all(&directory).expect("the fixture directory is creatable");
     for (name, content) in files {
         std::fs::write(Path::new(&directory).join(name), content)
@@ -83,8 +81,11 @@ fn transcript_arguments_keep_output_and_cwd_selection() {
             assert_eq!(
                 repeated.stderr,
                 format!(
-                    "No sessions found for {second}\nExpected: {base}/home/.maestro/agent/sessions/{}\n",
-                    maestro_session::encode_session_dir(&second)
+                    "No sessions found for {second}\nExpected: {}\n",
+                    maestro_session::sessions_dir(
+                        &format!("{base}/home/.maestro/agent/sessions"),
+                        &second
+                    )
                 )
             );
             let positional = run_transcripts(&["--help", "--output", &first, &project], false)

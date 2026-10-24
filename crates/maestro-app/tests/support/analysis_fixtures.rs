@@ -1,5 +1,6 @@
 //! Fixtures and report runners shared by the native analysis reports.
 
+use crate::isolated_home::with_environment;
 use chrono::TimeZone;
 use maestro_app::developer_tools::{cost, session_transcripts, stats, tool_stats};
 use std::path::Path;
@@ -77,7 +78,7 @@ pub fn run_usage(values: &[&str]) -> std::io::Result<Run> {
 
 /// The sessions directory of `cwd` beneath `base`'s home, created with the files.
 pub fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
-    let directory = home(base, &format!("sessions/{}", encode(cwd)));
+    let directory = maestro_session::sessions_dir(&home(base, "sessions"), cwd);
     write_files(&directory, files);
     directory
 }
@@ -99,14 +100,88 @@ pub fn write_files(directory: &str, files: &[(&str, &str)]) {
     }
 }
 
-/// The session directory name of an authored working directory.
-fn encode(cwd: &str) -> String {
-    maestro_session::encode_session_dir(cwd)
-}
-
 /// Replace the `{BASE}` placeholder in a recorded expectation.
 pub fn expected(template: &str, base: &str) -> String {
     template.replace("{BASE}", base)
+}
+
+/// Run one report test with a controlled page viewer on `PATH` and an isolated home.
+///
+/// Every report test that opens its page runs here, so no test starts the
+/// platform's real viewer. The viewer records the arguments it receives, and a
+/// test that waits for them reads [`OPEN_RECORD`] as a pipe, so its wait ends
+/// with the viewer instead of on a clock.
+pub fn with_controlled_viewer(test: &str, body: impl FnOnce(&str)) {
+    with_controlled_viewer_and(test, &[], body);
+}
+
+/// Run one report test as [`with_controlled_viewer`] does, with `variables` added.
+pub fn with_controlled_viewer_and(test: &str, variables: &[(&str, &str)], body: impl FnOnce(&str)) {
+    let mut selected = vec![("PATH", "$BASE/bin:/usr/bin:/bin")];
+    selected.extend_from_slice(variables);
+    with_environment(test, &selected, |base| {
+        write_viewer(base);
+        body(base);
+    });
+}
+
+/// The name of the record the controlled viewer writes.
+pub const OPEN_RECORD: &str = "open.txt";
+
+/// The pipe a test reads to wait for the controlled viewer; absent means no wait.
+pub const OPEN_PIPE: &str = "open.fifo";
+
+/// Write the controlled page viewer of this platform beneath `base`.
+///
+/// The viewer appends its arguments to [`OPEN_RECORD`], and writes them into
+/// [`OPEN_PIPE`] when the test made one, which blocks until the test reads it.
+fn write_viewer(base: &str) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let program = if cfg!(target_os = "macos") {
+            "open"
+        } else {
+            "xdg-open"
+        };
+        let directory = format!("{base}/bin");
+        std::fs::create_dir_all(&directory).expect("the viewer directory is creatable");
+        let viewer = format!("{directory}/{program}");
+        let record = format!("{base}/{OPEN_RECORD}");
+        let pipe = format!("{base}/{OPEN_PIPE}");
+        std::fs::write(
+            &viewer,
+            format!(
+                "#!/bin/sh\nprintf '%s\\n' \"$@\" >> {record}\nif [ -p {pipe} ]; then printf '%s\\n' \"$@\" > {pipe}; fi\n"
+            ),
+        )
+        .expect("the viewer is writable");
+        let mut permissions = std::fs::metadata(&viewer)
+            .expect("the viewer is readable")
+            .permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&viewer, permissions).expect("the viewer is executable");
+    }
+    #[cfg(not(unix))]
+    let _ = base;
+}
+
+/// Create the pipe the controlled viewer writes into, before the page is opened.
+#[cfg(unix)]
+pub fn open_pipe(base: &str) -> String {
+    let pipe = format!("{base}/{OPEN_PIPE}");
+    let created = std::process::Command::new("mkfifo")
+        .arg(&pipe)
+        .status()
+        .expect("the pipe command runs");
+    assert!(created.success(), "the pipe is creatable");
+    pipe
+}
+
+/// Block until the controlled viewer writes into `pipe`, and return its arguments.
+#[cfg(unix)]
+pub fn read_pipe(pipe: &str) -> String {
+    std::fs::read_to_string(pipe).expect("the controlled viewer answers")
 }
 
 /// Run the tool report with the fixture clock.

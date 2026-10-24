@@ -31,10 +31,7 @@ pub async fn main(
         Painting::Plain
     };
     std::fs::create_dir_all(&options.output)?;
-    let sessions = maestro_path::join(&[
-        &super::session_base()?,
-        &maestro_session::encode_session_dir(&options.cwd),
-    ]);
+    let sessions = maestro_session::sessions_dir(&super::session_base()?, &options.cwd);
     if !Path::new(&sessions).exists() {
         writeln!(stderr, "No sessions found for {}", options.cwd)?;
         writeln!(stderr, "Expected: {sessions}")?;

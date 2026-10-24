@@ -79,10 +79,7 @@ pub fn main(
     let Some(options) = parse_options(args, stdout)? else {
         return Ok(ExitCode::SUCCESS);
     };
-    let sessions = maestro_path::join(&[
-        &options.sessions_base,
-        &maestro_session::encode_session_dir(&options.cwd),
-    ]);
+    let sessions = maestro_session::sessions_dir(&options.sessions_base, &options.cwd);
     if !std::path::Path::new(&sessions).exists() {
         writeln!(stderr, "Sessions directory not found: {sessions}")?;
         return Ok(ExitCode::from(1));

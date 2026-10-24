@@ -1,9 +1,10 @@
 // Drive the committed tool report in Chromium and observe what it paints.
 //
 // The page keeps both library URLs as the reference writes them, so this script
-// serves those URLs from a local cache: the exact versions are fetched once,
-// checked against the digests below and reused. A missing cache entry downloads
-// again; a failed download or a digest mismatch fails the run instead of skipping.
+// intercepts those requests and answers them from a digest-checked local cache:
+// the exact versions are fetched once and reused. A missing cache entry downloads
+// again, and a failed download, a digest mismatch or a request that would leave
+// the machine fails the run instead of skipping.
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
@@ -55,7 +56,7 @@ async function download(asset) {
   throw new Error(`cannot fetch ${asset.source}: ${lastError && lastError.message}`);
 }
 
-async function assets_() {
+async function cachedAssets() {
   fs.mkdirSync(cache, {recursive: true});
   const bodies = new Map();
   for (const asset of assets) {
@@ -69,25 +70,40 @@ async function assets_() {
   return bodies;
 }
 
-function serve(page, bodies) {
-  const server = http.createServer((request, response) => {
-    try {
-      if (request.url === '/') {
-        response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.end(page);
-        return;
-      }
-      const found = [...bodies].find(([url]) => new URL(url).pathname === request.url);
-      if (!found) throw new Error(`unexpected request ${request.url}`);
-      response.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      response.end(found[1]);
-    } catch (error) {
-      // Log the detail; never echo request or exception text into a response.
-      console.log(`UNEXPECTED ${request.url}: ${error.message}`);
-      response.statusCode = 404;
-      response.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      response.end('not found');
+// Answer the page's two library URLs from the verified cache and record every
+// request that is not local, so a downloaded asset fails the run.
+function serveFromCache(page, bodies) {
+  const escaped = [];
+  page.route('**/*', route => {
+    const url = route.request().url();
+    const cached = bodies.get(url);
+    if (cached) {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/javascript; charset=utf-8',
+        body: cached,
+      });
+      return;
     }
+    if (url.startsWith('https://')) {
+      escaped.push(url);
+      route.abort();
+      return;
+    }
+    route.continue();
+  });
+  return escaped;
+}
+
+function serve(page) {
+  const server = http.createServer((request, response) => {
+    if (request.url !== '/') {
+      response.statusCode = 404;
+      response.end('not found');
+      return;
+    }
+    response.setHeader('Content-Type', 'text/html; charset=utf-8');
+    response.end(page);
   });
   return new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -95,27 +111,41 @@ function serve(page, bodies) {
   });
 }
 
-async function stablePaint(page, selector) {
-  const read = () => page.evaluate(name => {
-    const canvas = document.querySelector(name);
-    return canvas ? canvas.toDataURL() : '';
-  }, selector);
-  let previous = '';
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    const current = await read();
-    if (current && current === previous) return current;
-    previous = current;
-    await new Promise(resolve => setTimeout(resolve, 50));
-  }
-  throw new Error(`${selector} never finished painting`);
-}
-
-async function waitFor(page, condition, what) {
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    if (await page.evaluate(condition)) return;
-    await new Promise(resolve => setTimeout(resolve, 50));
-  }
-  throw new Error(`${what} never happened`);
+// The page's own animation completion is the render signal: no test here waits on
+// a clock. Each chart reports completion for its canvas identifier, so a second
+// histogram on the same canvas is a second completion.
+function hookRenders() {
+  window.__renders = 0;
+  window.__done = {};
+  window.__waiters = [];
+  const finishing = canvas => {
+    const id = canvas && canvas.id;
+    if (!id) return;
+    window.__done[id] = (window.__done[id] || 0) + 1;
+    for (const waiter of window.__waiters.slice()) waiter();
+  };
+  window.__settled = (id, after) => new Promise(resolve => {
+    const done = () => (window.__done[id] || 0) > after;
+    if (done()) return resolve();
+    return window.__waiters.push(() => {
+      if (done()) resolve();
+    });
+  });
+  let chart;
+  Object.defineProperty(window, 'Chart', {
+    configurable: true,
+    get: () => chart,
+    set: value => {
+      chart = new Proxy(value, {
+        construct(target, args) {
+          const config = args[1] || (args[1] = {});
+          const options = config.options || (config.options = {});
+          options.animation = {...options.animation, onComplete: () => finishing(args[0])};
+          return new target(...args);
+        },
+      });
+    },
+  });
 }
 
 const probe = () => {
@@ -124,11 +154,16 @@ const probe = () => {
     const hex = value.replace('#', '');
     return [0, 2, 4].map(offset => Number.parseInt(hex.slice(offset, offset + 2), 16));
   };
-  const painted = (canvas, [red, green, blue], fromFraction) => {
+  // The pixels strictly inside one band of the canvas, so a bar never stands in
+  // for axis text and axis text never stands in for a bar.
+  const painted = (canvas, [red, green, blue], {fromX = 0, toX = 1, fromY = 0, toY = 1}) => {
     const context = canvas.getContext('2d');
     const {width, height} = canvas;
-    const top = Math.floor(height * fromFraction);
-    const pixels = context.getImageData(0, top, width, height - top).data;
+    const left = Math.floor(width * fromX);
+    const top = Math.floor(height * fromY);
+    const right = Math.floor(width * toX);
+    const bottom = Math.floor(height * toY);
+    const pixels = context.getImageData(left, top, right - left, bottom - top).data;
     let count = 0;
     for (let index = 0; index < pixels.length; index += 4) {
       if (pixels[index] === red && pixels[index + 1] === green && pixels[index + 2] === blue && pixels[index + 3] === 255) {
@@ -142,15 +177,18 @@ const probe = () => {
       accent: channels(role('--maestro-color-accent')),
       muted: channels(role('--maestro-color-muted')),
       border: channels(role('--maestro-color-border')),
-      font: role('--maestro-font-body'),
+      text: channels(role('--maestro-color-text')),
+      background: channels(role('--maestro-color-background')),
     },
     painted: (name, colour, band) => painted(document.querySelector(name), colour, band),
     summary: () => document.getElementById('toolSummary').textContent,
     bitmap: name => document.querySelector(name).toDataURL(),
-    border: () => {
-      const row = document.querySelector('#tools tr[data-row]');
-      const style = getComputedStyle(row);
-      return {width: style.borderTopWidth, colour: style.borderTopColor};
+    measure: (name, font) => {
+      const element = document.querySelector(name);
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      context.font = font || getComputedStyle(element).font;
+      return context.measureText(element.textContent).width;
     },
     path: () => {
       const code = document.querySelector('main > p > code');
@@ -163,40 +201,94 @@ const probe = () => {
   };
 };
 
+// The screenshot pixels of one element, decoded inside the page so no image
+// library is needed: the tool report is observed as it is rasterized, not as it is
+// declared. The element is scrolled into view first, as only visible pixels paint.
+async function painted(page, selector) {
+  const locator = page.locator(selector).first();
+  await locator.scrollIntoViewIfNeeded();
+  const found = await locator.boundingBox();
+  assert.ok(found, `${selector} has a box`);
+  const png = await page.screenshot({clip: found});
+  const pixels = await page.evaluate(source => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      resolve([...context.getImageData(0, 0, image.width, image.height).data]);
+    };
+    image.onerror = () => reject(new Error('the screenshot does not decode'));
+    image.src = source;
+  }), `data:image/png;base64,${png.toString('base64')}`);
+  return {pixels, box: found};
+}
+
+// Pixels of one colour, and the ink extent of everything that is not the background.
+function counted(pixels, [red, green, blue]) {
+  let count = 0;
+  for (let index = 0; index < pixels.length; index += 4) {
+    if (pixels[index] === red && pixels[index + 1] === green && pixels[index + 2] === blue
+      && pixels[index + 3] === 255) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function inkWidth(pixels, width, background) {
+  let left = width;
+  let right = -1;
+  for (let index = 0; index < pixels.length; index += 4) {
+    const [red, green, blue] = [pixels[index], pixels[index + 1], pixels[index + 2]];
+    if (red === background[0] && green === background[1] && blue === background[2]) continue;
+    const column = (index / 4) % width;
+    left = Math.min(left, column);
+    right = Math.max(right, column);
+  }
+  return right < left ? 0 : right - left + 1;
+}
+
 async function run(url) {
   const {chromium} = require(process.env.PLAYWRIGHT_MODULE);
   const browser = await chromium.launch({executablePath: process.env.CHROMIUM_PATH, args: launchArgs});
-  let failed = 0;
   try {
     const page = await browser.newPage({deviceScaleFactor});
     const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
-    await page.goto(url);
-    await waitFor(page, () => typeof window.Chart === 'function', 'the pinned chart library');
-    await page.evaluate(probe);
-    const roles = await page.evaluate(() => window.probe.roles);
-
     const failures = [];
     const observe = (name, actual, expected) => {
       const ok = JSON.stringify(actual) === JSON.stringify(expected);
       if (!ok) failures.push(`${name}: ${JSON.stringify(actual)} !== ${JSON.stringify(expected)}`);
       console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`);
     };
+    const escaped = serveFromCache(page, await cachedAssets());
+    await page.addInitScript(hookRenders);
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(url);
+    observe('cdn_assets_come_from_the_cache', escaped, []);
+    if (escaped.length > 0) {
+      throw new Error(`the page fetched ${escaped[0]} over the network`);
+    }
+    // Two frames let the pinned style library apply the utilities the page names.
+    await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+    await page.evaluate(probe);
+    const roles = await page.evaluate(() => window.probe.roles);
 
-    await stablePaint(page, '#toolHistogram');
+    await page.evaluate(() => window.__settled('toolHistogram', 0));
     const before = await page.evaluate(() => ({
       summary: window.probe.summary(),
       bitmap: window.probe.bitmap('#toolHistogram'),
     }));
-    await page.click('#tools tbody tr[data-row]:nth-child(2)');
-    await waitFor(page, () => document.getElementById('toolSelect').value === '1', 'the row click to select');
-    await stablePaint(page, '#toolHistogram');
+    await page.locator('#tools tbody tr[data-row]').nth(1).click();
+    await page.evaluate(() => window.__settled('toolHistogram', 1));
     const after = await page.evaluate(() => ({
       summary: window.probe.summary(),
       bitmap: window.probe.bitmap('#toolHistogram'),
     }));
     await page.selectOption('#toolSelect', '1');
-    await stablePaint(page, '#toolHistogram');
+    await page.evaluate(() => window.__settled('toolHistogram', 2));
     const explicit = await page.evaluate(() => window.probe.bitmap('#toolHistogram'));
     observe('row_click_changes_the_summary', after.summary !== before.summary, true);
     observe('row_click_repaints_the_histogram', after.bitmap !== before.bitmap, true);
@@ -216,20 +308,44 @@ async function run(url) {
 
     observe(
       'bars_paint_the_accent',
-      (await page.evaluate(colour => window.probe.painted('#tokens', colour, 0) > 100, roles.accent)),
+      // Only the plot band where the tallest bar paints, never the axis labels.
+      (await page.evaluate(
+        colour => window.probe.painted('#tokens', colour, {fromX: 0.06, fromY: 0.1, toY: 0.6}) > 100,
+        roles.accent,
+      )),
       true,
     );
     observe(
       'chart_text_paints_the_muted_colour',
       // Only the label band, where no bar paints, so a bar cannot stand in for text.
-      (await page.evaluate(colour => window.probe.painted('#toolHistogram', colour, 0.75) > 0, roles.muted)),
+      (await page.evaluate(
+        colour => window.probe.painted('#toolHistogram', colour, {fromY: 0.75}) > 0,
+        roles.muted,
+      )),
       true,
     );
-    await waitFor(page, () => window.probe.border().width !== '0px', 'the row border width');
-    const border = await page.evaluate(() => window.probe.border());
-    const borderColour = `rgb(${roles.border.join(', ')})`;
-    observe('row_border_paints_the_border_colour', border.colour, borderColour);
-
+    observe(
+      'summary_text_paints_the_muted_colour',
+      counted((await painted(page, '#toolSummary')).pixels, roles.muted) > 0,
+      true,
+    );
+    observe(
+      'row_border_paints_the_border_colour',
+      counted((await painted(page, '#tools tbody tr[data-row]')).pixels, roles.border) > 0,
+      true,
+    );
+    const heading = await painted(page, 'h1');
+    observe('heading_paints_the_text_colour', counted(heading.pixels, roles.text) > 0, true);
+    // The expected width comes from the shared brand role, not from the page's own
+    // rule, so a lost declaration paints a width the role does not explain.
+    const declared = await page.evaluate(() => {
+      const role = getComputedStyle(document.documentElement)
+        .getPropertyValue('--maestro-font-display').trim();
+      const style = getComputedStyle(document.querySelector('h1'));
+      return window.probe.measure('h1', `${style.fontWeight} ${style.fontSize} ${role}`);
+    });
+    const ink = inkWidth(heading.pixels, Math.round(heading.box.width * deviceScaleFactor), roles.background);
+    observe('heading_paints_the_brand_font', Math.abs(ink / deviceScaleFactor - declared) <= 8, true);
     observe('page_errors', errors, []);
     if (failures.length > 0) {
       throw new Error(failures.join('; '));
@@ -237,7 +353,6 @@ async function run(url) {
   } finally {
     await browser.close();
   }
-  return failed;
 }
 
 (async () => {
@@ -245,12 +360,10 @@ async function run(url) {
     assert(process.env[key] && path.isAbsolute(process.env[key]), `${key} must be absolute`);
   }
   const fixture = path.resolve(process.argv[2] || path.join(__dirname, '../fixtures/analysis/tool-report.html'));
-  const bodies = await assets_();
-  const server = await serve(fs.readFileSync(fixture, 'utf8'), bodies);
+  const server = await serve(fs.readFileSync(fixture, 'utf8'));
   const {port} = server.address();
   try {
-    const failed = await run(`http://127.0.0.1:${port}/`);
-    assert.equal(failed, 0);
+    await run(`http://127.0.0.1:${port}/`);
     console.log('PASS analysis_page');
   } finally {
     await new Promise(resolve => server.close(resolve));

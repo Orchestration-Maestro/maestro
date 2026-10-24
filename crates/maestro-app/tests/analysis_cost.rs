@@ -129,10 +129,11 @@ fn cost_groups_entry_days_and_providers() {
         &[("TZ", ZONE)],
         |base| {
             let journal = format!(
-                "{}{}{}",
-                entry("2026-03-09T02:30:00Z", "zeta", 1.2345),
+                "{}{}{}{}",
+                entry("2026-03-09T02:30:00Z", "zeta", 0.2345),
                 entry("2026-03-08T23:30:00Z", "alpha", 2.0),
                 entry("2026-03-09T02:30:00Z", "__proto__", 5.0),
+                entry("2026-03-09T03:00:00Z", "toString", 13.7655),
             );
             sessions(
                 base,
@@ -155,17 +156,19 @@ Period: last 7 days (since 2026-03-02)
 2026-03-09
 ----------------------------------------
   __proto__       $  5.0000  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
-  zeta            $  1.2345  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
-  Day total:      $  6.2345
+  toString        $ 13.7655  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
+  zeta            $  0.2345  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
+  Day total:      $ 19.0000
 
 ================================================================================
 TOTALS BY PROVIDER
 ----------------------------------------
   __proto__       $  5.0000  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
   alpha           $  2.0000  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
-  zeta            $  1.2345  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
+  toString        $ 13.7655  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
+  zeta            $  0.2345  (1 reqs, in: $0.0000, out: $0.0000, cache: $0.0000)
 ----------------------------------------
-  GRAND TOTAL:    $  8.2345
+  GRAND TOTAL:    $ 21.0000
 
 "
             );
