@@ -1369,6 +1369,94 @@ fn refused_login_stays_out_of_diagnostics(sentinel: &str) {
 }
 
 #[test]
+fn ftp_credential_never_reaches_a_captured_trace() {
+    // A sentinel assembled at run time, so it is not a credential-shaped literal.
+    let sentinel = concat!("hunter2", "-sentinel");
+    // The control: the same capture sees a DEBUG event that carries this value, so the silence
+    // asserted below means nothing logged it rather than nothing was watched.
+    let control = Captured::default();
+    maestro_test_tracing::with_default(control.clone(), || super::probe_credential(sentinel));
+    assert!(
+        control.text().contains(sentinel),
+        "the capture sees a DEBUG event carrying the sentinel"
+    );
+
+    let traces = Captured::default();
+    let loaded = maestro_test_tracing::with_default(traces.clone(), || {
+        crate::tests::runtime::run(async {
+            let peer = ftp_server::serve(vec![Scenario::default()]).unwrap();
+            let loaded = load(
+                &source(&peer, &format!("user:{sentinel}@"), "/script.pac"),
+                None,
+            )
+            .await
+            .expect("the login completes");
+            assert!(
+                peer.commands().contains(&format!("PASS {sentinel}")),
+                "the decoded password reaches the private wire"
+            );
+            peer.finish().unwrap();
+            loaded
+        })
+    });
+    assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+    let captured = traces.text();
+    assert!(
+        !captured.contains(sentinel),
+        "the load logs no credential: {captured}"
+    );
+    assert!(
+        !captured.contains("PASS"),
+        "the load logs no command: {captured}"
+    );
+}
+
+/// Every field of every event one scoped subscriber received, rendered as `name=value`.
+#[derive(Clone, Default)]
+struct Captured(std::sync::Arc<std::sync::Mutex<String>>);
+
+impl Captured {
+    /// The text every event wrote.
+    fn text(&self) -> String {
+        self.0.lock().unwrap().clone()
+    }
+}
+
+impl tracing::Subscriber for Captured {
+    fn enabled(&self, _: &tracing::Metadata<'_>) -> bool {
+        true
+    }
+    fn new_span(&self, _: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+        tracing::span::Id::from_u64(1)
+    }
+    fn record(&self, _: &tracing::span::Id, _: &tracing::span::Record<'_>) {}
+    fn record_follows_from(&self, _: &tracing::span::Id, _: &tracing::span::Id) {}
+    fn enter(&self, _: &tracing::span::Id) {}
+    fn exit(&self, _: &tracing::span::Id) {}
+    fn event(&self, event: &tracing::Event<'_>) {
+        let mut fields = Fields(String::new());
+        event.record(&mut fields);
+        let mut captured = self.0.lock().unwrap();
+        captured.push_str(&fields.0);
+        captured.push('\n');
+    }
+}
+
+/// The fields one event carried.
+struct Fields(String);
+
+impl tracing::field::Visit for Fields {
+    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+        use std::fmt::Write as _;
+        write!(self.0, "{}={value:?} ", field.name()).ok();
+    }
+    fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
+        use std::fmt::Write as _;
+        write!(self.0, "{}={value} ", field.name()).ok();
+    }
+}
+
+#[test]
 fn ftp_control_and_data_finish_in_either_order() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario::default()]).unwrap();
@@ -1569,7 +1657,7 @@ fn ftp_control_response_limit_is_retained() {
 
 #[test]
 fn ftp_control_parser_work_stays_linear() {
-    // One multiline reply, fed one line at a time, is what the reference rescans.
+    // One multiline reply, pushed one byte at a time, as a fragmented peer sends it.
     let reply = |lines: usize| {
         let mut text = String::from("211-Features:\r\n");
         for _ in 0..lines {
@@ -1583,45 +1671,41 @@ fn ftp_control_parser_work_stays_linear() {
         let text = reply(lines);
         let mut frames = Frames::default();
         let mut replies = 0;
-        for line in text.split_inclusive('\n') {
-            replies += frames.push(line).unwrap().len();
+        for byte in text.as_bytes() {
+            let pushed = std::str::from_utf8(std::slice::from_ref(byte)).unwrap();
+            replies += frames.push(pushed).unwrap().len();
         }
         assert_eq!(replies, 1, "{lines} lines form one reply");
-        let units = text.chars().count();
         let visits = frames.visits();
         assert!(
-            visits <= units,
-            "{lines} lines: {visits} visits for {units} units"
+            visits <= 6 * text.len(),
+            "{lines} lines: {visits} characters examined for {} bytes",
+            text.len()
         );
-        counted.push((units, rescan_work(&text)));
+        counted.push((text.len(), rescan_work(&text)));
     }
-    // The reference rescans its retained partial text on every read, so its work grows with the
-    // square of the reply's length while the incremental framing visits each unit once.
-    let (units, rescan) = counted[2];
+    // A framer that rescans everything not yet formed into a reply on every read grows with the
+    // square of the reply's length, so this control fails the bound the incremental framing
+    // passes.
+    let (bytes, rescan) = counted[2];
     assert!(
-        rescan > 4 * units,
-        "the rescan negative control must exceed the linear bound: {rescan} for {units}"
+        rescan > 6 * bytes,
+        "the rescan negative control must exceed the linear bound: {rescan} for {bytes}"
     );
     let (small, rescan_small) = counted[0];
     assert!(
         rescan / rescan_small > 8,
-        "the rescan control grows faster than its input: {rescan_small} then {rescan}"
+        "the rescan control grows faster than its input: {rescan_small} for {small} then {rescan}"
     );
-    let _ = small;
 }
 
-/// The reference's own framing cost: it splits and scans the whole retained text on every read.
+/// The work of a framer that rescans its retained text on every pushed byte.
 fn rescan_work(text: &str) -> usize {
-    let mut partial = String::new();
+    let mut retained = 0;
     let mut work = 0;
-    for line in text.split_inclusive('\n') {
-        partial.push_str(line);
-        let complete: String = partial.clone();
-        work += complete.chars().count();
-        // A reply group completes only at its terminating line.
-        if complete.ends_with("211 End\r\n") {
-            partial.clear();
-        }
+    for _ in text.bytes() {
+        retained += 1;
+        work += retained;
     }
     work
 }

@@ -189,11 +189,12 @@ fn extended_port(reply: &str) -> Result<u16, Failure> {
     let inside = EXTENDED
         .as_ref()
         .and_then(|pattern| pattern.captures(reply))
-        .and_then(|groups| groups.get(1).map(|group| group.as_str().to_owned()));
+        .and_then(|groups| groups.get(1))
+        .map(|group| group.as_str());
     let Some(inside) = inside else {
         return Err(unparsable("EPSV", reply));
     };
-    decimal_prefix(&inside)
+    decimal_prefix(inside)
         .and_then(|port| u16::try_from(port).ok())
         .filter(|port| *port != 0)
         .ok_or_else(|| unparsable("EPSV", reply))

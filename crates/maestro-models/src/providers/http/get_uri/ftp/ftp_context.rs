@@ -116,26 +116,40 @@ pub(super) async fn connect_data(address: SocketAddr) -> Result<Data<TcpStream>,
 pub(super) struct Data<R> {
     /// The reader carrying the transfer.
     reader: R,
+    /// The instant this connection's silence expires, stamped by its own last byte.
+    silent_at: tokio::time::Instant,
 }
 
 impl<R> Data<R> {
     /// Wrap a reader that the inactivity window governs.
     pub(super) fn new(reader: R) -> Self {
-        Self { reader }
+        Self {
+            reader,
+            silent_at: tokio::time::Instant::now() + INACTIVITY,
+        }
     }
 }
 
 impl<R: AsyncRead + Unpin> Data<R> {
-    /// Read one chunk, failing when the reader stays silent for one inactivity window.
+    /// Read one chunk, failing when the connection stays silent for one inactivity window.
+    ///
+    /// The deadline belongs to the connection, so a wait another event cancels resumes towards
+    /// the same instant instead of starting a fresh window.
     ///
     /// # Errors
     /// Returns the reader's own error, or a data-socket timeout.
     pub(super) async fn read(&mut self, buffer: &mut [u8]) -> Result<usize, Failure> {
-        match tokio::time::timeout(INACTIVITY, self.reader.read(buffer)).await {
-            Ok(Ok(read)) => Ok(read),
-            Ok(Err(error)) => Err(error.into()),
-            Err(_) => Err(Box::new(Silent(Socket::Data))),
-        }
+        let silent_at = self.silent_at;
+        let read = tokio::select! {
+            biased;
+            read = self.reader.read(buffer) => read,
+            () = tokio::time::sleep_until(silent_at) => {
+                return Err(Box::new(Silent(Socket::Data)));
+            }
+        };
+        let read = read.map_err(Failure::from)?;
+        self.silent_at = tokio::time::Instant::now() + INACTIVITY;
+        Ok(read)
     }
 }
 
@@ -424,5 +438,89 @@ impl FtpContext {
     pub(super) fn close(mut self) {
         self.data = None;
         self.control.quit();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::task::{Context, Poll, Waker};
+    use std::time::Duration;
+
+    use tokio::io::AsyncWriteExt as _;
+
+    use super::Data;
+    use crate::tests::runtime;
+
+    #[test]
+    fn ftp_control_activity_keeps_the_data_deadline() {
+        runtime::run_paused(async {
+            // The transfer's wait starts at t=0 and a control reply interrupts it at t=20.
+            let (_server, connection) = tokio::io::duplex(64);
+            let mut data = Data::new(connection);
+            let mut chunk = [0u8; 8];
+            assert!(
+                step(&mut data, &mut chunk).is_pending(),
+                "a silent data connection waits"
+            );
+            tokio::time::advance(Duration::from_secs(20)).await;
+            assert!(
+                step(&mut data, &mut chunk).is_pending(),
+                "the interrupted wait resumes towards the same instant"
+            );
+            // Twenty of the thirty seconds are spent; the window closes a millisecond later.
+            tokio::time::advance(Duration::from_millis(9_999)).await;
+            assert!(
+                step(&mut data, &mut chunk).is_pending(),
+                "the connection expires one window after its own last byte, not earlier"
+            );
+            tokio::time::advance(Duration::from_millis(2)).await;
+            match step(&mut data, &mut chunk) {
+                Poll::Ready(Err(error)) => assert_eq!(error.to_string(), "Timeout (data socket)"),
+                Poll::Ready(Ok(_)) => panic!("the silent data connection reported a read"),
+                Poll::Pending => panic!("the interrupted wait restarted the data window"),
+            }
+        });
+    }
+
+    #[test]
+    fn ftp_data_byte_moves_the_data_deadline() {
+        runtime::run_paused(async {
+            let (mut server, connection) = tokio::io::duplex(64);
+            let mut data = Data::new(connection);
+            let mut chunk = [0u8; 8];
+            assert!(
+                step(&mut data, &mut chunk).is_pending(),
+                "a silent data connection waits"
+            );
+            tokio::time::advance(Duration::from_secs(25)).await;
+            server.write_all(b"x").await.unwrap();
+            assert!(
+                matches!(step(&mut data, &mut chunk), Poll::Ready(Ok(1))),
+                "the late byte is read"
+            );
+            // The byte moved the deadline to one window after it.
+            tokio::time::advance(Duration::from_millis(29_999)).await;
+            assert!(
+                step(&mut data, &mut chunk).is_pending(),
+                "the byte moved the window past the original deadline"
+            );
+            tokio::time::advance(Duration::from_millis(2)).await;
+            match step(&mut data, &mut chunk) {
+                Poll::Ready(Err(error)) => assert_eq!(error.to_string(), "Timeout (data socket)"),
+                Poll::Ready(Ok(_)) => panic!("the silent data connection reported a read"),
+                Poll::Pending => panic!("the byte did not move the data window"),
+            }
+        });
+    }
+
+    /// Poll one read of a data connection, which the paused clock governs.
+    fn step<R: tokio::io::AsyncRead + Unpin>(
+        data: &mut Data<R>,
+        chunk: &mut [u8],
+    ) -> Poll<Result<usize, super::Failure>> {
+        std::future::Future::poll(
+            std::pin::pin!(data.read(chunk)),
+            &mut Context::from_waker(Waker::noop()),
+        )
     }
 }

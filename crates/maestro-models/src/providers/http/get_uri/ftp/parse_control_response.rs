@@ -50,6 +50,8 @@ struct Group {
     token: String,
     /// The lines kept so far, including the opening line.
     lines: Vec<String>,
+    /// The UTF-16 length of the kept lines, each with the newline that joins it.
+    units: usize,
 }
 
 /// Framing state across reads: the unfinished line and any open multiline reply.
@@ -59,6 +61,8 @@ pub(crate) struct Frames {
     line: String,
     /// The multiline reply whose terminating line has not arrived.
     open: Option<Group>,
+    /// The UTF-16 length of `line` and of the open group's kept lines.
+    retained: usize,
     /// Characters examined, so a test can bound the traversal.
     #[cfg(test)]
     visits: std::cell::Cell<usize>,
@@ -67,22 +71,30 @@ pub(crate) struct Frames {
 impl Frames {
     /// Take every reply `text` completes, retaining an unfinished line or group.
     ///
+    /// Each pushed character is examined a bounded number of times, because the text of an
+    /// unfinished line is never searched or copied again.
+    ///
     /// # Errors
     /// Returns [`TooLong`] when the retained text would exceed the accepted size.
     pub(crate) fn push(&mut self, text: &str) -> Result<Vec<Reply>, TooLong> {
-        if self.retained() + text.encode_utf16().count() > MAX_RETAINED {
+        let units = text.encode_utf16().count();
+        self.count(units);
+        if self.retained + units > MAX_RETAINED {
             return Err(TooLong);
         }
-        let mut buffer = std::mem::take(&mut self.line);
-        buffer.push_str(text);
+        self.retained += units;
         let mut replies = Vec::new();
-        let mut rest = buffer.as_str();
+        let mut rest = text;
         while let Some(end) = rest.find('\n') {
-            let (line, remaining) = rest.split_at(end);
-            rest = &remaining[1..];
-            self.take_line(line.strip_suffix('\r').unwrap_or(line), &mut replies);
+            self.count(end + 1);
+            self.line.push_str(&rest[..end]);
+            self.count(end);
+            let line = std::mem::take(&mut self.line);
+            self.take_line(line, &mut replies);
+            rest = &rest[end + 1..];
         }
-        rest.clone_into(&mut self.line);
+        self.count(rest.len());
+        self.line.push_str(rest);
         Ok(replies)
     }
 
@@ -92,46 +104,56 @@ impl Frames {
         self.visits.get()
     }
 
-    /// Take one complete line into the group it belongs to.
-    fn take_line(&mut self, line: &str, replies: &mut Vec<Reply>) {
+    /// Record `characters` examined, which only the bounded test observes.
+    fn count(&self, characters: usize) {
         #[cfg(test)]
-        self.visits.set(self.visits.get() + line.chars().count());
+        self.visits.set(self.visits.get() + characters);
+        #[cfg(not(test))]
+        let _ = (self, characters);
+    }
+
+    /// Take one complete line into the group it belongs to.
+    fn take_line(&mut self, mut line: String, replies: &mut Vec<Reply>) {
+        let stripped = line.strip_suffix('\r').is_some();
+        if stripped {
+            line.pop();
+        }
+        let units = line.encode_utf16().count();
+        self.count(units);
+        // The taken line, the newline that ended it and any carriage return before that newline
+        // leave the retained text.
+        self.retained -= units + 1 + usize::from(stripped);
         // The reference drops blank lines wherever they appear, including inside a group.
         if line.chars().all(maestro_text::is_whitespace_scalar) {
+            self.count(units);
             return;
         }
+        self.count(units);
+        // A line a reply keeps costs its own text and the newline joining it to the next.
+        let kept = units + 1;
         match self.open.take() {
             Some(mut group) => {
-                group.lines.push(line.to_owned());
-                if closes(&group.token, line) {
+                if closes(&group.token, &line) {
+                    self.retained -= group.units;
+                    group.lines.push(line);
                     replies.push(reply(group.lines.join("\n")));
                 } else {
+                    group.lines.push(line);
+                    group.units += kept;
+                    self.retained += kept;
                     self.open = Some(group);
                 }
             }
-            None if multiline(line) => {
+            None if multiline(&line) => {
+                self.retained += kept;
                 self.open = Some(Group {
                     token: line[..3].to_owned(),
-                    lines: vec![line.to_owned()],
+                    lines: vec![line],
+                    units: kept,
                 });
             }
-            None if single(line) => replies.push(reply(line.to_owned())),
+            None if single(&line) => replies.push(reply(line)),
             None => {}
-        }
-    }
-
-    /// The UTF-16 length of everything not yet formed into a reply.
-    fn retained(&self) -> usize {
-        let line = self.line.encode_utf16().count();
-        match &self.open {
-            Some(group) => {
-                line + group
-                    .lines
-                    .iter()
-                    .map(|line| line.encode_utf16().count() + 1)
-                    .sum::<usize>()
-            }
-            None => line,
         }
     }
 }

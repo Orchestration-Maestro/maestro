@@ -47,14 +47,11 @@ impl Client {
     /// # Errors
     /// Returns a decoding, transport, feature, login or settings failure.
     pub(super) async fn access(uri: &Url) -> Result<Self, Failure> {
-        let user = credential(
-            &super::super::super::proxy_agent::decode(uri.username())?,
-            "anonymous",
-        );
-        let password = credential(
-            &super::super::super::proxy_agent::decode(uri.password().unwrap_or_default())?,
-            "guest",
-        );
+        let decoded_user = super::super::super::proxy_agent::decode(uri.username())?;
+        let user = credential(&decoded_user, "anonymous");
+        let decoded_password =
+            super::super::super::proxy_agent::decode(uri.password().unwrap_or_default())?;
+        let password = credential(&decoded_password, "guest");
         let host = uri
             .host_str()
             .filter(|host| !host.is_empty())
@@ -62,7 +59,7 @@ impl Client {
         let mut context = FtpContext::open(host, port(uri)).await?;
         context.greeting().await?;
         context.request_ignoring_error("OPTS UTF8 ON").await?;
-        login(&mut context, &user, &password).await?;
+        login(&mut context, user, password).await?;
         let machine = features(&mut context).await?;
         context.request("TYPE I").await?;
         context.request_ignoring_error("STRU F").await?;
@@ -109,7 +106,7 @@ impl Client {
     /// Returns the last server refusal, a transport failure, or the listing size refusal.
     pub(super) async fn list(&mut self, directory: &str) -> Result<Vec<String>, Failure> {
         let mut last: Option<Failure> = None;
-        for candidate in self.listings.clone() {
+        for candidate in std::mem::take(&mut self.listings) {
             let command = if directory.is_empty() {
                 candidate.to_owned()
             } else {
@@ -179,10 +176,9 @@ async fn features(context: &mut FtpContext) -> Result<bool, Failure> {
 fn announces_mlst(message: &str) -> bool {
     let mut lines = message.split('\n');
     lines.next();
-    let mut entries: Vec<&str> = lines.collect();
     // The first and last lines wrap the multiline reply.
-    entries.pop();
-    entries.iter().any(|line| {
+    lines.next_back();
+    lines.any(|line| {
         line.trim_matches(maestro_text::is_whitespace_scalar)
             .split(' ')
             .next()
@@ -191,10 +187,6 @@ fn announces_mlst(message: &str) -> bool {
 }
 
 /// A URL credential, defaulting exactly as the reference client logs in.
-fn credential(value: &str, default: &str) -> String {
-    if value.is_empty() {
-        default.to_owned()
-    } else {
-        String::from(value)
-    }
+fn credential<'a>(value: &'a str, default: &'a str) -> &'a str {
+    if value.is_empty() { default } else { value }
 }
