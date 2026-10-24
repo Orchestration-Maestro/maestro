@@ -1816,9 +1816,9 @@ fn a_manual_compaction_left_unobserved_still_completes() {
         let provider = gated(supplied_summary(), Some(gate.clone()));
         let h = seeded(json!({}), vec![provider]).await;
         let ended = compaction_ended(&h);
-        start_and_abandon(h.session.compact(None));
-        gate.0.notified().await;
+        drop(h.session.compact(None));
         assert!(h.session.is_compacting(), "the compaction still runs");
+        gate.0.notified().await;
         gate.1.notify_one();
         ended.notified().await;
         assert_observation(&h, &expected);
