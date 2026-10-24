@@ -132,7 +132,7 @@ pub(super) fn tool_config(
                             description: Some(tool.description),
                             input_schema: Some(
                                 ToolInputSchema {
-                                    json: Some(tool.parameters),
+                                    json: Some(tool.parameters.into_json()),
                                 }
                                 .into(),
                             ),

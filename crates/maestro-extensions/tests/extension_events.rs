@@ -1293,7 +1293,7 @@ fn threaded_definition(
         definition: maestro_models::Tool {
             name,
             description: "worker".into(),
-            parameters: json!({}),
+            parameters: json!({}).into(),
         },
         label: "worker".into(),
         prompt_snippet: None,

@@ -517,9 +517,16 @@ When such a crate has top-level integration-test sources, the check requires
 `autotests = false` and exactly one test target: the runnable `integration`
 target at `tests/integration.rs`.
 
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`,
+which keeps the supplied JSON Schema value beside the kinds its author declared for
+individual nodes. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
+re-exports it, and the model argument-validation owner is its only converter.
+Serialization writes the supplied JSON alone; provider payloads and saved JSON never
+carry the declared kinds.
+
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+Native callers use the default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
 belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
 session listeners and extension error delivery reuse it. For shared `Rc` callbacks
 it also owns subscribing, which returns the removal operation, and the live walk in

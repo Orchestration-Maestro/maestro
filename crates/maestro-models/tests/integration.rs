@@ -8,6 +8,7 @@ use maestro_models::{Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLev
 mod account_message_routing;
 mod account_tool_names;
 mod assistant_publication;
+mod authored_tool_arguments;
 #[path = "support/azure_cases.rs"]
 mod azure_cases;
 #[path = "support/azure_endpoint.rs"]

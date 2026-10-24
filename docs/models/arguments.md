@@ -88,6 +88,14 @@ name. `validate_tool_arguments` checks one supplied declaration independently of
 its name. Both return an owned argument object and leave the invocation and schema
 unchanged.
 
+A declaration whose schema was built by a schema builder carries the kind of each node
+its author declared, beside the ordinary JSON Schema value. Preparation converts those
+authored nodes first, exactly as the builder declared them, and then runs the same
+primitive conversion over the plain schema. A schema supplied as ordinary JSON carries
+no declared kinds, so only the primitive conversion applies: `null` for a required
+string member stays `""` there, while the same member of an authored schema becomes
+`"null"`. Schema text never implies author intent; rebuilding it needs the builder.
+
 Checking converts declared primitive values before evaluating the original schema.
 Objects and arrays are traversed only when their type is explicitly declared.
 Combinator alternatives use independent candidates; the first valid converted

@@ -392,7 +392,7 @@ pub fn tool_definition(
         definition: Tool {
             name: name.into(),
             description: format!("{name} tool"),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         label: name.into(),
         prompt_snippet: snippet.map(str::to_owned),

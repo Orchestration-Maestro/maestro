@@ -24,6 +24,7 @@ mod browser_decimal;
 mod browser_discovery;
 mod browser_messages;
 mod browser_proxy;
+mod browser_schema_origins;
 mod browser_sessions;
 mod browser_storage;
 #[path = "support/browser_storage.rs"]
