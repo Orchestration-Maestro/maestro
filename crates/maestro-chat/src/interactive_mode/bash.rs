@@ -261,6 +261,7 @@ async fn execute_bash_command(
     let on_chunk: BashChunkCallback = Box::new(move |chunk: &str| send(chunk.to_owned()));
     let session = mode.runtime_host.session();
     let result = session.execute_bash(command, Some(on_chunk), options).await;
-    dispatch.settle().await;
+    // A chunk the row could not show ends the command like the reference's thrown update.
+    dispatch.settle().await?;
     result
 }
