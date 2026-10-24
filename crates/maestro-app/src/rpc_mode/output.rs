@@ -6,7 +6,7 @@ use crate::rpc_types::{RpcExtensionUIRequest, RpcResponse, workspace_schema};
 use maestro_extensions::ExtensionError;
 use maestro_json::jsonl::serialize_json_line;
 use serde::{Serialize, Serializer, ser::SerializeMap};
-use std::{io, rc::Rc};
+use std::rc::Rc;
 
 /// One record a server writes.
 ///
@@ -56,6 +56,18 @@ impl Serialize for RpcRecord<'_> {
 /// ```compile_fail
 /// let line = maestro_app::rpc_mode::RpcLine(String::from("{}\n"));
 /// ```
+///
+/// A framed line is written, never dropped:
+///
+/// ```compile_fail
+/// #![deny(unused_must_use)]
+/// use maestro_app::rpc_mode::{RpcLine, RpcRecord};
+/// fn discard(record: &RpcRecord<'_>) -> serde_json::Result<()> {
+///     RpcLine::new(record)?;
+///     Ok(())
+/// }
+/// ```
+#[must_use]
 pub struct RpcLine(String);
 
 impl RpcLine {
@@ -87,11 +99,6 @@ impl RpcLine {
     pub fn as_str(&self) -> &str {
         &self.0
     }
-}
-
-/// Writes `record` as one line through `output`.
-pub(super) fn write_record(output: &RpcOutput, record: RpcRecord<'_>) -> io::Result<()> {
-    output(&RpcLine::new(&record)?)
 }
 
 /// An output writing each line to standard output, which carries protocol lines only once
