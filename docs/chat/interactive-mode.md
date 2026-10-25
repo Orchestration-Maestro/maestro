@@ -229,9 +229,9 @@ was waiting. Submission does not keep the mode alive.
 
 Submission offers the text to the mode's commands first. Text recognized as one of
 the commands runs that command instead of becoming prompt text: the command reports
-on the transcript, completes no waiting input and enters no history. `/export` and `/changelog`
-answer before the editor hands the text back; `/share` and `/copy` are admitted on
-the terminal runtime and clear the editor once they settle. Near spellings are
+on the transcript, completes no waiting input and enters no history. `/export`,
+`/changelog` and `/hotkeys` answer before the editor hands the text back; `/share`
+and `/copy` are admitted on the terminal runtime and clear the editor once they settle. Near spellings are
 prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`
 and `/copyx` reach the input. See [interactive commands](commands.md).
 
