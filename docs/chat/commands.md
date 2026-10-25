@@ -3,14 +3,15 @@
 The interactive mode reads a few commands from the editor before ordinary
 input. Submitted text is trimmed with the shared whitespace rule first: BOM and
 no-break space count as whitespace, while U+0085 and zero-width space do not. The
-editor empties itself before calling back, so a command needs no clearing step; a
-slash command never answers the waiting input and never enters the editor history. Any
-other text, including `/Model`, `/models`, `/model<Tab>term`,
-`/scoped-models extra` and `/logout extra`, is ordinary input.
+editor empties itself before calling back; a slash command never answers the
+waiting input and never enters the editor history. Any other text, including
+`/Model`, `/models`, `/model<Tab>term`, `/scoped-models extra` and `/logout extra`,
+is ordinary input.
 
 The mode handles shell input and the slash commands `/export`, `/changelog`,
-`/model`, `/scoped-models`, `/logout`, `/name`, `/session` and `/debug`. Import, the
-offline viewer and packaged asset injection are not delivered yet (see
+`/model`, `/scoped-models`, `/logout`, `/name`, `/session`, `/debug`, `/share` and
+`/copy`. Import, the offline viewer and packaged asset injection are not delivered
+yet (see
 [what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
@@ -80,6 +81,60 @@ A recoverable failure shows `Failed to export session: <diagnostic>` in the
 transcript's error colour, with the diagnostic the export owner produced. A
 failure to render that notice goes to the terminal runtime's error route, which
 is the route the mode's shortcuts already use.
+
+## `/share`
+
+`/share` exports the current session to HTML and publishes it as a secret GitHub
+gist, then reports the gist and, when a hosted viewer origin is configured, its
+viewer URL. It takes no argument: `/share extra` is prompt text.
+
+```text
+/share
+```
+
+The command runs in four steps, each with its own answer on the transcript:
+
+1. It runs `gh auth status`. A program that is missing or cannot be executed shows
+   `GitHub CLI (gh) is not installed. Install it from https://cli.github.com/`;
+   a nonzero or signalled status shows `GitHub CLI is not logged in. Run 'gh auth
+   login' first.` Neither starts an export.
+2. It writes the session, through the same HTML export owner `/export` uses, into a
+   directory this share operation alone owns.
+3. It replaces the editor with a cancellable `Creating gist...` loader and runs
+   `gh gist create --public=false <path>`, collecting the command's output.
+4. It restores the editor, removes its own directory and document, and reports the
+   result: `Share URL: <viewer>` and `Gist: <url>` when a viewer origin is
+   configured, `Gist: <url>` when it is not, or `Failed to create gist: <message>`
+   in the transcript's error colour. A zero exit whose output holds no identifier
+   shows `Failed to parse gist ID from gh output`; the identifier is the text after
+   the last literal slash, kept exactly as printed.
+
+Cancelling the loader with the cancel key terminates the gist command, restores the
+editor, removes the document and answers `Share cancelled`. A failure to export the
+session shows `Failed to export session: <message>` and starts no gist. Every
+failure after the editor is replaced restores it, and cleanup never replaces the
+result.
+
+Two share operations never write the same path: each creates its own directory, and
+a directory that already exists is refused rather than reused. The captured output is
+decoded once from the complete bytes, so a multi-byte character split across pipe
+reads survives.
+
+## `/copy`
+
+`/copy` writes the last answer to the clipboard. It takes no argument.
+
+```text
+/copy
+```
+
+The text is the session's last answer, trimmed under the shared whitespace policy
+(U+0085 is kept), with its text blocks joined without a separator and thinking
+omitted. An answer that was aborted with no content is skipped in favour of the
+previous one. With nothing to copy the mode shows `No agent messages to copy yet.`
+A completed copy shows `Copied last agent message to clipboard`; a reached
+clipboard failure shows its own message in the error colour. The mode reads the
+current session each time, so a replaced session is copied from its own answer.
 
 ## `/changelog`
 
@@ -286,8 +341,10 @@ show it once. Checking at startup comes with the prompt loop.
 
 - Import (`/import <path.jsonl>`) is not delivered. It waits for the shared
   dialog host and the session rebuild helpers, and it stays part of the same work.
-- The complete offline viewer is separate work; the export tests supply a
+- The complete offline viewer is separate work (#1762); the export tests supply a
   controlled bundle, so they prove the serializer wiring and not a shipped viewer.
-- Packaging and asset injection are separate work. The mode reads the bundle the
-  configuration's package directory selects, exactly as the other export callers
-  do.
+  Until it ships, a share with no bundle installed follows the export failure path
+  above and reports it.
+- Packaging and asset injection are separate work (#249). The mode reads the bundle
+  the configuration's package directory selects, exactly as the other export
+  callers do.
