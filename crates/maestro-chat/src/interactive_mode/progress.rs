@@ -260,7 +260,7 @@ impl InteractiveMode {
     fn progress_loader(&self, message: Option<String>, spinner: ThemeColor) -> Loader {
         let theme = self.themes.theme();
         Loader::new(
-            self.ui.clone(),
+            self.ui.as_ref().clone(),
             colored(theme.clone(), spinner),
             colored(theme, ThemeColor::Muted),
             message,

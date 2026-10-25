@@ -6,9 +6,10 @@ the startup help, the loaded-resource listing, the transcript notices, typed
 input, queued input, the export command, the prompt loop, session replay, the
 session events with the working row and the streamed transcript rows, the window
 title, the extension controls of that row and of the hidden-thinking label, the
-expansion and thinking shortcuts, thinking and model cycling, the editor border,
-external editing, image paste, compaction and retry progress. Installed custom
-headers, a requested shutdown and the other integrations are still to come.
+expansion and thinking shortcuts, thinking and model cycling, model selection and
+scopes, the editor border, external editing, image paste, compaction and retry
+progress. Installed custom headers, a requested shutdown and the other integrations
+are still to come.
 
 ## Construction
 
@@ -65,9 +66,10 @@ discovery order. The compact form puts them on one row, separated by commas: a f
 inside the working directory shows its relative path (`.` for the directory
 itself), and any other file its absolute path. The expanded form puts each path on
 its own row. Paths resolve lexically, without reading the filesystem. A leading
-home directory is shown as `~`; an empty home directory abbreviates nothing. The home
-directory is looked up only when a full path is shown, so a listing of prompts
-alone needs none. When that lookup fails, the listing reports the failure.
+home directory is shown as `~`; a home directory that is empty or `/` abbreviates
+nothing, so paths stay as written. The home directory is looked up only when a
+full path is shown, so a listing of prompts alone needs none. When that lookup
+fails, the listing reports the failure.
 
 `[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
 templates. The compact form is one row of skill names, or of prompt names with a
@@ -137,10 +139,10 @@ frame; the editor's history is kept.
 
 The mode implements the extension UI port. A host retains it with
 `ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
-lists the operations it answers today, which are editor access, theme queries and
-selection, the terminal title, tool expansion, status text and keyed widgets above
-or below the editor. Dialogs, notifications and terminal input listeners keep
-their own published owners.
+lists the operations it answers today, which are dialogs, editor access, theme
+queries and selection, the terminal title, tool expansion, status text and keyed
+widgets above or below the editor. Notifications and terminal input listeners
+keep their own published owners.
 
 ## Typed input
 
@@ -260,6 +262,11 @@ message a dim `Follow-up: <text>` row, cut to one line. A last row names the key
 keys are read when the rows are built, each part capitalized, as in `Ctrl+Alt+Q`.
 With nothing queued, the rows are removed.
 
+A shell row shown in that area while a response streams stays above those text
+rows. Rebuilding them re-adds the same row rather than a new one, so a refresh, a
+dequeue or a theme change leaves its identity and its output in place; the next
+ordinary submission moves it into the transcript.
+
 The dequeue key moves every queued message back into the editor: steering messages
 first, then follow-up messages, separated by blank lines and followed by the current
 draft when that draft is not blank. Duplicates and their order are kept. A status
@@ -267,10 +274,14 @@ line then says `Restored 1 queued message to editor`,
 `Restored <n> queued messages to editor` or `No queued messages to restore`; with
 nothing queued the editor is left as it was.
 
-While a response streams, the interrupt key (Escape by default) restores the queued
-messages the same way and then stops the response, even when nothing was queued. When
-no response streams, the key does nothing. The queue keys do not keep the mode alive,
-and a failure in them goes to the terminal runtime's error route.
+The interrupt key (Escape by default) takes the first case that applies: while a
+response streams it restores the queued messages the same way and then stops the
+response, even when nothing was queued; while a shell command runs it cancels that
+command and keeps the editor text; while the editor holds a shell command it empties the
+editor, leaves shell mode and repaints the border for the current thinking level. With
+none of those it does nothing. The queue keys do not keep the mode alive, and a failure
+in them goes to the terminal runtime's error route.
+
 ## Session events
 
 One listener carries the session's events into the mode. It is the session's own
@@ -425,11 +436,15 @@ the next or previous available model when none are scoped. The cycle runs on the
 terminal runtime, which keeps the mode until it completes. It then shows
 `Switched to <name>`, using the model id when the name is empty and adding
 ` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
-the footer and editor border. With no other candidate it shows
-`Only one model in scope` or `Only one model available`. A session error is shown
-as an error notice instead of the switch message. A failed credential lookup leaves
-the selection as it was; a recording or listener failure happens after the new
-model is selected, so that model stays selected.
+the footer and editor border, then checks the
+[subscription billing notice](commands.md#subscription-billing-notice). With no
+other candidate it shows `Only one model in scope` or `Only one model available`. A
+session error is shown as an error notice instead of the switch message. A failed
+credential lookup leaves the selection as it was; a recording or listener failure
+happens after the new model is selected, so that model stays selected.
+
+`/model`, `/scoped-models` and the model-select key are described in
+[interactive commands](commands.md).
 
 ## Editor border
 

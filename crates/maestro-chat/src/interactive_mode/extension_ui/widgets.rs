@@ -41,7 +41,7 @@ impl InteractiveMode {
         };
         let component = match content {
             WidgetContent::Factory(factory) => {
-                factory.call((self.ui.clone(), self.themes.theme()))?
+                factory.call((self.ui.as_ref().clone(), self.themes.theme()))?
             }
             WidgetContent::Lines(lines) => {
                 let container = Rc::new(Container::new());

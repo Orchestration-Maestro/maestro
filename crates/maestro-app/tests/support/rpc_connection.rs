@@ -74,7 +74,7 @@ pub type WorkspaceResult = Result<workspace_schema::ResponseResult, workspace_sc
 pub type WorkspaceAnswer = Rc<dyn Fn(workspace::RpcCommand, WorkspaceEventSink) -> WorkspaceResult>;
 
 /// Workspace operations that answer through a test closure.
-struct ClosureWorkspace(WorkspaceAnswer);
+pub struct ClosureWorkspace(pub WorkspaceAnswer);
 
 impl WorkspaceOperations for ClosureWorkspace {
     fn execute(
@@ -217,10 +217,13 @@ pub fn unspawned(
     let signals = Rc::new(Signals::default());
     let options = RpcModeOptions {
         workspace: Rc::new(ClosureWorkspace(workspace)),
-        process: Rc::clone(&signals) as Rc<dyn RpcProcessPort>,
-        theme,
-        export_operations: Rc::new(Recording::default()),
-        render_environment: environment(published()),
+        session: Some(maestro_app::RpcSessionOptions {
+            runtime,
+            process: Rc::clone(&signals) as Rc<dyn RpcProcessPort>,
+            theme,
+            export_operations: Rc::new(Recording::default()),
+            render_environment: environment(published()),
+        }),
     };
     let failing_writes = Rc::new(std::cell::Cell::new(false));
     let failing = Rc::clone(&failing_writes);
@@ -238,7 +241,7 @@ pub fn unspawned(
         lines,
         signals,
     };
-    let server = Box::pin(run_rpc_connection(runtime, reader, output, options));
+    let server = Box::pin(run_rpc_connection(reader, output, options));
     (peer, server)
 }
 

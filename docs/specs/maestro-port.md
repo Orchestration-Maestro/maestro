@@ -649,8 +649,8 @@ test. It has no workspace dependencies except the native feature unifier and one
 native development edge to the disposable directory owner for its own child
 fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
-from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
+from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`
 and `maestro-tui-crossterm`; a
@@ -678,9 +678,10 @@ temporary directory unless its case sets one.
 exclusive disposable-directory allocation and cleanup. It has no workspace
 edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
-dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
+dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
+`maestro-extensions-wasmtime`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
@@ -810,8 +811,13 @@ exact wire bytes, fields, omission/null rules and results. Workspace commands ar
 `maestro-protocol` owns the generic request and response envelopes, the workspace records and
 their schema; `maestro-app::rpc_types` owns the session records and the composed command
 family; `maestro-json::jsonl` owns JSONL framing. `maestro-app::rpc_mode` is the one connection
-runner: it serves a local session runtime over a caller's line reader and writer and returns
-how the connection ended. `maestro-rpc` is its standard-stream adapter, which exits the process. Live screen traffic stays binary in
+runner: it serves workspace operations and an optional local session over a caller's line
+reader and writer, returning how the connection ended. `RpcModeOptions` groups session-only
+facilities in `Option<RpcSessionOptions>`: runtime, process signals, theme and export effects.
+A session-free connection creates no UI or session binding and registers no session signals;
+session commands return a correlated refusal asking the caller to open in a session. A supplied
+session keeps its binding, rebind, event subscription and disposal lifecycle.
+`maestro-rpc` is its standard-stream adapter, which exits the process. Live screen traffic stays binary in
 a channel of the same protocol and version. Plain JSONL clients need no new header, handshake or
 version member, and receive no unsolicited startup record or binary bytes.
 

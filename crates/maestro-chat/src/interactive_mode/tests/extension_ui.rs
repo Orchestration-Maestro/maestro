@@ -1,5 +1,7 @@
 //! The extension UI host over the retained mode: theme, editor, title, expansion and
 //! typed errors through the installed port.
+mod dialogs;
+
 use super::transcript::tool_params;
 use super::{Setup, World, dark, isolated, light, roles, started};
 use crate::InteractiveMode;

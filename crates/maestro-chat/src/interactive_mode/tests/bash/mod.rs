@@ -1,14 +1,16 @@
 //! Shell input through the retained rows, the session and its extension runner.
 mod lifecycle;
 
+use super::super::bash::component_address;
 use super::typed::{recalled, submit};
-use super::{Setup, World, isolated};
+use super::{
+    Setup, ShellOperations, World, active, driving, echoing_shell, holding, isolated, on_tasks,
+    scripted, start_shells, started, transcript_positions, until_complete, until_exists,
+};
 use crate::BashExecutionComponent;
-use crate::components::session_selector::list::tests::session_picker::manual_runtime::ManualRuntime;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
-use maestro_tui::tui::LocalFuture;
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     error::Error,
     future::Future,
     path::Path,
@@ -17,103 +19,8 @@ use std::{
     task::{Context, Poll, Waker},
 };
 
-/// The failures the mode's work reported.
-type Failures = Rc<RefCell<Vec<Box<dyn Error>>>>;
-
-/// Runs the work the mode handed its terminal runtime beside `body`, collecting the
-/// failures that work reported.
-///
-/// The mode's own futures are awaited to completion, so the session's shell execution and
-/// its chunk delivery interleave with `body`, which stops the driver when it is done.
-async fn driving<T>(world: &World, body: impl Future<Output = T>) -> (T, Vec<Box<dyn Error>>) {
-    let runtime = world.runtime.clone();
-    let finished = Rc::new(Cell::new(false));
-    let errors: Failures = Rc::default();
-    let driver = {
-        let finished = Rc::clone(&finished);
-        let errors = Rc::clone(&errors);
-        tokio::task::spawn_local(async move { drive(&runtime, &finished, &errors).await })
-    };
-    let value = body.await;
-    finished.set(true);
-    driver.await.unwrap();
-    let errors = Rc::try_unwrap(errors).unwrap().into_inner();
-    (value, errors)
-}
-
-/// Drives the mode's futures until the caller reports it is done.
-async fn drive(runtime: &ManualRuntime, finished: &Rc<Cell<bool>>, errors: &Failures) {
-    loop {
-        dispatch(runtime, errors);
-        if finished.get() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-}
-
-/// Hands every future the mode admitted to the task set running beside the caller.
-fn dispatch(runtime: &ManualRuntime, errors: &Failures) {
-    for future in runtime.take_futures() {
-        let errors = Rc::clone(errors);
-        tokio::task::spawn_local(async move { await_work(future, &errors).await });
-    }
-}
-
-/// Awaits one future the mode admitted, recording its failure.
-async fn await_work(future: LocalFuture, errors: &Failures) {
-    if let Err(error) = future.await {
-        errors.borrow_mut().push(error);
-    }
-}
-
-/// Runs `body` inside a current-thread runtime and task set, where the mode's work and the
-/// session's own tasks make progress.
-fn on_tasks<T>(body: impl Future<Output = T>) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, body)
-}
-
-/// Waits until `path` exists, yielding so the work that creates it runs.
-async fn until_exists(path: &Path) {
-    for _ in 0..10_000 {
-        if path.exists() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("{} appeared", path.display());
-}
-
-/// Waits until no shell row is producing output and the transcript holds `rows` children.
-async fn until_complete(world: &World, rows: usize) {
-    for _ in 0..10_000 {
-        if active(world).is_none() && world.mode.chat_container.children().borrow().len() == rows {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!(
-        "the shell command completed: active={} rows={}",
-        active(world).is_some(),
-        world.mode.chat_container.children().borrow().len()
-    );
-}
-
-/// Writes an executable shell script answering every command with `body`.
-fn scripted(directory: &Path, name: &str, body: &str) -> String {
-    use std::os::unix::fs::PermissionsExt;
-    let path = directory.join(name);
-    std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
-    path.to_str().unwrap().to_owned()
-}
-
 /// A started mode whose shell runs `script`.
-fn shelling(directory: &Path, script: &str) -> World {
+pub(super) fn shelling(directory: &Path, script: &str) -> World {
     let script = script.to_owned();
     let world = Setup {
         configure: Box::new(move |settings: &mut SettingsManager| {
@@ -125,11 +32,6 @@ fn shelling(directory: &Path, script: &str) -> World {
     world.mode.init().unwrap();
     world.runtime.settle().unwrap();
     world
-}
-
-/// The shell row the mode still reports as producing output.
-fn active(world: &World) -> Option<Rc<BashExecutionComponent>> {
-    world.mode.active_shell.borrow().clone()
 }
 
 /// Polls `future` once with a waker that observes nothing.
@@ -293,9 +195,6 @@ fn warnings(world: &World) -> usize {
         .count()
 }
 
-/// The operations an extension supplies for a shell command.
-type ShellOperations = std::sync::Arc<dyn maestro_app::BashOperations>;
-
 /// The events the registered `user_bash` handlers saw, in order.
 type Seen = Rc<RefCell<Vec<maestro_app::UserBashEvent>>>;
 
@@ -452,6 +351,8 @@ fn shell_interception_and_operations_share_one_retained_row_and_settle() {
             excluded_result_records_its_exclusion(directory);
             supplied_operations_run_the_command(directory);
             rejected_execution_fails_the_row(directory);
+            streaming_placement(directory, ("!echo p", false));
+            streaming_placement(directory, ("!!echo p", true));
         },
     );
 }
@@ -548,6 +449,145 @@ fn rejected_execution_fails_the_row(directory: &Path) {
         recorded(&world).is_empty(),
         "a failed command records no result"
     );
+}
+
+/// An answer that leaves the command to the session's selected operations.
+fn default_answer() -> Answer {
+    Rc::new(|_event: &mut maestro_app::UserBashEvent| {
+        Some(Interception {
+            operations: None,
+            result: None,
+        })
+    })
+}
+
+/// An answer that runs the command through `operations`.
+fn through(operations: ShellOperations) -> Answer {
+    Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
+        Some(Interception {
+            operations: Some(operations.clone()),
+            result: None,
+        })
+    })
+}
+
+/// An answer that runs the command through a shell that does not exist.
+fn failing() -> Answer {
+    through(maestro_app::create_local_bash_operations(
+        String::new(),
+        Some("/nonexistent/shell".to_owned()),
+    ))
+}
+
+/// The transcribed rows of `row` at width 80.
+fn row_rows(row: &Rc<BashExecutionComponent>) -> String {
+    maestro_tui::Component::render(&**row, 80).join("\n")
+}
+
+/// One streaming placement case: the answer the extension gives, the submitted text and
+/// the output the row paints, when the command produces one.
+struct Placement {
+    /// The `user_bash` answer.
+    answer: Answer,
+    /// The submitted text.
+    text: &'static str,
+    /// Whether the text keeps the output out of the context.
+    excluded: bool,
+    /// The output the row paints once, absent when execution fails.
+    painted: Option<&'static str>,
+}
+
+/// Submits both prefix forms while a response streams: the command keeps one retained row
+/// in the pending area, never in the transcript, through every interception branch.
+fn streaming_placement(directory: &Path, (text, excluded): (&'static str, bool)) {
+    let script = scripted(directory, "streaming-shell", "printf 'ran\n'");
+    let supplied = maestro_app::create_local_bash_operations(String::new(), Some(script.clone()));
+    let cases = [
+        Placement {
+            answer: default_answer(),
+            text,
+            excluded,
+            painted: Some("ran"),
+        },
+        Placement {
+            answer: through(supplied),
+            text,
+            excluded,
+            painted: Some("ran"),
+        },
+        Placement {
+            answer: whole("whole output", Some(0.0)),
+            text,
+            excluded,
+            painted: Some("whole output"),
+        },
+        Placement {
+            answer: failing(),
+            text,
+            excluded,
+            painted: None,
+        },
+    ];
+    for case in cases {
+        placement_case(directory, &script, &case);
+    }
+}
+
+/// Runs one streaming placement case and checks the retained row it left.
+fn placement_case(directory: &Path, script: &str, case: &Placement) {
+    let (world, seen) = intercepting_world(directory, script, Rc::clone(&case.answer));
+    let errors = on_tasks(async {
+        holding(&world, |_| async {
+            let ((), errors) = driving(&world, async {
+                submit(&world.mode, case.text);
+                until_command_settles(&world).await;
+            })
+            .await;
+            errors
+        })
+        .await
+    });
+    assert!(errors.is_empty(), "{errors:?}");
+    assert_eq!(seen.borrow().len(), 1, "{}", case.text);
+    assert_eq!(
+        seen.borrow()[0].exclude_from_context,
+        case.excluded,
+        "{}",
+        case.text
+    );
+    let retained = world.mode.pending_shells.borrow().clone();
+    assert_eq!(retained.len(), 1, "one retained shell row: {}", case.text);
+    let row = Rc::clone(&retained[0]);
+    let shown: Vec<usize> = world
+        .mode
+        .pending_messages_container
+        .children()
+        .borrow()
+        .iter()
+        .map(component_address)
+        .collect();
+    assert_eq!(shown, vec![component_address(&row)], "the row is pending");
+    let transcript = transcript(&world).join("\n");
+    assert!(
+        !transcript.contains("$ "),
+        "the row is not transcribed: {transcript}"
+    );
+    assert!(
+        active(&world).is_none(),
+        "completion releases the active claim"
+    );
+    let rendered = row_rows(&row);
+    match case.painted {
+        Some(painted) => assert_eq!(
+            rendered.matches(painted).count(),
+            1,
+            "the row paints {painted:?} once for {}: {rendered}",
+            case.text
+        ),
+        // A failed execution completes the row and reports through a status line.
+        None => assert!(transcript.contains("Bash command failed: "), "{transcript}"),
+    }
+    assert_eq!(world.mode.pending_shells.borrow().len(), 1, "{}", case.text);
 }
 
 #[test]
@@ -1160,40 +1200,87 @@ fn pending_shell_flush_uses_linear_identity_membership() {
     isolated(
         "pending_shell_flush_uses_linear_identity_membership",
         |directory| {
-            let world = Setup::default().build(directory);
-            world.mode.init().unwrap();
-            world.runtime.settle().unwrap();
-            let (rows, neighbours) = pending_area(&world);
-            world.mode.flush_pending_bash_components();
-            assert_pending_flush(&world, &rows, &neighbours);
-            world.mode.flush_pending_bash_components();
-            assert_eq!(world.mode.chat_container.children().borrow().len(), 3);
-            assert_eq!(
-                world
-                    .mode
-                    .pending_messages_container
-                    .children()
-                    .borrow()
-                    .len(),
-                2
-            );
+            for count in [3, 64, 128, 256] {
+                membership_case(directory, count);
+            }
+            streaming_flush(directory);
         },
     );
 }
 
-/// Fills the pending area with text neighbours around equal-looking shell rows, recording
-/// the row handles in another order than the container holds them.
+/// Flushes `count` equal-looking pending rows recorded in another order than the container
+/// holds them, and checks the transcript order a second flush leaves alone.
+fn membership_case(directory: &Path, count: usize) {
+    let world = started(directory);
+    let (rows, neighbours) = pending_area(&world, count);
+    world.mode.flush_pending_bash_components();
+    assert_pending_flush(&world, &rows, &neighbours);
+    world.mode.flush_pending_bash_components();
+    assert_eq!(
+        world.mode.chat_container.children().borrow().len(),
+        count,
+        "a second flush moves nothing"
+    );
+    assert_eq!(
+        world
+            .mode
+            .pending_messages_container
+            .children()
+            .borrow()
+            .len(),
+        neighbours.len()
+    );
+}
+
+/// Rows two real shell commands produced while a response streamed move into the transcript
+/// in submission order under their own identities.
+fn streaming_flush(directory: &Path) {
+    let world = echoing_shell(directory);
+    let rows = on_tasks(async {
+        holding(&world, |_| async {
+            let (rows, errors) = driving(&world, async {
+                start_shells(&world, 2).await;
+                world.mode.pending_shells.borrow().clone()
+            })
+            .await;
+            assert!(errors.is_empty(), "{errors:?}");
+            rows
+        })
+        .await
+    });
+    assert_eq!(rows.len(), 2, "both commands kept their row");
+    let baseline = world.mode.chat_container.children().borrow().len();
+    world.mode.flush_pending_bash_components();
+    assert_eq!(
+        transcript_positions(&world, &rows),
+        vec![baseline, baseline + 1],
+        "the rows move once, in submission order"
+    );
+    assert!(
+        world
+            .mode
+            .pending_messages_container
+            .children()
+            .borrow()
+            .is_empty(),
+        "nothing stays pending"
+    );
+}
+
+/// Fills the pending area with text neighbours around `count` equal-looking shell rows,
+/// recording the row handles in another order than the container holds them.
 fn pending_area(
     world: &World,
+    count: usize,
 ) -> (
     Vec<Rc<BashExecutionComponent>>,
     Vec<Rc<dyn maestro_tui::Component>>,
 ) {
-    let rows: Vec<_> = std::iter::repeat_n("!echo same", 3)
+    let rows: Vec<_> = std::iter::repeat_n("!echo same", count)
         .map(|command| {
             Rc::new(BashExecutionComponent::new(
                 command.to_owned(),
-                world.mode.ui.clone(),
+                (*world.mode.ui).clone(),
                 world.themes.theme(),
                 false,
             ))
@@ -1206,21 +1293,20 @@ fn pending_area(
             text as Rc<dyn maestro_tui::Component>
         })
         .collect();
+    let mut children: Vec<Rc<dyn maestro_tui::Component>> = vec![Rc::clone(&neighbours[0])];
+    children.extend(
+        rows.iter()
+            .cloned()
+            .map(|row| row as Rc<dyn maestro_tui::Component>),
+    );
+    children.push(Rc::clone(&neighbours[1]));
     world
         .mode
         .pending_messages_container
-        .set_children(Rc::new(RefCell::new(vec![
-            Rc::clone(&neighbours[0]),
-            rows[0].clone(),
-            Rc::clone(&neighbours[1]),
-            rows[1].clone(),
-            rows[2].clone(),
-        ])));
-    *world.mode.pending_shells.borrow_mut() = vec![
-        Rc::clone(&rows[2]),
-        Rc::clone(&rows[0]),
-        Rc::clone(&rows[1]),
-    ];
+        .set_children(Rc::new(RefCell::new(children)));
+    let mut membership = rows.clone();
+    membership.rotate_left(count.saturating_sub(1));
+    *world.mode.pending_shells.borrow_mut() = membership;
     (rows, neighbours)
 }
 

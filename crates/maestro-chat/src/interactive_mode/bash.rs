@@ -10,7 +10,7 @@ use maestro_app::{
     AgentSession, BashOperations, BashResult, DiagnosticErrorInfo, Presence, TruncationResult,
     UserBashEvent, UserBashEventResult,
 };
-use maestro_tui::EditorComponent;
+use maestro_tui::{EditorComponent, TUI};
 use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc, sync::Arc};
 
 /// The callable operations an extension supplies for one shell command.
@@ -40,7 +40,7 @@ pub(super) fn selected_shell_command(text: &str) -> Option<(&str, bool)> {
 }
 
 /// The address of the component `handle` holds, so two handles to one component share it.
-fn component_address<T: ?Sized>(handle: &Rc<T>) -> usize {
+pub(super) fn component_address<T: ?Sized>(handle: &Rc<T>) -> usize {
     Rc::as_ptr(handle).cast::<()>() as usize
 }
 
@@ -154,7 +154,7 @@ impl InteractiveMode {
     ) -> Rc<BashExecutionComponent> {
         let row = Rc::new(BashExecutionComponent::new(
             command.to_owned(),
-            self.ui.clone(),
+            TUI::clone(&self.ui),
             self.themes.theme(),
             exclude_from_context,
         ));
