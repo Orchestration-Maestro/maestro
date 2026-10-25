@@ -22,6 +22,7 @@ mod authentication;
 mod bash;
 mod compaction_queue;
 mod debug;
+mod dispatch;
 mod events;
 mod info;
 mod key_display;
@@ -53,26 +54,7 @@ type StatusLine = (Rc<dyn Component>, Rc<Text>);
 /// The assistant row a response streams into and the message it shows.
 type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
-/// How the interactive mode starts.
-#[derive(Default)]
-pub struct InteractiveModeOptions {
-    /// Forces the expanded startup help, even when startup is quiet.
-    pub verbose: bool,
-    /// Providers whose credentials were migrated at startup, warned about in order.
-    pub migrated_providers: Vec<String>,
-    /// The warning shown when the session model could not be restored.
-    pub model_fallback_message: Option<String>,
-    /// The first prompt sent at startup.
-    pub initial_message: Option<String>,
-    /// Images attached to the first startup prompt.
-    pub initial_images: Option<Vec<maestro_app::ImageContent>>,
-    /// Prompts sent after the first startup prompt, in order.
-    pub initial_messages: Vec<String>,
-    /// Hosted service origin; absent selects the compiled default.
-    pub service_origin: Option<String>,
-    /// Supplied HTTP transport for startup requests.
-    pub fetch: Option<maestro_app::Fetch>,
-}
+pub use maestro_app::presentation_data::mode_dispatch::InteractiveModeOptions;
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {

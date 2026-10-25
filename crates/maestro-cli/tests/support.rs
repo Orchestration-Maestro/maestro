@@ -73,3 +73,6 @@ pub fn assert_argv_title(title: &str) {
 
 /// Isolated missing-directory presentation harness.
 pub mod missing_cwd;
+
+/// Final dispatch recording presentations and streams.
+pub mod mode_dispatch;
