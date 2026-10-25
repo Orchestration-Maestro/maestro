@@ -8,9 +8,9 @@ use crate::native_html_artifact_support::{
 };
 use maestro_app::{DiagnosticErrorInfo, SandboxRuntimeProvider, SharedHandle};
 use maestro_web::{
+    HtmlArtifact,
     browser::sandbox_value::BrowserSandboxValue,
     dom::{DomContent as _, DomRoot, DomView},
-    tools::artifacts::html_artifact::HtmlArtifact,
 };
 use std::{cell::Cell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
@@ -669,4 +669,373 @@ fn untaken(view: &DomView, parent: &Element) {
     );
     assert_eq!(stale_reads.get(), 0);
     fresh.remove();
+}
+/// A long logging source whose listing overflows a bounded body.
+fn long_source() -> String {
+    format!(
+        "{}<script>console.log(\"one\")</script>",
+        "<p>line</p>\n".repeat(80)
+    )
+}
+/// The preview and source buttons of a header, in order.
+fn toggles(header: &DomRoot) -> (web_sys::HtmlElement, web_sys::HtmlElement) {
+    let buttons = header
+        .node
+        .unchecked_ref::<Element>()
+        .query_selector_all(".maestro-toggle-button")
+        .unwrap();
+    let at = |index| buttons.item(index).unwrap().unchecked_into();
+    (at(0), at(1))
+}
+/// Whether a body shows its source listing rather than its preview.
+fn shows_source(root: &DomRoot) -> bool {
+    let preview = select(&root.node, ".maestro-html-preview");
+    let source = select(&root.node, ".maestro-html-source");
+    assert_eq!(
+        preview.has_attribute("hidden"),
+        !source.has_attribute("hidden")
+    );
+    crate::contributions_support::computed(&preview, "display") == "none"
+}
+/// Header selections switch the presentation of one body while its frame, listing,
+/// selection, scroll and single load stay in place.
+#[wasm_bindgen]
+pub async fn html_artifact_dom_keeps_frame_across_mode_changes(import_module: js_sys::Function) {
+    let view = view();
+    let _host = host(&view, &import_module);
+    let page = page_module(&import_module).await;
+    let parent = container();
+    parent
+        .set_attribute("style", "display:block;height:160px")
+        .unwrap();
+    let reads = Rc::new(Cell::new(0));
+    let mut artifact = HtmlArtifact::new();
+    artifact.filename = "modes.html".to_owned();
+    artifact.runtime_providers.push(marker("modes", &reads));
+    artifact.set_content(long_source()).unwrap();
+    let root = artifact.mount(&view).unwrap();
+    parent.append_child(&root.node).unwrap();
+    let header = artifact.get_header_buttons(&view).unwrap();
+    container().append_child(&header.node).unwrap();
+    logged(&page, &root, &artifact, &view.i18n, "[log] one").await;
+    // The load and the header's standalone preparation each read the provider once.
+    assert_eq!(reads.get(), 2);
+    let loaded = frame(&root).unwrap();
+    let node: &Element = root.node.unchecked_ref();
+    let source = select(node, ".maestro-html-source");
+    assert_eq!(
+        crate::contributions_support::computed(node, "overflow"),
+        "hidden"
+    );
+    assert_eq!(
+        crate::contributions_support::computed(&source, "overflow-y"),
+        "auto"
+    );
+    assert!(!shows_source(&root));
+    let (preview_button, source_button) = toggles(&header);
+    source_button.click();
+    assert!(shows_source(&root));
+    assert!(frame(&root).unwrap().is_same_node(Some(&loaded)));
+    source_mode(&page, &root, &mut artifact).await;
+    preview_button.focus().unwrap();
+    crate::contributions_support::driver("driverPress", "Enter").await;
+    assert!(!shows_source(&root));
+    assert!(frame(&root).unwrap().is_same_node(Some(&loaded)));
+    assert_eq!(reads.get(), 2, "changing the presentation never loads");
+    sibling_modes(&view, &root);
+    parent.remove();
+}
+/// The shown listing paints the selected brand background, scrolls inside the bounded body, and
+/// keeps its nodes, selection and scroll through an unrelated update.
+async fn source_mode(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mut HtmlArtifact) {
+    let view = view();
+    let source = select(&root.node, ".maestro-html-source");
+    let background = view.pack.presentation(view.mode).unwrap().colors["background"];
+    assert_eq!(
+        crate::contributions_support::computed(&source, "background-color"),
+        crate::contributions_support::rgb(background)
+    );
+    source.set_scroll_top(40);
+    let scrolled = source.scroll_top();
+    assert!(scrolled > 0, "the bounded listing scrolls");
+    let listing = code(root);
+    call(page, "select", &js_sys::Array::of1(&listing)).await;
+    artifact.filename = "renamed.html".to_owned();
+    artifact.update(root, &view).unwrap();
+    assert!(
+        shows_source(root),
+        "an unrelated update keeps the presentation"
+    );
+    assert!(code(root).is_same_node(Some(&listing)));
+    assert!(selection(page, &listing).await.1);
+    assert_eq!(source.scroll_top(), scrolled);
+}
+/// A differently named sibling switches only its own presentation.
+fn sibling_modes(view: &DomView, first: &DomRoot) {
+    let mut other = HtmlArtifact::new();
+    other.filename = "other.html".to_owned();
+    other.set_content(QUIET.to_owned()).unwrap();
+    let root = other.mount(view).unwrap();
+    let parent = container();
+    parent.append_child(&root.node).unwrap();
+    let header = other.get_header_buttons(view).unwrap();
+    parent.append_child(&header.node).unwrap();
+    toggles(&header).1.click();
+    assert!(shows_source(&root) && !shows_source(first));
+    let reopened = other.get_header_buttons(view).unwrap();
+    let selected = toggles(&reopened).1;
+    assert!(selected.class_name().contains("maestro-toggle-selected"));
+    parent.remove();
+}
+/// The header row's controls in order.
+fn controls(header: &DomRoot) -> Vec<Element> {
+    std::iter::successors(
+        header.node.unchecked_ref::<Element>().first_element_child(),
+        Element::next_element_sibling,
+    )
+    .collect()
+}
+/// Header control titles in order: preview, source, reload, copy, download.
+fn titles(header: &DomRoot) -> Vec<String> {
+    let (preview, source) = toggles(header);
+    let row = controls(header);
+    assert_eq!(row.len(), 4);
+    let title = |index: usize| row[index].get_attribute("title").unwrap();
+    vec![
+        preview.title(),
+        source.title(),
+        title(1),
+        title(2),
+        title(3),
+    ]
+}
+/// Header titles in both languages.
+fn localized_titles(view: &DomView) {
+    for (language, expected) in [
+        (
+            "en",
+            [
+                "Preview",
+                "Code",
+                "Reload HTML",
+                "Copy HTML",
+                "Download HTML",
+            ],
+        ),
+        (
+            "de",
+            [
+                "Vorschau",
+                "Code",
+                "HTML neu laden",
+                "HTML kopieren",
+                "HTML herunterladen",
+            ],
+        ),
+    ] {
+        let localized = localized_view(view, language);
+        let header = HtmlArtifact::new().get_header_buttons(&localized).unwrap();
+        assert_eq!(titles(&header), expected);
+    }
+}
+/// The header's control at `index` in the row, or its inner button for the copy element.
+fn control(header: &DomRoot, index: usize) -> web_sys::HtmlElement {
+    let child = controls(header).swap_remove(index);
+    child
+        .query_selector("button")
+        .unwrap()
+        .unwrap_or(child)
+        .unchecked_into()
+}
+/// Headers keep the source they were built from; downloads save original bytes or the
+/// standalone document; completion follows the whole source.
+#[wasm_bindgen]
+pub async fn html_artifact_dom_source_copy_and_standalone_download(
+    import_module: js_sys::Function,
+) {
+    let view = view();
+    let _host = host(&view, &import_module);
+    let page = page_module(&import_module).await;
+    localized_titles(&view);
+    let fixture = crate::session_download_browser::Fixture::import(&import_module).await;
+    let clipboard = crate::contributions_support::Recorded::install(
+        crate::contributions_support::Clipboard::Accept,
+    );
+    let mut artifact = HtmlArtifact::new();
+    artifact.filename = "literal$&雪.html".to_owned();
+    artifact.set_content("test".to_owned()).unwrap();
+    let parent = container();
+    let captured = artifact.get_header_buttons(&view).unwrap();
+    parent.append_child(&captured.node).unwrap();
+    fixture
+        .saved(
+            &control(&captured, 3),
+            b"test",
+            "text/html",
+            "literal$&雪.html",
+        )
+        .await;
+    artifact.set_content("<p>edited</p>".to_owned()).unwrap();
+    let edited = artifact.get_header_buttons(&view).unwrap();
+    parent.append_child(&edited.node).unwrap();
+    for (header, text) in [(&captured, "test"), (&edited, "<p>edited</p>")] {
+        let before = clipboard.texts().len();
+        control(header, 2).click();
+        crate::contributions_support::frames(&page, 1).await;
+        assert_eq!(clipboard.texts()[before..], [text.to_owned()]);
+    }
+    mounted_download(&page, &fixture, &mut artifact).await;
+    completion(&page).await;
+    parent.remove();
+}
+/// A connected body's header saves the standalone document, and reload loads the body's
+/// current source after clearing its logs.
+async fn mounted_download(
+    page: &wasm_bindgen::JsValue,
+    fixture: &crate::session_download_browser::Fixture,
+    artifact: &mut HtmlArtifact,
+) {
+    let view = view();
+    let reads = Rc::new(Cell::new(0));
+    artifact.runtime_providers.push(marker("saved", &reads));
+    artifact.set_content(LOGGING.to_owned()).unwrap();
+    let root = artifact.mount(&view).unwrap();
+    let parent = container();
+    parent.append_child(&root.node).unwrap();
+    logged(page, &root, artifact, &view.i18n, "[log] one").await;
+    let header = artifact.get_header_buttons(&view).unwrap();
+    parent.append_child(&header.node).unwrap();
+    let adapter = artifact.sandbox_iframe_ref.borrow().clone().unwrap();
+    let standalone = adapter
+        .prepare_html_document(
+            "artifact-literal$&雪.html",
+            LOGGING,
+            &artifact.runtime_providers,
+            Some(
+                maestro_web::components::sandboxed_iframe::PrepareHtmlOptions {
+                    is_html_artifact: true,
+                    is_standalone: true,
+                },
+            ),
+        )
+        .unwrap();
+    assert_eq!(
+        authored(&standalone),
+        LOGGING,
+        "the saved source has no completion"
+    );
+    assert!(!standalone.contains("sendRuntimeMessage"));
+    fixture
+        .saved(
+            &control(&header, 3),
+            standalone.as_bytes(),
+            "text/html",
+            "literal$&雪.html",
+        )
+        .await;
+    // The connection, both standalone preparations and the changed source each read once.
+    artifact.set_content(QUIET.to_owned()).unwrap();
+    artifact.update(&root, &view).unwrap();
+    assert_eq!(reads.get(), 4);
+    control(&header, 1).click();
+    assert_eq!(reads.get(), 5, "reload loads once");
+    assert!(
+        srcdoc(&root)
+            .ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
+    );
+    assert_eq!(
+        artifact.get_logs(&view.i18n).unwrap(),
+        "No logs for literal$&雪.html"
+    );
+    parent.remove();
+}
+/// One recorded completion case: the source, its completed document and what the page did.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Completion {
+    /// Original source.
+    source: String,
+    /// Source with the completion signal appended.
+    html: String,
+    /// Completion signals that ran.
+    completions: u32,
+    /// Script errors the page reported.
+    errors: u32,
+    /// Completion positions and document readiness, in order.
+    events: serde_json::Value,
+    /// Body element names when loading finished.
+    body: Vec<String>,
+}
+/// Recorded completion cases.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Completions {
+    /// Every case in order.
+    cases: Vec<Completion>,
+}
+/// A provider whose runtime records each completion with its position and readiness, script
+/// errors and loading, then posts them as one console line after the page loads.
+struct Probe;
+impl SandboxRuntimeProvider<BrowserSandboxValue> for Probe {
+    fn get_data(
+        &self,
+    ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
+        Ok(indexmap::IndexMap::new())
+    }
+    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
+        Ok(include_str!("native_html_artifact_support/probe.js").to_owned())
+    }
+    fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
+        Ok(String::new())
+    }
+}
+/// The authored part of a prepared document, without the injected runtime.
+fn authored(document: &str) -> String {
+    let start = document.find("<style>\nhtml, body {").unwrap();
+    let end_marker = "s.remove()}</script>";
+    let end = document[start..].find(end_marker).unwrap() + start + end_marker.len();
+    format!("{}{}", &document[..start], &document[end..])
+}
+/// The completion signal follows the whole source exactly once, where the page parser places
+/// it, at the same moment of loading; malformed tails stay unrepaired.
+async fn completion(page: &wasm_bindgen::JsValue) {
+    let view = view();
+    let cases: Completions =
+        serde_json::from_str(include_str!("fixtures/html_artifact_completion.json")).unwrap();
+    let mut artifact = HtmlArtifact::new();
+    artifact.filename = "completion.html".to_owned();
+    artifact.runtime_providers.push(SharedHandle::new(Probe));
+    let root = artifact.mount(&view).unwrap();
+    let parent = container();
+    parent.append_child(&root.node).unwrap();
+    for case in cases.cases {
+        artifact.set_content(case.source.clone()).unwrap();
+        if case.source.is_empty() {
+            artifact.execute_content("").unwrap();
+        }
+        assert_eq!(authored(&srcdoc(&root)), case.html);
+        crate::contributions_support::until(page, &root.node, || {
+            artifact
+                .get_logs(&view.i18n)
+                .unwrap()
+                .starts_with("[log] {")
+        })
+        .await;
+        let logs = artifact.get_logs(&view.i18n).unwrap();
+        let observed: serde_json::Value = serde_json::from_str(&logs["[log] ".len()..]).unwrap();
+        assert_eq!(
+            observed["completions"], case.completions,
+            "{:?}",
+            case.source
+        );
+        assert_eq!(observed["errors"], case.errors, "{:?}", case.source);
+        assert_eq!(observed["events"], case.events, "{:?}", case.source);
+        assert_eq!(
+            observed["body"],
+            serde_json::json!(case.body),
+            "{:?}",
+            case.source
+        );
+    }
+    parent.remove();
 }

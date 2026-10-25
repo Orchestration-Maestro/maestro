@@ -2,6 +2,7 @@
 use crate::{
     I18n, SandboxIframe,
     browser::sandbox_value::BrowserSandboxValue,
+    components::preview_code_toggle::ViewMode,
     dom::{DomContent, DomRoot, DomView},
     tools::{
         artifacts::console::{Console, LogEntry},
@@ -10,11 +11,12 @@ use crate::{
 };
 use maestro_app::{SandboxRuntimeProvider, SandboxUrlProvider, SharedHandle};
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     rc::{Rc, Weak},
 };
 
 mod body;
+mod header;
 pub(crate) use body::define;
 
 /// One runtime provider, shared with the sandbox router.
@@ -39,6 +41,8 @@ pub struct HtmlArtifact {
     content: String,
     /// Logs of the current source, in arrival order.
     logs: Logs,
+    /// Whether bodies show the preview or the source listing.
+    mode: Rc<Cell<ViewMode>>,
     /// The body this artifact last mounted or updated.
     body: Rc<RefCell<Weak<body::Body>>>,
 }
@@ -94,6 +98,7 @@ impl HtmlArtifact {
             url: self.sandbox_url_provider.clone(),
             frame: Rc::clone(&self.sandbox_iframe_ref),
             logs: Rc::clone(&self.logs),
+            mode: Rc::clone(&self.mode),
             body: self.body.borrow().clone(),
         }
     }
@@ -111,6 +116,8 @@ struct Binding {
     frame: Frame,
     /// Logs receiving console messages.
     logs: Logs,
+    /// Presentation the body shows.
+    mode: Rc<Cell<ViewMode>>,
     /// Body repainting its console after each message.
     body: Weak<body::Body>,
 }
@@ -128,13 +135,17 @@ impl Binding {
         let consumer = body::LogConsumer::shared(&self.logs, &self.body);
         sandbox
             .load_content(
-                &format!("artifact-{}", self.filename),
+                &sandbox_id(&self.filename),
                 &complete_html(html),
                 self.providers.clone(),
                 vec![consumer],
             )
             .map_err(|error| ToolUiError::Presentation(error.message))
     }
+}
+/// The sandbox identifier of an artifact named `filename`.
+fn sandbox_id(filename: &str) -> String {
+    format!("artifact-{filename}")
 }
 /// Append the completion signal after the whole source, which the page parser then places.
 fn complete_html(html: &str) -> String {
@@ -149,6 +160,7 @@ impl DomContent for HtmlArtifact {
             .as_ref()
             .and_then(|owner| owner.downcast_ref::<body::Mounted>())
             .ok_or_else(|| ToolUiError::Presentation("HTML body is not mounted".to_owned()))?
+            .0
             .bind(self, view)
     }
 }

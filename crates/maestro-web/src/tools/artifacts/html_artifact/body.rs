@@ -6,7 +6,7 @@ use crate::{
         attachment_content::browser::{append, element, host_error},
         sandbox_value::BrowserSandboxValue,
     },
-    components::sandbox::runtime_message_router::MessageConsumer,
+    components::{preview_code_toggle::ViewMode, sandbox::runtime_message_router::MessageConsumer},
     dom::{DomContent as _, DomRoot, DomView, Link, Property, Reflected},
     tools::{
         artifacts::{
@@ -112,7 +112,34 @@ impl Body {
         self.console.borrow_mut().logs = Rc::clone(&artifact.logs);
         self.view.replace(view.clone());
         self.list(&artifact.content, view);
+        self.show_mode()?;
         self.paint_logs()
+    }
+    /// Show `mode` through the bound artifact's presentation.
+    pub(super) fn select(&self, mode: ViewMode) -> Result<(), ToolUiError> {
+        self.binding.borrow().mode.set(mode);
+        self.show_mode()
+    }
+    /// Show the preview or the source region, keeping both in place.
+    fn show_mode(&self) -> Result<(), ToolUiError> {
+        let code = self.binding.borrow().mode.get() == ViewMode::Code;
+        for (region, hidden) in [(&self.preview, code), (&self.source, !code)] {
+            if hidden {
+                region.set_attribute("hidden", "")
+            } else {
+                region.remove_attribute("hidden")
+            }
+            .map_err(|error| ToolUiError::native(&error))?;
+        }
+        Ok(())
+    }
+    /// Clear the logs, then load the listed source again, even when empty.
+    pub(super) fn reload(&self) -> Result<(), ToolUiError> {
+        let binding = self.binding.borrow().clone();
+        binding.logs.borrow_mut().clear();
+        self.paint_logs()?;
+        let content = self.shown.borrow().clone();
+        binding.execute(&content)
     }
     /// Re-list the source only when it changed, keeping the listing nodes and selection otherwise.
     fn list(&self, content: &str, view: &DomView) {
@@ -201,13 +228,7 @@ fn unpublish(frame: &Frame, sandbox: &Rc<SandboxIframe>) -> bool {
     published
 }
 /// The mounted root's share of its body, which releases the frame when the root is dropped.
-pub(super) struct Mounted(Rc<Body>);
-impl Mounted {
-    /// Bind the body to `artifact`.
-    pub(super) fn bind(&self, artifact: &HtmlArtifact, view: &DomView) -> Result<(), ToolUiError> {
-        self.0.bind(artifact, view)
-    }
-}
+pub(super) struct Mounted(pub(super) Rc<Body>);
 impl Drop for Mounted {
     fn drop(&mut self) {
         self.0.release();

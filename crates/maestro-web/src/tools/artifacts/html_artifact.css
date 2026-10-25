@@ -13,6 +13,14 @@
   display: flex;
   flex-direction: column;
 }
+.maestro-html-preview[hidden],
+.maestro-html-source[hidden] {
+  display: none;
+}
+.maestro-html-frame {
+  flex: 1;
+  min-height: 0;
+}
 .maestro-html-source {
   overflow: auto;
   background: var(--maestro-color-background);

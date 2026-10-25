@@ -56,6 +56,8 @@
     "html_artifact_dom_forwards_current_providers_and_url",
     "html_artifact_dom_routes_logs_and_releases_its_frame",
     "html_artifact_dom_nested_creation_keeps_controllers",
+    "html_artifact_dom_keeps_frame_across_mode_changes",
+    "html_artifact_dom_source_copy_and_standalone_download",
     "simple_html_session_replays_existing_browser_owners",
     "long_session_replays_existing_browser_owners"
   ],

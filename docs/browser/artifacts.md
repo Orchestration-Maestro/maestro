@@ -32,7 +32,8 @@ component-owned native controls: `components::download_button::dom::download_but
 and `DomContent for PreviewCodeToggle` publish them as page content. The generic
 file body also mounts natively through `DomContent for GenericArtifact`, and its
 independent header is `GenericArtifact::get_header_buttons(view: &DomView)`. The
-Word body and artifact console have separate native interfaces described below.
+Word body, the HTML body and the artifact console have separate native interfaces
+described below.
 The remaining bodies, the panel and the Chat integration still use their retained
 canvas owners until their own deliveries mount those controls.
 
@@ -109,8 +110,6 @@ or partial content-only dimming is included.
 Specialized viewers remain in
 [#797](https://github.com/Orchestration-Maestro/maestro/issues/797) and
 [#819](https://github.com/Orchestration-Maestro/maestro/issues/819).
-HTML runtime-provider composition remains in
-[#753](https://github.com/Orchestration-Maestro/maestro/issues/753).
 
 ## PDF artifacts
 
@@ -302,5 +301,44 @@ An update may replace the log handle or use another console and localization.
 Subsequent controls use those current operands, and unchanged positional rows,
 selection and keyboard focus survive. Each mounted root owns its subscriptions;
 releasing one does not release a sibling. This direct body does not register an
-`artifact-console` tag or install the HTML body, panel or Chat integration.
-Those integrations remain in [#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761).
+`artifact-console` tag. The HTML body below mounts it; the panel and Chat
+integration remain in [#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761).
+
+## Native HTML artifact
+
+On browser targets, `HtmlArtifact` mounts as an `html-artifact` element through
+`DomContent`. Create it with `new` or `default`, set `filename`,
+`runtime_providers` and `sandbox_url_provider`, and assign source with
+`set_content`. `content` returns the source unchanged.
+
+The body keeps two regions in place: a preview with the isolated frame and, while
+there are logs, the artifact console; and a highlighted source listing. Connecting
+the element creates the frame adapter, publishes it in `sandbox_iframe_ref` and
+loads a nonempty source once. A changed source clears the logs and, while
+connected, loads again. Equal or empty assignments, arriving logs and `update`
+never load. `execute_content` loads any source while connected, even an empty one.
+Loads read the current providers in order. A configured address replaces the
+frame's address; without one the frame keeps its own. Each load appends the
+completion signal after the whole source, so authored scripts, comments and
+attributes stay intact. In an empty document the signal runs in the body.
+
+Detaching the element removes the frame and its route and empties
+`sandbox_iframe_ref`. Reconnecting loads again through the same adapter, and
+dropping the mounted root releases it. An `update` from another artifact moves the
+frame to that artifact. The `filename` attribute names the sandbox of the next
+load; a `content` attribute is ignored.
+
+Only messages whose `type` is `"console"` become log lines, in arrival order and
+with their raw text; only the `"error"` method marks an error line. `get_logs`
+returns `[log] text` and `[error] text` lines with whole-value text. With no logs it
+returns the localized `No logs for {filename}` guidance, with the first placeholder
+replaced by the literal filename.
+
+`get_header_buttons(&DomView)` returns an independent row: preview/source
+selection, reload, copy and download. Copy and download keep the source the header
+was built with. Download saves UTF-8 bytes as `text/html` under the literal
+filename: the standalone document prepared through the connected frame, otherwise
+the original source. Selection and reload act on the body the artifact last
+mounted or updated. Reload clears the logs and loads that body's source again.
+Switching between preview and source keeps the frame, the listing, its selection
+and its scroll position.
