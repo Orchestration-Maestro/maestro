@@ -34,6 +34,7 @@ mod info;
 mod key_display;
 mod lifecycle;
 mod models;
+mod navigation;
 mod notices;
 mod progress;
 mod queues;
@@ -144,6 +145,8 @@ pub struct InteractiveMode {
     pending_tools: RefCell<replay::PendingTools>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// Wall time of the latest unpaired interrupt press on the empty editor.
+    last_escape_time: Cell<i64>,
     /// The shell row that is still producing output, when one is attached.
     active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
     /// Shell rows shown in the pending area until the next ordinary submission.
@@ -183,8 +186,7 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
-        let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
-        let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
+        let (tool_environment, ui) = create_presentation(&session, terminal, themes.theme())?;
         let (keys, editor, editor_container) = create_input(&session, &ui, themes.theme())?;
         let (footer, footer_data_provider) = create_footer(&session, &operations, themes.theme())?;
         let hide_thinking = init_theme(&session, &themes, &operations)?;
@@ -230,6 +232,7 @@ impl InteractiveMode {
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            last_escape_time: Cell::new(0),
             active_shell: RefCell::default(),
             pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
@@ -356,6 +359,20 @@ fn tool_environment(
         ),
         terminal_image: TerminalImage::default(),
     }))
+}
+
+/// Builds the transcript environment and frame writer with shared image support.
+///
+/// # Errors
+/// Returns the failure of the transcript environment.
+fn create_presentation(
+    session: &AgentSession,
+    terminal: (TerminalHandle, Rc<dyn TuiRuntime>),
+    theme: LiveTheme,
+) -> Result<(Rc<ToolRenderEnvironment>, Rc<TUI>), Box<dyn Error>> {
+    let environment = tool_environment(terminal.1.clone(), theme)?;
+    let ui = create_ui(session, terminal, environment.terminal_image.clone());
+    Ok((environment, ui))
 }
 
 /// Builds the frame writer with the configured hardware-cursor and clear-on-shrink policies,

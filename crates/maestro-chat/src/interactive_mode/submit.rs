@@ -85,7 +85,8 @@ impl InteractiveMode {
             );
             return;
         }
-        if self.runs_command(text)
+        if self.runs_navigation_command(text)
+            || self.runs_command(text)
             || self.runs_session_command(text)
             || self.runs_model_command(text)
         {
@@ -157,6 +158,33 @@ impl InteractiveMode {
                 mode.clear_editor();
                 settled
             }));
+        true
+    }
+
+    /// Opens the fork, tree or saved-session panel, or starts a clone, without delivering a
+    /// prompt.
+    fn runs_navigation_command(self: &Rc<Self>, text: &str) -> bool {
+        match text {
+            "/fork" => self.report(self.show_user_message_selector()),
+            "/tree" => self.report(self.show_tree_selector(None)),
+            "/resume" => self.report(self.show_session_selector()),
+            "/clone" => {
+                if let Err(error) = self.current_editor().try_set_text("") {
+                    self.report(Err(error));
+                    return true;
+                }
+                let mode = Rc::clone(self);
+                self.tool_environment
+                    .runtime
+                    .spawn_local(Box::pin(async move { mode.handle_clone_command().await }));
+            }
+            _ => return false,
+        }
+        self.report(
+            self.current_editor()
+                .try_set_text("")
+                .map_err(|error| -> Box<dyn Error> { error }),
+        );
         true
     }
 

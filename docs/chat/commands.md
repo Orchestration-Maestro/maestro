@@ -10,8 +10,9 @@ waiting input and never enters the editor history. Any other text, including
 
 The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
 `/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
-`/debug`, `/hotkeys`, `/share`, `/copy`, `/new`, `/compact` and `/quit`. The offline
-viewer and packaged asset injection are not delivered yet (see
+`/debug`, `/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume`, `/new`,
+`/compact` and `/quit`. The offline viewer and packaged asset injection are not
+delivered yet (see
 [what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
@@ -21,6 +22,45 @@ follows a session switch.
 Editor submission routes `/name` or `/name ` followed by a name, `/session` and
 `/debug` to those methods. Other text, such as `/names` or `/session extra`, is
 ordinary input. When a command fails, the failure goes to the terminal host.
+
+## Session tree
+
+`/tree` opens the current session's tree at its current leaf, using the saved tree
+filter. The configurable `app.session.tree` action opens the same panel. Selecting
+another entry offers `No summary`, `Summarize` and `Summarize with custom prompt`.
+The `branchSummary.skipPrompt` setting skips this question and navigates without a
+summary. Selecting the current leaf shows `Already at this point` instead.
+
+Custom instructions may be empty. Cancelling their editor returns to the summary
+choices; cancelling the choices reopens the tree at the same entry. A summary
+shows a loader whose interrupt key cancels it. Cancelling a summary reopens that
+entry, while an extension veto closes navigation without changing the transcript.
+
+Successful navigation replays the selected branch and delivers input captured
+during compaction. Returned message text fills an empty or whitespace-only editor;
+an existing draft is kept. The panel's label action records or removes the selected
+entry's label through the session manager.
+
+Pressing the interrupt key twice on an empty or whitespace-only editor opens the
+tree or the earlier-message fork panel, as the `doubleEscapeAction` setting says;
+`none` turns this off. The second press must come strictly less than 500 ms after
+the first, and the setting is read on each press. A streaming response, a running
+shell command and shell mode take the interrupt key first.
+
+## Resuming a session
+
+`/resume` and the configurable `app.session.resume` action list the saved sessions
+of the current project; the selector's scope key lists every project instead.
+Choosing one closes the panel and resumes it through the runtime, then replays it
+and shows `Resumed session`. An extension can cancel the switch, which changes
+nothing. Cancelling the selector puts the editor back, its exit key shuts the mode
+down, and its rename action records a trimmed, nonblank name in the chosen file.
+
+When the saved session's directory no longer exists, the mode asks whether to
+resume in the current directory instead. Declining shows `Resume cancelled`;
+accepting retries there and shows `Resumed session in current cwd`. A failed retry
+goes to the terminal host. Any other failure to resume is fatal: the mode shows
+`Failed to resume session: <reason>` and the process exits with status 1.
 
 ## `/quit`
 

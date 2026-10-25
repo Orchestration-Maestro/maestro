@@ -585,7 +585,7 @@ fn catalog_getter_and_constructor_share_one_direct_owner() {
         &runner.create_command_context().model_registry().unwrap()
     ));
     let retained = context.model_registry().unwrap();
-    let (_owner, api) = local_api(runtime.clone(), "/work");
+    let (_owner, api) = local_api(runtime, "/work");
     bind_empty(&runner, ProviderActions::default()).unwrap();
     api.register_provider("fallback".into(), good("fallback-model"))
         .unwrap();
@@ -602,7 +602,7 @@ fn catalog_getter_and_constructor_share_one_direct_owner() {
         .register_provider("p", good("m"))
         .unwrap();
     assert!(registry.find("p", "m").is_some());
-    runtime.invalidate(Some("stale".into()));
+    runner.invalidate(Some("stale".into()));
     assert_eq!(context.model_registry().err().unwrap().to_string(), "stale");
     retained.refresh().unwrap();
     assert!(retained.find("p", "m").is_some());

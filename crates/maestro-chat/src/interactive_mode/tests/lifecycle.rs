@@ -343,7 +343,7 @@ type Signals = (Rc<dyn Fn()>, Rc<dyn Fn()>);
 /// Observable process effects without touching the real process.
 pub(super) struct Effects {
     /// Wall time the clear action observes.
-    now: Cell<i64>,
+    pub(super) now: Cell<i64>,
     /// Effects in invocation order.
     pub(super) events: Rc<RefCell<Vec<String>>>,
     /// The currently registered callbacks, shared with their remover.

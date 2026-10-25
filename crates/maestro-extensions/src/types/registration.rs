@@ -146,6 +146,13 @@ pub struct Extension<E: ExtensionExecution = Threaded> {
 pub struct ExtensionRuntimeState {
     /// Current shared flag values.
     pub flag_values: RwLock<IndexMap<String, FlagValue>>,
+    /// Registration activity, shared by every facade over the runtime.
+    pub(crate) activity: ActivityGuard,
+}
+
+/// The activity of a runtime or of one runner: active until its first invalidation.
+#[derive(Default)]
+pub(crate) struct ActivityGuard {
     /// First invalidation message.
     pub(crate) stale_message: RwLock<Option<String>>,
 }
