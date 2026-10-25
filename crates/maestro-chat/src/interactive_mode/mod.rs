@@ -103,6 +103,8 @@ pub struct InteractiveMode {
     editor: Rc<CustomEditor>,
     /// The current editor, the extension editor factory and the completion provider.
     editor_state: extension_ui::editor::EditorState,
+    /// The extension custom views that have not settled.
+    custom_views: extension_ui::custom::CustomViews,
     /// The keybindings the editor reads, and the configured keys extension shortcuts use.
     keybindings: KeybindingsManager,
     /// The footer.
@@ -201,6 +203,7 @@ impl InteractiveMode {
             widget_container_below: Rc::new(Container::new()),
             editor_container,
             editor_state: extension_ui::editor::EditorState::new(editor.clone()),
+            custom_views: Rc::default(),
             editor,
             keybindings: keys,
             footer,

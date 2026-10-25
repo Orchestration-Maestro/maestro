@@ -7,6 +7,7 @@ mod bindings;
 mod commands;
 mod debug;
 mod events;
+mod extension_custom;
 mod extension_editors;
 mod extension_replacements;
 mod extension_ui;

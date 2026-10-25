@@ -24,7 +24,7 @@ use std::{
 
 /// An error whose allocation identity survives host forwarding.
 #[derive(Debug)]
-struct Original(Arc<()>);
+pub(super) struct Original(pub(super) Arc<()>);
 impl std::fmt::Display for Original {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("editor operation failed")
@@ -34,24 +34,24 @@ impl std::error::Error for Original {}
 
 /// What a test reads from, and asks of, the editors its factories build.
 #[derive(Default)]
-struct Knobs {
+pub(super) struct Knobs {
     /// The editor calls in order.
-    calls: RefCell<Vec<String>>,
+    pub(super) calls: RefCell<Vec<String>>,
     /// The fallible operation that fails next, by name.
-    fail: Cell<Option<&'static str>>,
+    pub(super) fail: Cell<Option<&'static str>>,
     /// The identity the failures carry.
-    error: Arc<()>,
+    pub(super) error: Arc<()>,
     /// The last editor built, kept weakly.
     built: RefCell<Weak<Probe>>,
 }
 
 impl Knobs {
     /// The last editor built, while it is alive.
-    fn editor(&self) -> Rc<Probe> {
+    pub(super) fn editor(&self) -> Rc<Probe> {
         self.built.borrow().upgrade().unwrap()
     }
     /// Whether `error` is this witness's original failure.
-    fn is_original(&self, error: &(dyn std::error::Error + 'static)) -> bool {
+    pub(super) fn is_original(&self, error: &(dyn std::error::Error + 'static)) -> bool {
         error
             .downcast_ref::<Original>()
             .is_some_and(|error| Arc::ptr_eq(&error.0, &self.error))
@@ -64,7 +64,7 @@ impl Knobs {
 
 /// A forwarding editor over the chat editor that records its fallible operations and can
 /// fail any of them with the witness's original error.
-struct Probe {
+pub(super) struct Probe {
     /// The forwarded editor.
     inner: CustomEditor,
     /// The test's view of this editor.
@@ -201,7 +201,7 @@ impl CustomEditorComponent for Probe {
 
 /// An editor factory building a probe; `custom` selects the application capability and
 /// `own` supplies the probe's own escape callback before the host sees it.
-fn probe_factory(
+pub(super) fn probe_factory(
     api: &ExtensionAPI<Local>,
     knobs: &Rc<Knobs>,
     custom: bool,

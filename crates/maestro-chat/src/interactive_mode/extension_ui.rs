@@ -8,6 +8,7 @@ use maestro_app::{
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
 use std::rc::Rc;
 
+pub(super) mod custom;
 mod dialogs;
 pub(super) mod editor;
 pub(super) mod input;
@@ -113,6 +114,16 @@ impl ExtensionUIContextPort for InteractiveMode {
     /// Returns the original disposal, factory or expansion failure.
     fn set_header(&self, factory: Option<maestro_app::ComponentFactory>) -> Result<(), EventError> {
         self.set_extension_header(factory)
+    }
+
+    /// Shows the extension's component in place of the editor or as an overlay until it
+    /// closes or fails.
+    fn custom_component(
+        &self,
+        factory: maestro_app::CustomComponentFactory,
+        options: Option<maestro_app::CustomUIOptions>,
+    ) -> ExtensionUIFuture<()> {
+        self.show_extension_custom(&factory, options)
     }
 
     /// Forwards the supplied text to the terminal's title setter unchanged.

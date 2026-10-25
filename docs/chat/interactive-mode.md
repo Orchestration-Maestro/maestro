@@ -249,8 +249,8 @@ contexts report no UI. Another host retains it with
 `ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
 lists the operations it answers today, which are dialogs, editor access, theme
 queries and selection, the terminal title, tool expansion, status text, keyed
-widgets above or below the editor, extension headers and footers, and custom
-editors. Notifications and terminal input listeners
+widgets above or below the editor, extension headers and footers, custom
+editors and custom views. Notifications and terminal input listeners
 keep their own published owners.
 
 ## Typed input

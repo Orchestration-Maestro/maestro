@@ -369,5 +369,37 @@ failures return the original error and keep effects already performed. A
 failed disposer stops before removal; a failed factory leaves the old entry
 removed. Neither failure rebuilds the last painted containers.
 
-Custom-view installation is a separate operation; these setters do not
-implement session replacement or reset.
+These setters do not implement session replacement or reset.
+
+## Custom views
+
+`custom` shows the component an extension builds, ready or later, in place of
+the editor with focus, or as an overlay when `overlay` is `Some(true)`. The
+factory receives the live terminal, theme, application keybindings and the
+view's completion. The current editor's raw text is kept when the view starts.
+
+An overlay uses the supplied static options, keeping the same shared options so
+later edits reach the layout, or calls the resolver once when the view is shown.
+Without options, a nonzero component `width` becomes the overlay width in whole
+cells, at least one, as image widths count them; an empty options value still
+wins over the component width. `on_handle` receives the overlay's handle after
+it is shown.
+
+The first `done` closes the view: it removes the view's own overlay, or puts the
+current editor back with the kept text and focus, then settles the result and
+disposes the component. A disposal failure is ignored once the view has closed.
+Later calls do not close, restore or dispose again. When putting the editor back
+fails, that original failure is the view's result and every later `done` returns
+it again; no value is committed.
+
+A view completed before its component exists never shows that component and
+disposes it once. Completing while the overlay options resolve shows nothing.
+A failing factory, resolver or handle callback settles the view with the
+original error: an inline view puts the editor back, and an overlay already shown
+is removed and its component disposed. When putting the editor back fails too,
+that failure is the result. Closing one overlay leaves every other view shown,
+and focus returns to the overlay still shown.
+
+The mode keeps each view and its building work until the view settles, so
+dropping the returned future neither cancels the build nor closes the view.
+A settled view releases its component, overlay handle and the mode.
