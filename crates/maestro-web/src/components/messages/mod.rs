@@ -40,6 +40,7 @@ mod tests;
 #[doc(hidden)]
 pub mod dom {
     pub use super::aborted_message::dom::AbortedMessage;
+    pub use super::assistant_message::dom::{AssistantMessage, ToolResults};
     pub use super::tool_message::dom::ToolMessage;
     pub use super::tool_message_debug_view::dom::ToolMessageDebugView;
     pub use super::user_message::dom::UserMessage;

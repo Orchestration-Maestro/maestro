@@ -147,6 +147,8 @@
     "tile_dom_remove_does_not_open_and_uses_current_callback",
     "tile_dom_opened_overlays_outlive_tiles",
     "user_dom_selects_first_text_and_preserves_attachment_handles",
+    "assistant_dom_preserves_order_visibility_and_emitted_positions",
+    "assistant_dom_usage_outcomes_current_action_and_localization",
     "tool_dom_preserves_original_operands_abort_and_card_choice",
     "debug_dom_keeps_strict_pretty_missing_null_and_literal_code",
     "message_dom_reconnect_update_and_drop_keep_independent_roots",

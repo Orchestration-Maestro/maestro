@@ -1386,5 +1386,1515 @@
   "aborted": {
     "en": "Request aborted",
     "de": "Anfrage abgebrochen"
+  },
+  "assistant": [
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "thinking",
+            "thinking": ""
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "thinking",
+            "thinking": " "
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "\t\r\n"
+          },
+          {
+            "type": "thinking",
+            "thinking": "\t\r\n"
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "﻿"
+          },
+          {
+            "type": "thinking",
+            "thinking": "﻿"
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "thinking",
+            "thinking": ""
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "text",
+            "source": ""
+          },
+          {
+            "kind": "thinking",
+            "source": "",
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "  kept  "
+          },
+          {
+            "type": "thinking",
+            "thinking": "  kept  "
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "text",
+            "source": "  kept  "
+          },
+          {
+            "kind": "thinking",
+            "source": "  kept  ",
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "雪"
+          },
+          {
+            "type": "thinking",
+            "thinking": "雪"
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "text",
+            "source": "雪"
+          },
+          {
+            "kind": "thinking",
+            "source": "雪",
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": false,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": false,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": false,
+            "aborted": true,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": false,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": false,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": true,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": true,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": true,
+            "aborted": true,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": true,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": true,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": false,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": false,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": false,
+            "aborted": true,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": false,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": false,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": true,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": true,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": true,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": true,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": false,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": false,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": false,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": false,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": true,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": true,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": true,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": true,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": false,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": false,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": false,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": false,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": true,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": true,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": true,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": true,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "stop",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "stop",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "error"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "error",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "error",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": [
+          "Error:",
+          "provider failed"
+        ],
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "aborted"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "aborted",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "aborted",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "stop",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "stop",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "error"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "error",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "error",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": [
+          "Error:",
+          "provider failed"
+        ],
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "aborted"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "aborted",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "aborted",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "stop",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "stop",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "error"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "error",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "error",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": [
+          "Error:",
+          "provider failed"
+        ],
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "aborted"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "aborted",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "aborted",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "stop",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "stop",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "error"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "error",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "error",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": [
+          "Error:",
+          "provider failed"
+        ],
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "aborted"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "aborted",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "aborted",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    }
+  ],
+  "assistantNames": [
+    {
+      "tools": null,
+      "selected": "registered"
+    },
+    {
+      "tools": [],
+      "selected": "registered"
+    },
+    {
+      "tools": [
+        {
+          "name": "other"
+        }
+      ],
+      "selected": "registered"
+    },
+    {
+      "tools": [
+        {
+          "name": "registered"
+        }
+      ],
+      "selected": "registered"
+    },
+    {
+      "tools": [
+        {
+          "name": "registered",
+          "marker": 1
+        },
+        {
+          "name": "registered",
+          "marker": 2
+        }
+      ],
+      "selected": "registered"
+    }
+  ],
+  "assistantStrings": [
+    {
+      "language": "en",
+      "aborted": "Request aborted",
+      "errorPrefix": "Error:",
+      "errorText": "Error: <b>literal & error</b>",
+      "errorElements": 0
+    },
+    {
+      "language": "de",
+      "aborted": "Anfrage abgebrochen",
+      "errorPrefix": "Fehler:",
+      "errorText": "Fehler: <b>literal & error</b>",
+      "errorElements": 0
+    }
+  ],
+  "assistantInteractions": [
+    {
+      "action": "cost-click",
+      "expected": {
+        "firstClicks": 1,
+        "secondClicks": 0,
+        "text": "↑1.0k ↓2 R3 W4 $0.0010"
+      }
+    },
+    {
+      "action": "replace-cost-handler",
+      "expected": {
+        "firstClicks": 1,
+        "secondClicks": 1
+      }
+    },
+    {
+      "action": "stream-usage",
+      "expected": {
+        "usageVisible": false
+      }
+    },
+    {
+      "action": "plain-usage",
+      "expected": {
+        "clickable": false,
+        "text": "↑1.0k ↓2 R3 W4 $0.0010"
+      }
+    }
+  ],
+  "assistantUsage": {
+    "input": 1000,
+    "output": 2,
+    "cacheRead": 3,
+    "cacheWrite": 4,
+    "cost": {
+      "total": 0.001
+    }
   }
 }

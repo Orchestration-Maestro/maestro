@@ -38,7 +38,7 @@ pub(super) struct Seen {
     /// Selected streaming flag.
     streaming: bool,
     /// Result envelope fields and original details, when a result was supplied.
-    result: Option<Envelope>,
+    pub(super) result: Option<Envelope>,
 }
 /// Content each renderer call returns.
 #[derive(Clone, Copy)]

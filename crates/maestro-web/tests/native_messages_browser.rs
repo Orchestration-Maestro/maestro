@@ -8,7 +8,28 @@ use maestro_web::{components::messages::dom::UserMessage, dom::DomContent as _};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
+mod assistant;
 mod rows;
+
+/// Assistant admission, order and original tool/result operands through native children.
+#[wasm_bindgen]
+pub fn assistant_dom_preserves_order_visibility_and_emitted_positions(
+    import_module: &js_sys::Function,
+) {
+    let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
+    assistant::visibility(&view, &rows::fixture());
+}
+
+/// Usage and localized outcomes remain independent of streaming and use the current action.
+#[wasm_bindgen]
+pub fn assistant_dom_usage_outcomes_current_action_and_localization(
+    import_module: &js_sys::Function,
+) {
+    let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
+    assistant::outcomes(&view, &rows::fixture());
+}
 
 /// Tool rows pass original arguments and result envelopes to the selected renderer, let an abort
 /// replace the result and end streaming, and card only default content.
@@ -49,6 +70,7 @@ pub async fn message_dom_reconnect_update_and_drop_keep_independent_roots(
     rows::debug_row_lifecycle(&view);
     rows::abort_row(&view, &fixture);
     user_row_lifecycle(&view);
+    assistant::lifecycle(&view, &fixture);
 }
 
 /// A user row keeps its root and last text when its required message goes missing.

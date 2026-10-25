@@ -1,4 +1,7 @@
 //! Ordered assistant content with emitted-position child ownership.
+/// Native page assistant rows.
+#[doc(hidden)]
+pub mod dom;
 use super::{AbortedMessage, ToolMessage, ToolMessageProps, color, reading_view};
 use crate::{
     browser::attachment_content::AttachmentHost,
@@ -237,24 +240,43 @@ impl AssistantMessage {
         Ok(())
     }
 }
-/// Apply content visibility without modifying the source selected for display.
-fn visible<D>(chunk: &AssistantContent, props: &AssistantMessageProps<'_, D>) -> bool {
+/// Selected tool visibility, independent of the content representation.
+struct Visibility {
+    /// Hide every call.
+    hide_all: bool,
+    /// Hide pending calls without results.
+    hide_pending: bool,
+    /// Whether this exact call is pending without a paired result.
+    pending_without_result: bool,
+}
+/// Apply shared admission without modifying the displayed source.
+fn admitted(
+    chunk: &AssistantContent,
+    tool_state: impl FnOnce(&maestro_app::ToolCall) -> Visibility,
+) -> bool {
     match chunk {
         AssistantContent::Text(text) => !text.text.chars().all(maestro_app::is_whitespace_scalar),
         AssistantContent::Thinking(text) => {
             !text.thinking.chars().all(maestro_app::is_whitespace_scalar)
         }
         AssistantContent::ToolCall(call) => {
-            !(props.hide_tool_calls
-                || props.hide_pending_tool_calls
-                    && props
-                        .pending_tool_calls
-                        .is_some_and(|pending| pending.contains(&call.id))
-                    && props
-                        .tool_results_by_id
-                        .is_none_or(|results| !results.contains_key(&call.id)))
+            let state = tool_state(call);
+            !(state.hide_all || state.hide_pending && state.pending_without_result)
         }
     }
+}
+/// Read only the selected call's visibility from the borrowed drawing policy.
+fn visible<D>(chunk: &AssistantContent, props: &AssistantMessageProps<'_, D>) -> bool {
+    admitted(chunk, |call| Visibility {
+        hide_all: props.hide_tool_calls,
+        hide_pending: props.hide_pending_tool_calls,
+        pending_without_result: props
+            .pending_tool_calls
+            .is_some_and(|pending| pending.contains(&call.id))
+            && props
+                .tool_results_by_id
+                .is_none_or(|results| !results.contains_key(&call.id)),
+    })
 }
 /// Draw one admitted child, keeping native detail types unchanged.
 fn draw<D: 'static>(

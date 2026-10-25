@@ -1,6 +1,6 @@
 # Browser transcript
 
-## Native user rows
+## Native message rows
 
 `components::messages::dom::UserMessage<C>` mounts through `DomContent` with no
 attachment host. `Default` leaves its required `message` unset; mounting that row
@@ -9,6 +9,18 @@ The row selects the first text block without trimming its source. Only the
 attachment-bearing user branch emits tiles, in original order, retaining the
 original shared handles. Candidate children are prepared before replacing the
 contents of the containing root, so a failed preparation preserves its last content.
+
+`components::messages::dom::AssistantMessage<D>` retains the original shared
+assistant and tool collection. It admits text and thinking with the shared
+whitespace rules, preserving the displayed source and content order. Children
+retain their roots and thinking expansion by emitted position and kind.
+`ToolResults::Live` retains the original mutable standard envelopes, resolving
+each reached result independently; `ToolResults::Native` retains standalone
+native-detail envelopes without cloning or serialization bounds on their details.
+Tool visibility, pending visibility and streaming are independent. Nonstreaming
+usage delegates formatting and uses the current cost action; replacing, hiding
+or releasing that action revokes the old control. Literal localized errors and
+aborts remain visible when selected, including while streaming.
 
 `components::messages::dom::ToolMessage<D>` holds the original call and result
 envelope as shared handles. Mounting without a call returns an error. An empty or

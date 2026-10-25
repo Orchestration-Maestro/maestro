@@ -44,3 +44,66 @@ fn user_owned_operand_keeps_content_and_attachment_handles() {
         "edited.txt"
     );
 }
+
+#[test]
+fn assistant_preparation_has_linear_admission_and_no_tool_name_search() {
+    use super::dom::AssistantMessage;
+    use maestro_app::{AssistantContent, ToolCall};
+    use std::{cell::Cell, collections::HashSet, rc::Rc};
+    for count in [8, 16, 32] {
+        let chunks: Vec<_> = (0..count)
+            .map(|index| {
+                AssistantContent::ToolCall(ToolCall {
+                    id: index.to_string(),
+                    name: "selected".into(),
+                    arguments: serde_json::json!({"index": index}),
+                    thought_signature: None,
+                })
+            })
+            .collect();
+        let tools = Rc::new(RwLock::new(Vec::new()));
+        let row = AssistantMessage::<serde_json::Value> {
+            tools: Some(Rc::clone(&tools)),
+            ..AssistantMessage::default()
+        };
+        // An unused collection must not be read merely to recover the call's existing name.
+        let _exclusive = tools.write().unwrap();
+        let visited = Cell::new(0);
+        let emitted: Vec<_> = row
+            .parts(chunks.iter().inspect(|_| visited.set(visited.get() + 1)))
+            .collect();
+        assert_eq!(visited.get(), count);
+        assert_eq!(emitted.len(), count);
+        assert!(
+            emitted
+                .iter()
+                .zip(&chunks)
+                .all(|(part, source)| std::ptr::eq(*part, source))
+        );
+        let repeated = Cell::new(0);
+        for wanted in &chunks {
+            assert!(
+                chunks
+                    .iter()
+                    .inspect(|_| repeated.set(repeated.get() + 1))
+                    .any(|chunk| std::ptr::eq(chunk, wanted))
+            );
+        }
+        assert!(repeated.get() > count * 2);
+        let pending = Rc::new(
+            chunks
+                .iter()
+                .filter_map(|chunk| match chunk {
+                    AssistantContent::ToolCall(call) => Some(call.id.clone()),
+                    _ => None,
+                })
+                .collect::<HashSet<_>>(),
+        );
+        let row = AssistantMessage::<serde_json::Value> {
+            pending_tool_calls: Some(pending),
+            hide_pending_tool_calls: true,
+            ..AssistantMessage::default()
+        };
+        assert_eq!(row.parts(chunks.iter()).count(), 0);
+    }
+}
