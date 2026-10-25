@@ -88,6 +88,7 @@ impl Workspace {
     }
 
     /// Keep a persistent copy at an absolute path while the original remains disposable.
+    #[cfg(unix)]
     pub fn cache_at(&mut self, path: &Path) {
         assert!(path.is_absolute());
         if path.exists() {
