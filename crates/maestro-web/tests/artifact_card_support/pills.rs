@@ -30,18 +30,7 @@ impl Card {
         let presentation = Rc::new(crate::presentation::Presentation::new(surface.host()));
         let panel = Rc::new(LocalArtifactsPanel::new_local(presentation.clone()));
         if let Some(filename) = filename.as_str() {
-            let now = chrono::DateTime::from_timestamp_millis(0).unwrap();
-            panel.artifacts().write().unwrap().insert(
-                filename.into(),
-                std::sync::Arc::new(std::sync::RwLock::new(
-                    maestro_app::browser::tools::artifacts::Artifact {
-                        filename: filename.into(),
-                        content: "stored".into(),
-                        created_at: now,
-                        updated_at: now,
-                    },
-                )),
-            );
+            crate::presentation::store(&panel, filename);
         }
         presentation.opened.set(0);
         panel.show_artifact("sentinel");

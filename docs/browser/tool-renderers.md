@@ -275,7 +275,10 @@ diff. Successful get and logs cards show file content and console output,
 respectively, with a localized empty-output fallback. Edit errors retain their
 code or diff; lowercase `.html` filenames select an error console, while other
 filenames show plain error text. Non-edit errors have no disclosure or file pill.
-The ordinary outer tool card remains in use.
+The ordinary outer tool card remains in use. The renderer also prepares page
+content when its output type is explicitly `Box<dyn DomContent>`, using the same
+command and field selection. Its filename pills use native click propagation;
+its differences reuse the shared normalized rows and retained browser nodes.
 
 A filename pill captures its literal filename and panel during preparation.
 With a panel, its action consumes the click and opens an existing artifact;
@@ -296,3 +299,5 @@ rows preserve line order and carriage returns, with a local scrolling body cappe
 at 384 CSS pixels. Text updates retain the native root, local scroll and
 unchanged rows, including when rows grow or shrink or the title appears or
 disappears. Failed native insertion leaves the published diff unchanged.
+The browser-only `components::diff::dom::diff` entry mounts the same rows as
+page content without an attachment host.

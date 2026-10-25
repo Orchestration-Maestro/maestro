@@ -119,3 +119,5 @@ fn panel_action(
         }
     })
 }
+#[cfg(target_arch = "wasm32")]
+pub(in crate::tools) mod dom;

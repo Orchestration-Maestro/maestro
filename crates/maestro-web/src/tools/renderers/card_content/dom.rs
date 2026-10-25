@@ -22,8 +22,12 @@ impl CardOutput for Box<dyn DomContent> {
     fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self {
         Box::new(Content::<R, Self>::from(card))
     }
+    fn diff(props: crate::components::diff::DiffProps) -> Self {
+        crate::components::diff::dom::diff(props)
+    }
 }
-/// Prepare a card's status header from its glyph and caption, toggling `refs` when a body exists.
+/// Prepare a card's status header from its glyph and caption, with an artifact's filename pill
+/// after its label, toggling `refs` when a body exists.
 /// # Errors
 /// Returns a missing glyph or localization failure.
 pub(in crate::tools::renderers) fn header(
@@ -34,7 +38,13 @@ pub(in crate::tools::renderers) fn header(
     refs: Option<ToolHeaderRefs>,
 ) -> Result<Box<dyn DomContent>, ToolUiError> {
     let tool_icon = glyph(tool_icon)?;
-    let text = ToolHeaderText::Text(caption.resolve(&view.i18n)?);
+    let label = caption.resolve(&view.i18n)?;
+    let text = match caption {
+        Caption::Artifact(_, Some(pill)) => ToolHeaderText::Content(
+            crate::tools::artifacts::artifact_pill::dom::caption(label, pill),
+        ),
+        _ => ToolHeaderText::Text(label),
+    };
     Ok(match refs {
         Some(refs) => render_collapsible_header(state, tool_icon, text, refs, false),
         None => render_header(state, tool_icon, text),

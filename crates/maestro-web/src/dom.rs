@@ -225,6 +225,7 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(include_str!("tools/artifacts/generic_artifact.css"));
     css.push_str(include_str!("tools/artifacts/docx_artifact.css"));
     css.push_str(include_str!("tools/artifacts/console.css"));
+    css.push_str(include_str!("components/diff.css"));
     css.push_str(include_str!("dom.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))

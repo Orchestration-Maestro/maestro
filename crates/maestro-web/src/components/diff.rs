@@ -23,6 +23,18 @@ pub struct DiffProps {
 /// Browser count projection and retained native nodes.
 #[cfg(target_arch = "wasm32")]
 mod browser;
+/// Page-content line differences.
+#[cfg(target_arch = "wasm32")]
+#[doc(hidden)]
+pub mod dom {
+    /// Prepare a bordered page-content line difference with a locally scrolling body.
+    #[must_use]
+    pub fn diff(props: super::DiffProps) -> Box<dyn crate::dom::DomContent> {
+        Box::new(super::DiffContent(std::rc::Rc::new(super::normalize(
+            props,
+        ))))
+    }
+}
 
 /// Selected line content used by retained equality and browser projection.
 #[derive(PartialEq, Eq)]

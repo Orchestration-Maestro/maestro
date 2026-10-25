@@ -56,6 +56,7 @@
     "overlay_dom_documents_keep_resources_and_sheet_state"
   ],
   "contributions": [
+    "native_optional_tools_artifacts_and_diff_replay_existing_corpus",
     "mounted_content_keeps_one_root_while_its_content_type_stays",
     "mounted_content_replaces_the_root_when_the_content_type_changes",
     "failed_replacement_keeps_the_previous_root",

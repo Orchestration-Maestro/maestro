@@ -97,7 +97,7 @@ struct Header {
     disclosure: Option<(ToolHeaderRefs, bool)>,
 }
 /// One retained click subscription.
-type Click = EventSubscription<Closure<dyn Fn(Event) -> Result<(), JsValue>>>;
+pub(crate) type Click = EventSubscription<Closure<dyn Fn(Event) -> Result<(), JsValue>>>;
 /// A stable caption placement and the header's installed event.
 struct MountedHeader {
     /// Leading glyph and caption parent.
@@ -116,20 +116,23 @@ struct MountedHeader {
     _click: Option<Click>,
 }
 impl DomContent for Header {
+    /// A plain header has one template per state, a toggle one for all states.
     fn key(&self) -> Option<&str> {
-        Some(if self.disclosure.is_some() {
-            "button"
-        } else {
-            "div"
+        Some(match (&self.disclosure, self.state) {
+            (Some(_), _) => "button",
+            (None, ToolHeaderState::Inprogress) => "inprogress",
+            (None, ToolHeaderState::Complete) => "complete",
+            (None, ToolHeaderState::Error) => "error",
         })
     }
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         crate::dom::install_styles(view).map_err(|error| host_error(&error))?;
-        let node = element(
-            &view.document,
-            self.key().unwrap_or("div"),
-            "maestro-tool-header",
-        )?;
+        let tag = if self.disclosure.is_some() {
+            "button"
+        } else {
+            "div"
+        };
+        let node = element(&view.document, tag, "maestro-tool-header")?;
         let lead = element(&view.document, "div", "maestro-tool-header-lead")?;
         let tool = element(&view.document, "span", "maestro-tool-icon")?;
         let caption = element(&view.document, "span", "maestro-tool-caption")?;

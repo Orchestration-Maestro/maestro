@@ -211,6 +211,8 @@ pub(in crate::tools) trait CardOutput: Sized {
     fn card(card: CardContent) -> Self;
     /// Retain renderer `R`'s selected disclosure branch in this representation.
     fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self;
+    /// Retain a selected line difference in this representation.
+    fn diff(props: crate::components::diff::DiffProps) -> Self;
 }
 impl CardOutput for Box<dyn ToolContent> {
     fn card(card: CardContent) -> Self {
@@ -218,6 +220,9 @@ impl CardOutput for Box<dyn ToolContent> {
     }
     fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self {
         Box::new(Content::<R, Self>::from(card))
+    }
+    fn diff(props: crate::components::diff::DiffProps) -> Self {
+        crate::components::diff::diff(props)
     }
 }
 #[cfg(target_arch = "wasm32")]

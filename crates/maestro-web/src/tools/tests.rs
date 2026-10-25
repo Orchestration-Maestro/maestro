@@ -27,6 +27,8 @@ enum Recorded {
     Card(CardContent),
     /// Disclosure recipe and the renderer that prepared it.
     Collapsible(Box<CollapsibleCard<Recorded>>, TypeId),
+    /// Selected line difference operands.
+    Diff(crate::components::diff::DiffProps),
 }
 impl CardOutput for Recorded {
     fn card(card: CardContent) -> Self {
@@ -34,6 +36,9 @@ impl CardOutput for Recorded {
     }
     fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self {
         Self::Collapsible(Box::new(card), TypeId::of::<R>())
+    }
+    fn diff(props: crate::components::diff::DiffProps) -> Self {
+        Self::Diff(props)
     }
 }
 /// Prepare through the renderer's shared selection for the recording representation.
@@ -79,7 +84,7 @@ fn disclosure<R: 'static>(recorded: Recorded) -> CollapsibleCard<Recorded> {
             assert_eq!(renderer, TypeId::of::<R>());
             *card
         }
-        Recorded::Card(_) => panic!("status card selected"),
+        Recorded::Card(_) | Recorded::Diff(_) => panic!("status card selected"),
     }
 }
 /// Selected values of every reached JSON class keep their fallback, literal or compact text.
@@ -101,6 +106,7 @@ fn native_card_preparation_retains_selected_field_domains() {
     bash_domains_keep_native_details();
     javascript_domains_and_files();
     extraction_domains_and_metadata();
+    artifact_replacements_and_pill();
 }
 
 /// Command branches select the same text for every field class; native details stay native.
@@ -379,4 +385,53 @@ fn extraction_metadata() {
     );
     assert!(unread.body.is_none());
     assert_eq!(caption(&unread.caption), "Preparing extraction...");
+}
+
+/// Update replacements are read only when reached, and the filename pill keeps its captured panel
+/// and authored name, for raw and validated arguments alike.
+fn artifact_replacements_and_pill() {
+    use crate::tools::artifacts::artifacts_tool_renderer::ArtifactsToolRenderer;
+    use maestro_app::browser::tools::artifacts::{ArtifactCommand, ArtifactsParams};
+    let replacements = |recorded: Recorded| {
+        let card = disclosure::<ArtifactsToolRenderer>(recorded);
+        let Caption::Artifact(_, Some(pill)) = &card.caption else {
+            panic!("missing filename pill")
+        };
+        assert_eq!(pill.filename.as_deref(), Some("a.rs"));
+        assert!(pill.panel.is_none());
+        card.body.and_then(|body| body.diff).map(|diff| match diff {
+            Recorded::Diff(props) => (props.old_text, props.new_text, props.title),
+            _ => panic!("difference expected"),
+        })
+    };
+    let renderer = ArtifactsToolRenderer::new(None);
+    let complete = result("ok", false, None::<Value>);
+    for (old, new, phase, expected) in [
+        (json!("o"), json!("n"), None, Some(("o", "n"))),
+        (Value::Null, json!("n"), None, Some(("", "n"))),
+        (json!(""), json!(0), Some(&complete), Some(("", ""))),
+        (Value::Null, Value::Null, Some(&complete), Some(("", ""))),
+    ] {
+        let params =
+            json!({"command": "update", "filename": "a.rs", "old_str": old, "new_str": new});
+        let shown = render(&renderer, params.as_object(), phase).unwrap();
+        let expected = expected.map(|(old, new)| (old.to_owned(), new.to_owned(), None));
+        assert_eq!(replacements(shown), expected);
+    }
+    let params = json!({"command": "update", "filename": "a.rs", "old_str": "o"});
+    let pending = render(&renderer, params.as_object(), None::<&ToolResultMessage>).unwrap();
+    assert_eq!(
+        replacements(pending),
+        None,
+        "an absent replacement selects no difference"
+    );
+    let typed = ArtifactsParams {
+        command: ArtifactCommand::Update,
+        filename: "a.rs".into(),
+        content: None,
+        old_str: Some("o".into()),
+        new_str: Some("n".into()),
+    };
+    let shown = render(&renderer, Some(&typed), None::<&ToolResultMessage>).unwrap();
+    assert_eq!(replacements(shown), Some(("o".into(), "n".into(), None)));
 }

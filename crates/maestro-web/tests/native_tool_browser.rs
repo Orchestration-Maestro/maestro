@@ -12,6 +12,23 @@ use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::HtmlElement;
 
+mod optional;
+
+/// Calculation, current-time and artifact cards, their filename pills and direct differences
+/// replay every recorded branch through mounted page content.
+#[wasm_bindgen]
+pub fn native_optional_tools_artifacts_and_diff_replay_existing_corpus(
+    import_module: &js_sys::Function,
+) {
+    let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
+    optional::optional_tools(&view);
+    optional::artifacts(&view);
+    optional::transitions(&view);
+    optional::diffs(&view);
+    optional::pills(&view);
+}
+
 /// Status colors, literal captions, rich children and spinner placement remain independent.
 #[wasm_bindgen]
 pub async fn tool_headers_dom_keep_state_icons_and_literal_captions() {
@@ -66,8 +83,11 @@ pub async fn tool_headers_dom_keep_state_icons_and_literal_captions() {
 
 /// Activation follows both live references and native descendant bubbling exactly once.
 #[wasm_bindgen]
-pub fn native_header_targets_and_pill_bubbling_follow_current_elements() {
+pub fn native_header_targets_and_pill_bubbling_follow_current_elements(
+    import_module: &js_sys::Function,
+) {
     let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
     let target: HtmlElement = view
         .document
         .create_element("div")
@@ -118,6 +138,7 @@ pub fn native_header_targets_and_pill_bubbling_follow_current_elements() {
     missing_header_icons(header, &refs, &second);
     explicit_parent_and_bubbling_toggle_twice(header, &refs, &second);
     header.remove();
+    optional::created_artifact(&view);
 }
 
 /// The command corpus keeps exact caption, console text, result status and card choice.
@@ -155,7 +176,11 @@ fn observe_card(
     expected: &crate::tool_cards_support::Expected,
     index: usize,
 ) {
-    assert!(expected.errors.is_empty());
+    let errors: Vec<_> = all(element, "div.maestro-tool-error")
+        .iter()
+        .map(|error| text(error))
+        .collect();
+    assert_eq!(errors, expected.errors, "{index}");
     assert_eq!(
         text(
             &element

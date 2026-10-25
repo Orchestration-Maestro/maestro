@@ -173,12 +173,13 @@ fn assert_unused_diffs() {
     assert!(serde_json::from_value::<crate::artifact_card_support::Expected>(sibling).is_err());
 
     for row in cards::unused_diffs() {
-        let actual = maestro_web::ToolRenderer::render(
-            &maestro_web::ArtifactsToolRenderer::new(None),
-            row.input.params.as_ref(),
-            row.input.result.as_ref().map(Into::into),
-            row.input.is_streaming,
-        );
+        let actual: Result<maestro_web::tools::types::ToolRenderResult, _> =
+            maestro_web::ToolRenderer::render(
+                &maestro_web::ArtifactsToolRenderer::new(None),
+                row.input.params.as_ref(),
+                row.input.result.as_ref().map(Into::into),
+                row.input.is_streaming,
+            );
         match row.expected {
             Branch::Rendered { card } => assert_eq!(actual.unwrap().is_custom, card.is_custom),
             Branch::Error { kind } => {
