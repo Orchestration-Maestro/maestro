@@ -41,7 +41,9 @@ The optional-field helper that keeps null apart from absence is `present` in
 ## JSONL framing
 
 `jsonl::serialize_json_line` uses the compact writer above and appends one LF.
-U+2028 and U+2029 remain literal characters inside JSON strings.
+`jsonl::serialize_native_json_line` retains exact signed and unsigned integers for
+native workspace requests; keys and floating-point values use the same canonical
+writer. U+2028 and U+2029 remain literal characters inside JSON strings in both modes.
 
 `jsonl::JsonlLineSplitter` accepts byte chunks and returns owned lines, splitting
 only on LF and removing one terminal CR. It retains incomplete bytes across

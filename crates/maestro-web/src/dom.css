@@ -95,6 +95,19 @@ code-block, markdown-block, thinking-block {
   background: var(--maestro-color-panel);
   color: var(--maestro-color-text);
 }
+.maestro-button.maestro-button-compact {
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+.maestro-button-ghost.maestro-button-compact {
+  color: var(--maestro-color-muted);
+}
+.maestro-button-ghost.maestro-button-compact:hover {
+  background: var(--maestro-color-accent);
+  color: var(--maestro-color-on-accent);
+}
 .maestro-button-link {
   background: transparent;
   color: var(--maestro-color-accent);

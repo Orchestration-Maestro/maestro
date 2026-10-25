@@ -21,10 +21,12 @@ mod actions;
 mod bash;
 mod events;
 mod key_display;
+mod models;
 mod notices;
 mod queues;
 mod replay;
 mod resources;
+mod selectors;
 mod share;
 mod startup;
 mod submit;
@@ -120,6 +122,8 @@ pub struct InteractiveMode {
     pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Whether this mode has shown the subscription billing notice.
+    anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
     /// The session subscription that delivers agent and session events.
@@ -197,6 +201,7 @@ impl InteractiveMode {
             active_shell: RefCell::default(),
             pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
+            anthropic_subscription_warning_shown: Cell::new(false),
             compaction_queued_messages: RefCell::default(),
             unsubscribe: RefCell::default(),
             working: working::WorkingState::default(),
@@ -208,11 +213,12 @@ impl InteractiveMode {
     /// transcript shortcuts, installs editor submission, starts the terminal, lists the
     /// loaded resources with their diagnostics and replays the session, once; theme
     /// changes then refresh the editor border, and theme and branch changes request
-    /// fresh frames.
+    /// fresh frames. Finally the footer learns how many providers the model candidates
+    /// cover.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
-    /// resource listing or of the replay.
+    /// resource listing, of the replay or of the catalog refresh.
     pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -257,7 +263,8 @@ impl InteractiveMode {
             show_diagnostics_when_quiet: true,
             ..resources::ShowLoadedResourcesOptions::default()
         })?;
-        self.render_initial_messages()
+        self.render_initial_messages()?;
+        self.update_available_provider_count()
     }
 }
 

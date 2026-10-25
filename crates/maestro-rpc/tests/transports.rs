@@ -43,10 +43,14 @@ fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
             written.borrow_mut().push(line.as_str().to_owned());
             Ok(())
         });
-        let mut options = options(Rc::clone(&local), Served::default().workspace);
-        options.process = Rc::new(NoSignals);
+        let mut options = options(
+            Rc::clone(&local),
+            Rc::new(runtime),
+            Served::default().workspace,
+        );
+        options.session.as_mut().unwrap().process = Rc::new(NoSignals);
         let reader = Box::new(JsonlLineReader::new(input.as_bytes()));
-        let outcome = run_rpc_connection(Rc::new(runtime), reader, output, options).await;
+        let outcome = run_rpc_connection(reader, output, options).await;
         let lines = lines
             .borrow()
             .iter()
