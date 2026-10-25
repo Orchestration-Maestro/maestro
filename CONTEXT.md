@@ -153,10 +153,12 @@ Serialization writes the supplied JSON alone.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use the default parameter-schema owner through models; guest authoring
-keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
-listeners, extension error delivery and terminal input listeners reuse it. For
-shared `Rc` callbacks it also owns subscribing, which returns the removal
+keeps a `ToolInfo` alias over the same owner. Live callback storage
+belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
+default or one per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal
 operation, and the live walk in registration order. What each listener receives
 and when it runs remain with the caller. The collection returns removed ownership
 for release outside guards, and it reclaims retired registrations while no
@@ -223,7 +225,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Attachment:** Application-owned original bytes, media metadata and optional derived text/preview, with browser-message conversion. See [browser attachments](docs/application/browser-attachments.md).
 - **Text:** The core leaf `maestro-text` below layer 0, owning the whitespace scalar set, UTF-16 lexical order, one-pass markup escaping, CSS string serialization, terminal escape stripping and binary-output filtering, BOM-aware lossy UTF-8 decoding and, behind its `collation` and `number-format` features, locale comparator and number-formatter preparation through one locale selector; it depends on no workspace crate and its callers keep their own trimming, stable sorting and comparator lifetime. See [text](docs/text.md).
 - **JSON boundary:** The declared core leaf `maestro-json` below layer 0, owning JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text, JSONL line framing); it depends on no workspace crate and its callers keep their own preprocessing, defaults, duplicate-member policy and error wording. See [JSON boundary](docs/json.md).
-- **Process:** The declared core leaf `maestro-process` below layer 0, owning native child-process lifecycles (captured spawn, raw pipes, exit and EOF observation, termination, reaping, Linux pane terminals and their shared retained-front byte queue) for packages, credentials, detection, the application, the terminal toolkit, the terminal adapter, the daemon and tools; it depends on no workspace crate, including the path and cancellation leaves. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) defines synchronous capture's timeout handling and leaves cancellation, termination and settlement choices with callers.
+- **Process:** The declared core leaf `maestro-process` below layer 0, owning native child-process lifecycles (captured spawn, raw pipes, exit and EOF observation, termination and reaping, Linux pane terminals and their shared retained-front byte queue, and native termination-signal delivery with its prepared default action) for packages, credentials, detection, the application, the terminal toolkit, the terminal adapter, the daemon and tools; it depends on no workspace crate, including the path and cancellation leaves. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) defines synchronous capture's timeout handling and leaves cancellation, termination and settlement choices with callers.
 - **Test process:** The `maestro-test-process` crate, a dedicated, unpublished, native, std-only test-support leaf that owns one named test's isolated execution: its checked-output operations start a libtest child and prove the child started exactly that test; argument-only invocation checks eligibility and leaves startup proof with the caller; distinct from product process execution (**Process**). It is reached only through native development dependencies of its declared callers. See the [contract](docs/specs/maestro-port.md#test-process-owner).
 - **Foundation utility:** The `maestro-path` library of lexical path operations, native component normalization and home and directory selection from caller-supplied observations, below every delivery layer; native crates may depend on it optionally, except those the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order) excludes, and it depends on no other workspace crate.
 - **Directory listing:** The core leaf `maestro-listing` below layer 0, owning one directory's entries sorted by file name on every platform; resources, theme, the terminal toolkit, tools, session and the application list directories through it on native targets and keep their own kind filtering, name decoding and further ordering. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).

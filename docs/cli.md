@@ -100,3 +100,10 @@ default, the effort from the explicit level before the model shorthand and the
 scope, and the tool policy from the argument. A local resource path is resolved
 once against the original working directory; a package or URL source keeps its
 spelling.
+
+## Print mode
+
+`run_print_mode` runs one session to completion over a caller-owned runtime and
+presents the result as its final text or as session event records. See [print
+mode](print.md) for the options, the exact output and the cleanup and error
+boundary.

@@ -212,6 +212,19 @@ impl<'a> Parsed<'a> {
         &self.visible[grapheme.range.clone()]
     }
 
+    /// Index of the style state in effect at a grapheme, after the escapes written before it.
+    pub(super) fn state_after(&self, grapheme: &Grapheme) -> usize {
+        self.leading_events(grapheme)
+            .last()
+            .map_or(grapheme.state, |last| self.events[last].state)
+    }
+
+    /// Whether a grapheme is a blank that shows: whitespace whose style paints it.
+    pub(super) fn shows_blank(&self, grapheme: &Grapheme) -> bool {
+        self.text(grapheme).chars().all(super::is_whitespace_scalar)
+            && self.states[self.state_after(grapheme)].shows_on_blank()
+    }
+
     /// Escapes written directly before a grapheme, outside its text.
     pub(super) fn leading_events(&self, grapheme: &Grapheme) -> Range<usize> {
         let start = grapheme.events.start;
