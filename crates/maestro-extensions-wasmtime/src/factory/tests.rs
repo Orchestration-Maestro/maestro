@@ -45,7 +45,8 @@ async fn observe_faulted_store(release_trap: bool) {
     let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
     let weak = calls.downgrade();
     let retained = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-    let mut state = lifecycle::State::new(endpoint, callbacks);
+    let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
+    let mut state = lifecycle::State::new(endpoint, callbacks, &path);
     let count = Arc::new(AtomicUsize::new(0));
     let (dropped, observed) = tokio::sync::oneshot::channel();
     state
@@ -56,7 +57,6 @@ async fn observe_faulted_store(release_trap: bool) {
             dropped: Some(dropped),
         })
         .unwrap();
-    let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let worker =
         std::thread::spawn(move || super::worker(&path, state, &mut incoming, weak, &replies));
     let pump = tokio::task::spawn_local(async move {

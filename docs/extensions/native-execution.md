@@ -5,6 +5,13 @@ factory for an already-built component. Pass it to
 `maestro_extensions::load_extension_from_factory` on a Tokio local task set.
 Construction does not discover files or compile source.
 
+Each instance reads the artifact's path as the `MAESTRO_EXTENSION_PATH`
+environment variable, so a component can find files installed beside it. The
+value is the factory's `path` as supplied. Through `load_extensions` that is the
+module loader's lexically normalized absolute path, which keeps
+directory-symlink spelling. It is a host path, so keep the host's separator when
+deriving sibling paths. The instance does not receive the host's own environment.
+
 Each extension has one component Store and one local request receiver. Native
 contexts, UI and session owners stay on their original thread. Typed requests
 connect those owners to the Store; synchronous callbacks use that same receiver.

@@ -4097,6 +4097,8 @@ dependencies = [
  "maestro-extensions",
  "maestro-models",
  "maestro-session",
+ "maestro-test-directory",
+ "maestro-test-process",
  "maestro-theme",
  "serde",
  "serde_json",

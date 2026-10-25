@@ -10,6 +10,7 @@ mod canonical_ui;
 mod execution_bridge;
 mod lifetimes;
 mod listener_prefixes;
+mod module_location;
 mod retained_components;
 mod retained_contexts;
 mod startup;

@@ -32,9 +32,13 @@ pub(crate) struct State {
 }
 impl State {
     /// Constructs the one instance state before canonical linking.
-    pub(crate) fn new(api: Endpoint, callbacks: Callbacks) -> Self {
+    ///
+    /// The instance reads `path`, the artifact it is loaded from, as `MAESTRO_EXTENSION_PATH`.
+    pub(crate) fn new(api: Endpoint, callbacks: Callbacks, path: &str) -> Self {
         Self {
-            wasi: wasmtime_wasi::WasiCtxBuilder::new().build(),
+            wasi: wasmtime_wasi::WasiCtxBuilder::new()
+                .env("MAESTRO_EXTENSION_PATH", path)
+                .build(),
             table: ResourceTable::new(),
             api,
             callbacks,
