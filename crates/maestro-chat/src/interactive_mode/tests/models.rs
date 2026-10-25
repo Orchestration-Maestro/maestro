@@ -754,7 +754,7 @@ fn key_command(
 }
 
 /// Stores a sign-in for the subscription provider.
-fn sign_in(world: &World) {
+pub(super) fn sign_in(world: &World) {
     let session = world.host.session();
     session.model_registry().auth_storage().set(
         "anthropic",
@@ -1375,7 +1375,7 @@ struct FailureOutcome {
 }
 
 /// Makes every later session recording fail after the session holds a record.
-fn refuse_recording(world: &World, directory: &Path) {
+pub(super) fn refuse_recording(world: &World, directory: &Path) {
     let sessions = directory.join("sessions");
     let cwd = directory.to_str().unwrap();
     let mut manager = SessionManager::create(cwd, sessions.to_str(), cwd).unwrap();
