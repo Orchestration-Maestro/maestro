@@ -59,7 +59,15 @@ pub use maestro_session::session_manager::{
     ReadonlySessionManager, SessionTreeNode,
 };
 pub use maestro_session::{CompactionResult, Presence, SessionManager};
+/// Terminal color conversion mode used by extension themes.
+pub use maestro_theme::ColorMode;
 pub use maestro_theme::LiveTheme;
+/// Prepared terminal colors and text decorations supplied to extension renderers.
+pub use maestro_theme::Theme;
+/// Background color key, including authored names.
+pub use maestro_theme::ThemeBg;
+/// Foreground color key, including authored names.
+pub use maestro_theme::ThemeColor;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,

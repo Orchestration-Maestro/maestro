@@ -45,6 +45,8 @@ pub(crate) mod nested_schema_fixture;
 mod schema_author;
 #[path = "shell_author.rs"]
 mod shell_author;
+#[path = "theme_author.rs"]
+mod theme_author;
 #[path = "tool_author.rs"]
 mod tool_author;
 #[path = "ui_author.rs"]
@@ -429,6 +431,7 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                     match args.as_str() {
                         "catalog" => return catalog_author::register(&api),
                         "reader" => return reader_author::register(&api),
+                        "theme" => return theme_author::register(&api),
                         "ui" => return ui_author::register(&api),
                         _ => {}
                     }

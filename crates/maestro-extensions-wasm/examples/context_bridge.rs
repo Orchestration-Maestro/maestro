@@ -39,6 +39,10 @@ mod retained;
 mod ui;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/theme.rs"]
+mod theme;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/schema.rs"]
 mod schema;
 
@@ -64,7 +68,10 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         let renderer_api = api.clone();
         api.register_message_renderer(
             "bridge-view",
-            Rc::new(move |message, options, _, emitter| {
+            Rc::new(move |message, options, theme, emitter| {
+                if let Some(method) = message.custom_type.strip_prefix("theme ") {
+                    return Ok(Some(theme::view(theme, method.into())));
+                }
                 emitter.emit(
                     "renderer-created",
                     serde_json::json!([message.custom_type, options.expanded]),
@@ -189,9 +196,8 @@ fn command(
         if args == "schema imports" {
             return Err(schema::observe(&api)?.to_string());
         }
-        if args == "ui imports" || args == "ui clear" {
-            ui::observe(&context, args == "ui clear")?;
-            return Err("UI forwarded".into());
+        if args == "ui imports" || args == "ui clear" || args.starts_with("editor ") {
+            return Err(ui::observe(&context, &args)?);
         }
         if args == "imports" {
             return Err(reads::observe(&context)?.to_string());

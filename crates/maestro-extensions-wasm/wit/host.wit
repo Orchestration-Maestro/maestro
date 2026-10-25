@@ -28,8 +28,26 @@ interface host {
     }
 
 
-    /// Independently retained renderer theme.
-    resource theme;
+    /// Color depth a theme renders at.
+    enum color-mode { truecolor, color256 }
+    /// Independently retained theme; each request reads the host's current state.
+    resource theme {
+        name: func() -> result<option<string>, string>;
+        source-path: func() -> result<option<string>, string>;
+        /// Provenance as one JSON document.
+        source-info: func() -> result<option<string>, string>;
+        set-source-info: func(source: option<string>) -> result<_, string>;
+        fg: func(color: string, text: string) -> result<string, string>;
+        bg: func(color: string, text: string) -> result<string, string>;
+        bold: func(text: string) -> result<string, string>;
+        italic: func(text: string) -> result<string, string>;
+        underline: func(text: string) -> result<string, string>;
+        inverse: func(text: string) -> result<string, string>;
+        strikethrough: func(text: string) -> result<string, string>;
+        get-fg-ansi: func(color: string) -> result<string, string>;
+        get-bg-ansi: func(color: string) -> result<string, string>;
+        get-color-mode: func() -> result<color-mode, string>;
+    }
     /// Registers a renderer without invoking it.
     register-message-renderer: func(custom-type: string, handler: borrow<callback>) -> result<_, string>;
 
@@ -249,6 +267,9 @@ interface host {
         set-hidden-thinking-label: func(label: option<string>) -> import-route;
         set-widget: func(key: string, content: option<list<string>>, options: option<extension-widget-options>) -> import-route;
         set-title: func(title: string) -> import-route;
+        paste-to-editor: func(text: string) -> import-route;
+        set-editor-text: func(text: string) -> import-route;
+        get-editor-text: func() -> result<string, string>;
     }
     /// Resolved credentials, retaining key and header presence.
     record request-auth {

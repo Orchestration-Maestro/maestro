@@ -505,13 +505,6 @@ impl host::HostSubscription for State {
         Ok(())
     }
 }
-impl host::HostTheme for State {
-    fn drop(&mut self, this: Resource<super::renderer_host::Theme>) -> wasmtime::Result<()> {
-        let key = self.table.get(&this)?.0.clone();
-        self.observed.log(format!("theme-drop {key}"));
-        self.release(this)
-    }
-}
 impl host::HostCallbackEmitter for State {
     fn drop(&mut self, this: Resource<super::bus_host::Emitter>) -> wasmtime::Result<()> {
         self.table.delete(this)?;

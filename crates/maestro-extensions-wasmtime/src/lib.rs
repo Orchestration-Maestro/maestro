@@ -35,6 +35,8 @@ mod schema_registration;
 mod schema_wire;
 mod session_calls;
 mod session_imports;
+mod theme_imports;
+mod theme_reads;
 mod tool_registration;
 mod tree_imports;
 mod tree_reads;

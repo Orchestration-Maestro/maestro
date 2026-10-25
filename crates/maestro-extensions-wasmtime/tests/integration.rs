@@ -7,6 +7,7 @@ mod canonical_callbacks;
 mod canonical_commands;
 mod canonical_json;
 mod canonical_schema;
+mod canonical_theme;
 mod canonical_ui;
 mod execution_bridge;
 mod factory_shutdown;

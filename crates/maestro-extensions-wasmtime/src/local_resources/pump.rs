@@ -233,6 +233,7 @@ impl State {
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
+            Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Release(id) => {
                 let removed = self.registry.resources.borrow_mut().entries.remove(&id);
@@ -415,6 +416,16 @@ impl State {
             request.answer(ui);
         } else {
             request.reject("extension UI resource ended");
+        }
+    }
+
+    /// Serves the current theme after releasing the capability table borrow.
+    fn theme(&self, id: u64, request: crate::theme_reads::Request) {
+        let capability = self.registry.capability(id);
+        if let Some(Capability::Theme(theme)) = capability.as_deref() {
+            request.answer(theme);
+        } else {
+            request.reject("extension theme resource ended");
         }
     }
 

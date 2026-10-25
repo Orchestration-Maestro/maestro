@@ -80,6 +80,8 @@ pub(crate) enum Message {
     BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
+    /// Reads or edits the independently retained live renderer theme.
+    Theme(u64, crate::theme_reads::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -201,10 +203,7 @@ enum Capability {
     /// Original explicit remover from the existing event bus.
     Subscription(maestro_extensions::Subscription<maestro_extensions::Local>),
     /// Original live theme supplied by native rendering.
-    Theme {
-        /// Ownership alone crosses the opaque canonical theme resource.
-        _owner: maestro_extensions::LiveTheme,
-    },
+    Theme(maestro_extensions::LiveTheme),
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
 }

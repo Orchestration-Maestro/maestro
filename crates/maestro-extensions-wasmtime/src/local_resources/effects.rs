@@ -45,12 +45,8 @@ impl SubscriptionEndpoint {
     }
 }
 
-/// Opaque theme ownership crossing the boundary independently of its renderer.
-#[derive(Clone)]
-pub(crate) struct ThemeEndpoint {
-    /// Releases the original live theme only after the final copied capability.
-    _lease: Arc<Lease>,
-}
+/// Live theme endpoint retained independently of its renderer.
+pub(crate) use crate::theme_reads::Endpoint as ThemeEndpoint;
 
 /// Store-safe endpoint of the original native callback frame, not a second event bus.
 #[derive(Clone)]
@@ -107,8 +103,7 @@ impl Registry {
 
     /// Retains the native theme supplied to one renderer invocation.
     pub(crate) fn theme(&self, theme: LiveTheme) -> Result<ThemeEndpoint, String> {
-        self.insert(Capability::Theme { _owner: theme })
-            .map(|lease| ThemeEndpoint { _lease: lease })
+        self.insert(Capability::Theme(theme)).map(ThemeEndpoint)
     }
 }
 

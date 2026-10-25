@@ -262,6 +262,16 @@ impl Controlled {
     }
 }
 
+/// Answers a text request on `theme` through the controlled host.
+fn theme_text(
+    observed: &Rc<RefCell<Observed>>,
+    theme: &Theme,
+    method: &str,
+    operands: &serde_json::Value,
+) -> ExtensionResult<String> {
+    super::theme_host::text(&mut observed.borrow_mut(), &theme.key, method, operands)
+}
+
 /// Retained opaque UI owner with a counted lifetime.
 pub struct Ui {
     /// Host identity of this acquisition.
@@ -1012,6 +1022,20 @@ impl Imports for Controlled {
             &super::ui_host::title(title),
         )
     }
+    fn ui_paste_to_editor(&self, resource: &Ui, text: &str) -> ExtensionResult<()> {
+        ui_call(
+            &self.observed,
+            resource.key,
+            "pasteToEditor",
+            &serde_json::json!([text]),
+        )
+    }
+    fn ui_set_editor_text(&self, resource: &Ui, text: &str) -> ExtensionResult<()> {
+        super::ui_host::set_editor_text(&mut self.observed.borrow_mut(), resource.key, text)
+    }
+    fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
+        super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
+    }
     type Registry = Reader;
     type Reader = Reader;
     type Writer = Reader;
@@ -1354,6 +1378,95 @@ impl Imports for Controlled {
     }
 
     type Theme = Theme;
+    fn theme_name(&self, theme: &Theme) -> ExtensionResult<Option<String>> {
+        super::theme_host::optional(&mut self.observed.borrow_mut(), &theme.key, "name")
+    }
+    fn theme_source_path(&self, theme: &Theme) -> ExtensionResult<Option<String>> {
+        super::theme_host::optional(&mut self.observed.borrow_mut(), &theme.key, "sourcePath")
+    }
+    fn theme_source_info(&self, theme: &Theme) -> ExtensionResult<Option<String>> {
+        super::theme_host::source_info(&mut self.observed.borrow_mut(), &theme.key)
+    }
+    fn theme_set_source_info(&self, theme: &Theme, source: Option<&str>) -> ExtensionResult<()> {
+        let operands = serde_json::json!([source]);
+        super::theme_host::request(
+            &mut self.observed.borrow_mut(),
+            &theme.key,
+            "setSourceInfo",
+            &operands,
+        )
+        .map(drop)
+    }
+    fn theme_bold(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(&self.observed, theme, "bold", &serde_json::json!([text]))
+    }
+    fn theme_italic(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(&self.observed, theme, "italic", &serde_json::json!([text]))
+    }
+    fn theme_underline(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "underline",
+            &serde_json::json!([text]),
+        )
+    }
+    fn theme_inverse(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(&self.observed, theme, "inverse", &serde_json::json!([text]))
+    }
+    fn theme_strikethrough(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "strikethrough",
+            &serde_json::json!([text]),
+        )
+    }
+    fn theme_fg(&self, theme: &Theme, color: &str, text: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "fg",
+            &serde_json::json!([color, text]),
+        )
+    }
+    fn theme_bg(&self, theme: &Theme, color: &str, text: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "bg",
+            &serde_json::json!([color, text]),
+        )
+    }
+    fn theme_get_fg_ansi(&self, theme: &Theme, color: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "getFgAnsi",
+            &serde_json::json!([color]),
+        )
+    }
+    fn theme_get_bg_ansi(&self, theme: &Theme, color: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "getBgAnsi",
+            &serde_json::json!([color]),
+        )
+    }
+    fn theme_get_color_mode(&self, theme: &Theme) -> ExtensionResult<crate::ColorMode> {
+        let mode = theme_text(
+            &self.observed,
+            theme,
+            "getColorMode",
+            &serde_json::json!([]),
+        )?;
+        Ok(if mode == "truecolor" {
+            crate::ColorMode::Truecolor
+        } else {
+            crate::ColorMode::Color256
+        })
+    }
     fn register_message_renderer(
         &self,
         custom_type: &str,

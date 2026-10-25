@@ -26,6 +26,7 @@ macro_rules! on_both_adapters {
 }
 
 pub(crate) mod action_host;
+mod advanced_ui;
 mod agent_events;
 mod application_messages;
 pub(crate) mod author;
@@ -88,6 +89,7 @@ pub(crate) mod shell_host;
 mod shutdown_example;
 mod stream_events;
 mod system_prompt_header_example;
+pub(crate) mod theme_host;
 mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;

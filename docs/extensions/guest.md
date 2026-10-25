@@ -360,7 +360,7 @@ usage whose two estimates are unknown.
 
 ## Retained UI requests
 
-`ExtensionUIContext` sends eight synchronous requests to the installed host and
+`ExtensionUIContext` sends these synchronous requests to the installed host and
 returns its rejection as a recoverable `ExtensionResult` error:
 
 | Method | Request |
@@ -373,6 +373,9 @@ returns its rejection as a recoverable `ExtensionResult` error:
 | `set_hidden_thinking_label` | Literal collapsed-thinking text, or the host default. |
 | `set_widget` | Fixed ordered lines for one key with optional `WidgetPlacement`, or that widget's removal. |
 | `set_title` | A literal terminal title. |
+| `paste_to_editor` | Literal text the host editor receives as a paste, through its paste handling. |
+| `set_editor_text` | Literal replacement text for the host editor. |
+| `get_editor_text` | Reads the host editor's current text, returned unchanged. |
 
 The four option types are generated from the same interface file and re-exported at
 the author root. `None` and a present empty value stay different requests. The text
@@ -899,4 +902,18 @@ input defaults to a no-op and the release preference defaults to false. Renderin
 the supplied width; successful rendering returns the author's ordered lines. Returned errors remain errors.
 
 Cloned themes retain the supplied host owner independently of renderer registration.
-Theme is currently opaque: styling methods and widget composition are not exposed here.
+Each `Theme` method sends one synchronous request to that owner. The owner keeps the palette
+and the style algorithms, so every call reads its current state:
+
+| Method | Answer |
+| --- | --- |
+| `name`, `source_path` | The theme name and file path, or `None`. |
+| `source_info`, `set_source_info` | Reads, replaces or clears the theme's `SourceInfo`. |
+| `fg`, `bg` | Text wrapped in a named foreground or background color that restores only that color. |
+| `bold`, `italic`, `underline`, `inverse`, `strikethrough` | Text with that one style and its own closing escape. |
+| `get_fg_ansi`, `get_bg_ansi` | The escape that selects a named color. |
+| `get_color_mode` | The `ColorMode`: `Truecolor` or `Color256`. |
+
+The styled text is the owner's bytes, unchanged. An unknown color name is an error carrying the
+owner's message. A theme kept past its renderer call observes later theme changes and provenance
+edits made through any of its clones. Widget composition is not exposed here.

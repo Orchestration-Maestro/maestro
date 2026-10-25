@@ -24,6 +24,7 @@ mod model_registry;
 mod schema;
 mod session;
 mod setup;
+mod theme;
 mod tools;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;

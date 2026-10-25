@@ -32,6 +32,12 @@ pub(crate) enum Request {
     ),
     /// Sets the terminal title verbatim.
     Title(String, Reply),
+    /// Sends literal text through the native editor's paste handling.
+    PasteToEditor(String, Reply),
+    /// Replaces the original editor's text.
+    SetEditorText(String, Reply),
+    /// Reads the original editor's current text.
+    GetEditorText(Sender<Result<String, String>>),
 }
 
 impl Request {
@@ -49,21 +55,35 @@ impl Request {
                 reply,
             ),
             Self::Title(title, reply) => (ui.set_title(title), reply),
+            Self::PasteToEditor(text, reply) => (ui.paste_to_editor(text), reply),
+            Self::SetEditorText(text, reply) => (ui.set_editor_text(text), reply),
+            Self::GetEditorText(reply) => {
+                let _ = reply.send(ui.get_editor_text().map_err(|error| error.to_string()));
+                return;
+            }
         };
         let _ = reply.send(result.map_err(|error| error.to_string()));
     }
 
     /// Settles a released capability without leaving the Store caller waiting.
     pub(crate) fn reject(self, error: &str) {
-        let (Self::Notify(_, _, reply)
-        | Self::Status(_, _, reply)
-        | Self::WorkingMessage(_, reply)
-        | Self::WorkingVisible(_, reply)
-        | Self::WorkingIndicator(_, reply)
-        | Self::HiddenThinkingLabel(_, reply)
-        | Self::Widget(_, _, _, reply)
-        | Self::Title(_, reply)) = self;
-        let _ = reply.send(Err(error.to_owned()));
+        match self {
+            Self::GetEditorText(reply) => {
+                let _ = reply.send(Err(error.to_owned()));
+            }
+            Self::Notify(_, _, reply)
+            | Self::Status(_, _, reply)
+            | Self::WorkingMessage(_, reply)
+            | Self::WorkingVisible(_, reply)
+            | Self::WorkingIndicator(_, reply)
+            | Self::HiddenThinkingLabel(_, reply)
+            | Self::Widget(_, _, _, reply)
+            | Self::Title(_, reply)
+            | Self::PasteToEditor(_, reply)
+            | Self::SetEditorText(_, reply) => {
+                let _ = reply.send(Err(error.to_owned()));
+            }
+        }
     }
 }
 
