@@ -45,6 +45,18 @@ pub(crate) fn view() -> Rc<DomView> {
         mode: maestro_theme::BrandMode::Dark,
     })
 }
+/// Replace only localization, keeping the supplied document, syntax engine and brand operands.
+pub(crate) fn localized_view(view: &DomView, language: &str) -> Rc<DomView> {
+    let i18n = I18n::new(Rc::new(crate::support::Host {
+        stored: Some(language.to_owned()).into(),
+        ..crate::support::Host::default()
+    }))
+    .unwrap();
+    Rc::new(DomView {
+        i18n: Rc::new(i18n),
+        ..view.clone()
+    })
+}
 /// The isolated-frame document served beside the page, which carries no page policy.
 pub(crate) fn sandbox_url() -> SandboxUrlProvider {
     SharedHandle::new(|| Ok(format!("{}/sandbox.html", origin())))

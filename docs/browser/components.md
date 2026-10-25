@@ -163,3 +163,36 @@ preview/source toggles return `components::copy_button::LocalizedControlError`
 for localization, shared control drawing and selected-color I/O errors.
 These Rust source interfaces keep failure kinds and causes with the operation
 that owns them, without changing rendering, callback timing or retained lifetimes.
+
+## Custom provider cards
+
+[`CustomProviderCard`](../../crates/maestro-web/src/components/custom_provider_card.rs)
+mounts through `DomContent` with the existing `CustomProvider` handle:
+
+```rust
+use std::{cell::RefCell, rc::Rc};
+use maestro_web::{CustomProvider, CustomProviderCard};
+
+fn provider_card(provider: Rc<RefCell<CustomProvider>>) -> CustomProviderCard {
+    let mut card = CustomProviderCard::new(provider);
+    card.on_edit = Some(Rc::new(|provider| {
+        provider.borrow_mut().name = "Edited provider".into();
+    }));
+    card
+}
+```
+
+The card starts in manual mode and displays the supplied model count. Set
+`is_auto_discovery` independently of the provider protocol to display the supplied
+`components::custom_provider_card::ProviderStatus`; an absent discovery result
+omits that row. Names, protocol spellings and URLs remain literal native text.
+
+Call `DomContent::update` after changing operands. Existing buttons keep their
+nodes, focus and selection while their actions remain present. Activation reads
+the most recently published callback and provider handle, including later edits
+to that provider. It releases component borrows before calling the action, so the
+action may update its containing card. Removing an action releases its binding;
+disconnected roots perform no action, and reconnecting restores delivery without
+a second registration. Dropping `DomRoot` releases every retained binding even
+when the page still holds its nodes. Localization failures leave the last
+successfully published content in place.
