@@ -132,7 +132,8 @@ impl InteractiveMode {
 }
 
 impl InteractiveMode {
-    /// Initializes the presentation, shows the startup notices, sends the startup prompts,
+    /// Initializes the presentation, starts independent checks, shows startup warnings,
+    /// sends the startup prompts,
     /// then keeps sending typed prompts to the current session.
     ///
     /// A prompt the session refuses is shown as an error and the loop continues.
@@ -141,6 +142,7 @@ impl InteractiveMode {
     /// Returns an initialization or notice-presentation failure.
     pub async fn run(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         self.init()?;
+        self.start_startup_checks();
         if !self.options.migrated_providers.is_empty() {
             self.show_warning(&format!(
                 "Migrated credentials to auth.json: {}",

@@ -43,8 +43,10 @@ start failure is returned and leaves the mode uninitialized. Once started, it
 subscribes to the session events and sets the window title. A theme change then
 invalidates the presentation, recolours the editor border and requests a frame,
 and a branch change requests a frame. Neither callback keeps the mode alive. Last,
-it lists the loaded resources and their diagnostics in the transcript and then
-replays the session (see below).
+it lists the loaded resources and their diagnostics in the transcript, shows the
+[startup history](startup.md#startup-history) once, and replays the session (see
+below). The history selection and version recording happen before building the
+header, even if starting the terminal later fails.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the
@@ -197,11 +199,11 @@ and `/copyx` reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
-`run` initializes the mode, shows the startup notices, sends the startup prompts and
-then keeps sending typed prompts. It never finishes on its own. It returns only an
+`run` initializes the mode and starts the [independent startup checks](startup.md#independent-startup-checks),
+then shows the startup warnings, sends the startup prompts and keeps sending typed prompts. It never finishes on its own. It returns only an
 initialization failure or a failure to show a notice.
 
-The startup notices come in this order, before any prompt:
+The synchronous startup warnings come in this order, before any prompt:
 
 - a warning `Migrated credentials to auth.json: ` followed by
   `migrated_providers` joined with `", "`, when the list is not empty. Names keep

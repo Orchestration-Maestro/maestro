@@ -68,6 +68,10 @@ pub struct InteractiveModeOptions {
     pub initial_images: Option<Vec<maestro_app::ImageContent>>,
     /// Prompts sent after the first startup prompt, in order.
     pub initial_messages: Vec<String>,
+    /// Hosted service origin; absent selects the compiled default.
+    pub service_origin: Option<String>,
+    /// Supplied HTTP transport for startup requests.
+    pub fetch: Option<maestro_app::Fetch>,
 }
 
 /// The retained interactive presentation over the current session.
@@ -110,6 +114,10 @@ pub struct InteractiveMode {
     footer_data_provider: FooterDataProvider,
     /// The supplied watch, timer and Git process effects, reused for named theme watching.
     operations: Rc<dyn FooterOperations>,
+    /// Selected release history for this startup.
+    changelog_markdown: RefCell<Option<String>>,
+    /// Whether this mode has handled its startup notice.
+    startup_notices_shown: Cell<bool>,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
     /// The expandable startup help, absent when startup is quiet.
@@ -174,7 +182,6 @@ impl InteractiveMode {
             operations.clone(),
         );
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
-        footer.set_auto_compact_enabled(session.auto_compaction_enabled());
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
@@ -198,6 +205,8 @@ impl InteractiveMode {
             footer,
             footer_data_provider,
             operations,
+            changelog_markdown: RefCell::default(),
+            startup_notices_shown: Cell::new(false),
             is_initialized: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
@@ -218,10 +227,12 @@ impl InteractiveMode {
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, binds the
+    /// Selects unseen release history before starting the terminal, builds the header,
+    /// adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission and the global debug key, starts
-    /// the terminal, lists the loaded resources with their diagnostics and replays the
-    /// session; theme changes then refresh the editor border, and theme and branch
+    /// the terminal, lists the loaded resources with their diagnostics, shows selected
+    /// history once and replays the session; theme changes then refresh the editor
+    /// border, and theme and branch
     /// changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.
@@ -233,6 +244,7 @@ impl InteractiveMode {
         if self.is_initialized.get() {
             return Ok(());
         }
+        *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
         self.build_header()?;
         self.render_widgets();
         for child in [
@@ -274,6 +286,7 @@ impl InteractiveMode {
             show_diagnostics_when_quiet: true,
             ..resources::ShowLoadedResourcesOptions::default()
         })?;
+        self.show_startup_notices_if_needed()?;
         self.render_initial_messages()?;
         self.update_available_provider_count()
     }
@@ -347,11 +360,14 @@ fn create_footer(
     data: &FooterDataProvider,
     theme: LiveTheme,
 ) -> Result<Rc<FooterComponent>, Box<dyn Error>> {
-    Ok(Rc::new(FooterComponent::new(
+    let auto_compact = session.auto_compaction_enabled();
+    let footer = Rc::new(FooterComponent::new(
         session,
         Rc::new(data.clone()),
         theme,
         Rc::new(Collator::new(&|key| std::env::var(key).ok())?),
         Rc::new(|key| std::env::var(key).ok()),
-    )))
+    ));
+    footer.set_auto_compact_enabled(auto_compact);
+    Ok(footer)
 }
