@@ -634,6 +634,9 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
     for (marker, role) in [
         ("@border@", ThemeColor::Border),
         ("@accent@", ThemeColor::Accent),
+        ("@border@", ThemeColor::Border),
+        ("@borderMuted@", ThemeColor::BorderMuted),
+        ("@text@", ThemeColor::Text),
         ("@dim@", ThemeColor::Dim),
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),

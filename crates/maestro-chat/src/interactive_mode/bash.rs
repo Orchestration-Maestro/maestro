@@ -10,7 +10,7 @@ use maestro_app::{
     AgentSession, BashOperations, BashResult, DiagnosticErrorInfo, Presence, TruncationResult,
     UserBashEvent, UserBashEventResult,
 };
-use maestro_tui::EditorComponent;
+use maestro_tui::{EditorComponent, TUI};
 use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc, sync::Arc};
 
 /// The callable operations an extension supplies for one shell command.
@@ -154,7 +154,7 @@ impl InteractiveMode {
     ) -> Rc<BashExecutionComponent> {
         let row = Rc::new(BashExecutionComponent::new(
             command.to_owned(),
-            self.ui.clone(),
+            TUI::clone(&self.ui),
             self.themes.theme(),
             exclude_from_context,
         ));
