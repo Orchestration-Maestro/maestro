@@ -22,13 +22,24 @@ pub fn isolated(name: &str) -> bool {
     .unwrap();
     let output = TestProcess::current(name)
         .unwrap()
+        .env_clear()
         .case("presentation")
+        .env("HOME", scratch.path())
+        .env(
+            "MAESTRO_PACKAGE_DIR",
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap(),
+        )
         .env("MAESTRO_CODING_AGENT_DIR", scratch.path())
         .output()
         .unwrap();
     assert!(
         output.status.success(),
-        "isolated presentation failed: {}",
+        "isolated test failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
     true

@@ -14,5 +14,6 @@ mod startup_bootstrap;
 mod startup_config;
 mod startup_dispatch;
 mod startup_options;
+mod startup_runtime;
 mod startup_sessions;
 mod support;

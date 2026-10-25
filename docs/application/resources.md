@@ -124,3 +124,13 @@ run from a source checkout reads the shipped themes from
 `crates/maestro-theme/assets/theme` in that package directory; a standalone
 executable reads them from the `theme` folder in the package directory. See
 [application configuration](configuration.md#installation-paths).
+
+The command-line `startup::main::runtime::create_runtime` constructs a selected
+session over already-created services. It collects service, settings and
+extension diagnostics before applying model, thinking and tool selections. An
+explicit API key needs a selected command-line or scoped model, even when the
+session constructor could choose a default later. Caller patterns, including an
+empty list, take precedence over saved enabled-model patterns. The operation
+retains the supplied history and service handles; it does not bind directories,
+replace a runtime or launch a frontend. Startup entry and executable composition
+remain separate work.
