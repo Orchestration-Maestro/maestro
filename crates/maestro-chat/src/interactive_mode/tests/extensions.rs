@@ -1,6 +1,8 @@
 //! Extension shortcut selection, dispatch and ownership through the editor's first
 //! interceptor.
 
+mod autocomplete;
+
 use super::{Setup, World, isolated};
 use maestro_app::{
     Extension, ExtensionFactory, ExtensionShortcut, Local, ReadonlySessionManager, strip_ansi,

@@ -81,7 +81,8 @@ impl InteractiveMode {
             on_image_width_cells_change: self.fallible_setting_callback(Self::settings_image_width),
             on_auto_resize_images_change: self.save_setting(SettingsManager::set_image_auto_resize),
             on_block_images_change: self.save_setting(SettingsManager::set_block_images),
-            on_enable_skill_commands_change: self.setting_callback(Self::settings_skill_commands),
+            on_enable_skill_commands_change: self
+                .fallible_setting_callback(Self::settings_skill_commands),
             on_steering_mode_change: self.setting_callback(|mode, value| {
                 mode.runtime_host
                     .session()
@@ -235,13 +236,18 @@ impl InteractiveMode {
     }
 
     /// Saves skill command admission before rebuilding completion.
-    fn settings_skill_commands(&self, enabled: bool) {
+    ///
+    /// # Errors
+    /// Returns the original wrapper failure after the setting has been saved.
+    fn settings_skill_commands(&self, enabled: bool) -> Result<(), Box<dyn Error>> {
         self.runtime_host
             .session()
             .settings_manager()
             .borrow_mut()
             .set_enable_skill_commands(enabled);
-        self.setup_autocomplete_provider();
+        self.setup_autocomplete_provider()
+            .map_err(|error| -> Box<dyn Error> { error })?;
+        Ok(())
     }
 
     /// Saves the transport before changing the next request's live preference.
