@@ -87,6 +87,24 @@ impl Workspace {
         Ok(())
     }
 
+    /// Keep a persistent copy at an absolute path while the original remains disposable.
+    pub fn cache_at(&mut self, path: &Path) {
+        assert!(path.is_absolute());
+        if path.exists() {
+            fs::remove_dir_all(path).unwrap();
+        }
+        assert!(
+            Command::new("cp")
+                .arg("-a")
+                .arg(self.path())
+                .arg(path)
+                .status()
+                .unwrap()
+                .success()
+        );
+        self.name = path.as_os_str().to_owned();
+    }
+
     pub fn command(&self, recipe: &str) -> Command {
         let mut command = super::toolchain_support::command("just");
         command
