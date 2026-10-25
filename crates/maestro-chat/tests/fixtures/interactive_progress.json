@@ -1573,6 +1573,7 @@
         "progress": [],
         "timers": [
           80,
+          80,
           1000
         ],
         "editor": "draft"
@@ -1581,7 +1582,9 @@
         "status": [],
         "chat": [],
         "progress": [],
-        "timers": [],
+        "timers": [
+          80
+        ],
         "editor": "draft"
       }
     }

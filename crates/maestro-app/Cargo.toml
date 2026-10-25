@@ -41,10 +41,10 @@ maestro-tui = { path = "../maestro-tui" }
 maestro-text = { path = "../maestro-text", features = ["number-format"] }
 maestro-path = { path = "../maestro-path" }
 maestro-watch = { path = "../maestro-watch" }
+regex.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-export = { path = "../maestro-export" }
-regex.workspace = true
 maestro-workspace = { path = "../maestro-workspace" }
 maestro-daemon = { path = "../maestro-daemon" }
 maestro-terminal = { path = "../maestro-terminal" }

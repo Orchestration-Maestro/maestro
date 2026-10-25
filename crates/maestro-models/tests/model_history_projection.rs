@@ -608,7 +608,8 @@ mod tests {
             tools: Some(vec![Tool {
                 name: "first".into(),
                 description: "supplied".into(),
-                parameters: json!({"type":"object", "properties":{"nested":{"type":"object"}}}),
+                parameters: json!({"type":"object", "properties":{"nested":{"type":"object"}}})
+                    .into(),
             }]),
         };
         let original = context.clone();

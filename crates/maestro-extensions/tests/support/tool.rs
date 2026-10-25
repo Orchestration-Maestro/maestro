@@ -14,7 +14,7 @@ pub fn definition(
         definition: Tool {
             name: name.into(),
             description: "registered".into(),
-            parameters: json!({"type":"object"}),
+            parameters: json!({"type":"object"}).into(),
         },
         label: label.into(),
         prompt_snippet: None,

@@ -128,8 +128,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 
 - One job per crate, describable in one sentence without "and".
 - Dependencies point one way; core crates never use dedicated
-  (non-core) crates as normal or build dependencies; the declared native
-  test-process, test-directory and test-tracing development edges are permitted.
+  (non-core) crates as normal or build dependencies; the declared test-support
+  development edges are permitted under their owners' target rules.
 - `maestro-path` is the foundation utility for lexical path strings. It sits
   below layer 0 and depends on no workspace crate. Native normalization reuses its
   segment reducer without decoding path bytes or accessing the filesystem.
@@ -243,7 +243,7 @@ Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, terminal scenario harness, checked test-process owner,
-disposable test-directory owner, test tracing owner,
+disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
@@ -258,7 +258,10 @@ the native-only `maestro-extensions` to `maestro-credentials`, for extension tes
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
 the native `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges
-for its standard-stream child tests,
+for its standard-stream child tests, the native-only, non-optional `maestro-chat`
+to `maestro-models` edge for interactive-mode tests that drive a real session
+through the scripted provider, the native-only, non-optional `maestro-cli`
+to `maestro-listeners` development edge for the controlled print adapter,
 and the native, non-optional dev-dependencies
 of the twenty-three declared callers on `maestro-test-process`, the owner of
 checked child tests (see
@@ -283,6 +286,14 @@ leaf names apart, and `folded_names(paths)` reports every name group it does not
 apart across all components of the supplied relative paths, so a fixture can state a
 premise the host can exercise.
 Both graph cycle checks still apply.
+
+The dedicated, unpublished `maestro-test-fixtures` portable leaf owns shared test
+fixture operations. Only agent, models, request, catalog, chat, credentials, tools
+and export may declare it as a development dependency, portable or target-specific;
+models, request, catalog, chat and credentials use portable declarations, while
+agent, tools and export use native declarations. It has no product or utility
+edge, only the native unifier exception. Both cycle checks apply. See the
+[fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
 scoped tracing subscriber that sees every callsite. Only daemon, models, process,
@@ -531,9 +542,16 @@ When such a crate has top-level integration-test sources, the check requires
 `autotests = false` and exactly one test target: the runnable `integration`
 target at `tests/integration.rs`.
 
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`,
+which keeps the supplied JSON Schema value beside the kinds its author declared for
+individual nodes. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
+re-exports it, and the model argument-validation owner is its only converter.
+Serialization writes the supplied JSON alone; provider payloads and saved JSON never
+carry the declared kinds.
+
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+Native callers use the default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
 belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
 listeners, extension error delivery and terminal input listeners reuse it. For
 shared `Rc` callbacks it also owns subscribing, which returns the removal

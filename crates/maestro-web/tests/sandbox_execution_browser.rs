@@ -797,7 +797,7 @@ pub async fn hidden_host_and_default_tool_use_the_same_real_adapter() {
         let tool = first.read().unwrap();
         assert_eq!(tool.definition.name, expected.name);
         assert_eq!(tool.label, expected.label);
-        assert_eq!(tool.definition.parameters, expected.parameters);
+        assert_eq!(*tool.definition.parameters, expected.parameters);
     }
     let trace = Trace::default();
     let provider: SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>> =

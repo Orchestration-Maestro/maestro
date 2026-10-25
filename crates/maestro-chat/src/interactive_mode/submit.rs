@@ -1,8 +1,11 @@
-//! Editor submission and the single waiting input operation.
+//! Editor submission, the single waiting input operation and the prompt loop.
 use super::InteractiveMode;
-use maestro_app::is_whitespace_scalar;
+use super::bash::selected_shell_command;
 use maestro_app::messages::UserMessageDelivery;
+use maestro_app::{ImageContent, PromptOptions, is_whitespace_scalar};
+use maestro_tui::EditorComponent;
 use std::{
+    error::Error,
     future::{Future, pending},
     rc::Rc,
 };
@@ -28,10 +31,11 @@ impl InteractiveMode {
         }
     }
 
-    /// Installs submission on the editor without keeping the mode alive: a recognized
-    /// command runs and reports its own outcome, any other trimmed nonempty text is queued
-    /// as steering during a compaction or a response, and otherwise it goes to the waiting
-    /// input, if any, then into the editor's history.
+    /// Installs submission on the editor without keeping the mode alive: a shell command
+    /// runs through the mode, a recognized command runs and reports its own outcome, and
+    /// any other trimmed nonempty text is queued as steering during a compaction or a
+    /// response and otherwise moves the pending shell rows into the transcript, goes to
+    /// the waiting input, if any, then into the editor's history.
     ///
     /// The editor empties itself before calling back, so a command needs no clearing step.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
@@ -41,6 +45,10 @@ impl InteractiveMode {
             let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
                 return;
             };
+            if let Some((command, exclude_from_context)) = selected_shell_command(text) {
+                mode.submit_shell_command(text, command, exclude_from_context);
+                return;
+            }
             if mode.runs_command(text) {
                 return;
             }
@@ -48,6 +56,7 @@ impl InteractiveMode {
                 Ok(false) => {}
                 queued => return mode.report(queued.map(drop)),
             }
+            mode.flush_pending_bash_components();
             let waiting = mode.on_input_callback.borrow_mut().take();
             if let Some(waiting) = waiting {
                 // A dropped waiter no longer wants the text; history still records it.
@@ -57,9 +66,16 @@ impl InteractiveMode {
         })));
     }
 
-    /// Runs the export command when `text` is one, handing a failure beyond the transcript
-    /// to the terminal runtime, and says whether `text` was handled as a command.
+    /// Runs the changelog or export command when `text` is one, handing a failure beyond
+    /// the transcript to the terminal runtime, and says whether `text` was handled as a
+    /// command.
     fn runs_command(&self, text: &str) -> bool {
+        if text == "/changelog" {
+            if let Err(error) = self.handle_changelog_command() {
+                self.report(Err(error));
+            }
+            return true;
+        }
         if text != "/export" && !text.starts_with("/export ") {
             return false;
         }
@@ -67,5 +83,80 @@ impl InteractiveMode {
             self.report(Err(error));
         }
         true
+    }
+}
+
+impl InteractiveMode {
+    /// Initializes the presentation, shows the startup notices, sends the startup prompts,
+    /// then keeps sending typed prompts to the current session.
+    ///
+    /// A prompt the session refuses is shown as an error and the loop continues.
+    ///
+    /// # Errors
+    /// Returns an initialization or notice-presentation failure.
+    pub async fn run(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+        self.init()?;
+        if !self.options.migrated_providers.is_empty() {
+            self.show_warning(&format!(
+                "Migrated credentials to auth.json: {}",
+                self.options.migrated_providers.join(", ")
+            ))?;
+        }
+        if let Some(error) = self
+            .runtime_host
+            .session()
+            .model_registry()
+            .get_error()
+            .filter(|error| !error.is_empty())
+        {
+            self.show_error(&format!("models.json error: {error}"))?;
+        }
+        if let Some(message) = self
+            .options
+            .model_fallback_message
+            .as_deref()
+            .filter(|message| !message.is_empty())
+        {
+            self.show_warning(message)?;
+        }
+        let first = self
+            .options
+            .initial_message
+            .as_deref()
+            .filter(|text| !text.is_empty())
+            .map(|text| (text, self.options.initial_images.as_deref()));
+        let rest = self.options.initial_messages.iter();
+        self.run_prompts(
+            first
+                .into_iter()
+                .chain(rest.map(|text| (text.as_str(), None))),
+        )
+        .await
+    }
+
+    /// Sends each startup prompt once, in order, then each text the input waiter selects.
+    ///
+    /// # Errors
+    /// Returns a failure presenting a refused prompt.
+    pub(super) async fn run_prompts<'a>(
+        &self,
+        mut startup: impl Iterator<Item = (&'a str, Option<&'a [ImageContent]>)>,
+    ) -> Result<(), Box<dyn Error>> {
+        loop {
+            let typed;
+            let (text, images) = if let Some(prompt) = startup.next() {
+                prompt
+            } else {
+                typed = self.get_user_input().await;
+                (typed.as_str(), None)
+            };
+            let options = PromptOptions {
+                images: images.map(<[_]>::to_vec),
+                ..PromptOptions::default()
+            };
+            if let Err(error) = self.runtime_host.session().prompt(text, options).await {
+                self.show_error(&error.message)?;
+            }
+        }
     }
 }

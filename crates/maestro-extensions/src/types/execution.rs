@@ -193,7 +193,7 @@ macro_rules! family {
             #[cfg(not(target_arch = "wasm32"))]
             type ModuleLoader=dyn Fn(&str)->Self::Future<'static,Result<Option<ExtensionFactory<Self>>,EventError>> $($bound)*;
             fn retain_definition<P:DeserializeOwned+'static,D:Serialize+'static,S:Default+'static>(input:RegisteredToolInput<P,D,S,Self>)->Self::Shared<Self::RegisteredDefinition> {
-                let definition=match input.definition { ToolDefinitionInput::Owned(x)=>Self::share(RwLock::new(x)),ToolDefinitionInput::Retained(x)=>x };
+                let definition=match input.definition { ToolDefinitionInput::Owned(x)=>Self::share(RwLock::new(*x)),ToolDefinitionInput::Retained(x)=>x };
                 Self::share(super::registration::tools::Definition::<P,D,S,Self>{definition,project_renderers:input.project_renderers})
             }
             fn erase_handler<V:'static,R:'static>(handler:ExtensionHandler<V,R,Self>)->Self::HandlerRegistration { Box::new(handler) }

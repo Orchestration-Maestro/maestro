@@ -765,8 +765,12 @@ fn progress_replacement_stops_old_countdown_and_restores_escape() {
         expected.changed.assert_animated(&world, &effects);
         // A response starts: the retry's countdown and row go before the working row does.
         agent_event(&world, maestro_app::AgentEvent::AgentStart);
-        assert_eq!(timers(&world), Vec::<u64>::new());
-        assert!(world.mode.status_container.render(100).is_empty());
+        assert_eq!(timers(&world), [80]);
+        let status = world.mode.status_container.render(100);
+        assert_eq!(status.len(), 2);
+        assert!(status[0].is_empty());
+        assert!(status[1].contains("Working..."));
+        assert!(!status[1].contains("Retrying"));
         start_retry(&world, 2, 4.0, 1000.0);
         expected.after.assert_animated(&world, &effects);
         end_retry(&world, true, 2, None);

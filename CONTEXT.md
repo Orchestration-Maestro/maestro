@@ -145,9 +145,15 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Session services:** Credentials, settings, the model catalog and reloaded resources bound to one session working directory, created before and separately from the session. See [application resources](docs/application/resources.md#session-services).
 - **Module loader:** The caller-supplied operation that turns a resolved extension path into a factory; the component runtime supplies it and the executable wires it.
 
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`,
+which keeps the supplied JSON Schema value beside the kinds its author declared for
+individual nodes. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
+re-exports it, and the model argument-validation owner is its only converter.
+Serialization writes the supplied JSON alone.
+
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+Native callers use the default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
 belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
 listeners, extension error delivery and terminal input listeners reuse it. For
 shared `Rc` callbacks it also owns subscribing, which returns the removal
@@ -166,7 +172,7 @@ traversal runs, so one removal and a complete clear both stay cheap.
 ### Interfaces
 
 - **Footer metadata:** A cached Git branch, extension status texts and a supplied available-provider count, owned by `maestro-app` and rendered by frontends. Its read-only contract and live status view belong to `maestro-extensions`, whose footer factories receive them.
-- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy.
+- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy. Its skill-block parser of an expanded prompt belongs to the application and is available to browser builds, so transcripts and the offline viewer read one implementation.
 - **CLI:** The command-line frontend for argument parsing, startup and print/JSON operations.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
@@ -300,6 +306,11 @@ From `docs/specs/tool-additions.md`.
   run alone. Only the callers its [contract](docs/specs/maestro-port.md#test-directory-owner)
   declares may use it, through native development edges.
 
+- **Test fixtures:** The dedicated, unpublished, portable `maestro-test-fixtures`
+  leaf for shared fixture records, header lookup, wire-literal round trips and
+  single-color theme construction. Its eight callers use development edges only;
+  it has no product or utility dependency. See the
+  [contract](docs/specs/maestro-port.md#test-fixture-owner).
 - **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`
   leaf that runs a test action under a scoped tracing subscriber that sees
   every callsite, whichever thread reaches the callsite first. Only daemon,

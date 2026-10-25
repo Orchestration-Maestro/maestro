@@ -15,8 +15,16 @@ pub fn register(
     captured: Rc<RefCell<Option<ExtensionCommandContext>>>,
 ) -> ExtensionResult<()> {
     let config: Value = serde_json::from_str(config).map_err(|e| e.to_string())?;
-    let metadata: ToolMetadata =
+    let mut metadata: ToolMetadata =
         serde_json::from_value(config["metadata"].clone()).map_err(|e| e.to_string())?;
+    if let Some(kinds) = config["metadata"].get("schemaKinds") {
+        let kinds: std::collections::HashMap<String, maestro_extensions_wasm::SchemaKind> =
+            serde_json::from_value(kinds.clone()).map_err(|e| e.to_string())?;
+        metadata.parameters = maestro_extensions_wasm::ParameterSchema::authored(
+            metadata.parameters.into_json(),
+            kinds,
+        );
+    }
     let kept: Rc<RefCell<Kept>> = Rc::default();
     let prepare_arguments = preparation(api, config.clone(), Rc::clone(&kept));
     let execute = execution(api, config, captured, kept);

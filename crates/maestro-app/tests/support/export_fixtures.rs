@@ -5,11 +5,59 @@ use maestro_export::{ExportAsset, ExportOperations};
 use maestro_theme::{ColorMode, LiveTheme, Theme, ThemeError, ThemeExportColors, ThemeOptions};
 use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::TerminalImage;
-use std::{cell::RefCell, io, rc::Rc};
+use maestro_tui::tui::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
+use std::{cell::RefCell, io, path::Path, rc::Rc, time::Duration};
 
-#[path = "../../../maestro-test-terminal/src/manual_runtime.rs"]
-#[allow(dead_code)]
-mod manual_runtime;
+/// The host an export renders through: no clock, deferred work, environment or log files.
+struct ExportHost;
+
+/// A scheduled callback this host never runs.
+struct IdleTimer;
+
+impl RenderTimer for IdleTimer {
+    fn cancel(&mut self) {}
+}
+
+impl TuiRuntime for ExportHost {
+    fn now(&self) -> Duration {
+        Duration::ZERO
+    }
+
+    fn schedule(&self, _delay: Duration, _callback: RenderCallback) -> Box<dyn RenderTimer> {
+        Box::new(IdleTimer)
+    }
+
+    fn spawn_local(&self, _future: LocalFuture) {}
+
+    fn environment(&self, _key: &str) -> Option<String> {
+        None
+    }
+
+    fn log_context(&self) -> LogContext {
+        LogContext {
+            home: Path::new("").to_path_buf(),
+            iso_time: String::new(),
+            unix_ms: 0,
+            nonce: String::new(),
+        }
+    }
+
+    fn append_log(&self, path: &Path, _contents: &str) -> io::Result<()> {
+        Err(no_log_file(path))
+    }
+
+    fn write_log(&self, path: &Path, _contents: &str) -> io::Result<()> {
+        Err(no_log_file(path))
+    }
+}
+
+/// The failure an export sees when the host keeps no log file at `path`.
+fn no_log_file(path: &Path) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::Unsupported,
+        format!("no log file at {}", path.display()),
+    )
+}
 
 /// Export assets whose template is the payload alone, with recorded theme lookups.
 #[derive(Default)]
@@ -50,7 +98,7 @@ pub fn published() -> LiveTheme {
 /// A rendering environment over `live_theme`.
 pub fn environment(live_theme: LiveTheme) -> Rc<ToolRenderEnvironment> {
     Rc::new(ToolRenderEnvironment {
-        runtime: Rc::new(manual_runtime::ManualRuntime::default()),
+        runtime: Rc::new(ExportHost),
         readme_path: String::new(),
         live_theme,
         highlighter: Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),

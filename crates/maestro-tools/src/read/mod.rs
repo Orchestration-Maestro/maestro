@@ -100,7 +100,7 @@ pub fn create_read_tool_definition<C: ReadContext + 'static $($bound)*>(
         definition: Tool {
             name: "read".into(),
             description,
-            parameters: json!({
+            parameters: maestro_models::ParameterSchema::authored(json!({
                 "type": "object",
                 "required": ["path"],
                 "properties": {
@@ -108,7 +108,7 @@ pub fn create_read_tool_definition<C: ReadContext + 'static $($bound)*>(
                     "offset": {"type": "number", "description": "Line number to start reading from (1-indexed)"},
                     "limit": {"type": "number", "description": "Maximum number of lines to read"},
                 },
-            }),
+            }), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/offset".to_owned(), maestro_models::SchemaKind::Number), ("/properties/limit".to_owned(), maestro_models::SchemaKind::Number)]),
         },
         label: "read".into(),
         prompt_snippet: Some("Read file contents".into()),

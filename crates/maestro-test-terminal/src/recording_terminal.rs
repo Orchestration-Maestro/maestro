@@ -273,12 +273,11 @@ impl Terminal for RecordingTerminal {
     }
 
     fn set_progress(&mut self, active: bool) -> io::Result<()> {
-        let sequence = if active {
+        self.emulate(if active {
             "\x1b]9;4;3\x07"
         } else {
             "\x1b]9;4;0;\x07"
-        };
-        self.emulate(sequence);
+        });
         Ok(())
     }
 }

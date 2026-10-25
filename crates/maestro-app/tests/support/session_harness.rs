@@ -14,9 +14,10 @@ use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput, Sc
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
 use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
-    BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionContext, ExtensionExecution,
-    ExtensionFactory, ExtensionRunner, InputEvent, InputEventResult, LoadExtensionsResult,
-    RegisteredToolInput, create_event_bus_for, create_extension_runtime,
+    BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionAPI, ExtensionContext,
+    ExtensionExecution, ExtensionFactory, ExtensionRunner, InputEvent, InputEventResult,
+    LoadExtensionsResult, RegisteredToolInput, SessionBeforeCompactEvent,
+    SessionBeforeCompactResult, create_event_bus_for, create_extension_runtime,
     load_extension_from_factory,
 };
 use maestro_models::system_prompt::ContextFile;
@@ -38,6 +39,36 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex, RwLock},
 };
+
+/// An extension that summarizes every compaction as `summary` instead of calling a provider.
+pub fn summary_provider(summary: &'static str) -> ExtensionFactory<Local> {
+    Rc::new(move |api: ExtensionAPI<Local>| {
+        let registered = api.on::<SessionBeforeCompactEvent, SessionBeforeCompactResult>(
+            "session_before_compact".into(),
+            Rc::new(move |event, _| {
+                Box::pin(std::future::ready(Ok(Some(summary_result(event, summary)))))
+            }),
+        );
+        drop(registered);
+        Box::pin(std::future::ready(Ok(())))
+    })
+}
+
+/// A supplied summary retaining the compaction preparation's boundary and token count.
+pub fn summary_result(
+    event: &SessionBeforeCompactEvent,
+    summary: &str,
+) -> SessionBeforeCompactResult {
+    SessionBeforeCompactResult {
+        cancel: Presence::Missing,
+        compaction: Presence::Present(CompactionResult {
+            summary: summary.to_owned(),
+            first_kept_entry_id: event.data.preparation.first_kept_entry_id.clone(),
+            tokens_before: event.data.preparation.tokens_before,
+            details: Presence::Present(json!({})),
+        }),
+    }
+}
 
 /// The recorded corpus file `name`.
 pub fn corpus(name: &str) -> Value {
@@ -392,7 +423,7 @@ pub fn tool_definition(
         definition: Tool {
             name: name.into(),
             description: format!("{name} tool"),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         label: name.into(),
         prompt_snippet: snippet.map(str::to_owned),
@@ -1942,7 +1973,7 @@ pub fn waiting_tool(
         definition: Tool {
             name: "wait".into(),
             description: "Wait for release".into(),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         description: None,
         label: "Wait".into(),
@@ -1974,7 +2005,8 @@ pub fn echo_tools(
         definition: Tool {
             name: "echo".into(),
             description: "Echo back".into(),
-            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}})
+                .into(),
         },
         description: None,
         label: "Echo".into(),

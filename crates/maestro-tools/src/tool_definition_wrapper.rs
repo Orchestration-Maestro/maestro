@@ -26,7 +26,7 @@ pub enum ToolDefinitionInput<
     I: maestro_agent::AgentExecution = E,
 > {
     /// A standalone owned definition.
-    Owned(ToolDefinitionRecord<C, P, D, S, E, I>),
+    Owned(Box<ToolDefinitionRecord<C, P, D, S, E, I>>),
     /// The original shared mutable definition.
     Retained(RetainedToolDefinition<C, P, D, S, E, I>),
 }
@@ -34,7 +34,7 @@ impl<C, P, D, S, E: ToolExecution, I: maestro_agent::AgentExecution>
     From<ToolDefinitionRecord<C, P, D, S, E, I>> for ToolDefinitionInput<C, P, D, S, E, I>
 {
     fn from(definition: ToolDefinitionRecord<C, P, D, S, E, I>) -> Self {
-        Self::Owned(definition)
+        Self::Owned(Box::new(definition))
     }
 }
 impl<C, P, D, S, E: ToolExecution, I: maestro_agent::AgentExecution>

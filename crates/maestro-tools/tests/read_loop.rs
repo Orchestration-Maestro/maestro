@@ -81,7 +81,7 @@ fn null_details_tool() -> AgentTool {
         definition: maestro_models::Tool {
             name: "nullish".into(),
             description: "explicit null".into(),
-            parameters: json!({"type": "object"}),
+            parameters: json!({"type": "object"}).into(),
         },
         label: "nullish".into(),
         prepare_arguments: None,

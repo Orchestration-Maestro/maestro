@@ -2,12 +2,11 @@
 //! resources, notices, transcript shortcuts, editor actions, typed input and queued
 //! input.
 
-use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
-use indexmap::IndexMap;
+use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, ToolRenderEnvironment,
+    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
@@ -19,8 +18,10 @@ use std::{
 };
 
 mod actions;
+mod bash;
 mod events;
 mod key_display;
+mod notices;
 mod progress;
 mod queues;
 mod replay;
@@ -32,6 +33,7 @@ mod extension_ui;
 mod toggles;
 mod transcript;
 mod transfer;
+mod working;
 
 #[cfg(test)]
 #[cfg(unix)]
@@ -40,15 +42,32 @@ mod tests;
 /// The spacer and text of a status line.
 type StatusLine = (Rc<dyn Component>, Rc<Text>);
 
+/// The assistant row a response streams into and the message it shows.
+type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
+
 /// How the interactive mode starts.
 #[derive(Default)]
 pub struct InteractiveModeOptions {
     /// Forces the expanded startup help, even when startup is quiet.
     pub verbose: bool,
+    /// Providers whose credentials were migrated at startup, warned about in order.
+    pub migrated_providers: Vec<String>,
+    /// The warning shown when the session model could not be restored.
+    pub model_fallback_message: Option<String>,
+    /// The first prompt sent at startup.
+    pub initial_message: Option<String>,
+    /// Images attached to the first startup prompt.
+    pub initial_images: Option<Vec<maestro_app::ImageContent>>,
+    /// Prompts sent after the first startup prompt, in order.
+    pub initial_messages: Vec<String>,
 }
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {
+    /// Live keyed widgets above the editor.
+    extension_widgets_above: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    /// Live keyed widgets below the editor.
+    extension_widgets_below: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
     /// The runtime the current session is read from.
     runtime_host: Rc<AgentSessionRuntime>,
     /// How the mode starts.
@@ -92,9 +111,13 @@ pub struct InteractiveMode {
     /// The spacer and text of the latest status line.
     last_status: RefCell<Option<StatusLine>>,
     /// Tool rows waiting for their results, by call id in call order.
-    pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
+    pending_tools: RefCell<replay::PendingTools>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// The shell row that is still producing output, when one is attached.
+    active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
+    /// Shell rows shown in the pending area until the next ordinary submission.
+    pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Messages typed while the session compacts, in the order they were typed.
@@ -103,6 +126,10 @@ pub struct InteractiveMode {
     progress: progress::Retained,
     /// The session subscription that delivers agent and session events.
     unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
+    /// The working row and its extension-controlled presentation.
+    working: working::WorkingState,
+    /// The assistant row of the response streaming now.
+    streaming: RefCell<Option<StreamingMessage>>,
 }
 
 impl InteractiveMode {
@@ -144,6 +171,8 @@ impl InteractiveMode {
         themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
         let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new(Self {
+            extension_widgets_above: maestro_app::Live::new(),
+            extension_widgets_below: maestro_app::Live::new(),
             runtime_host,
             options,
             ui,
@@ -167,10 +196,14 @@ impl InteractiveMode {
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            active_shell: RefCell::default(),
+            pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
             compaction_queued_messages: RefCell::default(),
             progress: progress::Retained::default(),
             unsubscribe: RefCell::default(),
+            working: working::WorkingState::default(),
+            streaming: RefCell::default(),
         }))
     }
 
@@ -188,6 +221,7 @@ impl InteractiveMode {
             return Ok(());
         }
         self.build_header()?;
+        self.render_widgets();
         for child in [
             &self.header_container,
             &self.chat_container,
