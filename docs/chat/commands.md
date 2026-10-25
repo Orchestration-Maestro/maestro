@@ -311,11 +311,12 @@ Choosing a value applies it at once and saves it through the settings owner:
 session policies go to the session, which saves them, and the rest are written to
 the settings file. Image visibility and width, padding, completion height,
 thinking, the hardware cursor and the shrink policy update the retained rows,
-editor and terminal straight away, and skill command admission rebuilds the
-completion provider. Thinking visibility also rebuilds the transcript from the
-session's messages. Themes publish immediately; a preview never saves, a commit
-saves the requested name, and a theme that fails to load falls back to `dark`
-with:
+editor and terminal straight away. Turning skill commands on or off saves the
+choice and then installs a rebuilt completion provider on the editor, so the next
+completion there offers `/skill:` commands or leaves them out. Thinking visibility
+also rebuilds the transcript from the session's messages. Themes publish
+immediately; a preview never saves, a commit saves the requested name, and a
+theme that fails to load falls back to `dark` with:
 
 ```text
 Failed to load theme "<name>": <error>
@@ -324,8 +325,9 @@ Fell back to dark theme.
 
 Every theme choice keeps the supplied watch effects, so a selected custom theme
 is watched again after a preview or a commit. Escape closes the panel, restores
-the editor with its focus and requests a frame. Forwarding to an installed
-custom editor belongs to that editor's own work.
+the editor with its focus and requests a frame. Padding and completion height
+reach the default editor only; an installed custom editor does not receive them
+yet.
 
 ## Removing stored credentials
 

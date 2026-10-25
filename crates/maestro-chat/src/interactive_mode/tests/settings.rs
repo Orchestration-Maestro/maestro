@@ -7,7 +7,6 @@ use crate::SettingsSelectorComponent;
 use maestro_app::presentation_data::footer_data_provider::FooterOperations;
 use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting, strip_ansi};
 use maestro_theme::{ThemeColor, ThemeDirectories};
-use maestro_tui::autocomplete::{CompletionOptions, CursorPosition};
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{Component, SettingsList, TerminalCapabilities};
 use std::path::Path;
@@ -747,31 +746,40 @@ fn settings_skill_commands_refresh_registered_autocomplete() {
             }
             .build(directory);
             start(&world).await;
-            let list = open(&world);
-            choose(&list, "skill", 0);
             let session = world.host.session();
+            let commands = session.extension_runner().get_registered_commands();
+            // Built while skills are enabled, so it keeps offering the skill once disabled.
+            let stale = world.mode.create_base_autocomplete_provider(&commands);
+            choose(&open(&world), "skill", 0);
+            press(&open_list(&world), "\x1b");
+            assert!(panel(&world).is_none(), "the editor is shown again");
             assert!(
                 !session
                     .settings_manager()
                     .borrow()
                     .get_enable_skill_commands()
             );
-            assert!(
-                !skill_candidates(&world)
-                    .await
-                    .contains(&"skill:helper".to_owned())
+            assert_eq!(completed(&world).await, "/skill:hel");
+            world.mode.editor.set_autocomplete_provider(stale);
+            assert_eq!(
+                completed(&world).await,
+                "/skill:helper ",
+                "a provider kept from before the change still completes the skill"
             );
-            choose(&list, "skill", 0);
+            world.mode.setup_autocomplete_provider();
+            assert_eq!(completed(&world).await, "/skill:hel");
+            choose(&open(&world), "skill", 0);
+            press(&open_list(&world), "\x1b");
+            assert!(panel(&world).is_none(), "the editor is shown again");
             assert!(
                 session
                     .settings_manager()
                     .borrow()
                     .get_enable_skill_commands()
             );
-            assert!(
-                skill_candidates(&world)
-                    .await
-                    .contains(&"skill:helper".to_owned()),
+            assert_eq!(
+                completed(&world).await,
+                "/skill:helper ",
                 "the rebuilt provider offers the loaded skill command again"
             );
             drop(world.runtime.settle());
@@ -779,38 +787,18 @@ fn settings_skill_commands_refresh_registered_autocomplete() {
     );
 }
 
-/// The command candidates the base provider offers for `/skill:helper`, which the mode
-/// installs on its editor.
-async fn skill_candidates(world: &World) -> Vec<String> {
-    let commands = world
-        .host
-        .session()
-        .extension_runner()
-        .get_registered_commands();
-    let provider = world.mode.create_base_autocomplete_provider(&commands);
-    let line = "/skill:helper";
-    let signal = maestro_tui::Cancellation::new();
-    let suggestions = provider
-        .get_suggestions(
-            &[line.to_owned()],
-            CursorPosition {
-                line: 0,
-                col: line.len(),
-            },
-            CompletionOptions {
-                signal: &signal,
-                force: None,
-            },
-        )
-        .await
-        .unwrap();
-    suggestions.map_or_else(Vec::new, |suggestions| {
-        suggestions
-            .items
-            .into_iter()
-            .map(|item| item.value)
-            .collect()
-    })
+/// The retained editor's text after it holds `/skill:hel` and the terminal sends Tab twice:
+/// the first Tab opens the completion menu the installed provider answers, the second
+/// confirms its selection.
+async fn completed(world: &World) -> String {
+    world.mode.editor.set_text("/skill:hel");
+    for _ in 0..2 {
+        world.terminal.send_input("\t");
+        for request in world.runtime.take_futures() {
+            request.await.unwrap();
+        }
+    }
+    world.mode.editor.get_text()
 }
 
 /// A loaded skill named `name`.
