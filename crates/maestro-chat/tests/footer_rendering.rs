@@ -150,6 +150,54 @@ fn select_first_answer(world: &World) {
     manager.branch(&first).expect("an indexed answer");
 }
 
+/// A saved answer whose usage reports the categories 7/3/2/1 at cost 1, with `total` present
+/// or omitted.
+fn saved_answer(total: Option<f64>) -> Value {
+    let mut usage = json!({
+        "input": 7.0,
+        "output": 3.0,
+        "cacheRead": 2.0,
+        "cacheWrite": 1.0,
+        "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0, "total": 1.0},
+    });
+    if let Some(total) = total {
+        usage["totalTokens"] = json!(total);
+    }
+    json!({
+        "role": "assistant",
+        "content": [],
+        "api": "openai-completions",
+        "provider": "test",
+        "model": "test-model",
+        "usage": usage,
+        "stopReason": "stop",
+        "timestamp": 0.0,
+    })
+}
+
+#[test]
+fn footer_renders_history_without_total_tokens() {
+    for (total, context) in [(None, "13.0%/100 (auto)"), (Some(97.0), "97.0%/100 (auto)")] {
+        let answer = saved_answer(total);
+        let world = World::new("/tmp/project", None);
+        world.set_model("test-model", "test", false, 100.0);
+        world.append_message(&answer);
+        world.push_answer(&answer);
+        let lines = world
+            .footer()
+            .try_render(120)
+            .expect("the footer paints a saved history");
+        let text = lines
+            .iter()
+            .map(|line| plain(line))
+            .collect::<Vec<_>>()
+            .join("\n");
+        for part in ["↑7", "↓3", "R2", "W1", "$1.000", context] {
+            assert!(text.contains(part), "{part} is missing from {text}");
+        }
+    }
+}
+
 #[test]
 fn footer_usage_fields_and_cost_rounding_remain_distinct() {
     replay("footer_usage_fields_and_cost_rounding_remain_distinct");

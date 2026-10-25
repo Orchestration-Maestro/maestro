@@ -17,6 +17,7 @@ use crate::{
     SharedAssistantMessage, StopReason, TextContent, ThinkingContent, Tool, ToolCall,
     calculate_cost, parsed_arguments,
 };
+use maestro_request::presence::Presence;
 
 /// Text of a redacted reasoning block.
 const REDACTED_TEXT: &str = "[Reasoning redacted]";
@@ -129,7 +130,8 @@ impl<'a> Reducer<'a> {
     /// Recompute the token total and the costs of the message.
     fn total_usage(&self, message: &mut AssistantMessage) {
         let usage = &mut message.usage;
-        usage.total_tokens = usage.input + usage.output + usage.cache_read + usage.cache_write;
+        usage.total_tokens =
+            Presence::Present(usage.input + usage.output + usage.cache_read + usage.cache_write);
         calculate_cost(&self.model, usage);
     }
 

@@ -15,6 +15,7 @@ use crate::{
     AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject, Model, SharedAssistantMessage,
     StopReason, TextContent, ThinkingContent, ToolCall, Usage, calculate_cost,
 };
+use maestro_request::presence::Presence;
 
 /// The open item and the block position captured when it started.
 enum Current {
@@ -414,7 +415,7 @@ impl<'a> Reducer<'a> {
             usage.output = count(reported, "output_tokens")?;
             usage.cache_read = cached;
             usage.cache_write = 0.0;
-            usage.total_tokens = count(reported, "total_tokens")?;
+            usage.total_tokens = Presence::Present(count(reported, "total_tokens")?);
         }
         calculate_cost(self.model, &mut usage);
         self.change(|message| message.usage = usage.clone());

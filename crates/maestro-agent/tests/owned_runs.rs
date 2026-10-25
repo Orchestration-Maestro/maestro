@@ -737,7 +737,10 @@ fn assert_failed_state(agent: &Agent) {
     assert_eq!(last.stop_reason, StopReason::Error);
     assert_eq!(last.error_message.as_deref(), Some("original"));
     assert_eq!(last.model, "unknown");
-    assert_eq!(last.usage.total_tokens.to_bits(), 0.0_f64.to_bits());
+    assert_eq!(
+        last.usage.total_tokens.present().unwrap().to_bits(),
+        0.0_f64.to_bits()
+    );
     assert!(state.streaming_message().is_none());
     assert!(state.pending_tool_calls().is_empty());
 }

@@ -94,7 +94,7 @@ mod tests {
         );
         number(message.usage.input, 3.0);
         number(message.usage.output, 2.0);
-        number(message.usage.total_tokens, 5.0);
+        number(message.usage.total_tokens.present().copied().unwrap(), 5.0);
         assert_eq!(registration.state.call_count(), 1);
         registration.unregister();
     }
@@ -207,7 +207,7 @@ mod tests {
             assert_eq!(message.content.len(), 1);
             assert_eq!(message.stop_reason, StopReason::Stop);
             assert!(message.timestamp > 0.0);
-            number(message.usage.total_tokens, 0.0);
+            number(message.usage.total_tokens.present().copied().unwrap(), 0.0);
         }
         assert!(
             faux_assistant_message(Vec::new(), FauxAssistantMessageOptions::default())
@@ -412,7 +412,7 @@ mod tests {
             Some("No more faux responses queued")
         );
         number(result.usage.cache_write, 2.0);
-        number(result.usage.total_tokens, 2.0);
+        number(result.usage.total_tokens.present().copied().unwrap(), 2.0);
         assert_eq!(registration.state.call_count(), 3);
         assert_eq!(registration.get_pending_response_count(), 0);
         let result = invoke(&registration, context("hi"), Some(session("exhaust", None)));
@@ -547,7 +547,7 @@ mod tests {
             number(usage.cache_read, read);
             number(usage.cache_write, prompt - read);
             number(usage.input, 0.0);
-            number(usage.total_tokens, prompt + 2.0);
+            number(usage.total_tokens.present().copied().unwrap(), prompt + 2.0);
             number(usage.cost.total, 0.0);
         }
         registration.unregister();
@@ -1094,7 +1094,7 @@ mod tests {
             number(usage.cache_read, read);
             number(usage.cache_write, write);
             number(usage.output, 2.0);
-            number(usage.total_tokens, 5.0);
+            number(usage.total_tokens.present().copied().unwrap(), 5.0);
         }
         registration.unregister();
     }
@@ -1415,7 +1415,7 @@ mod tests {
         assert_eq!(message.stop_reason, StopReason::Error);
         assert_eq!(message.error_message.as_deref(), Some("boom"));
         assert!(message.content.is_empty());
-        number(message.usage.total_tokens, 0.0);
+        number(message.usage.total_tokens.present().copied().unwrap(), 0.0);
         registration.unregister();
     }
 
@@ -1626,7 +1626,7 @@ mod tests {
         let usage = invoke(&registration, context, None).usage;
         number(usage.input, 58.0);
         number(usage.output, 10.0);
-        number(usage.total_tokens, 68.0);
+        number(usage.total_tokens.present().copied().unwrap(), 68.0);
         assert_eq!(
             usage.cost,
             UsageCost {
@@ -1643,7 +1643,15 @@ mod tests {
             messages: vec![],
             tools: Some(vec![]),
         };
-        number(invoke(&registration, empty, None).usage.total_tokens, 0.0);
+        number(
+            invoke(&registration, empty, None)
+                .usage
+                .total_tokens
+                .present()
+                .copied()
+                .unwrap(),
+            0.0,
+        );
         registration.unregister();
     }
 
@@ -1922,7 +1930,7 @@ mod tests {
             AssistantMessageEvent::Error { error, .. } => {
                 let error = error.read().unwrap();
                 assert_eq!(error.error_message.as_deref(), Some("hook failed"));
-                number(error.usage.total_tokens, 0.0);
+                number(error.usage.total_tokens.present().copied().unwrap(), 0.0);
             }
             _ => unreachable!(),
         }

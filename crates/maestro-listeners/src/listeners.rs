@@ -103,6 +103,18 @@ impl<P: Deref> Listeners<P> {
         removed
     }
 
+    /// Clones the registered handles in registration order.
+    ///
+    /// The returned handles retain their values independently of later registration
+    /// edits or release of the collection. Payloads are not cloned separately.
+    pub fn snapshot(&mut self) -> Vec<P>
+    where
+        P: Clone,
+    {
+        let mut cursor = self.cursor();
+        std::iter::from_fn(|| self.next_from(&mut cursor).cloned()).collect()
+    }
+
     /// Starts a traversal at the first registration.
     #[must_use]
     pub fn cursor(&mut self) -> ListenerCursor {

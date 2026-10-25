@@ -382,4 +382,4 @@ fn code_merge_end(source: &Segmented, consumed: usize) -> usize {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

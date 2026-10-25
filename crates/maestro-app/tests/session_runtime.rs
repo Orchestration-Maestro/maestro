@@ -169,6 +169,110 @@ fn custom_types(session: &maestro_app::AgentSession<Local>) -> Vec<Value> {
 }
 
 #[test]
+fn suspended_rebind_keeps_its_continuation_on_the_rebound_session() {
+    on_task_set(|_| async {
+        let (_h, runtime, _recorded) = runtime_for("suspended-rebind", Vec::new()).await;
+        let (release, resume) = tokio::sync::oneshot::channel::<()>();
+        let resume = Rc::new(RefCell::new(Some(resume)));
+        let target = Rc::new(RefCell::new(None));
+        let rebound = Rc::clone(&target);
+        runtime.set_rebind_session(Some(Rc::new(move |session| {
+            let Some(resume) = resume.borrow_mut().take() else {
+                return Box::pin(std::future::ready(Ok(())));
+            };
+            *rebound.borrow_mut() = Some(session);
+            Box::pin(async move {
+                resume.await.unwrap();
+                Ok(())
+            })
+        })));
+        let options = NewSessionCommandOptions {
+            with_session: Some(Rc::new(|context| {
+                Box::pin(async move { context.send_message(probe_message(), None).await })
+            })),
+            ..NewSessionCommandOptions::default()
+        };
+        let mut operation = std::pin::pin!(runtime.new_session(options));
+        assert!(
+            std::future::Future::poll(
+                operation.as_mut(),
+                &mut std::task::Context::from_waker(std::task::Waker::noop()),
+            )
+            .is_pending()
+        );
+        let target = target.borrow().as_ref().cloned().unwrap();
+        runtime
+            .new_session(NewSessionCommandOptions::default())
+            .await
+            .unwrap();
+        let current = runtime.session();
+        assert!(!Rc::ptr_eq(&target, &current));
+        release.send(()).unwrap();
+        operation.await.unwrap();
+        assert_eq!(custom_types(&target), ["probe"]);
+        assert!(custom_types(&current).is_empty());
+        assert!(Rc::ptr_eq(&current, &runtime.session()));
+    });
+}
+
+#[test]
+fn suspended_setup_keeps_reload_and_continuation_on_the_created_session() {
+    on_task_set(|_| async {
+        let (_h, runtime, _recorded) = runtime_for("suspended-setup", Vec::new()).await;
+        let (release, resume) = tokio::sync::oneshot::channel::<()>();
+        let resume = Rc::new(RefCell::new(Some(resume)));
+        let options = NewSessionCommandOptions {
+            setup: Some(Rc::new(move |manager| {
+                let resume = resume.borrow_mut().take().unwrap();
+                Box::pin(async move {
+                    resume.await.unwrap();
+                    manager
+                        .borrow_mut()
+                        .append_message(json!({
+                            "role": "user", "content": "setup history", "timestamp": 0
+                        }))
+                        .unwrap();
+                    Ok(())
+                })
+            })),
+            with_session: Some(Rc::new(|context| {
+                Box::pin(async move { context.send_message(probe_message(), None).await })
+            })),
+            ..NewSessionCommandOptions::default()
+        };
+        let mut operation = std::pin::pin!(runtime.new_session(options));
+        assert!(
+            std::future::Future::poll(
+                operation.as_mut(),
+                &mut std::task::Context::from_waker(std::task::Waker::noop()),
+            )
+            .is_pending()
+        );
+        let target = runtime.session();
+        assert!(target.messages().read().unwrap().is_empty());
+        runtime
+            .new_session(NewSessionCommandOptions::default())
+            .await
+            .unwrap();
+        let current = runtime.session();
+        assert!(!Rc::ptr_eq(&target, &current));
+        release.send(()).unwrap();
+        operation.await.unwrap();
+        assert_eq!(custom_types(&target), ["probe"]);
+        let messages = target.messages();
+        let messages = messages.read().unwrap();
+        assert_eq!(messages.len(), 2);
+        assert_eq!(
+            serde_json::to_value(&messages[0]).unwrap()["content"],
+            "setup history"
+        );
+        assert!(current.messages().read().unwrap().is_empty());
+        assert!(custom_types(&current).is_empty());
+        assert!(Rc::ptr_eq(&current, &runtime.session()));
+    });
+}
+
+#[test]
 fn applies_setup_entries_to_the_new_session() {
     let expected = expected("runtime_new_session_setup_applies_history");
     on_task_set(|_| async {
