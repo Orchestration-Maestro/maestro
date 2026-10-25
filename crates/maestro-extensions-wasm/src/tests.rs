@@ -73,6 +73,7 @@ mod send_user_message_example;
 mod session_actions;
 mod session_corpus;
 mod session_events;
+mod session_name_example;
 mod session_reader;
 mod session_records;
 mod session_summary;

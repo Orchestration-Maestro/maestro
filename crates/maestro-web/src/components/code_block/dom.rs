@@ -89,8 +89,8 @@ impl Listing {
     ) -> Result<(Element, Self), AttachmentHostError> {
         let built = browser::build(&view.document, prepared)?;
         let i18n = Rc::new(RefCell::new(Rc::clone(&view.i18n)));
-        let copy =
-            copy_button::create(&view.document, &i18n).map_err(|error| host_error(&error))?;
+        let copy = copy_button::create(&view.document, &i18n, copy_button::FEEDBACK_MS, None)
+            .map_err(|error| host_error(&error))?;
         for (name, value) in [
             ("text", prepared.text.as_str()),
             ("title", title),

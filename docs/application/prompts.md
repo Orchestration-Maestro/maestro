@@ -95,9 +95,10 @@ under the command as given. A configured command prefix goes on its own line bef
 the command that runs. A configured shell path runs it unless the options supply
 the shell operations. Progress chunks reach the caller in arrival order.
 `abort_bash` stops the running command, which is then recorded as cancelled without
-an exit status. `is_bash_running` is true while a command runs. Once started, a
-command belongs to the session: dropping the returned future leaves it running and
-its result is still recorded.
+an exit status. `is_bash_running` is true while a command runs. Calling
+`execute_bash` starts the command and installs its cancellation signal before the
+returned future is polled. The command belongs to the session: dropping even a
+never-polled result future leaves it running and its result is still recorded.
 
 `record_bash_result` records a result. While the agent is idle the record is
 appended to the history and the session at once. While a response streams it waits

@@ -62,14 +62,15 @@ own result or error. Dropping the pending operation is the whole cancellation.
 ## Rendering
 
 The call line shows `ls`, the listed path (`.` when absent, null or empty, a leading `~` for
-the home directory or a path below it, `[invalid arg]` when it is not a string) and, when the arguments carry a
-`limit`, ` (limit <value>)`, with a present `null` shown as `null`. The result shows the
-text trimmed of leading and trailing whitespace, the first 20 lines unless the row is
-expanded, the count of hidden lines with the live expand key, and a warning
-`[Truncated: <n> entries limit, <size> limit]` that names the entry limit when the details
-carry a nonzero one and the byte limit, formatted as `<size>` from the record's byte
-budget (50.0KB for a normal listing), when their truncation record says it cut. Only the
-result options decide expansion. Both renderers reuse the previous `Text` component of
+the home directory or a path below it unless that home is empty or `/`, `[invalid arg]`
+when it is not a string) and, when the arguments carry a `limit`, ` (limit <value>)`, with
+a present `null` shown as `null`. The result shows the text trimmed of leading and
+trailing whitespace, the first 20 lines unless the row is expanded, the count of
+hidden lines with the live expand key, and a warning `[Truncated: <n> entries limit,
+<size> limit]` that names the entry limit when the details carry a nonzero one and the
+byte limit, formatted as `<size>` from the record's byte budget (50.0KB for a normal
+listing), when their truncation record says it cut. Only the result options decide
+expansion. Both renderers reuse the previous `Text` component of
 the row and leave it unchanged when a theme color is missing.
 
 ## Search programs

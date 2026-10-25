@@ -3951,6 +3951,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-detection",
  "maestro-ipc",
+ "maestro-json",
  "maestro-path",
  "maestro-process",
  "maestro-protocol",

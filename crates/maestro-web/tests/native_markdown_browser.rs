@@ -1,7 +1,7 @@
 //! Markdown mounted as native page content through its public component.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    call, computed, container, document, host, page_module, rgb, view,
+    call, computed, container, document, host, page_module, rgb, selection, view,
 };
 use crate::markdown_support::{
     BlockRow, ContextRow, rows,
@@ -82,14 +82,6 @@ impl Fixture {
     fn root(&self) -> Element {
         self.shown.root().cloned().unwrap().unchecked_into()
     }
-}
-/// The selected text and whether `root` holds the selection.
-async fn selection(page: &JsValue, root: &Element) -> (String, bool) {
-    let pair = js_sys::Array::from(&call(page, "selection", &js_sys::Array::of1(root)).await);
-    (
-        pair.get(0).as_string().unwrap(),
-        pair.get(1).as_bool().unwrap(),
-    )
 }
 /// Select every child of `node`, returning the selected text.
 async fn select(page: &JsValue, node: &Element) -> String {
