@@ -75,11 +75,16 @@ impl InteractiveMode {
         drop(self.working.loading_animation.replace(Some(loader)));
     }
 
-    /// Stops and releases the working row, then empties the status rows.
-    pub(super) fn stop_working_loader(&self) {
+    /// Stops and releases the working row without changing the status rows.
+    pub(super) fn release_working_loader(&self) {
         if let Some(loader) = self.working.loading_animation.take() {
             loader.stop();
         }
+    }
+
+    /// Stops and releases the working row, then empties the status rows.
+    pub(super) fn stop_working_loader(&self) {
+        self.release_working_loader();
         self.status_container.clear();
     }
 

@@ -38,6 +38,8 @@ struct State {
     hide_error: Option<io::ErrorKind>,
     /// Controlled failure after recording terminal stop.
     stop_error: Option<io::ErrorKind>,
+    /// Controlled failure for progress writes.
+    progress_error: Option<io::ErrorKind>,
     /// Whether a drain completes at once, shared with the drains it starts.
     drain_open: Rc<Cell<bool>>,
     /// Observer of every recorded byte string.
@@ -67,6 +69,7 @@ impl RecordingTerminal {
                 tap: None,
                 hide_error: None,
                 stop_error: None,
+                progress_error: None,
                 drain_open: Rc::new(Cell::new(true)),
             })),
         }
@@ -102,6 +105,11 @@ impl RecordingTerminal {
     /// Makes terminal stop fail after recording its occurrence.
     pub fn set_stop_error(&self, kind: Option<io::ErrorKind>) {
         self.state.borrow_mut().stop_error = kind;
+    }
+
+    /// Makes progress writes fail before writing, or restores success.
+    pub fn set_progress_error(&self, kind: Option<io::ErrorKind>) {
+        self.state.borrow_mut().progress_error = kind;
     }
 
     /// Makes a drain wait until [`release_drain`](Self::release_drain).
@@ -289,6 +297,9 @@ impl Terminal for RecordingTerminal {
     }
 
     fn set_progress(&mut self, active: bool) -> io::Result<()> {
+        if let Some(kind) = self.state.borrow().progress_error {
+            return Err(io::Error::new(kind, "progress failure"));
+        }
         self.emulate(if active {
             "\x1b]9;4;3\x07"
         } else {

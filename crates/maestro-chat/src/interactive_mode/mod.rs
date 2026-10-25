@@ -23,6 +23,7 @@ mod debug;
 mod events;
 mod info;
 mod key_display;
+mod lifecycle;
 mod models;
 mod notices;
 mod queues;
