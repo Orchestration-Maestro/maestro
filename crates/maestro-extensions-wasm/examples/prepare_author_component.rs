@@ -19,15 +19,17 @@ fn main() -> Result<(), String> {
     let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
     build::compile(&context).map_err(|error| error.to_string())?;
     let location = build::component("module_location_component", "MAESTRO_LOCATION_COMPONENT")?;
+    let hooks = build::component("hook_component", "MAESTRO_HOOK_COMPONENT")?;
     if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
         std::fs::write(
             environment,
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCATION_COMPONENT={}\n",
+                 MAESTRO_LOCATION_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\n",
                 path.display(),
                 context.display(),
-                location.display()
+                location.display(),
+                hooks.display()
             ),
         )
         .map_err(|error| error.to_string())?;

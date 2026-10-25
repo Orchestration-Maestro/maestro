@@ -31,6 +31,11 @@ status, working-row, indicator, hidden-thinking-label, widget and title requests
 without choosing presentation defaults. Credential commands belong to the supplied
 context's model catalog, not the component factory.
 
+When the component's factory returns an error, loading fails with that message as
+written, so `load_extensions` reports `Failed to load extension: <message>`, and
+the instance is torn down. A trap during initialization is a component fault and
+reads `component fault <path>: <cause>`.
+
 Component faults are retained for later calls on that instance. Other instances
 keep their own admission and fault state. Final resource destruction runs through
 the Store's existing lifecycle, after admitted work and retained consumers finish.

@@ -1,10 +1,10 @@
 //! Each loaded component instance reads the location of the artifact it was loaded from.
 #![cfg(test)]
+use super::components::{loader, local, place};
 use maestro_extensions::{
-    ExtensionRunner, LoadExtensionsResult, Local, ModuleLoader, ResourcesDiscoverReason,
-    create_event_bus_for, load_extensions, runner::ResourcePath, types::FlagValue,
+    ExtensionRunner, LoadExtensionsResult, Local, ResourcesDiscoverReason, create_event_bus_for,
+    load_extensions, runner::ResourcePath, types::FlagValue,
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use maestro_test_directory::Scratch;
 use std::{
     collections::BTreeMap,
@@ -19,22 +19,13 @@ const LOCATION: &str = "MAESTRO_EXTENSION_PATH";
 /// Variable through which the test setup supplies the built component.
 const COMPONENT: &str = "MAESTRO_LOCATION_COMPONENT";
 
-/// Runs a test body on the local task set the artifact factory requires.
-fn local(test: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, test);
-}
-
 /// Copies the built component into the nested directories below `root` as `index.wasm`.
 fn install(root: &Path, directories: &[&str]) -> PathBuf {
-    let directory = directories
+    let artifact = directories
         .iter()
-        .fold(root.to_owned(), |path, name| path.join(name));
-    std::fs::create_dir_all(&directory).unwrap();
-    let artifact = directory.join("index.wasm");
-    std::fs::copy(std::env::var_os(COMPONENT).unwrap(), &artifact).unwrap();
+        .fold(root.to_owned(), |path, name| path.join(name))
+        .join("index.wasm");
+    place(COMPONENT, &artifact);
     artifact
 }
 
@@ -45,11 +36,6 @@ fn location(path: &Path) -> FlagValue {
 
 /// Loads each path through the artifact factory, as an application's module loader does.
 async fn load(paths: &[PathBuf]) -> LoadExtensionsResult<Local> {
-    let loader: ModuleLoader<Local> = Rc::new(|path: &str| {
-        Box::pin(std::future::ready(Ok(Some(artifact_factory(
-            path.to_owned(),
-        )))))
-    });
     let bus = create_event_bus_for::<Local>(
         Rc::new(|_| panic!("no tails")),
         Rc::new(|_| panic!("no errors")),
@@ -58,7 +44,7 @@ async fn load(paths: &[PathBuf]) -> LoadExtensionsResult<Local> {
         .iter()
         .map(|path| path.to_str().unwrap().to_owned())
         .collect();
-    let result = load_extensions(paths, "/unrelated/work", &bus, &loader)
+    let result = load_extensions(paths, "/unrelated/work", &bus, &loader())
         .await
         .unwrap();
     let errors: Vec<_> = result.errors.iter().map(|error| &error.error).collect();
