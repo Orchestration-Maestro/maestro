@@ -823,6 +823,33 @@ fn selects_routed_attribution_before_cloudflare_matches() {
     ]);
 }
 
+#[test]
+fn caller_headers_win_after_credential_and_attribution_headers() {
+    check_attribution_cases(&["three_layer_precedence", "provider_and_request_overrides"]);
+}
+
+#[test]
+fn cloudflare_user_agent_respects_credential_and_caller_precedence() {
+    check_attribution_cases(&[
+        "cloudflare_credential_precedence",
+        "cloudflare_caller_precedence",
+    ]);
+}
+
+#[test]
+fn keeps_header_names_distinct_at_application_merge() {
+    check_attribution_cases(&["application_header_keys_are_exact"]);
+}
+
+#[test]
+fn preserves_absent_and_explicit_empty_request_headers() {
+    check_attribution_cases(&[
+        "all_maps_absent",
+        "empty_credential_map",
+        "empty_request_map",
+    ]);
+}
+
 /// An extension that replaces each payload with itself marked `injected` and records the
 /// payload and response events into `seen`.
 fn hooks(seen: Rc<RefCell<Vec<String>>>) -> ExtensionFactory<Local> {
