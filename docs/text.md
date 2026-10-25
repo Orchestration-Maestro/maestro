@@ -4,14 +4,24 @@
 shared text operations and a per-stream decoder; each caller keeps its own trimming, any-or-all semantics,
 stable sorting and comparator lifetime.
 
+- **Terminal controls.** `terminal::strip_ansi` removes matches of one cached terminal
+  escape expression; `terminal::sanitize_binary_output` drops C0 controls except TAB,
+  LF and CR, plus U+FFF9 to U+FFFB. Tools and opt-in Markdown content emission share
+  these functions. `terminal::ansi_regex` exposes the same compiled grammar for
+  streamed tool-output boundary detection.
 - **Streaming UTF-8.** `Utf8Stream` decodes complete scalars, replaces invalid prefixes
   and holds an incomplete suffix until `push` or `finish`. It retains BOMs;
   terminal input, tool output and message framing keep their own BOM policy.
 - **UTF-8 decoding.** `decode_utf8` removes one initial byte-order mark and uses
   lossy UTF-8 decoding for invalid bytes. Attachments and HTTP response readers
   share this decoder.
+- **Owned UTF-8 decoding.** `lossy_string` takes owned bytes and keeps their buffer
+  when they are valid; otherwise it decodes them lossily. It keeps a byte-order mark.
+  Process output and Office package entries share it.
 - **Environment flags.** `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
   `true` or `yes` without trimming; absent values are false. Tools and packages share it.
+  `is_offline_selected` returns a caller's offline selection, or reads `MAESTRO_OFFLINE`
+  through that rule when the selection is absent.
 - **Whitespace.** `WHITESPACE` lists the 25 scalars once: Unicode white space except
   U+0085, plus U+FEFF. `is_whitespace_scalar` tests membership. HTTP edge
   whitespace and JSON token whitespace are different rules and stay with their owners.

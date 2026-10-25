@@ -6,15 +6,6 @@ use maestro_web::browser::sandbox_value::BrowserSandboxValue;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
 use wasm_bindgen::{JsCast as _, prelude::*};
 
-#[wasm_bindgen(module = "/tests/sandbox_loading_support/native.js")]
-extern "C" {
-    /// Decode special native values from the recorded input.
-    fn decode(value: JsValue) -> JsValue;
-    /// Compare generated documents and execute their parser-restored programs.
-    pub fn observe_document(name: &str, html: &str, output: JsValue) -> js_sys::Promise;
-    /// Restore instrumentation and remove all test parents.
-    pub fn finish();
-}
 /// Exact checked-in oracle envelope; every field is consumed.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -45,6 +36,8 @@ pub struct DocumentCase {
 pub struct Provider {
     /// Native provider data including non-JSON values.
     pub data: JsValue,
+    /// Fixture namespace used by the native message observer.
+    pub fixture: Fixture,
     /// Self-contained function source.
     pub runtime: String,
     /// Reached provider failure phase.
@@ -62,7 +55,7 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Provider {
             .as_deref()
             == Some("execution-error")
         {
-            record_provider(message.0);
+            self.fixture.record_provider(&message.0);
             let result = respond(BrowserSandboxValue(
                 js_sys::JSON::parse("{\"bootstrapAcknowledged\":true}").unwrap(),
             ));
@@ -100,10 +93,11 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Provider {
         Ok(String::new())
     }
 }
-mod placement;
-pub use placement::{adapter, adapter_pack};
+pub(crate) mod placement;
+pub(crate) use placement::{adapter, adapter_pack};
 /// Materialize native provider values before preparation, preserving failure phases.
-pub fn document_cases() -> Vec<DocumentCase> {
+#[must_use]
+pub(crate) fn document_cases(fixture: &Fixture) -> Vec<DocumentCase> {
     let rows: Vec<Case> =
         serde_json::from_str(include_str!("../fixtures/sandbox_documents.json")).unwrap();
     assert_eq!(rows.len(), 54);
@@ -118,7 +112,9 @@ pub fn document_cases() -> Vec<DocumentCase> {
                     .flatten()
                     .map(|p| {
                         SharedHandle::new(Provider {
-                            data: decode(js_sys::JSON::parse(&p["data"].to_string()).unwrap()),
+                            fixture: fixture.clone(),
+                            data: fixture
+                                .decode(&js_sys::JSON::parse(&p["data"].to_string()).unwrap()),
                             runtime: p["runtime"].as_str().unwrap().into(),
                             failure: None,
                         })
@@ -127,6 +123,7 @@ pub fn document_cases() -> Vec<DocumentCase> {
                     .collect();
             if let Some(phase) = input["provider_failure"].as_str() {
                 providers.push(SharedHandle::new(Provider {
+                    fixture: fixture.clone(),
                     data: js_sys::Object::new().into(),
                     runtime: "function(){}".into(),
                     failure: Some(phase.into()),
@@ -151,21 +148,19 @@ pub fn document_cases() -> Vec<DocumentCase> {
         .collect()
 }
 /// Native callback for a simple self-contained runtime.
-pub fn provider(source: &str) -> SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>> {
+#[must_use]
+pub(crate) fn provider(
+    fixture: &Fixture,
+    source: &str,
+) -> SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>> {
     SharedHandle::new(Provider {
+        fixture: fixture.clone(),
         data: js_sys::Object::new().into(),
         runtime: source.into(),
         failure: None,
     })
 }
 
-#[wasm_bindgen(module = "/tests/sandbox_loading_support/native.js")]
-extern "C" {
-    /// Observe native registration synchronously around standalone runtime execution.
-    pub fn standalone(html: &str) -> js_sys::Promise;
-    /// Execute the wrapper with controlled ordered completion gates.
-    pub fn callbacks(html: &str, input: &str, expected: &str) -> js_sys::Promise;
-}
 /// Selected behavioral fixture with no discarded envelope fields.
 pub struct Observation {
     /// Complete input driving this observation.
@@ -174,7 +169,8 @@ pub struct Observation {
     pub output: serde_json::Value,
 }
 /// Select distinct callback or navigation inputs; names select, inputs drive, outputs assert.
-pub fn fixture_group(prefix: &str) -> Vec<Observation> {
+#[must_use]
+pub(crate) fn fixture_group(prefix: &str) -> Vec<Observation> {
     let rows: Vec<Case> =
         serde_json::from_str(include_str!("../fixtures/sandbox_documents.json")).unwrap();
     rows.into_iter()
@@ -186,35 +182,8 @@ pub fn fixture_group(prefix: &str) -> Vec<Observation> {
         .collect()
 }
 
-#[wasm_bindgen(module = "/tests/sandbox_loading_support/routes.js")]
-extern "C" {
-    /// Instrument native registrations and openers below the adapter.
-    pub fn begin();
-    /// Start waiting before the frame is mounted or signalled.
-    pub fn arm(kind: &str);
-    /// Await the exact producer completion message.
-    pub fn waited() -> js_sys::Promise;
-    /// Exercise native link clicks and assert routing after each completed load.
-    pub fn route_check(mode: &str) -> js_sys::Promise;
-    /// Post a controlled current-source message synchronously through native dispatch.
-    pub fn dispatch(kind: &str, source: &str);
-    /// Observe synchronous detach and prove closed native routes cannot deliver.
-    pub fn closed(expected: u32);
-    /// Return the authored load probe document.
-    pub fn content() -> String;
-    /// Build a URL bootstrap with a controlled handshake.
-    pub fn url(mode: &str) -> String;
-    /// Record the same consumer payload received through normal routing.
-    pub fn record(message: JsValue);
-    /// Retain the provider's observation independently of the consumer.
-    pub fn record_provider(message: JsValue);
-    /// Configure one controlled failure below the adapter.
-    pub fn fault(mode: &str);
-    /// Restore instrumentation after native cleanup.
-    pub fn end();
-}
 /// Consumer observing actual registered dispatch rather than adapter bookkeeping.
-pub struct Consumer;
+pub struct Consumer(pub Fixture);
 impl maestro_web::components::sandbox::runtime_message_router::MessageConsumer<BrowserSandboxValue>
     for Consumer
 {
@@ -222,22 +191,178 @@ impl maestro_web::components::sandbox::runtime_message_router::MessageConsumer<B
         &self,
         message: BrowserSandboxValue,
     ) -> maestro_app::BoxFuture<Result<(), DiagnosticErrorInfo>> {
-        record(message.0);
+        self.0.record(&message.0);
         Box::pin(async { Ok(()) })
     }
 }
 
-#[wasm_bindgen(module = "/tests/sandbox_loading_support/native.js")]
-extern "C" {
-    /// Dispatch native events through the injected navigation handler.
-    pub fn navigation(html: &str, input: &str, expected: &str) -> js_sys::Promise;
-}
-
-#[wasm_bindgen(module = "/tests/sandbox_loading_support/routes.js")]
-extern "C" {
-    /// Observe the mounted native validation document, or accepted recovered input.
-    pub fn validation_check(expected: &str, css: &str) -> js_sys::Promise;
-}
-
 /// Mounted program and effective-target transactions.
 pub mod programs;
+
+/// Native namespaces retained for one browser test transaction.
+#[derive(Clone)]
+pub struct Fixture {
+    /// Original packaged native namespace.
+    module0: crate::browser_fixture_support::FixtureModule,
+    /// Original packaged native namespace.
+    module1: crate::browser_fixture_support::FixtureModule,
+}
+impl Fixture {
+    /// Load each namespace before installing controlled host effects.
+    pub(crate) async fn load() -> Self {
+        Self {
+            module0: crate::browser_fixture_support::FixtureModule::load(&wasm_bindgen::link_to!(
+                module = "/tests/sandbox_loading_support/native.js"
+            ))
+            .await
+            .unwrap(),
+            module1: crate::browser_fixture_support::FixtureModule::load(&wasm_bindgen::link_to!(
+                module = "/tests/sandbox_loading_support/routes.js"
+            ))
+            .await
+            .unwrap(),
+        }
+    }
+    /// Decode special native values from the recorded input.
+    #[must_use]
+    pub(crate) fn decode(&self, value: &JsValue) -> JsValue {
+        self.module0
+            .call("decode", &js_sys::Array::of1(value))
+            .unwrap()
+    }
+    /// Compare generated documents and execute their parser-restored programs.
+    pub(crate) fn observe_document(
+        &self,
+        name: &str,
+        html: &str,
+        output: &JsValue,
+    ) -> js_sys::Promise {
+        self.module0
+            .call(
+                "observe_document",
+                &js_sys::Array::of3(&name.into(), &html.into(), output),
+            )
+            .unwrap()
+            .unchecked_into()
+    }
+    /// Restore instrumentation and remove all test parents.
+    pub(crate) fn finish(&self) {
+        self.module0.call("finish", &js_sys::Array::new()).unwrap();
+    }
+    /// Observe native registration synchronously around standalone runtime execution.
+    pub(crate) fn standalone(&self, html: &str) -> js_sys::Promise {
+        self.module0
+            .call("standalone", &js_sys::Array::of1(&html.into()))
+            .unwrap()
+            .unchecked_into()
+    }
+    /// Execute the wrapper with controlled ordered completion gates.
+    pub(crate) fn callbacks(&self, html: &str, input: &str, expected: &str) -> js_sys::Promise {
+        self.module0
+            .call(
+                "callbacks",
+                &js_sys::Array::of3(&html.into(), &input.into(), &expected.into()),
+            )
+            .unwrap()
+            .unchecked_into()
+    }
+    /// Instrument native registrations and openers below the adapter.
+    pub(crate) fn begin(&self) {
+        self.module1.call("begin", &js_sys::Array::new()).unwrap();
+    }
+    /// Start waiting before the frame is mounted or signalled.
+    pub(crate) fn arm(&self, kind: &str) {
+        self.module1
+            .call("arm", &js_sys::Array::of1(&kind.into()))
+            .unwrap();
+    }
+    /// Await the exact producer completion message.
+    pub(crate) fn waited(&self) -> js_sys::Promise {
+        self.module1
+            .call("waited", &js_sys::Array::new())
+            .unwrap()
+            .unchecked_into()
+    }
+    /// Exercise native link clicks and assert routing after each completed load.
+    pub(crate) fn route_check(&self, mode: &str) -> js_sys::Promise {
+        self.module1
+            .call("route_check", &js_sys::Array::of1(&mode.into()))
+            .unwrap()
+            .unchecked_into()
+    }
+    /// Post a controlled current-source message synchronously through native dispatch.
+    pub(crate) fn dispatch(&self, kind: &str, source: &str) {
+        self.module1
+            .call(
+                "dispatch",
+                &js_sys::Array::of2(&kind.into(), &source.into()),
+            )
+            .unwrap();
+    }
+    /// Observe synchronous detach and prove closed native routes cannot deliver.
+    pub(crate) fn closed(&self, expected: u32) {
+        self.module1
+            .call("closed", &js_sys::Array::of1(&expected.into()))
+            .unwrap();
+    }
+    /// Return the authored load probe document.
+    #[must_use]
+    pub(crate) fn content(&self) -> String {
+        self.module1
+            .call("content", &js_sys::Array::new())
+            .unwrap()
+            .as_string()
+            .unwrap()
+    }
+    /// Build a URL bootstrap with a controlled handshake.
+    #[must_use]
+    pub(crate) fn url(&self, mode: &str) -> String {
+        self.module1
+            .call("url", &js_sys::Array::of1(&mode.into()))
+            .unwrap()
+            .as_string()
+            .unwrap()
+    }
+    /// Record the same consumer payload received through normal routing.
+    pub(crate) fn record(&self, message: &JsValue) {
+        self.module1
+            .call("record", &js_sys::Array::of1(message))
+            .unwrap();
+    }
+    /// Retain the provider's observation independently of the consumer.
+    pub(crate) fn record_provider(&self, message: &JsValue) {
+        self.module1
+            .call("record_provider", &js_sys::Array::of1(message))
+            .unwrap();
+    }
+    /// Configure one controlled failure below the adapter.
+    pub(crate) fn fault(&self, mode: &str) {
+        self.module1
+            .call("fault", &js_sys::Array::of1(&mode.into()))
+            .unwrap();
+    }
+    /// Restore instrumentation after native cleanup.
+    pub(crate) fn end(&self) {
+        self.module1.call("end", &js_sys::Array::new()).unwrap();
+    }
+    /// Dispatch native events through the injected navigation handler.
+    pub(crate) fn navigation(&self, html: &str, input: &str, expected: &str) -> js_sys::Promise {
+        self.module0
+            .call(
+                "navigation",
+                &js_sys::Array::of3(&html.into(), &input.into(), &expected.into()),
+            )
+            .unwrap()
+            .unchecked_into()
+    }
+    /// Observe the mounted native validation document, or accepted recovered input.
+    pub(crate) fn validation_check(&self, expected: &str, css: &str) -> js_sys::Promise {
+        self.module1
+            .call(
+                "validation_check",
+                &js_sys::Array::of2(&expected.into(), &css.into()),
+            )
+            .unwrap()
+            .unchecked_into()
+    }
+}

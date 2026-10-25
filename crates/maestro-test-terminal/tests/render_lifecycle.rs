@@ -7,20 +7,10 @@ use maestro_tui::images::terminal_image::{ImageProtocol, TerminalCapabilities};
 use maestro_tui::tui::{ChildArray, ComponentHandle};
 use maestro_tui::{CURSOR_MARKER, Component, Container, TUI, TerminalImage};
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod checks;
-    pub mod components;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-}
-use support::checks::succeeds;
-use support::components::{Cached, Probe};
-use support::manual_runtime::{ManualRuntime, ms};
-use support::recording_terminal::RecordingTerminal;
+use crate::support::checks::succeeds;
+use crate::support::components::{Cached, Probe};
+use crate::support::manual_runtime::{ManualRuntime, ms};
+use crate::support::recording_terminal::RecordingTerminal;
 
 /// A writer over a recording terminal whose terminal supports `protocol` images.
 fn writer(protocol: Option<ImageProtocol>) -> (TUI, RecordingTerminal, ManualRuntime) {
@@ -221,12 +211,12 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
             writer.request_render(false);
         }
     });
-    runtime.advance_to(ms(100));
+    let _ = runtime.advance_to(ms(100));
     succeeds(tui.start());
-    runtime.run_due();
+    let _ = runtime.run_due();
     tui.request_render(false);
     tui.request_render(false);
-    runtime.advance_to(ms(115));
+    let _ = runtime.advance_to(ms(115));
     events
         .borrow_mut()
         .push(Event::Observed(115, probe.renders.get()));
@@ -244,12 +234,12 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
         }
         _ => {}
     }
-    runtime.run_due();
-    runtime.advance_to(ms(116));
+    let _ = runtime.run_due();
+    let _ = runtime.advance_to(ms(116));
     events
         .borrow_mut()
         .push(Event::Observed(116, probe.renders.get()));
-    runtime.advance_to(ms(132));
+    let _ = runtime.advance_to(ms(132));
     probe.clear_callbacks();
     let seen = events.take();
     (seen, runtime.pending())
@@ -470,4 +460,46 @@ fn assert_invalidation_while_rendering_reaches_later_siblings_in_the_same_frame(
         "the frame replaces the cached text: {drawn:?}"
     );
     trigger.clear_callbacks();
+}
+
+#[test]
+fn drain_future_releases_terminal_before_scheduled_work() {
+    use std::task::{Context, Waker};
+
+    let (tui, terminal, runtime) = writer(None);
+    let probe = Probe::shared(&["frame"]);
+    tui.add_child(probe.clone());
+    tui.start().unwrap();
+    runtime.settle().unwrap();
+    assert_eq!(probe.renders.get(), 1, "the first frame renders");
+    terminal.clear_writes();
+    terminal.hold_drain();
+    let mut drain = tui.terminal().borrow_mut().drain_input(None, None);
+    let mut context = Context::from_waker(Waker::noop());
+    assert!(
+        drain.as_mut().poll(&mut context).is_pending(),
+        "the shutdown drain waits for the terminal"
+    );
+    probe.set_lines(&["frame-2".to_owned()]);
+    tui.request_render(false);
+    runtime.settle().unwrap();
+    assert_eq!(
+        probe.renders.get(),
+        2,
+        "a scheduled frame renders while the drain is pending"
+    );
+    assert!(
+        terminal.writes().concat().contains("frame-2"),
+        "the frame reached the terminal the drain holds: {:?}",
+        terminal.writes()
+    );
+    assert!(
+        drain.as_mut().poll(&mut context).is_pending(),
+        "the frame rendered without releasing the drain"
+    );
+    terminal.release_drain();
+    assert!(
+        drain.as_mut().poll(&mut context).is_ready(),
+        "the drain completes once the terminal releases it"
+    );
 }

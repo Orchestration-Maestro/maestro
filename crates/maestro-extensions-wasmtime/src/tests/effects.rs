@@ -19,7 +19,7 @@ fn opaque_theme_releases_its_native_owner_after_the_final_capability() {
                 .unwrap(),
             );
             let original = Rc::downgrade(&theme);
-            let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let endpoint = pump
                 .registry()
                 .theme(maestro_extensions::LiveTheme::from_theme(theme))
@@ -43,7 +43,7 @@ fn tool_updates_decode_before_calling_the_original_observer() {
             observed.borrow_mut().push(partial);
         });
         let original = Rc::downgrade(&callback);
-        let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+        let (pump, admission) = Pump::new();
         let update = pump.registry().tool_update(callback).unwrap();
         let worker = std::thread::spawn(move || {
             assert!(update.update("not JSON".into()).is_err());
@@ -78,7 +78,7 @@ fn dropping_a_subscription_resource_does_not_unsubscribe_the_native_listener() {
             });
             let retained = bus.on(" exact ", listener.clone());
             let removed = bus.on(" exact ", listener);
-            let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let retained = pump.registry().subscription(retained).unwrap();
             let removed = pump.registry().subscription(removed).unwrap();
             let worker = std::thread::spawn(move || {
@@ -116,7 +116,7 @@ fn retained_emitter_uses_original_queue_and_returns_native_retirement_error() {
                     Ok(None)
                 }),
             );
-            let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let registry = pump.registry();
             let endpoint = owner.invoke_callback(|emitter| {
                 emitter.emit(" exact ", serde_json::json!(1));

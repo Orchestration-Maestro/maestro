@@ -173,6 +173,8 @@ pub struct ToolsManager {
     fetch: Fetch,
     /// Platform selecting assets and program names.
     host: Host,
+    /// A caller's offline selection, or the ambient flag when absent.
+    offline: Option<bool>,
 }
 
 impl ToolsManager {
@@ -183,7 +185,17 @@ impl ToolsManager {
             bin_dir,
             fetch: fetch.unwrap_or_else(default_fetch),
             host: NATIVE_HOST,
+            offline: None,
         }
+    }
+
+    /// Selects offline mode from the caller instead of the ambient environment.
+    ///
+    /// An absent selection keeps reading `MAESTRO_OFFLINE` when a download is considered.
+    #[must_use]
+    pub fn with_offline(mut self, offline: Option<bool>) -> Self {
+        self.offline = offline;
+        self
     }
 
     /// The program's path in the binary directory when it exists, else the first `PATH`
@@ -221,7 +233,7 @@ impl ToolsManager {
         mut output: Option<ToolsManagerOutput<'_>>,
     ) -> Option<String> {
         let name = tool.config().name;
-        if is_offline_mode_enabled() {
+        if self.offline_mode_enabled() {
             let line = format!("{name} not found. Offline mode enabled, skipping download.");
             say(&mut output, Tone::Yellow, &line);
             return None;
@@ -245,6 +257,11 @@ impl ToolsManager {
                 None
             }
         }
+    }
+
+    /// Whether this manager refuses to download a missing program.
+    fn offline_mode_enabled(&self) -> bool {
+        maestro_text::is_offline_selected(self.offline)
     }
 
     /// File name of the program on this platform.
@@ -370,11 +387,6 @@ async fn command_exists(name: &str) -> bool {
     .is_ok()
 }
 
-/// Whether `MAESTRO_OFFLINE` disables downloads.
-fn is_offline_mode_enabled() -> bool {
-    maestro_text::is_truthy_env_flag(std::env::var("MAESTRO_OFFLINE").ok().as_deref())
-}
-
 /// Invocation-owned archive directory whose removal is attempted when dropped.
 struct Staging {
     /// The directory.
@@ -473,13 +485,11 @@ fn locate(dir: &str, stem: &str, binary: &str) -> io::Result<PathBuf> {
 }
 
 /// The first regular file named `file_name` below `root`; each directory's entries are visited
-/// in byte order of their names and the last subdirectory found is searched first.
+/// in name order and the last subdirectory found is searched first.
 fn find_binary_recursively(root: &Path, file_name: &str) -> io::Result<Option<PathBuf>> {
     let mut stack = vec![root.to_owned()];
     while let Some(dir) = stack.pop() {
-        let mut entries = std::fs::read_dir(&dir)?.collect::<io::Result<Vec<_>>>()?;
-        entries.sort_by_key(std::fs::DirEntry::file_name);
-        for entry in entries {
+        for entry in maestro_listing::read_dir(&dir)? {
             let kind = entry.file_type()?;
             if kind.is_file() && entry.file_name() == file_name {
                 return Ok(Some(entry.path()));

@@ -167,9 +167,7 @@ impl Reducer {
             return Ok(());
         }
         let event = serde_json::from_value(value).map_err(|error| error.to_string())?;
-        let mut message = partial
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut message = crate::agent::write(partial);
         let output = self.process_proxy_event(event, &mut message, Arc::clone(partial))?;
         drop(message);
         if let Some(output) = output {
@@ -300,10 +298,7 @@ fn text_start(
     content_index: usize,
     partial: SharedAssistantMessage,
 ) -> Result<Event, String> {
-    let block = AssistantContent::Text(TextContent {
-        text: String::new(),
-        text_signature: None,
-    });
+    let block = AssistantContent::Text(TextContent::new(String::new()));
     replace(message, content_index, block)?;
     Ok(Event::TextStart {
         content_index,
@@ -400,7 +395,7 @@ fn tool_start(
     let block = AssistantContent::ToolCall(ToolCall {
         id,
         name,
-        arguments: JsonObject::new(),
+        arguments: JsonObject::new().into(),
         thought_signature: None,
     });
     replace(message, content_index, block)?;
@@ -420,7 +415,13 @@ fn tool_delta(
     let Some(AssistantContent::ToolCall(block)) = message.content.get_mut(content_index) else {
         return Err("Received toolcall_delta for non-toolCall content".into());
     };
-    block.arguments = parsed_arguments(arguments);
+    // A falsy reconstructed root falls back to an empty object.
+    let parsed = parsed_arguments(arguments);
+    block.arguments = if maestro_json::is_truthy(&parsed) {
+        parsed
+    } else {
+        JsonObject::new().into()
+    };
     Ok(Event::ToolcallDelta {
         content_index,
         delta,

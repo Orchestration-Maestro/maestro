@@ -77,7 +77,13 @@ impl Request {
             Self::SessionName(reply) => send(&reply, api.get_session_name()),
             Self::Label(id, label, reply) => send(&reply, api.set_label(id, label)),
             Self::ActiveTools(reply) => send(&reply, api.get_active_tools()),
-            Self::AllTools(reply) => send_json(&reply, api.get_all_tools()),
+            Self::AllTools(reply) => {
+                let result = api
+                    .get_all_tools()
+                    .map_err(|error| error.to_string())
+                    .and_then(|tools| maestro_extensions::schema_transport::encode_tools(&tools));
+                let _ = reply.send(result);
+            }
             Self::SetActiveTools(names, reply) => send(&reply, api.set_active_tools(names)),
             Self::Commands(reply) => send_json(&reply, api.get_commands()),
             Self::Thinking(reply) => send_json(&reply, api.get_thinking_level()),

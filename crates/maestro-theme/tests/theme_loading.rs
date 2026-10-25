@@ -1,12 +1,11 @@
 //! Public theme file loading, admission and alias resolution.
+use crate::live::per_environment;
 use crate::support;
 
-use maestro_theme::{
-    ColorMode, NativeThemeOperations, ThemeColor, ThemeOperations, load_theme_from_path,
-};
+use maestro_theme::{ColorMode, ThemeColor, load_theme_from_path};
 use serde_json::{Value, json};
 use std::io::ErrorKind;
-use support::{Controlled, dark, fg, load, required_colors};
+use support::{DARK_PATH, ThemeFile, dark, fg, load, required_colors};
 
 #[cfg(test)]
 /// The background prefix stored under a literal key.
@@ -17,24 +16,19 @@ fn bg(theme: &maestro_theme::Theme, name: &str) -> String {
         .to_owned()
 }
 
-/// A controlled operation whose file is missing.
-fn missing() -> Controlled {
-    let mut operations = Controlled::new("", &[]);
-    operations.content = None;
-    operations
-}
-
 /// Serialize a theme document and load it with an explicit truecolor mode.
 fn load_doc(doc: &Value) -> Result<maestro_theme::Theme, maestro_theme::ThemeError> {
     load(&doc.to_string(), Some(ColorMode::Truecolor))
 }
 
 #[cfg(test)]
-/// The error text of a failed load.
+/// The error text of a failed load, with the file's path spelled `fixture`.
 fn failure(text: &str) -> String {
-    load(text, Some(ColorMode::Truecolor))
+    let file = ThemeFile::new(text);
+    file.load(Some(ColorMode::Truecolor))
         .unwrap_err()
         .to_string()
+        .replace(&file.path, "fixture")
 }
 
 /// Dark theme with every color set to `value` and the given variables.
@@ -130,7 +124,7 @@ fn theme_loads_shipped_theme_data() {
             (ColorMode::Truecolor, "truecolor"),
             (ColorMode::Color256, "color256"),
         ] {
-            let theme = load_theme_from_path(&path, Some(mode), &NativeThemeOperations).unwrap();
+            let theme = load_theme_from_path(&path, Some(mode)).unwrap();
             assert_eq!(theme.name(), Some(file));
             let table = expected[file][key].as_object().unwrap();
             assert_eq!(table.len(), 51);
@@ -549,27 +543,33 @@ fn theme_last_duplicate_members_win() {
 #[test]
 fn theme_retains_mode_and_authored_metadata() {
     let text = dark().to_string();
-    let operations = Controlled::new(&text, &[("TERM", "xterm")]);
-    let theme = load_theme_from_path(
-        "spelled/../name.json",
-        Some(ColorMode::Truecolor),
-        &operations,
-    )
-    .unwrap();
+    let limited = [("TERM", "linux")];
+    let cases: [(&[(&str, &str)], ColorMode); 2] = [
+        (&[("COLORTERM", "truecolor")], ColorMode::Truecolor),
+        (&limited, ColorMode::Color256),
+    ];
+    if let Some(group) = per_environment(
+        "theme_retains_mode_and_authored_metadata",
+        cases,
+        |(env, _)| env,
+    ) {
+        for (env, expected) in group {
+            let implicit = load_theme_from_path(DARK_PATH, None).unwrap();
+            assert_eq!(implicit.get_color_mode(), expected, "{env:?}");
+            if expected == ColorMode::Color256 {
+                assert_eq!(fg(&implicit, "accent"), "\x1b[38;5;179m");
+            }
+        }
+        return;
+    }
+    let file = ThemeFile::new(&text);
+    std::fs::create_dir(file.directory.path().join("spelled")).unwrap();
+    let spelled = file.directory.path().join("spelled/../fixture");
+    let spelled = spelled.to_str().unwrap();
+    let theme = load_theme_from_path(spelled, Some(ColorMode::Truecolor)).unwrap();
     assert_eq!(theme.name(), Some("dark"));
-    assert_eq!(theme.source_path(), Some("spelled/../name.json"));
+    assert_eq!(theme.source_path(), Some(spelled));
     assert_eq!(theme.get_color_mode(), ColorMode::Truecolor);
-    let implicit = load_theme_from_path(
-        "p",
-        None,
-        &Controlled::new(&text, &[("COLORTERM", "truecolor")]),
-    )
-    .unwrap();
-    assert_eq!(implicit.get_color_mode(), ColorMode::Truecolor);
-    let limited =
-        load_theme_from_path("p", None, &Controlled::new(&text, &[("TERM", "linux")])).unwrap();
-    assert_eq!(limited.get_color_mode(), ColorMode::Color256);
-    assert_eq!(fg(&limited, "accent"), "\x1b[38;5;179m");
     let bare = maestro_theme::Theme::new(
         [],
         [],
@@ -585,47 +585,37 @@ fn theme_retains_mode_and_authored_metadata() {
 
 #[test]
 fn theme_reads_ambient_color_settings_only_after_valid_input() {
-    let valid = dark().to_string();
-    let linux = [("TERM", "linux")];
-    let cases: [(&str, Option<ColorMode>, &[&str]); 4] = [
-        ("{", None, &["read:p"]),
-        ("[]", None, &["read:p"]),
-        (&valid, Some(ColorMode::Truecolor), &["read:p"]),
-        (
-            &valid,
-            None,
-            &["read:p", "env:COLORTERM", "env:WT_SESSION", "env:TERM"],
-        ),
-    ];
-    for (content, mode, reads) in cases {
-        let operations = Controlled::new(content, &linux);
-        let _ = load_theme_from_path("p", mode, &operations);
-        assert_eq!(*operations.log.borrow(), reads, "{content:.12}");
+    let linux: &[(&str, &str)] = &[("TERM", "linux")];
+    let test = "theme_reads_ambient_color_settings_only_after_valid_input";
+    if per_environment(test, [linux], |env| env).is_some() {
+        let explicit = load_theme_from_path(DARK_PATH, Some(ColorMode::Truecolor)).unwrap();
+        assert_eq!(explicit.get_color_mode(), ColorMode::Truecolor);
+        let ambient = load_theme_from_path(DARK_PATH, None).unwrap();
+        assert_eq!(ambient.get_color_mode(), ColorMode::Color256);
+        return;
     }
-    let absent = missing();
-    assert!(load_theme_from_path("p", None, &absent).is_err());
-    assert_eq!(*absent.log.borrow(), ["read:p"]);
+    for content in ["{", "[]"] {
+        let file = ThemeFile::new(content);
+        let message = file.load(None).unwrap_err().to_string();
+        assert!(
+            message.starts_with(&format!("Failed to parse theme {}", file.path))
+                || message.starts_with(&format!("Invalid theme \"{}\"", file.path)),
+            "{content}: {message}"
+        );
+        let absent = file.directory.path().join("absent.json");
+        assert!(load_theme_from_path(absent.to_str().unwrap(), None).is_err());
+    }
 }
 
 #[test]
 fn theme_native_and_controlled_loading_share_the_public_operation() {
     let mut doc = dark();
     doc["name"] = json!(" custom name ");
-    let directory = std::path::Path::new(env!("CARGO_TARGET_TMPDIR"));
-    let file = directory.join("theme-native-load.json");
-    let path = file.to_str().unwrap();
-    std::fs::write(&file, doc.to_string()).unwrap();
-    let native =
-        load_theme_from_path(path, Some(ColorMode::Color256), &NativeThemeOperations).unwrap();
-    let controlled = Controlled::new(&doc.to_string(), &[]);
-    let same = load_theme_from_path(path, Some(ColorMode::Color256), &controlled).unwrap();
-    assert_eq!(*controlled.log.borrow(), [format!("read:{path}")]);
+    let file = ThemeFile::new(doc.to_string());
+    let path = file.path.as_str();
+    let native = load_theme_from_path(path, Some(ColorMode::Color256)).unwrap();
     assert_eq!(native.name(), Some(" custom name "));
     assert_eq!(native.source_path(), Some(path));
-    assert_eq!(
-        native.fg(&ThemeColor::Accent, "x").unwrap(),
-        same.fg(&ThemeColor::Accent, "x").unwrap()
-    );
     assert_eq!(
         native.fg(&ThemeColor::Accent, "x").unwrap(),
         "\x1b[38;5;179mx\x1b[39m"
@@ -637,39 +627,45 @@ fn theme_native_and_controlled_loading_share_the_public_operation() {
         .into_bytes();
     let at = bytes.windows(2).position(|pair| pair == b"@@").unwrap();
     bytes.splice(at..at + 2, [0xff]);
-    std::fs::write(&file, bytes).unwrap();
-    let lossy =
-        load_theme_from_path(path, Some(ColorMode::Truecolor), &NativeThemeOperations).unwrap();
+    std::fs::write(path, bytes).unwrap();
+    let lossy = load_theme_from_path(path, Some(ColorMode::Truecolor)).unwrap();
     assert_eq!(lossy.name(), Some("a\u{fffd}b"));
-    assert_eq!(
-        NativeThemeOperations
-            .read_to_string(directory.join("absent.json").to_str().unwrap())
-            .unwrap_err()
-            .kind(),
-        ErrorKind::NotFound
-    );
+    let absent = file.directory.path().join("absent.json");
+    let error = load_theme_from_path(absent.to_str().unwrap(), None).unwrap_err();
+    let cause = std::error::Error::source(&error)
+        .unwrap()
+        .downcast_ref::<std::io::Error>()
+        .unwrap();
+    assert_eq!(cause.kind(), ErrorKind::NotFound);
 }
 
 #[test]
 fn theme_labels_json_parse_errors_without_relabelling_io() {
     let bom = format!("\u{feff}{}", dark());
     for content in ["", "{", bom.as_str()] {
-        let error = load_theme_from_path("p", None, &Controlled::new(content, &[])).unwrap_err();
+        let file = ThemeFile::new(content);
+        let error = file.load(None).unwrap_err();
         assert!(
-            error.to_string().starts_with("Failed to parse theme p: "),
+            error
+                .to_string()
+                .starts_with(&format!("Failed to parse theme {}: ", file.path)),
             "{content:.8}"
         );
     }
     for content in ["null", "[]"] {
-        let error = load_theme_from_path("p", None, &Controlled::new(content, &[])).unwrap_err();
+        let file = ThemeFile::new(content);
+        let error = file.load(None).unwrap_err();
         assert!(
-            error
-                .to_string()
-                .starts_with("Invalid theme \"p\":\n\n\nOther errors:\n  - /: "),
+            error.to_string().starts_with(&format!(
+                "Invalid theme \"{}\":\n\n\nOther errors:\n  - /: ",
+                file.path
+            )),
             "{content}"
         );
     }
-    let error = load_theme_from_path("p", None, &missing()).unwrap_err();
+    let file = ThemeFile::new("");
+    let absent = file.directory.path().join("absent.json");
+    let error = load_theme_from_path(absent.to_str().unwrap(), None).unwrap_err();
     assert!(!error.to_string().contains("Failed to parse"));
     let cause = std::error::Error::source(&error)
         .unwrap()

@@ -1,8 +1,9 @@
 //! Transcript Markdown with highlighted code blocks, copy controls and math.
 use super::code_block::{self, CodeBlockView, Prepared as Code};
+use crate::components::code_block::ReadingUiError;
 use crate::{
     browser::attachment_content::{
-        AttachmentHost, AttachmentUiError, ReadingContent,
+        AttachmentHost, AttachmentHostError, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
     components::copy_button::CopyButton,
@@ -14,23 +15,18 @@ use std::{
 
 mod admission;
 pub(super) mod browser;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
+mod math;
 mod render;
+pub(crate) use render::export::prepare_export;
 #[cfg(test)]
 mod tests;
 
-/// Complete native content: document HTML and its code listings in slot order.
+/// Code listings shared by native controls and the browser document.
 pub(crate) struct Document {
-    /// Document markup with one empty slot per listing.
-    #[cfg_attr(
-        not(target_arch = "wasm32"),
-        expect(dead_code, reason = "read only by the browser mount")
-    )]
-    pub(crate) html: String,
     /// Listings in slot order.
     pub(crate) code: Vec<Code>,
-    /// Generated-only listing attribute, absent from authored markup.
-    #[cfg(target_arch = "wasm32")]
-    pub(crate) slot_attribute: String,
 }
 
 /// The last successfully published document.
@@ -43,13 +39,28 @@ struct Published {
     buttons: Vec<CopyButton>,
     /// Native content, shared with the mount.
     document: Rc<Document>,
+    /// Browser-owned markup accompanying the portable listings.
+    markup: browser::Markup,
     /// Mounted owner of this published factory, never a speculative replacement.
     mounted: Rc<RefCell<Weak<browser::Mounted>>>,
     /// Successfully published reasoning presentation.
     thinking: bool,
 }
 
-/// Markdown content rendered as selectable native text with canvas copy controls.
+/// Native document width and padding policy.
+enum DocumentLayout {
+    /// Fill the supplied flow width without inner padding.
+    Flow,
+    /// Fill an artifact viewport with document padding.
+    Padded,
+    /// Fit user content within the supplied bubble width.
+    Intrinsic,
+}
+
+/// Markdown content rendered as selectable native text with copy controls.
+///
+/// [`Default`] content mounts as native page content through
+/// [`DomContent`](crate::dom::DomContent); [`MarkdownBlock::new`] draws on a canvas host.
 pub struct MarkdownBlock {
     /// Markdown source.
     pub content: String,
@@ -57,33 +68,53 @@ pub struct MarkdownBlock {
     pub is_thinking: bool,
     /// Show tag-like text literally instead of as markup.
     pub escape_html: bool,
-    /// Include document padding inside the native scroll viewport.
-    padded: bool,
-    /// Replaceable platform effects.
-    host: Rc<dyn AttachmentHost>,
+    /// Native document width and padding policy.
+    layout: DocumentLayout,
+    /// Replaceable platform effects of the canvas drawing, absent for page content.
+    host: Option<Rc<dyn AttachmentHost>>,
     /// Stable native surface identity.
     id: egui::Id,
     /// Last successfully published document.
     published: Option<Published>,
 }
-impl MarkdownBlock {
-    /// Retain the platform effects; content is empty, ordinary and escaped.
-    #[must_use]
-    pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+impl Default for MarkdownBlock {
+    /// Empty, ordinary and escaped page content.
+    fn default() -> Self {
         Self {
             content: String::new(),
             is_thinking: false,
             escape_html: true,
-            padded: false,
-            host,
+            layout: DocumentLayout::Flow,
+            host: None,
             id: crate::browser::attachment_content::identity(),
             published: None,
         }
     }
+}
+impl MarkdownBlock {
+    /// Retain the platform effects; content is empty, ordinary and escaped.
+    #[must_use]
+    pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        let mut block = Self::default();
+        block.host = Some(host);
+        block
+    }
+    /// The canvas platform effects.
+    fn host(&self) -> Result<&Rc<dyn AttachmentHost>, AttachmentHostError> {
+        self.host
+            .as_ref()
+            .ok_or_else(|| AttachmentHostError::Host("Missing platform host".into()))
+    }
+    /// Keep user text intrinsic within its containing bubble.
+    pub(crate) fn for_user(host: Rc<dyn AttachmentHost>) -> Self {
+        let mut block = Self::new(host);
+        block.layout = DocumentLayout::Intrinsic;
+        block
+    }
     /// Retain artifact padding inside the shared scrollable document.
     pub(crate) fn for_artifact(host: Rc<dyn AttachmentHost>) -> Self {
         let mut block = Self::new(host);
-        block.padded = true;
+        block.layout = DocumentLayout::Padded;
         block
     }
     /// Forward retained containing-owner admission to the native root.
@@ -91,44 +122,43 @@ impl MarkdownBlock {
         &self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
-        self.host.set_retained_visibility(self.id, visible, modal)
+    ) -> Result<(), AttachmentHostError> {
+        self.host()?
+            .set_retained_visibility(self.id, visible, modal)
     }
     /// Prepare the current source, replacing the published document only on success.
-    fn prepare<F: ?Sized>(
-        &self,
-        view: CodeBlockView<'_, F>,
-    ) -> Result<Published, AttachmentUiError> {
-        let prepared = render::prepare(&self.content, self.escape_html);
-        let code = prepared
-            .code
+    fn prepare<F: ?Sized>(&self, view: CodeBlockView<'_, F>) -> Result<Published, ReadingUiError> {
+        let host = self.host().map_err(ReadingUiError::Host)?;
+        let mut prepared = render::prepare(&self.content, self.escape_html);
+        let code = std::mem::take(&mut prepared.code)
             .into_iter()
             .map(|c| Code::new(view.highlighter, c.code, c.language))
             .collect::<Result<Vec<_>, _>>()?;
         let buttons = code
             .iter()
-            .map(|_| CopyButton::new(Rc::clone(&self.host), view.i18n))
+            .map(|_| CopyButton::new(Rc::clone(host), view.i18n))
             .collect::<Result<Vec<_>, _>>()?;
-        let document = Rc::new(Document {
-            html: prepared.html,
-            #[cfg(target_arch = "wasm32")]
-            slot_attribute: prepared.slot_attribute,
-            code,
-        });
+        let document = Rc::new(Document { code });
+        let markup = browser::prepare(prepared, &document);
         let ids = buttons.iter().map(|b| b.id).collect();
         let mounted = Rc::default();
         Ok(Published {
             key: (self.content.clone(), self.escape_html),
             content: browser::content(
-                &document,
+                &markup,
                 ids,
-                (self.is_thinking, self.padded, &mounted),
+                (
+                    self.is_thinking,
+                    matches!(self.layout, DocumentLayout::Padded),
+                    &mounted,
+                ),
                 browser::Update::Replace,
             ),
             mounted,
             thinking: self.is_thinking,
             buttons,
             document,
+            markup,
         })
     }
     /// Draw the document and its code controls for this frame.
@@ -138,33 +168,41 @@ impl MarkdownBlock {
         &mut self,
         ui: &mut egui::Ui,
         view: CodeBlockView<'_, F>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ReadingUiError> {
         let current = match &self.published {
             Some(p) if p.key.0 == self.content && p.key.1 == self.escape_html => {
                 p.document.code.iter().try_fold(true, |current, code| {
                     let html = Code::highlight(view.highlighter, &code.text, &code.language)?;
-                    Ok::<_, AttachmentUiError>(current && html == code.html)
+                    Ok::<_, ReadingUiError>(current && html == code.html)
                 })?
             }
             _ => false,
         };
         let mut candidate = (!current).then(|| self.prepare(view)).transpose()?;
+        let host = Rc::clone(self.host().map_err(ReadingUiError::Host)?);
         let Some(target) = candidate.as_mut().or(self.published.as_mut()) else {
-            return Err(AttachmentUiError::Host("Missing document".into()));
+            return Err(ReadingUiError::Host(AttachmentHostError::Host(
+                "Missing document".into(),
+            )));
         };
         let sizes = sync_controls(target, ui, view)?;
         let mounted = Rc::default();
         let style = (target.thinking != self.is_thinking).then(|| {
             browser::content(
-                &target.document,
+                &target.markup,
                 target.buttons.iter().map(|button| button.id).collect(),
-                (self.is_thinking, self.padded, &mounted),
+                (
+                    self.is_thinking,
+                    matches!(self.layout, DocumentLayout::Padded),
+                    &mounted,
+                ),
                 browser::Update::Presentation,
             )
         });
         let layout = ControlledReading {
+            intrinsic_width: matches!(self.layout, DocumentLayout::Intrinsic),
             height: ReadingHeight::Flow,
-            host: self.host.as_ref(),
+            host: host.as_ref(),
             id: self.id,
             content: style.as_ref().unwrap_or(&target.content),
             sizes: &sizes,
@@ -212,7 +250,7 @@ fn sync_controls<F: ?Sized>(
     target: &mut Published,
     ui: &egui::Ui,
     view: CodeBlockView<'_, F>,
-) -> Result<Vec<(egui::Id, egui::Vec2)>, AttachmentUiError> {
+) -> Result<Vec<(egui::Id, egui::Vec2)>, ReadingUiError> {
     let title = view.i18n.text("Copy code")?;
     target
         .buttons
@@ -228,6 +266,8 @@ fn sync_controls<F: ?Sized>(
 }
 impl Drop for MarkdownBlock {
     fn drop(&mut self) {
-        self.host.remove(self.id);
+        if let Some(host) = &self.host {
+            host.remove(self.id);
+        }
     }
 }

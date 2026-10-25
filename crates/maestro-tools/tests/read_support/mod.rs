@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::runtime::run;
 use maestro_agent::AgentToolResult;
 use maestro_models::{
     BoxFuture, Cancellation, DiagnosticErrorInfo, Model, ModelCost, ModelInput, UserBlock,
@@ -11,62 +12,43 @@ use maestro_tools::{
     create_read_tool_definition,
 };
 use serde_json::{Value, json};
-use std::{
-    path::PathBuf,
-    sync::{
-        Arc, Mutex, RwLock,
-        atomic::{AtomicUsize, Ordering},
-    },
+use std::sync::{
+    Arc, Mutex, RwLock,
+    atomic::{AtomicUsize, Ordering},
 };
 
-/// Complete the future on a test-owned runtime.
-pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
+pub use maestro_test_directory::Scratch;
+
+/// Transport counting acquisition attempts, which never succeeds.
+///
+/// Only the unix search-program tests consume it, so other hosts would see it unused.
+#[cfg(unix)]
+pub fn counting_fetch(calls: &Arc<AtomicUsize>) -> maestro_models::Fetch {
+    let calls = Arc::clone(calls);
+    Arc::new(move |_| {
+        calls.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async { Err(maestro_models::FetchError::Aborted) })
+    })
 }
 
-/// A directory removed when dropped.
-pub struct TempDir(pub PathBuf);
-
-impl TempDir {
-    /// Create an empty directory unique to this process and call.
-    pub fn new() -> Self {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let stem = format!("maestro-read-{}", std::process::id());
-        Self::create_in(&std::env::temp_dir(), &stem, &NEXT)
-    }
-
-    /// Create the first `stem-N` below `parent` that does not exist yet; existing entries stay untouched.
-    pub fn create_in(parent: &std::path::Path, stem: &str, next: &AtomicUsize) -> Self {
-        loop {
-            let path = parent.join(format!("{stem}-{}", next.fetch_add(1, Ordering::Relaxed)));
-            match std::fs::create_dir(&path) {
-                Ok(()) => return Self(path),
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(error) => panic!("cannot create {}: {error}", path.display()),
-            }
-        }
-    }
-
+/// Native fixture spellings callers need on top of the shared directory owner.
+pub trait Fixture {
     /// The directory as text.
-    pub fn text(&self) -> String {
-        self.0.to_str().unwrap().to_owned()
-    }
+    fn text(&self) -> String;
 
     /// Write `bytes` at `name` below the directory and return its text path.
-    pub fn file(&self, name: &str, bytes: &[u8]) -> String {
-        let path = self.0.join(name);
-        std::fs::write(&path, bytes).unwrap();
-        path.to_str().unwrap().to_owned()
-    }
+    fn file(&self, name: &str, bytes: &[u8]) -> String;
 }
 
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+impl Fixture for Scratch {
+    fn text(&self) -> String {
+        self.path().to_str().unwrap().to_owned()
+    }
+
+    fn file(&self, name: &str, bytes: &[u8]) -> String {
+        let path = self.path().join(name);
+        std::fs::write(&path, bytes).unwrap();
+        path.to_str().unwrap().to_owned()
     }
 }
 
@@ -396,8 +378,8 @@ pub fn isolated(test: &str, mode: &str, envs: &[(&str, Option<&str>)]) -> bool {
 ///
 /// The parent also checks that the selected child test ran and passed.
 pub fn isolated_os(test: &str, mode: &str, envs: &[(&str, Option<&std::ffi::OsStr>)]) -> bool {
-    if let Ok(current) = std::env::var("MAESTRO_READ_CHILD") {
-        return current == mode;
+    if maestro_test_process::selection().is_child() {
+        return maestro_test_process::selection().runs_case(mode);
     }
     isolated_os_output(test, mode, envs);
     false
@@ -409,16 +391,34 @@ pub fn isolated_os_output(
     mode: &str,
     envs: &[(&str, Option<&std::ffi::OsStr>)],
 ) -> std::process::Output {
-    let test = crate::child_process::selector(test).unwrap();
-    let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-    command.args(["--exact", &test, "--nocapture"]);
-    command.env("MAESTRO_READ_CHILD", mode);
-    for (key, value) in envs {
-        match value {
-            Some(value) => command.env(key, value),
-            None => command.env_remove(key),
-        };
-    }
+    isolated_output(test, mode, |mut command| {
+        for (key, value) in envs {
+            command = match value {
+                Some(value) => command.env(key, value),
+                None => command.env_remove(key),
+            };
+        }
+        command
+    })
+}
+
+/// Run a passing isolated child with its temporary directory set to `root`.
+pub fn isolated_temp_dir(test: &str, mode: &str, root: &std::path::Path) {
+    isolated_output(test, mode, |command| command.temp_dir(root));
+}
+
+/// Run a passing isolated child configured by `configure` and retain its output.
+fn isolated_output(
+    test: &str,
+    mode: &str,
+    configure: impl FnOnce(maestro_test_process::TestProcess) -> maestro_test_process::TestProcess,
+) -> std::process::Output {
+    let command = configure(
+        maestro_test_process::TestProcess::current(test)
+            .unwrap()
+            .nocapture()
+            .case(mode),
+    );
     let output = command.output().unwrap();
     assert!(
         output.status.success(),
@@ -426,7 +426,6 @@ pub fn isolated_os_output(
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
     output
 }
 

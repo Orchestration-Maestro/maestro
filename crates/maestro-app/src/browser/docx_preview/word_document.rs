@@ -1,6 +1,6 @@
 //! Ordered, cached discovery of supported Word package parts.
 use super::{
-    DocxError, Options, Part, PartData, PartKind, Relationship,
+    DocxError, OpenXmlElementTree, Options, Part, PartData, PartKind, Relationship,
     common::open_xml_package::OpenXmlPackage, utils,
 };
 use std::collections::HashMap;
@@ -144,6 +144,26 @@ impl WordDocument {
     pub fn document_part(&self) -> Option<&Part> {
         self.document.map(|i| &self.parts[i])
     }
+    /// Parse the latest designated document part body.
+    ///
+    /// # Errors
+    /// Returns an XML error for an unreadable main part.
+    pub fn document_body(&self) -> Result<Option<OpenXmlElementTree>, DocxError> {
+        let Some(part) = self.document_part() else {
+            return Ok(None);
+        };
+        let xml = self.package.parse(&part.xml, &part.path)?;
+        let Some(body) = xml.element(xml.root(), "body") else {
+            return Ok(None);
+        };
+        super::document_parser::parse_selected(
+            &xml,
+            body,
+            super::document_parser::Framing::Body,
+            false,
+        )
+        .map(Some)
+    }
     /// Borrow the latest designated core props data.
     pub fn core_props_part(&self) -> Option<&super::CorePropsPart> {
         match self.parts[self.core_props?].data.as_ref()? {
@@ -197,5 +217,14 @@ impl WordDocument {
     pub fn load_resource(&self, part: &Part, id: &str) -> Result<Option<Vec<u8>>, DocxError> {
         self.get_path_by_id(part, id)
             .map_or(Ok(None), |path| self.package.read(&path))
+    }
+    /// Read an alternate format chunk's text by relationship identifier, decoded as package
+    /// text is; `None` when the relationship or the entry is missing.
+    ///
+    /// # Errors
+    /// Returns an archive error if the selected entry cannot be read.
+    pub fn load_alt_chunk(&self, part: &Part, id: &str) -> Result<Option<String>, DocxError> {
+        self.get_path_by_id(part, id)
+            .map_or(Ok(None), |path| self.package.text(&path))
     }
 }

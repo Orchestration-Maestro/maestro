@@ -1,8 +1,10 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! Dynamic provider retention and catalog replay.
 use crate::dynamic;
 use crate::support;
 use maestro_catalog::{ModelRegistry, ProviderConfigInput};
+use maestro_models::SharedHandle;
 use std::sync::{Arc, RwLock};
 
 #[test]
@@ -10,11 +12,11 @@ fn upsert_mutates_first_retained_config_and_keeps_defined_empty_values() {
     if dynamic::isolated("upsert_mutates_first_retained_config_and_keeps_defined_empty_values") {
         return;
     }
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let first = dynamic::config(&["m"]);
-    let weak = Arc::downgrade(&first);
+    let weak = SharedHandle::downgrade(&first);
     registry.register_provider("p", first.clone()).unwrap();
-    let second = Arc::new(RwLock::new(ProviderConfigInput {
+    let second = SharedHandle::new(RwLock::new(ProviderConfigInput {
         name: Some(String::new()),
         base_url: Some(String::new()),
         models: Some(vec![]),
@@ -42,7 +44,7 @@ fn empty_retained_models_restore_underlying_catalog_on_refresh() {
     if dynamic::isolated("empty_retained_models_restore_underlying_catalog_on_refresh") {
         return;
     }
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     registry
         .register_provider("p", dynamic::config(&["m"]))
         .unwrap();
@@ -51,7 +53,7 @@ fn empty_retained_models_restore_underlying_catalog_on_refresh() {
     registry
         .register_provider(
             "p",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 models: Some(vec![]),
                 ..Default::default()
             })),
@@ -66,13 +68,13 @@ fn display_name_precedence_keeps_present_empty_names() {
     if dynamic::isolated("display_name_precedence_keeps_present_empty_names") {
         return;
     }
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     assert_eq!(registry.get_provider_display_name("unlisted"), "unlisted");
     assert_eq!(
         registry.get_provider_display_name("anthropic"),
         "Anthropic (Claude Pro/Max)"
     );
-    let config = Arc::new(RwLock::new(ProviderConfigInput {
+    let config = SharedHandle::new(RwLock::new(ProviderConfigInput {
         name: Some(String::new()),
         ..Default::default()
     }));
@@ -81,7 +83,7 @@ fn display_name_precedence_keeps_present_empty_names() {
     registry
         .register_provider(
             "unlisted",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 name: Some("Registered".into()),
                 ..Default::default()
             })),
@@ -97,7 +99,7 @@ fn construction_preserves_global_registries_but_refresh_resets_other_instances()
     ) {
         return;
     }
-    let first = ModelRegistry::in_memory(support::auth()).unwrap();
+    let first = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let config = dynamic::config(&["m"]);
     {
         let mut value = config.write().unwrap();
@@ -107,7 +109,7 @@ fn construction_preserves_global_registries_but_refresh_resets_other_instances()
     }
     dynamic::callback(&config, "first");
     first.register_provider("p", config).unwrap();
-    let second = ModelRegistry::in_memory(support::auth()).unwrap();
+    let second = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     assert!(maestro_models::get_api_provider("instance-api").is_some());
     assert!(maestro_models::get_oauth_provider("p").is_some());
     assert_eq!(second.get_provider_display_name("p"), "Dynamic OAuth");
@@ -126,14 +128,14 @@ fn refresh_replays_initial_provider_order_and_defined_field_merges() {
     if dynamic::isolated("refresh_replays_initial_provider_order_and_defined_field_merges") {
         return;
     }
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let p = dynamic::config(&["old"]);
     dynamic::callback(&p, "p-first");
     registry.register_provider("p", p).unwrap();
     let q = dynamic::config(&["other"]);
     dynamic::callback(&q, "q");
     registry.register_provider("q", q).unwrap();
-    let p = Arc::new(RwLock::new(ProviderConfigInput {
+    let p = SharedHandle::new(RwLock::new(ProviderConfigInput {
         api: Some("openai-completions".into()),
         base_url: Some("https://latest.invalid".into()),
         ..Default::default()
@@ -178,12 +180,12 @@ fn registered_oauth_label_precedes_current_global_provider() {
     if dynamic::isolated("registered_oauth_label_precedes_current_global_provider") {
         return;
     }
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     for name in ["Retained OAuth", ""] {
         registry
             .register_provider(
                 "p",
-                Arc::new(RwLock::new(ProviderConfigInput {
+                SharedHandle::new(RwLock::new(ProviderConfigInput {
                     oauth: Some(dynamic::oauth(name)),
                     ..Default::default()
                 })),
@@ -238,6 +240,7 @@ fn unknown_removal_does_not_reload_or_reset_shared_registries() {
         support::auth(),
         "counted",
         dynamic::CountFile(reads.clone()),
+        crate::support::values(),
     )
     .unwrap();
     let config = dynamic::config(&["m"]);
@@ -273,7 +276,7 @@ fn immediate_registration_uses_incoming_config_not_merged_config() {
         "p",
         maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
     );
-    let registry = ModelRegistry::in_memory(auth).unwrap();
+    let registry = ModelRegistry::in_memory(auth, crate::support::values()).unwrap();
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let observed = calls.clone();
     let config = dynamic::config(&["first"]);
@@ -303,7 +306,7 @@ fn immediate_registration_uses_incoming_config_not_merged_config() {
     registry
         .register_provider(
             "p",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 base_url: Some("https://override.invalid".into()),
                 ..Default::default()
             })),
@@ -328,7 +331,7 @@ fn failed_transform_keeps_applied_effects_without_upserting_config() {
         "p",
         maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
     );
-    let registry = ModelRegistry::in_memory(auth).unwrap();
+    let registry = ModelRegistry::in_memory(auth, crate::support::values()).unwrap();
     let retained = dynamic::config(&["old"]);
     retained.write().unwrap().name = Some("retained".into());
     registry.register_provider("p", retained).unwrap();
@@ -359,10 +362,7 @@ fn failed_transform_keeps_applied_effects_without_upserting_config() {
         "Dynamic OAuth"
     );
     request_support::success(
-        request_support::run(registry.get_api_key_and_headers(
-            &registry.find("p", "new").unwrap(),
-            &request_support::Operations::default(),
-        )),
+        request_support::run(registry.get_api_key_and_headers(&registry.find("p", "new").unwrap())),
         Some("unused-access"),
         &[("X", "new")],
     );
@@ -384,7 +384,7 @@ fn refresh_stops_after_first_replay_failure_with_partial_publication() {
             maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
         );
     }
-    let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    let registry = ModelRegistry::in_memory(auth.clone(), crate::support::values()).unwrap();
     let mut aliases = Vec::new();
     let fail = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let calls = Arc::new(std::sync::Mutex::new(Vec::new()));
@@ -439,9 +439,7 @@ fn assert_partial_request_sources(
     for (model, value) in aliases.iter().zip(["p", "q", "r"]) {
         let headers = [("X", value)];
         request_support::success(
-            request_support::run(
-                registry.get_api_key_and_headers(model, &request_support::Operations::default()),
-            ),
+            request_support::run(registry.get_api_key_and_headers(model)),
             if value == "r" { None } else { Some(value) },
             if value == "r" { &[] } else { &headers },
         );
@@ -457,7 +455,7 @@ fn known_removal_stays_removed_when_survivor_replay_fails() {
         "p",
         maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
     );
-    let registry = ModelRegistry::in_memory(auth).unwrap();
+    let registry = ModelRegistry::in_memory(auth, crate::support::values()).unwrap();
     let fail = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let observed = fail.clone();
     let config = dynamic::config(&["m"]);
@@ -492,12 +490,12 @@ fn removal_restores_builtin_oauth_and_deletes_custom_provider() {
     if dynamic::isolated("removal_restores_builtin_oauth_and_deletes_custom_provider") {
         return;
     }
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     for id in ["anthropic", "custom", "surviving"] {
         registry
             .register_provider(
                 id,
-                Arc::new(RwLock::new(ProviderConfigInput {
+                SharedHandle::new(RwLock::new(ProviderConfigInput {
                     oauth: Some(dynamic::oauth("Override")),
                     ..Default::default()
                 })),
@@ -526,8 +524,7 @@ fn removal_keeps_literal_pair_header_identity() {
     if dynamic::isolated("removal_keeps_literal_pair_header_identity") {
         return;
     }
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
-    let operations = request_support::Operations::default();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let mut aliases = Vec::new();
     for (provider, id, header) in [("a:b", "c", "left"), ("a", "b:c", "right")] {
         let config = dynamic::config(&[id]);
@@ -536,7 +533,7 @@ fn removal_keeps_literal_pair_header_identity() {
         registry.register_provider(provider, config).unwrap();
         let alias = registry.find(provider, id).unwrap();
         request_support::success(
-            request_support::run(registry.get_api_key_and_headers(&alias, &operations)),
+            request_support::run(registry.get_api_key_and_headers(&alias)),
             Some("configured"),
             &[("X", header)],
         );
@@ -544,12 +541,12 @@ fn removal_keeps_literal_pair_header_identity() {
     }
     registry.unregister_provider("a").unwrap();
     request_support::success(
-        request_support::run(registry.get_api_key_and_headers(&aliases[0], &operations)),
+        request_support::run(registry.get_api_key_and_headers(&aliases[0])),
         Some("configured"),
         &[("X", "left")],
     );
     request_support::success(
-        request_support::run(registry.get_api_key_and_headers(&aliases[1], &operations)),
+        request_support::run(registry.get_api_key_and_headers(&aliases[1])),
         None,
         &[],
     );
@@ -561,8 +558,7 @@ fn refresh_clears_file_error_and_request_maps_before_replaying() {
         return;
     }
     let text = support::Text(Arc::new(std::sync::Mutex::new(Some(r#"{"providers":{"p":{"baseUrl":"file","api":"test","apiKey":"file-key","headers":{"F":"file"},"models":[{"id":"retired"}]}}}"#.into()))));
-    let registry =
-        ModelRegistry::with_operations(support::auth(), "models-input", text.clone()).unwrap();
+    let registry = support::text_registry("models-input", &text, crate::support::values());
     let old = registry.find("p", "retired").unwrap();
     let config = dynamic::config(&["m"]);
     config.write().unwrap().headers = Some([("D".into(), "dynamic".into())].into());
@@ -575,10 +571,7 @@ fn refresh_clears_file_error_and_request_maps_before_replaying() {
         assert!(registry.find("p", "m").is_some());
         for model in [&old, &registry.find("p", "m").unwrap()] {
             request_support::success(
-                request_support::run(
-                    registry
-                        .get_api_key_and_headers(model, &request_support::Operations::default()),
-                ),
+                request_support::run(registry.get_api_key_and_headers(model)),
                 Some("configured"),
                 &[("D", "dynamic")],
             );
@@ -592,7 +585,7 @@ fn provider_overrides_and_replacements_survive_refresh() {
         return;
     }
     for case in 0..6 {
-        let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+        let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
         let provider = if case < 3 { "anthropic" } else { "p" };
         let ids = if case == 0 {
             maestro_models::get_models(provider)
@@ -613,7 +606,7 @@ fn provider_overrides_and_replacements_survive_refresh() {
                 .unwrap();
         }
         if [0, 2, 4, 5].contains(&case) {
-            let config = Arc::new(RwLock::new(ProviderConfigInput {
+            let config = SharedHandle::new(RwLock::new(ProviderConfigInput {
                 base_url: (case != 5).then(|| "https://proxy.invalid".into()),
                 headers: (case == 5).then(|| [("x-proxy".into(), "enabled".into())].into()),
                 ..Default::default()
@@ -634,9 +627,7 @@ fn provider_overrides_and_replacements_survive_refresh() {
             }));
         let model = registry.find(provider, &ids[0]).unwrap();
         request_support::success(
-            request_support::run(
-                registry.get_api_key_and_headers(&model, &request_support::Operations::default()),
-            ),
+            request_support::run(registry.get_api_key_and_headers(&model)),
             (case != 0).then_some("configured"),
             if case == 5 {
                 &[("x-proxy", "enabled")]
@@ -655,7 +646,7 @@ fn removal_restores_a_callable_builtin_handler_and_keeps_old_callback_handle() {
         return;
     }
     for api in ["openai-completions", "anthropic-messages"] {
-        let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+        let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
         let config = dynamic::config(&["override"]);
         config.write().unwrap().api = Some(api.into());
         dynamic::callback(&config, "override");
@@ -746,7 +737,7 @@ fn failed_same_handle_registration_preserves_prior_alias_edits() {
         "p",
         maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
     );
-    let registry = ModelRegistry::in_memory(auth).unwrap();
+    let registry = ModelRegistry::in_memory(auth, crate::support::values()).unwrap();
     let retained = dynamic::config(&["m"]);
     registry.register_provider("p", retained.clone()).unwrap();
     {

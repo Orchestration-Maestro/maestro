@@ -329,12 +329,7 @@ async fn failure_case(progress_failure: bool) {
 }
 /// Controlled operation failure, without credential-bearing diagnostics.
 fn failure_diagnostic(message: &str) -> maestro_models::DiagnosticErrorInfo {
-    maestro_models::DiagnosticErrorInfo {
-        name: None,
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    maestro_models::DiagnosticErrorInfo::new(None, message)
 }
 
 /// Selected records survive removal and their execute slots remain live until use.

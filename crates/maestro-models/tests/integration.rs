@@ -1,11 +1,14 @@
 //! Shared integration-test executable.
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel};
 
 mod account_message_routing;
 mod account_tool_names;
 mod assistant_publication;
+mod authored_tool_arguments;
 #[path = "support/azure_cases.rs"]
 mod azure_cases;
 #[path = "support/azure_endpoint.rs"]
@@ -50,9 +53,9 @@ mod chat_response_identity;
 #[path = "chat_tool_choices.rs"]
 mod chat_tool_choices;
 mod checked_tool_arguments;
-#[path = "support/child_process.rs"]
-mod child_process;
 mod circle_fixture;
+#[path = "support/clock.rs"]
+mod clock;
 mod cloud_content_projection;
 mod cloud_conversation_configuration;
 mod cloud_conversation_conversion;
@@ -63,6 +66,7 @@ mod cloud_conversation_runtime;
 mod cloud_conversation_streams;
 mod cloud_conversation_unknown_unions;
 mod cloud_model_routes;
+mod cloud_pac_routing;
 mod cloud_profile_credentials;
 mod cloud_proxy_transports;
 mod compatibility_invocation;
@@ -89,6 +93,12 @@ mod environment_children;
 mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
+#[allow(
+    dead_code,
+    reason = "Each test binary uses part of the scripted FTP peer."
+)]
+#[path = "support/ftp_server.rs"]
+mod ftp_server;
 mod handoff_tool_ids;
 #[path = "history_handoffs.rs"]
 mod history_handoffs;
@@ -156,6 +166,8 @@ mod reasoning_capabilities;
 mod reasoning_qualification;
 mod response_account_authorization;
 mod response_affinity;
+#[path = "support/response_case_schema.rs"]
+mod response_case_schema;
 #[path = "support/response_cases.rs"]
 mod response_cases;
 #[path = "support/response_endpoint.rs"]
@@ -172,22 +184,24 @@ mod response_reasoning_replay;
 mod response_runtime;
 mod response_session_affinity;
 mod response_session_surface;
+#[path = "support/response_support.rs"]
+mod response_support;
 mod response_tool_images;
 mod routed_cache_write;
+#[path = "support/runtime.rs"]
+mod runtime;
 mod schema_checker_qualification;
 mod schema_diagnostics;
 mod scripted_model_invocation;
 mod simple_model_options;
-#[allow(
-    dead_code,
-    reason = "The library's unit tests also compile this module and use other parts of it."
-)]
 #[path = "support/socks.rs"]
 mod socks;
 mod streamed_arguments;
 mod subscription_accounts;
+#[cfg(target_os = "linux")]
 #[path = "support/tls.rs"]
 mod tls;
+mod tool_argument_roots;
 #[path = "tool_images.rs"]
 mod tool_images;
 #[path = "support/transport.rs"]
@@ -199,9 +213,5 @@ mod usage_totals;
 
 mod cloud_content_invocation;
 
-#[allow(
-    dead_code,
-    reason = "Shared credential fixtures serve library and integration witnesses."
-)]
 #[path = "support/content_credentials.rs"]
 mod content_credentials;

@@ -81,10 +81,7 @@ fn request(
         Context {
             system_prompt: Some(utils::SUMMARIZATION_SYSTEM_PROMPT.into()),
             messages: vec![Message::User(UserMessage {
-                content: UserContent::Blocks(vec![UserBlock::Text(TextContent {
-                    text: prompt,
-                    text_signature: None,
-                })]),
+                content: UserContent::Blocks(vec![UserBlock::Text(TextContent::new(prompt))]),
                 timestamp: maestro_models::timestamp_now(),
             })],
             tools: None,
@@ -141,10 +138,7 @@ pub fn compact(
     options: &SummaryOptions,
 ) -> BoxFuture<Result<super::CompactionResult<super::CompactionDetails>, DiagnosticErrorInfo>> {
     use maestro_request::presence::Presence;
-    let previous = match &preparation.previous_summary {
-        Presence::Present(text) => Some(text.as_str()),
-        _ => None,
-    };
+    let previous = preparation.previous_summary.present().map(String::as_str);
     let reserve = preparation.settings.reserve_tokens;
     let history = if preparation.is_split_turn
         && !preparation.turn_prefix_messages.is_empty()

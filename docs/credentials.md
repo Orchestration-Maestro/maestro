@@ -111,10 +111,12 @@ holds for the asynchronous operation too.
 
 ## Configured values
 
-Non-command values use a nonempty exact-name environment value or the unchanged
-literal. Values beginning with `!` execute the remainder as a command. Successful
-command results and absence are cached process-wide by the complete configured
-string; concurrent misses share one initialization, including an absent result.
+Non-command values use the nonempty value of the environment variable the
+configured value names, matched by the platform's variable-name rules, or the
+unchanged literal. Values beginning with `!` execute the remainder as a
+command. Successful command results and absence are cached process-wide by the
+complete configured string; concurrent misses share one initialization,
+including an absent result.
 `clear_config_value_cache` removes the cached entries. Uncached and throwing
 operations bypass that cache without replacing it.
 
@@ -122,7 +124,9 @@ operations bypass that cache without replacing it.
 retains successful empty strings and stops at the first resolution error. Both
 preserve literal header names and input insertion order, including `__proto__`.
 
-Callers supply `ConfigValueOperations` for environment and command effects.
+Each call reads the value of the variable a configured value names from the
+process environment.
+Callers supply `ConfigValueOperations` for command runs.
 Native callers can use `ProcessConfigValueOperations` with a lazy configured-shell
 selector. Unix uses the default shell without reading that selector. Windows
 tries the configured shell first and falls back after selection, infrastructure

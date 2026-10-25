@@ -1,19 +1,39 @@
 //! Owned browser tool content and call-scoped native operands.
+mod ui_error;
 use crate::{
     I18n,
-    browser::attachment_content::{AttachmentHost, AttachmentUiError, PlacementScope},
+    browser::attachment_content::{AttachmentHost, PlacementScope},
 };
-use maestro_app::ToolRendererState;
+use maestro_app::{JsonObject, ToolRendererState};
 use serde_json::Value;
 use std::{
     any::{Any, TypeId},
     rc::Rc,
 };
+pub use ui_error::ToolUiError;
 mod binding;
 mod result_view;
 pub use binding::ToolRendererBinding;
 pub use result_view::ToolResultMessageView;
 
+/// One frame's drawing outcome plus independently owned opened overlays.
+#[must_use]
+pub struct ToolContentOutput {
+    /// Drawing result, independent of already-opened overlays.
+    pub response: Result<egui::Response, ToolUiError>,
+    /// Opened owners the caller retains even when the response failed.
+    pub overlays: Vec<crate::AttachmentOverlay>,
+}
+impl ToolContentOutput {
+    /// Transfer all opened owners before observing drawing failure.
+    pub(crate) fn collect(
+        self,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
+    ) -> Result<egui::Response, ToolUiError> {
+        overlays.extend(self.overlays);
+        self.response
+    }
+}
 /// Owned drawing recipe; mutable widgets belong to the caller's retained row.
 pub trait ToolContent: Any {
     /// Draw this recipe using the row's typed state.
@@ -24,10 +44,11 @@ pub trait ToolContent: Any {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError>;
+    ) -> ToolContentOutput;
 }
 /// Borrowed presentation inputs for one frame.
 #[derive(Clone, Copy)]
+#[non_exhaustive]
 pub struct ToolRenderView<'a> {
     /// Platform effects.
     pub host: &'a Rc<dyn AttachmentHost>,
@@ -39,11 +60,38 @@ pub struct ToolRenderView<'a> {
     pub highlighter: &'a dyn maestro_theme::SyntaxHighlighter,
     /// Containing modal.
     pub modal: Option<egui::Id>,
+    /// Native labels inheriting the containing header's foreground this frame.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) captions: Option<&'a std::cell::RefCell<Vec<web_sys::Element>>>,
 }
-/// Rendered recipe and outer-card choice.
-pub struct ToolRenderResult {
+impl<'a> ToolRenderView<'a> {
+    /// Borrow the platform and presentation operands for one rendered frame.
+    #[must_use]
+    pub fn new(
+        host: &'a Rc<dyn AttachmentHost>,
+        i18n: &'a I18n,
+        presentation: &'a maestro_theme::BrandPresentation<'a>,
+        highlighter: &'a dyn maestro_theme::SyntaxHighlighter,
+        modal: Option<egui::Id>,
+    ) -> Self {
+        Self {
+            host,
+            i18n,
+            presentation,
+            highlighter,
+            modal,
+            #[cfg(target_arch = "wasm32")]
+            captions: None,
+        }
+    }
+}
+/// Rendered content and outer-card choice.
+///
+/// `C` selects the content representation. Its canvas default exists only while the
+/// canvas renderer family remains; page content uses [`crate::dom::DomContent`].
+pub struct ToolRenderResult<C = Box<dyn ToolContent>> {
     /// Owned content, independent of call-scoped operands.
-    pub content: Box<dyn ToolContent>,
+    pub content: C,
     /// Whether the caller should omit its ordinary tool card.
     pub is_custom: bool,
 }
@@ -57,7 +105,7 @@ pub struct ToolRenderState {
     /// Non-aliased placement lifetime, distinct from retained widget ownership.
     scope: Option<(egui::Id, PlacementScope)>,
 }
-impl ToolRenderResult {
+impl ToolRenderResult<Box<dyn ToolContent>> {
     /// Draw the content, releasing prior widget state when its recipe type changes.
     /// # Errors
     /// Returns the content's rendering failure.
@@ -66,7 +114,7 @@ impl ToolRenderResult {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut ToolRenderState,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> ToolContentOutput {
         retained.draw(self.content.as_ref(), ui, view)
     }
 }
@@ -77,7 +125,7 @@ impl ToolRenderState {
         content: &dyn ToolContent,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> ToolContentOutput {
         let active = content.type_id();
         if self.active != Some(active) {
             self.scope = None;
@@ -90,7 +138,9 @@ impl ToolRenderState {
     }
 }
 /// Custom renderer receiving original native operands or explicitly decoded JSON.
-pub trait ToolRenderer<P = Value, D = Value> {
+///
+/// `C` is the produced content representation; see [`ToolRenderResult`].
+pub trait ToolRenderer<P = JsonObject, D = Value, C = Box<dyn ToolContent>> {
     /// Prepare owned content without retaining borrowed operands.
     /// # Errors
     /// Returns the renderer's preparation failure.
@@ -99,14 +149,25 @@ pub trait ToolRenderer<P = Value, D = Value> {
         params: Option<&P>,
         result: Option<ToolResultMessageView<'_, D>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError>;
+    ) -> Result<ToolRenderResult<C>, ToolUiError>;
 }
 /// Borrowed parameters with a deferred default-rendering projection.
 pub struct ToolParams<'a, P = Value> {
     /// Original caller operand.
     pub(crate) value: &'a P,
     /// Invoked only after default rendering is selected.
-    pub(crate) format: fn(&P) -> Result<Option<String>, AttachmentUiError>,
+    pub(crate) format: fn(&P) -> Result<Option<String>, ToolUiError>,
+}
+impl<'a> ToolParams<'a, JsonObject> {
+    /// Borrow model arguments with deferred canonical object formatting.
+    #[must_use]
+    pub fn object(value: &'a JsonObject) -> Self {
+        Self::typed(value, |object| {
+            maestro_app::pretty_object(object)
+                .map(Some)
+                .map_err(|error| ToolUiError::Presentation(error.to_string()))
+        })
+    }
 }
 impl<'a> ToolParams<'a, Value> {
     /// Borrow ordinary JSON using the default formatter.
@@ -118,16 +179,13 @@ impl<'a> ToolParams<'a, Value> {
 impl<'a, P> ToolParams<'a, P> {
     /// Borrow a native value with its optional literal input projection.
     #[must_use]
-    pub fn typed(
-        value: &'a P,
-        format: fn(&P) -> Result<Option<String>, AttachmentUiError>,
-    ) -> Self {
+    pub fn typed(value: &'a P, format: fn(&P) -> Result<Option<String>, ToolUiError>) -> Self {
         Self { value, format }
     }
 }
 
 /// Separate a row's placement revocation from its cloneable widget ownership.
-fn placement_scope(host: &Rc<dyn AttachmentHost>) -> (egui::Id, PlacementScope) {
+pub(crate) fn placement_scope(host: &Rc<dyn AttachmentHost>) -> (egui::Id, PlacementScope) {
     let id = crate::browser::attachment_content::identity();
     let host = Rc::downgrade(host);
     let lease = PlacementScope::new(move || {
@@ -137,3 +195,18 @@ fn placement_scope(host: &Rc<dyn AttachmentHost>) -> (egui::Id, PlacementScope) 
     });
     (id, lease)
 }
+
+/// Share whole-value truth/presence without copying an argument object.
+pub(crate) fn json_params<'a>(
+    value: Option<&'a Value>,
+    empty: &'a JsonObject,
+) -> Option<&'a JsonObject> {
+    value.and_then(|value| {
+        value
+            .as_object()
+            .or_else(|| maestro_app::is_truthy(value).then_some(empty))
+    })
+}
+
+mod retained;
+pub(crate) use retained::{render_retained, retained_tool_content};

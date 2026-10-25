@@ -1,6 +1,6 @@
 //! Configuration cases that run in a child process holding only the case's environment.
 
-use std::path::PathBuf;
+#![cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -8,8 +8,7 @@ use maestro_models::StreamOptions;
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
 
 use crate::bedrock;
-use crate::chat::{TestResult, block_on};
-use crate::child_process;
+use crate::chat::TestResult;
 use crate::transport;
 
 /// What a case expects the SDK to do.
@@ -70,7 +69,7 @@ impl Case {
 }
 
 /// Shared-config and credentials files holding two distinguishable synthetic profiles.
-pub struct AwsFiles(PathBuf);
+pub struct AwsFiles(maestro_test_directory::Scratch);
 
 impl AwsFiles {
     pub fn create(test: &str) -> TestResult<Self> {
@@ -83,21 +82,21 @@ impl AwsFiles {
     }
 
     /// Create exclusively owned configuration files for a synthetic profile.
-    pub fn create_with(test: &str, config: &str, credentials: &str) -> TestResult<Self> {
-        let dir =
-            std::env::temp_dir().join(format!("maestro-bedrock-{test}-{}", std::process::id()));
-        std::fs::create_dir(&dir)?;
-        let files = Self(dir);
-        std::fs::write(files.0.join("config"), config)?;
-        std::fs::write(files.0.join("credentials"), credentials)?;
+    pub fn create_with(_test: &str, config: &str, credentials: &str) -> TestResult<Self> {
+        let files = Self(maestro_test_directory::Scratch::new()?);
+        std::fs::write(files.0.path().join("config"), config)?;
+        std::fs::write(files.0.path().join("credentials"), credentials)?;
         Ok(files)
     }
 
     /// The environment of a child: the files, no metadata service, and the case's variables.
     pub fn environment(&self, case: &Case) -> Vec<(String, String)> {
-        let path = |name: &str| self.0.join(name).to_string_lossy().into_owned();
+        let path = |name: &str| self.0.path().join(name).to_string_lossy().into_owned();
         let mut vars = vec![
-            ("HOME".to_owned(), self.0.to_string_lossy().into_owned()),
+            (
+                "HOME".to_owned(),
+                self.0.path().to_string_lossy().into_owned(),
+            ),
             ("AWS_CONFIG_FILE".to_owned(), path("config")),
             (
                 "AWS_SHARED_CREDENTIALS_FILE".to_owned(),
@@ -114,26 +113,29 @@ impl AwsFiles {
     }
 }
 
-impl Drop for AwsFiles {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).ok();
-    }
-}
-
 /// Run every case of `test` in its own child, or the case this process was started for.
 pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
-    if let Some(id) = child_process::child_case() {
+    let id = maestro_test_process::selection();
+    if id.is_child() {
         let case = cases
             .iter()
-            .find(|case| case.id == id)
+            .find(|case| id.runs_case(case.id))
             .ok_or("unknown case")?;
-        return block_on(true, check(case));
+        return crate::runtime::run_paused(check(case));
     }
     let files = AwsFiles::create(test)?;
     for case in cases {
         let vars = files.environment(case);
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-        child_process::rerun(test, case.id, &vars)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(vars.iter().copied())
+                .case(case.id)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }

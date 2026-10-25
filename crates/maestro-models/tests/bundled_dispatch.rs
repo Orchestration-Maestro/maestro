@@ -1,30 +1,45 @@
 //! Bundled protocols reached through the public registry, generic dispatch and root exports.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::bundled;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
-use crate::child_process;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::key_selection;
 
-use bundled::{PROTOCOLS, Protocol};
-use chat::{TestResult, block_on};
-use maestro_models::records::api_registry::{get_api_provider, get_api_providers};
+#[cfg(not(target_arch = "wasm32"))]
+use bundled::Protocol;
+use bundled::{PROTOCOLS, registered};
+#[cfg(not(target_arch = "wasm32"))]
+use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_models::clear_api_providers;
+use maestro_models::records::api_registry::get_api_provider;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
-    AnthropicOptions, ApiProvider, AssistantMessageEvent, AssistantMessageEventStream,
-    AzureOpenAIResponsesOptions, DiagnosticErrorInfo, MistralOptions, OnPayload, OnResponse,
+    AnthropicOptions, AssistantMessageEvent, AssistantMessageEventStream,
+    AzureOpenAIResponsesOptions, MistralOptions, OnPayload, OnResponse,
     OpenAICodexResponsesOptions, OpenAICompletionsOptions, OpenAIResponsesOptions,
     ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamOptions,
-    complete, complete_simple, stream, stream_simple,
+    complete, complete_simple, stream,
 };
-use maestro_models::{
-    clear_api_providers, register_api_provider, reset_api_providers, unregister_api_providers,
-};
+use maestro_models::{ApiProvider, DiagnosticErrorInfo, SharedHandle, stream_simple};
+use maestro_models::{register_api_provider, reset_api_providers, unregister_api_providers};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, PoisonError};
 
+#[cfg(not(target_arch = "wasm32"))]
+/// Expected endpoint paths, owned by the native request observations.
+const EXPECTED_PATHS: [(&str, &str); 6] = [
+    (PROTOCOLS[0].api, "/v1/messages"),
+    (PROTOCOLS[1].api, "/v1/chat/completions"),
+    (PROTOCOLS[2].api, "/v1/chat/completions"),
+    (PROTOCOLS[3].api, "/v1/responses"),
+    (PROTOCOLS[4].api, "/v1/responses"),
+    (PROTOCOLS[5].api, "/codex/responses"),
+];
+
+#[cfg(not(target_arch = "wasm32"))]
 /// How a public operation reaches the protocol.
 #[derive(Clone, Copy, Debug)]
 enum Route {
@@ -36,6 +51,7 @@ enum Route {
     RootSimple,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 const ROUTES: [Route; 6] = [
     Route::GenericStream,
     Route::GenericComplete,
@@ -45,6 +61,7 @@ const ROUTES: [Route; 6] = [
     Route::RootSimple,
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What one invocation observed.
 struct Observed {
     result: SharedAssistantMessage,
@@ -52,6 +69,7 @@ struct Observed {
     hooks: Vec<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Common options with a key, the recording transport and logging hooks.
 fn common(
     text: &str,
@@ -85,6 +103,7 @@ fn common(
     (options, requests, hooks)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Start the typed root raw entry of `protocol`.
 fn root_raw(protocol: &Protocol, common: StreamOptions) -> TestResult<AssistantMessageEventStream> {
     let model = bundled::protocol_model(protocol)?;
@@ -142,6 +161,7 @@ fn root_raw(protocol: &Protocol, common: StreamOptions) -> TestResult<AssistantM
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Start the typed root simple entry of `protocol`.
 fn root_simple(
     protocol: &Protocol,
@@ -167,6 +187,7 @@ fn root_simple(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke `protocol` through `route` with controlled wire text.
 async fn invoke(protocol: &Protocol, route: Route, text: &str) -> TestResult<Observed> {
     let (common, requests, hooks) = common(text, protocol);
@@ -203,21 +224,28 @@ async fn invoke(protocol: &Protocol, route: Route, text: &str) -> TestResult<Obs
     })
 }
 
-/// Hooks a successful call runs; the conversation adapter has no response hook.
+#[cfg(not(target_arch = "wasm32"))]
+/// Hooks a successful call runs under the protocol's response-hook policy.
 fn expected_hooks(protocol: &Protocol) -> &'static [&'static str] {
-    if protocol.api == "mistral-conversations" {
-        &["payload"]
-    } else {
+    if bundled::policy(protocol.api).response_hook {
         &["payload", "response 200"]
+    } else {
+        &["payload"]
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_public_routes_reach_real_adapters() -> TestResult {
     let _registry = bundled::registry();
     maestro_models::reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         for protocol in &PROTOCOLS {
+            let path = EXPECTED_PATHS
+                .iter()
+                .find(|(api, _)| *api == protocol.api)
+                .ok_or("missing protocol path expectation")?
+                .1;
             for route in ROUTES {
                 let text = format!("{} via {route:?}", protocol.api);
                 let seen = invoke(protocol, route, &text).await?;
@@ -226,12 +254,16 @@ fn maestro_public_routes_reach_real_adapters() -> TestResult {
                 assert_eq!(bundled::stop_of(&seen.result), StopReason::Stop, "{label}");
                 assert_eq!(seen.requests.len(), 1, "{label}");
                 let url = seen.requests[0].url.split('?').next().unwrap_or_default();
-                assert!(url.ends_with(protocol.path), "{label}: {url}");
+                assert!(url.ends_with(path), "{label}: {url}");
                 assert_eq!(seen.hooks, expected_hooks(protocol), "{label}");
                 let usage = seen.result.read().map_err(|_| "poisoned")?.usage.clone();
                 assert_eq!(
-                    (usage.input, usage.output, usage.total_tokens),
-                    (3.0, 2.0, 5.0),
+                    (
+                        usage.input,
+                        usage.output,
+                        usage.total_tokens.present().copied()
+                    ),
+                    (3.0, 2.0, Some(5.0)),
                     "{label}"
                 );
             }
@@ -254,23 +286,25 @@ fn failure(message: &str) -> DiagnosticErrorInfo {
 fn custom(api: &str, label: &'static str) -> ApiProvider {
     ApiProvider {
         api: api.into(),
-        stream: Arc::new(SetupFailure(label)),
-        stream_simple: Arc::new(SetupFailure(label)),
+        stream: SharedHandle::new(SetupFailure(label)),
+        stream_simple: SharedHandle::new(SetupFailure(label)),
     }
 }
 
-/// Registered protocol identifiers in registry order.
-fn registered() -> Vec<String> {
-    get_api_providers()
-        .into_iter()
-        .map(|provider| provider.api)
-        .collect()
-}
-
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_initial_registry_is_ready() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun("maestro_initial_registry_is_ready", "fresh", &[]);
+    if !maestro_test_process::selection().is_child() {
+        return {
+            let output =
+                maestro_test_process::TestProcess::current("maestro_initial_registry_is_ready")?
+                    .nocapture()
+                    .env_clear()
+                    .case("fresh")
+                    .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     assert_eq!(registered(), bundled::registered_apis());
     Ok(())
@@ -324,6 +358,7 @@ fn maestro_registration_keeps_custom_order() {
     reset_api_providers();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_reset_restores_builtin_adapters() -> TestResult {
     let _registry = bundled::registry();
@@ -346,7 +381,7 @@ fn maestro_reset_restores_builtin_adapters() -> TestResult {
         old.err().map(|error| error.message),
         Some("custom".to_owned())
     );
-    block_on(false, async {
+    crate::runtime::run(async {
         for protocol in &PROTOCOLS {
             let seen = invoke(protocol, Route::GenericStream, "restored").await?;
             assert_eq!(
@@ -372,11 +407,12 @@ fn maestro_reset_restores_builtin_adapters() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_clear_does_not_reactivate() -> TestResult {
     let _registry = bundled::registry();
     clear_api_providers();
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         for protocol in &PROTOCOLS {
             assert!(registered().is_empty());
             let missing = format!("No API provider registered for api: {}", protocol.api);
@@ -400,6 +436,7 @@ fn maestro_clear_does_not_reactivate() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_custom_setup_errors_stay_immediate() -> TestResult {
     let _registry = bundled::registry();
@@ -417,7 +454,7 @@ fn maestro_custom_setup_errors_stay_immediate() -> TestResult {
         message(stream_simple(model.clone(), bundled::conversation()?, None)).as_deref(),
         Some("custom setup")
     );
-    let completed = block_on(false, async {
+    let completed = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(complete(model, bundled::conversation()?, None)
             .await
             .err()
@@ -428,6 +465,7 @@ fn maestro_custom_setup_errors_stay_immediate() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A controlled stream that ends without publishing its result.
 fn ending_provider() -> ApiProvider {
     ApiProvider {
@@ -437,6 +475,7 @@ fn ending_provider() -> ApiProvider {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_explicit_end_keeps_result_pending() -> TestResult {
     let _registry = bundled::registry();
@@ -444,7 +483,7 @@ fn maestro_explicit_end_keeps_result_pending() -> TestResult {
     register_api_provider(ending_provider(), None);
     let model = bundled::descriptor("ending-api", "https://controlled.invalid")?;
     let started = stream(model.clone(), bundled::conversation()?, None)?;
-    let original = block_on(false, async {
+    let original = crate::runtime::run::<crate::TestResult<_>>(async {
         let events = bundled::drain(&started).await;
         assert!(matches!(
             events.as_slice(),
@@ -479,7 +518,7 @@ fn maestro_explicit_end_keeps_result_pending() -> TestResult {
         None,
     );
     started.end(Some(Arc::clone(&original)));
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         assert!(Arc::ptr_eq(&raw.await?, &original));
         assert!(Arc::ptr_eq(&simple.await?, &original));
         Ok(())
@@ -488,6 +527,7 @@ fn maestro_explicit_end_keeps_result_pending() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The dedicated simple entry of `protocol`, which reports setup failure as `Err`.
 fn dedicated_simple(
     protocol: &Protocol,
@@ -513,6 +553,7 @@ fn dedicated_simple(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Wire facts every protocol must report for a missing key.
 fn expected_setup_error(protocol: &Protocol) -> serde_json::Value {
     json!({
@@ -524,6 +565,7 @@ fn expected_setup_error(protocol: &Protocol) -> serde_json::Value {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Simple options carrying an optional cancellation signal and API key.
 fn signalled(
     signal: Option<&maestro_models::Cancellation>,
@@ -539,6 +581,7 @@ fn signalled(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One terminal error refers to the same shared result handle.
 fn assert_error_identity(
     events: &[AssistantMessageEvent],
@@ -556,6 +599,7 @@ fn assert_error_identity(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A settled keyless failure through every public simple route of `protocol`.
 async fn assert_setup_error(
     protocol: &Protocol,
@@ -607,13 +651,14 @@ async fn assert_setup_error(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_builtin_setup_errors_settle() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     let aborted = maestro_models::Cancellation::new();
     aborted.abort();
-    block_on(false, async {
+    crate::runtime::run(async {
         for protocol in &PROTOCOLS {
             let dedicated = dedicated_simple(protocol, None)?;
             assert_eq!(
@@ -641,6 +686,7 @@ fn maestro_builtin_setup_errors_settle() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The chat protocol's answer "ab" in separate body reads.
 fn chat_chunks() -> Vec<Vec<u8>> {
     let frame = |delta: serde_json::Value, finish: serde_json::Value| {
@@ -655,6 +701,7 @@ fn chat_chunks() -> Vec<Vec<u8>> {
     ]
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The shared partial handle of a stream's first event.
 fn first_handle(events: &[AssistantMessageEvent]) -> TestResult<SharedAssistantMessage> {
     match events.first() {
@@ -663,6 +710,7 @@ fn first_handle(events: &[AssistantMessageEvent]) -> TestResult<SharedAssistantM
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Every delta shares the start handle; returns their concatenation.
 fn shared_deltas(events: &[AssistantMessageEvent], handle: &SharedAssistantMessage) -> String {
     let mut deltas = String::new();
@@ -681,6 +729,7 @@ fn shared_deltas(events: &[AssistantMessageEvent], handle: &SharedAssistantMessa
     deltas
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Payload edits and one shared handle across start, deltas, terminal and results.
 async fn assert_shared_results(protocol: &Protocol, root: bool) -> TestResult {
     let chunks = if protocol.api == "openai-completions" {
@@ -737,6 +786,7 @@ async fn assert_shared_results(protocol: &Protocol, root: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Common options whose payload or response hook fails.
 fn failing_hook(protocol: &Protocol, fail_payload: bool) -> (StreamOptions, bundled::Requests) {
     let (mut common, requests, _) = common("unused", protocol);
@@ -752,6 +802,7 @@ fn failing_hook(protocol: &Protocol, fail_payload: bool) -> (StreamOptions, bund
     (common, requests)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A failing hook ends `protocol` through its own error path.
 async fn assert_hook_failure(protocol: &Protocol, fail_payload: bool) -> TestResult {
     let (common, requests) = failing_hook(protocol, fail_payload);
@@ -782,11 +833,12 @@ async fn assert_hook_failure(protocol: &Protocol, fail_payload: bool) -> TestRes
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_root_hooks_keep_shared_results() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         assert_shared_results(&PROTOCOLS[1], false).await?;
         for root in [false, true] {
             assert_shared_results(&PROTOCOLS[5], root).await?;
@@ -805,6 +857,7 @@ fn maestro_root_hooks_keep_shared_results() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A cloud body that publishes one text delta, then breaks.
 fn broken_body() -> TestResult<maestro_models::HttpBody> {
     let frames = String::from_utf8(bundled::text_body("azure-openai-responses", "partial"))?;
@@ -820,6 +873,7 @@ fn broken_body() -> TestResult<maestro_models::HttpBody> {
     ])))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A transport that answers once with `body`.
 fn single_body_fetch(body: maestro_models::HttpBody) -> maestro_models::Fetch {
     let slot = Arc::new(Mutex::new(Some(body)));
@@ -838,11 +892,12 @@ fn single_body_fetch(body: maestro_models::HttpBody) -> maestro_models::Fetch {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_cloud_partial_failure_settles() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         let common = StreamOptions {
             api_key: Some("controlled-key".into()),
             fetch: Some(single_body_fetch(broken_body()?)),
@@ -871,6 +926,7 @@ fn maestro_cloud_partial_failure_settles() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Known extras of the wrong shape, by protocol.
 fn rejected_extras() -> [(&'static str, serde_json::Value); 12] {
     [
@@ -898,6 +954,7 @@ fn rejected_extras() -> [(&'static str, serde_json::Value); 12] {
     ]
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Known extras written as maps or arrays where a string or an object is required.
 fn rejected_shapes() -> [(&'static str, serde_json::Value); 13] {
     [
@@ -944,6 +1001,7 @@ fn rejected_shapes() -> [(&'static str, serde_json::Value); 13] {
     ]
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invalid selected fields, including strings encoded as tagged objects or arrays.
 fn rejected_session_extras() -> Vec<(&'static str, serde_json::Value)> {
     let mut cases = Vec::new();
@@ -974,11 +1032,14 @@ fn rejected_session_extras() -> Vec<(&'static str, serde_json::Value)> {
     cases
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Hook log shared with the options that fill it.
 type Hooks = Arc<Mutex<Vec<String>>>;
+#[cfg(not(target_arch = "wasm32"))]
 /// Raw options, the requests they send and the hooks they run.
 type ExtraSetup = (ProviderStreamOptions, bundled::Requests, Hooks);
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Raw options sending `extra` to `protocol`, with its recorders.
 fn extra_options(
     protocol: &Protocol,
@@ -998,11 +1059,12 @@ fn extra_options(
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_invalid_extra_reports_decode_failure() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         for (index, (api, extra)) in rejected_extras()
             .iter()
             .chain(&rejected_shapes())
@@ -1049,18 +1111,22 @@ fn maestro_invalid_extra_reports_decode_failure() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Counts drops of the last handle to a stored object.
 struct Released(Arc<std::sync::atomic::AtomicUsize>);
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Released {
     fn drop(&mut self) {
         self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The `u32` and `String` objects each call received.
 type ObjectsSeen = Arc<Mutex<Vec<(Option<u32>, Option<String>)>>>;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A provider recording the `u32` and `String` objects each raw call received.
 fn recording_provider(seen: &ObjectsSeen) -> ApiProvider {
     let recorder = Arc::clone(seen);
@@ -1071,6 +1137,7 @@ fn recording_provider(seen: &ObjectsSeen) -> ApiProvider {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_provider_objects_keep_typed_aliases() -> TestResult {
     fn assert_send_sync<T: Send + Sync>() {}
@@ -1109,7 +1176,7 @@ fn maestro_provider_objects_keep_typed_aliases() -> TestResult {
         })
     };
     assert!(stream(model.clone(), bundled::conversation()?, options(&objects)).is_err());
-    let completed = block_on(false, async {
+    let completed = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(
             complete(model, bundled::conversation()?, options(&replaced))
                 .await
@@ -1135,9 +1202,11 @@ fn maestro_provider_objects_keep_typed_aliases() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Payloads and retry counts an injected client received.
 type ClientCalls = Arc<Mutex<Vec<(serde_json::Value, Option<f64>)>>>;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An injected message client answering with `text` and recording what it was sent.
 fn injected_client(sent: &ClientCalls) -> maestro_models::AnthropicClient {
     let recorder = Arc::clone(sent);
@@ -1157,6 +1226,7 @@ fn injected_client(sent: &ClientCalls) -> maestro_models::AnthropicClient {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_injected_client_bypasses_default_setup() -> TestResult {
     let _registry = bundled::registry();
@@ -1172,7 +1242,7 @@ fn maestro_injected_client_bypasses_default_setup() -> TestResult {
     };
     let mut model = bundled::protocol_model(&PROTOCOLS[0])?;
     model.base_url = "not a url".into();
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         let mut objects = maestro_models::ProviderObjects::default();
         objects.insert(Arc::clone(&client));
         let raw = ProviderStreamOptions {
@@ -1221,14 +1291,21 @@ fn maestro_injected_client_bypasses_default_setup() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_first_access_is_safe_across_threads() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            "maestro_first_access_is_safe_across_threads",
-            "threads",
-            &[],
-        );
+    if !maestro_test_process::selection().is_child() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_first_access_is_safe_across_threads",
+            )?
+            .nocapture()
+            .env_clear()
+            .case("threads")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     let readers = 8;
     let start = Arc::new(std::sync::Barrier::new(readers + 1));
@@ -1258,6 +1335,7 @@ fn maestro_first_access_is_safe_across_threads() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A response hook fails once, then the existing retry completes the same invocation.
 async fn assert_session_response_retry() -> TestResult {
     let (mut common, requests, _) = common("retried", &PROTOCOLS[5]);
@@ -1280,17 +1358,22 @@ async fn assert_session_response_retry() -> TestResult {
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 2);
     let usage = &result.read().map_err(|_| "poisoned")?.usage;
     assert_eq!(
-        (usage.input, usage.output, usage.total_tokens),
-        (3.0, 2.0, 5.0)
+        (
+            usage.input,
+            usage.output,
+            usage.total_tokens.present().copied()
+        ),
+        (3.0, 2.0, Some(5.0))
     );
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_session_cache_affinity_completes() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         for session in [None, Some(""), Some("affinity")] {
             let (mut common, requests, _) = common("cache affinity e2e success", &PROTOCOLS[5]);
             common.session_id = session.map(str::to_owned);
@@ -1326,11 +1409,12 @@ fn maestro_response_session_cache_affinity_completes() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_session_raw_key_errors_settle() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         for (key, aborted) in [
             (None, false),
             (None, true),
@@ -1345,6 +1429,7 @@ fn maestro_response_session_raw_key_errors_settle() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Raw key failure preserves cancellation, terminal identity and the absence of effects.
 async fn assert_raw_key_error(key: Option<String>, aborted: bool, route: Route) -> TestResult {
     let (mut common, requests, hooks) = common("unused", &PROTOCOLS[5]);
@@ -1387,6 +1472,7 @@ async fn assert_raw_key_error(key: Option<String>, aborted: bool, route: Route) 
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A dedicated simple entry fails synchronously with the caller's own diagnostic fields.
 fn assert_missing_key(row: &key_selection::Row) -> TestResult {
     let protocol = PROTOCOLS
@@ -1415,6 +1501,7 @@ fn assert_missing_key(row: &key_selection::Row) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_missing_key_keeps_each_callers_diagnostic() -> TestResult {
     let _registry = bundled::registry();
@@ -1441,8 +1528,10 @@ impl<E: maestro_models::ProviderExecution, O>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct EndingProvider;
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for EndingProvider
 {
@@ -1467,8 +1556,10 @@ impl<E: maestro_models::ProviderExecution, O>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct ObjectRecorder(ObjectsSeen);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution>
     maestro_models::Invoke<
         E,
@@ -1496,8 +1587,10 @@ impl<E: maestro_models::ProviderExecution>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Keep an explicitly ended stream's original result observation across replacement.
 struct RetainedOutput(AssistantMessageEventStream);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for RetainedOutput
 {

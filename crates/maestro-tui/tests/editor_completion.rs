@@ -1,6 +1,5 @@
 #![cfg(test)]
 //! Completion requests, menus and key routing through the public editor.
-#[allow(dead_code, reason = "Each test crate uses part of the shared rig.")]
 use crate::completion_rig as rig;
 use crate::editor_host as support;
 use maestro_cancellation::Cancellation;
@@ -17,7 +16,6 @@ use maestro_tui::{
 use rig::{Rig, offer};
 use std::{cell::RefCell, future::Future, io, pin::Pin, rc::Rc};
 
-#[allow(dead_code, reason = "Only the one-step suspension is used here.")]
 use crate::fixtures::futures;
 use futures::YieldOnce;
 
@@ -1223,8 +1221,8 @@ fn open_plain(rig: &Rig) {
 /// Candidates `{argument}1` and `{argument}2`.
 fn numbered(argument: &str) -> Vec<AutocompleteItem> {
     vec![
-        rig::item(&format!("{argument}1")),
-        rig::item(&format!("{argument}2")),
+        crate::fixtures::providers::item(&format!("{argument}1")),
+        crate::fixtures::providers::item(&format!("{argument}2")),
     ]
 }
 

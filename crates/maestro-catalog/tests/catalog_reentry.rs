@@ -3,6 +3,7 @@
 //! Public callback re-entry and phase-specific catalog observations.
 use crate::{dynamic, request_support, support};
 use maestro_catalog::ModelRegistry;
+use maestro_models::SharedHandle;
 use std::sync::{Arc, Mutex};
 
 #[test]
@@ -11,7 +12,8 @@ fn registration_transform_can_reenter_catalog() {
         return;
     }
     for throws in [false, true] {
-        let registry = Arc::new(ModelRegistry::in_memory(support::auth()).unwrap());
+        let registry =
+            Arc::new(ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap());
         registry.get_all().write().unwrap().clear();
         registry
             .auth_storage()
@@ -63,7 +65,8 @@ fn registration_transform_can_reenter_catalog() {
 
 /// Empty published view for independently recorded callback scenarios.
 fn registry() -> Arc<ModelRegistry> {
-    let registry = Arc::new(ModelRegistry::in_memory(support::auth()).unwrap());
+    let registry =
+        Arc::new(ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap());
     registry.get_all().write().unwrap().clear();
     registry
 }
@@ -145,7 +148,7 @@ fn selected_transform_return_wins_over_reentrant_writes() {
         for model in config.write().unwrap().models.as_mut().unwrap() {
             model.name.clone_from(&model.id);
         }
-        let retained = Arc::downgrade(&config);
+        let retained = SharedHandle::downgrade(&config);
         let error = registry
             .register_provider("outer", config)
             .err()
@@ -321,7 +324,7 @@ fn refresh_stops_at_first_reentrant_transform_failure() {
         .auth_storage()
         .set("later", request_support::tokens(f64::MAX));
     let later = recording(&events, "later");
-    let retained = Arc::downgrade(&later);
+    let retained = SharedHandle::downgrade(&later);
     registry.register_provider("outer", outer).unwrap();
     registry.register_provider("later", later).unwrap();
     events.lock().unwrap().clear();
@@ -376,9 +379,7 @@ fn request_auth_keeps_early_provider_and_late_model_sources() {
             .auth_storage()
             .set("p", request_support::tokens(0.0));
         request_support::success(
-            request_support::run(
-                registry.get_api_key_and_headers(&model, &request_support::Operations::default()),
-            ),
+            request_support::run(registry.get_api_key_and_headers(&model)),
             Some("unused-access"),
             &[("P", early), ("M", late)],
         );
@@ -400,19 +401,49 @@ fn header_config(
 }
 
 /// Supplied configuration effects with an independently controlled command result.
-struct EffectOperations<'a> {
-    effect: &'a dyn Fn(&str),
-    output: Option<&'a str>,
+struct EffectOperations {
+    /// Caller code the configured command runs.
+    effect: Box<dyn Fn(&str) + Send + Sync>,
+    /// Completed command output.
+    output: Option<&'static str>,
+    /// Commands asked for, in order.
+    calls: Arc<Mutex<Vec<String>>>,
 }
-impl maestro_credentials::ConfigValueOperations for EffectOperations<'_> {
-    fn environment(&self, name: &str) -> Option<String> {
-        (self.effect)(name);
-        None
-    }
+impl maestro_credentials::ConfigValueOperations for EffectOperations {
     fn execute(&self, command: &str) -> Option<Vec<u8>> {
+        self.calls.lock().unwrap().push(command.to_owned());
         (self.effect)(command);
         self.output.map(|s| s.as_bytes().to_vec())
     }
+}
+/// Operations that reach their own catalog once ownership is established.
+fn reentrant(
+    slot: &Arc<std::sync::OnceLock<std::sync::Weak<ModelRegistry>>>,
+    effect: impl Fn(&ModelRegistry, &str) + Send + Sync + 'static,
+    output: Option<&'static str>,
+) -> Arc<EffectOperations> {
+    let slot = Arc::clone(slot);
+    Arc::new(EffectOperations {
+        effect: Box::new(move |command| {
+            let registry = slot.get().unwrap().upgrade().unwrap();
+            effect(&registry, command);
+        }),
+        output,
+        calls: Arc::default(),
+    })
+}
+/// Offline catalog over `values`, bound to the handle that reaches it.
+fn bind(
+    slot: &Arc<std::sync::OnceLock<std::sync::Weak<ModelRegistry>>>,
+    values: &Arc<EffectOperations>,
+) -> Arc<ModelRegistry> {
+    let registry = Arc::new(support::memory_with(values.clone()));
+    registry.get_all().write().unwrap().clear();
+    assert!(
+        slot.set(Arc::downgrade(&registry)).is_ok(),
+        "registry bound once"
+    );
+    registry
 }
 #[test]
 fn provider_key_samples_fallback_after_credential_effect() {
@@ -420,7 +451,22 @@ fn provider_key_samples_fallback_after_credential_effect() {
         return;
     }
     for edit in ["replace", "remove", "add"] {
-        let registry = registry();
+        let slot: Arc<std::sync::OnceLock<std::sync::Weak<ModelRegistry>>> = Arc::default();
+        let values = reentrant(
+            &slot,
+            move |registry, _| {
+                assert!(registry.get_error().is_none());
+                if edit == "remove" {
+                    registry.unregister_provider("p").unwrap();
+                } else {
+                    let config = dynamic::config(&["m"]);
+                    config.write().unwrap().api_key = Some("later-key".into());
+                    registry.register_provider("p", config).unwrap();
+                }
+            },
+            None,
+        );
+        let registry = bind(&slot, &values);
         if edit != "add" {
             registry
                 .register_provider("p", dynamic::config(&["m"]))
@@ -433,24 +479,7 @@ fn provider_key_samples_fallback_after_credential_effect() {
             }),
         );
         maestro_credentials::clear_config_value_cache();
-        let effect = |_: &str| {
-            assert!(registry.get_error().is_none());
-            if edit == "remove" {
-                registry.unregister_provider("p").unwrap();
-            } else {
-                let config = dynamic::config(&["m"]);
-                config.write().unwrap().api_key = Some("later-key".into());
-                registry.register_provider("p", config).unwrap();
-            }
-        };
-        let key = request_support::run(registry.get_api_key_for_provider(
-            "p",
-            &EffectOperations {
-                effect: &effect,
-                output: None,
-            },
-        ))
-        .unwrap();
+        let key = request_support::run(registry.get_api_key_for_provider("p")).unwrap();
         assert!(
             key.as_deref().eq(&if edit == "remove" {
                 None
@@ -459,7 +488,7 @@ fn provider_key_samples_fallback_after_credential_effect() {
             }),
             "late configured fallback"
         );
-        empty_key_blocks_fallback(&registry);
+        empty_key_blocks_fallback(&registry, &values.calls);
     }
 }
 
@@ -508,7 +537,18 @@ fn credential_and_metadata_effects_can_reenter_catalog() {
     if dynamic::isolated("credential_and_metadata_effects_can_reenter_catalog") {
         return;
     }
-    let registry = registry();
+    let slot: Arc<std::sync::OnceLock<std::sync::Weak<ModelRegistry>>> = Arc::default();
+    let values = reentrant(
+        &slot,
+        |registry, _| {
+            registry
+                .register_provider("configuration", dynamic::config(&["nested"]))
+                .unwrap();
+            assert!(registry.find("fallback", "nested").is_some());
+        },
+        Some("resolved"),
+    );
+    let registry = bind(&slot, &values);
     extraction_reenters(&registry);
     let weak = Arc::downgrade(&registry);
     let visits = Arc::new(Mutex::new(Vec::new()));
@@ -530,7 +570,7 @@ fn credential_and_metadata_effects_can_reenter_catalog() {
     assert!(registry.has_configured_auth(&model).unwrap());
     assert!(
         registry
-            .get_provider_auth_status("metadata", &request_support::Operations::default())
+            .get_provider_auth_status("metadata")
             .unwrap()
             .configured
     );
@@ -540,25 +580,11 @@ fn credential_and_metadata_effects_can_reenter_catalog() {
         *visits.lock().unwrap(),
         ["metadata", "metadata", "metadata"]
     );
-    let effect = |_: &str| {
-        registry
-            .register_provider("configuration", dynamic::config(&["nested"]))
-            .unwrap();
-        assert!(registry.find("fallback", "nested").is_some());
-    };
-    let operations = EffectOperations {
-        effect: &effect,
-        output: Some("resolved"),
-    };
-    let key =
-        request_support::run(registry.get_api_key_for_provider("fallback", &operations)).unwrap();
+    let key = request_support::run(registry.get_api_key_for_provider("fallback")).unwrap();
     assert!(
         key.as_deref().eq(&Some("resolved")),
         "configured command result"
     );
-    registry
-        .get_provider_auth_status("metadata", &operations)
-        .unwrap();
     assert!(registry.find("configuration", "nested").is_some());
     metadata_error_stops_effects(&registry);
 }
@@ -647,8 +673,13 @@ impl maestro_catalog::ModelFileOperations for FileEffects {
 fn file_registry() -> (Arc<ModelRegistry>, Arc<Files>) {
     let files = Arc::new(Files::default());
     let registry = Arc::new(
-        ModelRegistry::with_operations(support::auth(), "models", FileEffects(files.clone()))
-            .unwrap(),
+        ModelRegistry::with_operations(
+            support::auth(),
+            "models",
+            FileEffects(files.clone()),
+            crate::support::values(),
+        )
+        .unwrap(),
     );
     *files.registry.lock().unwrap() = Arc::downgrade(&registry);
     files.events.lock().unwrap().clear();
@@ -779,7 +810,9 @@ fn native_shared_catalog_and_local_action_both_work() {
     .join()
     .unwrap();
     assert!(registry.find("thread", "m").is_some());
-    let local = std::rc::Rc::new(ModelRegistry::in_memory(support::auth()).unwrap());
+    let local = std::rc::Rc::new(
+        ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap(),
+    );
     let count = std::rc::Rc::new(std::cell::Cell::new(0));
     let action = {
         let local = local.clone();
@@ -828,28 +861,21 @@ fn edit_selection(
 }
 
 /// An empty stored value is present, never a configured fallback request.
-fn empty_key_blocks_fallback(registry: &ModelRegistry) {
+fn empty_key_blocks_fallback(registry: &ModelRegistry, commands: &Mutex<Vec<String>>) {
     registry.auth_storage().set(
         "p",
         maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
             key: String::new(),
         }),
     );
-    let never = |name: &str| {
-        assert!(
-            name.is_empty(),
-            "empty stored credential must not resolve fallback"
-        );
-    };
-    let key = request_support::run(registry.get_api_key_for_provider(
-        "p",
-        &EffectOperations {
-            effect: &never,
-            output: None,
-        },
-    ))
-    .unwrap();
+    let asked = commands.lock().unwrap().len();
+    let key = request_support::run(registry.get_api_key_for_provider("p")).unwrap();
     assert!(key.as_deref().eq(&Some("")), "present empty credential");
+    assert_eq!(
+        commands.lock().unwrap().len(),
+        asked,
+        "empty stored credential must not resolve fallback"
+    );
 }
 
 /// Credential extraction invokes caller code without a catalog guard.
@@ -873,29 +899,20 @@ fn extraction_reenters(registry: &Arc<ModelRegistry>) {
         .auth_storage()
         .set("p", request_support::tokens(f64::MAX));
     request_support::success(
-        request_support::request(registry, &request_support::Operations::default()),
+        request_support::request(registry),
         Some("unused-access"),
         &[],
     );
     assert!(registry.find("extraction", "nested").is_some());
 }
 
-/// Credential errors stop later configured-value effects.
+/// A credential error ends provider auth status with its fallback diagnostic.
 fn metadata_error_stops_effects(registry: &ModelRegistry) {
     registry
         .auth_storage()
         .set_fallback_resolver(|_| Err(dynamic::account_failure("fallback refused")));
-    let never = |_: &str| panic!("credential failure must stop configured effects");
     dynamic::assert_account_failure(
-        &registry
-            .get_provider_auth_status(
-                "metadata",
-                &EffectOperations {
-                    effect: &never,
-                    output: None,
-                },
-            )
-            .unwrap_err(),
+        &registry.get_provider_auth_status("metadata").unwrap_err(),
         "fallback refused",
     );
 }

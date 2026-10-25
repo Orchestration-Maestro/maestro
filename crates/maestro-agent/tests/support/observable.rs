@@ -47,6 +47,22 @@ pub fn drain<C: CustomAgentMessages + 'static>(
 pub fn poll<T>(future: std::pin::Pin<&mut (impl Future<Output = T> + ?Sized)>) -> Poll<T> {
     future.poll(&mut Context::from_waker(Waker::noop()))
 }
+/// Select role tags without losing sequence or repeated occurrences.
+///
+/// # Panics
+/// Panics on a custom entry.
+#[must_use]
+pub fn roles(messages: &[AgentMessage]) -> Vec<&'static str> {
+    messages
+        .iter()
+        .map(|m| match m {
+            AgentMessage::User(_) => "user",
+            AgentMessage::Assistant(_) => "assistant",
+            AgentMessage::ToolResult(_) => "toolResult",
+            AgentMessage::Custom(_) => unreachable!(),
+        })
+        .collect()
+}
 /// Identify variants while retaining the original payloads separately.
 #[must_use]
 pub fn kind<C: CustomAgentMessages>(event: &AgentEvent<C>) -> &'static str {
@@ -90,10 +106,7 @@ pub fn text(message: &AgentMessage) -> String {
 pub fn artifact(text: &str, terminate: bool) -> maestro_agent::AgentToolResult {
     maestro_agent::AgentToolResult {
         content: vec![maestro_models::UserBlock::Text(
-            maestro_models::TextContent {
-                text: text.into(),
-                text_signature: None,
-            },
+            maestro_models::TextContent::new(text.into()),
         )],
         details: Some(serde_json::json!({"output":text})),
         terminate: Some(terminate),
@@ -131,7 +144,7 @@ pub fn tool(name: &str, execute: maestro_agent::ExecuteTool) -> maestro_agent::S
         definition: maestro_models::Tool {
             name: name.into(),
             description: name.into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         label: name.into(),
         prepare_arguments: None,

@@ -1,5 +1,5 @@
 //! Authored metadata becomes the real native local tool definition.
-use crate::{guest_calls::Handle, local_resources::Registry, writer_reads::decode};
+use crate::{guest_calls::Handle, local_resources::Registry};
 use maestro_extensions::{
     EventBus, Local, Presence, Tool, ToolExecutionMode, ToolRenderShell, local::ToolDefinition,
 };
@@ -16,8 +16,6 @@ struct Metadata {
     label: String,
     /// Literal model-facing description.
     description: String,
-    /// Authored semantic JSON schema.
-    parameters: Value,
     /// Independently optional prompt text.
     #[serde(default)]
     prompt_snippet: Presence<String>,
@@ -59,13 +57,14 @@ pub(crate) fn definition(
     registry: Registry,
     events: EventBus<Local>,
 ) -> Result<ToolDefinition<maestro_extensions::ExtensionContext, Value, Value, ()>, String> {
-    let metadata: Metadata = decode(metadata)?;
+    let (metadata, parameters): (Metadata, _) =
+        maestro_extensions::schema_transport::decode_metadata(metadata)?;
     let prepare_arguments = prepare.map(|prepare| prepare.prepare(registry.clone(), events));
     Ok(ToolDefinition {
         definition: Tool {
             name: metadata.name,
             description: metadata.description,
-            parameters: metadata.parameters,
+            parameters,
         },
         label: metadata.label,
         prompt_snippet: optional(metadata.prompt_snippet),

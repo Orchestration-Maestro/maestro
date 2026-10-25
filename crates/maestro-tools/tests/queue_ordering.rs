@@ -7,7 +7,7 @@ use crate::write_support;
 
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use maestro_tools::with_file_mutation_queue as queue;
-use read_support::TempDir;
+use read_support::{Fixture, Scratch};
 use serde_json::json;
 use std::task::Poll;
 use tokio::sync::oneshot;
@@ -39,7 +39,7 @@ fn expected_journal(test: &str) -> Vec<String> {
 
 #[test]
 fn mutation_queue_keeps_invocation_order_before_waiting() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let journal = Journal::default();
     let (open_a, gate_a) = Gate::new();
     let first = format!("{}/same.txt", dir.text());
@@ -61,7 +61,7 @@ fn mutation_queue_keeps_invocation_order_before_waiting() {
 
 #[test]
 fn mutation_queue_different_paths_can_finish_out_of_order() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let journal = Journal::default();
     let (open_a, gate_a) = Gate::new();
     let mut a = queue(
@@ -85,7 +85,7 @@ fn mutation_queue_different_paths_can_finish_out_of_order() {
 #[cfg(unix)]
 #[test]
 fn mutation_queue_serializes_existing_symlink_aliases() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let target = dir.file("target.txt", b"x");
     let alias = format!("{}/alias.txt", dir.text());
     std::os::unix::fs::symlink(&target, &alias).unwrap();
@@ -122,11 +122,11 @@ fn mutation_queue_raw_names_preserve_literal_path_identity() {
         pair: [String; 2],
     }
     for row in rows("mutation_queue_raw_names_preserve_literal_path_identity") {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let target = dir.file("target.txt", b"x");
         #[cfg(unix)]
-        std::os::unix::fs::symlink(&target, dir.0.join("alias.txt")).unwrap();
-        std::fs::hard_link(&target, dir.0.join("hard.txt")).unwrap();
+        std::os::unix::fs::symlink(&target, dir.path().join("alias.txt")).unwrap();
+        std::fs::hard_link(&target, dir.path().join("hard.txt")).unwrap();
         let [first, second] = serde_json::from_value::<Input>(row.input).unwrap().pair;
         let spell = |name: &str| {
             if IN_DIRECTORY.contains(&name) {
@@ -164,7 +164,7 @@ fn mutation_queue_failure_does_not_poison_following_work() {
         stack: Some("controlled stack".into()),
         code: Some(maestro_models::DiagnosticCode::Text("E_CONTROL".into())),
     };
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = format!("{}/f.txt", dir.text());
     let (open_a, gate_a) = Gate::new();
     let expected_error = failure.clone();
@@ -187,7 +187,7 @@ fn mutation_queue_failure_does_not_poison_following_work() {
 
 #[test]
 fn mutation_queue_dropped_middle_waiter_preserves_active_head() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = format!("{}/m.txt", dir.text());
     let journal = Journal::default();
     let (open_a, gate_a) = Gate::new();

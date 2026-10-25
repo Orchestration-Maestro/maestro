@@ -1,5 +1,6 @@
 //! Strict PDF oracle records and public loading helpers.
 #![cfg(test)]
+use super::run;
 use base64::{Engine, engine::general_purpose::STANDARD};
 use hayro::vello_cpu::Pixmap;
 use maestro_app::browser::utils::attachment_utils::{
@@ -132,13 +133,6 @@ pub fn documents() -> Vec<Document> {
 /// Read complete source routes.
 pub fn routes() -> Vec<Route> {
     serde_json::from_str(include_str!("../fixtures/pdf/routes.json")).unwrap()
-}
-/// Drive one operation without network access.
-pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 /// Load one document through the public owner.
 pub fn load(name: &str) -> Result<Attachment, AttachmentError> {
@@ -318,6 +312,16 @@ enum TextShowInput {
 /// Read the complete text-show corpus.
 pub fn text_shows() -> Vec<TextShow> {
     serde_json::from_str(include_str!("../fixtures/pdf/text-shows.json")).unwrap()
+}
+/// Enumerate binary inputs consumed by the text-show corpus.
+pub fn text_show_files() -> Vec<String> {
+    text_shows()
+        .into_iter()
+        .filter_map(|row| match row.input {
+            TextShowInput::File { file } => Some(file),
+            TextShowInput::Content { .. } => None,
+        })
+        .collect()
 }
 /// Assert each selected row and return the attachments for extra pixel checks.
 pub fn check_text_shows(test: &str, count: usize) -> Vec<Attachment> {

@@ -1,6 +1,6 @@
 //! Browser tool dispatch through retained typed registrations.
 #![cfg(test)]
-use maestro_web::browser::attachment_content::AttachmentUiError;
+use maestro_web::tools::types::ToolUiError;
 use maestro_web::tools::{
     renderer_registry::{TOOL_RENDERERS, get_tool_renderer, register_tool_renderer},
     types::{ToolRenderResult, ToolRenderer, ToolRendererBinding, ToolResultMessageView},
@@ -9,14 +9,16 @@ use serde_json::Value;
 use std::rc::Rc;
 
 struct Renderer(&'static str);
-impl ToolRenderer for Renderer {
+impl ToolRenderer<Value> for Renderer {
     fn render(
         &self,
         _: Option<&Value>,
         _: Option<ToolResultMessageView<'_>>,
         _: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
-        Err(AttachmentUiError::Host(self.0.into()))
+    ) -> Result<ToolRenderResult, ToolUiError> {
+        Err(ToolUiError::Host(
+            maestro_web::browser::attachment_content::AttachmentHostError::Host(self.0.into()),
+        ))
     }
 }
 
@@ -24,12 +26,12 @@ impl ToolRenderer for Renderer {
 fn registry_preserves_replacement_and_retained_handles() {
     TOOL_RENDERERS.with(|all| all.borrow_mut().clear());
     assert!(get_tool_renderer::<Value, Value>("missing").is_none());
-    let renderer: Rc<dyn ToolRenderer> = Rc::new(Renderer("original"));
+    let renderer: Rc<dyn ToolRenderer<Value>> = Rc::new(Renderer("original"));
     for name in ["", "雪", "__proto__"] {
         register_tool_renderer(name, ToolRendererBinding::from_raw(renderer.clone()));
     }
     let retained = get_tool_renderer::<Value, Value>("雪").unwrap();
-    let replacement: Rc<dyn ToolRenderer> = Rc::new(Renderer("replacement"));
+    let replacement: Rc<dyn ToolRenderer<Value>> = Rc::new(Renderer("replacement"));
     register_tool_renderer("雪", ToolRendererBinding::from_raw(replacement.clone()));
     let current = get_tool_renderer::<Value, Value>("雪").unwrap();
     assert!(Rc::ptr_eq(&current, &replacement));
@@ -54,8 +56,7 @@ fn registry_preserves_replacement_and_retained_handles() {
     );
 }
 
-#[cfg(test)]
-pub mod tool_renderer_support;
+use crate::tool_renderer_support;
 use maestro_web::{render_tool, set_show_json_mode, tools::types::ToolParams};
 use std::cell::{Cell, RefCell};
 use tool_renderer_support::{Renderer as CallbackRenderer, content, message, reset};
@@ -69,7 +70,7 @@ fn tool_dispatch_forwards_complete_arguments_and_custom_wrapper_choice() {
         ToolRendererBinding::from_raw::<Value, Value>(Rc::new(Renderer("controlled"))),
     );
     assert!(
-        matches!(render_tool::<Value,Value>("failure",None,None,false),Err(AttachmentUiError::Host(message)) if message == "controlled")
+        matches!(render_tool::<Value,Value>("failure",None,None,false),Err(ToolUiError::Host(maestro_web::browser::attachment_content::AttachmentHostError::Host(message))) if message == "controlled")
     );
 }
 
@@ -77,11 +78,11 @@ struct Native {
     value: Rc<Cell<u32>>,
     formatted: Rc<Cell<usize>>,
 }
-fn format_native(input: &Native) -> Result<Option<String>, AttachmentUiError> {
+fn format_native(input: &Native) -> Result<Option<String>, ToolUiError> {
     input.formatted.set(input.formatted.get() + 1);
     maestro_app::pretty_json(&serde_json::json!(input.value.get()))
         .map(Some)
-        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))
+        .map_err(|error| ToolUiError::Presentation(error.to_string()))
 }
 struct Details(Rc<Cell<u32>>);
 #[test]
@@ -193,7 +194,7 @@ fn typed_tool_renderer_json_admission_preserves_borrowed_message_fields() {
         .is_custom
     );
     assert_eq!(seen.get(), 1);
-    let raw: Rc<dyn ToolRenderer> = Rc::new(Renderer("original"));
+    let raw: Rc<dyn ToolRenderer<Value>> = Rc::new(Renderer("original"));
     let binding = ToolRendererBinding::from_typed(raw.clone());
     assert!(Rc::ptr_eq(
         &binding.renderer::<Value, Value>().unwrap(),
@@ -259,7 +260,7 @@ fn json_mode_bypasses_custom_renderers_without_unregistering() {
     reset();
     let calls = Rc::new(Cell::new(0));
     let count = calls.clone();
-    let renderer: Rc<dyn ToolRenderer> = Rc::new(CallbackRenderer(Rc::new(
+    let renderer: Rc<dyn ToolRenderer<Value>> = Rc::new(CallbackRenderer(Rc::new(
         move |_: Option<&Value>, _: Option<ToolResultMessageView<'_>>, _| {
             count.set(count.get() + 1);
             Ok(content("custom", true))
@@ -339,14 +340,6 @@ fn renderer_callback_can_replace_registry_entries() {
     assert!(get_tool_renderer::<Value, Value>("other").is_some());
 }
 
-#[path = "support/brand.rs"]
-mod brand;
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod copy_button_support;
-mod effects_support;
-mod support;
-
 /// Raw admission remains available after independently selected decoder failures.
 fn raw_registration_after_decoder_failures() {
     let input = Native {
@@ -371,5 +364,52 @@ fn raw_registration_after_decoder_failures() {
         )
         .unwrap()
         .is_custom
+    );
+}
+
+/// A canvas renderer that names the content parameter explicitly.
+struct ExplicitCanvas(Rc<Cell<u32>>);
+impl ToolRenderer<Value, Value, Box<dyn maestro_web::tools::types::ToolContent>>
+    for ExplicitCanvas
+{
+    fn render(
+        &self,
+        _: Option<&Value>,
+        _: Option<ToolResultMessageView<'_>>,
+        _: bool,
+    ) -> Result<ToolRenderResult<Box<dyn maestro_web::tools::types::ToolContent>>, ToolUiError>
+    {
+        self.0.set(self.0.get() + 1);
+        Ok(content("explicit", true))
+    }
+}
+
+/// Canvas renderers with the defaulted or explicit content type dispatch as before.
+#[test]
+fn content_parameter_keeps_canvas_renderers_working() {
+    reset();
+    let calls = Rc::new(Cell::new(0));
+    register_tool_renderer(
+        "explicit",
+        ToolRendererBinding::from_raw::<Value, Value>(Rc::new(ExplicitCanvas(calls.clone()))),
+    );
+    let count = calls.clone();
+    let defaulted: Rc<dyn ToolRenderer<Value>> = Rc::new(CallbackRenderer(Rc::new(
+        move |_: Option<&Value>, _: Option<ToolResultMessageView<'_>>, _| {
+            count.set(count.get() + 10);
+            Ok(content("defaulted", false))
+        },
+    )));
+    register_tool_renderer("defaulted", ToolRendererBinding::from_raw(defaulted));
+    let explicit: ToolRenderResult =
+        render_tool::<Value, Value>("explicit", None, None, false).unwrap();
+    let defaulted = render_tool::<Value, Value>("defaulted", None, None, false).unwrap();
+    assert!(explicit.is_custom);
+    assert!(!defaulted.is_custom);
+    assert_eq!(calls.get(), 11);
+    assert!(
+        !render_tool::<Value, Value>("unknown", None, None, false)
+            .unwrap()
+            .is_custom
     );
 }

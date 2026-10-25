@@ -57,7 +57,7 @@ fn undefined(value: &Value) -> bool {
     value == &absent()
 }
 /// Returned member sequence, independent of map equality.
-fn keys(value: &Value) -> Vec<&str> {
+pub fn keys(value: &Value) -> Vec<&str> {
     value
         .as_object()
         .unwrap()

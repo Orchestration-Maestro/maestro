@@ -20,18 +20,20 @@ fn cancelled_import_does_not_revoke_its_admitted_operation() {
             let released = Rc::downgrade(&retained);
             let (resume, resumed) = oneshot::channel();
             let operands = RefCell::new(Some((retained, resumed)));
-            runner.bind_command_context(Some(ExtensionCommandContextActions {
-                wait_for_idle: Rc::new(move || {
-                    let (retained, resumed) = operands.borrow_mut().take().unwrap();
-                    Box::pin(async move {
-                        resumed.await?;
-                        drop(retained);
-                        Ok(())
-                    })
-                }),
-                ..ExtensionCommandContextActions::default()
-            }));
-            let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+                maestro_extensions::CommandContextOperations {
+                    wait_for_idle: Rc::new(move || {
+                        let (retained, resumed) = operands.borrow_mut().take().unwrap();
+                        Box::pin(async move {
+                            resumed.await?;
+                            drop(retained);
+                            Ok(())
+                        })
+                    }),
+                    ..crate::context_actions::silent_command_operations()
+                },
+            )));
+            let (mut pump, admission) = Pump::new();
             let endpoint = pump
                 .registry()
                 .context(Owner::Command(runner.create_command_context()))

@@ -2,7 +2,7 @@
 use super::Body;
 use crate::browser::{
     attachment_content::{
-        AttachmentUiError, ReadingRoot,
+        AttachmentHostError, ReadingRoot,
         browser::{append, element, host_error},
     },
     event_subscription::EventSubscription,
@@ -37,7 +37,7 @@ pub(super) fn sync(body: &Body) -> Result<(), wasm_bindgen::JsValue> {
 pub(super) fn mount(
     document: &web_sys::Document,
     body: &Rc<RefCell<Body>>,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let root = element(document, "div", "maestro-image-artifact")?;
     if body.borrow().svg {
         root.set_class_name("maestro-image-artifact maestro-svg-artifact");
@@ -72,6 +72,8 @@ pub(super) fn mount(
     };
     sync(&body.borrow()).map_err(|error| host_error(&error))?;
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element: root,
         slots: vec![],
         owner: listener.map(|listener| Box::new(listener) as Box<dyn std::any::Any>),

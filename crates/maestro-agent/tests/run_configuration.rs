@@ -332,7 +332,7 @@ fn key_barrier_preserves_selected_model_identity() {
             recorded.lock().unwrap().push(provider);
             let gate = gates.lock().unwrap().take();
             Box::pin(async move {
-                wait_key_gate(gate).await;
+                support::wait_gate(gate).await;
                 Ok(None)
             })
         }));
@@ -432,19 +432,6 @@ fn captured_callbacks_release_after_settlement_and_slot_replacement() {
         observe.await.unwrap();
         assert!(weak_owner.upgrade().is_none());
     });
-}
-
-/// Signal credential entry before awaiting its caller-owned release.
-async fn wait_key_gate(
-    gate: Option<(
-        tokio::sync::oneshot::Sender<()>,
-        tokio::sync::oneshot::Receiver<()>,
-    )>,
-) {
-    if let Some((entered, released)) = gate {
-        entered.send(()).unwrap();
-        released.await.unwrap();
-    }
 }
 
 /// Retain a single observed payload through each changed callback category.

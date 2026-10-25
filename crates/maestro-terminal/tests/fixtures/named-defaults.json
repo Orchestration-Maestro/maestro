@@ -1,0 +1,1090 @@
+[
+  {
+    "input": 0,
+    "value": {
+      "r": 29,
+      "g": 31,
+      "b": 33
+    }
+  },
+  {
+    "input": 1,
+    "value": {
+      "r": 204,
+      "g": 102,
+      "b": 102
+    }
+  },
+  {
+    "input": 2,
+    "value": {
+      "r": 181,
+      "g": 189,
+      "b": 104
+    }
+  },
+  {
+    "input": 3,
+    "value": {
+      "r": 240,
+      "g": 198,
+      "b": 116
+    }
+  },
+  {
+    "input": 4,
+    "value": {
+      "r": 129,
+      "g": 162,
+      "b": 190
+    }
+  },
+  {
+    "input": 5,
+    "value": {
+      "r": 178,
+      "g": 148,
+      "b": 187
+    }
+  },
+  {
+    "input": 6,
+    "value": {
+      "r": 138,
+      "g": 190,
+      "b": 183
+    }
+  },
+  {
+    "input": 7,
+    "value": {
+      "r": 197,
+      "g": 200,
+      "b": 198
+    }
+  },
+  {
+    "input": 8,
+    "value": {
+      "r": 102,
+      "g": 102,
+      "b": 102
+    }
+  },
+  {
+    "input": 9,
+    "value": {
+      "r": 213,
+      "g": 78,
+      "b": 83
+    }
+  },
+  {
+    "input": 10,
+    "value": {
+      "r": 185,
+      "g": 202,
+      "b": 74
+    }
+  },
+  {
+    "input": 11,
+    "value": {
+      "r": 231,
+      "g": 197,
+      "b": 71
+    }
+  },
+  {
+    "input": 12,
+    "value": {
+      "r": 122,
+      "g": 166,
+      "b": 218
+    }
+  },
+  {
+    "input": 13,
+    "value": {
+      "r": 195,
+      "g": 151,
+      "b": 216
+    }
+  },
+  {
+    "input": 14,
+    "value": {
+      "r": 112,
+      "g": 192,
+      "b": 177
+    }
+  },
+  {
+    "input": 15,
+    "value": {
+      "r": 234,
+      "g": 234,
+      "b": 234
+    }
+  },
+  {
+    "input": 16,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 17,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 18,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 19,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 20,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 21,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 22,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 23,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 24,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 25,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 26,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 27,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 28,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 29,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 30,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 31,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 32,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 33,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 34,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 35,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 36,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 37,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 38,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 39,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 40,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 41,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 42,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 43,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 44,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 45,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 46,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 47,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 48,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 49,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 50,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 51,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 52,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 53,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 54,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 55,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 56,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 57,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 58,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 59,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 60,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 61,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 62,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 63,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 64,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 65,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 66,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 67,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 68,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 69,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 70,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 71,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 72,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 73,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 74,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 75,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 76,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 77,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 78,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 79,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 80,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 81,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 82,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 83,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 84,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 85,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 86,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 87,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 88,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 89,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 90,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 91,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 92,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 93,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 94,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 95,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 96,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 97,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 98,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 99,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 100,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 101,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 102,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 103,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 104,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 105,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 106,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 107,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 108,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 109,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 110,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 111,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 112,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 113,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 114,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 115,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 116,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 117,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 118,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 119,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 120,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 121,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 122,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 123,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 124,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 125,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 126,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 127,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 128,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 129,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 130,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 131,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 132,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 133,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 134,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 135,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 136,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 137,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 138,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 139,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 140,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 141,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 142,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 143,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 144,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 145,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 146,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 147,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 148,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 149,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 150,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 151,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 152,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 153,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 154,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 155,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 156,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 157,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 158,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 159,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 160,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 161,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 162,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 163,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 164,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 165,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 166,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 167,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 168,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 169,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 170,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 171,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 172,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 173,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 174,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 175,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 176,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 177,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 178,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 179,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 180,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 181,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 182,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 183,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 184,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 185,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 186,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 187,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 188,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 189,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 190,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 191,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 192,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 193,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 194,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 195,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 196,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 197,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 198,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 199,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 200,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 201,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 202,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 203,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 204,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 205,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 206,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 207,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 208,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 209,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 210,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 211,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 212,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 213,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 214,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 215,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 216,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 217,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 218,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 219,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 220,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 221,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 222,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 223,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 224,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 225,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 226,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 227,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 228,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 229,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 230,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 231,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 232,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 233,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 234,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 235,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 236,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 237,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 238,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 239,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 240,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 241,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 242,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 243,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 244,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 245,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 246,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 247,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 248,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 249,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 250,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 251,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 252,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 253,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 254,
+    "err": "NoDefaultValue"
+  },
+  {
+    "input": 255,
+    "err": "NoDefaultValue"
+  }
+]

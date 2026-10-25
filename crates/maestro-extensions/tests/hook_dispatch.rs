@@ -1,9 +1,7 @@
 //! Live registered hook dispatch through the native runner.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod support;
+use crate::local_support as support;
 use maestro_extensions::*;
 use std::rc::Rc;
 
@@ -44,12 +42,11 @@ fn handler_presence_observes_live_known_and_open_registration_names() {
     });
 }
 
+use crate::model_support;
 use maestro_extensions::runner::RunnerEmitEvent;
 use maestro_session::Presence;
 use serde_json::{Value, json};
 use std::cell::RefCell;
-#[path = "support/model.rs"]
-mod model_support;
 
 fn register_notifications<V: RunnerEmitEvent<Result = ()>>(
     loaded: &support::Loaded,
@@ -655,4 +652,39 @@ fn register_context_rebinding(
             }),
         )
         .unwrap();
+}
+
+#[test]
+fn error_listener_removers_follow_listener_identity() {
+    support::local(async {
+        let bus = support::LocalBus::new();
+        let loaded = support::loaded("identity", bus.controller.for_extension());
+        let runner = support::runner(&loaded.owners);
+        let calls = Rc::new(std::cell::Cell::new(0));
+        let seen = Rc::clone(&calls);
+        let listener: ExtensionErrorListener = Rc::new(move |_| {
+            seen.set(seen.get() + 1);
+            Ok(())
+        });
+        let error = ExtensionError {
+            extension_path: "identity".into(),
+            event: "agent_start".into(),
+            error: "failure".into(),
+            stack: None,
+        };
+        let first = runner.on_error(Rc::clone(&listener));
+        let second = runner.on_error(Rc::clone(&listener));
+        second();
+        runner.emit_error(&error).unwrap();
+        assert_eq!(calls.get(), 0, "the later remover deletes the listener");
+        let _again = runner.on_error(Rc::clone(&listener));
+        first();
+        runner.emit_error(&error).unwrap();
+        assert_eq!(
+            calls.get(),
+            0,
+            "an earlier remover deletes the re-registration"
+        );
+        bus.settle().await;
+    });
 }

@@ -4,7 +4,7 @@ use crate::output::render_utils::{ToolRenderResultLike, render_args};
 use crate::{
     keybinding_hints::{EXPAND, key_text},
     output::{
-        render_parts::{expand_hint, float, into_text, paint},
+        render_parts::{expand_hint, float, into_text, paint, themed},
         render_utils::{
             PREVIEW_LINES, TruncationView, flag, format_read_line_range, get_text_output, num,
             number, number_text, path_display, replace_tabs, selected_path, str,
@@ -16,17 +16,14 @@ use crate::{
     types::{ToolRenderContext, ToolRenderResultOptions},
     utils::diagnostics::diagnostic,
 };
-use maestro_models::DiagnosticErrorInfo;
+use maestro_models::{DiagnosticErrorInfo, system_prompt::CONTEXT_FILE_NAMES};
 use maestro_path::{Cwd, SEP, basename, dirname, relative, try_resolve};
-use maestro_theme::{Theme, ThemeColor, get_language_from_path, highlight_code};
+use maestro_theme::{LiveTheme, Theme, ThemeColor, get_language_from_path, highlight_code};
 use maestro_tui::tui::ComponentHandle;
 use serde_json::Value;
 
 /// Result of a render step.
 type Rendered<T> = Result<T, DiagnosticErrorInfo>;
-
-/// Names that mark a resource file.
-const RESOURCE_FILE_NAMES: [&str; 4] = ["AGENTS.md", "AGENTS.MD", "CLAUDE.md", "CLAUDE.MD"];
 
 /// What a compact read is shown as.
 enum Kind {
@@ -116,7 +113,7 @@ fn classify(args: &Value, context: &ToolRenderContext<'_>) -> Rendered<Option<Cl
         }));
     }
     Ok(docs_classification(&absolute, context)?.or_else(|| {
-        RESOURCE_FILE_NAMES
+        CONTEXT_FILE_NAMES
             .contains(&name.as_str())
             .then_some(Classification {
                 kind: Kind::Resource,
@@ -164,9 +161,11 @@ fn format_compact_call(
 /// Returns a theme, home or path failure; the previous component is left unchanged.
 pub(super) fn render_call(
     args: Option<&Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let args = render_args(args);
     let classification = if context.expanded {
         None
@@ -181,7 +180,7 @@ pub(super) fn render_call(
 }
 
 /// The warning line for a truncated read, empty when nothing was cut.
-fn truncation_notice(details: Option<&Value>, theme: &Theme) -> Rendered<String> {
+fn truncation_notice(details: Option<&Value>, theme: &LiveTheme) -> Rendered<String> {
     let Some(cut) = TruncationView::selected(details) else {
         return Ok(String::new());
     };
@@ -204,9 +203,10 @@ fn truncation_notice(details: Option<&Value>, theme: &Theme) -> Rendered<String>
             format_size(cut.max_bytes())
         )
     };
+    let resolved = themed(theme.get())?;
     Ok(format!(
         "\n{}",
-        paint(theme, &ThemeColor::Warning, &notice)?
+        paint(&resolved, &ThemeColor::Warning, &notice)?
     ))
 }
 
@@ -214,7 +214,7 @@ fn truncation_notice(details: Option<&Value>, theme: &Theme) -> Rendered<String>
 fn format_read_result(
     result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<String> {
     let output = get_text_output(
@@ -226,12 +226,12 @@ fn format_read_result(
         .filter(|raw| !raw.is_empty())
         .and_then(get_language_from_path);
     let lines = match language {
-        Some(language) => highlight_code(
+        Some(language) => themed(highlight_code(
             &context.environment.live_theme,
             &*context.environment.highlighter,
             &replace_tabs(&output),
             Some(language),
-        ),
+        ))?,
         None => output.split('\n').map(str::to_owned).collect(),
     };
     let lines = without_trailing_empty(&lines);
@@ -240,17 +240,22 @@ fn format_read_result(
     } else {
         PREVIEW_LINES.min(lines.len())
     };
-    let rows = lines[..shown]
+    let shown_lines = &lines[..shown];
+    let styled = (!shown_lines.is_empty() && language.is_none())
+        .then(|| themed(theme.get()))
+        .transpose()?;
+    let rows = shown_lines
         .iter()
-        .map(|line| match language {
-            Some(_) => Ok(replace_tabs(line)),
-            None => paint(theme, &ThemeColor::ToolOutput, &replace_tabs(line)),
+        .map(|line| match &styled {
+            Some(theme) => paint(theme, &ThemeColor::ToolOutput, &replace_tabs(line)),
+            None => Ok(replace_tabs(line)),
         })
         .collect::<Rendered<Vec<_>>>()?;
     let mut text = ["\n", &rows.join("\n")].concat();
     if lines.len() > shown {
         let counts = format!("{} more lines", lines.len() - shown);
-        text += &expand_hint(&counts, theme, &context.environment.live_theme)?;
+        let resolved = themed(theme.get())?;
+        text += &expand_hint(&counts, &resolved, &context.environment.live_theme)?;
     }
     Ok(text + &truncation_notice(result.details, theme)?)
 }
@@ -263,7 +268,7 @@ fn format_read_result(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
     let hidden = !options.expanded

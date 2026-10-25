@@ -1,0 +1,7 @@
+<!doctype html>
+<p id="frame-card">replacement card</p>
+<script>
+const text = 'replacement:' + window.maestroInput.title;
+document.getElementById('frame-card').textContent = text;
+parent.postMessage({sandboxId: window.sandboxId, type: 'qa-frame', text}, '*');
+</script>

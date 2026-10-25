@@ -1,7 +1,9 @@
 //! Closed ownership for recorded usage-accounting invocations.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::{chat::TestResult, response_qualification::assert_corpus_rows};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Execute only the named test's recorded invocations.
 pub(super) fn assert_rows(test: &str) -> TestResult {
     assert_corpus_rows(

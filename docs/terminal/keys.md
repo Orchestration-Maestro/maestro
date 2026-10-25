@@ -4,7 +4,46 @@
 characters and key events. It reads no device: a caller passes each chunk of input it
 receives and learns what the chunk means. Its only state is one protocol flag, and the
 backspace rule under legacy ambiguities consults the terminal environment variables
-named there. The crate root re-exports everything below except `decode_printable_key`.
+named there. Structured host decoding is independent of that flag and environment.
+The crate root re-exports the chat helpers; structured records and
+`parse_terminal_key_sequence` stay under `keys`.
+
+## Structured host keys
+
+`keys::parse_terminal_key_sequence` reads one complete host key and returns a
+`Sequence`, or `None` for unsupported or malformed input. It accepts legacy keys,
+application keypad sequences, modified function and navigation keys, CSI-u and
+modifyOtherKeys. It performs no byte buffering or device reads.
+
+The result keeps the logical `Code` (`Char` or `Key(Named)`), modifier bits,
+`KeyEventType`, optional numeric shifted point and optional generated text.
+Keypad reports map to their logical character or navigation key. Native lock,
+media and modifier keys and F13 through F35 remain structured keys; they do not
+extend the chat identifier vocabulary.
+
+Host reports accept only event fields `1`, `2` and `3`. Modifiers are an unsigned
+byte from 1 through 255, with one subtracted to obtain Shift (1), Alt (2), Control
+(4), Super (8), Hyper (16), Meta (32) and the lock bits (64 and 128). Numeric fields
+use Rust unsigned parsing, including a leading plus sign. A valid, distinct
+shifted scalar implies Shift; a numeric shifted point that is not a scalar is
+retained without implying Shift. Associated text must contain one or more valid
+non-control Unicode scalars.
+
+Legacy uppercase ASCII retains its case and carries Shift. Bare LF means
+Control-J, independent of the chat protocol flag. These host rules do not change
+`parse_key`, `matches_key` or the chat event helpers described below.
+
+```rust
+use maestro_tui::keys::{Code, KeyEventType, parse_terminal_key_sequence};
+
+let key = parse_terminal_key_sequence("\x1b[108:76;2:3u").unwrap();
+assert_eq!(key.code, Code::Char('l'));
+assert_eq!(key.shifted, Some(76));
+assert_eq!(key.modifier, 1);
+assert_eq!(key.event_type, KeyEventType::Release);
+let text = parse_terminal_key_sequence("\x1b[32;;20320:22909u").unwrap();
+assert_eq!(text.generated_text.as_deref(), Some("你好"));
+```
 
 ## Key identifiers
 

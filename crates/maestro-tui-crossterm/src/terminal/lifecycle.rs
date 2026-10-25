@@ -16,12 +16,14 @@ use tokio::signal::unix::{SignalKind, signal};
 use tokio::task::JoinHandle;
 use tokio::time::{Instant, sleep};
 
-use super::input::{Input, Source};
+use super::descriptor::Source;
+use super::input::Input;
 use super::output::{
     FALLBACK_OFF, FALLBACK_ON, KEYBOARD_ON, KEYBOARD_POP, KEYBOARD_QUERY, PASTE_OFF, PASTE_ON,
-    PROGRESS_CLEAR, emit, emit_if, first_failure,
+    PROGRESS_CLEAR, first_failure,
 };
 use super::{InputCallback, ProcessTerminal, ResizeCallback, Shared};
+use tokio::io::Interest;
 
 /// How long after `start` a missing keyboard reply selects the fallback reporting mode.
 const NEGOTIATION: Duration = Duration::from_millis(150);
@@ -130,6 +132,7 @@ impl ProcessTerminal {
                 Ok(())
             }
             Err(error) => {
+                let _ = self.shared.finish_output();
                 if replaced {
                     let _ = self.give_back(&mut acquired);
                 }
@@ -147,9 +150,14 @@ impl ProcessTerminal {
         on_resize: ResizeCallback,
     ) -> io::Result<JoinHandle<()>> {
         acquired.take()?;
-        let source = Source::open()?;
+        let source = Source::open(stdin(), Interest::READABLE)?;
         let resize = signal(SignalKind::window_change())?;
-        emit(&[PASTE_ON, KEYBOARD_QUERY].concat())?;
+        if self.shared.output.borrow().is_none() {
+            let writer =
+                super::tty_writer::TtyWriter::new(&self.local, Rc::downgrade(&self.shared))?;
+            self.shared.output.replace(writer.map(Rc::new));
+        }
+        self.shared.emit(&[PASTE_ON, KEYBOARD_QUERY].concat())?;
         let generation = self.shared.install(on_input, on_resize);
         let input = Input::new(
             Rc::clone(&self.shared),
@@ -163,7 +171,7 @@ impl ProcessTerminal {
     /// attempted and the first failure is returned.
     fn give_back(&self, acquired: &mut Acquired) -> io::Result<()> {
         first_failure([
-            emit(PASTE_OFF),
+            self.shared.emit(PASTE_OFF),
             self.shared.disable_keyboard(),
             acquired.restore(),
         ])
@@ -173,9 +181,12 @@ impl ProcessTerminal {
     /// failure included, is returned.
     pub(super) fn end(&mut self) -> io::Result<()> {
         let mut acquired = self.retire();
-        let progress = emit_if(self.cancel_keepalive(), PROGRESS_CLEAR);
+        let output = self.shared.finish_output();
+        let active = self.cancel_keepalive();
+        let progress = self.shared.emit_if(active, PROGRESS_CLEAR);
         first_failure([
             self.shared.failure.take().map_or(Ok(()), Err),
+            output,
             progress,
             self.give_back(&mut acquired),
         ])
@@ -185,7 +196,7 @@ impl ProcessTerminal {
 impl Shared {
     /// Enables the enhanced keyboard protocol after the terminal reported support.
     pub(super) fn enable_enhanced(&self) -> io::Result<()> {
-        emit(KEYBOARD_ON)?;
+        self.emit(KEYBOARD_ON)?;
         self.enhanced.set(true);
         set_kitty_protocol_active(true);
         Ok(())
@@ -196,7 +207,7 @@ impl Shared {
         if !self.negotiating.get() || self.enhanced.get() || self.fallback.get() {
             return Ok(());
         }
-        emit(FALLBACK_ON)?;
+        self.emit(FALLBACK_ON)?;
         self.fallback.set(true);
         Ok(())
     }
@@ -209,8 +220,8 @@ impl Shared {
             set_kitty_protocol_active(false);
         }
         first_failure([
-            emit_if(enhanced, KEYBOARD_POP),
-            emit_if(fallback, FALLBACK_OFF),
+            self.emit_if(enhanced, KEYBOARD_POP),
+            self.emit_if(fallback, FALLBACK_OFF),
         ])
     }
 
@@ -269,7 +280,7 @@ impl ProcessTerminal {
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         let begin = Instant::now();
         self.shared.activity.set(begin);
         self.shared.negotiating.set(false);
@@ -313,7 +324,7 @@ async fn wait_until_quiet(shared: &Shared, begin: Instant, max: Duration, idle: 
 /// operation error when restoration also fails.
 pub async fn wait_for_input() -> io::Result<()> {
     Handle::try_current().map_err(io::Error::other)?;
-    let mut source = Source::open()?;
+    let mut source = Source::open(stdin(), Interest::READABLE)?;
     let mut acquired = Acquired::default();
     let result = async {
         acquired.take()?;

@@ -7,13 +7,11 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use chrono::{DateTime, Local, TimeZone};
-use rustix::event::{PollFd, PollFlags, poll};
-use rustix::io::{Errno, write};
-use rustix::stdio::stdout;
 use tokio::task::JoinHandle;
 use tokio::time::{Instant, MissedTickBehavior, interval_at};
 
 use super::{ProcessTerminal, Shared};
+use crate::output_errors::FailureSource;
 
 /// Enables bracketed paste.
 pub(super) const PASTE_ON: &str = "\x1b[?2004h";
@@ -63,36 +61,9 @@ const KEEPALIVE: Duration = Duration::from_millis(1000);
 /// The environment variable naming the write log.
 const LOG_VARIABLE: &str = "MAESTRO_TUI_WRITE_LOG";
 
-/// Writes all of `text` to standard output, waiting while it is full, or returns the first
-/// error that is neither an interruption nor a full output; part of `text` may be written
-/// by then. The reader makes the description nonblocking, and standard output usually shares
-/// it.
+/// Writes synchronously through the shared byte advancement when no writer is running.
 pub(super) fn emit(text: &str) -> io::Result<()> {
-    let mut rest = text.as_bytes();
-    while !rest.is_empty() {
-        match write(stdout(), rest) {
-            Ok(written) => rest = &rest[written..],
-            Err(Errno::INTR) => {}
-            Err(Errno::AGAIN) => wait_until_writable()?,
-            Err(error) => return Err(error.into()),
-        }
-    }
-    Ok(())
-}
-
-/// Blocks until standard output accepts more.
-fn wait_until_writable() -> io::Result<()> {
-    let output = stdout();
-    let mut waiting = [PollFd::new(&output, PollFlags::OUT)];
-    match poll(&mut waiting, None) {
-        Ok(_) | Err(Errno::INTR) => Ok(()),
-        Err(error) => Err(error.into()),
-    }
-}
-
-/// Writes `text` when `condition` holds.
-pub(super) fn emit_if(condition: bool, text: &str) -> io::Result<()> {
-    if condition { emit(text) } else { Ok(()) }
+    super::tty_writer::write_sync(text)
 }
 
 /// The first failure among `steps` that have already run, if any.
@@ -156,9 +127,9 @@ impl ProcessTerminal {
     pub(super) fn show_progress(&mut self, active: bool) -> io::Result<()> {
         if !active {
             self.cancel_keepalive();
-            return emit(PROGRESS_CLEAR);
+            return self.shared.emit(PROGRESS_CLEAR);
         }
-        emit(PROGRESS_ACTIVE)?;
+        self.shared.emit(PROGRESS_ACTIVE)?;
         if self.progress.as_ref().is_none_or(JoinHandle::is_finished) {
             let first = Instant::now() + KEEPALIVE;
             let task = keepalive(Rc::clone(&self.shared), first);
@@ -180,8 +151,8 @@ async fn keepalive(shared: Rc<Shared>, first: Instant) {
     ticks.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
         ticks.tick().await;
-        if let Err(error) = emit(PROGRESS_ACTIVE) {
-            return shared.fail(error);
+        if let Err(error) = shared.write_output(PROGRESS_ACTIVE) {
+            return shared.fail(FailureSource::Output, error);
         }
     }
 }

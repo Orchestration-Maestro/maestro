@@ -1,0 +1,23 @@
+{
+  "theme_keys": [
+    "toolTitle",
+    "accent",
+    "toolOutput",
+    "warning",
+    "dim",
+    "muted",
+    "customMessageLabel",
+    "customMessageText",
+    "error",
+    "mdCodeBlock",
+    "syntaxKeyword",
+    "syntaxType",
+    "syntaxNumber",
+    "syntaxString",
+    "syntaxComment",
+    "syntaxFunction",
+    "syntaxVariable",
+    "syntaxOperator",
+    "syntaxPunctuation"
+  ]
+}

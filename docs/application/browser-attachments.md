@@ -22,12 +22,13 @@ are case-sensitive. Existing text MIME strings, including parameters, are kept;
 a suffix-only text match uses `text/plain`.
 
 PDF, Word, PowerPoint and spreadsheet recognition precedes image/text handling.
-PowerPoint recognition uses the exact presentation MIME or a case-insensitive
-`.pptx` suffix. Earlier PDF/Word recognition wins; presentation recognition
-precedes spreadsheet recognition. Word still returns
-`AttachmentError::Unsupported`. The separate
+Word recognition uses the exact wordprocessing MIME or a case-insensitive
+`.docx` suffix. PowerPoint recognition uses the exact presentation MIME or a
+case-insensitive `.pptx` suffix. Earlier PDF/Word recognition wins;
+presentation recognition precedes spreadsheet recognition. The separate
 [Word property preparation](document-formats.md#word-default-properties-and-conditional-table-styles)
-reads table layout and indentation without rendering or extracting attachments.
+reads table layout and indentation without rendering; attachment text comes from
+the Word extraction below.
 Transport/body errors retain the original
 `FetchError`, while rejected response status has its own `HttpStatus` variant.
 
@@ -36,10 +37,14 @@ selecting canonical `application/pdf`. PDF documents retain original bytes/name/
 Each page contributes `\n<page number="N">\nTEXT\n</page>` inside the literal
 `<pdf filename="NAME">` and final `\n</pdf>` wrapper. Native Unicode runs are
 filtered by the shared whitespace policy without trimming retained text, then
-joined with one space. Extraction observes decoded nonempty text shows before
-painting: outlined text contributes once per show, while independent repeated
-shows remain separate, including at identical positions. Invisible OCR and
-clip-only text are retained. Page order and empty page wrappers remain.
+joined with one space. Owned traversal follows logical text shows and their font
+resource scopes; the registry interpreter decodes the original string bytes.
+An active Form stream cannot invoke itself again until it returns; separate
+invocations and finite nesting remain admissible.
+Outlined text contributes once per show, while independent repeated shows remain
+separate, including at identical positions. Invisible OCR, clip-only text and
+text in hidden optional layers are retained independently of painting. Page order
+and empty page wrappers remain.
 
 The optional preview is standard padded base64 PNG from page one, fit to 160
 pixels with truncating target dimensions, opaque white background and upscaling
@@ -60,6 +65,28 @@ Thumbnail sizing reads inherited page boxes at full precision before intersectin
 the crop and media boxes and applying page rotation. Documents, caches and pixels
 are scoped to the operation.
 
+Word documents retain the original bytes/name/size, use the canonical
+wordprocessing MIME and have extracted text without a preview. The
+[shared package reader](document-formats.md#word-package-reader) supplies the
+typed body through `WordDocument::document_body`. Body elements keep document
+order and are joined by LF, dropping empty results. A paragraph contributes its
+inline text concatenated without added separators; hyperlinks, smart tags,
+tracked insertions, simple fields, content controls and equations contribute
+through the same rule, while tracked deletions and the bookmarks, comment
+markers, drawings, drawn text boxes, field markers, breaks, tabs and
+instructions around them add no text. A table contributes `\n[Table]\n`, one
+line per row, `\n[/Table]\n`; cells are joined by ` | ` and a cell's own element
+texts by one space, dropping empty cells and rows. Every element result is
+trimmed with the shared whitespace policy, which treats U+00A0 and U+FEFF as
+whitespace while U+0085 stays in the text. The
+literal `<docx filename="<name>">`, `\n<page number="1">\n` wrapper, body and
+`\n</page>\n</docx>` closing keep the filename unescaped. A package without a
+main part, or a main part without a body, yields an empty page. Extracted output
+above 512 MiB returns a processing error. Processing failures return
+`AttachmentError::Docx`, display `Failed to process DOCX: ` before the diagnostic
+and expose the retained document error through `Error::source`. Exhaustive SDK
+matches must handle this variant.
+
 Presentation documents retain the original bytes/name/size, use the canonical
 presentation MIME and have extracted text without a preview. The
 [shared package reader](document-formats.md#word-package-reader) supplies selected
@@ -74,9 +101,10 @@ entities are decoded once; invalid fragments retain the original complete run.
 Slide runs are joined by LF inside `<slide number="<position>">`; note runs use
 one space. A slide with no matched run is omitted, but a whitespace-only match
 keeps an empty slide wrapper. Selected notes always produce a `<notes>` wrapper,
-with headings only for retained text. Wrapper separators are LF. Package failures
+with headings only for retained text. Wrapper separators are LF. Extracted output
+above 512 MiB returns a processing error. Processing failures
 return `AttachmentError::Pptx`, display `Failed to process PPTX: ` before the
-package diagnostic and expose the retained package error through `Error::source`.
+diagnostic and expose the retained document error through `Error::source`.
 This additional variant requires exhaustive SDK matches to handle it.
 
 Spreadsheet recognition uses exact XLSX/Excel MIME strings or case-insensitive
@@ -95,7 +123,8 @@ The literal `<excel filename="NAME">` wrapper contains workbook-ordered sheets,
 each `\n<sheet name="NAME" index="N">\nCSV\n</sheet>`, followed by
 `\n</excel>`. Names are not escaped; indices start at one and include empty
 sheets. [Default CSV serialization](document-formats.md#default-csv) uses the
-shared workbook formatter. Processing failures return `AttachmentError::Excel`,
+shared workbook formatter. Extracted output above 512 MiB returns a processing
+error. Processing failures return `AttachmentError::Excel`,
 display `Failed to process Excel: ` before the diagnostic and expose the retained
 `WorkbookError` through `Error::source`. Exhaustive SDK matches must handle it.
 

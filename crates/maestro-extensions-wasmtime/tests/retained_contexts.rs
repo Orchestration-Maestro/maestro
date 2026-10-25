@@ -41,11 +41,13 @@ pub(super) async fn retained(with_healthy: bool) {
     let original_ui = Rc::downgrade(&ui);
     runner.set_ui_context(Some(ExtensionUIContext::new(ui)));
     let (entered, mut admitted) = tokio::sync::mpsc::unbounded_channel();
-    runner.bind_command_context(Some(ExtensionCommandContextActions {
-        wait_for_idle: wait(entered.clone(), false),
-        reload: wait(entered, true),
-        ..Default::default()
-    }));
+    runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+        maestro_extensions::CommandContextOperations {
+            wait_for_idle: wait(entered.clone(), false),
+            reload: wait(entered, true),
+            ..crate::context_actions::silent_command_operations()
+        },
+    )));
     let command = runner
         .get_command("bridge-observe")
         .unwrap()
@@ -126,12 +128,7 @@ async fn load(
     let catalog = session.model_registry.clone();
     let model = super::model_support::model("owned before suspension");
     *catalog.get_all().write().unwrap() = vec![model.clone()];
-    let (_, runner, _) = super::retained_components::loaded_in(
-        events,
-        session,
-        super::support::credential_operations(),
-    )
-    .await;
+    let (_, runner, _) = super::retained_components::loaded_in(events, session).await;
     let signal = maestro_extensions::Cancellation::new();
     bind(&runner, model, signal);
     (runner, history)

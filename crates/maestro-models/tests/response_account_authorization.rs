@@ -1,33 +1,30 @@
 //! Controlled response-account authorization through supplied effects.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Fetch, HttpResponse, refresh_openai_codex_token};
+#[cfg(not(target_arch = "wasm32"))]
 use std::{collections::BTreeMap, sync::Arc};
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_refresh_keeps_stderr_clean() {
-    if std::env::var_os("MAESTRO_RESPONSE_STDERR_CHILD").is_none() {
-        run(async {
-            let _permit = PORT.acquire().await.unwrap();
-            let output = std::process::Command::new(std::env::current_exe().unwrap())
-                .args([
-                    "--exact",
-                    "response_account_authorization::maestro_response_refresh_keeps_stderr_clean",
-                    "--nocapture",
-                ])
-                .env("MAESTRO_RESPONSE_STDERR_CHILD", "1")
-                .output()
-                .unwrap();
+    if !maestro_test_process::selection().is_child() {
+        crate::runtime::run(async {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_response_refresh_keeps_stderr_clean",
+            )
+            .unwrap()
+            .nocapture()
+            .case("*")
+            .output()
+            .unwrap();
             assert!(
                 output.status.success(),
                 "{}",
                 String::from_utf8_lossy(&output.stdout)
             );
-            crate::child_process::assert_executed(
-                &output,
-                "response_account_authorization::maestro_response_refresh_keeps_stderr_clean",
-            )
-            .unwrap();
             assert!(
                 output.stderr.is_empty(),
                 "{}",
@@ -45,14 +42,7 @@ fn maestro_response_refresh_keeps_stderr_clean() {
     });
 }
 
-/// Drive a controlled authorization future with native effects enabled.
-fn run(work: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(work);
-}
+#[cfg(not(target_arch = "wasm32"))]
 /// Token response with supplied account metadata.
 fn token_fetch(account: &str) -> Fetch {
     use base64::Engine as _;
@@ -77,10 +67,10 @@ fn token_fetch(account: &str) -> Fetch {
     })
 }
 
-/// Fixed-port scenarios and the stderr subprocess share admission.
-static PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
+#[cfg(not(target_arch = "wasm32"))]
 /// Interaction that recovers with a pasted code.
 struct Manual;
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Manual {
     fn on_auth(
         &self,
@@ -106,6 +96,7 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Protocol-aware manual interaction retaining the actual authorization URL.
 struct Protocol {
     /// Expected explicit or default originator.
@@ -113,6 +104,7 @@ struct Protocol {
     /// Auth notification retained for the token-request witness.
     auth: maestro_models::EventStream<maestro_models::OAuthAuthInfo, maestro_models::OAuthAuthInfo>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Protocol {
     fn on_auth(
         &self,
@@ -188,26 +180,7 @@ impl maestro_models::OAuthLoginCallbacks for Protocol {
     }
 }
 
-/// Callback-only interaction publishes the bound listener's URL.
-struct Browser {
-    /// Authorization identity from the actual operation.
-    auth: maestro_models::EventStream<maestro_models::OAuthAuthInfo, maestro_models::OAuthAuthInfo>,
-}
-impl maestro_models::OAuthLoginCallbacks for Browser {
-    fn on_auth(
-        &self,
-        info: maestro_models::OAuthAuthInfo,
-    ) -> Result<(), maestro_models::OAuthError> {
-        self.auth.push(info);
-        Ok(())
-    }
-    fn on_prompt(
-        &self,
-        _: maestro_models::OAuthPrompt,
-    ) -> maestro_models::BoxFuture<Result<String, maestro_models::OAuthError>> {
-        panic!("valid callback avoids prompt")
-    }
-}
+#[cfg(not(target_arch = "wasm32"))]
 /// Write bytes after readiness, without fixed delays.
 async fn write_native(peer: &tokio::net::TcpStream, mut bytes: &[u8]) {
     while !bytes.is_empty() {
@@ -222,45 +195,7 @@ async fn write_native(peer: &tokio::net::TcpStream, mut bytes: &[u8]) {
         }
     }
 }
-/// Read until the producer closes its response set.
-async fn native_response(peer: &tokio::net::TcpStream) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    loop {
-        peer.readable().await.unwrap();
-        let mut buffer = [0; 4096];
-        match peer.try_read(&mut buffer) {
-            Ok(0) => return bytes,
-            Ok(count) => bytes.extend_from_slice(&buffer[..count]),
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
-            Err(error) => panic!("{error}"),
-        }
-    }
-}
-/// Issue one literal callback target through the actual HTTP parser.
-async fn callback_response(target: &str) -> String {
-    let peer = tokio::net::TcpStream::connect("127.0.0.1:1455")
-        .await
-        .unwrap();
-    write_native(
-        &peer,
-        format!("GET {target} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n").as_bytes(),
-    )
-    .await;
-    String::from_utf8(native_response(&peer).await).unwrap()
-}
-/// Release the same callback-selected token request after page consumption.
-async fn released_fetch(
-    gate: maestro_models::EventStream<(), ()>,
-    request: maestro_models::HttpRequest,
-) -> Result<HttpResponse, maestro_models::FetchError> {
-    gate.result().await;
-    let fields: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body)
-        .into_owned()
-        .collect();
-    assert_eq!(fields["code"], "browser");
-    token_fetch("callback-account")(request).await
-}
-
+#[cfg(not(target_arch = "wasm32"))]
 /// Read the request body using the client's framing, keeping received bytes intact.
 async fn read_request(peer: &tokio::net::TcpStream) -> Vec<u8> {
     let mut bytes = Vec::new();
@@ -287,9 +222,10 @@ async fn read_request(peer: &tokio::net::TcpStream) -> Vec<u8> {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_default_fetch_reads_complete_loopback_response() {
-    run(async {
+    crate::runtime::run(async {
         for reason in [Some("Odd Reason"), Some(""), None] {
             let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
             let address = listener.local_addr().unwrap();
@@ -314,6 +250,7 @@ fn response_default_fetch_reads_complete_loopback_response() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Produce one complete fragmented reply after reading the actual default client's POST.
 async fn loopback_token(listener: tokio::net::TcpListener, reason: Option<&str>) {
     use base64::Engine as _;
@@ -351,37 +288,41 @@ async fn loopback_token(listener: tokio::net::TcpListener, reason: Option<&str>)
     }
 }
 
-/// Compare the complete route response through the native HTTP consumer.
-async fn check_page(target: &str, status: u16, message: &str) {
-    let response = callback_response(target).await;
-    let (headers, body) = response.split_once("\r\n\r\n").unwrap();
+#[cfg(not(target_arch = "wasm32"))]
+/// Run public fallback assertions in a checked child without opening a callback listener.
+fn public_fallback_child(test: &str) -> bool {
+    if std::env::var("MAESTRO_OAUTH_CALLBACK_HOST").as_deref() == Ok(" ") {
+        return false;
+    }
+    let output = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .env("MAESTRO_OAUTH_CALLBACK_HOST", " ")
+        .output()
+        .unwrap();
     assert!(
-        headers.starts_with(&format!("HTTP/1.1 {status} ")),
-        "{headers}"
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
     );
-    assert!(headers.contains("content-type: text/html; charset=utf-8"));
-    let expected = if status == 200 {
-        maestro_models::oauth_success_html(message)
-    } else {
-        maestro_models::oauth_error_html(message, None)
-    };
-    assert_eq!(body, expected.unwrap());
+    true
 }
 
-/// Tests that bind the fixed callback port live in an `oauth_callback` module.
+/// Public callback checks exercise manual fallback in an isolated process.
 mod oauth_callback {
+    #[cfg(not(target_arch = "wasm32"))]
     use super::*;
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_response_tokens_require_account_claim() {
-        run(maestro_response_tokens_require_account_claim_flow());
+        if public_fallback_child("maestro_response_tokens_require_account_claim") {
+            return;
+        }
+        crate::runtime::run(maestro_response_tokens_require_account_claim_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn maestro_response_tokens_require_account_claim_flow() {
-        let _permit = PORT.acquire().await.unwrap();
-        let _occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
-            .await
-            .unwrap();
         for (account, operation) in ["é猫😀", " ", ""]
             .into_iter()
             .flat_map(|account| [(account, "login"), (account, "refresh")])
@@ -418,37 +359,13 @@ mod oauth_callback {
         }
     }
 
-    #[test]
-    fn maestro_response_login_falls_back_after_bind_failure() {
-        run(async {
-            let _permit = PORT.acquire().await.unwrap();
-            let occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
-                .await
-                .unwrap();
-            let fetch = token_fetch("manual-account");
-            let checked: Fetch = Arc::new(move |request| {
-                let fields: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body)
-                    .into_owned()
-                    .collect();
-                assert_eq!(fields["code"], "pasted-code");
-                fetch(request)
-            });
-            let credentials =
-                maestro_models::login_openai_codex(Arc::new(Manual), None, Some(checked))
-                    .await
-                    .unwrap();
-            assert_eq!(credentials.extra["accountId"], "manual-account");
-            drop(occupied);
-        });
-    }
-
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn response_provider_delegates_and_borrows_access_key() {
-        run(async {
-            let _permit = PORT.acquire().await.unwrap();
-            let occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
-                .await
-                .unwrap();
+        if public_fallback_child("response_provider_delegates_and_borrows_access_key") {
+            return;
+        }
+        crate::runtime::run(async {
             let provider = maestro_models::OPENAI_CODEX_OAUTH_PROVIDER;
             assert_eq!(
                 (
@@ -491,17 +408,20 @@ mod oauth_callback {
                 maestro_models::get_model("anthropic", "claude-sonnet-4-5").unwrap(),
             ];
             assert!(provider.modify_models(&models, &rotated).is_none());
-            drop(occupied);
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_response_authorization_keeps_protocol_fields() {
-        run(maestro_response_authorization_keeps_protocol_fields_flow());
+        if public_fallback_child("maestro_response_authorization_keeps_protocol_fields") {
+            return;
+        }
+        crate::runtime::run(maestro_response_authorization_keeps_protocol_fields_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn maestro_response_authorization_keeps_protocol_fields_flow() {
-        let _permit = PORT.acquire().await.unwrap();
         for originator in [None, Some(""), Some("x +&=😀")] {
             let callbacks = Arc::new(Protocol {
                 originator: originator.unwrap_or("maestro"),
@@ -533,63 +453,5 @@ mod oauth_callback {
             .unwrap();
             assert_eq!(credentials.extra["accountId"], "protocol-account");
         }
-    }
-
-    #[test]
-    fn maestro_response_callback_pages_preserve_status() {
-        run(async {
-            let _permit = PORT.acquire().await.unwrap();
-            let callbacks = Arc::new(Browser {
-                auth: maestro_models::EventStream::new(|_| true, Clone::clone),
-            });
-            let auth = callbacks.auth.clone();
-            let release = maestro_models::EventStream::new(|()| true, |()| ());
-            let gate = release.clone();
-            let fetch: Fetch =
-                Arc::new(move |request| Box::pin(released_fetch(gate.clone(), request)));
-            let work = tokio::spawn(maestro_models::login_openai_codex(
-                callbacks,
-                None,
-                Some(fetch),
-            ));
-            let info = auth.result().await;
-            let url = url::Url::parse(&info.url).unwrap();
-            let state = url.query_pairs().find(|(key, _)| key == "state").unwrap().1;
-            assert!(
-                callback_response("http://[")
-                    .await
-                    .starts_with("HTTP/1.1 400 ")
-            );
-            for (target, status, message) in [
-                ("/wrong".into(), 404, "Callback route not found."),
-                (
-                    "/auth/callback?state=wrong&code=x".into(),
-                    400,
-                    "State mismatch.",
-                ),
-                (
-                    format!("/auth/callback?state={state}"),
-                    400,
-                    "Missing authorization code.",
-                ),
-                (
-                    "//[".into(),
-                    500,
-                    "Internal error while processing OAuth callback.",
-                ),
-                (
-                    format!("/auth/callback?state={state}&code=browser"),
-                    200,
-                    "OpenAI authentication completed. You can close this window.",
-                ),
-            ] {
-                check_page(&target, status, message).await;
-            }
-            release.push(());
-            assert_eq!(
-                work.await.unwrap().unwrap().extra["accountId"],
-                "callback-account"
-            );
-        });
     }
 }

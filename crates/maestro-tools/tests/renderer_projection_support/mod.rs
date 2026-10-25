@@ -1,5 +1,6 @@
 //! Strict source-observation corpus and the renderer-only public driver.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::display_support::{Env, Setup, context};
 use maestro_models::UserBlock;
 use maestro_tools::{
@@ -105,7 +106,7 @@ pub fn render(input: &Input, env: &Env) -> Vec<String> {
                 expanded: input.options.expanded,
                 is_partial: input.options.is_partial,
             },
-            &env.theme,
+            &env.live,
             &row,
         )
         .unwrap()
@@ -154,7 +155,7 @@ pub fn definition<S, D>() -> maestro_tools::types::local::ToolDefinition<(), (),
         definition: maestro_models::Tool {
             name: "custom".into(),
             description: String::new(),
-            parameters: json!({}),
+            parameters: json!({}).into(),
         },
         label: "custom".into(),
         prompt_snippet: None,

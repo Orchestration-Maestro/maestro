@@ -113,17 +113,12 @@ impl Supplied<'_> {
         }
     }
 }
-use read_support::run;
+use crate::runtime::run;
 
 fn corpus(name: &str) {
-    if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
-        let dir = read_support::TempDir::new();
-        let root = Some(dir.0.as_os_str());
-        read_support::isolated_os(
-            name,
-            "direct-corpus",
-            &[("TMPDIR", root), ("TMP", root), ("TEMP", root)],
-        );
+    if !maestro_test_process::selection().is_child() {
+        let dir = read_support::Scratch::new().unwrap();
+        read_support::isolated_temp_dir(name, "direct-corpus", dir.path());
         return;
     }
     let cases: Vec<Case> =
@@ -417,21 +412,7 @@ fn direct_local_line_overflow_writes_complete_artifact() {
         assert!(result.truncated);
         assert_eq!(result.exit_code, Some(0.0));
         assert!(!result.cancelled);
-        let filename = std::path::Path::new(&path)
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap();
-        let id = filename
-            .strip_prefix("maestro-bash-")
-            .unwrap()
-            .strip_suffix(".log")
-            .unwrap();
-        assert_eq!(id.len(), 16);
-        assert!(
-            id.bytes()
-                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-        );
+        crate::agent_shell_support::assert_output_file_name(&path);
     });
 }
 
@@ -472,8 +453,8 @@ fn direct_local_abort_retains_sanitized_prefix() {
 fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
     use tokio::io::AsyncWriteExt;
     run(async {
-        let dir = read_support::TempDir::new();
-        let gate = dir.0.join("exit");
+        let dir = read_support::Scratch::new().unwrap();
+        let gate = dir.path().join("exit");
         let command = format!(
             "printf '%s\\n' \"$$\"; while [ ! -f '{}' ]; do :; done; printf child-exiting",
             gate.display()
@@ -554,10 +535,11 @@ impl Drop for WindowsDescendant {
 #[test]
 #[cfg(windows)]
 fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
+    use crate::read_support::Fixture;
     run(async {
-        let dir = read_support::TempDir::new();
+        let dir = read_support::Scratch::new().unwrap();
         let guard = WindowsDescendant {
-            pid_file: dir.0.join("grandchild.pid"),
+            pid_file: dir.path().join("grandchild.pid"),
             signal: Cancellation::new(),
         };
         let operand = guard

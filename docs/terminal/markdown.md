@@ -2,12 +2,15 @@
 
 `Markdown` renders headings, paragraphs, code blocks, rules, quotes, lists and tables
 through supplied `MarkdownTheme` callbacks. Inline formatting includes emphasis,
-strong text, strikethrough, code and links. The native `CommonMark` parser owns the
-grammar through the [shared owned parser](../markdown.md); bare HTTP/HTTPS, www and email links are recognized in authored text,
+strong text, strikethrough, code and links. The [shared owned parser](../markdown.md)
+uses its terminal grammar by default, including strict double-tilde strikethrough.
+Bare HTTP/HTTPS, www and email links are recognized in authored text,
 before entity and backslash decoding, without starting inside a consumed punctuation
 escape. Selected links retain their literal spelling; surrounding text uses native
-decoding. A www link requires a period in the domain
-after its prefix. HTML is literal text,
+decoding. Web prefixes require an ASCII letter, digit or hyphen immediately
+afterward, not a valid domain name. Later bytes may include underscores or
+Unicode. Mixed-case prefixes are recognized only at reached text cursors,
+including after consumed escaped punctuation. HTML is literal text,
 including inside lists; quoted HTML suppresses the message foreground, like other
 quote text. Images display authored label markup without enclosing
 quote/list prefixes, unescaping brackets but retaining other escapes.
@@ -23,8 +26,22 @@ then each body row in turn, so stateful callbacks see both passes in source orde
 accepted but do not align text. When the width cannot give every column one cell, the
 table's source rows are shown instead; a table inside a list item also shows its source rows.
 
+Quotes reserve two cells for `│ ` only when at least three content cells remain,
+after horizontal padding and outer quote borders. At narrower widths, that level
+omits its border and keeps the body text and quote styling. Wider renders restore
+the borders that fit. The minimum content width remains one cell, even at viewport
+width zero. Wrapping follows the [styled text rules](text.md).
+
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
-`DefaultTextStyle`. Its `decorations` select `TextDecoration` values; they apply in
+`DefaultTextStyle`. Callers set `clean_content` to strip complete terminal escapes
+before parsing, then clean decoded authored values before styling and hyperlink
+generation. Both passes use the [shared terminal cleaners](../text.md). Binary
+controls are removed only after decoding, so their removal cannot join an entity
+spelling before the parser reads it.
+Assistant messages and branch and compaction summaries set it to `true`.
+User messages leave it disabled to preserve authored terminal styles.
+
+`DefaultTextStyle::decorations` selects `TextDecoration` values. They apply in
 bold, italic, strikethrough, underline order, ignoring duplicates. Foreground and
 decorations style content; background styles the final rows including margins.
 Empty or whitespace-only input renders nothing, even with padding. Requested
@@ -73,6 +90,7 @@ let theme = Rc::new(MarkdownTheme {
 let markdown = Markdown::new(
     "# Hello\n\n**World**".into(),
     MarkdownOptions {
+        clean_content: false,
         padding_x: 1,
         padding_y: 0,
         default_text_style: Some(DefaultTextStyle {

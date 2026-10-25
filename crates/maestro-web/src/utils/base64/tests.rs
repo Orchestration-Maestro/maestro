@@ -16,7 +16,7 @@ struct Input {
 #[serde(tag = "branch", rename_all = "lowercase", deny_unknown_fields)]
 enum Outcome {
     Success { bytes: Vec<u8> },
-    Error,
+    Error {},
 }
 #[test]
 fn pdf_raw_decoder_keeps_overlay_byte_domain() {
@@ -25,7 +25,7 @@ fn pdf_raw_decoder_keeps_overlay_byte_domain() {
     for row in rows {
         match row.overlay {
             Outcome::Success { bytes } => assert_eq!(decode(&row.input.content).unwrap(), bytes),
-            Outcome::Error => assert_eq!(
+            Outcome::Error {} => assert_eq!(
                 decode(&row.input.content).unwrap_err().kind(),
                 std::io::ErrorKind::InvalidData
             ),
@@ -34,7 +34,7 @@ fn pdf_raw_decoder_keeps_overlay_byte_domain() {
             Outcome::Success { bytes } => {
                 assert_eq!(super::original(&row.input.content).unwrap(), bytes);
             }
-            Outcome::Error => assert_eq!(
+            Outcome::Error {} => assert_eq!(
                 super::original(&row.input.content).unwrap_err().kind(),
                 std::io::ErrorKind::InvalidData
             ),

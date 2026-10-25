@@ -1,7 +1,6 @@
 //! Native Markdown nodes, code listing owners and their empty canvas-control slots.
-use super::Document;
 #[cfg(target_arch = "wasm32")]
-use crate::browser::attachment_content::AttachmentUiError;
+use crate::browser::attachment_content::AttachmentHostError;
 use crate::browser::attachment_content::ReadingContent;
 use std::{
     cell::RefCell,
@@ -18,6 +17,40 @@ use crate::{
 };
 #[cfg(target_arch = "wasm32")]
 use web_sys::Element;
+
+/// Browser markup composed with the portable code listings.
+#[cfg(target_arch = "wasm32")]
+pub(super) struct BrowserDocument {
+    /// Portable listing operands shared with the canvas controls.
+    document: Rc<super::Document>,
+    /// Document markup with one empty slot per listing.
+    html: String,
+    /// Generated-only listing attribute, absent from authored markup.
+    slot_attribute: String,
+}
+/// Retained browser markup shared with its mount factory.
+#[cfg(target_arch = "wasm32")]
+pub(super) type Markup = Rc<BrowserDocument>;
+/// Native hosts have no document markup to retain.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) struct Markup;
+
+/// Retain markup only on the target that mounts it.
+pub(super) fn prepare(prepared: super::render::Prepared, document: &Rc<super::Document>) -> Markup {
+    #[cfg(target_arch = "wasm32")]
+    {
+        Rc::new(BrowserDocument {
+            document: Rc::clone(document),
+            html: prepared.html,
+            slot_attribute: prepared.slot_attribute,
+        })
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = (prepared, document);
+        Markup
+    }
+}
 
 /// Mounted document root, retained while the surface lives.
 #[cfg(target_arch = "wasm32")]
@@ -67,7 +100,7 @@ pub(super) enum Update {
 
 /// Native factory owning the prepared document, never mounted state.
 pub(super) fn content(
-    document: &Rc<Document>,
+    document: &Markup,
     ids: Vec<egui::Id>,
     (thinking, padded, slot): (bool, bool, &Rc<RefCell<Weak<Mounted>>>),
     update: Update,
@@ -91,11 +124,11 @@ pub(super) fn content(
 #[cfg(target_arch = "wasm32")]
 fn mount(
     dom: &web_sys::Document,
-    document: &Document,
+    document: &BrowserDocument,
     ids: &[egui::Id],
     (thinking, padded, owner): (bool, bool, &Rc<RefCell<Weak<Mounted>>>),
     update: Update,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     crate::browser::math_assets::install(dom)?;
     let flow = element(
         dom,
@@ -106,25 +139,17 @@ fn mount(
             "maestro-markdown-root"
         },
     )?;
-    flow.set_attribute("style", "display:flow-root")
-        .map_err(|e| host_error(&e))?;
-    let style = code::styles(dom)?;
-    style.set_text_content(Some(&format!(
-        "{}{}",
-        style.text_content().unwrap_or_default(),
-        include_str!("markdown.css")
-    )));
-    append(&flow, &style)?;
+    append(&flow, &styles(dom)?)?;
     let root = element(dom, "div", "maestro-markdown")?;
     root.set_inner_html(&document.html);
     append(&flow, &root)?;
     let (mut slots, mut listings) = (Vec::new(), Vec::new());
-    for (index, (code_block, id)) in document.code.iter().zip(ids).enumerate() {
+    for (index, (code_block, id)) in document.document.code.iter().zip(ids).enumerate() {
         let built = code::build(dom, code_block)?;
         let placeholder = root
             .query_selector(&format!("[{}=\"{index}\"]", document.slot_attribute))
             .map_err(|e| host_error(&e))?
-            .ok_or_else(|| AttachmentUiError::Host("Missing code slot".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Missing code slot".into()))?;
         placeholder
             .set_attribute("class", "maestro-code-wrap")
             .map_err(|e| host_error(&e))?;
@@ -136,6 +161,8 @@ fn mount(
     mounted.set_thinking(thinking);
     *owner.borrow_mut() = Rc::downgrade(&mounted);
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element: flow,
         slots,
         commit: match update {
@@ -151,9 +178,22 @@ fn mount(
                         mounted.set_thinking(thinking);
                         *owner.borrow_mut() = Rc::downgrade(mounted);
                     }
+                    Ok(())
                 }
             })),
         },
         owner: Some(Box::new(mounted)),
     })
+}
+
+/// Combine Markdown presentation with the shared native listing stylesheet.
+#[cfg(target_arch = "wasm32")]
+fn styles(dom: &web_sys::Document) -> Result<Element, AttachmentHostError> {
+    let style = code::styles(dom)?;
+    style.set_text_content(Some(&format!(
+        "{}{}",
+        style.text_content().unwrap_or_default(),
+        include_str!("markdown.css")
+    )));
+    Ok(style)
 }

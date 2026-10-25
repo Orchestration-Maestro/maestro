@@ -1,5 +1,8 @@
 //! Supplied repository identity and lexical label rules.
-mod discovery;
+/// Native repository identity and supplied lexical labels.
+pub mod discovery;
+/// Native repository paths and metadata text.
+pub mod native;
 pub use discovery::{automatic_workspace_label, fallback_label_from_cwd};
 
 mod status;

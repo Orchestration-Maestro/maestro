@@ -1,7 +1,8 @@
 //! Native image artifact with original-byte download and branded load fallback.
 use super::artifact_element::{ArtifactElement, ArtifactView};
+use crate::tools::artifacts::ArtifactUiError;
 use crate::{
-    browser::attachment_content::{self, AttachmentHost, AttachmentUiError, ReadingContent},
+    browser::attachment_content::{self, AttachmentHost, ReadingContent},
     components::download_button,
 };
 use std::{cell::RefCell, rc::Rc};
@@ -84,13 +85,14 @@ impl ImageArtifact {
         }
     }
     /// Decode only the header's download branch, never the display body.
-    fn bytes(&self) -> Result<Vec<u8>, AttachmentUiError> {
+    fn bytes(&self) -> Result<Vec<u8>, ArtifactUiError> {
         let payload = if self.content.starts_with("data:") {
             crate::utils::base64::data_payload(&self.content).unwrap_or("")
         } else {
             &self.content
         };
-        Ok(crate::utils::base64::decode(payload)?)
+        crate::utils::base64::decode(payload)
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))
     }
     /// Recompute image operands only after an edit or selected-pack change.
     fn prepare(&mut self, view: ArtifactView<'_>) {
@@ -121,18 +123,7 @@ impl ImageArtifact {
         muted.clone_into(&mut self.muted);
         self.changed = false;
     }
-    /// Retain one factory owning only live state.
-    fn reading(&self) -> Rc<ReadingContent> {
-        if let Some(reading) = &self.reading {
-            return Rc::clone(reading);
-        }
-        #[cfg(target_arch = "wasm32")]
-        let body = Rc::clone(&self.body);
-        Rc::new(ReadingContent {
-            #[cfg(target_arch = "wasm32")]
-            mount: Rc::new(move |document| browser::mount(document, &body)),
-        })
-    }
+    super::retained::artifact_reading!(body);
 }
 impl ArtifactElement for ImageArtifact {
     fn filename(&self) -> &str {
@@ -155,14 +146,16 @@ impl ArtifactElement for ImageArtifact {
         &mut self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
-        self.host.set_retained_visibility(self.id, visible, modal)
+    ) -> Result<(), ArtifactUiError> {
+        self.host
+            .set_retained_visibility(self.id, visible, modal)
+            .map_err(ArtifactUiError::Host)
     }
     fn get_header_buttons(
         &mut self,
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         download_button::draw(
             ui,
@@ -172,11 +165,7 @@ impl ArtifactElement for ImageArtifact {
             (self.mime(), &self.bytes()?),
         )
     }
-    fn render(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         self.prepare(view);
         #[cfg(target_arch = "wasm32")]

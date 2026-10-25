@@ -1,93 +1,99 @@
 //! Cloud conversation reduction through controlled native event-stream frames.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bedrock;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::transport;
 
-use crate::child_process;
-use chat::{TestResult, block_on};
+#[cfg(not(target_arch = "wasm32"))]
+use chat::TestResult;
 
+#[cfg(not(target_arch = "wasm32"))]
 use bedrock::corpus;
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn thinking_text_and_signatures_follow_separate_updates() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/thinking.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/thinking.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_arguments_repair_each_fragment_and_finalize() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         corpus(include_str!("fixtures/cloud_conversation/tools.json")).await?;
         canonical_argument_keys()?;
         partial_arguments().await
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn interleaved_blocks_keep_content_indices_and_shared_result() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/interleaved.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/interleaved.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn text_blocks_keep_arrival_order_and_reused_numbers() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/text.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/text.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn unmatched_deltas_and_stops_do_not_create_tool_calls() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/unmatched.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/unmatched.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn usage_replaces_reports_without_inventing_cache_totals() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/usage.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/usage.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn stop_reasons_preserve_the_terminal_outcome() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/stops.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/stops.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn failures_keep_thinking_and_tool_arguments_without_scratch() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/failures.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/failures.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn empty_and_unknown_streams_conclude_without_synthetic_blocks() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/empty.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/empty.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn stream_fields_keep_sdk_selection_and_failure_phases() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/fields.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/fields.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Frames opening a thinking block and a tool with an incomplete argument.
 fn partial_frames() -> TestResult<Vec<Vec<u8>>> {
     Ok(vec![
@@ -111,6 +117,7 @@ fn partial_frames() -> TestResult<Vec<Vec<u8>>> {
     ])
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe repaired arguments before the gated producer can supply their completion.
 async fn partial_arguments() -> TestResult {
     let mut pending = bedrock::held(
@@ -161,31 +168,41 @@ async fn partial_arguments() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cancellation_keeps_partial_blocks_and_allows_a_new_call() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!(
-            "fixtures/cloud_conversation/cancellation.json"
-        )),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/cancellation.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn thinking_tool_results_replay_through_generic_dispatch() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            "thinking_tool_results_replay_through_generic_dispatch",
-            "replay",
-            &[("AWS_BEARER_TOKEN_BEDROCK", "fixture-token")],
-        );
+    if !maestro_test_process::selection().is_child() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "thinking_tool_results_replay_through_generic_dispatch",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [("AWS_BEARER_TOKEN_BEDROCK", "fixture-token")]
+                    .iter()
+                    .copied(),
+            )
+            .case("replay")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
-    block_on(
-        false,
-        bedrock::replay_corpus(include_str!("fixtures/cloud_conversation/replay.json")),
-    )
+    crate::runtime::run(bedrock::replay_corpus(include_str!(
+        "fixtures/cloud_conversation/replay.json"
+    )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Complete, unfinished and nested objects retain canonical numeric keys without sorting text keys.
 fn canonical_argument_keys() -> TestResult {
     for input in [
@@ -193,10 +210,10 @@ fn canonical_argument_keys() -> TestResult {
         r#"{"9":9,"z":1,"2":2,"a":2"#,
     ] {
         let arguments = maestro_models::parsed_arguments(input);
-        assert_eq!(
-            arguments.keys().map(String::as_str).collect::<Vec<_>>(),
-            ["2", "9", "z", "a"]
-        );
+        let keys = arguments
+            .as_object()
+            .map(|members| members.keys().map(String::as_str).collect::<Vec<_>>());
+        assert_eq!(keys, Some(vec!["2", "9", "z", "a"]));
     }
     for input in [
         r#"{"outer":{"9":9,"z":1,"2":2,"a":2}}"#,

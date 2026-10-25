@@ -1,7 +1,8 @@
 //! Retained literal or highlighted source artifact with original-text controls.
 use super::artifact_element::{ArtifactElement, ArtifactView};
+use crate::tools::artifacts::ArtifactUiError;
 use crate::{
-    browser::attachment_content::{self, AttachmentHost, AttachmentUiError, ReadingContent},
+    browser::attachment_content::{self, AttachmentHost, ReadingContent},
     components::{copy_button::CopyButton, download_button},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -176,18 +177,7 @@ impl TextArtifact {
         browser::sync(&body, html_changed);
         self.changed = false;
     }
-    /// Create the factory once, retaining owned state only.
-    fn reading(&self) -> Rc<ReadingContent> {
-        if let Some(reading) = &self.reading {
-            return Rc::clone(reading);
-        }
-        #[cfg(target_arch = "wasm32")]
-        let body = Rc::clone(&self.body);
-        Rc::new(ReadingContent {
-            #[cfg(target_arch = "wasm32")]
-            mount: Rc::new(move |document| browser::mount(document, &body)),
-        })
-    }
+    super::retained::artifact_reading!(body);
 }
 impl ArtifactElement for TextArtifact {
     fn filename(&self) -> &str {
@@ -211,14 +201,16 @@ impl ArtifactElement for TextArtifact {
         &mut self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
-        self.host.set_retained_visibility(self.id, visible, modal)
+    ) -> Result<(), ArtifactUiError> {
+        self.host
+            .set_retained_visibility(self.id, visible, modal)
+            .map_err(ArtifactUiError::Host)
     }
     fn get_header_buttons(
         &mut self,
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         if self.copy.is_none() {
             self.copy = Some(CopyButton::new(Rc::clone(&self.host), view.i18n)?);
@@ -233,7 +225,8 @@ impl ArtifactElement for TextArtifact {
                 SourceProfile::Markdown => "Copy Markdown",
                 SourceProfile::Svg => "Copy SVG",
             })?;
-            copy.render(ui, view.i18n, view.presentation)?;
+            copy.render(ui, view.i18n, view.presentation)
+                .map_err(ArtifactUiError::localized_control)?;
         }
         download_button::draw_titled(
             ui,
@@ -251,11 +244,7 @@ impl ArtifactElement for TextArtifact {
             ),
         )
     }
-    fn render(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         self.prepare(view);
         let reading = self.reading();

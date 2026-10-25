@@ -1,9 +1,24 @@
-//! Mounted Close properties and non-overlapping focus-shadow paint.
+//! Mounted Close properties and composed glyph/focus-shadow paint.
+use crate::browser::control_paint::{self, Glyph, PaintBounds, Raster};
 use crate::browser::{
-    attachment_content::{self as content, AttachmentUiError, channel},
+    attachment_content::{self as content, channel},
     transition::{Transition, TransitionStyle},
 };
+use crate::dialogs::dialog::DialogUiError;
+use crate::icons::{self, IconSize};
+use egui::emath::GuiRounding as _;
 use maestro_theme::BrandPresentation;
+
+/// Close-specific geometry and palette retained by the shared image owner.
+#[derive(PartialEq)]
+pub(crate) struct CloseKey {
+    /// Native drawable allocation.
+    bounds: PaintBounds,
+    /// Fractional annulus policy.
+    ring: super::ring::Ring,
+    /// Opaque glyph role.
+    color: egui::Color32,
+}
 
 /// Resolved CSS property endpoints, before quantization.
 pub(crate) struct Operands {
@@ -20,12 +35,15 @@ impl Operands {
         p: &BrandPresentation<'_>,
         response: &egui::Response,
         native_focus: bool,
-    ) -> Result<Self, AttachmentUiError> {
+    ) -> Result<Self, DialogUiError> {
         let hover = response.hovered();
         let focus = response.has_focus() || native_focus;
-        let color = content::color(p, if hover { "text" } else { "muted" })?;
-        let background = content::color(p, "background")?;
-        let ring = content::color(p, "accent")?;
+        let color = content::color(p, if hover { "text" } else { "muted" })
+            .map_err(|error| DialogUiError::Presentation(error.to_string()))?;
+        let background = content::color(p, "background")
+            .map_err(|error| DialogUiError::Presentation(error.to_string()))?;
+        let ring = content::color(p, "accent")
+            .map_err(|error| DialogUiError::Presentation(error.to_string()))?;
         let shadow = if focus {
             [
                 f32::from(background.r()),
@@ -100,60 +118,72 @@ pub(crate) struct Paint {
     active: bool,
 }
 impl Paint {
-    /// Draw the glyph and disjoint annuli without multiplying overlap opacity twice.
+    /// Compose the native glyph and disjoint annuli before fading once.
     pub(crate) fn draw(
         &self,
         ui: &mut egui::Ui,
         close: egui::Rect,
         p: &BrandPresentation<'_>,
-        painter: &mut super::ring::Painter,
-    ) -> Result<(), AttachmentUiError> {
+        painter: &mut control_paint::Painter<CloseKey>,
+    ) -> Result<(), DialogUiError> {
         if self.active {
             ui.ctx().request_repaint();
         }
-        let mut child = ui.new_child(egui::UiBuilder::new().max_rect(close));
-        child.set_opacity(self.opacity);
-        content::glyph(
-            &child,
-            close,
-            "X",
-            egui::Color32::from_rgb(
+        let glyph_rect = close.round_to_pixels(ui.ctx().pixels_per_point());
+        let Some(bounds) =
+            control_paint::raster_bounds(ui, close.expand(self.shadow[9]), glyph_rect)
+        else {
+            return Ok(());
+        };
+        let key = self.key(ui, close, p, bounds);
+        painter.draw(ui, (key, self.opacity), |key| {
+            let node = content::glyph_node("X")?;
+            let image = icons::icon(&node, IconSize::Md, key.color, key.ring.density)
+                .map_err(content::ControlError::Icon)?;
+            let base = Raster {
+                rect: key.bounds.rect,
+                image: super::ring::raster(&key.ring, key.bounds.pixels)?,
+            };
+            Ok(control_paint::compose(
+                ui,
+                base,
+                Glyph::Image {
+                    image,
+                    rect: glyph_rect,
+                },
+            )?)
+        })
+    }
+    /// Retain annulus policy and raw colors separately from whole-control opacity.
+    fn key(
+        &self,
+        ui: &egui::Ui,
+        close: egui::Rect,
+        p: &BrandPresentation<'_>,
+        bounds: PaintBounds,
+    ) -> CloseKey {
+        let mut composed = [0.; 4];
+        for (i, value) in composed.iter_mut().enumerate() {
+            *value = self.shadow[i] + self.shadow[i + 5] * (1. - self.shadow[3]);
+        }
+        CloseKey {
+            bounds,
+            color: egui::Color32::from_rgb(
                 channel(self.color[0]),
                 channel(self.color[1]),
                 channel(self.color[2]),
             ),
-        )?;
-        let inner = self.shadow[4];
-        let outer = self.shadow[9];
-        if outer > 0. {
-            let mut composed = [0.; 4];
-            for (i, value) in composed.iter_mut().enumerate() {
-                *value = self.shadow[i] + self.shadow[i + 5] * (1. - self.shadow[3]);
-            }
-            let radius = content::points(p.radii["control"] / 2.).min(close.width() / 2.);
-            painter.draw(
-                ui,
-                super::ring::Ring {
-                    rect: close,
-                    radius,
-                    spreads: [inner, outer],
-                    colors: [
-                        shadow_color(&composed, self.opacity),
-                        shadow_color(&self.shadow[5..9], self.opacity),
-                    ],
-                    density: ui.ctx().pixels_per_point(),
-                },
-            )?;
+            ring: super::ring::Ring {
+                rect: close,
+                radius: content::points(p.radii["control"] / 2.),
+                spreads: [self.shadow[4], self.shadow[9]],
+                colors: [shadow_color(&composed), shadow_color(&self.shadow[5..9])],
+                density: ui.ctx().pixels_per_point(),
+            },
         }
-        Ok(())
     }
 }
-/// Scale premultiplied sRGB by whole-control opacity, alpha onto the channel range.
-fn shadow_color(value: &[f32], opacity: f32) -> [f32; 4] {
-    [
-        value[0] * opacity,
-        value[1] * opacity,
-        value[2] * opacity,
-        value[3] * opacity * 255.,
-    ]
+/// Put premultiplied shadow alpha onto the channel range without fading.
+fn shadow_color(value: &[f32]) -> [f32; 4] {
+    [value[0], value[1], value[2], value[3] * 255.]
 }

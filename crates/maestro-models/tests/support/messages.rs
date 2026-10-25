@@ -1,5 +1,6 @@
 //! Fixture rows, a scripted transport and call observation for the message protocol tests.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
@@ -12,8 +13,7 @@ use serde_json::{Map, Value, json};
 use tokio::sync::{mpsc, oneshot};
 
 use crate::chat::TestResult;
-use crate::child_process::{child_case, rerun};
-use crate::json::canonical;
+use crate::json::{canonical, decode};
 
 /// Ends a message stream and nothing else.
 pub const STOP: &str = "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
@@ -166,14 +166,6 @@ pub fn scripted_fetch(case: &Case, requests: &Requests) -> maestro_models::Fetch
             body: body(&chunks),
         })))
     })
-}
-
-/// Decode an optional option the case names.
-fn decode<T: serde::de::DeserializeOwned>(spec: &Value, key: &str) -> TestResult<Option<T>> {
-    Ok(spec
-        .get(key)
-        .map(|value| serde_json::from_value(value.clone()))
-        .transpose()?)
 }
 
 /// Options a case names, over the defaults every case shares: a fixed key and no retries.
@@ -411,28 +403,17 @@ pub fn rows_of(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
 
 /// Check every row a test owns in fresh processes, so ambient environment cannot reach a call.
 ///
-/// Rows without an environment run together in one child with an empty environment; each row
-/// with one runs alone in a child holding exactly those variables.
+/// Rows with equal environments share one child holding exactly those variables.
+/// Rows without an environment join the empty-environment group.
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows_of(fixture, test)?;
-    let Some(selected) = child_case() else {
-        rerun(test, "*", &[])?;
-        for row in owned.iter().filter(|row| row.case.env.is_some()) {
-            let variables: Vec<(&str, &str)> = row
-                .case
-                .env
-                .iter()
-                .flatten()
+    for row in crate::environment_rows::selected(test, &owned, |row| {
+        Ok(row.case.env.as_ref().map(|env| {
+            env.iter()
                 .map(|(name, value)| (name.as_str(), value.as_str()))
-                .collect();
-            rerun(test, &row.id, &variables)?;
-        }
-        return Ok(());
-    };
-    for row in owned
-        .iter()
-        .filter(|row| (selected == "*" && row.case.env.is_none()) || row.id == selected)
-    {
+                .collect()
+        }))
+    })? {
         assert_run(row, &run_case(&row.case).await?);
     }
     Ok(())

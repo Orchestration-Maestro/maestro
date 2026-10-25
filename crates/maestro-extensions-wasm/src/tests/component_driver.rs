@@ -364,36 +364,7 @@ impl Driver for ComponentDriver {
         complete: bool,
     ) -> Result<(), String> {
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
-        let emitter = harness
-            .store
-            .data_mut()
-            .table
-            .push(super::bus_host::Emitter { key: 0 })
-            .map_err(|e| e.to_string())?;
-        let function = if complete {
-            harness.exports.func_invoke_compaction_complete()
-        } else {
-            harness.exports.func_invoke_compaction_error()
-        };
-        let result = function
-            .call_async(
-                &mut harness.store,
-                (
-                    borrow(handler),
-                    payload.to_owned(),
-                    Resource::new_borrow(emitter.rep()),
-                ),
-            )
-            .await
-            .map_err(|e| e.to_string())?
-            .0;
-        harness
-            .store
-            .data_mut()
-            .table
-            .delete(emitter)
-            .map_err(|e| e.to_string())?;
-        result
+        super::host::notify_compaction(harness, handler, payload, complete).await
     }
     async fn start(&mut self) -> Result<(), String> {
         let harness = Harness::start(&self.path)

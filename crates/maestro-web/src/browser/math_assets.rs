@@ -1,5 +1,5 @@
 //! Matching math stylesheet and fonts, embedded and installed once per document.
-use crate::browser::attachment_content::AttachmentUiError;
+use crate::browser::attachment_content::AttachmentHostError;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use std::hash::{DefaultHasher, Hash as _, Hasher as _};
 use web_sys::Document;
@@ -91,7 +91,7 @@ const FONTS: [(&str, &[u8]); 20] = [
 ];
 
 /// Insert the stylesheet with its fonts as data, once per document and content hash.
-pub(crate) fn install(document: &Document) -> Result<(), AttachmentUiError> {
+pub(crate) fn install(document: &Document) -> Result<(), AttachmentHostError> {
     let mut hasher = DefaultHasher::new();
     STYLESHEET.hash(&mut hasher);
     for font in FONTS {

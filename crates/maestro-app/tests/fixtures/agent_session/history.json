@@ -1,0 +1,45 @@
+{
+  "forkTexts": [
+    "first",
+    "with image"
+  ],
+  "names": [
+    {
+      "input": "  Release notes  ",
+      "sessionName": "Release notes",
+      "entry": {
+        "type": "session_info",
+        "name": "Release notes"
+      }
+    },
+    {
+      "input": "",
+      "sessionName": null,
+      "entry": {
+        "type": "session_info",
+        "name": ""
+      }
+    },
+    {
+      "input": "Second",
+      "sessionName": "Second",
+      "entry": {
+        "type": "session_info",
+        "name": "Second"
+      }
+    }
+  ],
+  "sessionEvents": [
+    {
+      "type": "session_info_changed",
+      "name": "Release notes"
+    },
+    {
+      "type": "session_info_changed"
+    },
+    {
+      "type": "session_info_changed",
+      "name": "Second"
+    }
+  ]
+}

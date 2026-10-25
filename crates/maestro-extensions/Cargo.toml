@@ -1,4 +1,5 @@
 [package]
+autotests = false
 name = "maestro-extensions"
 version = "0.1.0"
 edition.workspace = true
@@ -7,6 +8,7 @@ repository.workspace = true
 
 [dependencies]
 maestro-agent = { path = "../maestro-agent" }
+maestro-listeners.workspace = true
 maestro-path = { path = "../maestro-path" }
 maestro-tools = { path = "../maestro-tools" }
 serde.workspace = true
@@ -21,12 +23,17 @@ serde_json.workspace = true
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process = { path = "../maestro-test-process" }
 maestro-credentials = { path = "../maestro-credentials" }
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"

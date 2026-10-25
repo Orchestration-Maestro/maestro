@@ -46,7 +46,7 @@ impl<I: Imports> ExtensionHost for Host<I> {
         Box::pin(async move { self.0.set_model(encode_value(&model)?).await })
     }
     fn get_all_tools(&self) -> ExtensionResult<Vec<crate::ToolInfo>> {
-        super::session::decode(&self.0.get_all_tools()?)
+        super::tools::decode_tools(&self.0.get_all_tools()?)
     }
     fn get_commands(&self) -> ExtensionResult<Vec<crate::SlashCommandInfo>> {
         super::session::decode(&self.0.get_commands()?)
@@ -123,7 +123,7 @@ impl<I: Imports> ExtensionHost for Host<I> {
             prepare_arguments,
             execute,
         } = tool;
-        let metadata = encode_value(&metadata)?;
+        let metadata = super::tools::encode_metadata(&metadata)?;
         let prepare = prepare_arguments.map(|prepare| (Identity::new(&self.0), prepare));
         let identity = Identity::new(&self.0);
         self.0.register_tool(

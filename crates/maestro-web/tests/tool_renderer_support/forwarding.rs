@@ -2,9 +2,8 @@
 #![cfg(test)]
 use super::{cases, content};
 use maestro_web::{
-    ToolRenderer,
-    browser::attachment_content::AttachmentUiError,
-    register_tool_renderer, render_tool,
+    ToolRenderer, register_tool_renderer, render_tool,
+    tools::types::ToolUiError,
     tools::types::{ToolParams, ToolRenderResult, ToolRendererBinding, ToolResultMessageView},
 };
 use serde_json::Value;
@@ -17,13 +16,13 @@ struct Forwarding {
     blocks: usize,
     calls: Rc<Cell<usize>>,
 }
-impl ToolRenderer for Forwarding {
+impl ToolRenderer<Value> for Forwarding {
     fn render(
         &self,
         params: Option<&Value>,
         result: Option<ToolResultMessageView<'_>>,
         stream: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
+    ) -> Result<ToolRenderResult, ToolUiError> {
         let result = result.unwrap();
         let expected = &self.expected;
         let same_params = params.map(|p| std::ptr::from_ref(p) as usize) == Some(self.params);

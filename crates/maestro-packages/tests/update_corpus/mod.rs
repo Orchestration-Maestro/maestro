@@ -2,13 +2,13 @@
 mod native;
 mod parallel;
 mod types;
-use super::support;
+use super::{native_support, resolution_support::case_in_child, scratch::Scratch, support};
 use maestro_packages::{
     DefaultPackageManager, PackageManager, PackageManagerOptions, ProgressAction, ProgressEventType,
 };
 use maestro_settings::{PackageSource, SettingsListEntry, SettingsManager};
 use serde_json::{Value, json};
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, path::Path, rc::Rc};
 use types::{Case, Command, Event, Expected, Files, GitInput, Input, Outcome, Response};
 
 /// Runs each committed case once, comparing every retained observation.
@@ -17,19 +17,37 @@ pub fn replay() {
         serde_json::from_str(include_str!("../fixtures/configured-update.json")).unwrap();
     let mut ids = std::collections::HashSet::new();
     assert_eq!(cases.len(), 81);
+    // Cases without an offline value run together in one child that starts online.
+    let online = case_in_child("online", |_| vec![]).is_some();
     for case in cases {
         assert!(ids.insert(case.id.clone()), "duplicate corpus case");
+        if let Input::Offline { offline, .. } = &case.input {
+            let environment = |_: &str| vec![("MAESTRO_OFFLINE", Some(offline.clone()))];
+            if case_in_child(&case.id, environment).is_none() {
+                continue;
+            }
+        } else if !online {
+            continue;
+        }
         assert_eq!(run(case.input), case.expected, "corpus case {}", case.id);
     }
 }
 /// The manager and the caller's retained settings and process observations.
 type Manager = Rc<DefaultPackageManager<support::Controlled>>;
-/// Creates authored fixture bases, without depending on ambient directories.
+/// Creates the authored fixture bases below a fresh tree.
 fn manager(
     user: &Value,
     project: &Value,
-) -> (Manager, Rc<RefCell<SettingsManager>>, Rc<support::Effects>) {
+) -> (
+    Manager,
+    Rc<RefCell<SettingsManager>>,
+    Rc<support::Effects>,
+    Scratch,
+) {
+    let tree = Scratch::new().unwrap();
     let (_, settings, effects) = support::manager(&json!({"packages":user}));
+    let global = support::output(&support::below(tree.path(), "/fixture/global"), "", Some(0));
+    effects.outputs.borrow_mut().push_back(Ok(global));
     settings.borrow_mut().set_project_packages(
         project
             .as_array()
@@ -41,13 +59,13 @@ fn manager(
     );
     let manager = Rc::new(DefaultPackageManager::new(
         PackageManagerOptions {
-            cwd: "/fixture/cwd".into(),
-            agent_dir: "/fixture/agent".into(),
+            cwd: support::below(tree.path(), "/fixture/cwd"),
+            agent_dir: support::below(tree.path(), "/fixture/agent"),
             settings_manager: settings.clone(),
         },
         support::Controlled(effects.clone()),
     ));
-    (manager, settings, effects)
+    (manager, settings, effects, tree)
 }
 /// Replays one operation with controlled process responses or native repository effects.
 fn run(input: Input) -> Outcome {
@@ -91,22 +109,27 @@ fn settings_input(input: &Input) -> (Value, Value, Option<String>) {
 /// Runs controlled work to completion, including workers surviving a returned error.
 fn controlled(input: Input) -> Expected {
     let (user, project, source) = settings_input(&input);
-    let (manager, settings, effects) = manager(&user, &project);
+    let (manager, settings, effects, tree) = manager(&user, &project);
+    let source = source.map(|source| support::below(tree.path(), &source));
     let observed = Rc::new(RefCell::new(Expected::default()));
     observe_commands(&effects, &observed);
     if !matches!(input, Input::Named { .. } | Input::Offline { .. }) {
         observe_events(&manager, &observed);
     }
+    prepare_tree(&input, tree.path());
     configure(&input, &manager, &settings, &effects, &observed);
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     let result = runtime.block_on(local.run_until(manager.update(source.as_deref())));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
     let mut actual = std::mem::take(&mut *observed.borrow_mut());
+    let base = tree.path().to_str().unwrap();
+    let spelled = |text: &str| support::recorded_stages(&text.replace(base, ""));
+    for command in &mut actual.commands {
+        command.args = command.args.iter().map(|arg| spelled(arg)).collect();
+        command.cwd = command.cwd.as_deref().map(spelled);
+    }
     actual.error = result.err().map(|error| error.to_string());
     if let Input::Batch { command, .. } = input {
         actual.settings = Some(json!(settings.borrow().get_global_settings().0));
@@ -117,7 +140,7 @@ fn controlled(input: Input) -> Expected {
             actual.project =
                 Some(json!({"packages":settings.borrow().get_project_settings().0["packages"]}));
         }
-        actual.files = project_files(&effects);
+        actual.files = project_files(tree.path());
     }
     actual
 }
@@ -183,7 +206,7 @@ fn event_record(event: &maestro_packages::ProgressEvent, observer: Option<String
         observer,
     }
 }
-/// Applies the input's process/filesystem responses before invoking the public operation.
+/// Applies the input's process responses and observers before invoking the public operation.
 fn configure(
     input: &Input,
     manager: &Manager,
@@ -191,34 +214,17 @@ fn configure(
     effects: &Rc<support::Effects>,
     observed: &Rc<RefCell<Expected>>,
 ) {
-    *effects.manifest.borrow_mut() = None;
     match input {
-        Input::Offline { offline, .. } => *effects.offline.borrow_mut() = Some(offline.clone()),
-        Input::Npm { installed, latest } => {
-            configure_npm(installed.as_deref(), latest.clone(), effects, observed);
-        }
+        Input::Npm { latest, .. } => npm_probe(latest.clone(), effects, observed),
         Input::Batch {
             command,
-            existing,
             user,
             project,
+            ..
         } => {
             set_command(settings, command.as_ref());
             if !user.as_array().unwrap().is_empty() && !project.as_array().unwrap().is_empty() {
                 parallel_batches(effects, observed);
-            }
-            if *existing {
-                effects.exists.set(true);
-                effects.writes.borrow_mut().extend([
-                    (
-                        "/fixture/cwd/.maestro/npm/package.json".into(),
-                        "existing manifest".into(),
-                    ),
-                    (
-                        "/fixture/cwd/.maestro/npm/.gitignore".into(),
-                        "existing ignore".into(),
-                    ),
-                ]);
             }
         }
         Input::Callback { phase } => configure_callback(phase, manager, effects, observed),
@@ -234,17 +240,38 @@ fn set_command(settings: &Rc<RefCell<SettingsManager>>, command: Option<&Vec<Str
             .collect()
     }));
 }
-/// Installed-version and latest-process responses for an npm candidate.
-fn configure_npm(
-    installed: Option<&str>,
-    latest: Response,
-    effects: &Rc<support::Effects>,
-    observed: &Rc<RefCell<Expected>>,
-) {
-    effects.exists.set(installed.is_some());
-    *effects.manifest.borrow_mut() = installed
-        .filter(|text| !["NO_FILE", "DIRECTORY"].contains(text))
-        .map(str::to_owned);
+/// Creates the input's installed contents and existing files below `tree`.
+fn prepare_tree(input: &Input, tree: &Path) {
+    match input {
+        Input::Npm { installed, .. } => {
+            let package = support::below(tree, "/fixture/cwd/.maestro/npm/node_modules/a");
+            let manifest = format!("{package}/package.json");
+            match installed.as_deref() {
+                None => {}
+                Some("NO_FILE") => std::fs::create_dir_all(package).unwrap(),
+                Some("DIRECTORY") => std::fs::create_dir_all(manifest).unwrap(),
+                Some(text) => native_support::write(&manifest, text),
+            }
+        }
+        Input::Batch { existing: true, .. } => {
+            let root = support::below(tree, "/fixture/cwd/.maestro/npm");
+            native_support::write(format!("{root}/package.json"), "existing manifest");
+            native_support::write(format!("{root}/.gitignore"), "existing ignore");
+        }
+        Input::Git(git) => {
+            let checkout = support::below(tree, "/fixture/agent/git/github.com/acme/tool");
+            if !git.missing {
+                std::fs::create_dir_all(&checkout).unwrap();
+            }
+            if git.manifest {
+                native_support::write(format!("{checkout}/package.json"), "{}");
+            }
+        }
+        _ => {}
+    }
+}
+/// The latest-process response for an npm candidate.
+fn npm_probe(latest: Response, effects: &Rc<support::Effects>, observed: &Rc<RefCell<Expected>>) {
     let output = observed.clone();
     let weak = Rc::downgrade(effects);
     *effects.capture_hook.borrow_mut() = Some(Rc::new(move |program, args, cwd| {
@@ -265,20 +292,12 @@ fn response(response: &Response) -> std::io::Result<String> {
         Response::Failure(failure) => Err(std::io::Error::other(failure.error.clone())),
     }
 }
-/// Reports actual prepared-file records from the controlled filesystem seam.
-fn project_files(effects: &support::Effects) -> Option<Files> {
-    let files = effects.writes.borrow();
-    let manifest = files
-        .iter()
-        .rev()
-        .find(|(path, _)| path == "/fixture/cwd/.maestro/npm/package.json")?;
-    let ignore = files
-        .iter()
-        .rev()
-        .find(|(path, _)| path == "/fixture/cwd/.maestro/npm/.gitignore")?;
+/// Reports the prepared project files.
+fn project_files(tree: &Path) -> Option<Files> {
+    let root = support::below(tree, "/fixture/cwd/.maestro/npm");
     Some(Files {
-        manifest: manifest.1.clone(),
-        ignore: ignore.1.clone(),
+        manifest: std::fs::read_to_string(format!("{root}/package.json")).ok()?,
+        ignore: std::fs::read_to_string(format!("{root}/.gitignore")).ok()?,
     })
 }
 /// Installs stateful callback failures and replacement without retaining its owner.
@@ -331,13 +350,6 @@ fn configure_git(
     observed: &Rc<RefCell<Expected>>,
 ) {
     set_command(settings, input.command.as_ref());
-    effects.exists.set(!input.missing);
-    if !input.manifest {
-        effects
-            .absent_under
-            .borrow_mut()
-            .push("/fixture/agent/git/github.com/acme/tool/package.json".into());
-    }
     let fetched = Rc::new(std::cell::Cell::new(false));
     let output = observed.clone();
     let after_fetch = fetched.clone();

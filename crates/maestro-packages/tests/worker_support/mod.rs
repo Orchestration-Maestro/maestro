@@ -75,15 +75,34 @@ fn gated_capture(
         })
     })
 }
+/// Gates each npm check while Git probes remain immediately available.
+pub fn gated_npm_checks(
+    effects: &support::Effects,
+) -> (
+    tokio::sync::watch::Sender<bool>,
+    tokio::sync::mpsc::UnboundedReceiver<()>,
+) {
+    let (checks, checking) = tokio::sync::mpsc::unbounded_channel();
+    let (release_checks, wait_checks) = tokio::sync::watch::channel(false);
+    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |command, _, _| {
+        let checks = checks.clone();
+        let mut wait = wait_checks.clone();
+        let npm = command != "git";
+        Box::pin(async move {
+            if npm {
+                checks.send(()).unwrap();
+                wait.wait_for(|ready| *ready).await.unwrap();
+                Ok("\"2\"".into())
+            } else {
+                Ok("origin/main".into())
+            }
+        })
+    }));
+    (release_checks, checking)
+}
 /// Native local runtime used by concurrency witnesses.
 pub fn driver(effects: &support::Effects) -> (tokio::runtime::Runtime, Rc<tokio::task::LocalSet>) {
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    (
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap(),
-        local,
-    )
+    (crate::runtime::runtime(), local)
 }

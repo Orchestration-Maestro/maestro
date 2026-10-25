@@ -49,12 +49,9 @@ fn configuration_roots_flow_into_update_selection() {
 
 #[test]
 fn configured_bun_uses_both_global_roots() {
-    support::run(
-        include_str!(
-            "fixtures/configuration/self_update/configured_bun_uses_both_global_roots.json"
-        ),
-        false,
-    );
+    support::run_bun_roots(include_str!(
+        "fixtures/configuration/self_update/configured_bun_uses_both_global_roots.json"
+    ));
 }
 
 #[test]
@@ -105,6 +102,18 @@ fn output_probes_preserve_trim_and_failure_precedence() {
     );
 }
 
+/// Only a Unix process can end without an exit code (by signal).
+#[cfg(unix)]
+#[test]
+fn signal_only_probe_status_reports_unknown_exit_code() {
+    support::run(
+        include_str!(
+            "fixtures/configuration/self_update/signal_only_probe_status_reports_unknown_exit_code.json"
+        ),
+        false,
+    );
+}
+
 #[test]
 fn root_evidence_requires_canonical_descendants() {
     support::run(
@@ -125,6 +134,9 @@ fn selector_reads_observations_only_on_reachable_branches() {
     );
 }
 
+/// The owned update record outlives its selection inputs; the recorded install tree of this
+/// case is POSIX, so it runs everywhere but Windows.
+#[cfg(not(windows))]
 #[test]
 fn self_update_records_outlive_selection_inputs() {
     support::run_owned(include_str!(
@@ -164,10 +176,24 @@ fn windows_native_queries_preserve_literal_executable_and_arguments() {
     literal_query();
 }
 
-/// Runs the native query conversion against a real executable under a spaced path.
+/// Runs the self-update query and the package-manager command against a real executable
+/// under a spaced path.
 fn literal_query() {
     use maestro_app::configuration::config::{NativeSelfUpdateOperations, SelfUpdateOperations};
-    let directory = std::env::temp_dir().join(format!("maestro query {}", std::process::id()));
+    use maestro_packages::{NativePackageOperations, PackageOperations};
+    let packages = NativePackageOperations::new(
+        std::rc::Rc::new(|| false),
+        &std::rc::Rc::new(tokio::task::LocalSet::new()),
+    );
+    let child = || {
+        TestProcess::named(test_name(native_query_child).unwrap())
+            .unwrap()
+            .nocapture()
+            .skip("argument with spaces")
+            .skip("literal & | ; $HOME %PATH% ^ < >")
+    };
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let directory = scratch.path().join("maestro query");
     std::fs::create_dir(&directory).unwrap();
     let executable = directory.join(format!("npm{}", std::env::consts::EXE_SUFFIX));
     std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
@@ -181,14 +207,9 @@ fn literal_query() {
         commands
     };
     for command in commands {
-        let output = TestProcess::named(test_name(native_query_child).unwrap())
-            .unwrap()
-            .nocapture()
-            .skip("argument with spaces")
-            .skip("literal & | ; $HOME %PATH% ^ < >")
-            .output_with(|args| {
-                NativeSelfUpdateOperations.run_command_sync(command.to_str().unwrap(), args)
-            })
+        let command = command.to_str().unwrap();
+        let output = child()
+            .output_with(|args| NativeSelfUpdateOperations.run_command_sync(command, args))
             .unwrap();
         assert!(output.status.success(), "{command:?}: {output:?}");
         assert!(
@@ -196,8 +217,17 @@ fn literal_query() {
                 .unwrap()
                 .contains("literal argv received")
         );
+        // The child prints its marker only after checking that every argument arrived intact.
+        let package = child()
+            .invoke_with(|args| packages.run_command_sync(command, args))
+            .unwrap();
+        assert_eq!(package.status, Some(0), "{command:?}: {}", package.stderr);
+        assert!(
+            package.stdout.contains("literal argv received"),
+            "{command:?}: {}",
+            package.stdout
+        );
     }
-    std::fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]

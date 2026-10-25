@@ -1,19 +1,27 @@
 //! Controlled runtime witnesses shared by response endpoints.
-use crate::chat::{TestResult, context, model};
+use crate::chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::chat::{context, model};
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::responses::azure_openai_responses::{
     stream_azure_openai_responses, stream_simple_azure_openai_responses,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::responses::openai_responses::{
     stream_openai_responses, stream_simple_openai_responses,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     AssistantMessageEventStream, AzureOpenAIResponsesOptions, Context, Model,
     OpenAIResponsesOptions, SimpleStreamOptions, StreamOptions,
 };
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, PoisonError};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Response endpoint under test.
 #[derive(Clone, Copy)]
 pub enum Endpoint {
@@ -22,6 +30,7 @@ pub enum Endpoint {
     /// Cloud response endpoint.
     Azure,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Endpoint {
     /// Completion frame for this endpoint's controlled fixture.
     fn complete(self) -> &'static str {
@@ -31,6 +40,7 @@ impl Endpoint {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// One endpoint and entry-point selection.
 #[derive(Clone, Copy)]
 struct Invocation {
@@ -39,6 +49,7 @@ struct Invocation {
     /// Whether to use the simple entry point.
     simple: bool,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Descriptor and conversation shared by controlled runtime tests.
 fn inputs(endpoint: Endpoint) -> TestResult<(Model, Context)> {
     let (api, provider) = match endpoint {
@@ -52,6 +63,7 @@ fn inputs(endpoint: Endpoint) -> TestResult<(Model, Context)> {
         context(&json!({"messages":[{"role":"user","content":"hello"}]}))?,
     ))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke one of the two public entries.
 fn start(
     call: Invocation,
@@ -94,6 +106,7 @@ fn start(
         ),
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Both entries use native HTTP with hooks, closed success, incomplete EOF and failures.
 pub async fn native(endpoint: Endpoint) -> TestResult {
     let success = format!(
@@ -140,6 +153,7 @@ pub async fn native(endpoint: Endpoint) -> TestResult {
     }
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise one joined native exchange.
 async fn native_case(
     call: Invocation,
@@ -189,6 +203,7 @@ async fn native_case(
     check_native_contents(call.endpoint, &result, body, error);
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Inspect retained text and model-priced cost for the closed native response.
 fn check_native_contents(endpoint: Endpoint, result: &Value, body: &str, error: Option<&str>) {
     if body.contains("draft") {
@@ -203,6 +218,7 @@ fn check_native_contents(endpoint: Endpoint, result: &Value, body: &str, error: 
         assert_eq!(result["content"][0]["text"], "answer");
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert endpoint-specific native path and credential headers.
 fn check_native_target(endpoint: Endpoint, received: &crate::loopback::Received) {
     let (path, header, key) = match endpoint {
@@ -220,6 +236,7 @@ fn check_native_target(endpoint: Endpoint, received: &crate::loopback::Received)
     assert_eq!(received.request_line, path);
     assert_eq!(received.header(header), Some(key));
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Record native hook effects without holding a lock around serialization or user code.
 fn native_options(hooks: &Arc<Mutex<Vec<&'static str>>>) -> StreamOptions {
     let payload = Arc::clone(hooks);
@@ -256,8 +273,10 @@ fn native_options(hooks: &Arc<Mutex<Vec<&'static str>>>) -> StreamOptions {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A producer completion witness sent when its pending read is dropped.
 struct Closed(Option<tokio::sync::oneshot::Sender<()>>);
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Closed {
     fn drop(&mut self) {
         if let Some(sender) = self.0.take() {
@@ -265,6 +284,7 @@ impl Drop for Closed {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// A hook controlled by entry and completion acknowledgements.
 fn gate_hook() -> (
     maestro_models::OnPayload,
@@ -294,6 +314,7 @@ fn gate_hook() -> (
     });
     (hook, entered, release, done)
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Body creation and polling check the hook's completed effect, not timing-based absence.
 fn pending_body(
     done: Arc<std::sync::atomic::AtomicBool>,
@@ -320,6 +341,7 @@ fn pending_body(
         },
     ))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Gate one operation, then abort a witnessed pending read after observing its partial.
 async fn gated_call(call: Invocation) -> TestResult {
     let (payload_hook, payload_entered, payload_release, payload_done) = gate_hook();
@@ -366,6 +388,7 @@ async fn gated_call(call: Invocation) -> TestResult {
     let _ = response_release.send(());
     cancel_partial(&stream, signal, waiting, closed).await
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Abort the same operation after its body acknowledges publication of partial text.
 async fn cancel_partial(
     stream: &AssistantMessageEventStream,
@@ -405,6 +428,7 @@ async fn cancel_partial(
     );
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Fetch begins only after the payload hook's completed effect.
 fn gated_fetch(
     body: Arc<Mutex<Option<maestro_models::HttpBody>>>,
@@ -421,6 +445,7 @@ fn gated_fetch(
         })))
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Both entry points preserve effect order and the pending body's partial output.
 pub async fn gated(endpoint: Endpoint) -> TestResult {
     for simple in [false, true] {
@@ -430,6 +455,7 @@ pub async fn gated(endpoint: Endpoint) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Shared HTTP retry, timeout and cancellation options reach the existing sender.
 pub async fn transport_options(endpoint: Endpoint) -> TestResult {
     for simple in [false, true] {
@@ -486,6 +512,7 @@ pub async fn transport_options(endpoint: Endpoint) -> TestResult {
     }
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Zero retries and a caller timeout are forwarded unchanged.
 async fn attempt_failure(
     call: Invocation,
@@ -508,6 +535,7 @@ async fn attempt_failure(
     assert_eq!(setup.attempts(), 1);
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Abort after the transport begins a pending setup, without advancing a timer.
 async fn cancel_setup(call: Invocation) -> TestResult {
     let signal = maestro_models::Cancellation::new();
@@ -529,6 +557,7 @@ async fn cancel_setup(call: Invocation) -> TestResult {
     assert_eq!(result["errorMessage"], "Request was aborted.");
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Failure to spawn without a native runtime still closes both entry streams.
 pub fn without_runtime(endpoint: Endpoint) -> TestResult {
     for simple in [false, true] {
@@ -539,7 +568,7 @@ pub fn without_runtime(endpoint: Endpoint) -> TestResult {
             ..Default::default()
         };
         let stream = start(call, target, history, common)?;
-        crate::chat::block_on(false, async {
+        crate::runtime::run::<crate::TestResult<_>>(async {
             let (events, result) = crate::response_output::collect(&stream).await?;
             assert_eq!(events, vec![json!({"type":"error","reason":"error"})]);
             assert_eq!(
@@ -552,6 +581,7 @@ pub fn without_runtime(endpoint: Endpoint) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// HTTP status retries retain the retry hint while ignoring the delay-cap preference.
 async fn retry_statuses(call: Invocation) -> TestResult {
     for retries in [Some(0_u8), Some(1), None] {
@@ -603,6 +633,7 @@ async fn retry_statuses(call: Invocation) -> TestResult {
     assert_eq!(result["stopReason"], "stop");
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// The inherited timeout remains ten minutes on a controlled paused clock.
 async fn inherited_timeout(call: Invocation) -> TestResult {
     let setup = crate::transport::transport(vec![crate::transport::Attempt::Hang]);

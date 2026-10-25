@@ -1,9 +1,9 @@
 //! Live footer refresh through controlled and native effects.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
 use crate::native;
-#[path = "support/watching.rs"]
-mod watching;
+use crate::watching;
 use maestro_app::presentation_data::footer_data_provider::{
     FooterDataProvider, FooterFileStats, ReadonlyFooterDataProvider,
 };
@@ -22,7 +22,7 @@ use watching::Effects;
 
 type Seen = Rc<RefCell<Vec<Option<String>>>>;
 fn provider(effects: &Rc<Effects>, cwd: &str) -> FooterDataProvider {
-    FooterDataProvider::new(watching::target(cwd), effects.clone())
+    FooterDataProvider::new(effects.path(cwd), effects.clone())
 }
 fn subscribed(p: &FooterDataProvider) -> Seen {
     let seen = Seen::default();
@@ -102,10 +102,17 @@ fn footer_watch_selection_tracks_common_metadata() {
     for case in cases::<Selection>(include_str!("fixtures/footer_selection.json")) {
         let e = Rc::new(Effects::default());
         for path in case.entries {
-            e.directory(&path);
+            if path.ends_with("HEAD") || path.ends_with("tables.list") {
+                e.text(&path, "ref: refs/heads/main");
+            } else {
+                e.directory(&path);
+            }
         }
         let p = provider(&e, &case.cwd);
-        assert_eq!(e.active(), case.paths);
+        assert_eq!(
+            e.active(),
+            case.paths.iter().map(|p| e.path(p)).collect::<Vec<_>>()
+        );
         let polls: Vec<_> = e
             .polls
             .borrow()
@@ -116,7 +123,7 @@ fn footer_watch_selection_tracks_common_metadata() {
             polls,
             case.polls
                 .into_iter()
-                .map(|p| (p.path, Duration::from_millis(p.interval)))
+                .map(|p| (e.path(&p.path), Duration::from_millis(p.interval)))
                 .collect::<Vec<_>>()
         );
         assert_eq!(e.pending_timers(), 0);
@@ -136,11 +143,11 @@ fn footer_watch_selection_tracks_common_metadata() {
         let p = provider(&e, "/repo");
         assert_eq!(
             e.active(),
-            [
+            e.paths([
                 "/storage [one]*/worktrees/one",
                 "/storage [one]*/reftable",
                 "/storage [one]*/reftable/tables.list"
-            ]
+            ])
         );
         p.dispose();
     }
@@ -164,7 +171,7 @@ fn footer_head_events_filter_before_scheduling() {
         let p = provider(&e, "/repo");
         e.event(source, Some("unrelated.table"));
         e.advance(500);
-        assert_eq!(e.query_dirs.borrow().as_slice(), ["/repo"]);
+        assert_eq!(e.query_dirs.borrow().as_slice(), e.paths(["/repo"]));
         e.answer("updated");
         assert_eq!(p.get_git_branch().as_deref(), Some("updated"));
         p.dispose();
@@ -248,7 +255,10 @@ fn footer_inflight_events_queue_one_later_refresh() {
         e.advance(1);
         assert_eq!(e.queries.borrow().len(), 1);
         e.answer("second");
-        assert_eq!(e.query_dirs.borrow().as_slice(), ["/repo", "/repo"]);
+        assert_eq!(
+            e.query_dirs.borrow().as_slice(),
+            e.paths(["/repo", "/repo"])
+        );
         let expected = if answer == "main" {
             vec![Some("second".into())]
         } else {
@@ -343,7 +353,7 @@ fn footer_cwd_change_rejects_old_completion() {
         let calls = Rc::new(Cell::new(0));
         let log = calls.clone();
         let _keep = p.on_branch_change(Rc::new(move || log.set(log.get() + 1)));
-        p.set_cwd(watching::target("/other"));
+        p.set_cwd(e.path("/other"));
         if primed {
             p.get_git_branch();
         }
@@ -363,7 +373,10 @@ fn footer_cwd_change_rejects_old_completion() {
         e.advance(1);
         assert_eq!(e.queries.borrow().len(), usize::from(pending));
         if pending {
-            assert_eq!(e.query_dirs.borrow().as_slice(), ["/repo", "/other"]);
+            assert_eq!(
+                e.query_dirs.borrow().as_slice(),
+                e.paths(["/repo", "/other"])
+            );
             e.answer("new-cwd");
             assert_eq!(p.get_git_branch().as_deref(), Some("new-cwd"));
         }
@@ -450,7 +463,7 @@ fn footer_async_lookup_preserves_fallback_and_trim() {
     let e = Effects::repo();
     let p = provider(&e, "/repo");
     p.get_git_branch();
-    e.files.borrow_mut().remove("/repo/.git/HEAD");
+    e.repository.remove("/repo/.git/HEAD");
     begin(&e);
     assert_eq!(p.get_git_branch(), None);
     assert!(e.query_dirs.borrow().is_empty());
@@ -486,11 +499,12 @@ fn footer_dispose_during_callback_stops_walk() {
     let e = Effects::repo();
     let p = provider(&e, "/repo");
     p.get_git_branch();
+    let other = e.path("/other");
     let reader = p.clone();
     let moved = Cell::new(false);
     drop(p.on_branch_change(Rc::new(move || {
         if !moved.replace(true) {
-            reader.set_cwd(watching::target("/other"));
+            reader.set_cwd(other.clone());
         }
     })));
     begin(&e);
@@ -498,8 +512,8 @@ fn footer_dispose_during_callback_stops_walk() {
     e.answer("new");
     e.advance(500);
     assert_eq!(p.get_git_branch().as_deref(), Some("other"));
-    assert_eq!(e.query_dirs.borrow().as_slice(), ["/repo"]);
-    assert_eq!(e.active(), ["/other/.git"]);
+    assert_eq!(e.query_dirs.borrow().as_slice(), e.paths(["/repo"]));
+    assert_eq!(e.active(), e.paths(["/other/.git"]));
     p.dispose();
 }
 
@@ -520,7 +534,7 @@ fn footer_disposal_cancels_registered_sources() {
         e.directory("/other/.git/reftable");
         e.text("/other/.git/reftable/tables.list", "0");
         let seen = subscribed(&p);
-        p.set_cwd(watching::target("/other"));
+        p.set_cwd(e.path("/other"));
         assert_eq!(p.get_git_branch().as_deref(), Some("other"));
         assert_eq!(*seen.borrow(), [Some("other".into())]);
         assert!(e.active().is_empty());
@@ -555,7 +569,7 @@ fn footer_cwd_change_cancels_old_debounce_and_retry() {
         p.get_git_branch();
         e.event(1, None);
         e.error(1);
-        p.set_cwd(watching::target(if same { "/repo" } else { "/absent" }));
+        p.set_cwd(e.path(if same { "/repo" } else { "/absent" }));
         assert_eq!(e.pending_timers(), if same { 2 } else { 0 });
         e.advance(500);
         assert_eq!(e.queries.borrow().len(), usize::from(same));
@@ -572,8 +586,8 @@ fn footer_cwd_change_cancels_old_debounce_and_retry() {
     let e = Effects::repo();
     let p = provider(&e, "/repo");
     let seen = subscribed(&p);
-    p.set_cwd(watching::target("/other"));
-    assert_eq!(e.active(), ["/other/.git"]);
+    p.set_cwd(e.path("/other"));
+    assert_eq!(e.active(), e.paths(["/other/.git"]));
     assert_eq!(e.live_polls(), 0);
     assert_eq!(*seen.borrow(), [Some("other".into())]);
     p.dispose();
@@ -663,10 +677,7 @@ fn footer_disposal_keeps_other_provider_polling() {
 #[cfg(unix)]
 fn native_runtime() -> (tokio::runtime::Runtime, Rc<tokio::task::LocalSet>) {
     (
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap(),
+        crate::support::io_runtime(),
         Rc::new(tokio::task::LocalSet::new()),
     )
 }
@@ -872,7 +883,7 @@ fn footer_native_async_lookup_runs_selected_command() {
     let e = Effects::repo();
     let p = provider(&e, "/repo");
     begin(&e);
-    assert_eq!(e.query_dirs.borrow().as_slice(), ["/repo"]);
+    assert_eq!(e.query_dirs.borrow().as_slice(), e.paths(["/repo"]));
     e.finish(Err(io::Error::other("process failed")));
     assert_eq!(p.get_git_branch().as_deref(), Some("detached"));
     p.dispose();
@@ -893,9 +904,12 @@ fn native_command_probe(root: &native::Scratch) {
         std::path::Path::new(&root.join("bin/git")),
     );
     let output = native::probe(
-        &crate::child_process::selector("footer_native_async_lookup_runs_selected_command")
-            .unwrap(),
-        &root.0,
+        maestro_test_process::TestProcess::current(
+            "footer_native_async_lookup_runs_selected_command",
+        )
+        .unwrap()
+        .case("*"),
+        root.0.path(),
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
             ("PATH", &root.join("bin")),
@@ -906,13 +920,19 @@ fn native_command_probe(root: &native::Scratch) {
         output,
         [
             "--no-optional-locks symbolic-ref --quiet --short HEAD",
-            std::fs::canonicalize(&root.0).unwrap().to_str().unwrap()
+            std::fs::canonicalize(root.0.path())
+                .unwrap()
+                .to_str()
+                .unwrap()
         ]
     );
     let failed = native::probe(
-        &crate::child_process::selector("footer_native_async_lookup_runs_selected_command")
-            .unwrap(),
-        &root.0,
+        maestro_test_process::TestProcess::current(
+            "footer_native_async_lookup_runs_selected_command",
+        )
+        .unwrap()
+        .case("*"),
+        root.0.path(),
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
             ("PATH", &root.join("bin")),
@@ -988,7 +1008,7 @@ fn cwd_plain_completion() {
     p.get_git_branch();
     let seen = subscribed(&p);
     begin(&e);
-    p.set_cwd(watching::target("/other"));
+    p.set_cwd(e.path("/other"));
     e.answer("stale");
     assert_eq!(p.get_git_branch().as_deref(), Some("other"));
     assert_eq!(*seen.borrow(), [Some("other".into())]);
@@ -1066,11 +1086,11 @@ fn footer_linked_worktree_without_commondir_watches_its_own_metadata() {
     let p = provider(&e, "/repo");
     assert_eq!(
         e.active(),
-        [
+        e.paths([
             "/storage/worktrees/one",
             "/storage/worktrees/one/reftable",
             "/storage/worktrees/one/reftable/tables.list",
-        ]
+        ])
     );
     assert_eq!(e.live_polls(), 1);
     assert_eq!(p.get_git_branch().as_deref(), Some("main"));
@@ -1085,14 +1105,14 @@ fn footer_pending_refresh_after_leaving_repository_keeps_branch_absent() {
     let seen = subscribed(&p);
     begin(&e);
     e.event(1, None);
-    p.set_cwd(watching::target("/absent"));
+    p.set_cwd(e.path("/absent"));
     e.answer("stale");
     assert_eq!(e.pending_timers(), 1);
     e.advance(500);
     assert_eq!(e.pending_timers(), 0);
     assert_eq!(p.get_git_branch(), None);
     assert_eq!(*seen.borrow(), [None]);
-    assert_eq!(e.query_dirs.borrow().as_slice(), ["/repo"]);
+    assert_eq!(e.query_dirs.borrow().as_slice(), e.paths(["/repo"]));
     assert!(e.active().is_empty());
     p.dispose();
 }
@@ -1136,9 +1156,12 @@ os._exit(0)
     );
     assert!(
         native::probe(
-            &crate::child_process::selector("footer_async_lookup_keeps_output_until_pipe_eof")
-                .unwrap(),
-            &root.0,
+            maestro_test_process::TestProcess::current(
+                "footer_async_lookup_keeps_output_until_pipe_eof"
+            )
+            .unwrap()
+            .case("*"),
+            root.0.path(),
             &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")],
             &[]
         )
@@ -1150,11 +1173,7 @@ os._exit(0)
 /// Drive the isolated native query while its inherited pipe is held.
 fn footer_pipe_child() {
     use std::io::{BufRead, BufReader, Read, Write};
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap();
+    let runtime = crate::support::paused_io_runtime();
     let local = Rc::new(tokio::task::LocalSet::new());
     runtime.block_on(local.run_until(async {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
@@ -1209,4 +1228,60 @@ async fn footer_reaping_barrier(pid: rustix::process::Pid) {
             Err(error) => panic!("native reaping observation failed: {error}"),
         }
     }
+}
+
+/// Embedded bare metadata keeps checkout HEAD and common watch paths distinct.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn footer_embedded_checkout_retains_branch_and_watch_identity() {
+    use maestro_workspace::workspace::git::native::discover_git_paths;
+    let e = Rc::new(Effects::default());
+    e.directory("/container/.bare/objects");
+    e.directory("/container/.bare/refs");
+    e.text("/container/.bare/config", "[core]\n bare = true\n");
+    e.text("/container/.bare/HEAD", "ref: refs/heads/base");
+    e.text("/container/.git", "gitdir: .bare");
+    e.text(
+        "/checkout/.git",
+        "gitdir: ../container/.bare/worktrees/topic",
+    );
+    e.text(
+        "/container/.bare/worktrees/topic/HEAD",
+        "ref: refs/heads/topic",
+    );
+    e.text("/container/.bare/worktrees/topic/commondir", "../..");
+    e.directory("/container/.bare/reftable");
+    e.text("/container/.bare/reftable/tables.list", "0");
+    let cwd = e.path("/checkout");
+    let shared = discover_git_paths(std::path::Path::new(&cwd)).unwrap();
+    let p = provider(&e, "/checkout");
+    assert_eq!(shared.repo_root, std::path::Path::new(&cwd));
+    assert_eq!(
+        shared.git_dir.to_string_lossy(),
+        e.path("/container/.bare/worktrees/topic")
+    );
+    assert_eq!(
+        shared.git_common_dir.to_string_lossy(),
+        e.path("/container/.bare")
+    );
+    assert_eq!(p.get_git_branch().as_deref(), Some("topic"));
+    assert_eq!(
+        e.active(),
+        e.paths([
+            "/container/.bare/worktrees/topic",
+            "/container/.bare/reftable",
+            "/container/.bare/reftable/tables.list",
+        ])
+    );
+    assert_eq!(e.live_polls(), 1);
+    e.text(
+        "/container/.bare/worktrees/topic/HEAD",
+        "ref: refs/heads/updated",
+    );
+    e.event(0, Some("HEAD"));
+    e.advance(500);
+    assert_eq!(p.get_git_branch().as_deref(), Some("updated"));
+    p.dispose();
+    assert!(e.active().is_empty());
+    assert_eq!(e.live_polls(), 0);
 }

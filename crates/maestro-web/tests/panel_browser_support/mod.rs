@@ -26,9 +26,9 @@ pub struct Panel {
 }
 impl Panel {
     /// Bind the runner's existing canvas and the existing local presentation harness.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
+            web_sys::console::error_1(&info.to_string().into());
         }));
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document
@@ -47,12 +47,12 @@ impl Panel {
             panel,
             caller,
             context: egui::Context::default(),
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
+            pack: support::brand::pack("brand.json").unwrap(),
             i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
         }
     }
     /// Create through the actual tool, not a replacement artifact map.
-    pub fn create(&self, name: &str, content: &str) {
+    pub(crate) fn create(&self, name: &str, content: &str) {
         presentation::ready((self.caller.tool().execute)(
             "call".into(),
             serde_json::json!({"command":"create","filename":name,"content":content}),
@@ -63,7 +63,7 @@ impl Panel {
         self.draw(vec![]);
     }
     /// Draw the real public panel with the current application selection.
-    pub fn draw(&self, events: Vec<egui::Event>) -> egui::FullOutput {
+    pub(crate) fn draw(&self, events: Vec<egui::Event>) -> egui::FullOutput {
         let presentation = self.pack.presentation(BrandMode::Dark).unwrap();
         let mut output = self.context.run_ui(
             egui::RawInput {

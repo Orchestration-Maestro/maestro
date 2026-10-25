@@ -2,6 +2,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 use super::*;
 #[cfg(not(target_arch = "wasm32"))]
+use crate::browser::attachment_content::AttachmentHostError;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::browser::attachment_content::*;
 #[cfg(not(target_arch = "wasm32"))]
 use std::{cell::RefCell, rc::Rc};
@@ -22,17 +24,17 @@ impl AttachmentHost for Host {
         &self,
     ) -> Result<
         Option<std::rc::Rc<crate::browser::attachment_content::FocusTarget>>,
-        AttachmentUiError,
+        AttachmentHostError,
     > {
         unreachable!("no dialog focus in this adapter")
     }
     fn restore_focus(
         &self,
         _: std::rc::Rc<crate::browser::attachment_content::FocusTarget>,
-    ) -> Result<crate::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<crate::browser::timer::Timer, AttachmentHostError> {
         unreachable!("no dialog focus in this adapter")
     }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentUiError> {
+    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
         unreachable!("no dialog measurement in this adapter")
     }
     fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
@@ -44,20 +46,20 @@ impl AttachmentHost for Host {
         bytes: &[u8],
         name: &str,
         mime: &str,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.0
             .borrow_mut()
             .push((name.into(), mime.into(), bytes.to_vec()));
         Ok(())
     }
-    fn reading_layout(&self, _: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
+    fn reading_layout(&self, _: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
         unreachable!()
     }
     fn present(
         &self,
         _: AttachmentSurface<'_>,
         _: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
     fn set_retained_visibility(
@@ -65,13 +67,13 @@ impl AttachmentHost for Host {
         _: egui::Id,
         _: bool,
         _: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         unreachable!()
     }
     fn remove(&self, _: egui::Id) {
@@ -85,40 +87,139 @@ impl AttachmentHost for Host {
         _: i32,
         _: bool,
         _: Rc<dyn Fn()>,
-    ) -> Result<crate::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<crate::browser::timer::Timer, AttachmentHostError> {
         unreachable!()
     }
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!()
     }
-    fn download(&self, _: Rc<RefCell<crate::Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, _: Rc<RefCell<crate::Attachment>>) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
+}
+/// Native byte-control recording.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Corpus {
+    /// Selected byte-control cases.
+    download: Vec<DownloadCase>,
+}
+/// Selected byte input with optional slice boundaries.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct DownloadInput {
+    /// Recorded byte or slice admission.
+    pub kind: String,
+    /// Original byte values.
+    pub bytes: Vec<u8>,
+    /// Inclusive slice start when present.
+    pub start: Option<usize>,
+    /// Exclusive slice end when present.
+    pub end: Option<usize>,
+    /// Supplied MIME type.
+    pub mime_type: String,
+    /// Literal authored filename.
+    pub filename: String,
+}
+/// Selected download output.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DownloadOutput {
+    /// Original byte values.
+    pub bytes: Vec<u8>,
+    /// Expected Blob MIME type.
+    pub mime: String,
+}
+/// Byte-control case.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DownloadCase {
+    /// Recorded operation operands.
+    pub input: DownloadInput,
+    /// Recorded observable result.
+    pub output: DownloadOutput,
+}
+/// Decode native byte cases and reject malformed fixture records.
+#[cfg(not(target_arch = "wasm32"))]
+fn download_corpus() -> Corpus {
+    let valid: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/generic_artifacts_native.json"
+    ))
+    .unwrap();
+    for value in [serde_json::Value::Null, serde_json::json!([])] {
+        let mut sibling = valid.clone();
+        sibling["classifier"] = value.clone();
+        assert!(serde_json::from_value::<Corpus>(sibling).is_err());
+        let mut wrong = valid["download"][0]["input"].clone();
+        wrong["kind"] = value;
+        assert!(serde_json::from_value::<DownloadInput>(wrong).is_err());
+    }
+    let rejects: [fn(serde_json::Value) -> bool; 4] = [
+        |value| serde_json::from_value::<Corpus>(value).is_err(),
+        |value| serde_json::from_value::<DownloadCase>(value).is_err(),
+        |value| serde_json::from_value::<DownloadInput>(value).is_err(),
+        |value| serde_json::from_value::<DownloadOutput>(value).is_err(),
+    ];
+    let records: [(_, &[&str]); 4] = [
+        (&valid, &["download"]),
+        (&valid["download"][0], &["input", "output"]),
+        (
+            &valid["download"][0]["input"],
+            &["kind", "bytes", "mimeType", "filename"],
+        ),
+        (&valid["download"][0]["output"], &["bytes", "mime"]),
+    ];
+    for ((record, required), rejects) in records.into_iter().zip(rejects) {
+        assert!(!rejects(record.clone()));
+        for value in [serde_json::Value::Null, serde_json::json!([])] {
+            let mut extra = record.clone();
+            extra["unexpected"] = value;
+            assert!(rejects(extra));
+        }
+        for field in required {
+            let mut missing = record.clone();
+            missing
+                .as_object_mut()
+                .unwrap()
+                .shift_remove(*field)
+                .unwrap();
+            assert!(rejects(missing), "missing {field}");
+            let wrong = if record[field].is_array() || record[field].is_object() {
+                serde_json::json!(false)
+            } else {
+                serde_json::json!([])
+            };
+            for value in [serde_json::Value::Null, wrong] {
+                let mut invalid = record.clone();
+                invalid[field] = value;
+                assert!(rejects(invalid), "invalid {field}");
+            }
+        }
+    }
+    serde_json::from_value(valid).unwrap()
 }
 /// Mouse and keyboard activation preserve the selected slice and original media type.
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn download_control_preserves_original_bytes_and_slice_bounds() {
-    let corpus: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../tests/fixtures/generic_artifacts.json"
+    let corpus = download_corpus();
+    let pack = maestro_theme::load_brand_pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/brand.json"
     ))
-    .unwrap();
-    let pack = maestro_theme::load_brand_pack(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-        &maestro_theme::theme::NativeThemeOperations,
-    )
     .unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     let i18n = crate::I18n::new(Rc::new(Language)).unwrap();
-    for (index, case) in corpus["download"].as_array().unwrap().iter().enumerate() {
-        let input = &case["input"];
-        let bytes: Vec<u8> = serde_json::from_value(input["bytes"].clone()).unwrap();
-        let selected = match input["kind"].as_str().unwrap() {
-            "bytes" => &bytes[..],
-            "slice" => {
-                &bytes[input["start"].as_u64().unwrap().try_into().unwrap()
-                    ..input["end"].as_u64().unwrap().try_into().unwrap()]
-            }
+    assert_eq!(corpus.download.len(), 5);
+    for (index, case) in corpus.download.into_iter().enumerate() {
+        let input = &case.input;
+        let selected = match input.kind.as_str() {
+            "bytes" => &input.bytes[..],
+            "slice" => &input.bytes[input.start.unwrap()..input.end.unwrap()],
             _ => panic!("unknown recorded content"),
         };
         let host = Host::default();
@@ -139,14 +240,9 @@ fn download_control_preserves_original_bytes_and_slice_bounds() {
         for events in activation(index) {
             draw_frame(events);
         }
-        let expected: Vec<u8> = serde_json::from_value(case["output"]["bytes"].clone()).unwrap();
         assert_eq!(
             host.0.borrow().as_slice(),
-            &[(
-                input["filename"].as_str().unwrap().into(),
-                case["output"]["mime"].as_str().unwrap().into(),
-                expected
-            )]
+            &[(input.filename.clone(), case.output.mime, case.output.bytes)]
         );
     }
 }
@@ -181,7 +277,7 @@ fn frame(
     context: &egui::Context,
     events: Vec<egui::Event>,
     view: ArtifactView<'_>,
-    operands: (&Host, &serde_json::Value, &[u8]),
+    operands: (&Host, &DownloadInput, &[u8]),
 ) {
     let (host, input, selected) = operands;
     let mut glyphs = [egui::Rect::NOTHING; 2];
@@ -200,8 +296,8 @@ fn frame(
                 ui,
                 view,
                 host,
-                input["filename"].as_str().unwrap(),
-                (input["mimeType"].as_str().unwrap(), selected),
+                &input.filename,
+                (input.mime_type.as_str(), selected),
             )
             .unwrap();
             assert_eq!(ui.min_rect().right_bottom() - start, egui::vec2(36., 32.));

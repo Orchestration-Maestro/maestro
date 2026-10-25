@@ -4,6 +4,7 @@ use crate::{
     AbortSignal, AgentToolResult, AgentToolUpdateCallback, ExtensionContext, ExtensionFuture,
     ExtensionResult, ToolExecutionMode,
 };
+use maestro_request::parameter_schema::ParameterSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::rc::Rc;
@@ -34,7 +35,7 @@ pub struct ToolMetadata {
     /// Prompt guidelines.
     pub prompt_guidelines: Presence<Vec<String>>,
     /// Parameters.
-    pub parameters: crate::JsonText,
+    pub parameters: ParameterSchema,
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     /// Render shell.
     pub render_shell: Presence<RenderShell>,

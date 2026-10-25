@@ -1,14 +1,12 @@
 //! Real browser retained-panel and existing native-registry qualification.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "artifact_support/presentation.rs"]
-mod presentation;
-pub mod support;
+use crate::presentation;
 use maestro_theme::BrandMode;
 use maestro_web::browser::attachment_content::AttachmentHost;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 
-mod panel_browser_support;
+use crate::panel_browser_support;
 use panel_browser_support::Panel;
 /// Execute observation-only native DOM operations in the runner's actual document.
 fn js(code: &str) -> JsValue {
@@ -80,11 +78,10 @@ pub fn artifact_panel_browser_switches_keep_native_roots() {
     let pos = output
         .shapes
         .iter()
-        .filter_map(|shape| match &shape.shape {
+        .find_map(|shape| match &shape.shape {
             egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds().center()),
             _ => None,
         })
-        .next()
         .unwrap();
     view.draw(vec![
         egui::Event::PointerMoved(pos),
@@ -225,16 +222,18 @@ fn reading_content(
     class: &'static str,
 ) -> Rc<maestro_web::browser::attachment_content::ReadingContent> {
     use maestro_web::browser::attachment_content::{
-        AttachmentUiError, ReadingContent, ReadingRoot,
+        AttachmentHostError, ReadingContent, ReadingRoot,
     };
     Rc::new(ReadingContent {
         mount: Rc::new(move |document| {
             let element = document
                 .create_element("section")
-                .map_err(|_| AttachmentUiError::Host("create failed".into()))?;
+                .map_err(|_| AttachmentHostError::Host("create failed".into()))?;
             element.set_class_name(class);
             element.set_text_content(Some("retained native text"));
             Ok(ReadingRoot {
+                frame_style: "",
+                decoration: None,
                 commit: None,
                 owner: None,
                 element,
@@ -251,7 +250,7 @@ fn reading(
     content: &Rc<maestro_web::browser::attachment_content::ReadingContent>,
     phase: maestro_web::browser::attachment_content::ReadingPhase,
     modal: Option<egui::Id>,
-) -> Result<(), maestro_web::browser::attachment_content::AttachmentUiError> {
+) -> Result<(), maestro_web::browser::attachment_content::AttachmentHostError> {
     use maestro_web::browser::attachment_content::{
         AttachmentContent, AttachmentSurface, ReadingPlacement,
     };
@@ -265,6 +264,7 @@ fn reading(
             opacity: 1.,
             occluders: vec![],
             content: AttachmentContent::Reading(ReadingPlacement {
+                intrinsic_width: false,
                 content: content.clone(),
                 phase,
                 sizes: &[],
@@ -450,5 +450,3 @@ pub fn artifact_panel_browser_body_leaves_shell_dividers_visible() {
         assert_ne!(body.tag_name(), "CANVAS");
     }
 }
-
-pub mod highlighter_support;

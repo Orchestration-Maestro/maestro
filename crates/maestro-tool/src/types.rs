@@ -11,7 +11,10 @@ pub enum ToolExecutionMode {
     Parallel,
 }
 
-use maestro_request::{presence::Omittable, types::UserBlock};
+use maestro_request::{
+    presence::Omittable,
+    types::{TextContent, UserBlock},
+};
 
 /// Tool output with caller-selected optional field representations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,4 +28,16 @@ pub struct AgentToolResult<D: Omittable, T: Omittable> {
     /// Requested termination.
     #[serde(default, skip_serializing_if = "Omittable::is_omitted")]
     pub terminate: T,
+}
+
+impl<D> AgentToolResult<Option<D>, Option<bool>> {
+    /// Wrap text in a result with optional details and no termination request.
+    #[must_use]
+    pub fn text_result(text: String, details: Option<D>) -> Self {
+        Self {
+            content: vec![UserBlock::Text(TextContent::new(text))],
+            details,
+            terminate: None,
+        }
+    }
 }

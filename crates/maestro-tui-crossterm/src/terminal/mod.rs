@@ -1,10 +1,12 @@
 //! The Unix process terminal: raw standard input, streamed text input, the enhanced keyboard
 //! negotiation, bracketed paste, progress and the write log.
 
+mod descriptor;
 mod dimensions;
 mod input;
 mod lifecycle;
 mod output;
+mod tty_writer;
 
 use std::cell::{Cell, RefCell};
 use std::future::Future;
@@ -15,15 +17,17 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use maestro_tui::Terminal;
+use maestro_tui::terminal::OutputErrorHandler;
 use tokio::task::{JoinHandle, LocalSet};
 use tokio::time::Instant;
 
+use crate::output_errors::{FailureSource, OutputErrors};
 use dimensions::Dimensions;
 use lifecycle::Running;
 pub use lifecycle::wait_for_input;
 use output::{
     CLEAR_FROM_CURSOR, CLEAR_LINE, CLEAR_SCREEN, CURSOR_HIDE, CURSOR_SHOW, PROGRESS_CLEAR,
-    append_log, emit, log_destination, relative_move, title,
+    append_log, log_destination, relative_move, title,
 };
 
 /// Receives the input the terminal delivers, one framed chunk at a time.
@@ -73,9 +77,43 @@ struct Shared {
     dimensions: Dimensions,
     /// The first failure of a background task, reported by the next `stop`.
     failure: RefCell<Option<io::Error>>,
+    /// The callbacks registered for native output failures.
+    errors: Rc<OutputErrors>,
+    /// The one live output writer, retained across input generations.
+    output: RefCell<Option<Rc<tty_writer::TtyWriter>>>,
 }
 
 impl Shared {
+    /// Writes `text` to the running writer, or synchronously while stopped, and announces an
+    /// output failure to the registered handlers once.
+    fn emit(&self, text: &str) -> io::Result<()> {
+        self.write_output(text)
+            .inspect_err(|error| self.errors.notify(error))
+    }
+
+    /// Writes `text` to the running writer, or synchronously while stopped, without
+    /// announcing a failure; the caller retains and announces the one it gets.
+    fn write_output(&self, text: &str) -> io::Result<()> {
+        let writer = self.output.borrow().clone();
+        if let Some(writer) = writer {
+            writer.write(text);
+            Ok(())
+        } else {
+            output::emit(text)
+        }
+    }
+
+    /// Writes conditional controls through the same output owner.
+    fn emit_if(&self, condition: bool, text: &str) -> io::Result<()> {
+        if condition { self.emit(text) } else { Ok(()) }
+    }
+
+    /// Takes the writer out of service before draining any retained front.
+    fn finish_output(&self) -> io::Result<()> {
+        let writer = self.output.take();
+        writer.map_or(Ok(()), |writer| writer.finish())
+    }
+
     /// Whether `generation` is the one whose task may still act.
     fn is_current(&self, generation: u64) -> bool {
         self.generation.get() == generation
@@ -125,8 +163,10 @@ impl Shared {
         }
     }
 
-    /// Keeps the first failure of a background task.
-    fn fail(&self, error: io::Error) {
+    /// Keeps the first failure of a background task and announces it when it came from
+    /// output or standard error.
+    fn fail(&self, source: FailureSource, error: io::Error) {
+        self.errors.notify_source(source, &error);
         self.failure.borrow_mut().get_or_insert(error);
     }
 }
@@ -149,6 +189,8 @@ impl ProcessTerminal {
                 activity: Cell::new(Instant::now()),
                 dimensions: Dimensions::observe(),
                 failure: RefCell::new(None),
+                errors: Rc::new(OutputErrors::default()),
+                output: RefCell::new(None),
             }),
             running: None,
             progress: None,
@@ -169,16 +211,24 @@ impl Terminal for ProcessTerminal {
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         self.drain(max, idle)
     }
 
     fn write(&mut self, data: &str) -> io::Result<()> {
-        emit(data)?;
+        self.shared.emit(data)?;
         if let Some(log) = &self.log {
             append_log(log, data);
         }
         Ok(())
+    }
+
+    fn pending_output_bytes(&self) -> usize {
+        self.shared
+            .output
+            .borrow()
+            .as_ref()
+            .map_or(0, |writer| writer.pending())
     }
 
     fn columns(&self) -> usize {
@@ -194,35 +244,39 @@ impl Terminal for ProcessTerminal {
     }
 
     fn move_by(&mut self, lines: isize) -> io::Result<()> {
-        relative_move(lines).map_or(Ok(()), |sequence| emit(&sequence))
+        relative_move(lines).map_or(Ok(()), |sequence| self.shared.emit(&sequence))
     }
 
     fn hide_cursor(&mut self) -> io::Result<()> {
-        emit(CURSOR_HIDE)
+        self.shared.emit(CURSOR_HIDE)
     }
 
     fn show_cursor(&mut self) -> io::Result<()> {
-        emit(CURSOR_SHOW)
+        self.shared.emit(CURSOR_SHOW)
     }
 
     fn clear_line(&mut self) -> io::Result<()> {
-        emit(CLEAR_LINE)
+        self.shared.emit(CLEAR_LINE)
     }
 
     fn clear_from_cursor(&mut self) -> io::Result<()> {
-        emit(CLEAR_FROM_CURSOR)
+        self.shared.emit(CLEAR_FROM_CURSOR)
     }
 
     fn clear_screen(&mut self) -> io::Result<()> {
-        emit(CLEAR_SCREEN)
+        self.shared.emit(CLEAR_SCREEN)
     }
 
     fn set_title(&mut self, text: &str) -> io::Result<()> {
-        emit(&title(text))
+        self.shared.emit(&title(text))
     }
 
     fn set_progress(&mut self, active: bool) -> io::Result<()> {
         self.show_progress(active)
+    }
+
+    fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
+        self.shared.errors.register(handler)
     }
 }
 
@@ -231,7 +285,7 @@ impl Drop for ProcessTerminal {
         if self.running.is_some() {
             let _ = self.end();
         } else if self.cancel_keepalive() {
-            let _ = emit(PROGRESS_CLEAR);
+            let _ = self.shared.emit(PROGRESS_CLEAR);
         }
     }
 }

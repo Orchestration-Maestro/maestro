@@ -50,7 +50,10 @@ async fn tool(runner: Rc<ExtensionRunner<Local>>) {
     let definition = &registered[0];
     let metadata = definition.definition.metadata();
     assert_eq!(metadata.definition.name, "canonical-tool");
-    assert_eq!(metadata.definition.parameters, json!({"type":"object"}));
+    assert_eq!(
+        metadata.definition.parameters.as_json(),
+        &json!({"type":"object"})
+    );
     assert_eq!(
         metadata.definition.description,
         " Literal tool description "

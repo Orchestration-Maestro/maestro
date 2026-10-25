@@ -153,11 +153,14 @@ way, excludes destinations from proxying: `*` excludes all, `host` that host onl
 `*suffix` hosts ending so, and a `:port` limits an entry; entries are separated by commas or
 JavaScript whitespace. With proxying off, no proxy is used whatever other variables say. A proxy
 or `AWS_BEDROCK_FORCE_HTTP1=1` makes the connection speak HTTP/1 only. HTTP and HTTPS proxies
-are supported, as are `socks`, `socks5` and `socks5h`. `socks5` resolves destination names
-locally; `socks` and `socks5h` send names to the proxy. IP literals retain their address family.
+are supported, as are `socks`, `socks4`, `socks4a`, `socks5` and `socks5h`. `socks4` and
+`socks5` resolve destination names locally; the other SOCKS schemes send names to the proxy.
+SOCKS4 sends IPv6 destinations as names; SOCKS5 retains their address family.
 SOCKS URL credentials are percent-decoded once as UTF-8; `+` stays a plus. Invalid escapes
-fail when selected. Configured credentials offer both no-login and username/password methods,
-including when one field is empty. A field exceeding 255 UTF-8 bytes fails only when the proxy
+fail when selected. SOCKS4 sends the complete user ID followed by NUL, including an empty ID;
+passwords are decoded but not transmitted. For SOCKS5, configured credentials offer both
+no-login and username/password methods, including when one field is empty. A SOCKS5 field
+exceeding 255 UTF-8 bytes fails only when the proxy
 selects password authentication. Empty credentials use no-login alone.
 
 The SOCKS handshake has a 30-second deadline covering proxy connection and negotiation,
@@ -165,11 +168,71 @@ after local destination lookup and before destination TLS. Each SOCKS request ow
 connection through response-body consumption; cancellation or a header deadline closes
 pending connection work. Request preparation and response conversion use the
 [shared HTTP transport](chat-completions.md#transport).
-SOCKS4/4a remain in [#900](https://github.com/Orchestration-Maestro/maestro/issues/900), and
-proxy auto-configuration remains in [#901](https://github.com/Orchestration-Maestro/maestro/issues/901).
 A selected proxy that is not a URL or has an unsupported scheme ends the stream with an error
 before the destination is contacted; a destination the exclusion list leaves out never reads
 its proxy. The default sender returns redirects without following them.
+
+### Proxy scripts
+
+A selected `pac+data:`, `pac+file:`, `pac+ftp:`, `pac+http:` or `pac+https:` URL loads a
+proxy script instead of opening a direct destination connection. Both opaque
+`pac+data:,script` and hierarchical `pac+data://,script` spellings are accepted.
+The script receives the complete destination URL and its canonical host, including
+a nondefault port in the URL, before choosing ordered DIRECT, HTTP, HTTPS or SOCKS
+candidates. Unknown directives advance; malformed recognized proxy URLs fail.
+Fallback happens only before application bytes are sent. A connected proxy's
+CONNECT refusal is returned with its status, headers and body, without replay.
+
+Scripts have the standard host, DNS, network, local-address, time, weekday and
+calendar helpers. Local-address discovery first probes `8.8.8.8:53`, closes that
+socket, and falls back to native interfaces on failure. It selects the first
+non-loopback IPv4 on the first eligible interface, preserving interface and
+per-interface address order. An authored `alert` emits its exact message through
+tracing rather than printing.
+
+Each bridge retains separate script globals for each destination protocol and
+source URL, independently of its connection timeout settings. Compilation resolves
+and retains `FindProxyForURL`, including lexical declarations; later reassignment
+does not replace that callable. Missing or non-callable exports fail compilation.
+Unchanged source keeps that context; successfully compiled replacement code
+creates a new one. Failed compilation cannot publish source metadata or
+revive an old script through a later unchanged response. File sources compare the
+opened file's millisecond modification time; HTTP and HTTPS sources use cache
+headers, validators and up to five redirects; FTP sources ask the server for the
+file's modification time and compare it at millisecond precision.
+Source requests do not recursively apply the script they are loading. Destination
+exclusions and a supplied sender skip script loading entirely.
+
+An FTP source logs in with the URL's decoded credentials, or anonymously when it has
+none, at the URL's port, or 21 when it names none. After the greeting it enables UTF-8,
+logs in, reads the server's features, selects binary mode and file structure, and asks a
+machine listing to carry the facts it reads. A password never appears in a diagnostic: a
+rejected command reports the control characters it held, without the command. It asks the
+modification-time command first: a refused file is not found, while an unsupported command
+falls back to listing the containing directory. Only a machine listing carries a
+comparable instant, so an entry from a Unix or DOS listing is not found; a listing in no
+accepted format reports the listing format as its own error. Machine-listing entries keep
+the name the server spelled and the stamp it reported, including a fractional stamp, a
+symbolic-link type, and a name that holds a semicolon or starts with a space; the last
+nonempty modification fact wins, and a current- or parent-directory entry is not a source
+entry. A listing asks for a machine listing first when the server advertises one, then for
+`LIST -a` and `LIST`, and keeps the first command the server accepts; only a refused
+command advances to the next one. A transfer the server refuses is not found rather than an
+empty script, and a transfer that breaks off is an error rather than a shortened one.
+
+A passive data connection opens in extended passive mode first, taking only the port from a
+reply that may delimit it with `|` or, as the IBM i server does, with `!`. When that preparation
+fails the loader falls back to the classic mode, which keeps the data host the server advertises
+unless that address is private and the control connection's is not. Every completed read or
+write restarts its own connection's inactivity window, so a greeting, reply or transfer that
+keeps arriving byte by byte outlives thirty seconds while a silent connection fails at its own
+boundary. The data connection's window starts when the server admits the transfer, and control
+replies during the transfer neither end nor restart it; once the data ends, the control
+connection's window runs again until the completion arrives. A transfer
+settles only when both the data connection ended and the control connection reported
+completion, in either order. A directory listing larger than 40 MiB is refused, and the control
+and data connections close on success, failure and cancellation, with the goodbye sent without
+waiting for its reply.
 
 ## Hooks and results
 

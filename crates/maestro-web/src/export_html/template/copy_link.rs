@@ -1,6 +1,6 @@
 //! Literal message-link preparation with weak asynchronous feedback delivery.
 use crate::browser::{
-    attachment_content::{self, AttachmentHost, AttachmentUiError},
+    attachment_content::{self, AttachmentHost},
     copy_feedback::CopyFeedback,
 };
 use std::rc::Rc;
@@ -19,6 +19,8 @@ pub struct CopyLinkState {
     pressed: Option<()>,
     /// Mounted property histories, absent before the first resolved style.
     transitions: Option<draw::CopyLinkTransitions>,
+    /// One retained composed control image.
+    painter: crate::browser::control_paint::Painter<draw::CopyKey>,
 }
 impl CopyLinkState {
     /// Retain the supplied browser effects and a stable control identity.
@@ -30,6 +32,7 @@ impl CopyLinkState {
             feedback: CopyFeedback::default(),
             pressed: None,
             transitions: None,
+            painter: crate::browser::control_paint::Painter::default(),
         }
     }
     /// Begin the native effect before scheduling its owned completion.
@@ -52,9 +55,8 @@ const KEY_ESCAPES: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS
     .add(b'=')
     .add(b'+');
 /// Prepare an activation-time URL without converting identities into markup.
-fn build_share_url(entry: &str, view: &CopyLinkView<'_>) -> Result<String, AttachmentUiError> {
-    let mut url = url::Url::parse(view.location_href)
-        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?;
+fn build_share_url(entry: &str, view: &CopyLinkView<'_>) -> std::io::Result<String> {
+    let mut url = url::Url::parse(view.location_href).map_err(std::io::Error::other)?;
     let selected = url::form_urlencoded::Serializer::new(String::new())
         .append_pair("leafId", view.current_leaf_id)
         .append_pair("targetId", entry)

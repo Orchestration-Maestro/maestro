@@ -32,21 +32,49 @@ pub struct CompactOptions {
     /// Optional error callback supplied to the host.
     pub on_error: Option<CompactionError>,
 }
-pub use crate::bindings::maestro::extension::host::ContextUsage;
+pub use crate::bindings::maestro::extension::host::{
+    ContextUsage, ExtensionWidgetOptions, NotificationType, WidgetPlacement,
+    WorkingIndicatorOptions,
+};
 use crate::{Model, ModelRegistry, ReadonlySessionManager};
-/// Retained opaque UI capability supplied by the host.
-pub trait ExtensionUIContextPort {}
 /// UI capability; clones share its host owner.
 #[derive(Clone)]
 pub struct ExtensionUIContext {
     /// Independently retained host capability.
-    _port: Rc<dyn ExtensionUIContextPort>,
+    port: Rc<dyn ExtensionUIContextPort>,
 }
 impl ExtensionUIContext {
     /// Wraps the supplied UI capability.
     #[must_use]
     pub fn new(port: Rc<dyn ExtensionUIContextPort>) -> Self {
-        Self { _port: port }
+        Self { port }
+    }
+}
+
+port! {
+    /// Requests to the independently retained host UI; each method forwards one request and
+    /// resolves to the host's message when the host rejects it.
+    ExtensionUIContextPort for ExtensionUIContext via port {
+        /// Shows a notification with an optional severity.
+        fn notify(message: &str, kind: Option<NotificationType>) -> ();
+        /// Sets the text of one status key, or clears that key.
+        fn set_status(key: &str, text: Option<&str>) -> ();
+        /// Sets the working message, or restores the host default.
+        fn set_working_message(message: Option<&str>) -> ();
+        /// Shows or hides the working loader row.
+        fn set_working_visible(visible: bool) -> ();
+        /// Configures the working indicator, or restores the host default.
+        fn set_working_indicator(options: Option<WorkingIndicatorOptions>) -> ();
+        /// Sets the hidden-thinking label, or restores the host default.
+        fn set_hidden_thinking_label(label: Option<&str>) -> ();
+        /// Sets the fixed lines of one widget, or removes it.
+        fn set_widget(
+            key: &str,
+            content: Option<&[String]>,
+            options: Option<ExtensionWidgetOptions>,
+        ) -> ();
+        /// Sets the terminal title.
+        fn set_title(title: &str) -> ();
     }
 }
 use std::fmt;

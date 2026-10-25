@@ -5,12 +5,19 @@ mod inline;
 mod lists;
 use maestro_markdown as nodes;
 
-/// Applies terminal text policy before shared parsing and mapped links.
-fn parse(text: &str) -> Vec<nodes::Node> {
+/// Applies terminal text policy before shared parsing.
+fn parse(text: &str, clean_content: bool) -> Vec<nodes::Node> {
+    // Binary controls stay until decoding so removal cannot join an entity.
+    let stripped = if clean_content {
+        maestro_text::terminal::strip_ansi(text).ok()
+    } else {
+        None
+    };
+    let text = stripped.as_deref().unwrap_or(text);
     let source =
         maestro_text::normalize_to_lf(&text.replace('\t', "   ")).replace('\0', "\u{fffd}");
-    let mut document = nodes::parse(source);
-    nodes::autolinks(&mut document);
+    let document = nodes::parse(source);
+
     document.nodes
 }
 mod tables;
@@ -89,6 +96,8 @@ pub struct MarkdownTheme {
 
 /// Padding and base style supplied to a Markdown component.
 pub struct MarkdownOptions {
+    /// Strips input escapes before parsing and cleans decoded values before styling when enabled.
+    pub clean_content: bool,
     /// Requested margin on each side.
     pub padding_x: usize,
     /// Blank rows above and below nonempty content.
@@ -115,6 +124,8 @@ pub struct Markdown {
 
 /// Callback context for one layout; no retained component state is borrowed.
 struct Renderer<'a> {
+    /// Whether authored content is filtered before terminal styling.
+    clean_content: bool,
     /// Supplied styles.
     theme: &'a MarkdownTheme,
     /// Optional message styling.
@@ -160,13 +171,14 @@ impl Markdown {
             .as_ref()
             .and_then(|style| style.bg_color.as_deref());
         let renderer = Renderer {
+            clean_content: self.options.clean_content,
             theme: &self.theme,
             default_style: self.options.default_text_style.as_ref(),
             terminal_image: &self.terminal_image,
             default_prefix: std::cell::OnceCell::new(),
         };
         let content: Vec<String> = renderer
-            .blocks(&parse(text), content_width, inline::Style::Default)
+            .blocks(&parse(text, self.options.clean_content), content_width)
             .into_iter()
             .flat_map(|line| {
                 if crate::is_image_line(&line) {
@@ -216,5 +228,18 @@ impl Component for Markdown {
     }
     fn invalidate(&self) {
         super::invalidate_cache(&self.generation, &self.cache);
+    }
+}
+
+impl Renderer<'_> {
+    /// Filters only authored values, never renderer-generated styles or hyperlinks.
+    fn clean<'a>(&self, text: &'a str) -> std::borrow::Cow<'a, str> {
+        if self.clean_content {
+            let plain =
+                maestro_text::terminal::strip_ansi(text).unwrap_or_else(|_| text.to_owned());
+            maestro_text::terminal::sanitize_binary_output(&plain).into()
+        } else {
+            text.into()
+        }
     }
 }

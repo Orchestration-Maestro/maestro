@@ -1,5 +1,5 @@
 //! Index forest retaining each original session occurrence.
-use maestro_app::{Presence, ResourceOperations, SessionInfo, canonicalize_path};
+use maestro_app::{Presence, SessionInfo, canonicalize_path};
 use std::collections::HashMap;
 /// Visible original occurrence with its connector text.
 pub(super) struct FlatSessionNode {
@@ -12,11 +12,10 @@ pub(super) struct FlatSessionNode {
 pub(super) fn build_session_tree(
     sessions: &[std::rc::Rc<SessionInfo>],
     eligible: &[usize],
-    paths: &dyn ResourceOperations,
 ) -> Vec<FlatSessionNode> {
     let canonical: HashMap<_, _> = eligible
         .iter()
-        .map(|&i| (canonicalize_path(&sessions[i].path, paths), i))
+        .map(|&i| (canonicalize_path(&sessions[i].path), i))
         .collect();
     let mut parents = vec![None; sessions.len()];
     for &i in eligible {
@@ -24,7 +23,7 @@ pub(super) fn build_session_tree(
             parents[i] = value
                 .as_str()
                 .filter(|p| !p.is_empty())
-                .and_then(|p| canonical.get(&canonicalize_path(p, paths)).copied());
+                .and_then(|p| canonical.get(&canonicalize_path(p)).copied());
         }
     }
     break_cycles(&mut parents, eligible);

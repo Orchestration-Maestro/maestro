@@ -53,7 +53,8 @@ The payload uses compact canonical JSON, LF separators and no final newline,
 with MIME type `application/x-ndjson`. A truthy string header ID becomes the
 literal `<id>.jsonl` filename; an absent or falsy ID uses `session.jsonl`.
 Reached unsupported metadata and serialization failures return
-`AttachmentUiError::Presentation`; supplied host failures propagate unchanged.
+`std::io::Error` with their original kind and message. Supplied host failures are
+wrapped by `io::Error::other` with an inspectable `AttachmentHostError` payload.
 
 The supplied `AttachmentHost::download_bytes` consumes the prepared bytes
 synchronously. The native adapter shares the
@@ -70,9 +71,12 @@ not execute them. Title, keyboard help and six metadata rows remain literal,
 selectable native text. The three labelled controls remain on the canvas.
 
 Identity uses `unknown` for an absent header or falsy ID and rejects a truthy
-nonstring. Preparation consumes `global_stats` without recounting edited history
-while preparing prompt/tool disclosures from the current raw fields. Models retain supplied order, token
-counts use thousand/million tiers, and cost adds four components left-to-right
+nonstring. Preparation consumes `global_stats` without recounting edited history.
+Shared preparation validates prompt and tool operands once on every target.
+Retained factory equality compares their selected normalized content, ignoring
+unknown fields. The browser builds disclosure nodes and expansion-hint text from
+those operands. Models retain supplied order, token counts use thousand/million
+tiers, and cost adds four components left-to-right
 before three-place rounding. A falsy timestamp skips localization; otherwise the
 supplied date operation receives the unchanged value. The browser's
 `localize_header_date` uses native `Date` and zero-argument `toLocaleString`.
@@ -128,7 +132,9 @@ and target identities remain literal through URL encoding, including empty value
 a present empty injected base differs from no base. Current-location links retain
 the fragment and first nonreserved valueless query identity. Injected bases retain
 their spelling, with selection appended before their fragment. Invalid current
-locations return `AttachmentUiError::Presentation` on activation even with a base.
+locations return `std::io::Error` containing the URL parser cause on activation,
+even with a base. Color preparation retains its native I/O error; glyph drawing
+retains a typed `ControlError` payload.
 
 The containing native message positions a 28-by-28 slot eight points from its
 top/right edges and publishes the measured slot as a canvas hole. The control
@@ -142,8 +148,9 @@ shortened reversals; unchanged destinations keep their existing run. New control
 start at their resolved style and drop their history with their retained state.
 The border switches immediately on hover or successful copy; feedback glyphs
 switch immediately on success and expiry.
-The current painter fades background and glyph separately; overlapping pixels at
-partial opacity remain tracked in [the composition repair](https://github.com/Orchestration-Maestro/maestro/issues/1277).
+The control composes its background, inside border and glyph before applying
+opacity once. Visibility-only animation reuses the retained image; changes to
+reached raster inputs refresh it.
 The copied check uses the selected pack's body typography, independent of the
 parent button style. It owns no text root or viewport.
 
@@ -167,3 +174,62 @@ Message rendering and final composition remain
 Permission-dependent OS clipboard and broad browser/device qualification remain
 [#1084](https://github.com/Orchestration-Maestro/maestro/issues/1084) and
 [#825](https://github.com/Orchestration-Maestro/maestro/issues/825).
+
+## Markdown and output
+
+[`safe_marked_parse`](../../crates/maestro-web/src/export_html/template/markdown.rs)
+prepares selectable export HTML through the shared Markdown walker. Authored tags
+are literal, source line breaks display as hard breaks, and deletion requires
+double tildes with non-whitespace edges. Rejected script, VBScript and data URLs
+retain their label or literal image alternative. Attribute escaping prevents
+quoted content from creating attributes. Export code uses the supplied viewer
+highlighter without chat-only formulas, copy controls or language labels.
+The shared parser selects export grammar with HTML block and tag tokenizers
+disabled. Escapes, definitions, destinations and code keep their own tokenizers;
+no source-rewriting pass runs before parsing.
+
+[`format_expandable_output`](../../crates/maestro-web/src/export_html/template/output.rs)
+replaces tabs with three spaces, preserves LF-split rows and prepares independent
+full and preview bodies. A nonempty language requests explicit highlighting;
+each failed body falls back to escaped text. Remaining rows produce an exact
+`... (N more lines)` hint.
+
+In the browser, call `bind_expandable_output(&root)` after mounting the containing
+parent. Keep the returned guard in that parent's `ReadingRoot.owner`, not in its
+factory. It includes an expandable root itself and expandable descendants,
+installs scoped viewer presentation, and removes listeners on release. Native
+selection in the element's owning window prevents a toggle; otherwise the live
+expanded class is toggled without replacing unrelated classes. The containing
+viewer supplies its base typography and selected brand properties.
+Binding reports mount-time document, presentation and listener failures;
+selection and class-toggle failures are thrown by the later native click callback.
+
+## Offline tool cards
+
+[`render_tool_call`](../../crates/maestro-web/src/export_html/template/tool_call/mod.rs)
+borrows a `SessionDocument`, a raw call and the supplied syntax highlighter,
+returning one complete owned HTML card. It looks up the first matching result in
+current entry order, including results before the call. Pending, success and
+error shells use the selected panel role. This operation does not execute tools
+or consult the live renderer registry.
+
+Built-in command, read, write, edit and directory cards retain their own preview,
+trimming and literal-output policies. File paths shorten lexical `/home/` and
+`/Users/` prefixes without reading the host environment. Numeric read ranges use
+the application's range formatter; malformed display operands remain escaped
+literal text or canonical JSON. Image metadata is escaped for quoted attributes.
+Nonstring text and metadata display through the shared canonical JSON writers.
+
+Exporter-supplied `renderedTools` strings remain trusted HTML, including their
+inline styling. Distinct collapsed and expanded results use the
+[shared output binding](#markdown-and-output); session-authored names, arguments
+and output never gain that trust. Without supplied bodies, arguments display as
+two-space canonical JSON and results remain literal text. Mount the card through
+the existing reading-content host and retain the binding guard in its
+`ReadingRoot.owner`; cards add no retained surface owner.
+
+Reached missing or nonstring call identities/names, malformed result content and
+truthy nonstring edit diffs return `InvalidData`, without partial HTML. A caller
+can report that failure for one card and continue with its neighbors. Nonstring
+result identities do not match string calls. Message composition remains
+[#1043](https://github.com/Orchestration-Maestro/maestro/issues/1043).

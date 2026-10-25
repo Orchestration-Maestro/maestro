@@ -1,26 +1,23 @@
 //! Live guarded base contexts over the runner's bound capabilities.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod local_support;
-#[path = "support/model.rs"]
-mod model_support;
-#[path = "support/ui_host.rs"]
-mod ui_host;
+use crate::local_support;
+use crate::model_support;
+use crate::ui_host;
 use ui_host::Named;
 
+use crate::context_actions;
+use crate::error_support;
+use context_actions::{
+    Recorder, SharedModel, check_bound_operations, check_compaction_forwarding, full_compaction,
+    same_model,
+};
+use error_support::Marker;
 use local_support::{LocalBus, STALE, loaded, local, session::runner_session};
 use maestro_catalog::ModelRegistry;
 use maestro_extensions::types::{
     ExtensionCollection, ExtensionFlagOptions, ExtensionShortcutOptions, ExtensionUIContextPort,
     FlagType, RegisteredCommandOptions, ShortcutHandler,
-};
-#[path = "support/context_actions.rs"]
-mod context_actions;
-use context_actions::{
-    Recorder, SharedModel, check_bound_operations, check_compaction_forwarding, full_compaction,
-    same_model,
 };
 use maestro_extensions::{
     CompactOptions, EventError, Extension, ExtensionAPI, ExtensionContext, ExtensionContextActions,
@@ -29,9 +26,6 @@ use maestro_extensions::{
 use maestro_models::{Cancellation, Local};
 use maestro_session::SessionManager;
 use maestro_theme::LiveTheme;
-#[path = "support/error.rs"]
-mod error_support;
-use error_support::Marker;
 use model_support::model;
 use std::{
     cell::{Cell, RefCell},
@@ -513,9 +507,7 @@ fn threaded_shortcut_reads_its_context_before_suspending() {
     let shortcuts = runner.get_shortcuts(&Vec::new());
     let handler = Arc::clone(&shortcuts["ctrl+t"].read().unwrap().handler);
     let pressed = send(handler(runner.create_context()));
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let executor = crate::runtime_support::runtime();
     executor.block_on(pressed).unwrap();
     assert_eq!(*seen.lock().unwrap(), ["/threaded"]);
 }

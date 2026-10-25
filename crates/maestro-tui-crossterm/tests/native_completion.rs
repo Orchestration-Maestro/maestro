@@ -1,8 +1,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! A retained editor completing asynchronously on the native host.
-#[allow(dead_code, reason = "Each test crate uses part of the shared helpers.")]
-mod runtime_support;
 
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
@@ -15,10 +13,12 @@ use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
 
+use crate::runtime_support::{is_child, rerun, run_set};
 use maestro_tui::autocomplete::{
     AutocompleteOperations, CompletionError, CompletionOptions, CompletionResult, CursorPosition,
     NativeAutocompleteOperations,
 };
+use maestro_tui::terminal::OutputErrorHandler;
 use maestro_tui::tui::{
     LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime,
 };
@@ -28,7 +28,6 @@ use maestro_tui::{
     Terminal, TerminalImage, set_keybindings, tui::InputHandler,
 };
 use maestro_tui_crossterm::ProcessTuiRuntime;
-use runtime_support::{is_child, rerun, run_set};
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::{Instant, advance};
 
@@ -140,7 +139,7 @@ impl Terminal for Sink {
         &mut self,
         _: Option<Duration>,
         _: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         Box::pin(async { Ok(()) })
     }
 
@@ -315,6 +314,10 @@ impl TuiRuntime for Watched {
 
     fn write_log(&self, path: &Path, contents: &str) -> io::Result<()> {
         self.host.write_log(path, contents)
+    }
+
+    fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
+        self.host.on_output_error(handler)
     }
 }
 

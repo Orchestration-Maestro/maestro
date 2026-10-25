@@ -1,10 +1,8 @@
 //! Markdown and SVG through the application, retained panel and artifact interface.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-pub mod artifact_support;
-pub mod highlighter_support;
-pub mod session_header_support;
-pub mod support;
+use crate::artifact_support;
+use crate::session_header_support;
 use artifact_support::panel::{Harness, Input};
 
 /// Filename policy installs specialized views through the actual application caller.
@@ -37,12 +35,10 @@ fn artifact_factory_installs_markdown_and_svg_views() {
     );
 }
 
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-mod effects_support;
-pub mod markdown_svg_support;
-#[path = "artifact_support/text_image.rs"]
-pub mod text_image_support;
+use crate::canvas_paint;
+use crate::effects_support;
+use crate::markdown_svg_support;
+use crate::text_image_support;
 use artifact_support::Frame;
 use maestro_web::{
     ArtifactElement, MarkdownArtifact, SvgArtifact,
@@ -107,8 +103,8 @@ fn preview_toggle_reports_only_real_changes() {
             None
         );
         states.push([
-            toggle.mode == ViewMode::Preview,
-            toggle.mode == ViewMode::Code,
+            toggle.mode() == ViewMode::Preview,
+            toggle.mode() == ViewMode::Code,
         ]);
         for index in [0, 1, 1, 0] {
             let position = slots(&frame.context)[index].center();
@@ -117,22 +113,22 @@ fn preview_toggle_reports_only_real_changes() {
             assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&case.titles[index]))));
             transitions.extend(transition.map(mode_name));
             states.push([
-                toggle.mode == ViewMode::Preview,
-                toggle.mode == ViewMode::Code,
+                toggle.mode() == ViewMode::Preview,
+                toggle.mode() == ViewMode::Code,
             ]);
         }
         assert_eq!(states, case.states);
         assert_eq!(transitions, case.events);
         let mut configured = PreviewCodeToggle::default();
-        configured.mode = ViewMode::Code;
+        configured.set_mode(ViewMode::Code);
         assert_eq!(
             toggle_frame(&frame, &mut configured, vec![], &mut paint).0,
             None
         );
         assert_eq!(
             [
-                configured.mode == ViewMode::Preview,
-                configured.mode == ViewMode::Code
+                configured.mode() == ViewMode::Preview,
+                configured.mode() == ViewMode::Code
             ],
             case.configured
         );
@@ -141,32 +137,43 @@ fn preview_toggle_reports_only_real_changes() {
 /// Both independent actions receive every original byte and localized title.
 #[test]
 fn specialized_headers_keep_literal_bytes_and_titles() {
-    for case in corpus().content {
-        let host = Rc::new(effects_support::Host::default());
-        let frame = Frame::default();
-        locale(&frame.i18n, &case.language);
-        let mut view = maestro_web::tools::artifacts::create_artifact_element(
-            &case.filename,
-            &case.content,
-            host.clone(),
-        )
-        .unwrap();
-        for index in [2, 3] {
-            let output = frame.activate_header(view.as_mut(), index, 4);
-            assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&case.titles[index - 2]))));
+    let corpus = corpus();
+    for header in &corpus.headers {
+        for case in corpus
+            .content
+            .iter()
+            .filter(|case| case.kind == header.kind)
+        {
+            header_actions(header, case);
         }
-        assert_eq!(host.copies.borrow().as_slice(), &[case.content]);
-        for result in host.results.borrow().iter() {
-            result.set(Some(true));
-        }
-        host.run_work();
-        host.advance(2000);
-        assert_eq!(host.live(), 0);
-        assert_eq!(
-            host.downloads.borrow().as_slice(),
-            &[(case.filename, case.mime, case.bytes)]
-        );
     }
+}
+/// Copy and download one case through its header under the header's locale.
+fn header_actions(header: &markdown_svg_support::Header, case: &markdown_svg_support::Case) {
+    let host = Rc::new(effects_support::Host::default());
+    let frame = Frame::default();
+    locale(&frame.i18n, &header.language);
+    let mut view = maestro_web::tools::artifacts::create_artifact_element(
+        &case.filename,
+        &case.content,
+        host.clone(),
+    )
+    .unwrap();
+    for index in [2, 3] {
+        let output = frame.activate_header(view.as_mut(), index, 4);
+        assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&header.titles[index - 2]))));
+    }
+    assert_eq!(host.copies.borrow().as_slice(), [case.content.as_str()]);
+    for result in host.results.borrow().iter() {
+        result.set(Some(true));
+    }
+    host.run_work();
+    host.advance(2000);
+    assert_eq!(host.live(), 0);
+    assert_eq!(
+        host.downloads.borrow().as_slice(),
+        &[(case.filename.clone(), case.mime.clone(), case.bytes.clone())]
+    );
 }
 /// Source selection belongs to its view and persists across every kind of edit.
 #[test]
@@ -212,37 +219,34 @@ fn artifact_modes_survive_edits_and_stay_independent() {
 /// Selected, hover and focus treatment survive tessellation and the final clip.
 #[test]
 fn preview_toggle_paints_selected_hover_and_focus() {
-    for frame in branded_frames() {
-        let mode = frame.mode;
+    let valid: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/control_texture_sampling_native.json"
+    ))
+    .unwrap();
+    crate::support::strict_record::<FilteringFixture>(&valid, &["preview"]);
+    assert_eq!(valid["preview"].as_array().unwrap().len(), 8);
+    crate::support::strict_record::<PreviewRow>(
+        &valid["preview"][0],
+        &["role", "tint", "size", "samples"],
+    );
+    crate::support::strict_record::<FilterSample>(
+        &valid["preview"][0]["samples"][0],
+        &["uv", "expected"],
+    );
+    crate::support::reject_sections::<FilteringFixture>(&valid, &["rows"]);
+    for (case, frame) in branded_frames().into_iter().enumerate() {
         let mut toggle = PreviewCodeToggle::new();
         let mut paint = canvas_paint::Paint::default();
         let output = toggle_frame(&frame, &mut toggle, vec![], &mut paint).1;
 
         let controls = slots(&frame.context);
         assert_eq!(controls.len(), 2);
-        let presentation = frame.pack.presentation(mode).unwrap();
-        let muted = egui::Color32::from_hex(presentation.colors["muted"])
-            .unwrap()
-            .to_array();
-        let text = egui::Color32::from_hex(presentation.colors["text"])
-            .unwrap()
-            .to_array();
-        let glyph = |r: egui::Rect| egui::Rect::from_center_size(r.center(), egui::vec2(16., 16.));
-        assert!(
-            paint
-                .region(&frame.context, &output.shapes, glyph(controls[0]))
-                .contains(&text)
-        );
-        assert!(
-            paint
-                .region(&frame.context, &output.shapes, glyph(controls[1]))
-                .contains(&muted)
-        );
+        assert_native_toggle_glyphs(&frame, &output, &paint, case);
         let sample = |rect: egui::Rect| rect.shrink2(egui::vec2(12., 4.));
         let preview = paint.region(&frame.context, &output.shapes, sample(controls[0]));
         let code = paint.region(&frame.context, &output.shapes, sample(controls[1]));
         assert_ne!(preview, code);
-        toggle.mode = ViewMode::Code;
+        toggle.set_mode(ViewMode::Code);
         let output = toggle_frame(&frame, &mut toggle, vec![], &mut paint).1;
 
         assert_ne!(
@@ -250,6 +254,104 @@ fn preview_toggle_paints_selected_hover_and_focus() {
             paint.region(&frame.context, &output.shapes, sample(controls[0]))
         );
         hover_focus(&frame, &mut toggle, &mut paint, &output, &controls);
+    }
+}
+
+/// Native selected-role texture samples.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FilteringFixture {
+    /// Preview glyph observations.
+    preview: Vec<PreviewRow>,
+}
+/// Recorded `PreviewRow` observations.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PreviewRow {
+    /// Recorded role.
+    pub role: String,
+    /// Recorded tint.
+    pub tint: [u8; 4],
+    /// Recorded size.
+    pub size: [usize; 2],
+    /// Recorded samples.
+    pub samples: Vec<FilterSample>,
+}
+/// Recorded `FilterSample` observations.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FilterSample {
+    /// Recorded uv.
+    pub uv: [f32; 2],
+    /// Recorded expected.
+    pub expected: [f32; 4],
+}
+/// Compare every isolated native glyph sample and its unequal-role control.
+fn assert_native_toggle_glyphs(
+    frame: &Frame,
+    output: &egui::FullOutput,
+    paint: &canvas_paint::Paint,
+    case: usize,
+) {
+    let presentation = frame.pack.presentation(frame.mode).unwrap();
+    let muted = egui::Color32::from_hex(presentation.colors["muted"])
+        .unwrap()
+        .to_array();
+    let text = egui::Color32::from_hex(presentation.colors["text"])
+        .unwrap()
+        .to_array();
+    let recorded: FilteringFixture = serde_json::from_str(include_str!(
+        "fixtures/control_texture_sampling_native.json"
+    ))
+    .unwrap();
+    let glyphs: Vec<_> = output
+        .shapes
+        .iter()
+        .filter(|s| matches!(s.shape, egui::Shape::Mesh(_)))
+        .collect();
+    assert_eq!(glyphs.len(), 2);
+    for (index, shape) in glyphs.iter().enumerate() {
+        let row = &recorded.preview[case * 2 + index];
+        let tint = if index == 0 { text } else { muted };
+        assert_eq!(row.tint, tint);
+        assert_eq!(row.role, if index == 0 { "text" } else { "muted" });
+        let egui::Shape::Mesh(mesh) = &shape.shape else {
+            unreachable!()
+        };
+        let rect = mesh.calc_bounds();
+        let images = paint.images(std::slice::from_ref(*shape));
+        assert_eq!(row.size, images[0].size);
+        let negative = if text == muted {
+            egui::Color32::from_hex(presentation.colors["accent"])
+                .unwrap()
+                .to_array()
+        } else {
+            [muted, text][index]
+        };
+        let [r, g, b, a] = negative;
+        let (wrong_paint, wrong_shapes) = canvas_paint::icon(
+            &frame.context,
+            rect,
+            if index == 0 { "Eye" } else { "Code" },
+            egui::Color32::from_rgba_premultiplied(r, g, b, a),
+        );
+        let mut rejects_wrong_role = false;
+        for sample in &row.samples {
+            let position = rect.min + rect.size() * egui::vec2(sample.uv[0], sample.uv[1]);
+            let actual = paint.pixel(&frame.context, std::slice::from_ref(*shape), position);
+            let wrong = wrong_paint.pixel(&frame.context, &wrong_shapes, position);
+            rejects_wrong_role |= wrong
+                .into_iter()
+                .zip(sample.expected)
+                .any(|(a, b)| (a - b).abs() > 0.51);
+            for (actual, expected) in actual.into_iter().zip(sample.expected) {
+                assert!(
+                    (actual - expected).abs() <= 0.51,
+                    "native preview pixel differs"
+                );
+            }
+        }
+        assert!(rejects_wrong_role);
     }
 }
 
@@ -264,10 +366,10 @@ fn branded_frames() -> Vec<Frame> {
             ]
             .map(|mode| Frame {
                 mode,
-                pack: maestro_theme::load_brand_pack(
-                    &format!("{}/../../assets/brand/{path}", env!("CARGO_MANIFEST_DIR")),
-                    &maestro_theme::theme::NativeThemeOperations,
-                )
+                pack: maestro_theme::load_brand_pack(&format!(
+                    "{}/../../assets/brand/{path}",
+                    env!("CARGO_MANIFEST_DIR")
+                ))
                 .unwrap(),
                 ..Frame::default()
             })

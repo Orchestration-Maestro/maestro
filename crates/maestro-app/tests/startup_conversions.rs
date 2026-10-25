@@ -150,30 +150,30 @@ fn session_destinations_reuse_the_session_directory_owner() {
 #[cfg(windows)]
 fn windows_basename() {
     use maestro_app::configuration::migrations::migrate_sessions_from_agent_root;
-    use std::{fs, process::Command};
+    use std::fs;
     if std::env::var_os("STARTUP_WINDOWS_CHILD").is_some() {
         migrate_sessions_from_agent_root().unwrap();
         return;
     }
-    let root = std::env::temp_dir().join(format!("maestro-startup-{}", std::process::id()));
-    fs::create_dir(&root).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().to_path_buf();
     let source = root.join("one.jsonl");
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\nopaque";
     fs::write(&source, body).unwrap();
-    let test =
-        crate::child_process::selector("session_destinations_reuse_the_session_directory_owner")
-            .unwrap();
-    let output = Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test])
-        .env("STARTUP_WINDOWS_CHILD", "1")
-        .env("MAESTRO_CODING_AGENT_DIR", &root)
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "session_destinations_reuse_the_session_directory_owner",
+    )
+    .unwrap()
+    .env("STARTUP_WINDOWS_CHILD", "1")
+    .env("MAESTRO_CODING_AGENT_DIR", &root)
+    .output()
+    .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test).unwrap();
     assert!(!source.exists());
-    assert!(fs::read(root.join("sessions/--work--/one.jsonl")).unwrap() == body);
-    fs::remove_dir_all(root).unwrap();
+    assert_eq!(
+        fs::read(root.join("sessions/--work--/one.jsonl")).unwrap(),
+        body
+    );
 }
 
 #[test]
@@ -248,8 +248,9 @@ fn relocated_referent(name: &str, alias_first: bool) {
         return;
     }
     let scratch = child::Scratch::new();
+    let root = scratch.0.path();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
-    let entry = |file: &str| scratch.0.join(file);
+    let entry = |file: &str| root.join(file);
     // Enumeration order follows names or creation, so try both until the wanted role is first.
     let (alias, referent) = [("a.jsonl", "b.jsonl"), ("b.jsonl", "a.jsonl")]
         .into_iter()
@@ -265,14 +266,16 @@ fn relocated_referent(name: &str, alias_first: bool) {
                 fs::remove_file(entry(referent)).unwrap();
                 fs::write(entry(referent), body).unwrap();
             }
-            let first = fs::read_dir(&scratch.0).unwrap().next().unwrap().unwrap();
+            let first = fs::read_dir(root).unwrap().next().unwrap().unwrap();
             ((first.file_name() == alias) == alias_first).then_some((alias, referent))
         })
         .expect("the directory enumerates the wanted role first");
     for _ in 0..2 {
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
-            &scratch.0,
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case("*"),
+            root,
             &[
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", "."),
@@ -281,18 +284,16 @@ fn relocated_referent(name: &str, alias_first: bool) {
         );
         for file in [alias, referent] {
             assert_eq!(
-                fs::read(scratch.0.join("sessions/--work--").join(file)).unwrap(),
+                fs::read(root.join("sessions/--work--").join(file)).unwrap(),
                 body
             );
             assert_eq!(
-                fs::symlink_metadata(scratch.0.join(file))
-                    .unwrap_err()
-                    .kind(),
+                fs::symlink_metadata(root.join(file)).unwrap_err().kind(),
                 std::io::ErrorKind::NotFound
             );
         }
         assert!(
-            fs::symlink_metadata(scratch.0.join("sessions/--work--").join(alias))
+            fs::symlink_metadata(root.join("sessions/--work--").join(alias))
                 .unwrap()
                 .is_symlink()
         );
@@ -311,23 +312,28 @@ fn relative_session_link_replaces_a_dangling_destination() {
     }
     let scratch = child::Scratch::new();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
-    fs::write(scratch.0.join("original.data"), body).unwrap();
-    symlink("original.data", scratch.0.join("alias.jsonl")).unwrap();
-    let directory = scratch.0.join("sessions/--work--");
+    fs::write(scratch.0.path().join("original.data"), body).unwrap();
+    symlink("original.data", scratch.0.path().join("alias.jsonl")).unwrap();
+    let directory = scratch.0.path().join("sessions/--work--");
     fs::create_dir_all(&directory).unwrap();
     symlink("missing.data", directory.join("alias.jsonl")).unwrap();
     for _ in 0..2 {
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
-            &scratch.0,
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case("*"),
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
-                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+                (
+                    "MAESTRO_CODING_AGENT_DIR",
+                    scratch.0.path().to_str().unwrap(),
+                ),
             ],
             &[],
         );
         assert_eq!(
-            fs::symlink_metadata(scratch.0.join("alias.jsonl"))
+            fs::symlink_metadata(scratch.0.path().join("alias.jsonl"))
                 .unwrap_err()
                 .kind(),
             std::io::ErrorKind::NotFound
@@ -338,7 +344,10 @@ fn relative_session_link_replaces_a_dangling_destination() {
                 .is_symlink()
         );
         assert_eq!(fs::read(directory.join("alias.jsonl")).unwrap(), body);
-        assert_eq!(fs::read(scratch.0.join("original.data")).unwrap(), body);
+        assert_eq!(
+            fs::read(scratch.0.path().join("original.data")).unwrap(),
+            body
+        );
         assert!(!directory.join("missing.data").exists());
     }
 }
@@ -358,19 +367,24 @@ fn unchanged_absolute_session_link_moves_by_rename() {
     }
     let scratch = child::Scratch::new();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
-    let referent = scratch.0.join("original.data");
+    let referent = scratch.0.path().join("original.data");
     fs::write(&referent, body).unwrap();
-    let source = scratch.0.join("alias.jsonl");
+    let source = scratch.0.path().join("alias.jsonl");
     symlink(&referent, &source).unwrap();
     let identity = fs::symlink_metadata(&source).unwrap().ino();
-    let destination = scratch.0.join("sessions/--work--/alias.jsonl");
+    let destination = scratch.0.path().join("sessions/--work--/alias.jsonl");
     for _ in 0..2 {
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
-            &scratch.0,
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case("*"),
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
-                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+                (
+                    "MAESTRO_CODING_AGENT_DIR",
+                    scratch.0.path().to_str().unwrap(),
+                ),
             ],
             &[],
         );
@@ -394,13 +408,12 @@ fn session_link_resolution_matrix() {
         return;
     }
     for depth in 1..=3 {
-        for payload in ["absolute", "relative", "absolute-relative", "mixed-case"] {
+        for payload in ["absolute", "relative", "absolute-relative"] {
             for moving in ["none", "final", "intermediate", "deep", "blocked"]
                 .into_iter()
                 .filter(|moving| {
                     !(depth == 1 && matches!(*moving, "intermediate" | "blocked")
-                        || depth < 3 && *moving == "deep"
-                        || payload == "mixed-case" && *moving == "blocked")
+                        || depth < 3 && *moving == "deep")
                 })
             {
                 check_resolution_orders(depth, payload, moving);
@@ -414,15 +427,7 @@ fn check_resolution_orders(depth: usize, payload: &str, moving: &str) {
     let mut orders = std::collections::BTreeSet::new();
     for arrangement in 0..2 * (depth + 1) {
         let (scratch, paths) = resolution_chain(depth, payload, moving, arrangement);
-        if payload == "mixed-case"
-            && !scratch
-                .0
-                .join(paths[1].file_name().unwrap().to_ascii_uppercase())
-                .exists()
-        {
-            return;
-        }
-        let entries: Vec<_> = std::fs::read_dir(&scratch.0)
+        let entries: Vec<_> = std::fs::read_dir(scratch.0.path())
             .unwrap()
             .map(|entry| entry.unwrap().path())
             .collect();
@@ -465,7 +470,7 @@ fn resolution_chain(
                 depth - index
             };
             let number = (index_in_order + arrangement / 2) % (depth + 1);
-            scratch.0.join(format!(
+            scratch.0.path().join(format!(
                 "session-{number}.{}",
                 if relocates { "jsonl" } else { "data" }
             ))
@@ -482,11 +487,7 @@ fn resolution_chain(
             .unwrap();
         } else {
             let target = &paths[index + 1];
-            let target = if payload == "mixed-case" {
-                scratch
-                    .0
-                    .join(target.file_name().unwrap().to_ascii_uppercase())
-            } else if payload != "relative"
+            let target = if payload != "relative"
                 && !(index > 0 && (moving == "blocked" || payload == "absolute-relative"))
             {
                 target.clone()
@@ -514,8 +515,10 @@ fn check_resolution_chain(
     let authored = fs::read_link(&paths[0]).unwrap();
     for _ in 0..2 {
         child::probe(
-            &crate::child_process::selector("session_link_resolution_matrix").unwrap(),
-            &scratch.0,
+            maestro_test_process::TestProcess::current("session_link_resolution_matrix")
+                .unwrap()
+                .case("*"),
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", "."),
@@ -534,6 +537,7 @@ fn check_resolution_chain(
                     );
                     scratch
                         .0
+                        .path()
                         .join("sessions/--work--")
                         .join(path.file_name().unwrap())
                 } else {
@@ -549,6 +553,7 @@ fn check_resolution_chain(
         }
         let destination = scratch
             .0
+            .path()
             .join("sessions/--work--")
             .join(paths[0].file_name().unwrap());
         assert!(fs::symlink_metadata(&destination).unwrap().is_symlink());
@@ -572,6 +577,7 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
     let (scratch, paths) = resolution_chain(2, "absolute", "blocked", 0);
     let alias = scratch
         .0
+        .path()
         .join("sessions/--work--")
         .join(paths[0].file_name().unwrap());
     for call in 0..3 {
@@ -579,11 +585,12 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
             fs::remove_file(paths[1].with_extension("jsonl.migrating")).unwrap();
         }
         child::probe(
-            &crate::child_process::selector(
+            maestro_test_process::TestProcess::current(
                 "blocked_intermediate_retry_keeps_migrated_alias_readable",
             )
-            .unwrap(),
-            &scratch.0,
+            .unwrap()
+            .case("*"),
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", "."),

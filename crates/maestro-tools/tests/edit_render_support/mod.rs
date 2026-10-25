@@ -4,7 +4,9 @@
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions};
 use serde::Deserialize;
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::BTreeMap;
+#[cfg(not(target_arch = "wasm32"))]
+use std::collections::{BTreeSet, HashSet};
 
 /// One independent rendering query.
 #[derive(Deserialize)]
@@ -28,9 +30,11 @@ struct Corpus {
     /// Background role indices.
     backgrounds: BTreeMap<String, Value>,
     /// Distinct queries.
+    #[cfg(not(target_arch = "wasm32"))]
     cases: Vec<Case>,
 }
 /// All admitted fixture groups.
+#[cfg(not(target_arch = "wasm32"))]
 const GROUPS: [&str; 10] = [
     "edit_preview_selects_complete_inputs",
     "edit_title_uses_display_alias_precedence",
@@ -44,6 +48,7 @@ const GROUPS: [&str; 10] = [
     "edit_theme_replacement_updates_background_and_rebuilt_text",
 ];
 /// Load strict records, verifying inventory and uniqueness before selecting a group.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn cases(test: &str) -> Vec<Case> {
     let corpus: Corpus =
         serde_json::from_str(include_str!("../fixtures/edit-render-cases.json")).unwrap();
@@ -97,6 +102,7 @@ pub fn theme(colors: &Value, backgrounds: &Value) -> Theme {
     .unwrap()
 }
 /// The corpus palette, with an optional distinguishable index shift.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn palette(shift: u64) -> Theme {
     palette_except(shift, None)
 }
@@ -123,6 +129,7 @@ fn palette_except(shift: u64, omit: Option<&str>) -> Theme {
     theme(&shifted(corpus.colors), &shifted(corpus.backgrounds))
 }
 /// A generated numbered preview's fixture representation.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Details {
@@ -143,6 +150,7 @@ pub struct Failure {
     pub error: String,
 }
 /// A typed result fixture.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ResultRecord {

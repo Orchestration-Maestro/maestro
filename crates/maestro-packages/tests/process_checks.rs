@@ -1,6 +1,7 @@
 //! Real children launched through the native package operations.
 #![cfg(unix)]
 #![cfg(test)]
+use crate::runtime::runtime;
 use crate::scratch;
 use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
@@ -20,15 +21,7 @@ use std::{
 
 /// A path below the directory.
 fn at(root: &Scratch, relative: &str) -> String {
-    root.0.join(relative).to_string_lossy().into_owned()
-}
-
-/// A runtime with process support for driving native futures.
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
+    root.path().join(relative).to_string_lossy().into_owned()
 }
 
 /// A native manager running the given shell script as its package command.
@@ -46,7 +39,6 @@ fn manager_running(script: &str, root: &Scratch) -> DefaultPackageManager<Native
             settings_manager: Rc::new(RefCell::new(settings)),
         },
         NativePackageOperations::new(
-            |_| false,
             Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         ),
@@ -56,7 +48,6 @@ fn manager_running(script: &str, root: &Scratch) -> DefaultPackageManager<Native
 /// Native operations that never use the shell and never take over stdout.
 fn direct() -> NativePackageOperations {
     NativePackageOperations::new(
-        |_| false,
         Rc::new(|| false),
         &std::rc::Rc::new(tokio::task::LocalSet::new()),
     )
@@ -68,9 +59,9 @@ fn parallel_scratch_directories_are_all_created_and_distinct() {
         .map(|_| std::thread::spawn(|| Scratch::new().unwrap()))
         .collect();
     let scratches: Vec<_> = threads.into_iter().map(|t| t.join().unwrap()).collect();
-    let paths: std::collections::HashSet<_> = scratches.iter().map(|s| s.0.clone()).collect();
+    let paths: std::collections::HashSet<_> = scratches.iter().map(Scratch::path).collect();
     assert_eq!(paths.len(), 32);
-    assert!(scratches.iter().all(|s| s.0.is_dir()));
+    assert!(scratches.iter().all(|s| s.path().is_dir()));
 }
 
 #[test]
@@ -130,14 +121,15 @@ const STDIO_SCRIPT: &str =
     r#"printf '<%s>' "$@"; echo out-$0; echo err-$0 >&2; read -r line; echo "stdin:$line"; pwd -P"#;
 
 /// Runs the three launches of the stdio test inside the child process.
-fn stdio_launches(root: &Path) {
+fn stdio_launches(root: &Path, supplied: bool) {
     let taken = Rc::new(Cell::new(false));
     let query = taken.clone();
-    let operations: Box<dyn PackageOperations> = Box::new(NativePackageOperations::new(
-        |_| false,
-        Rc::new(move || query.get()),
-        &Rc::new(tokio::task::LocalSet::new()),
-    ));
+    let query: Rc<dyn Fn() -> bool> = Rc::new(move || query.get());
+    let operations: Box<dyn PackageOperations> = Box::new(if supplied {
+        NativePackageOperations::with_spawn(query, |_| panic!("stdio must not admit workers"))
+    } else {
+        NativePackageOperations::new(query, &Rc::new(tokio::task::LocalSet::new()))
+    });
     let runtime = runtime();
     let launch = |name: &str, cwd: Option<&str>| {
         let args = ["-c", STDIO_SCRIPT, name, "x  y", "z"].map(str::to_owned);
@@ -153,8 +145,16 @@ fn stdio_launches(root: &Path) {
 
 #[test]
 fn native_stdio_obeys_live_takeover_and_literal_arguments() {
+    stdio_scenario(
+        "native_stdio_obeys_live_takeover_and_literal_arguments",
+        false,
+    );
+}
+
+/// Drives the same native stream routes through either admission constructor.
+fn stdio_scenario(test: &str, supplied: bool) {
     if let Some(root) = std::env::var_os(STDIO_CHILD) {
-        stdio_launches(Path::new(&root));
+        stdio_launches(Path::new(&root), supplied);
         return;
     }
     let root = Scratch::new().unwrap();
@@ -169,10 +169,10 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
         .create_new(true)
         .open(&out)
         .unwrap();
-    let status = TestProcess::current("native_stdio_obeys_live_takeover_and_literal_arguments")
+    let status = TestProcess::current(test)
         .unwrap()
         .nocapture()
-        .env(STDIO_CHILD, &root.0)
+        .env(STDIO_CHILD, root.path())
         .current_dir(at(&root, "ambient"))
         .stdin(std::fs::File::open(at(&root, "input")).unwrap())
         .stderr(std::fs::File::create(&err).unwrap())
@@ -184,7 +184,7 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
         std::fs::read_to_string(err).unwrap(),
     );
     let canonical = |name: &str| {
-        root.0
+        root.path()
             .join(name)
             .canonicalize()
             .unwrap()
@@ -290,25 +290,23 @@ fn native_local_repository_installs_checks_out_and_removes() {
             git(&repository, &["tag", "v1"]);
         }
     }
-    let test =
-        crate::child_process::selector("native_local_repository_installs_checks_out_and_removes")
-            .unwrap();
-    let output = Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test])
-        .env(REPOSITORY_CHILD, &root.0)
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
-        .env("GIT_CONFIG_SYSTEM", "/dev/null")
-        .env("GIT_CONFIG_COUNT", "1")
-        .env("GIT_CONFIG_KEY_0", format!("url.{repository}.insteadOf"))
-        .env("GIT_CONFIG_VALUE_0", "https://example.test/team/repo")
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "native_local_repository_installs_checks_out_and_removes",
+    )
+    .unwrap()
+    .env(REPOSITORY_CHILD, root.path())
+    .env("GIT_CONFIG_GLOBAL", "/dev/null")
+    .env("GIT_CONFIG_SYSTEM", "/dev/null")
+    .env("GIT_CONFIG_COUNT", "1")
+    .env("GIT_CONFIG_KEY_0", format!("url.{repository}.insteadOf"))
+    .env("GIT_CONFIG_VALUE_0", "https://example.test/team/repo")
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stdout)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
 }
 
 #[test]
@@ -355,28 +353,127 @@ fn native_commands_preserve_spawn_failures_and_signal_status() {
 }
 
 #[test]
-fn supplied_shell_choice_is_observed_for_each_command() {
-    let runtime = runtime();
-    let operations: &dyn PackageOperations = &NativePackageOperations::new(
-        |command| command == "true",
-        Rc::new(|| false),
-        &std::rc::Rc::new(tokio::task::LocalSet::new()),
+fn native_package_spawn_keeps_admission_and_output_routes() {
+    stdio_scenario(
+        "native_package_spawn_keeps_admission_and_output_routes",
+        true,
     );
-    let args = ["a;", "exit", "7"].map(str::to_owned);
+    let admitted = Rc::new(Cell::new(0));
+    let seen = admitted.clone();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let target = local.clone();
+    let operations = NativePackageOperations::with_spawn(Rc::new(|| false), move |work| {
+        seen.set(seen.get() + 1);
+        drop(target.spawn_local(work));
+        Ok(())
+    });
+    let (send, receive) = tokio::sync::oneshot::channel();
+    operations
+        .spawn(Box::pin(async move {
+            send.send(()).unwrap();
+        }))
+        .unwrap();
+    assert_eq!(admitted.get(), 1);
+    runtime().block_on(local.run_until(async {
+        receive.await.unwrap();
+    }));
+    assert_supplied_capture_routes();
+}
+
+#[test]
+fn native_package_spawn_preserves_local_set_release_error() {
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
+    let (send, receive) = tokio::sync::oneshot::channel();
+    operations
+        .spawn(Box::pin(async move {
+            send.send(()).unwrap();
+        }))
+        .unwrap();
+    runtime().block_on(local.run_until(async {
+        receive.await.unwrap();
+    }));
+    assert_eq!(Rc::strong_count(&local), 1);
+    drop(local);
     assert_eq!(
-        runtime
-            .block_on(operations.run_command("true", &args, None))
-            .unwrap(),
-        Some(7)
+        operations
+            .spawn(Box::pin(async {}))
+            .unwrap_err()
+            .to_string(),
+        "package runtime is no longer available"
+    );
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let weak = Rc::downgrade(&local);
+    let supplied = NativePackageOperations::with_spawn(Rc::new(|| false), move |work| {
+        let local = weak
+            .upgrade()
+            .ok_or_else(|| std::io::Error::other("package runtime is no longer available"))?;
+        drop(local.spawn_local(work));
+        Ok(())
+    });
+    let (send, receive) = tokio::sync::oneshot::channel();
+    supplied
+        .spawn(Box::pin(async move {
+            send.send(()).unwrap();
+        }))
+        .unwrap();
+    runtime().block_on(local.run_until(async {
+        receive.await.unwrap();
+    }));
+    drop(local);
+    assert_eq!(
+        supplied.spawn(Box::pin(async {})).unwrap_err().to_string(),
+        "package runtime is no longer available"
+    );
+}
+
+/// Checks unchanged native capture operands beside an admission error.
+fn assert_supplied_capture_routes() {
+    let denied = NativePackageOperations::with_spawn(
+        Rc::new(|| panic!("capture must not query output routing")),
+        |_| Err(std::io::Error::from_raw_os_error(13)),
     );
     assert_eq!(
-        runtime
-            .block_on(operations.run_command("/usr/bin/true", &args, None))
-            .unwrap(),
-        Some(0)
+        denied.spawn(Box::pin(async {})).unwrap_err().raw_os_error(),
+        Some(13)
     );
+    let output = denied
+        .run_command_sync(
+            "/bin/sh",
+            &["-c".into(), "printf sync; printf err >&2; exit 7".into()],
+        )
+        .unwrap();
     assert_eq!(
-        operations.run_command_sync("true", &args).unwrap().status,
-        Some(7)
+        (
+            output.status,
+            output.stdout.as_str(),
+            output.stderr.as_str()
+        ),
+        (Some(7), "sync", "err")
+    );
+    let root = Scratch::new().unwrap();
+    let cwd = root.path().to_str().unwrap();
+    let output = runtime()
+        .block_on(denied.run_command_capture(
+            "/bin/sh",
+            &[
+                "-c".into(),
+                "printf '%s|%s|' \"$MAESTRO_CAPTURE_VALUE\" \"$1\"; pwd -P".into(),
+                "sh".into(),
+                "literal argument".into(),
+            ],
+            maestro_packages::CommandCaptureOptions {
+                cwd: Some(cwd),
+                timeout: None,
+                env: &[("MAESTRO_CAPTURE_VALUE", "overlaid")],
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        output,
+        format!(
+            "overlaid|literal argument|{}",
+            root.path().canonicalize().unwrap().display()
+        )
     );
 }

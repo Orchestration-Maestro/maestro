@@ -1,0 +1,1233 @@
+[
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[2J\u001b[1;1H\u001b[0;39;49mHi\u001b[2;1H! \u001b[0m\u001b[2;2H\u001b[?25l\u001b[?2026l\u001b[2;2H\u001b[?25l",
+    "case": "full_redraw_2x2_ascii",
+    "clear_before_full_redraw": true,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "H"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "i"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "!"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": " "
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 2,
+      "hyperlinks": [],
+      "width": 2
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mHi\u001b[2;1H! \u001b[0m\u001b[2;2H\u001b[?25l\u001b[?2026l\u001b[2;2H\u001b[?25l",
+    "case": "full_redraw_no_clear",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "H"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "i"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "!"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": " "
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 2,
+      "hyperlinks": [],
+      "width": 2
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mX\u001b[0m\u001b[2;2H\u001b[?25l\u001b[?2026l\u001b[2;2H\u001b[?25l",
+    "case": "diff_single_changed_cell",
+    "clear_before_full_redraw": true,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "X"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "i"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "!"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": " "
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 2,
+      "hyperlinks": [],
+      "width": 2
+    },
+    "previous": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "H"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "i"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "!"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": " "
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 2,
+      "hyperlinks": [],
+      "width": 2
+    },
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mX\u001b[0m\u001b[2;2H\u001b[?25l\u001b[?2026l",
+    "case": "diff_ime_anchor_skipped",
+    "clear_before_full_redraw": true,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "X"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "i"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "!"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": " "
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 2,
+      "hyperlinks": [],
+      "width": 2
+    },
+    "previous": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "H"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "i"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "!"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": " "
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 2,
+      "hyperlinks": [],
+      "width": 2
+    },
+    "repeat_ime_anchor": false,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mBBB\u001b[2;1HBBB\u001b[0m\u001b[2;3H\u001b[?25l\u001b[?2026l\u001b[2;3H\u001b[?25l",
+    "case": "size_change_3x2_no_clear",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "B"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "B"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "B"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "B"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "B"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "B"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 2,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "H"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "i"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "!"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": " "
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 2,
+      "hyperlinks": [],
+      "width": 2
+    },
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;1;31;40mA\u001b[0m\u001b[1;1H\u001b[?25l\u001b[?2026l\u001b[1;1H\u001b[?25l",
+    "case": "sgr_named_red_on_black_bold",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 1,
+          "fg": 2,
+          "hyperlink": null,
+          "modifier": 1,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 1
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;38;5;171;48;2;255;128;64mA\u001b[0m\u001b[1;1H\u001b[?25l\u001b[?2026l\u001b[1;1H\u001b[?25l",
+    "case": "sgr_indexed_fg_rgb_bg",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 50298944,
+          "fg": 16777387,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 1
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;4:3;39;49mA\u001b[0m\u001b[1;1H\u001b[?25l\u001b[?2026l\u001b[1;1H\u001b[?25l",
+    "case": "sgr_curly_underline_style_3",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 12296,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 1
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;1;2;3;4;5;6;7;8;9;39;49mA\u001b[0m\u001b[1;1H\u001b[?25l\u001b[?2026l\u001b[1;1H\u001b[?25l",
+    "case": "sgr_all_modifiers",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 511,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 1
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mAAA\u001b[2;1HAAA\u001b[3;1HAAA\u001b[0m\u001b[2;3H\u001b[5 q\u001b[?25h\u001b[?2026l\u001b[2;3H\u001b[?25h",
+    "case": "visible_cursor_shape_5",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": {
+        "shape": 5,
+        "visible": true,
+        "x": 2,
+        "y": 1
+      },
+      "graphics": [],
+      "height": 3,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mAAA\u001b[2;1HAAA\u001b[3;1HAAA\u001b[0m\u001b[2;3H\u001b[5 q\u001b[?25l\u001b[?2026l\u001b[2;3H\u001b[?25l",
+    "case": "visible_cursor_suppressed",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": {
+        "shape": 5,
+        "visible": true,
+        "x": 2,
+        "y": 1
+      },
+      "graphics": [],
+      "height": 3,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": true
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mAAA\u001b[2;1HAAA\u001b[3;1HAAA\u001b[0m\u001b[3;3H\u001b[?25h\u001b[?2026l\u001b[3;3H\u001b[?25h",
+    "case": "cursor_clamped_and_shape_normalised",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": {
+        "shape": 9,
+        "visible": true,
+        "x": 9,
+        "y": 9
+      },
+      "graphics": [],
+      "height": 3,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[3;3H\u001b[?25l\u001b[?2026l\u001b[3;3H\u001b[?25l",
+    "case": "unchanged_frame_parks_hidden_cursor_bottom_right",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 3,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "A"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 3,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49m💡\u001b[1;3HZ\u001b[0m\u001b[1;3H\u001b[?25l\u001b[?2026l\u001b[1;3H\u001b[?25l",
+    "case": "full_redraw_wide_grapheme_skips_tail",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "💡"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": true,
+          "symbol": ""
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "Z"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mｶﾞ\u001b[1;3HZ\u001b[0m\u001b[1;3H\u001b[?25l\u001b[?2026l\u001b[1;3H\u001b[?25l",
+    "case": "full_redraw_halfwidth_voiced_kana_skips_tail",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "ｶﾞ"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": true,
+          "symbol": ""
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "Z"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49ma\u001b[1;2Hb\u001b[0m\u001b[1;3H\u001b[?25l\u001b[?2026l\u001b[1;3H\u001b[?25l",
+    "case": "diff_reveals_cells_hidden_by_wide_grapheme",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "a"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "b"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "Z"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "💡"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": true,
+          "symbol": ""
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "Z"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49ma\u001b[1;2Hb\u001b[0m\u001b[1;3H\u001b[?25l\u001b[?2026l\u001b[1;3H\u001b[?25l",
+    "case": "diff_reveals_cells_hidden_by_voiced_kana",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "a"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "b"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "Z"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "previous": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "ｶﾞ"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": true,
+          "symbol": ""
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": null,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "Z"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [],
+      "width": 3
+    },
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49m\u001b]8;;https://example.test/a\u001b\\L\u001b]8;;\u001b\\M\u001b[0m\u001b[1;2H\u001b[?25l\u001b[?2026l\u001b[1;2H\u001b[?25l",
+    "case": "osc8_sanitized_links",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": 0,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "L"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": 1,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "M"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [
+        "https://example.test/a\u001b\u0007",
+        ""
+      ],
+      "width": 2
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  },
+  {
+    "bytes": "\u001b[?2026h\u001b[?25l\u001b]8;;\u001b\\\u001b[1;1H\u001b[0;39;49mLM\u001b[0m\u001b[1;2H\u001b[?25l\u001b[?2026l\u001b[1;2H\u001b[?25l",
+    "case": "osc8_empty_and_missing_index_ignored",
+    "clear_before_full_redraw": false,
+    "frame": {
+      "cells": [
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": 0,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "L"
+        },
+        {
+          "bg": 0,
+          "fg": 0,
+          "hyperlink": 7,
+          "modifier": 0,
+          "skip": false,
+          "symbol": "M"
+        }
+      ],
+      "cursor": null,
+      "graphics": [],
+      "height": 1,
+      "hyperlinks": [
+        "\u001b\u0007"
+      ],
+      "width": 2
+    },
+    "previous": null,
+    "repeat_ime_anchor": true,
+    "suppress_visible_cursor": false
+  }
+]

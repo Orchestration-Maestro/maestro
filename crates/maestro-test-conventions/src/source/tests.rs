@@ -29,7 +29,7 @@ fn repeated() -> Vec<(String, String)> {
 #[test]
 fn manifest_tables_keep_native_types() {
     let scratch = Scratch::new();
-    let path = scratch.root.join("manifest.toml");
+    let path = scratch.root.path().join("manifest.toml");
     std::fs::write(&path, "").unwrap();
     assert_eq!(read_manifest(&path).unwrap(), toml::Table::new());
     std::fs::write(
@@ -53,7 +53,7 @@ fn manifest_tables_keep_native_types() {
 #[test]
 fn manifest_failures_keep_the_requested_path() {
     let scratch = Scratch::new();
-    let path = scratch.root.join("Cargo.toml");
+    let path = scratch.root.path().join("Cargo.toml");
     let prefix = format!("{}: ", path.display());
     let read = std::fs::read_to_string(&path).unwrap_err();
     assert_eq!(read_manifest(&path).unwrap_err(), format!("{prefix}{read}"));
@@ -100,4 +100,30 @@ fn associated_attributes_keep_supported_variants() {
     assert!(impl_item_attributes(&opaque).is_empty());
     let opaque = syn::TraitItem::Verbatim(proc_macro2::TokenStream::new());
     assert!(trait_item_attributes(&opaque).is_empty());
+}
+
+/// Measure newline traversal through the repetition check on valid documentation.
+fn documentation_scan_bytes(comments: usize) -> usize {
+    let contents = "/// Alpha.\n/// Bravo.\n".repeat(comments / 2);
+    let member = super::Member {
+        name: "example".into(),
+        directory: "example".into(),
+        sources: vec![super::Source {
+            path: "example/src/lib.rs".into(),
+            contents,
+            syntax: None,
+        }],
+    };
+    super::SCANNED_BYTES.set(0);
+    crate::repetition::check(&[member]).unwrap();
+    super::SCANNED_BYTES.get()
+}
+
+#[test]
+fn documentation_newline_scans_grow_linearly() {
+    let small = documentation_scan_bytes(128);
+    let large = documentation_scan_bytes(256);
+    println!("newline scan bytes: N={small}, 2N={large}");
+    assert!(small > 0, "newline traversal must be observed");
+    assert_eq!(large, 2 * small, "doubling documentation doubles scan work");
 }

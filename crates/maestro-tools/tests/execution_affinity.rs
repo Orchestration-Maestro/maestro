@@ -1,6 +1,8 @@
 //! Caller-local tool execution through the public factory boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
+use crate::read_support::Fixture as _;
 use futures_util::FutureExt;
 use maestro_agent::{AgentToolResult, ToolExecutionMode};
 use maestro_models::{Cancellation, Tool};
@@ -18,7 +20,7 @@ fn custom(name: &str) -> ToolDefinition<Value> {
         definition: Tool {
             name: name.into(),
             description: "D".into(),
-            parameters: json!({"type":"object"}),
+            parameters: json!({"type":"object"}).into(),
         },
         label: "L".into(),
         prompt_snippet: None,
@@ -39,10 +41,7 @@ fn custom(name: &str) -> ToolDefinition<Value> {
 }
 /// A model-facing text block.
 fn text(value: &str) -> maestro_models::UserBlock {
-    maestro_models::UserBlock::Text(maestro_models::TextContent {
-        text: value.into(),
-        text_signature: None,
-    })
+    maestro_models::UserBlock::Text(maestro_models::TextContent::new(value.into()))
 }
 /// Serialize the complete result using its existing optional-field contract.
 fn result_value<D: serde::Serialize>(result: AgentToolResult<D>) -> Value {
@@ -480,7 +479,7 @@ fn local_bash_progress_keeps_prefix_and_settlement() {
             None,
         );
         assert_eq!(updates.lock().unwrap().len(), usize::from(!hook_error));
-        let result = crate::read_support::run(future);
+        let result = crate::runtime::run(future);
         let mut observed = json!({"calls":*calls.lock().unwrap(),"beforeAwait":updates.lock().unwrap().iter().map(|u|u["content"].clone()).collect::<Vec<_>>(),"updates":*updates.lock().unwrap()});
         match result {
             Ok(result) => observed["result"] = result_value(result),
@@ -571,8 +570,8 @@ fn local_bash_sink_uses_native_child_waiter() {
     use std::io::Write;
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
-    let root = crate::read_support::TempDir::new();
-    crate::read_support::run(async {
+    let root = crate::read_support::Scratch::new().unwrap();
+    crate::runtime::run(async {
         let tool = maestro_tools::local::create_bash_tool_definition::<()>(
             root.text(),
             String::new(),
@@ -633,14 +632,13 @@ fn local_renderer_binding_drops_executable_owners() {
         crate::display_support::shipped_theme("dark", None),
         Rc::new(crate::display_support::NoLanguages),
     );
-    let setup = crate::display_support::Setup::from(
-        &json!({"readme":"/opt/maestro/README.md","bindings":[]}),
-    );
-    let _bindings = crate::display_support::bind(&setup.bindings);
+    let recorded = json!({"readme":"/opt/maestro/README.md","bindings":[]});
+    let setup = crate::display_support::Setup::from(&recorded);
+    let _bindings = crate::display_support::bind(&crate::display_support::expand_keys(&recorded));
     let args = json!({});
     let row = crate::display_support::context::<ToolRendererState>(&args, &setup, &env, None);
-    check_custom_projection(&env.theme, &row);
-    check_builtin_projection(&env.theme, &row);
+    check_custom_projection(&env.live, &row);
+    check_builtin_projection(&env.live, &row);
 }
 
 #[test]
@@ -731,7 +729,7 @@ fn local_builtin_execution_reuses_existing_operations() {
     use crate::factory_support::execution::Probes;
     use maestro_agent::{AgentMessage, PromptInput};
     use maestro_models::{Execution, Local};
-    let root = crate::read_support::TempDir::new();
+    let root = crate::read_support::Scratch::new().unwrap();
     crate::grep_support::producer(&root, &crate::grep_support::Input::default());
     let probes = Probes::new(false);
     let context_calls = Rc::new(Cell::new(0));
@@ -771,8 +769,8 @@ fn local_builtin_execution_reuses_existing_operations() {
         images: vec![],
     });
     let work: <Local as Execution>::Future<'static, ()> = tasks.borrow_mut().pop().unwrap();
-    crate::read_support::run(work);
-    crate::read_support::run(result).unwrap();
+    crate::runtime::run(work);
+    crate::runtime::run(result).unwrap();
     subscription.unsubscribe();
     let messages = agent.state().read().unwrap().messages().clone();
     let results = messages
@@ -794,7 +792,7 @@ fn local_builtin_execution_reuses_existing_operations() {
 fn check_builtin_results(
     results: &[maestro_models::ToolResultMessage],
     probes: &crate::factory_support::execution::Probes,
-    root: &crate::read_support::TempDir,
+    root: &crate::read_support::Scratch,
     progress: &[(String, Value)],
 ) {
     assert_eq!(
@@ -988,7 +986,7 @@ fn selected_spawn_hook(
 
 /// Retain custom renderers without retaining executable captures.
 fn check_custom_projection(
-    theme: &maestro_theme::Theme,
+    theme: &maestro_theme::LiveTheme,
     row: &maestro_tools::ToolRenderContext<'_, maestro_tools::ToolRendererState>,
 ) {
     let mut definition = custom("rendered");
@@ -1024,7 +1022,7 @@ fn check_custom_projection(
 
 /// Retain builtin renderers without retaining executable captures.
 fn check_builtin_projection(
-    theme: &maestro_theme::Theme,
+    theme: &maestro_theme::LiveTheme,
     row: &maestro_tools::ToolRenderContext<'_, maestro_tools::ToolRendererState>,
 ) {
     let manager = Arc::new(maestro_tools::ToolsManager::new(
@@ -1074,7 +1072,7 @@ fn check_builtin_projection(
 /// Bind the existing file probes to local definitions before erasure.
 #[cfg(unix)]
 fn builtin_tools(
-    root: &crate::read_support::TempDir,
+    root: &crate::read_support::Scratch,
     probes: &crate::factory_support::execution::Probes,
     factory: &maestro_tools::local::ToolContextFactory<LocalContext>,
 ) -> Vec<maestro_agent::SharedAgentTool<maestro_models::Local>> {

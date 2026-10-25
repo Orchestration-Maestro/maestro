@@ -35,7 +35,7 @@ async fn retained_catalog(command: bool) {
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     );
-    let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    let (mut pump, admission) = Pump::new();
     let owner = if command {
         Owner::Command(runner.create_command_context())
     } else {

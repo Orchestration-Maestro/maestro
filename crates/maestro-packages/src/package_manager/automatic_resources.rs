@@ -17,9 +17,9 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         project: &Settings,
         result: &mut Accumulator,
     ) -> io::Result<()> {
-        let home = join(&[&self.operations.home_dir()?, ".agents", "skills"]);
-        let resolved_home = self.resolve_operands(&[&home])?;
-        let mut current = self.resolve_operands(&[&self.options.cwd])?;
+        let home = join(&[&super::operations::home_dir()?, ".agents", "skills"]);
+        let resolved_home = maestro_resources::paths::resolve(&[&home])?;
+        let mut current = maestro_resources::paths::resolve(&[&self.options.cwd])?;
         let mut ancestors = Vec::new();
         loop {
             let root = join(&[&current, ".agents", "skills"]);
@@ -27,12 +27,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 ancestors.push(root);
             }
             let parent = dirname(&current);
-            if self
-                .operations
-                .resource_operations()
-                .exists(Path::new(&join(&[&current, ".git"])))
-                || parent == current
-            {
+            if Path::exists(Path::new(&join(&[&current, ".git"]))) || parent == current {
                 break;
             }
             current = parent;
@@ -67,19 +62,16 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         };
         for kind in ResourceType::ALL {
             let entries = root_entries(snapshot, kind.name())?;
-            let operations = self.operations.resource_operations();
-            let mut files =
-                collect_auto_files(&join(&[&base, kind.name()]), kind, false, operations)?;
+            let mut files = collect_auto_files(&join(&[&base, kind.name()]), kind, false)?;
             let roots = if matches!(kind, ResourceType::Skills) {
                 roots
             } else {
                 &[]
             };
             for root in roots {
-                files.extend(collect_auto_files(root, kind, true, operations)?);
+                files.extend(collect_auto_files(root, kind, true)?);
             }
-            let selected =
-                super::resource_patterns::apply_patterns(&files, &entries, &base, operations)?;
+            let selected = super::resource_patterns::apply_patterns(&files, &entries, &base)?;
             for file in &files {
                 result.insert_enabled(kind, file.clone(), &metadata, selected.contains(file));
             }

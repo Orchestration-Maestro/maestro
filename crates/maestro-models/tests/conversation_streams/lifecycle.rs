@@ -2,6 +2,7 @@
 #![cfg(test)]
 use crate::{
     chat::{self, TestResult},
+    clock::epoch_millis,
     conversation_streams::corpus,
 };
 use futures_util::StreamExt;
@@ -108,10 +109,9 @@ pub async fn dropped_reader() -> TestResult {
     let output = result.await;
     assert_eq!(
         output.read().unwrap().content,
-        vec![AssistantContent::Text(maestro_models::TextContent {
-            text: "independent".into(),
-            text_signature: None
-        })]
+        vec![AssistantContent::Text(maestro_models::TextContent::new(
+            "independent".into()
+        ))]
     );
     Ok(())
 }
@@ -189,11 +189,7 @@ pub async fn shared_admission() -> TestResult {
         seen.fetch_add(1, Ordering::SeqCst);
         Box::pin(std::future::ready(Ok(())))
     }));
-    let before = (std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_secs_f64()
-        * 1000.0)
-        .floor();
+    let before = epoch_millis();
     let stream = stream_mistral(corpus::model()?, context()?, Some(settings));
     let start = stream.next().await.unwrap();
     assert!(matches!(start, Event::Start { .. }));
@@ -212,7 +208,7 @@ pub async fn shared_admission() -> TestResult {
     }
     let result = stream.result().await;
     assert!(Arc::ptr_eq(&result, &retained));
-    assert_shared_result(&retained, before)?;
+    assert_shared_result(&retained, before);
     assert_eq!(calls.load(Ordering::SeqCst), 0);
     Ok(())
 }
@@ -422,7 +418,7 @@ pub fn no_runtime() -> TestResult {
             ..Default::default()
         }),
     )?;
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for stream in [raw, simple] {
             assert_eq!(
                 stream
@@ -439,16 +435,11 @@ pub fn no_runtime() -> TestResult {
     })
 }
 /// Final content and bounded timestamp observed through a surviving Start alias.
-fn assert_shared_result(retained: &SharedAssistantMessage, before: f64) -> TestResult {
+fn assert_shared_result(retained: &SharedAssistantMessage, before: f64) {
     let message = retained.read().unwrap();
     assert!(matches!(&message.content[0], AssistantContent::Text(block) if block.text == "AB"));
-    let after = (std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_secs_f64()
-        * 1000.0)
-        .floor();
+    let after = epoch_millis();
     assert!(message.timestamp >= before && message.timestamp <= after);
-    Ok(())
 }
 /// Inspect lifetime failure without retaining a guard across the event drain.
 fn assert_lifetime_result(output: &SharedAssistantMessage, caller_signal: bool) {

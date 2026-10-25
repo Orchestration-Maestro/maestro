@@ -7,6 +7,7 @@ use super::super::websocket::{
 use super::super::{CodexError, headers::build_web_socket_headers};
 use crate::providers::nullable::Nullable;
 use crate::providers::responses::openai_responses::OpenAIResponsesServiceTier;
+use crate::tests::runtime::run_paused;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
     SharedAssistantMessage,
@@ -24,16 +25,6 @@ use tokio_tungstenite::tungstenite::{
     Error, Message,
     protocol::{CloseFrame, frame::coding::CloseCode},
 };
-
-/// Drive a future to completion on a paused-clock runtime.
-pub(super) fn block_on<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(future)
-}
 
 /// One scripted receive step.
 pub(super) enum Incoming {
@@ -427,32 +418,12 @@ struct EventCase {
 fn maestro_response_sessions_select_socket_events() {
     let rows: Vec<EventCase> =
         super::fixture_rows(include_str!("fixtures/socket_events.json"), &["scenario"]).unwrap();
-    block_on(async {
+    run_paused(async {
         for row in rows {
-            let signal = Cancellation::new();
             let incoming = row.packets.iter().map(Packet::incoming).collect();
-            let mut socket = Scripted::new(incoming, &signal);
-            let (model, _, _) = super::invocation();
-            let output = Arc::new(std::sync::RwLock::new(
-                crate::providers::assistant_output::initial_message(&model),
-            ));
-            let events = AssistantMessageEventStream::new();
-            let mut on_start = || {};
-            let mut receiver = Receiver::new(
-                &mut socket,
-                Some(&signal),
-                WebSocketOutput {
-                    output: &output,
-                    stream: &events,
-                    on_start: &mut on_start,
-                },
-            );
-            let mut selected = Vec::new();
-            while let Some(Ok(text)) = receiver.next().await {
-                selected.push(text);
-            }
+            let (selected, failure) = select_all(incoming).await;
             assert_eq!(selected, row.events, "{}", row.scenario);
-            match (&row.error, receiver.failure.take()) {
+            match (&row.error, failure) {
                 (Some(expected), Some(error)) => expected.assert_matches(&error, &row.scenario),
                 (None, None) => {}
                 (expected, actual) => {
@@ -541,7 +512,7 @@ fn maestro_response_sessions_run_uncached_socket_lifecycle() {
         &["scenario"],
     )
     .unwrap();
-    block_on(async {
+    run_paused(async {
         for row in rows {
             let incoming = row.packets.iter().map(Packet::incoming).collect();
             let fault = if row.send_fails {
@@ -629,7 +600,7 @@ fn maestro_response_sessions_keep_sse_selection_separate() {
     let completed = r#"{"type":"response.completed","response":{"id":"r","status":"completed"}}"#;
     let bom = '\u{feff}';
     let sse = format!("data: [DONE]\n\ndata: {bom}{event}\n\ndata: {completed}\n\n");
-    block_on(async {
+    run_paused(async {
         let mut source = Source::new(Box::pin(stream::iter([Ok(sse.into_bytes())])), None);
         let mut selected = Vec::new();
         while let Some(Ok(text)) = source.next().await {
@@ -748,7 +719,7 @@ fn phase_cases() -> [PhaseCase; 5] {
 #[test]
 fn maestro_response_sessions_preserve_socket_error_phase() {
     let cases = phase_cases();
-    block_on(async {
+    run_paused(async {
         for case in cases {
             let run = run_script(case.incoming, Fault::None).await;
             let label = case.scenario;

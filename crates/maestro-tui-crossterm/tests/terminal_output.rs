@@ -3,34 +3,82 @@
 #![cfg(test)]
 #![cfg(unix)]
 
-#[macro_use]
-mod support;
+use crate::{isolated, support};
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 
-use maestro_tui::Terminal;
-use maestro_tui_crossterm::ProcessTerminal;
-use rustix::event::{PollFd, PollFlags, poll};
-use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
-use rustix::stdio::stdout;
-use support::{
+use crate::support::{
     Capture, Inputs, Resizes, Rig, START_BYTES, elapse, is_child, pipe_input, pipe_output,
     pty_output,
 };
+use maestro_tui::Terminal;
+use maestro_tui_crossterm::ProcessTerminal;
+use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
+use rustix::stdio::stdout;
 
-/// Collects on another thread until `length` bytes arrived, so a writer can fill the pipe and
-/// wait for room.
-fn collect(capture: Capture, length: usize) -> JoinHandle<String> {
-    std::thread::spawn(move || {
-        let mut collected = String::new();
-        while collected.len() < length {
-            let mut waiting = [PollFd::new(&capture.0, PollFlags::IN)];
-            poll(&mut waiting, None).unwrap();
-            collected.push_str(&capture.take());
+/// An exec child must not retain either terminal pipe after its standard streams change.
+#[cfg(target_os = "linux")]
+#[test]
+fn native_terminal_descriptors_do_not_survive_exec() {
+    const PROBE: &str = "MAESTRO_TERMINAL_DESCRIPTOR_PROBE";
+    if let Ok(targets) = std::env::var(PROBE) {
+        let targets: Vec<_> = targets.lines().map(PathBuf::from).collect();
+        for entry in fs::read_dir("/proc/self/fd").unwrap() {
+            if let Ok(target) = fs::read_link(entry.unwrap().path()) {
+                assert!(
+                    !targets.contains(&target),
+                    "inherited terminal pipe: {target:?}"
+                );
+            }
         }
-        collected
+        return;
+    }
+    isolated!(&[], || {
+        use rustix::io::{FdFlags, fcntl_setfd};
+        use std::process::Stdio;
+        let rig = Rig::paused();
+        let input = pipe_input();
+        let output = pipe_output();
+        fcntl_setfd(&input.0, FdFlags::CLOEXEC).unwrap();
+        fcntl_setfd(&output.0, FdFlags::CLOEXEC).unwrap();
+        let targets =
+            ["/proc/self/fd/0", "/proc/self/fd/1"].map(|path| fs::read_link(path).unwrap());
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            let child = maestro_test_process::TestProcess::current(
+                "native_terminal_descriptors_do_not_survive_exec",
+            )
+            .unwrap()
+            .env(
+                PROBE,
+                format!("{}\n{}", targets[0].display(), targets[1].display()),
+            )
+            .stdin(Stdio::null())
+            .output()
+            .unwrap();
+            terminal.stop().unwrap();
+            assert!(
+                child.status.success(),
+                "{}\n{}",
+                String::from_utf8_lossy(&child.stdout),
+                String::from_utf8_lossy(&child.stderr)
+            );
+        });
+    });
+}
+
+/// Collects exact bytes, including scalars split across kernel reads.
+fn collect_bytes(capture: Capture, length: usize) -> JoinHandle<Vec<u8>> {
+    std::thread::spawn(move || {
+        use std::io::Read;
+        let flags = fcntl_getfl(&capture.0).unwrap();
+        fcntl_setfl(&capture.0, flags & !OFlags::NONBLOCK).unwrap();
+        let mut file = std::fs::File::from(capture.0);
+        let mut bytes = vec![0; length];
+        file.read_exact(&mut bytes).unwrap();
+        bytes
     })
 }
 
@@ -82,11 +130,11 @@ fn native_writes_complete_on_a_nonblocking_standard_output() {
         fcntl_setfl(stdout(), flags | OFlags::NONBLOCK).unwrap();
         let mut terminal = ProcessTerminal::new(rig.local());
         let data = "x".repeat(300_000);
-        let collected = collect(capture, data.len());
+        let collected = collect_bytes(capture, data.len());
         terminal.write(&data).unwrap();
         let received = collected.join().unwrap();
         assert_eq!(received.len(), data.len());
-        assert!(received.bytes().all(|byte| byte == b'x'));
+        assert!(received.iter().all(|byte| *byte == b'x'));
     });
 }
 
@@ -98,11 +146,11 @@ fn native_progress_repeats_one_keepalive_until_clear() {
         rig.run(async {
             let mut terminal = ProcessTerminal::new(rig.local());
             terminal.set_progress(true).unwrap();
-            assert_eq!(output.take(), PROGRESS_ACTIVE);
+            output.written(PROGRESS_ACTIVE).await;
             elapse(999).await;
             assert_eq!(output.take(), "");
             terminal.set_progress(true).unwrap();
-            assert_eq!(output.take(), PROGRESS_ACTIVE);
+            output.written(PROGRESS_ACTIVE).await;
             elapse(1).await;
             output.written(PROGRESS_ACTIVE).await;
             elapse(1000).await;
@@ -130,7 +178,7 @@ fn native_stop_clears_active_progress_before_input_modes() {
             feed.send(b"\x1b[?1u");
             output.written(&format!("{START_BYTES}\x1b[>7u")).await;
             terminal.set_progress(true).unwrap();
-            assert_eq!(output.take(), PROGRESS_ACTIVE);
+            output.written(PROGRESS_ACTIVE).await;
             terminal.stop().unwrap();
             assert_eq!(output.take(), format!("{PROGRESS_CLEAR}\x1b[?2004l\x1b[<u"));
             elapse(3001).await;
@@ -300,14 +348,10 @@ impl LogCase {
 }
 
 /// A fresh empty directory for one scenario, made by the parent only.
-fn scratch(name: &str, case: usize) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "maestro-terminal-{name}-{case}-{}",
-        std::process::id()
-    ));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).unwrap();
-    dir
+fn scratch() -> (maestro_test_directory::Scratch, PathBuf) {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path().to_path_buf();
+    (scratch, dir)
 }
 
 /// Writes around other output and checks that everything reached standard output, and that a
@@ -341,19 +385,20 @@ fn write_around_other_output() {
 fn native_write_logging_appends_only_explicit_writes() {
     for (case, kind) in LogCase::ALL.into_iter().enumerate() {
         let prepared = (!is_child()).then(|| {
-            let dir = scratch("logging", case);
+            let (root, dir) = scratch();
             let target = kind.prepare(&dir);
-            (dir, target)
+            (root, dir, target)
         });
-        let target = prepared.as_ref().and_then(|(_, target)| target.as_deref());
+        let target = prepared
+            .as_ref()
+            .and_then(|(_, _, target)| target.as_deref());
         let environment: Vec<(&str, &str)> = target
             .map(|path| ("MAESTRO_TUI_WRITE_LOG", path))
             .into_iter()
             .collect();
         isolated!(case, &environment, write_around_other_output);
-        if let Some((dir, _)) = prepared {
+        if let Some((_, dir, _)) = prepared {
             kind.verify(&dir);
-            fs::remove_dir_all(&dir).unwrap();
         }
     }
 }
@@ -361,10 +406,10 @@ fn native_write_logging_appends_only_explicit_writes() {
 #[test]
 fn native_log_names_use_local_calendar_fields_and_process_id() {
     for (case, offset_hours) in [0_i64, 14].into_iter().enumerate() {
-        let prepared = (!is_child()).then(|| scratch("log-names", case));
+        let prepared = (!is_child()).then(scratch);
         let dir = prepared
             .as_ref()
-            .and_then(|dir| dir.to_str())
+            .and_then(|(_, dir)| dir.to_str())
             .unwrap_or_default();
         let zone = format!("XXX{:+}", -offset_hours);
         let environment = [("MAESTRO_TUI_WRITE_LOG", dir), ("TZ", zone.as_str())];
@@ -397,8 +442,419 @@ fn native_log_names_use_local_calendar_fields_and_process_id() {
             let content = fs::read_to_string(Path::new(&directory).join(&names[0])).unwrap();
             assert_eq!(content, "firstsecond");
         });
-        if let Some(dir) = prepared {
-            fs::remove_dir_all(dir).unwrap();
-        }
+        drop(prepared);
+    }
+}
+
+#[test]
+fn native_output_backlog_keeps_input_responsive() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pty_output();
+        let input = pipe_input();
+        rig.run(async {
+            let (sent, received) = tokio::sync::oneshot::channel();
+            let mut sent = Some(sent);
+            let mut terminal = ProcessTerminal::new(rig.local());
+            terminal
+                .start(
+                    Box::new(move |_| {
+                        if let Some(sent) = sent.take() {
+                            sent.send(()).unwrap();
+                        }
+                    }),
+                    Box::new(|| {}),
+                )
+                .unwrap();
+            output.written(START_BYTES).await;
+            let data = "x".repeat(2 * 1024 * 1024);
+            terminal.write(&data).unwrap();
+            input.send(b"a");
+            received.await.unwrap();
+            assert!(terminal.pending_output_bytes() > 0);
+            let _reader = rustix::io::dup(&output.0).unwrap();
+            let collector = collect_bytes(output, data.len());
+            while !collector.is_finished() {
+                tokio::task::yield_now().await;
+            }
+            assert_eq!(collector.join().unwrap(), data.as_bytes());
+            terminal.stop().unwrap();
+        });
+    });
+}
+
+/// Starts over the caller's installed input, consuming only startup output.
+async fn queued_terminal(rig: &Rig, output: &Capture) -> ProcessTerminal {
+    let mut terminal = ProcessTerminal::new(rig.local());
+    terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+    output.written(START_BYTES).await;
+    terminal
+}
+
+#[test]
+fn native_output_preserves_repeated_chunk_order() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            terminal.write("first").unwrap();
+            terminal.show_cursor().unwrap();
+            terminal.write("second").unwrap();
+            terminal.write("first").unwrap();
+            output.written("first\x1b[?25hsecondfirst").await;
+            assert_eq!(terminal.pending_output_bytes(), 0);
+            terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_output_retries_after_descriptor_backpressure() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            fcntl_setfl(stdout(), fcntl_getfl(stdout()).unwrap() | OFlags::NONBLOCK).unwrap();
+            let data = "r".repeat(2 * 1024 * 1024);
+            terminal.write(&data).unwrap();
+            support::until(|| terminal.pending_output_bytes() < data.len()).await;
+            assert!(terminal.pending_output_bytes() > 0);
+            let _reader = rustix::io::dup(&output.0).unwrap();
+            let collector = collect_bytes(output, data.len());
+            support::until(|| collector.is_finished()).await;
+            assert_eq!(collector.join().unwrap(), data.as_bytes());
+            assert_eq!(terminal.pending_output_bytes(), 0);
+            terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_output_counts_every_partial_drain() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            let data = "p".repeat(2 * 1024 * 1024);
+            terminal.write(&data).unwrap();
+            assert_eq!(terminal.pending_output_bytes(), data.len());
+            support::until(|| terminal.pending_output_bytes() < data.len()).await;
+            let remaining = terminal.pending_output_bytes();
+            assert!(remaining > 0);
+            let first = output.take();
+            assert_eq!(first.len() + remaining, data.len());
+            support::until(|| terminal.pending_output_bytes() < remaining).await;
+            let later = terminal.pending_output_bytes();
+            assert!(later > 0 && later < remaining);
+            let _reader = rustix::io::dup(&output.0).unwrap();
+            let collector = collect_bytes(output, remaining);
+            support::until(|| collector.is_finished()).await;
+            assert_eq!(collector.join().unwrap(), vec![b'p'; remaining]);
+            assert_eq!(terminal.pending_output_bytes(), 0);
+            terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_output_small_writes_keep_exact_accounting() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            let _reader = rustix::io::dup(&output.0).unwrap();
+            let collector = collect_bytes(output, 100_000);
+            for accepted in 1..=100_000 {
+                terminal.write("s").unwrap();
+                assert_eq!(terminal.pending_output_bytes(), accepted);
+            }
+            support::until(|| collector.is_finished()).await;
+            assert_eq!(collector.join().unwrap(), vec![b's'; 100_000]);
+            assert_eq!(terminal.pending_output_bytes(), 0);
+            terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_output_failure_drops_pending_and_surfaces_at_stop() {
+    isolated!(0, &[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            terminal.write(&"f".repeat(2 * 1024 * 1024)).unwrap();
+            drop(output);
+            support::until(|| terminal.pending_output_bytes() == 0).await;
+            terminal.write("discarded").unwrap();
+            assert_eq!(terminal.pending_output_bytes(), 0);
+            assert_eq!(
+                terminal.stop().unwrap_err().kind(),
+                std::io::ErrorKind::BrokenPipe
+            );
+        });
+    });
+
+    isolated!(1, &[], || {
+        let rig = Rig::paused();
+        let directory = fs::File::open("/").unwrap();
+        rustix::stdio::dup2_stdin(&directory).unwrap();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = ProcessTerminal::new(rig.local());
+            terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+            let acquired = support::open_descriptors();
+            support::until(|| support::open_descriptors() < acquired).await;
+            drop(output);
+            terminal.write("after-input-failure").unwrap();
+            support::until(|| terminal.pending_output_bytes() == 0).await;
+            assert_eq!(
+                terminal.stop().unwrap_err().kind(),
+                std::io::ErrorKind::IsADirectory
+            );
+        });
+    });
+}
+
+#[test]
+fn native_output_stop_and_drop_drain_before_modes() {
+    for case in 0..2 {
+        isolated!(case, &[], || {
+            let rig = Rig::paused();
+            let input = pipe_input();
+            let output = pipe_output();
+            rig.run(async {
+                let mut terminal = queued_terminal(&rig, &output).await;
+                input.send(b"\x1b[?1u");
+                output.written("\x1b[>7u").await;
+                let data = "d".repeat(2 * 1024 * 1024);
+                terminal.write(&data).unwrap();
+                support::until(|| terminal.pending_output_bytes() < data.len()).await;
+                assert!(terminal.pending_output_bytes() > 0);
+                terminal.write("tail").unwrap();
+                terminal.set_progress(true).unwrap();
+                let expected =
+                    format!("{data}tail{PROGRESS_ACTIVE}{PROGRESS_CLEAR}\x1b[?2004l\x1b[<u");
+                let collector = collect_bytes(output, expected.len());
+                if case == 0 {
+                    terminal.stop().unwrap();
+                } else {
+                    drop(terminal);
+                }
+                assert_eq!(collector.join().unwrap(), expected.as_bytes());
+            });
+        });
+    }
+}
+
+#[test]
+fn native_output_session_bytes_stay_identical() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = ProcessTerminal::new(rig.local());
+            terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+            input.send(b"\x1b[?1u");
+            output.written(&format!("{START_BYTES}\x1b[>7u")).await;
+            terminal.write("first🦀first").unwrap();
+            terminal.move_by(0).unwrap();
+            terminal.move_by(-2).unwrap();
+            terminal.clear_line().unwrap();
+            terminal.clear_from_cursor().unwrap();
+            terminal.clear_screen().unwrap();
+            terminal.set_title("x\x07\x1b]0;y").unwrap();
+            terminal.set_progress(true).unwrap();
+            terminal.set_progress(false).unwrap();
+            terminal.stop().unwrap();
+            assert_eq!(output.take(), "first🦀first\x1b[2A\x1b[K\x1b[J\x1b[2J\x1b[H\x1b]0;x\x07\x1b]0;y\x07\x1b]9;4;3\x07\x1b]9;4;0;\x07\x1b[?2004l\x1b[<u");
+        });
+    });
+}
+
+#[test]
+fn native_output_regular_destinations_remain_synchronous() {
+    for case in 0..2 {
+        isolated!(case, &[], || {
+            use rustix::stdio::dup2_stdout;
+            use std::fs::File;
+            let rig = Rig::paused();
+            let _input = pipe_input();
+            let path = std::env::temp_dir().join(format!("maestro-output-{}", std::process::id()));
+            let file = if case == 0 {
+                File::options()
+                    .create_new(true)
+                    .read(true)
+                    .write(true)
+                    .open(&path)
+                    .unwrap()
+            } else {
+                File::options()
+                    .read(true)
+                    .write(true)
+                    .open("/dev/null")
+                    .unwrap()
+            };
+            dup2_stdout(&file).unwrap();
+            rig.run(async {
+                let mut terminal = ProcessTerminal::new(rig.local());
+                terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+                terminal.write("regular").unwrap();
+                assert_eq!(terminal.pending_output_bytes(), 0);
+                if case == 0 {
+                    assert_eq!(
+                        fs::read_to_string(&path).unwrap(),
+                        format!("{START_BYTES}regular")
+                    );
+                }
+                terminal.stop().unwrap();
+            });
+            if case == 0 {
+                fs::remove_file(path).unwrap();
+            }
+        });
+    }
+}
+
+#[test]
+fn native_output_restores_output_flags() {
+    for case in 0..8 {
+        isolated!(case, &[], || {
+            let rig = Rig::paused();
+            let _input = pipe_input();
+            let output = if case >= 4 {
+                pty_output()
+            } else {
+                pipe_output()
+            };
+            if case >= 4 {
+                rustix::stdio::dup2_stdin(stdout()).unwrap();
+            }
+            let original = fcntl_getfl(stdout()).unwrap();
+            let flags = if case % 2 == 0 {
+                original
+            } else {
+                original | OFlags::NONBLOCK
+            };
+            fcntl_setfl(stdout(), flags).unwrap();
+            rig.run(async {
+                let mut terminal = queued_terminal(&rig, &output).await;
+                assert!(fcntl_getfl(stdout()).unwrap().contains(OFlags::NONBLOCK));
+                terminal.write("flags").unwrap();
+                if case % 4 < 2 {
+                    terminal.stop().unwrap();
+                } else {
+                    drop(terminal);
+                }
+                assert_eq!(fcntl_getfl(stdout()).unwrap(), flags);
+                assert_eq!(output.take(), "flags\x1b[?2004l");
+            });
+        });
+    }
+
+    isolated!(8, &[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let file = fs::File::open("/dev/null").unwrap();
+        rustix::stdio::dup2_stdout(&file).unwrap();
+        let flags = fcntl_getfl(stdout()).unwrap();
+        let input_flags = fcntl_getfl(rustix::stdio::stdin()).unwrap();
+        rig.run(async {
+            let mut terminal = ProcessTerminal::new(rig.local());
+            let baseline = support::open_descriptors();
+            assert!(terminal.start(Box::new(|_| {}), Box::new(|| {})).is_err());
+            assert_eq!(fcntl_getfl(stdout()).unwrap(), flags);
+            assert_eq!(fcntl_getfl(rustix::stdio::stdin()).unwrap(), input_flags);
+            assert_eq!(support::open_descriptors(), baseline);
+        });
+    });
+}
+
+#[test]
+fn native_output_restart_keeps_pending_bytes() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            let data = "o".repeat(2 * 1024 * 1024);
+            terminal.write(&data).unwrap();
+            support::until(|| terminal.pending_output_bytes() < data.len()).await;
+            assert!(terminal.pending_output_bytes() > 0);
+            terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+            terminal.write("new").unwrap();
+            let expected = format!("{data}{START_BYTES}new\x1b[?2004l");
+            let collector = collect_bytes(output, expected.len());
+            terminal.stop().unwrap();
+            assert_eq!(collector.join().unwrap(), expected.as_bytes());
+        });
+    });
+}
+
+#[test]
+fn native_output_empty_and_multibyte_counts_are_bytes() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            terminal.write("").unwrap();
+            assert_eq!(terminal.pending_output_bytes(), 0);
+            let data = format!("{}🦀", "a".repeat(16383));
+            terminal.write(&data).unwrap();
+            assert_eq!(terminal.pending_output_bytes(), 16387);
+            let _reader = rustix::io::dup(&output.0).unwrap();
+            let collector = collect_bytes(output, data.len());
+            support::until(|| collector.is_finished()).await;
+            assert_eq!(collector.join().unwrap(), data.as_bytes());
+            terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_output_log_records_accepted_explicit_writes() {
+    let prepared = (!is_child()).then(scratch);
+    let path = prepared.as_ref().map(|(_, dir)| dir.join("write.log"));
+    let configured = path
+        .as_ref()
+        .map(|path| path.to_string_lossy().into_owned());
+    let environment: Vec<_> = configured
+        .as_deref()
+        .map(|value| ("MAESTRO_TUI_WRITE_LOG", value))
+        .into_iter()
+        .collect();
+    isolated!(&environment, || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            terminal.write("explicit").unwrap();
+            terminal.set_title("unlogged").unwrap();
+            let path = std::env::var_os("MAESTRO_TUI_WRITE_LOG").unwrap();
+            assert_eq!(fs::read_to_string(&path).unwrap(), "explicit");
+            assert!(terminal.pending_output_bytes() > 0);
+            terminal.stop().unwrap();
+            assert_eq!(output.take(), "explicit\x1b]0;unlogged\x07\x1b[?2004l");
+            drop(output);
+            assert!(terminal.write("refused").is_err());
+            assert_eq!(fs::read_to_string(path).unwrap(), "explicit");
+        });
+    });
+    if let Some(dir) = prepared {
+        drop(dir);
     }
 }

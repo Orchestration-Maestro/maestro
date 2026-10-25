@@ -8,33 +8,19 @@ use maestro_packages::PackageManager;
 use serde_json::json;
 use std::rc::Rc;
 
-/// Completes the update and joins its admitted workers.
+/// Completes the update of a checkout without a manifest and joins its admitted workers.
 fn run(responses: &[&str]) -> Rc<support::Effects> {
-    let (manager, _, effects) = support::manager(&json!({"packages":["git:github.com/acme/tool"]}));
-    effects.exists.set(true);
-    effects
-        .absent_under
-        .borrow_mut()
-        .push("/home/reader/agent/git/github.com/acme/tool/package.json".into());
-    effects
-        .capture_outputs
-        .borrow_mut()
-        .extend(responses.iter().map(|text| Ok((*text).into())));
-    let local = Rc::new(tokio::task::LocalSet::new());
-    *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime
-        .block_on(local.run_until(Rc::new(manager).update(None)))
-        .unwrap();
-    runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
+    let responses = responses.iter().map(|text| Ok((*text).into())).collect();
+    let (effects, result, _tree) = controlled_refresh(responses, without_manifest);
+    result.unwrap();
     effects
 }
 
 #[test]
 fn git_fetch_compares_refreshed_heads_before_replacement() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let effects = run(&["origin/feature/slash", "before", "local", "changed"]);
     assert_eq!(
         effects
@@ -77,6 +63,9 @@ fn git_fetch_compares_refreshed_heads_before_replacement() {
 
 #[test]
 fn git_native_current_preserves_dirty_and_untracked_contents() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let repo = native_git::Repository::new();
     std::fs::write(repo.target.join("content"), "dirty").unwrap();
     std::fs::write(repo.target.join("untracked"), "retained").unwrap();
@@ -103,6 +92,9 @@ fn git_native_current_preserves_dirty_and_untracked_contents() {
 
 #[test]
 fn git_native_new_commits_replace_head_and_contents() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for count in [1, 3] {
         let repo = native_git::Repository::new();
         std::fs::write(repo.target.join("content"), "dirty").unwrap();
@@ -121,6 +113,9 @@ fn git_native_new_commits_replace_head_and_contents() {
 
 #[test]
 fn git_native_detached_and_non_origin_use_origin_head() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for detached in [true, false] {
         let repo = native_git::Repository::new();
         if detached {
@@ -141,6 +136,9 @@ fn git_native_detached_and_non_origin_use_origin_head() {
 
 #[test]
 fn git_native_rewritten_history_replaces_installed_commits() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for scenario in ["rewritten", "removed", "orphan"] {
         let repo = native_git::Repository::new();
         match scenario {
@@ -174,6 +172,9 @@ fn git_native_rewritten_history_replaces_installed_commits() {
 
 #[test]
 fn git_native_pin_and_user_scope_do_not_acquire_project_contents() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let repo = native_git::Repository::new();
     repo.commit("updated");
     repo.update(true);
@@ -189,32 +190,51 @@ fn git_native_pin_and_user_scope_do_not_acquire_project_contents() {
     repo.assert_remote("updated");
 }
 
-/// Runs one controlled Git refresh and joins every accepted worker, including failures.
+/// The user checkout of the configured source in a configured tree.
+const CHECKOUT: &str = "/home/reader/agent/git/github.com/acme/tool";
+/// Runs one controlled Git refresh of an installed checkout with a manifest and joins every
+/// accepted worker, including failures.
 fn controlled_refresh(
     responses: Vec<std::io::Result<String>>,
     configure: impl FnOnce(
         &Rc<support::Effects>,
         &Rc<std::cell::RefCell<maestro_settings::SettingsManager>>,
+        &str,
     ),
-) -> (Rc<support::Effects>, std::io::Result<()>) {
-    let (manager, settings, effects) =
-        support::manager(&json!({"packages":["git:github.com/acme/tool"]}));
-    effects.exists.set(true);
+) -> (
+    Rc<support::Effects>,
+    std::io::Result<()>,
+    crate::scratch::Scratch,
+) {
+    let (manager, settings, effects, tree) = support::installed(
+        &json!({"packages":["git:github.com/acme/tool"]}),
+        &json!([]),
+    );
+    let checkout = support::below(tree.path(), CHECKOUT);
+    std::fs::write(format!("{checkout}/package.json"), "{}").unwrap();
     *effects.capture_outputs.borrow_mut() = responses.into();
-    configure(&effects, &settings);
+    configure(&effects, &settings, &checkout);
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let result = runtime.block_on(local.run_until(Rc::new(manager).update(None)));
+    let runtime = crate::runtime::runtime();
+    let result = runtime.block_on(local.run_until(manager.update(None)));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
-    (effects, result)
+    (effects, result, tree)
+}
+/// Removes the checkout's manifest, so the refresh installs no dependencies.
+fn without_manifest(
+    _: &Rc<support::Effects>,
+    _: &Rc<std::cell::RefCell<maestro_settings::SettingsManager>>,
+    checkout: &str,
+) {
+    std::fs::remove_file(format!("{checkout}/package.json")).unwrap();
 }
 
 #[test]
 fn git_targets_preserve_upstream_fallback_boundaries() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for upstream in ["other/main", "origin/", "originish/main", ""] {
         let responses = [
             upstream,
@@ -226,12 +246,7 @@ fn git_targets_preserve_upstream_fallback_boundaries() {
         .into_iter()
         .map(|text| Ok(text.to_owned()))
         .collect();
-        let (effects, result) = controlled_refresh(responses, |effects, _| {
-            effects
-                .absent_under
-                .borrow_mut()
-                .push("/home/reader/agent/git/github.com/acme/tool/package.json".into());
-        });
+        let (effects, result, _tree) = controlled_refresh(responses, without_manifest);
         result.unwrap();
         assert_eq!(
             effects.calls.borrow()[1].1,
@@ -253,6 +268,9 @@ fn git_targets_preserve_upstream_fallback_boundaries() {
 
 #[test]
 fn git_target_text_uses_shared_whitespace_rules() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let bom = run(&[
         "\u{feff}origin/main\u{feff}",
         "before",
@@ -282,6 +300,9 @@ fn git_target_text_uses_shared_whitespace_rules() {
 #[test]
 fn git_dependency_install_uses_live_command_configuration() {
     use maestro_settings::SettingsListEntry;
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for configured in [
         None,
         Some(vec![]),
@@ -299,7 +320,7 @@ fn git_dependency_install_uses_live_command_configuration() {
             .into_iter()
             .map(|text| Ok(text.into()))
             .collect();
-        let (effects, result) = controlled_refresh(responses, |effects, settings| {
+        let (effects, result, _tree) = controlled_refresh(responses, |effects, settings, _| {
             *effects.run_hook.borrow_mut() = Some(edit_after_clean(settings, configured));
         });
         result.unwrap();
@@ -309,11 +330,8 @@ fn git_dependency_install_uses_live_command_configuration() {
         .into_iter()
         .map(|text| Ok(text.into()))
         .collect();
-    let (effects, result) = controlled_refresh(responses, |effects, settings| {
-        effects
-            .absent_under
-            .borrow_mut()
-            .push("/home/reader/agent/git/github.com/acme/tool/package.json".into());
+    let (effects, result, _tree) = controlled_refresh(responses, |effects, settings, checkout| {
+        without_manifest(effects, settings, checkout);
         settings
             .borrow_mut()
             .set_npm_command(Some(vec![SettingsListEntry::String(String::new())]));
@@ -325,11 +343,16 @@ fn git_dependency_install_uses_live_command_configuration() {
 #[test]
 fn missing_unpinned_git_content_uses_existing_install() {
     use maestro_packages::{ProgressAction, ProgressEventType};
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     clone_acquires_dependencies();
     for failure in [false, true] {
         let events = Rc::new(std::cell::RefCell::new(Vec::new()));
-        let (manager, _, effects) =
-            support::manager(&json!({"packages":["git:github.com/acme/tool"]}));
+        let (manager, _, effects, tree) = support::uninstalled(
+            &json!({"packages":["git:github.com/acme/tool"]}),
+            &json!([]),
+        );
         let observed = events.clone();
         manager.set_progress_callback(Some(Rc::new(move |event| {
             observed
@@ -342,16 +365,13 @@ fn missing_unpinned_git_content_uses_existing_install() {
         }
         let local = Rc::new(tokio::task::LocalSet::new());
         *effects.local.borrow_mut() = Rc::downgrade(&local);
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let result = runtime.block_on(local.run_until(Rc::new(manager).update(None)));
+        let runtime = crate::runtime::runtime();
+        let result = runtime.block_on(local.run_until(manager.update(None)));
         runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
         assert_eq!(result.is_err(), failure);
         assert_eq!(
-            effects.calls.borrow().as_slice(),
-            &[(
+            spelled(&effects, &tree),
+            [(
                 "git".into(),
                 vec![
                     "clone".into(),
@@ -384,6 +404,9 @@ fn missing_unpinned_git_content_uses_existing_install() {
 
 #[test]
 fn git_failures_recover_only_after_mutation() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for failed in [
         "origin",
         "fetch",
@@ -393,9 +416,10 @@ fn git_failures_recover_only_after_mutation() {
         "clean",
         "install",
     ] {
-        let (effects, result) = controlled_refresh(failed_responses(failed), |effects, _| {
-            *effects.run_hook.borrow_mut() = Some(failing_command(failed, "command failed"));
-        });
+        let (effects, result, _tree) =
+            controlled_refresh(failed_responses(failed), |effects, _, _| {
+                *effects.run_hook.borrow_mut() = Some(failing_command(failed, "command failed"));
+            });
         assert_eq!(
             result
                 .unwrap_err()
@@ -446,7 +470,7 @@ fn failed_upstream_probes() {
             Ok("same".into()),
             Ok("same".into()),
         ]);
-        let (effects, result) = controlled_refresh(responses, |effects, _| {
+        let (effects, result, _tree) = controlled_refresh(responses, |effects, _, _| {
             *effects.run_hook.borrow_mut() =
                 Some(failing_command("remote", "set-head unavailable"));
         });
@@ -521,24 +545,18 @@ fn configured_update_matches_recorded_observations() {
 
 /// A successful clone makes the manifest visible to the existing dependency installer.
 fn clone_acquires_dependencies() {
-    let (effects, result) = controlled_refresh(Vec::new(), |effects, _| {
-        effects.exists.set(false);
-        let weak = Rc::downgrade(effects);
+    let (effects, result, tree) = controlled_refresh(Vec::new(), |effects, _, checkout| {
+        std::fs::remove_dir_all(checkout).unwrap();
         *effects.run_hook.borrow_mut() = Some(Rc::new(move |_, args, _| {
             if args[0] == "clone" {
-                weak.upgrade().unwrap().exists.set(true);
+                std::fs::write(format!("{}/package.json", args[2]), "{}").unwrap();
             }
             Box::pin(async { Ok(Some(0)) })
         }));
     });
     result.unwrap();
     assert_eq!(
-        effects
-            .calls
-            .borrow()
-            .iter()
-            .map(|(program, args)| (program.clone(), args.clone()))
-            .collect::<Vec<_>>(),
+        spelled(&effects, &tree),
         [
             (
                 "git".into(),
@@ -555,14 +573,15 @@ fn clone_acquires_dependencies() {
 
 #[test]
 fn current_git_checkout_with_manifest_skips_dependency_install() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let responses = ["origin/main", "stale", "same", "same"]
         .into_iter()
         .map(|text| Ok(text.into()))
         .collect();
-    let (effects, result) = controlled_refresh(responses, |_, _| {});
+    let (effects, result, _tree) = controlled_refresh(responses, |_, _, _| {});
     result.unwrap();
-    assert!(effects.absent_under.borrow().is_empty());
-    assert!(effects.exists.get());
     assert_eq!(effects.calls.borrow().len(), 5);
     assert!(
         effects
@@ -571,4 +590,18 @@ fn current_git_checkout_with_manifest_skips_dependency_install() {
             .iter()
             .all(|(command, _)| command == "git")
     );
+}
+/// The commands run so far, with paths spelled as the fixture names them.
+fn spelled(
+    effects: &support::Effects,
+    tree: &crate::scratch::Scratch,
+) -> Vec<(String, Vec<String>)> {
+    let base = tree.path().to_str().unwrap();
+    let spell = |text: &str| support::recorded_stages(&text.replace(base, ""));
+    effects
+        .calls
+        .borrow()
+        .iter()
+        .map(|(program, args)| (program.clone(), args.iter().map(|arg| spell(arg)).collect()))
+        .collect()
 }

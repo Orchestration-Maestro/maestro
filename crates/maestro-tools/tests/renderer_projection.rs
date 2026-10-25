@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::display_support::{Env, Setup, context};
+use crate::read_support::Fixture;
 use maestro_tools::{
     ToolRenderResult, ToolRenderResultOptions, output::render_utils::ToolRenderResultLike,
 };
@@ -48,7 +49,7 @@ fn native_renderer_keeps_typed_details_without_serializing() {
                     is_partial: false,
                 },
             ),
-            &env.theme,
+            &env.live,
             &ctx,
             |_| panic!("typed callback must not serialize"),
         )
@@ -140,7 +141,7 @@ fn native_raw_renderer_serializes_only_present_details() {
                     },
                     options,
                 ),
-                &env.theme,
+                &env.live,
                 &ctx,
                 |_| {
                     count.set(count.get() + 1);
@@ -158,7 +159,7 @@ fn native_raw_renderer_serializes_only_present_details() {
         is_error: None,
     };
     let error = callback
-        .invoke_native((&result, options), &env.theme, &ctx, |_| Err(failure()))
+        .invoke_native((&result, options), &env.live, &ctx, |_| Err(failure()))
         .err()
         .unwrap();
     assert_eq!(error.message, "conversion failed");
@@ -190,7 +191,7 @@ fn raw_renderer_does_not_invoke_typed_decoder() {
                     is_partial: false,
                 },
             ),
-            &env.theme,
+            &env.live,
             &ctx,
             |_| {
                 observed.set(observed.get() + 1);
@@ -219,7 +220,7 @@ fn typed_renderer_decodes_only_present_details() {
     let payload = json!(["custom", "shape"]);
     for details in [None, Some(&serde_json::Value::Null), Some(&payload)] {
         callback
-            .invoke_raw((&raw(details), options), &env.theme, &ctx, |value| {
+            .invoke_raw((&raw(details), options), &env.live, &ctx, |value| {
                 count.set(count.get() + 1);
                 if value.is_null() {
                     Ok(vec!["null".into()])
@@ -240,7 +241,7 @@ fn typed_renderer_decodes_only_present_details() {
     );
     assert!(
         callback
-            .invoke_raw((&raw(Some(&payload)), options), &env.theme, &ctx, |_| Err(
+            .invoke_raw((&raw(Some(&payload)), options), &env.live, &ctx, |_| Err(
                 failure()
             ))
             .is_err()
@@ -280,7 +281,7 @@ fn renderer_binding_keeps_same_type_state_across_slots() {
     let first = ToolRendererBinding::from_definition(&tool);
     let second = ToolRendererBinding::from_definition(&tool);
     assert_eq!(first.render_shell, Some(ToolRenderShell::SelfRendered));
-    first.render_call.unwrap()(Some(&args), &env.theme, &row).unwrap();
+    first.render_call.unwrap()(Some(&args), &env.live, &row).unwrap();
     second
         .render_result
         .unwrap()
@@ -291,7 +292,7 @@ fn renderer_binding_keeps_same_type_state_across_slots() {
                 expanded: false,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &row,
         )
         .unwrap();
@@ -310,7 +311,7 @@ fn renderer_binding_coexists_with_builtin_private_state() {
         maestro_tools::BashToolOptions::default(),
     ));
     let binding = tool.renderer_binding().unwrap();
-    let call = binding.render_call.unwrap()(Some(&args), &env.theme, &row).unwrap();
+    let call = binding.render_call.unwrap()(Some(&args), &env.live, &row).unwrap();
     assert!(call.render(80).join("\n").contains("echo observed"));
     let native = row
         .state
@@ -324,9 +325,9 @@ fn renderer_binding_coexists_with_builtin_private_state() {
     let call = ToolRendererBinding::from_definition(&custom)
         .render_call
         .unwrap();
-    call(None, &env.theme, &row).unwrap();
-    call(None, &env.theme, &row).unwrap();
-    call(None, &env.theme, &other).unwrap();
+    call(None, &env.live, &row).unwrap();
+    call(None, &env.live, &row).unwrap();
+    call(None, &env.live, &other).unwrap();
     assert_eq!(*row.state.borrow_mut().state::<u32>().borrow(), 2);
     assert_eq!(*other.state.borrow_mut().state::<u32>().borrow(), 1);
     assert!(Rc::ptr_eq(
@@ -380,7 +381,7 @@ fn renderer_binding_keeps_context_and_previous_slot_handle() {
     };
     tool.render_call = Some(Rc::new(move |_, _, ctx| Ok(check(ctx))));
     let binding = ToolRendererBinding::from_definition(&tool);
-    let returned = binding.render_call.unwrap()(Some(&args), &env.theme, &row).unwrap();
+    let returned = binding.render_call.unwrap()(Some(&args), &env.live, &row).unwrap();
     assert!(Rc::ptr_eq(&previous, &returned));
     assert_eq!(invalidations.get(), 1);
     let projected = row.with_state(Rc::new(RefCell::new(4u32)));
@@ -419,8 +420,8 @@ fn renderer_binding_drop_releases_captures_and_row_state() {
 
 #[test]
 fn renderer_binding_can_wrap_a_builtin_callback() {
-    crate::read_support::run(async {
-        let dir = crate::read_support::TempDir::new();
+    crate::runtime::run(async {
+        let dir = crate::read_support::Scratch::new().unwrap();
         dir.file("file", b"alpha\n");
         let env = Env::with(
             Rc::new(crate::edit_render_support::palette(0)),
@@ -434,7 +435,7 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
         let custom = wrapped_edit(&dir.text());
         let binding = ToolRendererBinding::from_definition(&custom);
         let render_call = binding.render_call.unwrap();
-        let call = render_call(Some(&args), &env.theme, &row).unwrap();
+        let call = render_call(Some(&args), &env.live, &row).unwrap();
         assert_eq!(env.runtime.futures(), 1);
         for future in env.runtime.take_futures() {
             future.await.unwrap();
@@ -442,20 +443,20 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
         row.last_component = Some(Rc::clone(&call));
         assert!(Rc::ptr_eq(
             &call,
-            &render_call(Some(&args), &env.theme, &row).unwrap()
+            &render_call(Some(&args), &env.live, &row).unwrap()
         ));
         let before = call.render(80);
         assert!(before.join("\n").contains("beta"));
         row.last_component = None;
         let render_result = binding.render_result.unwrap();
-        let settle = |line: &str, theme: &maestro_theme::Theme| {
+        let settle = |line: &str, theme: &maestro_theme::LiveTheme| {
             render_result
                 .prepare(raw(Some(&json!(["+1 persisted", line]))))
                 .unwrap()
                 .render(settled(false), theme, &row)
                 .unwrap()
         };
-        let output = settle("1.25", &env.theme);
+        let output = settle("1.25", &env.live);
         assert!(output.render(80).is_empty());
         assert!(call.render(80).join("\n").contains("persisted"));
         assert_fractional_line_rebuild(settle, &call);
@@ -469,20 +470,21 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
             maestro_tools::EditToolOptions::default(),
         )
         .render_call
-        .unwrap())(Some(&args), &env.theme, &row.with_state(state))
+        .unwrap())(Some(&args), &env.live, &row.with_state(state))
         .unwrap();
         assert!(Rc::ptr_eq(&call, &reused));
         assert_eq!(env.runtime.futures(), 0);
-        assert_eq!(std::fs::read(dir.0.join("file")).unwrap(), b"alpha\n");
+        assert_eq!(std::fs::read(dir.path().join("file")).unwrap(), b"alpha\n");
     });
 }
 /// An unchanged identity keeps the captured title; a different fraction rebuilds it.
 fn assert_fractional_line_rebuild(
-    settle: impl Fn(&str, &maestro_theme::Theme) -> maestro_tui::tui::ComponentHandle,
+    settle: impl Fn(&str, &maestro_theme::LiveTheme) -> maestro_tui::tui::ComponentHandle,
     call: &maestro_tui::tui::ComponentHandle,
 ) {
     let unchanged = call.render(80);
-    let changed_theme = crate::edit_render_support::palette(1);
+    let changed_theme =
+        maestro_theme::LiveTheme::from_theme(Rc::new(crate::edit_render_support::palette(1)));
     for (line, rebuild) in [("1.25", false), ("1.75", true)] {
         settle(line, &changed_theme);
         assert_eq!(call.render(80) != unchanged, rebuild);
@@ -658,7 +660,7 @@ fn retained_edit_malformed_line_uses_absent_fallback() {
         panic!("raw callback")
     };
     let row = context::<maestro_tools::EditRenderState>(&args, &setup, &env, None);
-    let retained = call(Some(&args), &env.theme, &row).unwrap();
+    let retained = call(Some(&args), &env.live, &row).unwrap();
     let unchanged = retained.render(80);
     let mut details = json!({"diff":"+1 after"});
     result(
@@ -667,13 +669,14 @@ fn retained_edit_malformed_line_uses_absent_fallback() {
             expanded: false,
             is_partial: false,
         },
-        &env.theme,
+        &env.live,
         &row,
     )
     .unwrap();
     let expected = retained.render(80);
     assert_ne!(expected, unchanged);
-    let changed_theme = crate::edit_render_support::palette(1);
+    let changed_theme =
+        maestro_theme::LiveTheme::from_theme(Rc::new(crate::edit_render_support::palette(1)));
     for wrong in [json!({"wrong":true}), json!(["wrong"])] {
         details["firstChangedLine"] = wrong;
         result(
@@ -734,12 +737,10 @@ fn prepared_typed_details_are_shared_and_released_per_operation() {
         .unwrap();
     drop(callback);
     for expanded in [false, true] {
-        prepared
-            .render(settled(expanded), &env.theme, &row)
-            .unwrap();
+        prepared.render(settled(expanded), &env.live, &row).unwrap();
     }
-    second.render(settled(false), &env.theme, &row).unwrap();
-    missing.render(settled(false), &env.theme, &row).unwrap();
+    second.render(settled(false), &env.live, &row).unwrap();
+    missing.render(settled(false), &env.live, &row).unwrap();
     assert_eq!(count.get(), 2);
     let seen = seen.borrow();
     let first = seen[0].as_ref().unwrap();
@@ -770,7 +771,7 @@ fn prepared_raw_details_keep_presence_and_borrowed_identity() {
     prepared
         .render(
             settled(false),
-            &env.theme,
+            &env.live,
             &context::<()>(&args, &setup, &env, None),
         )
         .unwrap();
@@ -806,7 +807,7 @@ fn prepared_result_failures_keep_original_diagnostics() {
     for _ in 0..2 {
         let prepared = callback.prepare_raw(raw(Some(&value)), |_| Ok(7)).unwrap();
         let error = prepared
-            .render(settled(false), &env.theme, &row)
+            .render(settled(false), &env.live, &row)
             .err()
             .unwrap();
         assert_eq!(error, expected);
@@ -844,7 +845,7 @@ fn check_prepared_binding_release() {
     drop(tool);
     drop(binding);
     let row = context::<ToolRendererState>(&args, &setup, &env, None);
-    operation.render(settled(false), &env.theme, &row).unwrap();
+    operation.render(settled(false), &env.live, &row).unwrap();
     assert!(weak.upgrade().is_some());
     drop(operation);
     assert!(weak.upgrade().is_none());
@@ -862,10 +863,7 @@ fn check_prepared_raw_case(details: Option<&serde_json::Value>, flag: Option<boo
     let (env, setup) = environment();
     let args = json!({});
     let content = vec![maestro_models::UserBlock::Text(
-        maestro_models::TextContent {
-            text: "ordered".into(),
-            text_signature: None,
-        },
+        maestro_models::TextContent::new("ordered".into()),
     )];
     let pointer = content.as_ptr();
     let expected = details.map(std::ptr::from_ref);
@@ -900,9 +898,131 @@ fn check_prepared_raw_case(details: Option<&serde_json::Value>, flag: Option<boo
         let mut row = context::<ToolRendererState>(&args, &setup, &env, expanded.then(empty));
         row.expanded = expanded;
         *row.state.borrow().state::<u32>().borrow_mut() = u32::from(expanded);
-        prepared
-            .render(settled(expanded), &env.theme, &row)
-            .unwrap();
+        prepared.render(settled(expanded), &env.live, &row).unwrap();
     }
     assert_eq!(calls.get(), 2);
+}
+
+/// A theme whose `toolOutput` colour is palette `index`.
+fn single_color_theme(index: u8) -> maestro_theme::Theme {
+    maestro_theme::Theme::new(
+        [(
+            maestro_theme::ThemeColor::ToolOutput,
+            maestro_theme::ColorValue::Index(index),
+        )],
+        [],
+        maestro_theme::ColorMode::Color256,
+        maestro_theme::ThemeOptions::default(),
+    )
+    .unwrap()
+}
+
+/// A definition whose call and result renderers colour their row from the theme.
+fn themed_definition() -> maestro_tools::types::local::ToolDefinition<(), (), serde_json::Value, u32>
+{
+    let styled = |theme: &maestro_theme::LiveTheme| {
+        let theme = theme
+            .get()
+            .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))?;
+        let text = theme
+            .fg(&maestro_theme::ThemeColor::ToolOutput, "styled")
+            .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))?;
+        Ok(Rc::new(Text::new(text, 0, 0, None)) as maestro_tui::tui::ComponentHandle)
+    };
+    let mut tool = definition::<u32, serde_json::Value>();
+    tool.render_call = Some(Rc::new(move |_, theme, _| styled(theme)));
+    tool.render_result = Some(ToolRenderResult::<
+        serde_json::Value,
+        u32,
+        maestro_models::Local,
+    >::Raw(Rc::new(move |_, _, theme, _| styled(theme))));
+    tool
+}
+
+#[test]
+fn projected_renderers_resolve_the_live_theme_per_invocation() {
+    use maestro_tools::ToolRendererBinding;
+    let state = maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
+    let live = state.theme();
+    let tool = themed_definition();
+    let bindings = [
+        ToolRendererBinding::from_definition(&tool),
+        ToolRendererBinding::from_raw(&tool).unwrap(),
+    ];
+    let (env, setup) = environment();
+    let args = json!({});
+    let row = context::<maestro_tools::ToolRendererState>(&args, &setup, &env, None);
+    for binding in bindings {
+        let call = binding.render_call.as_ref().unwrap();
+        let result = binding.render_result.as_ref().unwrap();
+        let unpublished = maestro_theme::LiveTheme::default();
+        let error = call(None, &unpublished, &row).err().unwrap();
+        assert_eq!(
+            error.message,
+            "Theme not initialized. Call initTheme() first."
+        );
+        let prepared = result.prepare(raw(None)).unwrap();
+        assert_eq!(
+            prepared
+                .render(settled(false), &unpublished, &row)
+                .err()
+                .unwrap()
+                .message,
+            "Theme not initialized. Call initTheme() first."
+        );
+        state
+            .set_theme_instance(Rc::new(single_color_theme(2)))
+            .unwrap();
+        assert!(
+            call(None, &live, &row)
+                .unwrap()
+                .render(20)
+                .join("")
+                .contains("38;5;2m")
+        );
+        state
+            .set_theme_instance(Rc::new(single_color_theme(5)))
+            .unwrap();
+        assert!(
+            call(None, &live, &row)
+                .unwrap()
+                .render(20)
+                .join("")
+                .contains("38;5;5m")
+        );
+    }
+}
+
+#[test]
+fn theme_free_native_results_draw_without_a_published_theme() {
+    use maestro_tools::ToolRendererBinding;
+    let (env, setup) = environment();
+    let args = json!({"path": "notes.txt"});
+    let row = context::<maestro_tools::ToolRendererState>(&args, &setup, &env, None);
+    let write = maestro_tools::create_write_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::WriteToolOptions::default(),
+    );
+    let binding = ToolRendererBinding::from_raw(&write).unwrap();
+    let prepared = binding
+        .render_result
+        .as_ref()
+        .unwrap()
+        .prepare(ToolRenderResultLike {
+            content: &[],
+            details: None,
+            terminate: Some(false),
+            is_error: Some(false),
+        })
+        .unwrap();
+    assert!(
+        prepared
+            .render(settled(false), &maestro_theme::LiveTheme::default(), &row)
+            .unwrap()
+            .render(20)
+            .is_empty()
+    );
 }

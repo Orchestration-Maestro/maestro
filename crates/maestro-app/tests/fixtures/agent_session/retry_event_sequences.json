@@ -1,0 +1,54 @@
+{
+  "plain": [
+    "agent_start",
+    "turn_start",
+    "message_start:user",
+    "message_end:user",
+    "message_start:assistant",
+    "message_update",
+    "message_end:assistant",
+    "turn_end",
+    "agent_end"
+  ],
+  "tool": [
+    "agent_start",
+    "turn_start",
+    "message_start:user",
+    "message_end:user",
+    "message_start:assistant",
+    "message_update",
+    "message_end:assistant",
+    "tool_execution_start:echo",
+    "tool_execution_end:echo",
+    "message_start:toolResult",
+    "message_end:toolResult",
+    "turn_end",
+    "turn_start",
+    "message_start:assistant",
+    "message_update",
+    "message_end:assistant",
+    "turn_end",
+    "agent_end"
+  ],
+  "extension": [
+    "extension:message_start:user",
+    "public:message_start:user",
+    "extension:message_end:user",
+    "public:message_end:user",
+    "extension:message_start:assistant",
+    "public:message_start:assistant",
+    "extension:message_end:assistant",
+    "public:message_end:assistant"
+  ],
+  "deltas": [
+    "thinking_start",
+    "thinking_delta",
+    "thinking_end",
+    "text_start",
+    "text_delta",
+    "text_end",
+    "toolcall_start",
+    "toolcall_delta",
+    "toolcall_end"
+  ]
+}

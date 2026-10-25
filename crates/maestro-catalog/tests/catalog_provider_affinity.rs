@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! Public catalog callbacks retain the original execution-family carriers.
 #[path = "../../maestro-models/tests/support/original_options.rs"]
 mod original_options;
@@ -41,12 +42,17 @@ impl Drop for CatalogProvider {
     }
 }
 /// Construct the actual public input, with no provider work during configuration.
-fn config(released: &Arc<AtomicUsize>) -> (Arc<RwLock<ProviderConfigInput>>, Arc<CatalogProvider>) {
+fn config(
+    released: &Arc<AtomicUsize>,
+) -> (
+    SharedHandle<RwLock<ProviderConfigInput>>,
+    Arc<CatalogProvider>,
+) {
     let config = dynamic::config(&["m"]);
     config.write().unwrap().api = Some("catalog-affinity".into());
     let owner = Arc::new(CatalogProvider {
         options: original_options::OptionsProvider::default(),
-        config: Arc::downgrade(&config),
+        config: SharedHandle::downgrade(&config),
         released: released.clone(),
     });
     config.write().unwrap().stream_simple = Some(owner.clone());
@@ -75,7 +81,7 @@ fn catalog_registration_keeps_original_option_families() {
         return;
     }
     let released = Arc::new(AtomicUsize::new(0));
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let (config, owner) = config(&released);
     registry.register_provider("p", config.clone()).unwrap();
     let _ = registry.get_all();
@@ -96,7 +102,7 @@ fn catalog_replacement_keeps_callback_and_source_ownership() {
         return;
     }
     let released = Arc::new(AtomicUsize::new(0));
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let (first_config, first) = config(&released);
     registry
         .register_provider("p", first_config.clone())

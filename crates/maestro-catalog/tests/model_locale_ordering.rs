@@ -1,10 +1,14 @@
 #![cfg(test)]
-//! Complete native model ordering with explicit and process locale operands.
+//! Model ordering through explicit and process locale operands.
 use crate::selection;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::subprocess;
 use maestro_catalog::{model_id_comparator, parse_model_pattern};
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::HashMap;
+#[cfg(not(target_arch = "wasm32"))]
 /// A complete recorded native ordering.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -16,6 +20,7 @@ struct LocaleCase {
     /// Expected complete descending identity order.
     order: Vec<Identity>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Identity independent of fixed descriptor metadata.
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -25,10 +30,12 @@ struct Identity {
     /// Distinct provider retaining equal-ID/collation order.
     provider: String,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Read the strict, complete native corpus.
 fn cases() -> Vec<LocaleCase> {
     serde_json::from_str(include_str!("fixtures/model_locale_ordering.json")).unwrap()
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe descending public selection until the catalog is exhausted.
 fn check_order(case: &LocaleCase, reader: &dyn Fn(&str) -> Option<String>) {
     let compare = model_id_comparator(reader).unwrap();
@@ -77,26 +84,29 @@ fn controlled_collation_drives_public_selection() {
     assert!(std::sync::Arc::ptr_eq(&result.model.unwrap(), &upper));
     selection::replay(&["case_169"]);
 }
-/// Child fixture index, absent in the parent runner.
-fn child_index() -> Option<usize> {
-    std::env::var("MAESTRO_LOCALE_CASE")
-        .ok()
-        .map(|s| s.parse().unwrap())
-}
+#[cfg(not(target_arch = "wasm32"))]
 /// Run one recorded environment, removing absent sibling operands.
 fn run_locale_child(name: &str, index: usize, environment: &HashMap<String, String>) {
     let index = index.to_string();
-    let mut operands: Vec<_> = ["LC_ALL", "LC_MESSAGES", "LANG"]
+    let operands: Vec<_> = ["LC_ALL", "LC_MESSAGES", "LANG"]
         .into_iter()
         .map(|key| (key, environment.get(key).map(String::as_str)))
         .collect();
-    operands.push(("MAESTRO_LOCALE_CASE", Some(&index)));
-    subprocess::run_child(name, &operands);
+    subprocess::run_child(
+        maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .case(index),
+        &operands,
+    );
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_model_ordering_tracks_process_locale() {
     let cases = cases();
-    if let Some(index) = child_index() {
+    if maestro_test_process::selection().is_child() {
+        let index = (0..cases.len())
+            .find(|index| maestro_test_process::selection().runs_case(&index.to_string()))
+            .expect("selected locale row");
         check_order(&cases[index], &|key| std::env::var(key).ok());
         return;
     }
@@ -108,10 +118,14 @@ fn native_model_ordering_tracks_process_locale() {
         );
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn supplied_locale_environment_overrides_process_environment() {
     let cases = cases();
-    if let Some(index) = child_index() {
+    if maestro_test_process::selection().is_child() {
+        let index = (0..cases.len())
+            .find(|index| maestro_test_process::selection().runs_case(&index.to_string()))
+            .expect("selected locale row");
         check_order(&cases[index], &|key| {
             cases[index].environment.get(key).cloned()
         });
@@ -130,9 +144,11 @@ fn supplied_locale_environment_overrides_process_environment() {
         );
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_model_ordering_recovers_from_invalid_locale() {
-    if child_index().is_some() {
+    if maestro_test_process::selection().is_child() {
+        assert!(maestro_test_process::selection().runs_case("0"));
         check_order(&cases()[0], &|key| std::env::var(key).ok());
         return;
     }

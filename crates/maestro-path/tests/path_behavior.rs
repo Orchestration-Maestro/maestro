@@ -553,3 +553,24 @@ fn native_drive_directories_come_from_equals_prefixed_variables() {
         [('C', r"C:\work".to_owned()), ('D', r"D:\skills".to_owned())]
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn native_normalization_preserves_bytes_and_stops_at_root() {
+    use std::{ffi::OsStr, os::unix::ffi::OsStrExt, path::Path};
+    let path = Path::new(OsStr::from_bytes(
+        b"/../checkout-\xff/child/../../metadata-\xfe",
+    ));
+    assert_eq!(
+        maestro_path::normalize_native(path),
+        Path::new(OsStr::from_bytes(b"/metadata-\xfe"))
+    );
+    assert_eq!(
+        maestro_path::normalize_native(Path::new("/../../")),
+        Path::new("/")
+    );
+    assert_eq!(
+        maestro_path::normalize_native(Path::new("../one/../two")),
+        Path::new("../two")
+    );
+}

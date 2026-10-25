@@ -39,10 +39,14 @@ mod replacement_author;
 mod setup_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
+#[path = "nested_schema_fixture.rs"]
+pub(crate) mod nested_schema_fixture;
 #[path = "shell_author.rs"]
 mod shell_author;
 #[path = "tool_author.rs"]
 mod tool_author;
+#[path = "ui_author.rs"]
+pub(crate) mod ui_author;
 
 /// Reports its label to the host when this guard is dropped.
 struct Released {
@@ -420,11 +424,11 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                     if let Some(result) = capture_registration(&api, &args, &ctx) {
                         return result;
                     }
-                    if args == "catalog" {
-                        return catalog_author::register(&api);
-                    }
-                    if args == "reader" {
-                        return reader_author::register(&api);
+                    match args.as_str() {
+                        "catalog" => return catalog_author::register(&api),
+                        "reader" => return reader_author::register(&api),
+                        "ui" => return ui_author::register(&api),
+                        _ => {}
                     }
                     if let Some(config) = args.strip_prefix("tools ") {
                         return tool_author::register(&api, config, Rc::clone(&captured));
@@ -754,7 +758,7 @@ fn write_number(event: &mut ExtensionEvent, bits: &str, field: Option<&str>) -> 
                 .write()
                 .map_err(|e| e.to_string())?
                 .usage
-                .total_tokens = value;
+                .total_tokens = maestro_request::presence::Presence::Present(value);
         }
         ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => match field {
             Some("reserveTokens") => compact.preparation.settings.reserve_tokens = value,

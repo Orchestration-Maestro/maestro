@@ -144,7 +144,7 @@ pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), Strin
     collected.visit_file(file);
     let attributes = collected.0;
     let at = source.path.display();
-    if relative == Path::new("src/bindings.rs") {
+    if bindings_source(member, source) {
         let widened = attributes
             .iter()
             .any(|attribute| attribute.level != "allow" || attribute.lints != [ALLOWED]);
@@ -221,4 +221,17 @@ fn wiring_only(path: &Path, file: &syn::File) -> Result<(), String> {
             path.display()
         ))
     }
+}
+
+/// Identify generated catalog source with the existing owner and path rule.
+pub(crate) fn catalog_source(member: &Member, source: &Source) -> bool {
+    member.name == "maestro-models"
+        && source
+            .path
+            .starts_with(member.directory.join("src/catalog/models_generated"))
+}
+
+/// Identify the generated guest binding source exactly.
+pub(crate) fn bindings_source(member: &Member, source: &Source) -> bool {
+    member.name == GUEST && source.path == member.directory.join("src/bindings.rs")
 }

@@ -1,14 +1,14 @@
 //! Browser Input operands at the native presentation boundary.
 #![cfg(test)]
 /// Shared drawing conformance support.
-pub mod attachment_support;
-mod input_support;
-mod support;
+use crate::attachment_support;
+use crate::input_support;
+use crate::support;
 use maestro_theme::BrandPresentation;
 use maestro_web::{
     I18n, Input,
     browser::attachment_content::{
-        AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError,
+        AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
     },
     components::input::{InputProps, InputSize, InputType},
 };
@@ -34,17 +34,17 @@ impl AttachmentHost for DefaultHost {
         &self,
     ) -> Result<
         Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentUiError,
+        AttachmentHostError,
     > {
         unreachable!("no dialog focus in this adapter")
     }
     fn restore_focus(
         &self,
         _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!("no dialog focus in this adapter")
     }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentUiError> {
+    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
         unreachable!("no dialog measurement in this adapter")
     }
     fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
@@ -54,14 +54,14 @@ impl AttachmentHost for DefaultHost {
     fn reading_layout(
         &self,
         _: egui::Id,
-    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentHostError> {
         unreachable!("this suite does not create reading content")
     }
     fn present(
         &self,
         surface: AttachmentSurface<'_>,
         _: &BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let AttachmentContent::Input {
             props,
             value_changed,
@@ -109,22 +109,22 @@ impl AttachmentHost for DefaultHost {
         _: egui::Id,
         _: bool,
         _: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         Ok(false)
     }
-    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
+    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
     fn download(
         &self,
         _: Rc<std::cell::RefCell<maestro_web::Attachment>>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
     fn take_escape(&self) -> bool {
@@ -135,7 +135,7 @@ impl AttachmentHost for DefaultHost {
         _: i32,
         _: bool,
         _: Rc<dyn Fn()>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!()
     }
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
@@ -151,10 +151,10 @@ fn input_defaults_keep_native_text_and_medium_size() {
     let host = Rc::new(DefaultHost::default());
     let mut input = Input::new(InputProps::default(), host.clone());
     let context = egui::Context::default();
-    let pack = maestro_theme::load_brand_pack(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-        &maestro_theme::theme::NativeThemeOperations,
-    )
+    let pack = crate::support::brand::pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/brand.json"
+    ))
     .unwrap();
     let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
@@ -468,10 +468,10 @@ fn input_styles_use_caller_tokens_without_replacing_layout() {
         ("packs/signal.json", maestro_theme::BrandMode::Dark),
     ] {
         let mut frame = attachment_support::Frame {
-            pack: maestro_theme::load_brand_pack(
-                &format!("{}/../../assets/brand/{path}", env!("CARGO_MANIFEST_DIR")),
-                &maestro_theme::theme::NativeThemeOperations,
-            )
+            pack: crate::support::brand::pack(&format!(
+                "{}/../../assets/brand/{path}",
+                env!("CARGO_MANIFEST_DIR")
+            ))
             .unwrap(),
             mode,
             density: 1.5,
@@ -703,4 +703,54 @@ fn input_stacks_in_horizontal_parent_without_changing_caller_spacing() {
     assert!(field.get().bottom() < error.top());
     assert!((label.left() - field.get().left()).abs() < 1.);
     assert!((error.left() - field.get().left()).abs() < 1.);
+}
+
+#[test]
+fn input_localization_failures_retain_the_original_cause() {
+    use maestro_web::{I18nError, TranslationValue, components::input::InputUiError};
+    use std::error::Error as _;
+    let publications = Rc::new(Cell::new(0));
+    let observed = publications.clone();
+    let host = input_support::Host::new(move |_, _| observed.set(observed.get() + 1));
+    let mut input = Input::new(
+        InputProps {
+            label: "Name".into(),
+            required: true,
+            ..Default::default()
+        },
+        host,
+    );
+    let mut frame = attachment_support::Frame::default();
+    let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
+    let tables = i18n.get_translations();
+    let english = tables.borrow()["en"].clone();
+    english
+        .borrow_mut()
+        .insert("*".into(), TranslationValue::Category(Rc::default()));
+    frame.run(vec![], |context, _, p| {
+        let mut result = None;
+        context
+            .run_ui(egui::RawInput::default(), |ui| {
+                result = Some(input.render(ui, &i18n, p));
+            })
+            .textures_delta
+            .clear();
+        let error = result.unwrap().unwrap_err();
+        assert!(matches!(error, InputUiError::I18n(I18nError::NotText(_))));
+        assert_eq!(error.to_string(), "Translation is not text: *");
+        assert!(error.source().unwrap().is::<I18nError>());
+    });
+    assert_eq!(publications.get(), 0);
+    english
+        .borrow_mut()
+        .insert("*".into(), TranslationValue::Text("*".into()));
+    frame.run(vec![], |context, _, p| {
+        context
+            .run_ui(egui::RawInput::default(), |ui| {
+                input.render(ui, &i18n, p).unwrap();
+            })
+            .textures_delta
+            .clear();
+    });
+    assert_eq!(publications.get(), 1);
 }

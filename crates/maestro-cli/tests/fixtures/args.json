@@ -1,0 +1,2205 @@
+[
+  {
+    "operation": "args_source",
+    "case": "parses --version flag",
+    "input": [
+      "--version"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "version": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -v shorthand",
+    "input": [
+      "-v"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "version": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "--version takes precedence over other args",
+    "input": [
+      "--version",
+      "--help",
+      "some message"
+    ],
+    "expected": {
+      "messages": [
+        "some message"
+      ],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "version": true,
+      "help": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --help flag",
+    "input": [
+      "--help"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "help": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -h shorthand",
+    "input": [
+      "-h"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "help": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --print flag",
+    "input": [
+      "--print"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "print": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -p shorthand",
+    "input": [
+      "-p"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "print": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses prompt after -p even when it starts with YAML frontmatter",
+    "input": [
+      "-p",
+      "---\ntitle: hello\n---\nSay hi."
+    ],
+    "expected": {
+      "messages": [
+        "---\ntitle: hello\n---\nSay hi."
+      ],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "print": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "does not consume options after -p as prompts",
+    "input": [
+      "-p",
+      "--provider",
+      "openai",
+      "Say hi."
+    ],
+    "expected": {
+      "messages": [
+        "Say hi."
+      ],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "print": true,
+      "provider": "openai"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --continue flag",
+    "input": [
+      "--continue"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "continue": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -c shorthand",
+    "input": [
+      "-c"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "continue": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --resume flag",
+    "input": [
+      "--resume"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "resume": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -r shorthand",
+    "input": [
+      "-r"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "resume": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --provider",
+    "input": [
+      "--provider",
+      "openai"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "provider": "openai"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --model",
+    "input": [
+      "--model",
+      "gpt-4o"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "model": "gpt-4o"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --api-key",
+    "input": [
+      "--api-key",
+      "sk-test-key"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "apiKey": "sk-test-key"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --system-prompt",
+    "input": [
+      "--system-prompt",
+      "You are a helpful assistant"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "systemPrompt": "You are a helpful assistant"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --append-system-prompt",
+    "input": [
+      "--append-system-prompt",
+      "Additional context"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "appendSystemPrompt": [
+        "Additional context"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses multiple --append-system-prompt flags",
+    "input": [
+      "--append-system-prompt",
+      "Context A",
+      "--append-system-prompt",
+      "Context B"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "appendSystemPrompt": [
+        "Context A",
+        "Context B"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --mode",
+    "input": [
+      "--mode",
+      "json"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "mode": "json"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --mode rpc",
+    "input": [
+      "--mode",
+      "rpc"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "mode": "rpc"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --session",
+    "input": [
+      "--session",
+      "/path/to/session.jsonl"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "session": "/path/to/session.jsonl"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --fork",
+    "input": [
+      "--fork",
+      "1234abcd"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "fork": "1234abcd"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --export",
+    "input": [
+      "--export",
+      "session.jsonl"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "export": "session.jsonl"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --thinking",
+    "input": [
+      "--thinking",
+      "high"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "thinking": "high"
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --models as comma-separated list",
+    "input": [
+      "--models",
+      "gpt-4o,claude-sonnet,gemini-pro"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "models": [
+        "gpt-4o",
+        "claude-sonnet",
+        "gemini-pro"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-session flag",
+    "input": [
+      "--no-session"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noSession": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses single --extension",
+    "input": [
+      "--extension",
+      "./my-extension.ts"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "extensions": [
+        "./my-extension.ts"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -e shorthand",
+    "input": [
+      "-e",
+      "./my-extension.ts"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "extensions": [
+        "./my-extension.ts"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses multiple --extension flags",
+    "input": [
+      "--extension",
+      "./ext1.ts",
+      "-e",
+      "./ext2.ts"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "extensions": [
+        "./ext1.ts",
+        "./ext2.ts"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-extensions flag",
+    "input": [
+      "--no-extensions"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noExtensions": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-extensions with explicit -e flags",
+    "input": [
+      "--no-extensions",
+      "-e",
+      "foo.ts",
+      "-e",
+      "bar.ts"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noExtensions": true,
+      "extensions": [
+        "foo.ts",
+        "bar.ts"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses single --skill",
+    "input": [
+      "--skill",
+      "./skill-dir"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "skills": [
+        "./skill-dir"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses multiple --skill flags",
+    "input": [
+      "--skill",
+      "./skill-a",
+      "--skill",
+      "./skill-b"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "skills": [
+        "./skill-a",
+        "./skill-b"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses single --prompt-template",
+    "input": [
+      "--prompt-template",
+      "./prompts"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "promptTemplates": [
+        "./prompts"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses multiple --prompt-template flags",
+    "input": [
+      "--prompt-template",
+      "./one",
+      "--prompt-template",
+      "./two"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "promptTemplates": [
+        "./one",
+        "./two"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses single --theme",
+    "input": [
+      "--theme",
+      "./theme.json"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "themes": [
+        "./theme.json"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses multiple --theme flags",
+    "input": [
+      "--theme",
+      "./dark.json",
+      "--theme",
+      "./light.json"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "themes": [
+        "./dark.json",
+        "./light.json"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-skills flag",
+    "input": [
+      "--no-skills"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noSkills": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-prompt-templates flag",
+    "input": [
+      "--no-prompt-templates"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noPromptTemplates": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-themes flag",
+    "input": [
+      "--no-themes"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noThemes": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-context-files flag",
+    "input": [
+      "--no-context-files"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noContextFiles": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -nc shorthand",
+    "input": [
+      "-nc"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noContextFiles": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --verbose flag",
+    "input": [
+      "--verbose"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "verbose": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --offline flag",
+    "input": [
+      "--offline"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "offline": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-tools flag",
+    "input": [
+      "--no-tools"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noTools": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -nt shorthand",
+    "input": [
+      "-nt"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noTools": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-builtin-tools flag",
+    "input": [
+      "--no-builtin-tools"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noBuiltinTools": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -nbt shorthand",
+    "input": [
+      "-nbt"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noBuiltinTools": true
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --tools flag",
+    "input": [
+      "--tools",
+      "read,bash"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "tools": [
+        "read",
+        "bash"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses -t shorthand",
+    "input": [
+      "-t",
+      "read,bash"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "tools": [
+        "read",
+        "bash"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-tools with explicit --tools flags",
+    "input": [
+      "--no-tools",
+      "--tools",
+      "read,bash"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noTools": true,
+      "tools": [
+        "read",
+        "bash"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses --no-builtin-tools with explicit --tools flags",
+    "input": [
+      "--no-builtin-tools",
+      "--tools",
+      "read,bash"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noBuiltinTools": true,
+      "tools": [
+        "read",
+        "bash"
+      ]
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses plain text messages",
+    "input": [
+      "hello",
+      "world"
+    ],
+    "expected": {
+      "messages": [
+        "hello",
+        "world"
+      ],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses @file arguments",
+    "input": [
+      "@README.md",
+      "@src/main.ts"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [
+        "README.md",
+        "src/main.ts"
+      ],
+      "unknownFlags": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses mixed messages and file args",
+    "input": [
+      "@file.txt",
+      "explain this",
+      "@image.png"
+    ],
+    "expected": {
+      "messages": [
+        "explain this"
+      ],
+      "fileArgs": [
+        "file.txt",
+        "image.png"
+      ],
+      "unknownFlags": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "captures unknown long flags with string values",
+    "input": [
+      "--unknown-flag",
+      "message"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "unknown-flag",
+          "message"
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "captures unknown boolean long flags",
+    "input": [
+      "--unknown-flag"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "unknown-flag",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "captures unknown long flags with equals syntax",
+    "input": [
+      "--unknown-flag=value"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "unknown-flag",
+          "value"
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_source",
+    "case": "parses multiple flags together",
+    "input": [
+      "--provider",
+      "anthropic",
+      "--model",
+      "claude-sonnet",
+      "--print",
+      "--thinking",
+      "high",
+      "@prompt.md",
+      "Do the task"
+    ],
+    "expected": {
+      "messages": [
+        "Do the task"
+      ],
+      "fileArgs": [
+        "prompt.md"
+      ],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "provider": "anthropic",
+      "model": "claude-sonnet",
+      "print": true,
+      "thinking": "high"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "empty",
+    "input": [],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "all_short_aliases",
+    "input": [
+      "-h",
+      "-v",
+      "-c",
+      "-r",
+      "-p",
+      "-t",
+      "read",
+      "-e",
+      "a",
+      "-nt",
+      "-nbt",
+      "-ne",
+      "-ns",
+      "-np",
+      "-nc"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "help": true,
+      "version": true,
+      "continue": true,
+      "resume": true,
+      "print": true,
+      "tools": [
+        "read"
+      ],
+      "extensions": [
+        "a"
+      ],
+      "noTools": true,
+      "noBuiltinTools": true,
+      "noExtensions": true,
+      "noSkills": true,
+      "noPromptTemplates": true,
+      "noContextFiles": true
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "missing_long_values",
+    "input": [
+      "--mode",
+      "--provider",
+      "--api-key",
+      "--model",
+      "--system-prompt",
+      "--append-system-prompt",
+      "--session",
+      "--fork",
+      "--session-dir",
+      "--models",
+      "--tools",
+      "--thinking",
+      "--export",
+      "--extension",
+      "--skill",
+      "--prompt-template",
+      "--theme"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "theme",
+          true
+        ]
+      ],
+      "diagnostics": [],
+      "apiKey": "--model",
+      "systemPrompt": "--append-system-prompt",
+      "session": "--fork",
+      "sessionDir": "--models",
+      "tools": [
+        "--thinking"
+      ],
+      "export": "--extension",
+      "skills": [
+        "--prompt-template"
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "short_option_looking_value",
+    "input": [
+      "-t",
+      "-e"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "tools": [
+        "-e"
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "missing_short_tools",
+    "input": [
+      "-t"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "error",
+          "message": "Unknown option: -t"
+        }
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "missing_short_extension",
+    "input": [
+      "-e"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "error",
+          "message": "Unknown option: -e"
+        }
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "empty_lists_remain_present",
+    "input": [
+      "--models",
+      ",,",
+      "--tools",
+      " , , "
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "models": [
+        "",
+        "",
+        ""
+      ],
+      "tools": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "empty_known_values",
+    "input": [
+      "--provider",
+      "",
+      "--model",
+      "",
+      "--api-key",
+      "",
+      "--system-prompt",
+      "",
+      "--append-system-prompt",
+      "",
+      "--session",
+      "",
+      "--fork",
+      "",
+      "--session-dir",
+      "",
+      "--models",
+      "",
+      "--tools",
+      "",
+      "--export",
+      "",
+      "--extension",
+      "",
+      "--skill",
+      "",
+      "--prompt-template",
+      "",
+      "--theme",
+      ""
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "provider": "",
+      "model": "",
+      "apiKey": "",
+      "systemPrompt": "",
+      "appendSystemPrompt": [
+        ""
+      ],
+      "session": "",
+      "fork": "",
+      "sessionDir": "",
+      "models": [
+        ""
+      ],
+      "tools": [],
+      "export": "",
+      "extensions": [
+        ""
+      ],
+      "skills": [
+        ""
+      ],
+      "promptTemplates": [
+        ""
+      ],
+      "themes": [
+        ""
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "unknown_empty_following_value",
+    "input": [
+      "--blank",
+      ""
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "blank",
+          ""
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "invalid_thinking_text_is_not_escaped",
+    "input": [
+      "--thinking",
+      "bad\"level\nnext"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Invalid thinking level \"bad\"level\nnext\". Valid values: off, minimal, low, medium, high, xhigh"
+        }
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "empty_mode_is_consumed",
+    "input": [
+      "--mode",
+      ""
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "empty_thinking_is_diagnosed",
+    "input": [
+      "--thinking",
+      ""
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Invalid thinking level \"\". Valid values: off, minimal, low, medium, high, xhigh"
+        }
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "empty_model_search_is_retained",
+    "input": [
+      "--list-models",
+      ""
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "listModels": ""
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "mode_text",
+    "input": [
+      "--mode",
+      "text"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "mode": "text"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "mode_invalid_without_previous",
+    "input": [
+      "--mode",
+      "invalid"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "thinking_off",
+    "input": [
+      "--thinking",
+      "off"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "thinking": "off"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "thinking_minimal",
+    "input": [
+      "--thinking",
+      "minimal"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "thinking": "minimal"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "thinking_low",
+    "input": [
+      "--thinking",
+      "low"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "thinking": "low"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "thinking_medium",
+    "input": [
+      "--thinking",
+      "medium"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "thinking": "medium"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "thinking_high",
+    "input": [
+      "--thinking",
+      "high"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "thinking": "high"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "thinking_xhigh",
+    "input": [
+      "--thinking",
+      "xhigh"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "thinking": "xhigh"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "thinking_preserves_high_after_invalid",
+    "input": [
+      "--thinking",
+      "high",
+      "--thinking",
+      "max"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Invalid thinking level \"max\". Valid values: off, minimal, low, medium, high, xhigh"
+        }
+      ],
+      "thinking": "high"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "thinking_invalid_without_previous",
+    "input": [
+      "--thinking",
+      "max"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Invalid thinking level \"max\". Valid values: off, minimal, low, medium, high, xhigh"
+        }
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "list_models_without_search",
+    "input": [
+      "--list-models"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "listModels": true
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "list_models_before_file",
+    "input": [
+      "--list-models",
+      "@f"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [
+        "f"
+      ],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "listModels": true
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "list_models_before_option",
+    "input": [
+      "--list-models",
+      "--help"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "listModels": true,
+      "help": true
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "models_tools_whitespace",
+    "input": [
+      "--models",
+      "﻿a﻿,b,, ",
+      "--tools",
+      "﻿read﻿,bash,, "
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "models": [
+        "a",
+        "b",
+        "",
+        ""
+      ],
+      "tools": [
+        "read",
+        "bash"
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "invalid_thinking_preserves",
+    "input": [
+      "--thinking",
+      "high",
+      "--thinking",
+      "max",
+      "--thinking",
+      "HIGH",
+      "--thinking",
+      "off"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Invalid thinking level \"max\". Valid values: off, minimal, low, medium, high, xhigh"
+        },
+        {
+          "type": "warning",
+          "message": "Invalid thinking level \"HIGH\". Valid values: off, minimal, low, medium, high, xhigh"
+        }
+      ],
+      "thinking": "off"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "invalid_mode_preserves",
+    "input": [
+      "--mode",
+      "json",
+      "--mode",
+      "invalid",
+      "--mode",
+      "--help"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "mode": "json"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "unknown_overwrite_order",
+    "input": [
+      "--z=old",
+      "--a=",
+      "--z=new",
+      "--m",
+      "@f"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [
+        "f"
+      ],
+      "unknownFlags": [
+        [
+          "z",
+          "new"
+        ],
+        [
+          "a",
+          ""
+        ],
+        [
+          "m",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "unknown_equals_keeps_the_entire_value",
+    "input": [
+      "--flag=a=b=c"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "flag",
+          "a=b=c"
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "unknown_replacement_changes_value_kind",
+    "input": [
+      "--z",
+      "--a=x",
+      "--z=y",
+      "--a",
+      "@f"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [
+        "f"
+      ],
+      "unknownFlags": [
+        [
+          "z",
+          "y"
+        ],
+        [
+          "a",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "known_equals_unknown",
+    "input": [
+      "--provider=x",
+      "--print=true",
+      "--=x",
+      "--",
+      "tail"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "provider",
+          "x"
+        ],
+        [
+          "print",
+          "true"
+        ],
+        [
+          "",
+          "tail"
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "dash_messages",
+    "input": [
+      "-",
+      "-x",
+      "-pv",
+      "---text",
+      "@",
+      "@@a",
+      "plain"
+    ],
+    "expected": {
+      "messages": [
+        "plain"
+      ],
+      "fileArgs": [
+        "",
+        "@a"
+      ],
+      "unknownFlags": [
+        [
+          "-text",
+          true
+        ]
+      ],
+      "diagnostics": [
+        {
+          "type": "error",
+          "message": "Unknown option: -"
+        },
+        {
+          "type": "error",
+          "message": "Unknown option: -x"
+        },
+        {
+          "type": "error",
+          "message": "Unknown option: -pv"
+        }
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "print_followers",
+    "input": [
+      "-p",
+      "@a",
+      "-p",
+      "-dash",
+      "-p",
+      "---",
+      "-p",
+      "",
+      "last"
+    ],
+    "expected": {
+      "messages": [
+        "---",
+        "",
+        "last"
+      ],
+      "fileArgs": [
+        "a"
+      ],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "error",
+          "message": "Unknown option: -dash"
+        }
+      ],
+      "print": true
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "list_models_followers",
+    "input": [
+      "--list-models",
+      "--help",
+      "--list-models",
+      "@f",
+      "--list-models",
+      "",
+      "--list-models",
+      "anthropic",
+      "end"
+    ],
+    "expected": {
+      "messages": [
+        "end"
+      ],
+      "fileArgs": [
+        "f"
+      ],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "listModels": "anthropic",
+      "help": true
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "repeated_scalars",
+    "input": [
+      "--provider",
+      "a",
+      "--provider",
+      "b",
+      "--tools",
+      "read",
+      "--tools",
+      "write",
+      "--models",
+      "a",
+      "--models",
+      "b"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "provider": "b",
+      "tools": [
+        "write"
+      ],
+      "models": [
+        "b"
+      ]
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "resource_aliases",
+    "input": [
+      "-ne",
+      "-ns",
+      "-np",
+      "--theme",
+      "a",
+      "--theme",
+      "b",
+      "--session-dir",
+      "sessions"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [],
+      "noExtensions": true,
+      "noSkills": true,
+      "noPromptTemplates": true,
+      "themes": [
+        "a",
+        "b"
+      ],
+      "sessionDir": "sessions"
+    }
+  },
+  {
+    "operation": "args_edges",
+    "case": "option_looking_values",
+    "input": [
+      "--provider",
+      "--help",
+      "--api-key",
+      "@secret",
+      "-e",
+      "-p",
+      "--thinking",
+      "--version"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Invalid thinking level \"--version\". Valid values: off, minimal, low, medium, high, xhigh"
+        }
+      ],
+      "provider": "--help",
+      "apiKey": "@secret",
+      "extensions": [
+        "-p"
+      ]
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "mode",
+    "input": [
+      "--mode"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "mode",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "provider",
+    "input": [
+      "--provider"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "provider",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "api-key",
+    "input": [
+      "--api-key"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "api-key",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "model",
+    "input": [
+      "--model"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "model",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "system-prompt",
+    "input": [
+      "--system-prompt"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "system-prompt",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "append-system-prompt",
+    "input": [
+      "--append-system-prompt"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "append-system-prompt",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "session",
+    "input": [
+      "--session"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "session",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "fork",
+    "input": [
+      "--fork"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "fork",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "session-dir",
+    "input": [
+      "--session-dir"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "session-dir",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "models",
+    "input": [
+      "--models"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "models",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "tools",
+    "input": [
+      "--tools"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "tools",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "thinking",
+    "input": [
+      "--thinking"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "thinking",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "export",
+    "input": [
+      "--export"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "export",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "extension",
+    "input": [
+      "--extension"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "extension",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "skill",
+    "input": [
+      "--skill"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "skill",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "prompt-template",
+    "input": [
+      "--prompt-template"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "prompt-template",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  },
+  {
+    "operation": "args_missing_each",
+    "case": "theme",
+    "input": [
+      "--theme"
+    ],
+    "expected": {
+      "messages": [],
+      "fileArgs": [],
+      "unknownFlags": [
+        [
+          "theme",
+          true
+        ]
+      ],
+      "diagnostics": []
+    }
+  }
+]

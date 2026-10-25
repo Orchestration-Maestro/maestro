@@ -1,11 +1,11 @@
 //! Public identity drawing through the replaceable native reading boundary.
 #![cfg(test)]
-pub mod attachment_support;
-mod session_header_support;
-mod support;
+use crate::attachment_support;
+use crate::session_header_support;
+use crate::support;
 use base64::Engine as _;
 use maestro_theme::BrandMode;
-use maestro_web::browser::attachment_content::AttachmentUiError;
+use maestro_web::browser::attachment_content::AttachmentHostError;
 use maestro_web::export_html::template::HeaderState;
 use session_header_support::{Canvas, Event, Failure, Host, document, draw, pack, pointer};
 use std::rc::Rc;
@@ -193,13 +193,10 @@ fn header_native_failures_preserve_the_reached_phase() {
 #[test]
 fn header_scope_uses_shared_theme_and_preserves_caller_style() {
     let default = pack();
-    let alternate = maestro_theme::load_brand_pack(
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../assets/brand/packs/signal.json"
-        ),
-        &maestro_theme::theme::NativeThemeOperations,
-    )
+    let alternate = crate::support::brand::pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/packs/signal.json"
+    ))
     .unwrap();
     for pack in [&default, &alternate] {
         for mode in [BrandMode::Light, BrandMode::Dark] {
@@ -460,8 +457,11 @@ fn check_native_failures(
         .0
         .unwrap_err();
         assert!(matches!(
-            error.get_ref().unwrap().downcast_ref::<AttachmentUiError>(),
-            Some(AttachmentUiError::BorrowConflict)
+            error
+                .get_ref()
+                .unwrap()
+                .downcast_ref::<AttachmentHostError>(),
+            Some(AttachmentHostError::BorrowConflict)
         ));
         let expected = match phase {
             Failure::Measure => vec![Event::Measure(id)],

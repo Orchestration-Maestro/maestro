@@ -1,6 +1,7 @@
 //! JavaScript execution through an owned sandbox host.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::run;
 use maestro_app::browser::{components::sandboxed_iframe::*, tools::javascript_repl::*};
 use maestro_app::{SandboxResult, SandboxUrlProvider};
 use maestro_models::DiagnosticErrorInfo;
@@ -68,7 +69,7 @@ fn repl_factory_declares_schema_and_exports() {
                 serde_json::to_string(&tool.definition.parameters).unwrap(),
                 metadata["schemaText"]
             );
-            assert_eq!(tool.definition.parameters, metadata["parameters"]);
+            assert_eq!(*tool.definition.parameters, metadata["parameters"]);
             assert_eq!(
                 repl.sandbox_url_provider.read().unwrap().is_some(),
                 metadata["defaultSandboxUrlPresent"].as_bool().unwrap()
@@ -91,16 +92,12 @@ fn repl_factory_declares_schema_and_exports() {
             let call = maestro_models::ToolCall {
                 id: name.clone(),
                 name: definition.name.clone(),
-                arguments: row["input"].as_object().unwrap().clone(),
+                arguments: row["input"].clone(),
                 thought_signature: None,
             };
             let result = maestro_models::arguments::validate_tool_arguments(&definition, &call);
             if row["expected"]["branch"] == "success" {
-                assert_eq!(
-                    serde_json::Value::Object(result.unwrap()),
-                    row["expected"]["arguments"],
-                    "{name}"
-                );
+                assert_eq!(result.unwrap(), row["expected"]["arguments"], "{name}");
             } else {
                 assert!(result.is_err(), "{name}");
             }
@@ -672,14 +669,6 @@ impl maestro_app::SandboxRuntimeProvider for FailingDescription {
     }
 }
 
-/// Drive owned test work without background runtime tasks.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
-
 /// Expected identity-bearing configuration.
 type Configuration = (
     Vec<Arc<dyn maestro_app::SandboxRuntimeProvider>>,
@@ -920,7 +909,7 @@ fn static_tool() -> maestro_agent::AgentTool {
         maestro_models::Tool {
             name: "static".into(),
             description: "unchanged".into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         "Static".into(),
         Arc::new(|_, _, _, _| {

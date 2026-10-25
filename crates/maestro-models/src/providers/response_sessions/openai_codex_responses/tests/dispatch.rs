@@ -1,6 +1,7 @@
 //! Public transport selection against controlled peers.
 
 use super::super::stream_openai_codex_responses;
+use crate::tests::runtime::run;
 use crate::{StopReason, Transport};
 use futures_util::{SinkExt, StreamExt};
 use std::sync::{
@@ -13,9 +14,7 @@ use tokio_tungstenite::{accept_async, tungstenite::Message};
 #[test]
 fn maestro_response_sessions_do_not_replay_started_output() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
-        maestro_response_sessions_do_not_replay_started_output_scenario(),
-    );
+    run(maestro_response_sessions_do_not_replay_started_output_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -34,9 +33,7 @@ async fn maestro_response_sessions_do_not_replay_started_output_scenario() {
 #[test]
 fn maestro_response_sessions_default_auto_reuses_context() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
-        maestro_response_sessions_default_auto_reuses_context_scenario(),
-    );
+    run(maestro_response_sessions_default_auto_reuses_context_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -115,9 +112,7 @@ async fn scripted(
 #[test]
 fn maestro_response_sessions_prestart_transport_fallback() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
-        maestro_response_sessions_prestart_transport_fallback_scenario(),
-    );
+    run(maestro_response_sessions_prestart_transport_fallback_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -170,9 +165,7 @@ async fn maestro_response_sessions_prestart_transport_fallback_scenario() {
 #[test]
 fn maestro_response_sessions_suppress_fallback_for_protocol_api_and_abort() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
-        maestro_response_sessions_suppress_fallback_for_protocol_api_and_abort_scenario(),
-    );
+    run(maestro_response_sessions_suppress_fallback_for_protocol_api_and_abort_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -283,7 +276,7 @@ fn maestro_response_sessions_preserve_transport_diagnostics() {
 #[test]
 fn maestro_response_sessions_dispatch_cache_matrix() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(maestro_response_sessions_dispatch_cache_matrix_scenario());
+    run(maestro_response_sessions_dispatch_cache_matrix_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -528,9 +521,7 @@ fn assert_matrix(
 #[test]
 fn maestro_response_sessions_hook_edits_survive_fallback() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
-        maestro_response_sessions_hook_edits_survive_fallback_scenario(),
-    );
+    run(maestro_response_sessions_hook_edits_survive_fallback_scenario());
 }
 
 /// Execute the controlled public-operation scenario.

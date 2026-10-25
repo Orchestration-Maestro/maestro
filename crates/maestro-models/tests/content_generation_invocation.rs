@@ -1,44 +1,48 @@
 //! Public content-generation invocation behavior.
-#![allow(
-    dead_code,
-    reason = "shared chat support serves multiple test binaries"
-)]
-
-use crate::{bundled, chat, child_process, response_output};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::{bundled, chat, response_output};
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn raw_request_projects_the_selected_payload() -> TestResult {
     content_invocation::assert_rows("raw_request_projects_the_selected_payload")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 #[path = "support/content_invocation.rs"]
 mod content_invocation;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn segments_accept_all_declared_delimiters() -> TestResult {
     content_invocation::assert_rows("segments_accept_all_declared_delimiters")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn null_response_roots_do_not_end_streaming() -> TestResult {
     content_invocation::assert_rows("null_response_roots_do_not_end_streaming")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn eof_requires_a_whitespace_only_tail() -> TestResult {
     content_invocation::assert_rows("eof_requires_a_whitespace_only_tail")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bare_error_objects_are_independent_of_chunk_boundaries() -> TestResult {
     content_invocation::assert_rows("bare_error_objects_are_independent_of_chunk_boundaries")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn delimited_bare_errors_preserve_prior_deltas() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let error = r#"{"error":{"code":429,"status":"RESOURCE_EXHAUSTED","message":"busy"}}"#;
         let delta =
             "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"retained\"}]}}]}\n\n";
@@ -65,97 +69,116 @@ fn delimited_bare_errors_preserve_prior_deltas() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn payload_edits_and_replacements_reach_the_transport() -> TestResult {
     content_invocation::assert_rows("payload_edits_and_replacements_reach_the_transport")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn payload_failure_prevents_dispatch_and_start() -> TestResult {
     content_invocation::assert_rows("payload_failure_prevents_dispatch_and_start")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn projection_failure_precedes_transport_failure() -> TestResult {
     content_invocation::assert_rows("projection_failure_precedes_transport_failure")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn raw_and_simple_key_failures_keep_their_boundary() -> TestResult {
     content_invocation::assert_rows("raw_and_simple_key_failures_keep_their_boundary")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn explicit_and_environment_keys_keep_precedence() -> TestResult {
     content_invocation::assert_rows("explicit_and_environment_keys_keep_precedence")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn common_retry_timeout_and_response_hook_are_unused() -> TestResult {
     content_invocation::assert_rows("common_retry_timeout_and_response_hook_are_unused")?;
-    chat::block_on(true, native::common_timeout_ignored())
+    crate::runtime::run_paused(native::common_timeout_ignored())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn hook_retry_options_do_not_enable_retries() -> TestResult {
     content_invocation::assert_rows("hook_retry_options_do_not_enable_retries")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn dispatch_failure_does_not_publish_start() -> TestResult {
     content_invocation::assert_rows("dispatch_failure_does_not_publish_start")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn successful_statuses_start_before_reduction() -> TestResult {
     content_invocation::assert_rows("successful_statuses_start_before_reduction")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bodyless_success_fails_after_start() -> TestResult {
     content_invocation::assert_rows("bodyless_success_fails_after_start")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn empty_successful_body_is_a_clean_stop() -> TestResult {
     content_invocation::assert_rows("empty_successful_body_is_a_clean_stop")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn http_failures_keep_text_status_and_no_start() -> TestResult {
     content_invocation::assert_rows("http_failures_keep_text_status_and_no_start")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn http_json_errors_keep_complete_server_values() -> TestResult {
     content_invocation::assert_rows("http_json_errors_keep_complete_server_values")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn content_type_json_detection_is_case_sensitive() -> TestResult {
     content_invocation::assert_rows("content_type_json_detection_is_case_sensitive")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn malformed_http_json_fails_before_start() -> TestResult {
     content_invocation::assert_rows("malformed_http_json_fails_before_start")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn http_body_read_failure_wins_before_start() -> TestResult {
     content_invocation::assert_rows("http_body_read_failure_wins_before_start")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn delimiter_splits_preserve_framing() -> TestResult {
     content_invocation::assert_rows("delimiter_splits_preserve_framing")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn mixed_or_incomplete_delimiters_remain_a_tail() -> TestResult {
     content_invocation::assert_rows("mixed_or_incomplete_delimiters_remain_a_tail")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn whole_segment_and_payload_trimming_use_the_owned_whitespace_set() -> TestResult {
     content_invocation::assert_rows(
@@ -163,128 +186,155 @@ fn whole_segment_and_payload_trimming_use_the_owned_whitespace_set() -> TestResu
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn only_an_initial_data_field_is_recognized() -> TestResult {
     content_invocation::assert_rows("only_an_initial_data_field_is_recognized")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn data_payloads_are_one_json_value_not_multiline_sse() -> TestResult {
     content_invocation::assert_rows("data_payloads_are_one_json_value_not_multiline_sse")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn json_whitespace_inside_one_data_payload_is_valid() -> TestResult {
     content_invocation::assert_rows("json_whitespace_inside_one_data_payload_is_valid")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn complete_events_survive_a_later_bad_frame() -> TestResult {
     content_invocation::assert_rows("complete_events_survive_a_later_bad_frame")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn read_failure_keeps_partial_without_closing_it() -> TestResult {
     content_invocation::assert_rows("read_failure_keeps_partial_without_closing_it")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn ignored_frames_do_not_end_streaming() -> TestResult {
     content_invocation::assert_rows("ignored_frames_do_not_end_streaming")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn utf8_splits_bom_and_invalid_bytes_follow_text_decoding() -> TestResult {
     content_invocation::assert_rows("utf8_splits_bom_and_invalid_bytes_follow_text_decoding")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn trailing_partial_utf8_is_not_a_new_event() -> TestResult {
     content_invocation::assert_rows("trailing_partial_utf8_is_not_a_new_event")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn framed_error_members_remain_response_data() -> TestResult {
     content_invocation::assert_rows("framed_error_members_remain_response_data")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn terminal_reason_and_partial_content_are_preserved() -> TestResult {
     content_invocation::assert_rows("terminal_reason_and_partial_content_are_preserved")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn public_stream_reuses_reduction_and_shared_message_identity() -> TestResult {
     content_invocation::assert_rows("public_stream_reuses_reduction_and_shared_message_identity")?;
-    chat::block_on(false, native::live_alias("google-generative-ai"))
+    crate::runtime::run(native::live_alias("google-generative-ai"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn preaborted_requests_skip_hooks_and_fetch() -> TestResult {
     content_invocation::assert_rows("preaborted_requests_skip_hooks_and_fetch")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn hook_time_abort_is_observed_before_fetch() -> TestResult {
     content_invocation::assert_rows("hook_time_abort_is_observed_before_fetch")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn removed_hook_signal_only_changes_transport_cancellation() -> TestResult {
     content_invocation::assert_rows("removed_hook_signal_only_changes_transport_cancellation")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn live_abort_releases_pending_body_and_retains_partial() -> TestResult {
     content_invocation::assert_rows("live_abort_releases_pending_body_and_retains_partial")?;
-    chat::block_on(false, native::held_body_abort("google-generative-ai"))
+    crate::runtime::run(native::held_body_abort("google-generative-ai"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn only_hook_positive_timeout_controls_dispatch() -> TestResult {
     content_invocation::assert_rows("only_hook_positive_timeout_controls_dispatch")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_entry_disables_thinking_through_the_actual_request() -> TestResult {
     content_invocation::assert_rows("simple_entry_disables_thinking_through_the_actual_request")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_entry_forwards_reasoning_and_common_options() -> TestResult {
     content_invocation::assert_rows("simple_entry_forwards_reasoning_and_common_options")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn registered_raw_options_keep_declared_domains() -> TestResult {
     content_invocation::assert_rows("registered_raw_options_keep_declared_domains")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn empty_model_endpoint_uses_the_public_environment_default() -> TestResult {
     content_invocation::assert_rows("empty_model_endpoint_uses_the_public_environment_default")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn explicit_model_endpoint_ignores_environment_defaults() -> TestResult {
     content_invocation::assert_rows("explicit_model_endpoint_ignores_environment_defaults")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn environment_endpoint_is_captured_before_payload_hooks() -> TestResult {
     content_invocation::assert_rows("environment_endpoint_is_captured_before_payload_hooks")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     Cancellation, Context, Fetch, GoogleOptions, HttpResponse, Model, StopReason, StreamOptions,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use native::{body_fetch, empty_response, held_body_deadline, native_input, native_stream};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn hook_selected_signal_controls_transport_not_terminal_classification() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for mode in [
             "replace-abort-B",
             "replace-abort-A",
@@ -297,9 +347,10 @@ fn hook_selected_signal_controls_transport_not_terminal_classification() -> Test
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cancellation_during_setup_releases_the_request() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let (fetch, admission, release) = native::held_fetch(empty_response());
         let caller = Cancellation::new();
         let stream = native_stream(StreamOptions {
@@ -325,17 +376,19 @@ fn cancellation_during_setup_releases_the_request() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn positive_timeout_covers_body_and_error_admission() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         held_body_deadline(200, "google-generative-ai").await?;
         held_body_deadline(500, "google-generative-ai").await
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn timeout_does_not_cancel_the_callers_signal() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let (fetch, admission, release) = native::held_fetch(empty_response());
         let caller = Cancellation::new();
         let stream = native_stream(StreamOptions {
@@ -372,9 +425,10 @@ fn timeout_does_not_cancel_the_callers_signal() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn generated_call_numbers_survive_invocation_boundaries() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let mut generated = Vec::new();
         for parts in [
             json!([{"functionCall":{"name":"lookup", "args":{}}}]),
@@ -401,18 +455,23 @@ fn generated_call_numbers_survive_invocation_boundaries() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn dropping_the_reader_keeps_the_producer_running() -> TestResult {
-    chat::block_on(false, native::dropped_reader("google-generative-ai"))
+    crate::runtime::run(native::dropped_reader("google-generative-ai"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn root_and_registered_entries_invoke_the_content_provider() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let captured = Arc::new(Mutex::new(Vec::new()));
         let requests = Arc::clone(&captured);
         let fetch: Fetch = Arc::new(move |request| {
-            requests.lock().unwrap().push(request);
+            requests
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(request);
             Box::pin(async { Ok(empty_response()) })
         });
         for route in 0..6 {
@@ -435,25 +494,84 @@ fn root_and_registered_entries_invoke_the_content_provider() -> TestResult {
                 format!("route {route}")
             );
         }
-        let registered: Vec<_> = maestro_models::records::api_registry::get_api_providers()
-            .into_iter()
-            .map(|provider| provider.api)
-            .collect();
-        assert_eq!(registered, bundled::registered_apis());
+        assert_eq!(bundled::registered(), bundled::registered_apis());
         Ok(())
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn history_argument_defaults_reach_the_transport() -> TestResult {
+    crate::runtime::run(async {
+        assert_eq!(
+            sent_call_args(serde_json::Value::Null).await?,
+            json!({"name": "inspect", "args": {}})
+        );
+        assert_eq!(
+            sent_call_args(json!([])).await?,
+            json!({"name": "inspect", "args": []})
+        );
+        Ok(())
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The `functionCall` node of one outgoing request carrying a replayed call.
+async fn sent_call_args(authored: serde_json::Value) -> TestResult<serde_json::Value> {
+    let captured = Arc::new(Mutex::new(Vec::new()));
+    let requests = Arc::clone(&captured);
+    let fetch: Fetch = Arc::new(move |request| {
+        requests
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(request);
+        Box::pin(async { Ok(empty_response()) })
+    });
+    let (model, _) = native_input()?;
+    let context = chat::context(&json!({"messages":[
+        {"role":"assistant", "content":[
+            {"type":"toolCall", "id":"call-a", "name":"inspect", "arguments":authored}
+        ]},
+        {"role":"toolResult", "toolCallId":"call-a", "toolName":"inspect",
+         "content":[{"type":"text", "text":"ok"}], "isError":false}
+    ]}))?;
+    let common = StreamOptions {
+        fetch: Some(Arc::clone(&fetch)),
+        api_key: Some("fixture-key".into()),
+        ..Default::default()
+    };
+    let output = native::route_output(0, model, context, common).await?;
+    assert_eq!(
+        output
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .stop_reason,
+        StopReason::Stop
+    );
+    let requests = captured
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let body: serde_json::Value = serde_json::from_slice(&requests[0].body)?;
+    Ok(body["contents"][0]["parts"][0]["functionCall"].clone())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn registered_simple_missing_key_becomes_a_terminal_error() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            "registered_simple_missing_key_becomes_a_terminal_error",
-            "missing-key",
-            &[],
-        );
+    if !maestro_test_process::selection().is_child() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "registered_simple_missing_key_becomes_a_terminal_error",
+            )?
+            .nocapture()
+            .env_clear()
+            .case("missing-key")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for (aborted, generic) in [(false, false), (false, true), (true, false), (true, true)] {
             let (model, context) = native_input()?;
             let signal = Cancellation::new();
@@ -486,9 +604,10 @@ fn registered_simple_missing_key_becomes_a_terminal_error() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn registered_options_reject_wrong_native_shapes() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let sends = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let count = Arc::clone(&sends);
         let fetch: Fetch = Arc::new(move |_| {
@@ -543,6 +662,7 @@ fn registered_options_reject_wrong_native_shapes() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 pub(crate) mod native {
     /// Select request cancellation independently of the caller's terminal signal.

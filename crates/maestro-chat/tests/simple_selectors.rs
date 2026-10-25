@@ -1,16 +1,23 @@
 //! Public selector behavior against recorded terminal rows.
 #![cfg(test)]
-use crate::keybindings;
-use crate::manual_runtime;
 use crate::published;
-use crate::selector;
 #[path = "simple_selector_support/mod.rs"]
 mod simple_selector_support;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::keybindings;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::manual_runtime;
+#[cfg(target_arch = "wasm32")]
+use crate::simple_selector_cases::*;
+#[cfg(not(target_arch = "wasm32"))]
 use keybindings::bindings;
 use maestro_app::ThinkingLevel;
 use maestro_chat::ThinkingSelectorComponent;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_tui::Component;
+#[cfg(not(target_arch = "wasm32"))]
 use simple_selector_support::*;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{error::Error, rc::Rc};
 
 #[test]
@@ -103,7 +110,7 @@ fn image_choices_render_and_report_both_boolean_values() {
     }
 }
 
-use crate::live;
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn theme_inventory_marks_only_the_current_name() {
     let _bindings = bindings_guard();
@@ -127,6 +134,7 @@ fn theme_inventory_marks_only_the_current_name() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn select_list_layout_uses_bounded_primary_columns() {
     let _bindings = bindings_guard();
@@ -164,6 +172,7 @@ fn select_list_layout_uses_bounded_primary_columns() {
         assert_eq!(component.render(query.width), expected.lines);
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn theme_preview_follows_navigation_not_programmatic_changes() {
     let _bindings = bindings_guard();
@@ -193,6 +202,7 @@ fn theme_preview_follows_navigation_not_programmatic_changes() {
         assert_eq!(frames, expected.frames);
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn theme_window_shows_ten_names_with_scroll_position() {
     let _bindings = bindings_guard();
@@ -211,6 +221,7 @@ fn theme_window_shows_ten_names_with_scroll_position() {
         assert_eq!(selector.render(80), expected.lines);
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn theme_discovery_failure_propagates_without_callbacks() {
     let _bindings = bindings_guard();
@@ -249,6 +260,7 @@ fn theme_discovery_failure_propagates_without_callbacks() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn message_initial_identity_defaults_to_newest() {
     let _bindings = bindings_guard();
@@ -280,6 +292,7 @@ fn message_initial_identity_defaults_to_newest() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn message_initial_duplicate_uses_first_and_empty_id_is_absent() {
     let _bindings = bindings_guard();
@@ -305,6 +318,7 @@ fn message_initial_duplicate_uses_first_and_empty_id_is_absent() {
         );
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn message_text_replaces_only_lf_and_trims_defined_whitespace() {
     let _bindings = bindings_guard();
@@ -329,6 +343,7 @@ fn message_text_replaces_only_lf_and_trims_defined_whitespace() {
         assert_eq!(selector.get_message_list().render(80), expected.lines);
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn message_clipping_preserves_cells_graphemes_and_escape_sequences() {
     let _bindings = bindings_guard();
@@ -356,6 +371,7 @@ fn message_clipping_preserves_cells_graphemes_and_escape_sequences() {
         );
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn message_window_centers_and_clamps_ten_rows() {
     let _bindings = bindings_guard();
@@ -375,6 +391,7 @@ fn message_window_centers_and_clamps_ten_rows() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn message_navigation_wraps_and_empty_confirmation_is_inert() {
     let _bindings = bindings_guard();
@@ -403,6 +420,7 @@ fn message_navigation_wraps_and_empty_confirmation_is_inert() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn message_binding_collision_prefers_navigation() {
     let _bindings = bindings_guard();
@@ -432,6 +450,7 @@ fn message_binding_collision_prefers_navigation() {
         );
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn message_callbacks_are_replaceable_clearable_and_reentrant() {
     let _bindings = bindings_guard();
@@ -481,6 +500,7 @@ fn message_callbacks_are_replaceable_clearable_and_reentrant() {
         );
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn selectors_read_live_bindings_and_reject_wrong_modifiers() {
     let _bindings = bindings_guard();
@@ -519,6 +539,7 @@ fn selectors_read_live_bindings_and_reject_wrong_modifiers() {
         assert_eq!(frames, expected.frames);
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn selector_live_colors_preserve_construction_time_help() {
     let _bindings = bindings_guard();
@@ -539,6 +560,7 @@ fn selector_live_colors_preserve_construction_time_help() {
         assert_eq!(selector.container().render(80), expected.after);
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn selector_children_and_focus_list_keep_distinct_identities() {
     let _bindings = bindings_guard();
@@ -569,6 +591,7 @@ fn selector_children_and_focus_list_keep_distinct_identities() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn empty_message_auto_cancel_uses_one_original_delayed_callback() {
     let _bindings = bindings_guard();
@@ -623,7 +646,9 @@ fn empty_message_auto_cancel_uses_one_original_delayed_callback() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::recording_terminal;
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn selector_focus_handles_outlive_chrome_without_retaining_it() {
     let _bindings = bindings_guard();
@@ -665,6 +690,7 @@ fn selector_focus_handles_outlive_chrome_without_retaining_it() {
 }
 
 /// The scheduled closure retains only its original callback until settlement.
+#[cfg(not(target_arch = "wasm32"))]
 fn empty_callback_releases_captures() {
     let runtime = manual_runtime::ManualRuntime::new();
     let (_, theme) = published::published(&colors(0));

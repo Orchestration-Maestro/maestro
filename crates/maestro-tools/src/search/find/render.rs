@@ -11,15 +11,17 @@ use crate::{
     utils::diagnostics::diagnostic,
 };
 use maestro_models::DiagnosticErrorInfo;
-use maestro_theme::{Theme, ThemeColor};
+use maestro_theme::{LiveTheme, Theme, ThemeColor};
 use maestro_tui::tui::ComponentHandle;
 use serde_json::Value;
 /// Render the pattern and directory, retaining a previous text component on success.
 pub(super) fn render_call(
     args: Option<&Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let args = render_args(args);
     let invalid = themed(invalid_arg_text(theme))?;
     let pattern = str(args.get("pattern")).map_or_else(
@@ -49,7 +51,7 @@ pub(super) fn render_call(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
     let view = ListingView {

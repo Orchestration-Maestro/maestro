@@ -79,7 +79,7 @@ fn read_declaration_has_exact_schema_and_prompt_text() {
             "limit": {"type": "number", "description": "Maximum number of lines to read"},
         },
     });
-    assert_eq!(tool.definition.parameters, expected);
+    assert_eq!(*tool.definition.parameters, expected);
     let keys: Vec<_> = tool.definition.parameters["properties"]
         .as_object()
         .unwrap()
@@ -313,7 +313,7 @@ fn read_forwards_access_detection_and_read_failures() {
         assert_eq!(error, ScriptedOps::failure(stage));
         assert_eq!(ops.log(), calls);
     }
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let tool = create_read_tool_definition::<()>(dir.text(), ReadToolOptions::default());
     let error = call(&tool, input("missing.txt", None, None), None, None)
         .err()
@@ -605,7 +605,7 @@ fn read_optional_detector_keeps_binary_text() {
         .unwrap();
         assert_eq!(only_text(&result), lossy);
     }
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     dir.file("sniff.bin", &[66, 77, 0, 255]);
     let tool = create_read_tool_definition::<()>(dir.text(), ReadToolOptions::default());
     assert_eq!(
@@ -616,7 +616,7 @@ fn read_optional_detector_keeps_binary_text() {
 
 #[test]
 fn read_uses_magic_and_preserves_image_order() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let png = STANDARD.decode(TINY_PNG).unwrap();
     dir.file("photo", &png);
     dir.file("fake.png", b"definitely not a png");
@@ -652,17 +652,17 @@ fn read_uses_magic_and_preserves_image_order() {
         (
             "sample.jpg",
             "image/jpeg",
-            std::fs::read(dir.0.join("sample.jpg")).unwrap(),
+            std::fs::read(dir.path().join("sample.jpg")).unwrap(),
         ),
         (
             "sample.gif",
             "image/gif",
-            std::fs::read(dir.0.join("sample.gif")).unwrap(),
+            std::fs::read(dir.path().join("sample.gif")).unwrap(),
         ),
         (
             "sample.webp",
             "image/webp",
-            std::fs::read(dir.0.join("sample.webp")).unwrap(),
+            std::fs::read(dir.path().join("sample.webp")).unwrap(),
         ),
     ] {
         assert_eq!(

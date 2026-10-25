@@ -2,7 +2,7 @@
 use super::{DefaultPackageManager, InstalledSourceScope, PackageOperations};
 use maestro_path::join;
 use maestro_resources::SourceScope;
-use std::io;
+use std::{io, io::Write, path::Path};
 
 /// The manifest written into a new project or temporary npm root, without a final newline.
 const PACKAGE_JSON: &str = "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}";
@@ -16,8 +16,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             return self.run_npm(&["install", "-g", spec], None).await;
         }
         let root = self.npm_root(scope);
-        self.ensure_file(&root, ".gitignore", GITIGNORE)?;
-        self.ensure_file(&root, "package.json", PACKAGE_JSON)?;
+        ensure_file(&root, ".gitignore", GITIGNORE)?;
+        ensure_file(&root, "package.json", PACKAGE_JSON)?;
         self.run_npm(&["install", spec, "--prefix", &root], None)
             .await
     }
@@ -31,26 +31,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             return self.run_npm(&["uninstall", "-g", name], None).await;
         }
         let root = join(&[&self.base(scope), "npm"]);
-        if !self.operations.exists(&root) {
+        if !Path::new(&root).exists() {
             return Ok(());
         }
         self.run_npm(&["uninstall", name, "--prefix", &root], None)
             .await
-    }
-    /// Creates parents and a missing bootstrap file, accepting a competing creation collision.
-    /// Other creation failures propagate without rolling back earlier effects.
-    pub(super) fn ensure_file(&self, dir: &str, name: &str, text: &str) -> io::Result<()> {
-        if !self.operations.exists(dir) {
-            self.operations.create_dir_all(dir)?;
-        }
-        let path = join(&[dir, name]);
-        if self.operations.exists(&path) {
-            return Ok(());
-        }
-        match self.operations.write_file(&path, text, true) {
-            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => Ok(()),
-            result => result,
-        }
     }
 }
 
@@ -60,7 +45,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if self.offline() {
             return false;
         }
-        let installed = self.installed_npm_version(path);
+        let installed = installed_npm_version(path);
         let Some(installed) = installed else {
             return false;
         };
@@ -93,26 +78,6 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 }
 
 impl<O: PackageOperations> DefaultPackageManager<O> {
-    /// Reads a nonempty string version, suppressing file and manifest failures.
-    pub(super) fn installed_npm_version(&self, path: &str) -> Option<String> {
-        let manifest = join(&[path, "package.json"]);
-        if !self.operations.exists(&manifest) {
-            return None;
-        }
-        self.operations
-            .read_file(&manifest)
-            .ok()
-            .and_then(|text| {
-                serde_json::from_str::<
-                    std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>,
-                >(&text)
-                .ok()
-            })
-            .and_then(|mut fields| {
-                serde_json::from_str::<String>(fields.remove("version")?.get()).ok()
-            })
-            .filter(|version| !version.is_empty())
-    }
     /// Unknown versions and failed latest probes require an update.
     pub(super) async fn should_update_npm(
         &self,
@@ -120,7 +85,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<bool> {
         let installed = self
             .installed_path(&row.source, row.scope)?
-            .and_then(|path| self.installed_npm_version(&path));
+            .and_then(|path| installed_npm_version(&path));
         let Some(installed) = installed else {
             return Ok(true);
         };
@@ -179,10 +144,49 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         }
         args.extend(specs.iter().map(String::as_str));
         if scope == InstalledSourceScope::Project {
-            self.ensure_file(&root, ".gitignore", GITIGNORE)?;
-            self.ensure_file(&root, "package.json", PACKAGE_JSON)?;
+            ensure_file(&root, ".gitignore", GITIGNORE)?;
+            ensure_file(&root, "package.json", PACKAGE_JSON)?;
             args.extend(["--prefix", &root]);
         }
         self.run_npm(&args, None).await
     }
+}
+
+/// Creates parents and a missing bootstrap file, accepting a competing creation collision.
+/// Other creation failures propagate without rolling back earlier effects.
+pub(super) fn ensure_file(dir: &str, name: &str, text: &str) -> io::Result<()> {
+    if !Path::new(dir).exists() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let path = join(&[dir, name]);
+    if Path::new(&path).exists() {
+        return Ok(());
+    }
+    let created = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .and_then(|mut file| file.write_all(text.as_bytes()));
+    match created {
+        Err(error) if error.kind() == io::ErrorKind::AlreadyExists => Ok(()),
+        result => result,
+    }
+}
+
+/// Reads a nonempty string version, suppressing file and manifest failures.
+pub(super) fn installed_npm_version(path: &str) -> Option<String> {
+    let manifest = join(&[path, "package.json"]);
+    if !Path::new(&manifest).exists() {
+        return None;
+    }
+    maestro_resources::read_text(Path::new(&manifest))
+        .ok()
+        .and_then(|text| {
+            serde_json::from_str::<
+                std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>,
+            >(&text)
+            .ok()
+        })
+        .and_then(|mut fields| serde_json::from_str::<String>(fields.remove("version")?.get()).ok())
+        .filter(|version| !version.is_empty())
 }

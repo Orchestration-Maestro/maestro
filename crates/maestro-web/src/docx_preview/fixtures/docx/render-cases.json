@@ -1,0 +1,4703 @@
+[
+  {
+    "name": "single-section",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "alpha"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "beta"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "two-sections-page-break",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "first"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "tail"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "second"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "last-rendered-break",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "before"
+                      },
+                      {
+                        "text": "after"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "last-rendered-break-kept",
+    "options": {
+      "ignoreLastRenderedPageBreak": false
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "before"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "after"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "next"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "page-break-mid-paragraph",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "head"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "left"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "right"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "tail"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "page-break-mid-run",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "left"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "right"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "tail"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "page-break-last-child",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "only"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "after"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "page-break-with-section-properties",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:36pt;padding-left:36pt;padding-right:36pt;padding-top:36pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "three"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "orientation-change",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "portrait"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:595.3pt;width:841.9pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "landscape"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "size-change-only",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:595.3pt;width:419.55pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "width-change-ignored",
+    "options": {
+      "ignoreWidth": true,
+      "ignoreHeight": true
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "style-page-break-before",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [
+                  [
+                    "class",
+                    "docx_pagebreak"
+                  ]
+                ],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "three"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "style-page-break-before-after-section",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:595.3pt;width:419.55pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:595.3pt;width:419.55pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "table",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "colgroup",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "cell"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [
+                  [
+                    "class",
+                    "docx_pagebreak"
+                  ]
+                ],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "columns",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [
+              [
+                "style",
+                "column-count:2;column-gap:36pt;column-rule:1px solid black"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "columns-single",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [
+              [
+                "style",
+                "column-count:1"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "header-footer-default",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:108pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [
+              [
+                "style",
+                "margin-top:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "head"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "body"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "footer",
+            "attributes": [
+              [
+                "style",
+                "margin-bottom:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "foot"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "title-page-and-even-odd",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [
+              [
+                "style",
+                "margin-top:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "first head"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "footer",
+            "attributes": [
+              [
+                "style",
+                "margin-bottom:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "foot"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [
+              [
+                "style",
+                "margin-top:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "even head"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "footer",
+            "attributes": [
+              [
+                "style",
+                "margin-bottom:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "foot"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [
+              [
+                "style",
+                "margin-top:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "default head"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "three"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "footer",
+            "attributes": [
+              [
+                "style",
+                "margin-bottom:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "foot"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "section-restarts-first-header",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [
+              [
+                "style",
+                "margin-top:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "first head"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [
+              [
+                "style",
+                "margin-top:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "first head"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "header-without-margins",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "head"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "body"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "headers-disabled",
+    "options": {
+      "renderHeaders": false,
+      "renderFooters": false
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "body"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "missing-header-part",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "body"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "footnotes",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "alpha"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "2"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "3"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "first note"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "second note"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "footnotes-disabled",
+    "options": {
+      "renderFootnotes": false
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "endnotes",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "alpha"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "foot one"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "2"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "foot two"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "end one"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "end two"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "endnotes-disabled",
+    "options": {
+      "renderEndnotes": false
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "table-grid",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "table",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "colgroup",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      },
+                      {
+                        "tag": "col",
+                        "attributes": [],
+                        "children": []
+                      },
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:120pt"
+                          ]
+                        ],
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "a"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "b"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "c"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "colspan",
+                            "2"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "d"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "e"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "table-vertical-merge",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "table",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "colgroup",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      },
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "rowspan",
+                            "3"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "r1c1"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "keep"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "style",
+                            "display:none"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "r2c1"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "plain"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "style",
+                            "display:none"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "r3c1"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "other"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "after"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "after2"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "table-grid-offsets",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "table",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "colgroup",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      },
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      },
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "colspan",
+                            "1"
+                          ],
+                          [
+                            "style",
+                            "border:none"
+                          ]
+                        ],
+                        "children": []
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "a"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "colspan",
+                            "1"
+                          ],
+                          [
+                            "style",
+                            "border:none"
+                          ]
+                        ],
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "b"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "c"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "table-cell-and-table-styles",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "table",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "colgroup",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      },
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "style",
+                            "background-color:#EEEEEE;border-left:0.5pt dotted #0000FF;border-top:1pt solid #FF0000;padding-left:7.2pt"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "styled"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "style",
+                            "border-left:0.5pt dotted #0000FF;border-top:0.5pt dotted #0000FF;padding-left:7.2pt"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "inherits"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nested-tables",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "table",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "colgroup",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      },
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "outer"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "tag": "table",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "colgroup",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "tag": "col",
+                                    "attributes": [
+                                      [
+                                        "style",
+                                        "width:60pt"
+                                      ]
+                                    ],
+                                    "children": []
+                                  }
+                                ]
+                              },
+                              {
+                                "tag": "tr",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "tag": "td",
+                                    "attributes": [
+                                      [
+                                        "rowspan",
+                                        "2"
+                                      ]
+                                    ],
+                                    "children": [
+                                      {
+                                        "tag": "p",
+                                        "attributes": [],
+                                        "children": [
+                                          {
+                                            "tag": "span",
+                                            "attributes": [],
+                                            "children": [
+                                              {
+                                                "text": "inner"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "tag": "tr",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "tag": "td",
+                                    "attributes": [
+                                      [
+                                        "style",
+                                        "display:none"
+                                      ]
+                                    ],
+                                    "children": [
+                                      {
+                                        "tag": "p",
+                                        "attributes": [],
+                                        "children": [
+                                          {
+                                            "tag": "span",
+                                            "attributes": [],
+                                            "children": [
+                                              {
+                                                "text": "inner2"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "rowspan",
+                            "2"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "beside"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "below"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "style",
+                            "display:none"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "below2"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "table-in-header",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [
+              [
+                "style",
+                "margin-top:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "table",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "colgroup",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "col",
+                        "attributes": [
+                          [
+                            "style",
+                            "width:60pt"
+                          ]
+                        ],
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "rowspan",
+                            "2"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "head cell"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "tr",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "td",
+                        "attributes": [
+                          [
+                            "style",
+                            "display:none"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "p",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "tag": "span",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "text": "more"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "body"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "inline-basics",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [
+                      [
+                        "style",
+                        "font-weight:bold"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "super"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "sub",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "sub"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "a"
+                      },
+                      {
+                        "tag": "br",
+                        "attributes": [],
+                        "children": []
+                      },
+                      {
+                        "text": "b"
+                      },
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": " "
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "span",
+                        "attributes": [
+                          [
+                            "style",
+                            "font-family:Symbol"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "text": "Ω"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [
+                      [
+                        "id",
+                        "mark"
+                      ]
+                    ],
+                    "children": []
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "wbr",
+                        "attributes": [],
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "inline-hostile-values",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "<tag> & \"quoted\" 'single'"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [
+                      [
+                        "id",
+                        "a\"b&c"
+                      ]
+                    ],
+                    "children": []
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "A"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "hyperlinks-and-smart-tags",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        "https://example.test/page#part"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "site"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        "#top"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "top"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        ""
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "inside"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "Paris"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "hyperlink-targets",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        "https://example.test/page#here"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "external"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        "javascript:alert(1)"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "script"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        "#only"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "anchor"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "paragraph-and-run-common-properties",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [
+                  [
+                    "style",
+                    "color:red;font-size:14pt;text-align:center"
+                  ]
+                ],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [
+                      [
+                        "style",
+                        "color:#00AA00;font-size:12pt;font-weight:bold;min-height:12pt;text-decoration:underline"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "text": "formatted"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "paragraph-style-numbering",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [
+                  [
+                    "class",
+                    "docx_body-text docx-num-7-2"
+                  ]
+                ],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "inherited"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "plain"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "body-background",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "background-color:#EEFFEE"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "tinted"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "section-and-page-break-together",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:36pt;padding-left:36pt;padding-right:36pt;padding-top:36pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "three"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "break-pages-disabled",
+    "options": {
+      "breakPages": false
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "left"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": []
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "right"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "tail"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "notes-without-parts",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "empty-body",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "body-section-properties",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;padding-bottom:72pt;padding-left:72pt;padding-right:72pt;padding-top:72pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "attributes": [
+              [
+                "style",
+                "margin-top:calc(...);min-height:calc(...)"
+              ]
+            ],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "head"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "one"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "text": "two"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "duplicate-note-ids",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "second five"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "part-relationship-links",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        "https://example.test/body"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "body"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "a",
+                        "attributes": [
+                          [
+                            "href",
+                            "https://example.test/document"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "span",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "text": "note"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "footer",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        ""
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "footer"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -32,7 +32,7 @@ fn captured_nodes_outlive_reader_without_rebuilding_history() {
             Rc::new(|_| {}),
             maestro_theme::LiveTheme::default(),
         );
-        let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+        let (mut pump, admission) = Pump::new();
         let endpoint = pump
             .registry()
             .context(Owner::Base(runner.create_context()))

@@ -1,0 +1,180 @@
+//! Path and inline extension loading, conflict diagnostics, extension provenance and the
+//! default event bus.
+use super::{DefaultResourceLoader, overrides::apply};
+use crate::utils::lock::{read, write};
+use maestro_extensions::{
+    EventBusController, ExtensionExecution, ExtensionLoadError, LoadExtensionsResult,
+    create_event_bus_for, load_extension_from_factory, load_extensions,
+};
+use maestro_models::{Execution, Local, Threaded};
+use maestro_resources::is_local_path;
+use std::{
+    collections::HashMap,
+    io,
+    path::Path,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
+use tokio::task::LocalSet;
+
+/// Execution families whose default event bus runs listener continuations on the
+/// caller's task set.
+pub trait DefaultEventBus: ExtensionExecution {
+    /// A bus whose continuations run on `local` and whose listener failures are written
+    /// to standard error.
+    fn default_event_bus(local: &Rc<LocalSet>) -> EventBusController<Self>;
+}
+
+/// Writes a bus diagnostic, which carries its own final newline, to standard error.
+pub(crate) fn report(text: &str) {
+    eprint!("{text}");
+}
+
+impl DefaultEventBus for Local {
+    fn default_event_bus(local: &Rc<LocalSet>) -> EventBusController<Self> {
+        let local = Rc::downgrade(local);
+        create_event_bus_for::<Self>(
+            Rc::new(move |tail| {
+                if let Some(local) = local.upgrade() {
+                    drop(local.spawn_local(tail));
+                }
+            }),
+            Rc::new(report),
+        )
+    }
+}
+
+impl DefaultEventBus for Threaded {
+    fn default_event_bus(local: &Rc<LocalSet>) -> EventBusController<Self> {
+        let (sender, mut receiver) =
+            tokio::sync::mpsc::unbounded_channel::<<Self as Execution>::Future<'static, ()>>();
+        drop(local.spawn_local(async move {
+            while let Some(tail) = receiver.recv().await {
+                drop(tokio::task::spawn_local(tail));
+            }
+        }));
+        create_event_bus_for::<Self>(
+            Arc::new(move |tail| {
+                // A closed channel means the task set is gone; the continuation is dropped.
+                drop(sender.send(tail));
+            }),
+            Arc::new(report),
+        )
+    }
+}
+
+/// A conflict error for each tool or flag that a later extension path registers again.
+fn conflicts<E: ExtensionExecution>(result: &LoadExtensionsResult<E>) -> Vec<ExtensionLoadError> {
+    let mut found = Vec::new();
+    let mut tool_owners = HashMap::new();
+    let mut flag_owners = HashMap::new();
+    for extension in &result.extensions {
+        let extension = read(extension);
+        for name in extension.tools.keys() {
+            claim(
+                &mut tool_owners,
+                name,
+                &extension.path,
+                "Tool \"",
+                &mut found,
+            );
+        }
+        for name in extension.flags.keys() {
+            claim(
+                &mut flag_owners,
+                name,
+                &extension.path,
+                "Flag \"--",
+                &mut found,
+            );
+        }
+    }
+    found
+}
+
+/// Gives `name` to `path` unless another path owns it, which is a conflict reported as
+/// `<label><name>" conflicts with <owner>`.
+fn claim(
+    owners: &mut HashMap<String, String>,
+    name: &str,
+    path: &str,
+    label: &str,
+    found: &mut Vec<ExtensionLoadError>,
+) {
+    match owners.get(name) {
+        Some(owner) if owner != path => found.push(ExtensionLoadError {
+            path: path.to_owned(),
+            error: format!("{label}{name}\" conflicts with {owner}"),
+        }),
+        _ => {
+            owners.insert(name.to_owned(), path.to_owned());
+        }
+    }
+}
+
+impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
+    /// Loads path extensions, then inline factories on the same runtime, reports conflicts
+    /// and missing explicit paths, applies the override and stores the result with each
+    /// extension's provenance.
+    pub(super) async fn load_extension_resources(&self, paths: Vec<String>) -> io::Result<()> {
+        let mut result = load_extensions(
+            paths,
+            &self.cwd,
+            &self.event_bus,
+            &self.options.module_loader,
+        )
+        .await?;
+        for (index, factory) in self.options.extension_factories.iter().enumerate() {
+            let path = format!("<inline:{}>", index + 1);
+            match load_extension_from_factory(
+                factory.clone(),
+                self.cwd.clone(),
+                self.event_bus.for_extension(),
+                result.runtime.clone(),
+                Some(path.clone()),
+            )
+            .await
+            {
+                Ok(extension) => result.extensions.push(extension),
+                Err(error) => result.errors.push(ExtensionLoadError {
+                    path,
+                    error: error.to_string(),
+                }),
+            }
+        }
+        result.errors.extend(conflicts(&result));
+        for path in &self.options.additional_extension_paths {
+            if is_local_path(path) && !Path::new(&self.resolve_resource_path(path)?).exists() {
+                result.errors.push(ExtensionLoadError {
+                    path: path.clone(),
+                    error: format!("Extension path does not exist: {path}"),
+                });
+            }
+        }
+        let result = apply(self.options.extensions_override.as_ref(), result);
+        self.apply_extension_provenance(&result)?;
+        self.state.borrow_mut().extensions = Rc::new(result);
+        Ok(())
+    }
+
+    /// Gives each extension a fresh provenance record, shared with its commands and tools.
+    fn apply_extension_provenance(&self, result: &LoadExtensionsResult<E>) -> io::Result<()> {
+        let state = self.state.borrow();
+        for extension in &result.extensions {
+            let mut extension = write(extension);
+            let source_info = match self.find_source_info(&extension.path, None, &state.metadata)? {
+                Some(found) => found,
+                None => self.default_source_info(&extension.path)?,
+            };
+            let shared = Arc::new(RwLock::new(source_info));
+            for command in extension.commands.values() {
+                write(command).source_info = Arc::clone(&shared);
+            }
+            for tool in extension.tools.values_mut() {
+                tool.source_info = Arc::clone(&shared);
+            }
+            extension.source_info = shared;
+        }
+        Ok(())
+    }
+}

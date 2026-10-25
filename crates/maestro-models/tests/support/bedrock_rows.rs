@@ -1,5 +1,6 @@
 //! Request rows: a hook edit applied to the conversation input, and what the SDK then sent.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
@@ -15,8 +16,7 @@ use serde_json::{Map, Value};
 use url::Url;
 
 use crate::bedrock;
-use crate::chat::{TestResult, block_on};
-use crate::child_process;
+use crate::chat::TestResult;
 use crate::json::canonical;
 use crate::transport;
 
@@ -227,21 +227,13 @@ fn rows(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
         .collect())
 }
 
-/// Run every row `test` owns in `fixture` in an isolated child with its row-specific variables.
+/// Run every row `test` owns in `fixture` in a cleared child holding exactly its variables.
 pub fn check_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} owns no rows");
-    if let Some(case) = child_process::child_case() {
-        let row = owned
-            .iter()
-            .find(|row| row.id == case)
-            .ok_or("unknown row")?;
-        return block_on(true, check(row));
-    }
-    for row in &owned {
-        let env = environment(row);
-        let env: Vec<(&str, &str)> = env.iter().map(|(k, v)| (*k, *v)).collect();
-        child_process::rerun(test, &row.id, &env)?;
+    let group = maestro_test_process::run_per_environment(test, &owned, |row| environment(row))?;
+    for row in group.into_iter().flatten() {
+        crate::runtime::run_paused(check(row))?;
     }
     Ok(())
 }

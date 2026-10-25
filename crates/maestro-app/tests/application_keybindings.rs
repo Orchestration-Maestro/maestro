@@ -258,7 +258,7 @@ fn file_loading_converts_legacy_names_without_rewriting_the_file() {
             std::fs::read_to_string(&path).unwrap(),
             case.expected.before
         );
-        let manager = KeybindingsManager::create(Some(dir.0.to_str().unwrap())).unwrap();
+        let manager = KeybindingsManager::create(Some(dir.0.path().to_str().unwrap())).unwrap();
         let expected = case.expected;
         assert_eq!(
             snapshot(&manager),
@@ -278,7 +278,7 @@ fn load_text(name: &str) {
     for case in rows::<TextInput, Snapshot>(name) {
         let dir = child::Scratch::new();
         std::fs::write(dir.join("keybindings.json"), case.input.text).unwrap();
-        let manager = KeybindingsManager::create(Some(dir.0.to_str().unwrap())).unwrap();
+        let manager = KeybindingsManager::create(Some(dir.0.path().to_str().unwrap())).unwrap();
         assert_eq!(snapshot(&manager), case.expected);
     }
 }
@@ -302,8 +302,8 @@ fn file_loading_keeps_prototype_named_unknown_actions() {
 #[serde(deny_unknown_fields, rename_all = "snake_case", tag = "kind")]
 enum ReadInput {
     InvalidUtf8 { bytes: Vec<u8> },
-    Directory,
-    Missing,
+    Directory {},
+    Missing {},
 }
 #[test]
 fn file_loading_uses_lossy_utf8_and_ignores_read_failures() {
@@ -314,11 +314,11 @@ fn file_loading_uses_lossy_utf8_and_ignores_read_failures() {
         let path = dir.join("keybindings.json");
         match case.input {
             ReadInput::InvalidUtf8 { bytes } => std::fs::write(&path, bytes).unwrap(),
-            ReadInput::Directory => std::fs::create_dir(&path).unwrap(),
-            ReadInput::Missing => {}
+            ReadInput::Directory {} => std::fs::create_dir(&path).unwrap(),
+            ReadInput::Missing {} => {}
         }
         assert_eq!(
-            snapshot(&KeybindingsManager::create(Some(dir.0.to_str().unwrap())).unwrap()),
+            snapshot(&KeybindingsManager::create(Some(dir.0.path().to_str().unwrap())).unwrap()),
             case.expected
         );
     }
@@ -352,7 +352,7 @@ fn file_loading_follows_native_symlinks_without_rewriting_the_target() {
         }
         let path = dir.join("keybindings.json");
         std::os::unix::fs::symlink("target.json", &path).unwrap();
-        let manager = KeybindingsManager::create(Some(dir.0.to_str().unwrap())).unwrap();
+        let manager = KeybindingsManager::create(Some(dir.0.path().to_str().unwrap())).unwrap();
         let expected = case.expected;
         assert_eq!(
             snapshot(&manager),
@@ -373,17 +373,18 @@ fn file_loading_follows_native_symlinks_without_rewriting_the_target() {
 }
 
 fn isolated(name: &str, run: impl FnOnce(&std::path::Path)) {
-    if std::env::var("MAESTRO_KEYS_CHILD").as_deref() == Ok(name) {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
+    {
         run(&std::env::current_dir().unwrap());
     } else {
         let dir = child::Scratch::new();
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
-            &dir.0,
-            &[
-                ("MAESTRO_KEYS_CHILD", name),
-                ("MAESTRO_CODING_AGENT_DIR", "decoy"),
-            ],
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case(name),
+            dir.0.path(),
+            &[("MAESTRO_CODING_AGENT_DIR", "decoy")],
             &[],
         );
     }
@@ -521,7 +522,7 @@ fn reload_missing_or_invalid_data_replaces_user_overrides_with_defaults() {
             "{\"app.clear\":\"alt+a\",\"custom.action\":\"ctrl+q\"}",
         )
         .unwrap();
-        let manager = KeybindingsManager::create(Some(dir.0.to_str().unwrap())).unwrap();
+        let manager = KeybindingsManager::create(Some(dir.0.path().to_str().unwrap())).unwrap();
         assert_eq!(manager.get_keys("app.clear"), ["alt+a"]);
         assert_eq!(manager.get_user_bindings().len(), 2);
         match case.input.replacement {

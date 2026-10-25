@@ -45,7 +45,7 @@ impl RetryFixture {
         git(&repo.target, &["reset", "--hard", "origin/main"]);
         repo.original = git(&repo.target, &["rev-parse", "HEAD"]);
         configure_layout(&repo, layout);
-        let root = &repo.scratch.0;
+        let root = repo.scratch.path();
         let settings = Rc::new(RefCell::new(SettingsManager::in_memory(Settings(
             json!({"packages":["git:github.com/acme/tool"]})
                 .as_object()
@@ -53,15 +53,8 @@ impl RetryFixture {
                 .clone(),
         ))));
         let local = Rc::new(tokio::task::LocalSet::new());
-        let native = Rc::new(NativePackageOperations::new(
-            |_| false,
-            Rc::new(|| false),
-            &local,
-        ));
-        let effects = Rc::new(Effects {
-            native_exists: true,
-            ..Effects::default()
-        });
+        let native = Rc::new(NativePackageOperations::new(Rc::new(|| false), &local));
+        let effects = Rc::new(Effects::default());
         *effects.local.borrow_mut() = Rc::downgrade(&local);
         configure_capture(&effects, native.clone());
         let fail = Rc::new(RefCell::new(String::new()));
@@ -75,10 +68,7 @@ impl RetryFixture {
             },
             Controlled(effects.clone()),
         ));
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = crate::runtime::runtime();
         Self {
             repo,
             manager,
@@ -166,7 +156,7 @@ async fn execute(
 
 /// Prepares each repository layout through native Git.
 fn configure_layout(repo: &Repository, layout: &str) {
-    let root = &repo.scratch.0;
+    let root = repo.scratch.path();
     if layout == "linked" {
         let owner = root.join("owner");
         std::fs::rename(&repo.target, &owner).unwrap();

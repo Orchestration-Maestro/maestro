@@ -1,15 +1,21 @@
 //! Measure browser prompt descriptions through the provider's token-counting endpoint.
 
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::TryStreamExt;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
     ATTACHMENTS_RUNTIME_DESCRIPTION, artifacts_tool_description, javascript_repl_tool_description,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{Fetch, HttpRequest, LocaleNumberFormat, decode_utf8};
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{error::Error, io::Write, process::ExitCode};
 
 /// Successful provider response; unrelated fields are ignored.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Deserialize)]
 struct TokenCountResponse {
     /// Number returned by the provider, without local estimation.
@@ -17,6 +23,7 @@ struct TokenCountResponse {
 }
 
 /// Sends one prompt and collects the complete response before decoding its numeric count.
+#[cfg(not(target_arch = "wasm32"))]
 async fn count_tokens(text: &str, api_key: &str, fetch: &Fetch) -> Result<f64, Box<dyn Error>> {
     let response = fetch(HttpRequest {
         method: "POST".into(),
@@ -44,6 +51,7 @@ async fn count_tokens(text: &str, api_key: &str, fetch: &Fetch) -> Result<f64, B
 }
 
 /// Reports five descriptions sequentially, retaining successes when individual requests fail.
+#[cfg(not(target_arch = "wasm32"))]
 async fn run(
     api_key: &str,
     fetch: &Fetch,
@@ -91,6 +99,7 @@ async fn run(
 }
 
 /// Supplies native environment, HTTP, runtime and output owners to the report.
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<ExitCode, Box<dyn Error>> {
     let api_key = std::env::var("ANTHROPIC_API_KEY").unwrap_or_default();
     if api_key.is_empty() {
@@ -111,7 +120,18 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
     Ok(ExitCode::SUCCESS)
 }
 
+/// The token measurement has no browser entry effects.
+#[cfg(target_arch = "wasm32")]
+fn main() {}
+
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "../tests/support/runtime.rs"]
+#[allow(dead_code, reason = "These tests use only the I/O runtime.")]
+mod runtime;
+
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests {
     use super::*;
     use futures_util::stream;
@@ -301,18 +321,14 @@ mod tests {
         );
         let formatter = LocaleNumberFormat::new(&|_| Some(case.input.locale.clone())).unwrap();
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(run(
-                case.input.api_key.as_deref().unwrap(),
-                &fetch,
-                &formatter,
-                &mut stdout,
-                &mut stderr,
-            ))
-            .unwrap();
+        runtime::run_io(run(
+            case.input.api_key.as_deref().unwrap(),
+            &fetch,
+            &formatter,
+            &mut stdout,
+            &mut stderr,
+        ))
+        .unwrap();
         assert_report(&case, &stdout, &stderr);
         assert!(replies.lock().unwrap().is_empty());
         let observed = transcript.lock().unwrap();
@@ -364,7 +380,7 @@ mod tests {
     /// Invokes the real entry point with isolated absent and empty key observations.
     #[test]
     fn token_measurement_requires_an_environment_key() {
-        if std::env::var_os("MAESTRO_COUNT_ENTRY_CHILD").is_some() {
+        if maestro_test_process::selection().is_child() {
             std::process::exit(i32::from(main().unwrap() == ExitCode::FAILURE));
         }
         for name in ["missing_key", "empty_key"] {
@@ -374,20 +390,19 @@ mod tests {
             assert!(case.output.stdout.is_empty());
             assert!(case.output.requests.is_none());
             assert!(case.output.phases.is_none());
-            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-            command
-                .args([
-                    "--exact",
-                    "tests::token_measurement_requires_an_environment_key",
-                    "--nocapture",
-                ])
-                .env("MAESTRO_COUNT_ENTRY_CHILD", "1")
+            let mut command = maestro_test_process::TestProcess::current(
+                "token_measurement_requires_an_environment_key",
+            )
+            .unwrap();
+            command = command
+                .nocapture()
+                .case("*")
                 .env("LC_ALL", &case.input.locale)
                 .env("LANG", &case.input.locale)
                 .env("LC_MESSAGES", &case.input.locale)
                 .env_remove("ANTHROPIC_API_KEY");
             if let Some(key) = case.input.api_key {
-                command.env("ANTHROPIC_API_KEY", key);
+                command = command.env("ANTHROPIC_API_KEY", key);
             }
             let output = command.output().unwrap();
             assert_eq!(output.status.code(), Some(case.output.exit));
@@ -462,18 +477,14 @@ mod tests {
             });
             let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
             let formatter = LocaleNumberFormat::new(&|_| Some("en_US.UTF-8".into())).unwrap();
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-                .block_on(run(
-                    "controlled",
-                    &fetch,
-                    &formatter,
-                    &mut stdout,
-                    &mut stderr,
-                ))
-                .unwrap();
+            runtime::run_io(run(
+                "controlled",
+                &fetch,
+                &formatter,
+                &mut stdout,
+                &mut stderr,
+            ))
+            .unwrap();
             assert!(stdout.ends_with(b"\nTotal: 4 tokens\n"));
             assert_eq!(String::from_utf8(stderr).unwrap().lines().count(), 1);
             assert!(replies.lock().unwrap().is_empty());
@@ -517,22 +528,18 @@ mod tests {
         });
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         let formatter = LocaleNumberFormat::new(&|_| Some("en_US.UTF-8".into())).unwrap();
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(async {
-                let work = run("controlled", &fetch, &formatter, &mut stdout, &mut stderr);
-                let mut work = std::pin::pin!(work);
-                let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-                assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
-                assert_eq!(calls.load(Ordering::SeqCst), 1);
-                headers.notify_one();
-                assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
-                assert_eq!(calls.load(Ordering::SeqCst), 1);
-                body.notify_one();
-                work.await.unwrap();
-            });
+        runtime::run_io(async {
+            let work = run("controlled", &fetch, &formatter, &mut stdout, &mut stderr);
+            let mut work = std::pin::pin!(work);
+            let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+            assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            headers.notify_one();
+            assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            body.notify_one();
+            work.await.unwrap();
+        });
         assert_eq!(calls.load(Ordering::SeqCst), 5);
         assert!(stdout.ends_with(b"\nTotal: 5 tokens\n"));
         assert!(stderr.is_empty());
@@ -587,7 +594,10 @@ mod tests {
     fn native_child_completed() -> bool {
         const CHILD: &str = "MAESTRO_COUNT_NATIVE_CHILD";
         if std::env::var_os(CHILD).is_none() {
-            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+            let mut command = maestro_test_process::TestProcess::current(
+                "token_measurement_sends_five_current_descriptions_in_order",
+            )
+            .unwrap();
             for name in [
                 "HTTP_PROXY",
                 "HTTPS_PROXY",
@@ -598,14 +608,10 @@ mod tests {
                 "NO_PROXY",
                 "no_proxy",
             ] {
-                command.env_remove(name);
+                command = command.env_remove(name);
             }
             let output = command
-                .args([
-                    "--exact",
-                    "tests::token_measurement_sends_five_current_descriptions_in_order",
-                    "--nocapture",
-                ])
+                .nocapture()
                 .env(CHILD, "1")
                 .env("ANTHROPIC_API_KEY", "controlled")
                 .env("LC_ALL", "en_US.UTF-8")
@@ -643,18 +649,14 @@ mod tests {
         });
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         let formatter = LocaleNumberFormat::new(&|key| std::env::var(key).ok()).unwrap();
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(run(
-                &std::env::var("ANTHROPIC_API_KEY").unwrap(),
-                &fetch,
-                &formatter,
-                &mut stdout,
-                &mut stderr,
-            ))
-            .unwrap();
+        runtime::run_io(run(
+            &std::env::var("ANTHROPIC_API_KEY").unwrap(),
+            &fetch,
+            &formatter,
+            &mut stdout,
+            &mut stderr,
+        ))
+        .unwrap();
         let wire = peer.join().unwrap();
         let expected = case.output.requests.unwrap();
         assert_eq!(wire.len(), expected.len());

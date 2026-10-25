@@ -1,11 +1,10 @@
 //! Native identity as observed on a public request.
+use crate::tests::runtime::run;
 
 #[test]
 fn maestro_response_sessions_request_ids_and_host_identity() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
-        maestro_response_sessions_request_ids_and_host_identity_scenario(),
-    );
+    run(maestro_response_sessions_request_ids_and_host_identity_scenario());
 }
 
 #[cfg(not(target_arch = "wasm32"))]

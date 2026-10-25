@@ -1,4 +1,5 @@
 //! Public numbered diff rendering witnesses.
+#![cfg(not(target_arch = "wasm32"))]
 use crate::diff_support;
 use crate::display_support;
 

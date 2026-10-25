@@ -23,9 +23,13 @@ pub struct Input {
     pub notice: Option<String>,
     pub ops: Option<Vec<String>>,
     pub phase: Option<String>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub supplied: Option<bool>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub action: Option<String>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub failure_index: Option<usize>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub branch: Option<String>,
 }
 /// All recorded transactions owned by a named public witness.
@@ -37,6 +41,7 @@ pub fn cases(test: &str) -> Vec<Case> {
     rows
 }
 /// Observe a boxed native callback failure without rebuilding it.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn error_value(error: &(dyn std::error::Error + 'static)) -> Value {
     errors::error_value(
         error

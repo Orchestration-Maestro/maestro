@@ -1,7 +1,6 @@
 //! Ownership, forwarding and settlement of observable raw operations.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use crate::maestro_proxy_stream::child_process;
 use crate::support;
 use maestro_agent::{AgentEvent, AgentLoopOptions, AgentMessage, agent_loop, agent_loop_continue};
 use maestro_models::{AssistantMessageEventStream, Cancellation, EventStream, StopReason};
@@ -439,19 +438,20 @@ fn maestro_wrapper_uses_registered_default_stream() {
 /// Rejections retain their prefix and remain unsettled, with one native diagnostic.
 #[test]
 fn maestro_raw_failure_reports_without_finishing_stream() {
-    if std::env::var_os("MAESTRO_RAW_FAILURE_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         failure_child();
         return;
     }
-    let test =
-        child_process::selector("maestro_raw_failure_reports_without_finishing_stream").unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_RAW_FAILURE_CHILD", "1")
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "maestro_raw_failure_reports_without_finishing_stream",
+    )
+    .unwrap()
+    .nocapture()
+    .case("*")
+    .output()
+    .unwrap();
     assert!(output.status.success());
-    child_process::assert_executed(&output, &test).unwrap();
+
     assert_eq!(
         String::from_utf8(output.stderr).unwrap(),
         "transform failure\nconversion failure\nmodel failure\nstop failure\ntransform failure\nconversion failure\nmodel failure\nstop failure\n"

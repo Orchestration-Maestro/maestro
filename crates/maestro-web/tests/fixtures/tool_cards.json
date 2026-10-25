@@ -1,0 +1,6292 @@
+{
+  "rows": [
+    {
+      "id": "bash-absent-false",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-absent-true",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-empty-object-false",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-empty-object-true",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-empty-field-false",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "command": ""
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-empty-field-true",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "command": ""
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-present-false",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> echo 雪 <&>",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-present-true",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> echo 雪 <&>",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-absent-ok",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-absent-error",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-empty-object-ok",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-empty-object-error",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-empty-field-ok",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "command": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-empty-field-error",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "command": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-present-ok",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\n4",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-present-error",
+      "tool": "bash",
+      "test": "bash_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\n4",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-empty-false",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> echo 雪 <&>",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-empty-true",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> echo 雪 <&>",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-mixed-false",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "text",
+              "text": "last"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\nlast\nfirst\nlast",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-mixed-true",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "text",
+              "text": "last"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\nlast\nfirst\nlast",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-two-empty-false",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\n\n",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-two-empty-true",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\n\n",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-image-only-false",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> echo 雪 <&>",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-image-only-true",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> echo 雪 <&>",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-json-looking-false",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " {\"z\":1,\"a\":2} "
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\n {\"z\":1,\"a\":2} ",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-json-looking-true",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " {\"z\":1,\"a\":2} "
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\n {\"z\":1,\"a\":2} ",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-encoded-looking-false",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "YWJj"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\nYWJj",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-encoded-looking-true",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "YWJj"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\nYWJj",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-whitespace-markup-false",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\r\n<script>0</script> & 雪﻿"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\n \t\r\n<script>0</script> & 雪﻿",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-output-whitespace-markup-true",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\r\n<script>0</script> & 雪﻿"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> echo 雪 <&>\n\n \t\r\n<script>0</script> & 雪﻿",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "bash-not-trimmed",
+      "tool": "bash",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "command": " \t﻿ "
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": ">  \t﻿ ",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-absent-false",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-absent-true",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-empty-object-false",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-empty-object-true",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-empty-field-false",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "expression": ""
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-empty-field-true",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "expression": ""
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-present-false",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating 2 + 2",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-present-true",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating 2 + 2",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-absent-ok",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-absent-error",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-empty-object-ok",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-empty-object-error",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-empty-field-ok",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "expression": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-empty-field-error",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "expression": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-present-ok",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2 = 4",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-present-error",
+      "tool": "calculate",
+      "test": "calculate_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "4"
+        ]
+      }
+    },
+    {
+      "id": "calculate-output-empty-false",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2 = ",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-output-empty-true",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          ""
+        ]
+      }
+    },
+    {
+      "id": "calculate-output-mixed-false",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "text",
+              "text": "last"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2 = last\nfirst\nlast",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-output-mixed-true",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "text",
+              "text": "last"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "last\nfirst\nlast"
+        ]
+      }
+    },
+    {
+      "id": "calculate-output-two-empty-false",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2 = \n",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-output-two-empty-true",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "\n"
+        ]
+      }
+    },
+    {
+      "id": "calculate-output-image-only-false",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2 = ",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-output-image-only-true",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          ""
+        ]
+      }
+    },
+    {
+      "id": "calculate-output-json-looking-false",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " {\"z\":1,\"a\":2} "
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2 =  {\"z\":1,\"a\":2} ",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-output-json-looking-true",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " {\"z\":1,\"a\":2} "
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          " {\"z\":1,\"a\":2} "
+        ]
+      }
+    },
+    {
+      "id": "calculate-output-encoded-looking-false",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "YWJj"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2 = YWJj",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-output-encoded-looking-true",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "YWJj"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "YWJj"
+        ]
+      }
+    },
+    {
+      "id": "calculate-output-whitespace-markup-false",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\r\n<script>0</script> & 雪﻿"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2 =  \t\r\n<script>0</script> & 雪﻿",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "calculate-output-whitespace-markup-true",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": "2 + 2"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\r\n<script>0</script> & 雪﻿"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "2 + 2",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          " \t\r\n<script>0</script> & 雪﻿"
+        ]
+      }
+    },
+    {
+      "id": "calculate-not-trimmed",
+      "tool": "calculate",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "expression": " \t﻿ "
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating  \t﻿ ",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-absent-false",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting time...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-absent-true",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting time...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-empty-object-false",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-empty-object-true",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-empty-field-false",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "timezone": ""
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-empty-field-true",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "timezone": ""
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-present-false",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-present-true",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-absent-ok",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: 4",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-absent-error",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "4"
+        ]
+      }
+    },
+    {
+      "id": "time-empty-object-ok",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: 4",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-empty-object-error",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "4"
+        ]
+      }
+    },
+    {
+      "id": "time-empty-field-ok",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "timezone": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: 4",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-empty-field-error",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "timezone": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "4"
+        ]
+      }
+    },
+    {
+      "id": "time-present-ok",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC: 4",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-present-error",
+      "tool": "time",
+      "test": "time_cards_select_all_parameter_and_result_branches",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "4"
+        ]
+      }
+    },
+    {
+      "id": "time-output-empty-false",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC: ",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-output-empty-true",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          ""
+        ]
+      }
+    },
+    {
+      "id": "time-output-mixed-false",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "text",
+              "text": "last"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC: last\nfirst\nlast",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-output-mixed-true",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "text",
+              "text": "last"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "last\nfirst\nlast"
+        ]
+      }
+    },
+    {
+      "id": "time-output-two-empty-false",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC: \n",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-output-two-empty-true",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "\n"
+        ]
+      }
+    },
+    {
+      "id": "time-output-image-only-false",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC: ",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-output-image-only-true",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          ""
+        ]
+      }
+    },
+    {
+      "id": "time-output-json-looking-false",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " {\"z\":1,\"a\":2} "
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC:  {\"z\":1,\"a\":2} ",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-output-json-looking-true",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " {\"z\":1,\"a\":2} "
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          " {\"z\":1,\"a\":2} "
+        ]
+      }
+    },
+    {
+      "id": "time-output-encoded-looking-false",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "YWJj"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC: YWJj",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-output-encoded-looking-true",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "YWJj"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "YWJj"
+        ]
+      }
+    },
+    {
+      "id": "time-output-whitespace-markup-false",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\r\n<script>0</script> & 雪﻿"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC:  \t\r\n<script>0</script> & 雪﻿",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "id": "time-output-whitespace-markup-true",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\r\n<script>0</script> & 雪﻿"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in Etc/UTC",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          " \t\r\n<script>0</script> & 雪﻿"
+        ]
+      }
+    },
+    {
+      "id": "time-not-trimmed",
+      "tool": "time",
+      "test": "tool_cards_keep_ordered_literal_text_and_escaping",
+      "input": {
+        "params": {
+          "timezone": " \t﻿ "
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in  \t﻿ ",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    }
+  ],
+  "domains": [
+    {
+      "tool": "bash",
+      "kind": "missing",
+      "phase": "pending",
+      "input": {
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "missing",
+      "phase": "success",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "missing",
+      "phase": "error",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "null",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": null
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "null",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": null
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "null",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": null
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": ""
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "zero",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "zero",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": 0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "zero",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": 0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "negative-zero",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": -0.0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "negative-zero",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": -0.0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "negative-zero",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": -0.0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "number",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": 1.25
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> 1.25",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "number",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": 1.25
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> 1.25\n\nR",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "number",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": 1.25
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> 1.25\n\nR",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "false",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": false
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "false",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": false
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "false",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": false
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "true",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": true
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> true",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "true",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": true
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> true\n\nR",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "true",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": true
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> true\n\nR",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty-object",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": {}
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> {}",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty-object",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": {}
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> {}\n\nR",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty-object",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": {}
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> {}\n\nR",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "object",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> {\"z\":1,\"a\":2}",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "object",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> {\"z\":1,\"a\":2}\n\nR",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "object",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> {\"z\":1,\"a\":2}\n\nR",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty-array",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": []
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> []",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty-array",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": []
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> []\n\nR",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "empty-array",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": []
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> []\n\nR",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "array",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "command": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> [\"b\",\"a\",\"b\"]",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "array",
+      "phase": "success",
+      "input": {
+        "params": {
+          "command": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [
+          {
+            "content": "> [\"b\",\"a\",\"b\"]\n\nR",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "kind": "array",
+      "phase": "error",
+      "input": {
+        "params": {
+          "command": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Running command...",
+        "spinner": 0,
+        "status": "error",
+        "console": [
+          {
+            "content": "> [\"b\",\"a\",\"b\"]\n\nR",
+            "variant": "error"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "missing",
+      "phase": "pending",
+      "input": {
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "missing",
+      "phase": "success",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "missing",
+      "phase": "error",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "null",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": null
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "null",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": null
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "null",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": null
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": ""
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "zero",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "zero",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": 0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "zero",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": 0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "negative-zero",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": -0.0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "negative-zero",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": -0.0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "negative-zero",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": -0.0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "number",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": 1.25
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating 1.25",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "number",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": 1.25
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "1.25 = R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "number",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": 1.25
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "1.25",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "false",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": false
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "false",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": false
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "false",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": false
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Writing expression...",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "true",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": true
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating true",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "true",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": true
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "true = R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "true",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": true
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "true",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty-object",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": {}
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating {}",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty-object",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": {}
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "{} = R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty-object",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": {}
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "{}",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "object",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating {\"z\":1,\"a\":2}",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "object",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "{\"z\":1,\"a\":2} = R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "object",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "{\"z\":1,\"a\":2}",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty-array",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": []
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating []",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty-array",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": []
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "[] = R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "empty-array",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": []
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "[]",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "array",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "expression": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Calculating [\"b\",\"a\",\"b\"]",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "array",
+      "phase": "success",
+      "input": {
+        "params": {
+          "expression": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "[\"b\",\"a\",\"b\"] = R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "kind": "array",
+      "phase": "error",
+      "input": {
+        "params": {
+          "expression": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "[\"b\",\"a\",\"b\"]",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "missing",
+      "phase": "pending",
+      "input": {
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "missing",
+      "phase": "success",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "missing",
+      "phase": "error",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "null",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": null
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "null",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": null
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "null",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": null
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": ""
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": ""
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "zero",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "zero",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": 0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "zero",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": 0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "negative-zero",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": -0.0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "negative-zero",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": -0.0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "negative-zero",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": -0.0
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "number",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": 1.25
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in 1.25",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "number",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": 1.25
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in 1.25: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "number",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": 1.25
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in 1.25",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "false",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": false
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "false",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": false
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "false",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": false
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current date and time",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "true",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": true
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in true",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "true",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": true
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in true: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "true",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": true
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in true",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty-object",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": {}
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in {}",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty-object",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": {}
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in {}: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty-object",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": {}
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in {}",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "object",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in {\"z\":1,\"a\":2}",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "object",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in {\"z\":1,\"a\":2}: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "object",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": {
+            "z": 1,
+            "a": 2
+          }
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in {\"z\":1,\"a\":2}",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty-array",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": []
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in []",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty-array",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": []
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in []: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "empty-array",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": []
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in []",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "array",
+      "phase": "pending",
+      "input": {
+        "params": {
+          "timezone": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in [\"b\",\"a\",\"b\"]",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "array",
+      "phase": "success",
+      "input": {
+        "params": {
+          "timezone": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in [\"b\",\"a\",\"b\"]: R",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "kind": "array",
+      "phase": "error",
+      "input": {
+        "params": {
+          "timezone": [
+            "b",
+            "a",
+            "b"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "R"
+            }
+          ],
+          "isError": true,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Getting current time in [\"b\",\"a\",\"b\"]",
+        "spinner": 0,
+        "status": "error",
+        "console": [],
+        "errors": [
+          "R"
+        ]
+      }
+    }
+  ],
+  "localized": [
+    {
+      "tool": "bash",
+      "input": {
+        "language": "de",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Warte auf Befehl...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "input": {
+        "language": "de",
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Warte auf Befehl...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "bash",
+      "input": {
+        "language": "de",
+        "params": {
+          "command": "echo 雪 <&>"
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Führe Befehl aus...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [
+          {
+            "content": "> echo 雪 <&>",
+            "variant": "default"
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "input": {
+        "language": "de",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Warte auf Ausdruck",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "input": {
+        "language": "de",
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Schreibe Ausdruck...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "calculate",
+      "input": {
+        "language": "de",
+        "params": {
+          "expression": "2 + 2"
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Berechne 2 + 2",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "input": {
+        "language": "de",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Hole Zeit...",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "input": {
+        "language": "de",
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Hole aktuelles Datum und Uhrzeit",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "tool": "time",
+      "input": {
+        "language": "de",
+        "params": {
+          "timezone": "Etc/UTC"
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Hole aktuelle Zeit in Etc/UTC",
+        "spinner": 1,
+        "status": "inprogress",
+        "console": [],
+        "errors": []
+      }
+    }
+  ],
+  "registration": {
+    "initialNames": [
+      "javascript_repl",
+      "extract_document",
+      "bash"
+    ],
+    "initial": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> echo registered",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    },
+    "replaced": true,
+    "forced": {
+      "isCustom": false,
+      "header": "Tool Call",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    },
+    "restored": true,
+    "removed": {
+      "isCustom": false,
+      "header": "Tool Call",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    },
+    "stillAbsent": true,
+    "retainedOriginal": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> echo retained",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  "valueRoutes": [
+    {
+      "input": {
+        "params": null,
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "native output"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "input": {
+        "params": false,
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "native output"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "input": {
+        "params": [],
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "native output"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    },
+    {
+      "input": {
+        "params": "native scalar",
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "native output"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Waiting for command...",
+        "spinner": 0,
+        "status": "complete",
+        "console": [],
+        "errors": []
+      }
+    }
+  ],
+  "nativeDetail": {
+    "input": {
+      "params": {
+        "command": "echo native"
+      },
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "call",
+        "toolName": "tool",
+        "content": [
+          {
+            "type": "text",
+            "text": "native output"
+          }
+        ],
+        "isError": false,
+        "timestamp": 0
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> echo native\n\nnative output",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    },
+    "detailReads": 0
+  }
+}

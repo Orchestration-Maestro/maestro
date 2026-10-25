@@ -3,6 +3,7 @@
 #![cfg(target_arch = "wasm32")]
 use futures_util::FutureExt;
 use maestro_agent::{Agent, AgentMessage, AgentOptions, CustomAgentMessages, PromptInput};
+use maestro_models::SharedHandle;
 use maestro_models::{AssistantMessageEventStream, BoxFuture, StopReason};
 use std::{
     cell::RefCell,
@@ -25,9 +26,11 @@ fn browser_task_admission_accepts_local_captures() {
     let seen = Rc::new(RefCell::new(0));
     let counted = Rc::clone(&seen);
     let payload = Rc::new(());
-    let agent: Arc<Agent<Notice>> = Arc::new(Agent::new(AgentOptions {
-        spawn: Some(Arc::new(move |task| captured.borrow_mut().push(task))),
-        stream_fn: Some(Arc::new(move |_, _, _, _| {
+    let agent: SharedHandle<Agent<Notice>> = SharedHandle::new(Agent::new(AgentOptions {
+        spawn: Some(SharedHandle::new(move |task| {
+            captured.borrow_mut().push(task)
+        })),
+        stream_fn: Some(SharedHandle::new(move |_, _, _, _| {
             *counted.borrow_mut() += 1;
             let stream = AssistantMessageEventStream::new();
             let message = serde_json::from_value(serde_json::json!({
@@ -42,7 +45,7 @@ fn browser_task_admission_accepts_local_captures() {
         ..Default::default()
     }));
     let counted = Rc::clone(&seen);
-    agent.subscribe(Arc::new(move |event, _| {
+    agent.subscribe(SharedHandle::new(move |event, _| {
         if let maestro_agent::AgentEvent::MessageEnd {
             message: AgentMessage::Custom(message),
         } = &*event.read().unwrap()
@@ -78,39 +81,41 @@ fn browser_continuation_accepts_local_configuration() {
     let response = local.clone();
     let before = local.clone();
     let after = local.clone();
-    let agent: Arc<Agent<Notice>> = Arc::new(Agent::new(AgentOptions {
+    let agent: SharedHandle<Agent<Notice>> = SharedHandle::new(Agent::new(AgentOptions {
         initial_state: maestro_agent::AgentInitialState {
             messages: vec![AgentMessage::Custom(Arc::new(RwLock::new(Notice(
                 Rc::new(()),
             ))))],
             ..Default::default()
         },
-        spawn: Some(Arc::new(move |task| submitted.borrow_mut().push(task))),
-        convert_to_llm: Some(Arc::new(move |_| {
+        spawn: Some(SharedHandle::new(move |task| {
+            submitted.borrow_mut().push(task)
+        })),
+        convert_to_llm: Some(SharedHandle::new(move |_| {
             *converted.borrow_mut() += 1;
             Box::pin(std::future::ready(Ok(vec![])))
         })),
-        transform_context: Some(Arc::new(move |history, _| {
+        transform_context: Some(SharedHandle::new(move |history, _| {
             *transformed.borrow_mut() += 1;
             Box::pin(std::future::ready(Ok(history)))
         })),
-        get_api_key: Some(Arc::new(move |_| {
+        get_api_key: Some(SharedHandle::new(move |_| {
             *keyed.borrow_mut() += 1;
             Box::pin(std::future::ready(Ok(None)))
         })),
-        on_payload: Some(Arc::new(move |value, _| {
+        on_payload: Some(SharedHandle::new(move |value, _| {
             *payload.borrow_mut() += 1;
             Box::pin(std::future::ready(Ok(value)))
         })),
-        on_response: Some(Arc::new(move |_, _| {
+        on_response: Some(SharedHandle::new(move |_, _| {
             *response.borrow_mut() += 1;
             Box::pin(std::future::ready(Ok(())))
         })),
-        before_tool_call: Some(Arc::new(move |_, _| {
+        before_tool_call: Some(SharedHandle::new(move |_, _| {
             *before.borrow_mut() += 1;
             Box::pin(std::future::ready(Ok(None)))
         })),
-        after_tool_call: Some(Arc::new(move |_, _| {
+        after_tool_call: Some(SharedHandle::new(move |_, _| {
             *after.borrow_mut() += 1;
             Box::pin(std::future::ready(Ok(None)))
         })),

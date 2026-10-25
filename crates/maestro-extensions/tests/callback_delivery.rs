@@ -1,6 +1,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod support;
+use crate::support;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
 use support::{mark, run};

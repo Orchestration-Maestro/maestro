@@ -1,6 +1,6 @@
 //! Owned feature-created native reading admission.
 #[cfg(target_arch = "wasm32")]
-use super::AttachmentUiError;
+use super::AttachmentHostError;
 use std::rc::Rc;
 /// Native factory with no borrowed render operands.
 pub struct ReadingContent {
@@ -22,6 +22,8 @@ pub struct ReadingPlacement<'a> {
     pub content: Rc<ReadingContent>,
     /// Current transaction phase.
     pub phase: ReadingPhase,
+    /// Shrink measurement to content, bounded by the supplied frame width.
+    pub intrinsic_width: bool,
     /// Actual canvas-control sizes, matched by identity.
     pub sizes: &'a [(egui::Id, egui::Vec2)],
     /// Containing foreground modal.
@@ -31,6 +33,10 @@ pub struct ReadingPlacement<'a> {
 }
 /// Live natural dimensions in canvas points.
 pub struct ReadingLayout {
+    /// Measured native frame width in canvas points.
+    pub width: f32,
+    /// Native-resolved decoration border in local canvas points.
+    pub border: egui::epaint::MarginF32,
     /// Unclipped natural height.
     pub height: f32,
     /// Full native slot rectangles relative to the fixed frame in canvas points.
@@ -38,10 +44,15 @@ pub struct ReadingLayout {
 }
 /// Feature factory returning the whole retained native owner.
 #[cfg(target_arch = "wasm32")]
-pub type ReadingMount = dyn Fn(&web_sys::Document) -> Result<ReadingRoot, AttachmentUiError>;
+pub type ReadingMount = dyn Fn(&web_sys::Document) -> Result<ReadingRoot, AttachmentHostError>;
 /// Feature-owned native reading root.
 #[cfg(target_arch = "wasm32")]
 pub struct ReadingRoot {
+    /// Feature-owned decoration style applied to the fixed frame, outside its backdrop root.
+    pub frame_style: &'static str,
+    /// Optional non-scrolling decoration, mounted inside the fixed clipped frame.
+    /// Its positioning and pointer policy belong to the feature's stylesheet.
+    pub decoration: Option<web_sys::Element>,
     /// Feature-created native text root.
     pub element: web_sys::Element,
     /// Empty native slots retaining their caller identities.
@@ -49,14 +60,14 @@ pub struct ReadingRoot {
     /// Mounted feature lifetime; factories must not retain this owner.
     pub owner: Option<Box<dyn std::any::Any>>,
     /// Reconcile staged content into the previous root after successful placement.
-    /// The callback is infallible and retains that root, its slots and native state.
+    /// The callback retains that root, its slots and native state, or returns an error.
     /// Publication releases the callback rather than retaining obsolete preparations.
     pub commit: Option<Box<ReadingCommit>>,
 }
 
 /// Commit a staged update into the root retained under the same surface identity.
 #[cfg(target_arch = "wasm32")]
-pub type ReadingCommit = dyn Fn(&ReadingRoot);
+pub type ReadingCommit = dyn Fn(&ReadingRoot) -> Result<(), AttachmentHostError>;
 
 /// Publish a full native body through the existing two-phase transaction.
 pub(crate) fn present(
@@ -65,7 +76,7 @@ pub(crate) fn present(
     surface: (egui::Id, egui::Rect, Option<egui::Id>),
     reading: &Rc<ReadingContent>,
     presentation: &maestro_theme::BrandPresentation<'_>,
-) -> Result<(), super::AttachmentUiError> {
+) -> Result<(), super::AttachmentHostError> {
     for phase in [ReadingPhase::Measure, ReadingPhase::Publish] {
         host.present(
             super::AttachmentSurface {
@@ -78,6 +89,7 @@ pub(crate) fn present(
                 content: super::AttachmentContent::Reading(ReadingPlacement {
                     content: Rc::clone(reading),
                     phase,
+                    intrinsic_width: false,
                     sizes: &[],
                     modal: surface.2,
                     context: ui.ctx(),

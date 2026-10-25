@@ -4,25 +4,23 @@ use crate::{
     tests::{model_support, session},
 };
 use maestro_credentials::{ApiKeyCredential, AuthCredential};
-use std::{cell::RefCell, rc::Rc};
+use std::sync::{Arc, Mutex};
 
 /// Controlled effects whose caller-visible log excludes ambient environment and shells.
-struct Operations(Rc<RefCell<Vec<String>>>);
+struct Operations(Arc<Mutex<Vec<String>>>);
 
 impl maestro_credentials::ConfigValueOperations for Operations {
-    fn environment(&self, name: &str) -> Option<String> {
-        self.0.borrow_mut().push(name.into());
+    fn execute(&self, name: &str) -> Option<Vec<u8>> {
+        self.0.lock().unwrap().push(name.into());
         Some(
             match name {
-                "BRIDGE_KEY" => " caller key ",
+                "bridge-key" => " caller key ",
                 "replacement-source" => " replacement key ",
                 _ => panic!("unexpected credential source"),
             }
-            .into(),
+            .as_bytes()
+            .to_vec(),
         )
-    }
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        panic!("this credential source requests no shell");
     }
 }
 
@@ -42,16 +40,19 @@ fn run_auth(assert_started: bool) {
         .build()
         .unwrap()
         .block_on(async {
-            let (session, _) = session::runner_session("/auth");
+            let calls = Arc::new(Mutex::new(Vec::new()));
+            let (session, _) = session::runner_session_with_config(
+                "/auth",
+                maestro_models::SharedHandle::new(Operations(calls.clone())),
+            );
             let catalog = session.model_registry;
             catalog.auth_storage().set(
                 "fixture",
                 AuthCredential::ApiKey(ApiKeyCredential {
-                    key: "BRIDGE_KEY".into(),
+                    key: "!bridge-key".into(),
                 }),
             );
-            let calls = Rc::new(RefCell::new(Vec::new()));
-            let (mut pump, admission) = Pump::new(Rc::new(Operations(calls.clone())));
+            let (mut pump, admission) = Pump::new();
             let endpoint = pump.registry().catalog(catalog.clone()).unwrap();
             let model = model_support::model("auth-owned").read().unwrap().clone();
             let worker = std::thread::spawn(move || {
@@ -66,21 +67,21 @@ fn run_auth(assert_started: bool) {
             assert!(pump.answer_next().await);
             if assert_started {
                 assert_eq!(
-                    calls.borrow().as_slice(),
-                    ["BRIDGE_KEY"],
+                    calls.lock().unwrap().as_slice(),
+                    ["bridge-key"],
                     "credential effects must start at consumption"
                 );
             }
             catalog.auth_storage().set(
                 "fixture",
                 AuthCredential::ApiKey(ApiKeyCredential {
-                    key: "replacement-source".into(),
+                    key: "!replacement-source".into(),
                 }),
             );
             drop(admission);
             pump.serve().await;
             worker.join().unwrap();
-            assert_eq!(calls.borrow().as_slice(), ["BRIDGE_KEY"]);
+            assert_eq!(calls.lock().unwrap().as_slice(), ["bridge-key"]);
             assert_eq!(std::sync::Arc::strong_count(&catalog), 1);
         });
 }

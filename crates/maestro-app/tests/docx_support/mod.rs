@@ -17,18 +17,27 @@ pub struct XmlInput {
     pub operation: String,
     /// Complete XML source.
     pub xml: String,
+    /// Cell-width suppression for every property group.
+    #[serde(default)]
+    pub ignore_width: bool,
 }
-/// Parse the source and route its root through the body, paragraph or run parser.
+/// Parse the source and route its root, or a document's body, through the body parsers.
 ///
 /// # Panics
-/// Panics if the source is not XML or the operation names no body route.
+/// Panics if the source is not XML, the operation names no body route, or a
+/// document has no body.
 pub fn framed(input: &XmlInput) -> Result<OpenXmlElementTree, DocxError> {
     let xml = parse_xml_string(&input.xml, true).unwrap();
     let element = OwnedXmlElement::new(xml.root());
+    let ignore_width = input.ignore_width;
     match input.operation.as_str() {
-        "body" => parse_body_elements(&element),
-        "paragraph" => parse_paragraph(&element),
-        "run" => parse_run(&element),
+        "body" => parse_body_elements(&element, ignore_width),
+        "document" => parse_body_elements(
+            &OwnedXmlElement::new(xml.element(xml.root(), "body").unwrap()),
+            ignore_width,
+        ),
+        "paragraph" => parse_paragraph(&element, ignore_width),
+        "run" => parse_run(&element, ignore_width),
         operation => panic!("unknown operation {operation}"),
     }
 }

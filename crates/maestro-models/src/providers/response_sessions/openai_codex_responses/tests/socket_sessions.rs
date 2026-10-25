@@ -17,9 +17,9 @@ use super::super::websocket::{
 use super::super::{CodexError, OpenAICodexResponsesOptions};
 use super::loopback::{Conversation, answer, read_request, respond};
 use super::socket_transport::{
-    Outcome, accept, acknowledged, closing, listen, opening, run_native, text_of, until_released,
+    Outcome, accept, acknowledged, closing, listen, opening, text_of, until_released,
 };
-use super::sockets::block_on;
+use crate::tests::runtime::{run, run_paused};
 use crate::{Cancellation, DiagnosticInput, Transport};
 use base64::Engine as _;
 use futures_util::future::{Either, join, join3, select as select_first};
@@ -169,7 +169,7 @@ async fn yields_expiry_to_a_claimed_handoff(listener: &TcpListener, url: &str) {
 #[test]
 fn maestro_response_sessions_expire_idle_sockets() {
     let _isolated = super::exclusive();
-    block_on(async {
+    run_paused(async {
         let (listener, url) = listen().await;
         expires_at_the_deadline(&listener, &url).await;
         restarts_the_idle_period_at_release(&listener, &url).await;
@@ -371,7 +371,7 @@ async fn busy_mismatch_and_other_session(listener: &TcpListener, url: &str) {
 #[test]
 fn maestro_response_sessions_bind_socket_identity() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (socket, mut peer) = pair().await;
         publish("identity-boundary", endpoint("a"), socket).keep();
         assert!(
@@ -498,7 +498,7 @@ async fn publish_race(first_gate: usize) {
 #[test]
 fn maestro_response_sessions_keep_replacement_cache_entry() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (new_peer, lease) = replaced_owner_leaves_the_replacement().await;
         Box::pin(replaced_lease_leaves_the_replacement(new_peer, lease)).await;
         Box::pin(publish_race(0)).await;
@@ -544,7 +544,7 @@ async fn uncached_servers(
 #[test]
 fn maestro_response_sessions_run_busy_session_uncached() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let session = "busy";
         let mut owner = Conversation::new(&url, Some(session), CACHED).await;
@@ -641,7 +641,7 @@ async fn idle_ping_publishes_nothing() {
 #[test]
 fn maestro_response_sessions_replace_closed_socket() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         for ending in ["close", "eof", "garbage"] {
             replaced_after_peer_ending(ending).await;
         }
@@ -723,7 +723,7 @@ async fn independent_sessions() {
 #[test]
 fn maestro_response_sessions_scope_missing_socket_session() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let sessions = [
             (None, false),
             (Some(""), false),
@@ -867,7 +867,7 @@ async fn failed_request(index: usize, fault: Fault, category: &str, message: &st
 #[test]
 fn maestro_response_sessions_clear_failed_socket_continuation() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         for (index, (fault, category, message)) in FAULTS.into_iter().enumerate() {
             Box::pin(failed_request(index, fault, category, message)).await;
         }
@@ -956,7 +956,7 @@ async fn dropped_cache_owner(listener: &TcpListener, url: &str) {
 #[test]
 fn maestro_response_sessions_release_socket_handoff_on_drop() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         dropped_handoff(&listener, &url).await;
         dropped_active_request(&listener, &url).await;
@@ -1087,7 +1087,7 @@ async fn close_while_connecting() {
 #[test]
 fn maestro_response_sessions_close_active_socket_session() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         for control in [Some("close-active"), None, Some("")] {
             Box::pin(close_during_use(control, &listener, &url)).await;
@@ -1137,7 +1137,7 @@ async fn close_with_late_frames(
 #[test]
 fn maestro_response_sessions_keep_frames_in_flight_at_explicit_close() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let delta = serde_json::json!({"type":"response.output_text.delta","delta":"more"});
         let error = serde_json::json!({"type":"error","message":"no"});
@@ -1162,7 +1162,7 @@ fn maestro_response_sessions_keep_frames_in_flight_at_explicit_close() {
 #[test]
 fn maestro_response_sessions_send_requested_close_reason_when_dropped() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let chat = Conversation::new(&url, Some("close-drop"), CACHED).await;
         let (ready_tx, ready_rx) = oneshot::channel::<()>();
@@ -1219,7 +1219,7 @@ async fn send_cancelling_at_start(chat: &Conversation, signal: &Cancellation) ->
 #[test]
 fn maestro_response_sessions_keep_post_completion_cancellation_state() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let signal = Cancellation::new();
         let mut chat = Conversation::new(&url, Some("late-abort"), CACHED).await;
@@ -1253,7 +1253,7 @@ fn maestro_response_sessions_keep_post_completion_cancellation_state() {
 #[test]
 fn maestro_response_sessions_discard_idle_application_frames() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let mut chat = Conversation::new(&url, Some("idle-frames"), CACHED).await;
         let (mut peer, first) = completed(&chat, &listener).await;
@@ -1286,7 +1286,7 @@ fn maestro_response_sessions_discard_idle_application_frames() {
 #[test]
 fn maestro_response_sessions_claim_idle_socket_synchronously() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let chat = Conversation::new(&url, Some("sync-claim"), CACHED).await;
         let (mut peer, _) = completed(&chat, &listener).await;

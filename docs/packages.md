@@ -6,6 +6,9 @@ for the user scope or, with `Some(InstalledSourceScope::Project)`, the project s
 local path rules and settings storage belong to [configured package
 sources](package-sources.md), `maestro-path` and `maestro-settings`.
 
+The content-only [development skill package](packages/maestro-skills.md) uses the
+same local-source resolution and conventional discovery.
+
 ## Sources
 
 - **npm** (`npm:` prefix): the user scope runs `install -g <spec>` or
@@ -42,6 +45,11 @@ Installation does not consult the offline setting. [Available-update
 checks](package-updates.md) consult it without acquiring contents. Configured
 execution selects registrations before applying the offline return.
 
+`DefaultPackageManager::with_offline` supplies the caller's startup selection.
+`Some(true)` suppresses that remote work, `Some(false)` permits it, and `None` keeps
+reading `MAESTRO_OFFLINE` whenever an operation consults offline mode. The flag
+accepts `1`, or `true` and `yes` in any ASCII letter case, and is never trimmed.
+
 ## Progress
 
 `set_progress_callback` replaces or clears the callback; each emission reads the
@@ -51,6 +59,41 @@ the next event. An operation reports a start event (`Installing <source>...` or
 failure text. A failing start callback stops the operation without an error event; a
 failing completion callback is reported as an error; a failing error callback
 replaces the error.
+
+## Commands
+
+`maestro-cli`'s `handle_package_command` turns `install`, `remove` (with
+`uninstall` as its alias), `update` and `list` into those operations and prints
+their outcomes; it returns whether the first argument named a package command.
+Each command loads settings lazily, reports their failures as
+`Warning (package command, <scope> settings): <message>`, keeps the raw global
+snapshot for self-update, and only then builds the manager. A warning callback may
+edit the live settings before that snapshot; later factory, progress and output
+edits do not replace it.
+
+Options are scanned left to right and keep the first value of each diagnostic
+category: unknown option, missing value, extra argument, conflict, then a missing
+install or remove source. `--help` wins over all of them and prints the complete
+document of its command. `--local` applies to install and remove only; `--self`,
+`--extensions`, `--extension <source>` and `--force` apply to update only. An empty
+first positional source is replaceable, while an empty extra argument is present
+and reports `Unexpected argument .` before any settings read or package effect.
+
+Update runs the selected extension update first and the application update second,
+so an extension failure stops before any self-update. The self-update side reuses
+the [application plan and runner](application/configuration.md#self-update-selection):
+a release that is not newer skips it, a changed package identity replaces the
+installed one, and a nonzero child exit reports the manual command to run.
+
+`handle_config_command` handles one leading `config` and ignores later tokens. It
+observes the working directory and the agent directory once, loads the settings
+owner, reports their failures as
+`Warning (config command, <scope> settings): <message>`, builds the manager over
+that same owner, resolves the configured paths and presents the
+[selector](cli.md#selectors) over them. A command whose presentation succeeds asks
+that presentation's exit effect for status 0; directory, settings, manager,
+resolution and presentation failures keep their own error, so it requests no exit and
+prints no package-command error line.
 
 ## Persistence
 
@@ -62,6 +105,14 @@ and returns whether any entry changed. Neither flushes settings nor undoes
 installed contents when the settings edit fails.
 
 ## Children
+
+Every package child starts through the native launcher with an argument vector,
+without Maestro building a shell command string. On Windows the launcher finds a
+command such as `npm` using the child's working directory, `PATH` and `PATHEXT`.
+Relative command paths and search directories use that working directory;
+capture overrides apply to lookup as well as the child's environment. Resolution
+and spawning share one operation. Rust's standard library runs `.cmd`
+and `.bat` files through `cmd.exe` and handles batch argument escaping.
 
 `NativePackageOperations::run_command` runs a child with inherited streams, or, while
 the supplied query reports stdout taken over, with stdin ignored and output sent to
@@ -95,8 +146,7 @@ Temporary npm shares `<temp>/maestro-extensions/npm/f35b2129`.
 Temporary Git uses `<temp>/maestro-extensions/git-<host>/<hash>/<path>`;
 `hash` is the first eight lowercase hexadecimal characters of SHA-256 over
 `git-<host>-<path>` before lexical joining, without the ref.
-The supplied `PackageOperations::temp_dir` selects the temporary base;
-`NativePackageOperations` uses Rust's OS temporary-directory selection.
+Rust's OS temporary-directory selection (`TMPDIR` on Unix) gives the temporary base.
 Temporary Git creates no managed-root ignore file. Cache files outlive the manager.
 
 Only existing, unpinned, online temporary Git sources refresh. The refresh rechecks
@@ -114,7 +164,9 @@ that fallback even when discovery is empty.
 Extension entry-point manifests use `package.json`'s `maestro.extensions` literal
 paths before `index.ts`, `index.js` or `index.wasm`, in that order. Other extension
 discovery admits top-level `.ts`, `.js` and `.wasm` files and entry-bearing children.
-Suffix matching is case-sensitive; a child's helper files are not implicit entries. Skills stop at an admitted `SKILL.md`;
+Suffix matching is case-sensitive; a child's helper files are not implicit entries.
+These entry rules belong to `maestro_resources::package_manifest`, which
+[extension path discovery](extensions/loading.md) shares. Skills stop at an admitted `SKILL.md`;
 loose Markdown is root-only. Prompts and themes recurse by their suffix.
 
 Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using
@@ -127,8 +179,7 @@ text begins with `#` before rule preparation removes one leading byte-order mark
 Directory patterns such as `a/**/` match `a` itself; `a/**` selects only descendants.
 The deepest matching directory decides, with later rules winning
 within that directory. Native Unix
-listings use byte-name order; replacement filesystem adapters supply their own
-order through `PackageOperations::resource_operations`. Returned records keep their authored path spellings; configured ownership is
+listings use byte-name order. Returned records keep their authored path spellings; configured ownership is
 described in [configured resource resolution](#configured-resource-resolution).
 Delegated path rules belong to [configured sources](package-sources.md) and
 file-pattern policy to [file patterns](package-patterns.md).

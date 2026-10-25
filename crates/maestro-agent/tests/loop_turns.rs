@@ -4,7 +4,7 @@
 use crate::support;
 use maestro_agent::{AgentEvent, AgentMessage, run_agent_loop};
 use std::sync::{Arc, Mutex, RwLock};
-use support::*;
+use support::{observable::kind, *};
 
 /// Prompting retains entries but leaves the supplied outer history unchanged.
 #[test]
@@ -56,22 +56,6 @@ async fn prompt_returns_new_messages_and_keeps_input_history_case() {
             "agent_end"
         ]
     );
-}
-
-/// Identify lifecycle variants without hiding their ordering.
-fn kind(event: &AgentEvent) -> &'static str {
-    match event {
-        AgentEvent::AgentStart => "agent_start",
-        AgentEvent::AgentEnd { .. } => "agent_end",
-        AgentEvent::TurnStart => "turn_start",
-        AgentEvent::TurnEnd { .. } => "turn_end",
-        AgentEvent::MessageStart { .. } => "message_start",
-        AgentEvent::MessageEnd { .. } => "message_end",
-        AgentEvent::MessageUpdate { .. } => "message_update",
-        AgentEvent::ToolExecutionStart { .. } => "tool_execution_start",
-        AgentEvent::ToolExecutionUpdate { .. } => "tool_execution_update",
-        AgentEvent::ToolExecutionEnd { .. } => "tool_execution_end",
-    }
 }
 
 /// Continuation appends through the original handle without replaying its tail.

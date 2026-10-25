@@ -1,4 +1,5 @@
 [package]
+autotests = false
 name = "maestro-process"
 version = "0.1.0"
 edition.workspace = true
@@ -7,14 +8,25 @@ repository.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
-tokio = { version = "=1.53.2", default-features = false, features = ["process", "io-util", "rt", "macros", "time", "sync"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["process", "io-util", "rt", "macros", "time", "sync"] }
 
 [target.'cfg(unix)'.dependencies]
 process-wrap = { version = "=10.0.1", default-features = false, features = ["tokio1", "process-session"] }
+signal-hook = { version = "=0.3.18", default-features = false }
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "process"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["signal"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["net", "sync", "test-util"] }
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
+maestro-test-tracing.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["net", "sync", "test-util"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+process-wrap = { version = "=10.0.1", default-features = false, features = ["reset-sigmask"] }
+rustix = { version = "=1.1.5", default-features = false, features = ["pty", "termios"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["net", "signal"] }
+tracing = "=0.1.44"
 
 [dev-dependencies]
 serde.workspace = true
@@ -22,3 +34,7 @@ serde_json.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"

@@ -5,10 +5,11 @@ use crate::browser::components::sandboxed_iframe::{
     SandboxEnvironment, SandboxExecution, SandboxFile, SandboxFileContent, SandboxHost,
     SandboxResult, SandboxUrlProvider, SandboxValue,
 };
+use crate::utils::lock::read;
 use base64::Engine;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
 use maestro_models::SharedHandle;
-use maestro_models::{Cancellation, DiagnosticErrorInfo, TextContent, Tool, UserBlock};
+use maestro_models::{Cancellation, DiagnosticErrorInfo, Tool};
 use maestro_text::is_whitespace_scalar;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
@@ -174,15 +175,25 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
         Tool {
             name: "javascript_repl".into(),
             description: String::new(),
-            parameters: serde_json::json!({"type":"object","required":["title","code"],"properties":{"title":{"type":"string","description":"Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"},"code":{"type":"string","description":"JavaScript code to execute"}}}),
+            parameters: maestro_models::ParameterSchema::authored(
+                serde_json::json!({"type":"object","required":["title","code"],"properties":{"title":{"type":"string","description":"Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"},"code":{"type":"string","description":"JavaScript code to execute"}}}),
+                [
+                    (String::new(), maestro_models::SchemaKind::Object),
+                    (
+                        "/properties/title".to_owned(),
+                        maestro_models::SchemaKind::String,
+                    ),
+                    (
+                        "/properties/code".to_owned(),
+                        maestro_models::SchemaKind::String,
+                    ),
+                ],
+            ),
         },
         "JavaScript REPL".into(),
         SharedHandle::new(move |_, args: JavaScriptReplParams, signal, _| {
             let providers = runtime_providers(&factory);
-            let url = url
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone();
+            let url = read(&url).clone();
             Box::pin(execute_tool(
                 args.code,
                 providers,
@@ -226,23 +237,16 @@ async fn execute_tool<V: SandboxValue>(
         .into_iter()
         .map(encode_file)
         .collect();
-    Ok(AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text: result.output,
-            text_signature: None,
-        })],
-        details: Some(JavaScriptReplToolResult { files: Some(files) }),
-        terminate: None,
-    })
+    Ok(AgentToolResult::text_result(
+        result.output,
+        Some(JavaScriptReplToolResult { files: Some(files) }),
+    ))
 }
 /// Invoke the current factory without holding the setting guard.
 fn runtime_providers<V: SandboxValue>(
     setting: &RwLock<Option<RuntimeProvidersFactory<V>>>,
 ) -> Result<Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo> {
-    let factory = setting
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone();
+    let factory = read(setting).clone();
     factory.map_or_else(|| Ok(vec![]), |factory| factory())
 }
 /// Encode borrowed payload bytes without intermediate binary strings.

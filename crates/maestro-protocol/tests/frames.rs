@@ -680,6 +680,192 @@ fn incomplete_frame_reports_unexpected_eof() {
 }
 
 #[test]
+/// A client string length the frame cannot hold fails decoding.
+fn client_string_length_beyond_the_frame_is_rejected() {
+    // `AttachTerminal` whose `terminal_id` declares 0x2600_0000_0100_0000 bytes.
+    let frame = [0x0a, 0, 0, 0, 0x05, 0xfd, 0, 0, 0, 0x01, 0, 0, 0, 0x26];
+    let result: Result<ClientMessage, FramingError> =
+        read_message(&mut frame.as_slice(), MAX_FRAME_SIZE);
+    assert!(
+        matches!(result, Err(FramingError::Bincode(_))),
+        "{result:?}"
+    );
+}
+
+#[test]
+/// A server string length the frame cannot hold fails decoding.
+fn server_string_length_beyond_the_frame_is_rejected() {
+    // `ServerShutdown` whose `reason` declares 0x2600_0000_0100_0000 bytes.
+    let frame = [
+        0x0b, 0, 0, 0, 0x04, 0x01, 0xfd, 0, 0, 0, 0x01, 0, 0, 0, 0x26,
+    ];
+    let result: Result<ServerMessage, FramingError> =
+        read_message(&mut frame.as_slice(), MAX_GRAPHICS_FRAME_SIZE);
+    assert!(
+        matches!(result, Err(FramingError::Bincode(_))),
+        "{result:?}"
+    );
+}
+
+#[test]
+/// A string past the frame's cap fails on the decoding limit, not on missing bytes.
+fn string_length_past_the_frame_cap_fails_on_the_limit() {
+    // `AttachTerminal` whose `terminal_id` declares one byte more than the cap.
+    let mut payload = vec![0x05, 0xfc];
+    payload.extend_from_slice(&u32::try_from(MAX_FRAME_SIZE + 1).unwrap().to_le_bytes());
+    let mut frame = u32::try_from(payload.len()).unwrap().to_le_bytes().to_vec();
+    frame.extend_from_slice(&payload);
+
+    let result: Result<ClientMessage, FramingError> =
+        read_message(&mut frame.as_slice(), MAX_FRAME_SIZE);
+    match result {
+        Err(FramingError::Bincode(message)) => {
+            assert!(message.contains("LimitExceeded"), "{message}");
+        }
+        other => panic!("expected the decoding limit, got: {other:?}"),
+    }
+}
+
+#[test]
+/// Strings past the normal and graphics caps round-trip under a cap that admits them.
+fn strings_past_the_frame_caps_round_trip_under_a_larger_cap() {
+    for (len, cap) in [
+        (MAX_FRAME_SIZE + 1, MAX_GRAPHICS_FRAME_SIZE),
+        (MAX_GRAPHICS_FRAME_SIZE + 1, 2 * MAX_GRAPHICS_FRAME_SIZE),
+    ] {
+        let msg = ServerMessage::Clipboard {
+            data: "A".repeat(len),
+        };
+        let mut buf = Vec::new();
+        write_message(&mut buf, &msg).unwrap();
+        let decoded: ServerMessage = read_message(&mut buf.as_slice(), cap).unwrap();
+        assert_eq!(decoded, msg);
+    }
+}
+
+#[test]
+/// Huge vector counts in tiny frames fail without reserving the claimed length.
+fn huge_vector_counts_in_tiny_frames_are_rejected() {
+    for tag in [1, 3] {
+        let frame = [0x0a, 0, 0, 0, tag, 0xfd, 0, 0, 0, 1, 0, 0, 0, 0x26];
+        let error = if tag == 1 {
+            read_message::<_, ClientMessage>(&mut frame.as_slice(), MAX_FRAME_SIZE).unwrap_err()
+        } else {
+            read_message::<_, ServerMessage>(&mut frame.as_slice(), MAX_FRAME_SIZE).unwrap_err()
+        };
+        assert!(
+            matches!(error, FramingError::Bincode(ref message) if message.contains("UnexpectedEnd")),
+            "{error:?}"
+        );
+    }
+}
+
+#[test]
+/// Small frames cannot reserve strings sized for the protocol-wide cap.
+fn string_allocation_limit_tracks_the_received_payload() {
+    for tag in [vec![5], vec![4, 1]] {
+        let mut payload = tag;
+        payload.extend_from_slice(&[251, 0, 16]);
+        let mut frame = u32::try_from(payload.len()).unwrap().to_le_bytes().to_vec();
+        frame.extend_from_slice(&payload);
+        let error = if payload[0] == 5 {
+            read_message::<_, ClientMessage>(&mut frame.as_slice(), MAX_FRAME_SIZE).unwrap_err()
+        } else {
+            read_message::<_, ServerMessage>(&mut frame.as_slice(), MAX_FRAME_SIZE).unwrap_err()
+        };
+        assert!(
+            matches!(error, FramingError::Bincode(ref message) if message.contains("LimitExceeded")),
+            "{error:?}"
+        );
+    }
+}
+
+#[test]
+/// Admitted clipboard strings retain their cap-edge round trips.
+fn cap_edge_clipboard_round_trips() {
+    for cap in [MAX_FRAME_SIZE, MAX_GRAPHICS_FRAME_SIZE] {
+        assert_cap_round_trip(
+            &ServerMessage::Clipboard {
+                data: "A".repeat(cap - 8),
+            },
+            cap,
+            cap - 2,
+        );
+    }
+}
+
+#[test]
+/// Admitted client byte vectors retain their cap-edge round trips.
+fn cap_edge_client_bytes_round_trip() {
+    for cap in [MAX_FRAME_SIZE, MAX_GRAPHICS_FRAME_SIZE] {
+        assert_cap_round_trip(
+            &ClientMessage::Input {
+                data: vec![0; cap - 6],
+            },
+            cap,
+            cap,
+        );
+    }
+}
+
+#[test]
+/// Admitted graphics bytes retain their cap-edge round trips.
+fn cap_edge_graphics_round_trip() {
+    for cap in [MAX_FRAME_SIZE, MAX_GRAPHICS_FRAME_SIZE] {
+        assert_cap_round_trip(
+            &ServerMessage::Graphics {
+                bytes: vec![0; cap - 6],
+            },
+            cap,
+            cap,
+        );
+    }
+}
+
+/// Checks both wire size and decoding through the public frame reader.
+fn assert_cap_round_trip<M>(message: &M, cap: usize, payload_len: usize)
+where
+    M: serde::Serialize + for<'de> serde::Deserialize<'de> + PartialEq + std::fmt::Debug,
+{
+    let mut buf = Vec::new();
+    write_message(&mut buf, message).unwrap();
+    assert_eq!(buf.len() - 4, payload_len);
+    assert_eq!(
+        &read_message::<_, M>(&mut buf.as_slice(), cap).unwrap(),
+        message
+    );
+}
+
+#[test]
+/// Compact cell collections decode even when accounting exceeds their wire size.
+fn dense_cells_at_the_frame_cap_round_trip() {
+    let cell = CellData {
+        symbol: String::new(),
+        fg: 0,
+        bg: 0,
+        modifier: 0,
+        skip: false,
+        hyperlink: None,
+    };
+    let count = (MAX_FRAME_SIZE - 11) / 6;
+    let msg = ServerMessage::Frame(FrameData {
+        cells: vec![cell; count],
+        width: 1,
+        height: 1,
+        cursor: None,
+        hyperlinks: Vec::new(),
+        graphics: vec![0; 3],
+    });
+    let mut buf = Vec::new();
+    write_message(&mut buf, &msg).unwrap();
+    assert_eq!(buf.len() - 4, MAX_FRAME_SIZE);
+    assert_eq!(
+        read_message::<_, ServerMessage>(&mut buf.as_slice(), MAX_FRAME_SIZE).unwrap(),
+        msg
+    );
+}
+
+#[test]
 /// The detach frame prefix records the payload length.
 fn detach_frame_prefix_matches_its_payload_length() {
     // Detach is a one-byte bincode payload.
@@ -1030,4 +1216,25 @@ fn hello_message() -> ClientMessage {
         keybindings: ClientKeybindings::Server,
         launch_mode: ClientLaunchMode::App,
     }
+}
+
+/// Named modifier values preserve the existing wire bit layout.
+#[test]
+fn modifier_bits_match_wire_layout() {
+    assert_eq!(
+        [
+            KeyModifiers::NONE,
+            KeyModifiers::SHIFT,
+            KeyModifiers::CONTROL,
+            KeyModifiers::ALT,
+            KeyModifiers::SUPER,
+            KeyModifiers::HYPER,
+            KeyModifiers::META
+        ],
+        [0, 1, 2, 4, 8, 16, 32]
+    );
+    assert_eq!(
+        KeyModifiers::SHIFT | KeyModifiers::ALT | KeyModifiers::META,
+        37
+    );
 }

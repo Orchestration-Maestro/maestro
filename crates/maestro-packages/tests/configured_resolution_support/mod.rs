@@ -47,12 +47,11 @@ struct Recipe {
     action: Option<String>,
     /// Offline environment value.
     offline: Option<String>,
+    /// Startup offline selection supplied to the manager.
+    selection: Option<bool>,
     /// Failed acquisition.
     #[serde(rename = "failInstall")]
     fail_install: Option<bool>,
-    /// Failed home read.
-    #[serde(rename = "homeFailure")]
-    home_failure: Option<bool>,
     /// Failed ambient cwd read.
     #[serde(rename = "cwdFailure")]
     cwd_failure: Option<bool>,
@@ -72,28 +71,16 @@ struct Recipe {
 }
 /// One native tree with surviving caller aliases.
 struct Fixture {
-    /// Owns the tree until producers finish.
-    scratch: scratch::Scratch,
+    /// The tree the calling process owns.
+    base: std::path::PathBuf,
     /// Public operation owner.
     manager: DefaultPackageManager<support::Controlled>,
     /// Surviving settings alias.
     settings: Rc<std::cell::RefCell<SettingsManager>>,
-    /// Directory permissions restored before removing the tree.
-    denied: Vec<std::path::PathBuf>,
+    /// Guards that give denied entries their permissions back before the tree goes.
+    _denied: Vec<maestro_test_directory::Restore>,
     /// Completed effect observations.
     effects: Rc<support::Effects>,
-}
-/// Restricts native resource path operands to one owned fixture tree.
-pub fn owned_filesystem(root: &Path) -> resolution_support::Filesystem {
-    resolution_support::Filesystem {
-        owned_root: Some(std::path::PathBuf::from(maestro_path::normalize(
-            &std::env::current_dir()
-                .unwrap()
-                .join(root)
-                .to_string_lossy(),
-        ))),
-        ..Default::default()
-    }
 }
 /// Runs complete selected recipes.
 pub fn check(names: &[&str]) {
@@ -109,14 +96,39 @@ pub fn check(names: &[&str]) {
         .collect();
     assert_eq!(cases.len(), names.len());
     for case in cases {
-        let fixture = setup(&case.recipe);
-        resolution_support::run(observe(&fixture, &case)).unwrap();
+        run_case(&case);
     }
 }
-/// Constructs the configured manager from real scoped settings files.
-fn setup(recipe: &Recipe) -> Fixture {
-    let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.0.to_str().unwrap();
+/// Runs one recipe in a child process with the recipe's home and offline value.
+fn run_case(case: &Record) {
+    let Some(base) = resolution_support::case_in_child(&case.case, |base| {
+        let home = case
+            .recipe
+            .home
+            .as_deref()
+            .map_or_else(|| format!("{base}/home"), |s| s.replace("$BASE", base));
+        vec![
+            ("HOME", Some(home)),
+            ("MAESTRO_OFFLINE", case.recipe.offline.clone()),
+        ]
+    }) else {
+        return;
+    };
+    // A privileged run reads denied entries anyway, so such a recipe has nothing to check.
+    let Some(fixture) = setup(&case.recipe, base) else {
+        return;
+    };
+    let _removed = case.recipe.cwd_failure.unwrap_or_default().then(|| {
+        let owner = scratch::Scratch::new_in(&fixture.base).unwrap();
+        owner.enter_removed("removed").unwrap();
+        owner
+    });
+    resolution_support::run(observe(&fixture, case)).unwrap();
+}
+/// Constructs the configured manager from real scoped settings files; `None` when this
+/// process still reads the recipe's denied entries.
+fn setup(recipe: &Recipe, root: std::path::PathBuf) -> Option<Fixture> {
+    let base = root.to_str().unwrap();
     let cwd = recipe
         .cwd
         .as_deref()
@@ -130,7 +142,7 @@ fn setup(recipe: &Recipe) -> Fixture {
     if !recipe.no_git.unwrap_or_default() {
         fs::write(Path::new(&cwd).join(".git"), "gitdir: unused").unwrap();
     }
-    native_tree(&scratch.0, recipe);
+    let denied = native_tree(&root, recipe)?;
     let mut global = substitute(&recipe.global, base);
     global["npmCommand"] = json!(["npm"]);
     fs::write(Path::new(&user).join("settings.json"), global.to_string()).unwrap();
@@ -151,21 +163,19 @@ fn setup(recipe: &Recipe) -> Fixture {
             settings_manager: Rc::clone(&settings),
         },
         support::Controlled(Rc::clone(&effects)),
-    );
-    Fixture {
-        denied: recipe
-            .denied
-            .iter()
-            .map(|name| scratch.0.join(name))
-            .collect(),
-        scratch,
+    )
+    .with_offline(recipe.selection);
+    Some(Fixture {
+        _denied: denied,
+        base: root,
         manager,
         settings,
         effects,
-    }
+    })
 }
-/// Creates each supplied file, directory, package and link.
-fn native_tree(root: &Path, recipe: &Recipe) {
+/// Creates each supplied file, directory, package and link, then denies access to the
+/// recipe's denied entries; `None` when this process is not refused.
+fn native_tree(root: &Path, recipe: &Recipe) -> Option<Vec<maestro_test_directory::Restore>> {
     let base = root.to_str().unwrap();
     for (name, text) in &recipe.files {
         let path = root.join(name);
@@ -186,29 +196,15 @@ fn native_tree(root: &Path, recipe: &Recipe) {
         }
         std::os::unix::fs::symlink(root.join(target), dest).unwrap();
     }
-    for name in &recipe.denied {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(root.join(name), fs::Permissions::from_mode(0o000)).unwrap();
-    }
+    recipe
+        .denied
+        .iter()
+        .map(|name| maestro_test_directory::deny(root.join(name), 0o000).unwrap())
+        .collect()
 }
-/// Supplies controlled acquisition and ambient failures below their owning wrappers.
+/// Supplies controlled acquisition failures below their owning wrappers.
 fn effects(recipe: &Recipe, base: &str) -> Rc<support::Effects> {
-    let resources = owned_filesystem(Path::new(base));
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        resources: Some(Rc::new(resources)),
-        ..Default::default()
-    });
-    *effects.home_override.borrow_mut() = (!recipe.home_failure.unwrap_or_default()).then(|| {
-        recipe
-            .home
-            .as_deref()
-            .map_or_else(|| format!("{base}/home"), |s| s.replace("$BASE", base))
-    });
-    effects
-        .fail_ambient
-        .set(recipe.home_failure.unwrap_or_default() || recipe.cwd_failure.unwrap_or_default());
-    *effects.offline.borrow_mut() = recipe.offline.clone();
+    let effects = Rc::new(support::Effects::default());
     effects.outputs.borrow_mut().push_back(Ok(support::output(
         &format!("{base}/global_node_modules"),
         "",
@@ -222,8 +218,7 @@ async fn observe(fixture: &Fixture, case: &Record) -> std::io::Result<()> {
     let manager = &fixture.manager;
     let settings = &fixture.settings;
     let effects = &fixture.effects;
-    let scratch = &fixture.scratch;
-    let base = scratch.0.to_str().unwrap();
+    let base = fixture.base.to_str().unwrap();
     let events = Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
     let sink = Rc::clone(&events);
     manager.set_progress_callback(Some(Rc::new(move |event| {
@@ -297,7 +292,10 @@ async fn gated_resolution(
 }
 /// Preserves command order, repetitions and complete operands while changing only framing.
 fn command_output(call: &Value, base: &str) -> Value {
-    let mut call: Value = serde_json::from_str(&call.to_string().replace(base, "$BASE")).unwrap();
+    let mut call: Value = serde_json::from_str(&support::recorded_stages(
+        &call.to_string().replace(base, "$BASE"),
+    ))
+    .unwrap();
     let object = call.as_object_mut().unwrap();
     object.shift_remove("mode");
     if let Some(cwd) = object.shift_remove("cwd") {
@@ -426,10 +424,15 @@ fn gated_callback<'a>(
 }
 /// Demonstrates a non-static callback capture through a completed configured operation.
 pub fn borrowed_callback() {
-    let fixture = setup(&Recipe {
-        global: json!({"packages":["npm:missing"]}),
-        ..Recipe::default()
-    });
+    let tree = scratch::Scratch::new().unwrap();
+    let fixture = setup(
+        &Recipe {
+            global: json!({"packages":["npm:missing"]}),
+            ..Recipe::default()
+        },
+        tree.path().to_path_buf(),
+    )
+    .unwrap();
     let manager = &fixture.manager;
     let settings = &fixture.settings;
     let effects = &fixture.effects;
@@ -450,13 +453,4 @@ pub fn borrowed_callback() {
             .iter()
             .any(|(_, args)| args.first().is_some_and(|arg| arg == "install"))
     );
-}
-
-impl Drop for Fixture {
-    fn drop(&mut self) {
-        use std::os::unix::fs::PermissionsExt;
-        for path in &self.denied {
-            fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
-        }
-    }
 }

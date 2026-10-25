@@ -4,6 +4,7 @@ use maestro_app::configuration::migrations::{MigrationStyle, run_migrations};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
+    ffi::OsStr,
     fs, io,
     os::unix::fs::{PermissionsExt, symlink},
     path::Path,
@@ -28,7 +29,7 @@ struct Input {
 #[serde(tag = "kind", deny_unknown_fields)]
 enum InputEntry {
     #[serde(rename = "dir")]
-    Directory,
+    Directory {},
     #[serde(rename = "file")]
     File { text: String },
     #[serde(rename = "link")]
@@ -66,7 +67,7 @@ struct Failure {
 #[serde(tag = "kind", deny_unknown_fields)]
 enum Entry {
     #[serde(rename = "dir")]
-    Directory,
+    Directory {},
     #[serde(rename = "file")]
     File { hex: String },
     #[serde(rename = "link")]
@@ -105,7 +106,7 @@ fn setup(root: &Path, input: &Input) {
         let path = root.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         match entry {
-            InputEntry::Directory => fs::create_dir_all(path).unwrap(),
+            InputEntry::Directory {} => fs::create_dir_all(path).unwrap(),
             InputEntry::File { text } => {
                 fs::write(path, text.replace("$ROOT", root.to_str().unwrap())).unwrap();
             }
@@ -161,7 +162,7 @@ fn check_tree(root: &Path, expected: &BTreeMap<String, Entry>) {
         let path = root.join(name);
         let meta = fs::symlink_metadata(&path).unwrap();
         match entry {
-            Entry::Directory => assert!(meta.is_dir(), "{name}"),
+            Entry::Directory {} => assert!(meta.is_dir(), "{name}"),
             Entry::File { hex: expected } => {
                 assert!(meta.is_file());
                 assert!(
@@ -239,8 +240,10 @@ fn operation() {
     );
 }
 fn replay(name: &str, case: Case<Input, Expected>) {
-    let scratch = child::Scratch::new();
-    setup(&scratch.0, &case.input);
+    let Some(scratch) = admitted_scenario(name, &case) else {
+        return;
+    };
+    setup(scratch.0.path(), &case.input);
     let authored = case.input.root.as_deref().unwrap_or("agent");
     let agent = if case.input.relative_root {
         format!("./{authored}")
@@ -251,11 +254,13 @@ fn replay(name: &str, case: Case<Input, Expected>) {
     assert_eq!(case.expected.calls.len(), 2);
     for expected in case.expected.calls {
         let lines = child::probe(
-            &crate::child_process::selector(name).unwrap(),
-            &scratch.0,
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case("*"),
+            scratch.0.path(),
             &[
                 ("COMPLETION_OPERATION", "1"),
-                ("COMPLETION_ROOT", scratch.0.to_str().unwrap()),
+                ("COMPLETION_ROOT", scratch.0.path().to_str().unwrap()),
                 (
                     "COMPLETION_UNREADABLE",
                     &serde_json::to_string(&case.input.unreadable).unwrap(),
@@ -273,14 +278,14 @@ fn replay(name: &str, case: Case<Input, Expected>) {
             normalize_output(&actual.output, case.input.permissions.contains_key("agent")),
             expected.output
         );
-        check_tree(&scratch.0, &expected.tree);
+        check_tree(scratch.0.path(), &expected.tree);
         assert_eq!(
             case.input.observe_modes,
             expected.observed_modes.keys().cloned().collect::<Vec<_>>()
         );
         for (path, mode) in expected.observed_modes {
             assert_eq!(
-                fs::metadata(scratch.0.join(path))
+                fs::metadata(scratch.0.path().join(path))
                     .unwrap()
                     .permissions()
                     .mode()
@@ -290,11 +295,33 @@ fn replay(name: &str, case: Case<Input, Expected>) {
         }
     }
     for name in case.input.permissions.keys() {
-        let path = scratch.0.join(name);
+        let path = scratch.0.path().join(name);
         if path.exists() {
             fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
         }
     }
+}
+
+/// A scratch directory for a scenario this host can author, with the spellings it cannot store
+/// apart reported. The migration resolves managed names by their lower-case spelling through the
+/// host's own lookup, so an authored upper-case spelling is exercisable only where the host
+/// keeps it apart from its lower-case twin.
+fn admitted_scenario(name: &str, case: &Case<Input, Expected>) -> Option<child::Scratch> {
+    let scratch = child::Scratch::new();
+    for entry in case.input.entries.keys() {
+        let leaf = entry.rsplit('/').next().unwrap_or(entry.as_str());
+        let lower = leaf.to_ascii_lowercase();
+        if lower != leaf
+            && !scratch
+                .0
+                .keeps_distinct(&[OsStr::new(leaf), OsStr::new(&lower)])
+                .unwrap()
+        {
+            eprintln!("{name}: host folds {leaf:?} and {lower:?}");
+            return None;
+        }
+    }
+    Some(scratch)
 }
 
 pub fn run(name: &str) {
@@ -302,8 +329,12 @@ pub fn run(name: &str) {
         operation();
         return;
     }
+    // A privileged run ignores the cases' modes, so those cases have nothing to check.
+    let denials = crate::native::denials();
     for case in cases::<Input, Expected>(name) {
-        replay(name, case);
+        if denials || (case.input.permissions.is_empty() && case.input.unreadable.is_empty()) {
+            replay(name, case);
+        }
     }
 }
 

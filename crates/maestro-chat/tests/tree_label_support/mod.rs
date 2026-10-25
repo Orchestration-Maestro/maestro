@@ -1,5 +1,6 @@
 //! Whole-frame recorded panel observations.
 mod errors;
+use crate::bindings::{self, Binding};
 use crate::manual_runtime;
 use crate::palette;
 use crate::published;
@@ -46,13 +47,6 @@ struct Input {
     now: String,
     callback: String,
     clock_reenter: bool,
-}
-/// Key override shape.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Binding {
-    Single(String),
-    Multiple(Vec<String>),
 }
 /// Key input or one public operation.
 #[derive(Deserialize)]
@@ -129,10 +123,12 @@ struct Effects {
 
 /// Replays all cases belonging to one named public witness in isolated zones.
 pub fn group(name: &str) {
-    if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             subprocess::run_child(
-                &crate::child_process::selector(name).unwrap(),
+                maestro_test_process::TestProcess::current(name)
+                    .unwrap()
+                    .case("*"),
                 &[("TZ", Some(tz))],
             );
         }

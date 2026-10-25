@@ -1,7 +1,7 @@
 //! Native selectable table nodes and empty canvas-control slots.
 use super::Sheets;
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
+    AttachmentHostError, ReadingRoot,
     browser::{element as create, host_error},
 };
 use web_sys::Document;
@@ -10,7 +10,7 @@ pub(super) fn mount(
     document: &Document,
     sheets: &Sheets,
     surface: (egui::Id, egui::Rect, Option<egui::Id>, bool),
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let root = create(
         document,
         "section",
@@ -62,6 +62,8 @@ pub(super) fn mount(
     *sheets.nodes.borrow_mut() = nodes;
     select(sheets, 0)?;
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         commit: None,
         owner: None,
         element: root,
@@ -69,7 +71,7 @@ pub(super) fn mount(
     })
 }
 /// Hide rather than rebuild bodies, preserving native selection and both offsets.
-pub(super) fn select(sheets: &Sheets, selected: usize) -> Result<(), AttachmentUiError> {
+pub(super) fn select(sheets: &Sheets, selected: usize) -> Result<(), AttachmentHostError> {
     for (index, node) in sheets.nodes.borrow().iter().enumerate() {
         let value = if index == selected {
             "display:block;"
@@ -85,7 +87,7 @@ pub(super) fn select(sheets: &Sheets, selected: usize) -> Result<(), AttachmentU
 }
 
 /// Keep inner scrolling bounded while the registry measures natural root geometry.
-pub(super) fn bound(sheets: &Sheets, height: f32) -> Result<(), AttachmentUiError> {
+pub(super) fn bound(sheets: &Sheets, height: f32) -> Result<(), AttachmentHostError> {
     if sheets.height.get().partial_cmp(&height) == Some(std::cmp::Ordering::Equal) {
         return Ok(());
     }
@@ -98,7 +100,7 @@ pub(super) fn bound(sheets: &Sheets, height: f32) -> Result<(), AttachmentUiErro
 }
 
 /// Reveal the focused canvas tab through its retained native layout slot.
-pub(super) fn reveal(sheets: &Sheets, index: usize) -> Result<(), AttachmentUiError> {
+pub(super) fn reveal(sheets: &Sheets, index: usize) -> Result<(), AttachmentHostError> {
     if let Some(root) = sheets.root.borrow().as_ref()
         && let Some(slot) = root
             .query_selector(&format!(".maestro-excel-tab:nth-child({})", index + 1))

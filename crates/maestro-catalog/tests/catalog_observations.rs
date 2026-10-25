@@ -1,29 +1,43 @@
 #![cfg(test)]
 //! Shared catalog state and reload observations.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::dynamic;
 use crate::support;
 use maestro_catalog::ModelRegistry;
-use maestro_models::get_model;
+use maestro_models::{Model, get_model};
 use std::sync::{Arc, Mutex, RwLock};
+
+/// Complete catalog file text whose declared model overrides are replaced.
+const INITIAL: &str = r#"{"providers":{"openrouter":{"baseUrl":"first","modelOverrides":{"anthropic/claude-sonnet-4":{"name":"First"}},"models":[{"id":"old"}]}}}"#;
 
 #[test]
 fn reload_replaces_custom_data_and_clears_load_errors() {
     support::corpus("reload_replaces_custom_data_and_clears_load_errors");
     let original = get_model("openrouter", "anthropic/claude-sonnet-4").unwrap();
-    for native in [false, true] {
-        reload(native, &original);
+    let text = support::Text(Arc::new(Mutex::new(Some(INITIAL.into()))));
+    let registry = support::text_registry("<models-file>", &text, crate::support::values());
+    reload(
+        &registry,
+        |input| *text.0.lock().unwrap() = input.map(str::to_owned),
+        &original,
+    );
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let file = support::File::new(INITIAL.as_bytes());
+        let registry =
+            ModelRegistry::create(support::auth(), file.path(), crate::support::values()).unwrap();
+        reload(
+            &registry,
+            |input| match input {
+                Some(input) => std::fs::write(file.path(), input).unwrap(),
+                None => std::fs::remove_file(file.path()).unwrap(),
+            },
+            &original,
+        );
     }
 }
-/// Exercise the same reload sequence on either file adapter.
-fn reload(native: bool, original: &Model) {
-    let initial = r#"{"providers":{"openrouter":{"baseUrl":"first","modelOverrides":{"anthropic/claude-sonnet-4":{"name":"First"}},"models":[{"id":"old"}]}}}"#;
-    let file = support::File::new(initial.as_bytes());
-    let text = support::Text(Arc::new(Mutex::new(Some(initial.into()))));
-    let registry = if native {
-        ModelRegistry::create(support::auth(), file.path()).unwrap()
-    } else {
-        ModelRegistry::with_operations(support::auth(), "<models-file>", text.clone()).unwrap()
-    };
+/// Exercise the same reload sequence through one adapter's source updates.
+fn reload(registry: &ModelRegistry, mut apply: impl FnMut(Option<&str>), original: &Model) {
     assert_eq!(
         registry
             .find("openrouter", "anthropic/claude-sonnet-4")
@@ -45,14 +59,7 @@ fn reload(native: bool, original: &Model) {
         (Some(r#"{"providers":{}}"#), original.name.as_str(), false),
         (None, original.name.as_str(), false),
     ] {
-        if native {
-            match input {
-                Some(input) => std::fs::write(file.path(), input).unwrap(),
-                None => std::fs::remove_file(file.path()).unwrap(),
-            }
-        } else {
-            *text.0.lock().unwrap() = input.map(str::to_owned);
-        }
+        apply(input);
         registry.refresh().unwrap();
         let model = registry
             .find("openrouter", "anthropic/claude-sonnet-4")
@@ -77,7 +84,7 @@ fn reload(native: bool, original: &Model) {
 
 #[test]
 fn retained_catalog_handles_track_edits_and_survive_reload() {
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let old = registry.get_all();
     assert!(Arc::ptr_eq(&old, &registry.get_all()));
     let first = old.read().unwrap()[0].clone();
@@ -149,18 +156,23 @@ fn exact_find_preserves_case_provider_and_descriptor_identity() {
         assert!(registry.find(provider, id).is_none());
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_credentials::{ApiKeyCredential, AuthCredential};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
-    BoxFuture, Fetch, Model, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthProviderInterface,
+    BoxFuture, Fetch, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthProviderInterface,
     register_oauth_provider, unregister_oauth_provider,
 };
 /// Controlled descriptor transformation.
+#[cfg(not(target_arch = "wasm32"))]
 type Transform = dyn Fn(Vec<Model>) -> Result<Vec<Model>, OAuthError> + Send + Sync;
 /// Controlled transform without network or interaction.
+#[cfg(not(target_arch = "wasm32"))]
 struct Modifier {
     id: &'static str,
     action: Box<Transform>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl OAuthProviderInterface for Modifier {
     fn id(&self) -> &str {
         self.id
@@ -197,7 +209,9 @@ impl OAuthProviderInterface for Modifier {
     }
 }
 /// Registration cleanup even when an assertion fails.
+#[cfg(not(target_arch = "wasm32"))]
 struct Registrations(Vec<&'static str>);
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Registrations {
     fn drop(&mut self) {
         for id in &self.0 {
@@ -206,6 +220,7 @@ impl Drop for Registrations {
     }
 }
 /// Register one controlled transformation.
+#[cfg(not(target_arch = "wasm32"))]
 fn register(
     id: &'static str,
     action: impl Fn(Vec<Model>) -> Result<Vec<Model>, OAuthError> + Send + Sync + 'static,
@@ -216,6 +231,7 @@ fn register(
     }));
 }
 /// Complete tokens whose expiry is intentionally in the past.
+#[cfg(not(target_arch = "wasm32"))]
 fn tokens() -> AuthCredential {
     AuthCredential::OAuth(OAuthCredentials {
         refresh: "unused-refresh".into(),
@@ -224,6 +240,7 @@ fn tokens() -> AuthCredential {
         extra: maestro_models::JsonObject::new(),
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
     if dynamic::isolated("oauth_transforms_run_in_registration_order_for_stored_tokens") {
@@ -254,7 +271,7 @@ fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
         .map(|m| (m.provider, m.id))
         .collect();
     for _ in 0..2 {
-        let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+        let registry = ModelRegistry::in_memory(auth.clone(), crate::support::values()).unwrap();
         let all = registry.get_all();
         let all = all.read().unwrap();
         assert_eq!(all[0].read().unwrap().name, "AB");
@@ -270,6 +287,7 @@ fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
     }
     assert_eq!(*calls.lock().unwrap(), ["a", "b", "a", "b"]);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn constructor_transform_failure_propagates_before_later_providers() {
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -302,12 +320,13 @@ fn constructor_transform_failure_propagates_before_later_providers() {
     for route in 0..3 {
         fail.store(false, Ordering::SeqCst);
         let construct = || match route {
-            0 => ModelRegistry::in_memory(auth.clone()),
-            1 => ModelRegistry::create(auth.clone(), file.path()),
+            0 => ModelRegistry::in_memory(auth.clone(), crate::support::values()),
+            1 => ModelRegistry::create(auth.clone(), file.path(), crate::support::values()),
             _ => ModelRegistry::with_operations(
                 auth.clone(),
                 "<models-file>",
                 dynamic::CountFile(reads.clone()),
+                crate::support::values(),
             ),
         };
         assert!(construct().unwrap().get_error().is_none());
@@ -321,6 +340,7 @@ fn constructor_transform_failure_propagates_before_later_providers() {
 }
 
 /// Register a stateful ordered chain plus key-only and absent-credential decoys.
+#[cfg(not(target_arch = "wasm32"))]
 fn order_modifiers(ids: &[&'static str; 4], calls: &Arc<Mutex<Vec<&'static str>>>) {
     let observed = calls.clone();
     register(ids[0], move |mut models| {

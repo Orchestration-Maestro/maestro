@@ -1,5 +1,5 @@
 use crate::support;
-use maestro_resources::{NativeResourceOperations, canonicalize_path, is_local_path};
+use maestro_resources::{canonicalize_path, is_local_path, paths::expand_tilde_text};
 use support::text;
 
 /// Classify only the six exact lowercase source prefixes.
@@ -35,17 +35,14 @@ fn maestro_paths_classify_only_known_source_prefixes() {
 fn maestro_paths_follow_file_and_directory_links() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
-    let file_link = dir.0.join("file-link");
-    let dir_link = dir.0.join("dir-link");
+    let file_link = dir.0.path().join("file-link");
+    let dir_link = dir.0.path().join("dir-link");
     std::os::unix::fs::symlink(&file, &file_link).unwrap();
-    std::os::unix::fs::symlink(dir.0.join("target"), &dir_link).unwrap();
+    std::os::unix::fs::symlink(dir.0.path().join("target"), &dir_link).unwrap();
+    assert_eq!(canonicalize_path(text(&file_link)), file);
     assert_eq!(
-        canonicalize_path(text(&file_link), &NativeResourceOperations),
-        file
-    );
-    assert_eq!(
-        canonicalize_path(text(&dir_link), &NativeResourceOperations),
-        dir.0.join("target")
+        canonicalize_path(text(&dir_link)),
+        dir.0.path().join("target")
     );
 }
 
@@ -53,23 +50,17 @@ fn maestro_paths_follow_file_and_directory_links() {
 #[test]
 fn maestro_paths_preserve_unresolvable_spelling() {
     let path = std::path::Path::new("relative/../missing");
-    assert_eq!(
-        canonicalize_path(text(path), &NativeResourceOperations),
-        text(path)
-    );
-    assert_eq!(
-        canonicalize_path(text(path), &support::Unresolvable),
-        text(path)
-    );
+    assert_eq!(canonicalize_path(text(path)), text(path));
     #[cfg(unix)]
     {
         let dir = support::Directory::new();
-        let dangling = dir.0.join("dangling");
-        std::os::unix::fs::symlink(dir.0.join("missing"), &dangling).unwrap();
-        assert_eq!(
-            canonicalize_path(text(&dangling), &NativeResourceOperations),
-            dangling
-        );
+        let dangling = dir.0.path().join("dangling");
+        std::os::unix::fs::symlink(dir.0.path().join("missing"), &dangling).unwrap();
+        assert_eq!(canonicalize_path(text(&dangling)), dangling);
+        // A link to itself exists as a name but cannot be resolved.
+        let looped = dir.0.path().join("loop");
+        std::os::unix::fs::symlink("loop", &looped).unwrap();
+        assert_eq!(canonicalize_path(text(&looped)), text(&looped));
     }
 }
 
@@ -138,13 +129,10 @@ fn maestro_source_info_defaults_only_synthetic_fields() {
 fn maestro_paths_canonicalize_existing_files() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
-    std::fs::create_dir(dir.0.join("detour")).unwrap();
-    let path = dir.0.join("detour/../target/./skill.md");
+    std::fs::create_dir(dir.0.path().join("detour")).unwrap();
+    let path = dir.0.path().join("detour/../target/./skill.md");
     assert_ne!(path.as_os_str(), file.as_os_str());
-    assert_eq!(
-        canonicalize_path(text(&path), &NativeResourceOperations),
-        text(&file)
-    );
+    assert_eq!(canonicalize_path(text(&path)), text(&file));
 }
 
 /// Collapse `..` against the preceding text, before any link or existence check.
@@ -155,14 +143,10 @@ fn maestro_paths_collapse_dot_dot_before_inspecting_components() {
     let file = dir.file("skill.md", "outer");
     let _ = dir.file("deep/inner/skill.md", "inner");
     let _ = dir.file("deep/skill.md", "linked parent");
-    std::os::unix::fs::symlink(dir.0.join("deep/inner"), dir.0.join("link")).unwrap();
+    std::os::unix::fs::symlink(dir.0.path().join("deep/inner"), dir.0.path().join("link")).unwrap();
     for detour in ["link", "missing"] {
-        let path = dir.0.join(detour).join("../skill.md");
-        assert_eq!(
-            canonicalize_path(text(&path), &NativeResourceOperations),
-            text(&file),
-            "{detour}"
-        );
+        let path = dir.0.path().join(detour).join("../skill.md");
+        assert_eq!(canonicalize_path(text(&path)), text(&file), "{detour}");
     }
 }
 
@@ -172,14 +156,14 @@ fn maestro_paths_collapse_dot_dot_before_inspecting_components() {
 fn maestro_paths_follow_links_in_middle_components() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
-    std::fs::create_dir(dir.0.join("nested")).unwrap();
-    let hop = dir.0.join("hop");
-    let alias = dir.0.join("nested/alias");
-    std::os::unix::fs::symlink(dir.0.join("target"), &hop).unwrap();
+    std::fs::create_dir(dir.0.path().join("nested")).unwrap();
+    let hop = dir.0.path().join("hop");
+    let alias = dir.0.path().join("nested/alias");
+    std::os::unix::fs::symlink(dir.0.path().join("target"), &hop).unwrap();
     std::os::unix::fs::symlink(&hop, &alias).unwrap();
     for linked in [hop, alias] {
         assert_eq!(
-            canonicalize_path(text(&linked.join("skill.md")), &NativeResourceOperations),
+            canonicalize_path(text(&linked.join("skill.md"))),
             text(&file)
         );
     }
@@ -191,13 +175,10 @@ fn maestro_paths_follow_links_in_middle_components() {
 fn maestro_paths_resolve_relative_link_targets_against_their_parent() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
-    std::fs::create_dir(dir.0.join("nested")).unwrap();
-    let alias = dir.0.join("nested/alias");
+    std::fs::create_dir(dir.0.path().join("nested")).unwrap();
+    let alias = dir.0.path().join("nested/alias");
     std::os::unix::fs::symlink("../target/./skill.md", &alias).unwrap();
-    assert_eq!(
-        canonicalize_path(text(&alias), &NativeResourceOperations),
-        text(&file)
-    );
+    assert_eq!(canonicalize_path(text(&alias)), text(&file));
 }
 
 /// Keep the input when a link loops or a component is not a directory.
@@ -206,13 +187,10 @@ fn maestro_paths_resolve_relative_link_targets_against_their_parent() {
 fn maestro_paths_preserve_spelling_of_link_loops_and_non_directories() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
-    std::os::unix::fs::symlink(dir.0.join("loop-b"), dir.0.join("loop-a")).unwrap();
-    std::os::unix::fs::symlink(dir.0.join("loop-a"), dir.0.join("loop-b")).unwrap();
-    for path in [dir.0.join("loop-a/skill.md"), file.join("child")] {
-        assert_eq!(
-            canonicalize_path(text(&path), &NativeResourceOperations),
-            text(&path)
-        );
+    std::os::unix::fs::symlink(dir.0.path().join("loop-b"), dir.0.path().join("loop-a")).unwrap();
+    std::os::unix::fs::symlink(dir.0.path().join("loop-a"), dir.0.path().join("loop-b")).unwrap();
+    for path in [dir.0.path().join("loop-a/skill.md"), file.join("child")] {
+        assert_eq!(canonicalize_path(text(&path)), text(&path));
     }
 }
 
@@ -222,15 +200,12 @@ fn maestro_paths_preserve_spelling_of_link_loops_and_non_directories() {
 fn maestro_paths_preserve_spelling_of_a_link_that_folds_back_to_itself() {
     let dir = support::Directory::new();
     let _ = dir.file("other/alias", "target");
-    std::fs::create_dir_all(dir.0.join("other/inner")).unwrap();
-    std::fs::create_dir(dir.0.join("base")).unwrap();
-    std::os::unix::fs::symlink("../other/inner", dir.0.join("base/dir-link")).unwrap();
-    std::os::unix::fs::symlink("dir-link/../alias", dir.0.join("base/alias")).unwrap();
-    let alias = dir.0.join("base/alias");
-    assert_eq!(
-        canonicalize_path(text(&alias), &NativeResourceOperations),
-        text(&alias)
-    );
+    std::fs::create_dir_all(dir.0.path().join("other/inner")).unwrap();
+    std::fs::create_dir(dir.0.path().join("base")).unwrap();
+    std::os::unix::fs::symlink("../other/inner", dir.0.path().join("base/dir-link")).unwrap();
+    std::os::unix::fs::symlink("dir-link/../alias", dir.0.path().join("base/alias")).unwrap();
+    let alias = dir.0.path().join("base/alias");
+    assert_eq!(canonicalize_path(text(&alias)), text(&alias));
 }
 
 /// Keep the input when links fold into each other through several states.
@@ -240,18 +215,14 @@ fn maestro_paths_preserve_spelling_of_links_that_fold_into_each_other() {
     let dir = support::Directory::new();
     let _ = dir.file("other/a", "first");
     let _ = dir.file("other/b", "second");
-    std::fs::create_dir_all(dir.0.join("other/inner")).unwrap();
-    std::fs::create_dir(dir.0.join("base")).unwrap();
-    std::os::unix::fs::symlink("../other/inner", dir.0.join("base/dir-link")).unwrap();
-    std::os::unix::fs::symlink("dir-link/../b", dir.0.join("base/a")).unwrap();
-    std::os::unix::fs::symlink("dir-link/../a", dir.0.join("base/b")).unwrap();
+    std::fs::create_dir_all(dir.0.path().join("other/inner")).unwrap();
+    std::fs::create_dir(dir.0.path().join("base")).unwrap();
+    std::os::unix::fs::symlink("../other/inner", dir.0.path().join("base/dir-link")).unwrap();
+    std::os::unix::fs::symlink("dir-link/../b", dir.0.path().join("base/a")).unwrap();
+    std::os::unix::fs::symlink("dir-link/../a", dir.0.path().join("base/b")).unwrap();
     for name in ["base/a", "base/b"] {
-        let link = dir.0.join(name);
-        assert_eq!(
-            canonicalize_path(text(&link), &NativeResourceOperations),
-            text(&link),
-            "{name}"
-        );
+        let link = dir.0.path().join(name);
+        assert_eq!(canonicalize_path(text(&link)), text(&link), "{name}");
     }
 }
 
@@ -260,16 +231,13 @@ fn maestro_paths_preserve_spelling_of_links_that_fold_into_each_other() {
 #[test]
 fn maestro_paths_preserve_spelling_of_a_link_that_folds_into_ever_longer_paths() {
     let dir = support::Directory::new();
-    std::fs::create_dir_all(dir.0.join("other/inner")).unwrap();
-    std::fs::create_dir_all(dir.0.join("other/alias/child")).unwrap();
-    std::fs::create_dir(dir.0.join("base")).unwrap();
-    std::os::unix::fs::symlink("../other/inner", dir.0.join("base/dir-link")).unwrap();
-    std::os::unix::fs::symlink("dir-link/../alias/child", dir.0.join("base/alias")).unwrap();
-    let alias = dir.0.join("base/alias");
-    assert_eq!(
-        canonicalize_path(text(&alias), &NativeResourceOperations),
-        text(&alias)
-    );
+    std::fs::create_dir_all(dir.0.path().join("other/inner")).unwrap();
+    std::fs::create_dir_all(dir.0.path().join("other/alias/child")).unwrap();
+    std::fs::create_dir(dir.0.path().join("base")).unwrap();
+    std::os::unix::fs::symlink("../other/inner", dir.0.path().join("base/dir-link")).unwrap();
+    std::os::unix::fs::symlink("dir-link/../alias/child", dir.0.path().join("base/alias")).unwrap();
+    let alias = dir.0.path().join("base/alias");
+    assert_eq!(canonicalize_path(text(&alias)), text(&alias));
 }
 
 /// Expand a link to its own directory once for every time the path passes through it.
@@ -278,11 +246,11 @@ fn maestro_paths_preserve_spelling_of_a_link_that_folds_into_ever_longer_paths()
 fn maestro_paths_follow_a_link_to_its_own_directory_repeatedly() {
     let dir = support::Directory::new();
     let file = dir.file("d/x", "hello");
-    std::os::unix::fs::symlink(".", dir.0.join("d/loop")).unwrap();
+    std::os::unix::fs::symlink(".", dir.0.path().join("d/loop")).unwrap();
     for traversals in [2, 40, 41, 100] {
-        let path = format!("{}/d/{}x", text(&dir.0), "loop/".repeat(traversals));
+        let path = format!("{}/d/{}x", text(dir.0.path()), "loop/".repeat(traversals));
         assert_eq!(
-            canonicalize_path(&path, &NativeResourceOperations),
+            canonicalize_path(&path),
             text(&file),
             "{traversals} traversals"
         );
@@ -295,10 +263,10 @@ fn maestro_paths_follow_a_link_to_its_own_directory_repeatedly() {
 fn maestro_paths_follow_a_repeated_link_whose_remainder_only_ends_with_the_old_text() {
     let dir = support::Directory::new();
     let file = dir.file("d/ax", "hello");
-    std::os::unix::fs::symlink(".", dir.0.join("d/loop")).unwrap();
-    std::os::unix::fs::symlink("loop/ax", dir.0.join("d/x")).unwrap();
+    std::os::unix::fs::symlink(".", dir.0.path().join("d/loop")).unwrap();
+    std::os::unix::fs::symlink("loop/ax", dir.0.path().join("d/x")).unwrap();
     assert_eq!(
-        canonicalize_path(text(&dir.0.join("d/loop/x")), &NativeResourceOperations),
+        canonicalize_path(text(&dir.0.path().join("d/loop/x"))),
         text(&file)
     );
 }
@@ -309,31 +277,73 @@ fn maestro_paths_follow_a_repeated_link_whose_remainder_only_ends_with_the_old_t
 fn maestro_paths_follow_a_link_whose_expansion_brings_back_components_already_read() {
     let dir = support::Directory::new();
     let file = dir.file("d/a/x", "hello");
-    std::os::unix::fs::symlink(".", dir.0.join("d/loop")).unwrap();
-    std::os::unix::fs::symlink("loop/a/x", dir.0.join("d/x")).unwrap();
+    std::os::unix::fs::symlink(".", dir.0.path().join("d/loop")).unwrap();
+    std::os::unix::fs::symlink("loop/a/x", dir.0.path().join("d/x")).unwrap();
     assert_eq!(
-        canonicalize_path(text(&dir.0.join("d/loop/x")), &NativeResourceOperations),
+        canonicalize_path(text(&dir.0.path().join("d/loop/x"))),
         text(&file)
     );
 }
-/// Native entries use byte-name order on Unix, unlike insertion order.
+/// Native entries use name order on every platform, unlike insertion or NTFS order.
 #[test]
 fn native_directory_entries_follow_platform_order() {
-    use maestro_resources::skills::ResourceOperations;
     let dir = support::Directory::new();
-    for name in ["z.md", "b.md", "a.md"] {
+    for name in ["b.md", "_x.md", "C.md", "a.md"] {
         let _ = dir.file(name, "fixture");
     }
-    let entries = NativeResourceOperations.read_dir(&dir.0).unwrap();
+    let entries = maestro_resources::read_entries(dir.0.path()).unwrap();
     let names: Vec<_> = entries.into_iter().map(|e| e.name).collect();
-    #[cfg(unix)]
-    assert_eq!(names, ["a.md", "b.md", "z.md"]);
-    #[cfg(windows)]
+    assert_eq!(names, ["C.md", "_x.md", "a.md", "b.md"]);
+}
+
+/// A leading `~` joins below the home directory and normalizes the written segments, spelled in
+/// the host's path flavor.
+#[test]
+fn text_tilde_expansion_joins_below_the_home_directory() {
+    let (home, rows) = if cfg!(windows) {
+        (
+            r"C:\home\sample",
+            [
+                ("~/link/../f", r"C:\home\sample\f"),
+                ("~", r"C:\home\sample"),
+                ("~/", r"C:\home\sample"),
+                ("~//note", r"C:\home\sample\note"),
+                ("~child", r"C:\home\sample\child"),
+            ],
+        )
+    } else {
+        (
+            "/home/sample",
+            [
+                ("~/link/../f", "/home/sample/f"),
+                ("~", "/home/sample"),
+                ("~/", "/home/sample"),
+                ("~//note", "/home/sample/note"),
+                ("~child", "/home/sample/child"),
+            ],
+        )
+    };
+    let text = || Ok(home.to_owned());
+    for (written, expected) in rows {
+        assert_eq!(
+            expand_tilde_text(written, text).unwrap(),
+            expected,
+            "{written:?}"
+        );
+    }
     assert_eq!(
-        names,
-        std::fs::read_dir(&dir.0)
-            .unwrap()
-            .map(|e| e.unwrap().file_name())
-            .collect::<Vec<_>>()
+        expand_tilde_text("/extra/../extra/q.md", || unreachable!()).unwrap(),
+        "/extra/../extra/q.md"
+    );
+}
+
+/// An empty home spelling joins lexically, so `~/` keeps the working directory.
+#[test]
+fn text_expansion_joins_an_empty_home_lexically() {
+    assert_eq!(expand_tilde_text("~/", || Ok(String::new())).unwrap(), ".");
+    assert_eq!(expand_tilde_text("~", || Ok(String::new())).unwrap(), "");
+    assert_eq!(
+        expand_tilde_text("~child", || Ok(String::new())).unwrap(),
+        "child"
     );
 }

@@ -1,7 +1,7 @@
 //! Document observations through retained production dialogs.
 #![cfg(all(test, target_arch = "wasm32"))]
 use maestro_web::dialogs::dialog::{DialogHeaderProps, dialog_header};
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsCast as _, prelude::*};
 
 /// Prove header retains title description and literal text.
 #[wasm_bindgen]
@@ -35,8 +35,8 @@ pub fn dialog_header_retains_title_description_and_literal_text() {
     }
 }
 
-pub mod attachment_support;
-pub mod support;
+use crate::attachment_support;
+use crate::support;
 use maestro_web::{
     I18n,
     browser::attachment_content::*,
@@ -71,9 +71,8 @@ impl View {
     /// Bind the production dialog to the runner document.
     fn new() -> Self {
         std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
+            web_sys::console::error_1(&info.to_string().into());
         }));
-        use wasm_bindgen::JsCast as _;
         let document = web_sys::window().unwrap().document().unwrap();
         let host = Rc::new(
             BrowserAttachmentHost::new(
@@ -112,7 +111,7 @@ impl View {
             dialogs,
             owner,
             props,
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
+            pack: support::brand::pack("brand.json").unwrap(),
             i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
         }
     }
@@ -184,6 +183,8 @@ pub fn dialog_body_keeps_owned_mixed_content() {
             let control = document.create_element("span").unwrap();
             element.append_child(&control).unwrap();
             Ok(ReadingRoot {
+                frame_style: "",
+                decoration: None,
                 element,
                 slots: vec![(slot, control)],
                 commit: None,
@@ -239,8 +240,9 @@ pub async fn dialog_css_size_changes_preserve_native_root_and_body_identity() {
     view.owner.close().unwrap();
     view.props.width = "min(500px, 90vw)".into();
     view.props.height = "min(700px, 90vh)".into();
-    view.props.class_name = "caller-panel literal-class".into();
     view.owner = dialog(&view.dialogs, view.props.clone()).unwrap();
+    view.owner
+        .set_class_name("caller-panel literal-class".into());
     js(
         "document.getElementById('canvas').style.left='13.25px';document.getElementById('canvas').style.top='7.5px'",
     );
@@ -316,7 +318,7 @@ pub fn dialog_retained_body_replacement_keeps_old_owner_until_publish() {
         "globalThis.oldDialogRoot=document.querySelector('.maestro-dialog-native');globalThis.oldDialogButton=oldDialogRoot.querySelector('button');getSelection().selectAllChildren(oldDialogRoot.querySelector('h2'))",
     );
     view.props.children.reading = Rc::new(ReadingContent {
-        mount: Rc::new(|_| Err(AttachmentUiError::Host("candidate failure".into()))),
+        mount: Rc::new(|_| Err(AttachmentHostError::Host("candidate failure".into()))),
     });
     view.owner.set_props(view.props.clone()).unwrap();
     view.context.begin_pass(egui::RawInput::default());
@@ -353,6 +355,7 @@ pub fn dialog_retained_body_replacement_keeps_old_owner_until_publish() {
 #[wasm_bindgen]
 pub fn dialog_native_field_escape_reaches_every_open_owner() {
     use std::cell::{Cell, RefCell};
+
     let view = View::new();
     let mode = Rc::new(Cell::new(0));
     let behavior = mode.clone();
@@ -370,8 +373,16 @@ pub fn dialog_native_field_escape_reaches_every_open_owner() {
     let input = RefCell::new(input);
     let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
     let mut props = view.props.clone();
-    props.children.render_content =
-        Rc::new(move |ui, _, _, p| input.borrow_mut().render(ui, &i18n, p));
+    props.children.render_content = Rc::new(move |ui, _, _, p| {
+        input.borrow_mut().render(ui, &i18n, p).map_err(|error| {
+            use maestro_web::{components::input::InputUiError, dialogs::dialog::DialogUiError};
+            match error {
+                InputUiError::I18n(error) => DialogUiError::I18n(error),
+                InputUiError::Host(error) => DialogUiError::Host(error),
+                InputUiError::Presentation(error) => DialogUiError::Presentation(error),
+            }
+        })
+    });
     let _second = dialog(&view.dialogs, props).unwrap();
     view.draw();
     js("document.querySelector('input').focus()");
@@ -433,7 +444,6 @@ pub fn dialog_escape_from_native_predecessor_and_body_releases_listener() {
 
 /// Let native next-frame callbacks settle without a test deadline.
 async fn next_frame() {
-    use wasm_bindgen::JsCast as _;
     let promise: js_sys::Promise = js("new Promise(resolve=>requestAnimationFrame(resolve))")
         .dyn_into()
         .unwrap();
@@ -550,6 +560,7 @@ pub fn dialog_semantic_close_revokes_callbacks_when_candidate_or_owner_drops() {
 #[wasm_bindgen]
 pub fn dialog_first_frame_uses_current_body_size_and_slot_geometry() {
     use std::cell::RefCell;
+
     let mut view = View::new();
     let observed = Rc::new(RefCell::new(Vec::new()));
     let record = observed.clone();
@@ -563,6 +574,8 @@ pub fn dialog_first_frame_uses_current_body_size_and_slot_geometry() {
             child.set_id("dialog-body-slot");
             element.append_child(&child).unwrap();
             Ok(ReadingRoot {
+                frame_style: "",
+                decoration: None,
                 element,
                 slots: vec![(slot, child)],
                 commit: None,
@@ -595,7 +608,7 @@ pub fn dialog_first_frame_uses_current_body_size_and_slot_geometry() {
             assert!((f64::from(actual) - expected).abs() < 0.02);
         }
         let shapes = view.shapes.borrow();
-        assert!(shapes.iter().any(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.stroke.width==1. && r.rect.width()>200.)));
+        assert!(shapes.iter().any(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.stroke.width.to_bits()==1_f32.to_bits() && r.rect.width()>200.)));
     }
 }
 
@@ -639,7 +652,7 @@ fn visible(view: &View, shape: &egui::epaint::ClippedShape, outside: Option<egui
             let egui::epaint::Primitive::Mesh(mesh) = &primitive.primitive else {
                 return false;
             };
-            mesh.indices.chunks_exact(3).any(|indices| {
+            mesh.indices.as_chunks::<3>().0.iter().any(|indices| {
                 let [a, b, c] = [
                     mesh.vertices[indices[0] as usize],
                     mesh.vertices[indices[1] as usize],
@@ -702,7 +715,7 @@ pub fn dialog_decoration_survives_clipping_and_scroll() {
     });
     view.owner.set_props(view.props.clone()).unwrap();
     view.draw();
-    let before: Vec<_> = view.shapes.borrow().iter().filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.blur_width>0. || r.stroke.width==1.)).cloned().collect();
+    let before: Vec<_> = view.shapes.borrow().iter().filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.blur_width>0. || r.stroke.width.to_bits()==1_f32.to_bits())).cloned().collect();
     assert_eq!(before.len(), 3);
     let panel = egui::Rect::from_min_size(egui::pos2(100., 210.), egui::vec2(600., 180.));
     let presentation = view
@@ -723,7 +736,7 @@ pub fn dialog_decoration_survives_clipping_and_scroll() {
             unreachable!()
         };
         assert_eq!(shadow.rect, expected);
-        assert_eq!(shadow.blur_width, blur);
+        assert_eq!(shadow.blur_width.to_bits(), f32::to_bits(blur));
         assert_eq!(shadow.fill, border.gamma_multiply(0.1));
     }
     assert!(visible(&view, &before[2], None));
@@ -739,7 +752,7 @@ pub fn dialog_decoration_survives_clipping_and_scroll() {
         "globalThis.dialogFrame=document.querySelector('.maestro-dialog-native').parentElement.parentElement;globalThis.dialogFrameStyle=dialogFrame.getAttribute('style');dialogFrame.firstElementChild.scrollTop=50",
     );
     view.draw();
-    let after: Vec<_> = view.shapes.borrow().iter().filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.blur_width>0. || r.stroke.width==1.)).cloned().collect();
+    let after: Vec<_> = view.shapes.borrow().iter().filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.blur_width>0. || r.stroke.width.to_bits()==1_f32.to_bits())).cloned().collect();
     assert_eq!(before, after);
     assert_eq!(js("dialogFrame.firstElementChild.scrollTop>0 && dialogFrame.getAttribute('style')===dialogFrameStyle").as_bool(), Some(true));
     assert_eq!(js("(()=>{const r=document.querySelector('.maestro-dialog-semantic-close').getBoundingClientRect();return Math.abs(r.x-closeBeforeScroll.x)<.02&&Math.abs(r.y-closeBeforeScroll.y)<.02})()").as_bool(), Some(true));
@@ -866,10 +879,11 @@ fn native_rings(view: &View) -> Vec<f32> {
 
 /// Read the actual canvas glyph extent, independent of the native body's natural height.
 fn native_close(view: &View) -> egui::Rect {
-    attachment_support::dialog_paint::glyphs(&view.shapes.borrow())
-        .next()
+    view.context
+        .interactive_rects_last_pass()
+        .into_iter()
+        .find(|rect| rect.size() == egui::vec2(16., 16.))
         .unwrap()
-        .calc_bounds()
 }
 
 /// Compare actual keyboard-focus pixel coverage with the recorded fractional spread.
@@ -880,5 +894,147 @@ fn assert_native_spread(view: &View, spread: f32) {
             .top_alpha(&view.context, &view.shapes.borrow(), native_close(view)),
         spread,
         0.7,
+    );
+}
+
+/// Literal caller-class operands shared by native document witnesses.
+const CALLER_CLASSES: [&str; 5] = [
+    "",
+    "  \t\n",
+    "caller one one",
+    "<literal>&\"' \u{feff}\u{85}",
+    "日本語 😀",
+];
+
+/// Class updates before mount and after publication preserve literal data and retained roots.
+#[wasm_bindgen]
+pub fn dialog_class_operands_keep_literal_native_readers() {
+    let view = View::new();
+    view.owner.set_class_name(CALLER_CLASSES[3].into());
+    view.draw();
+    assert_eq!(
+        js("document.querySelector('.maestro-dialog-native').getAttribute('class')")
+            .as_string()
+            .as_deref(),
+        Some("maestro-dialog-native <literal>&\"' \u{feff}\u{85}")
+    );
+    js(
+        "globalThis.classRoot=document.querySelector('.maestro-dialog-native');globalThis.classHeading=classRoot.querySelector('h2');getSelection().selectAllChildren(classHeading)",
+    );
+    for classes in CALLER_CLASSES {
+        let document = web_sys::window().unwrap().document().unwrap();
+        let header = dialog_header(DialogHeaderProps {
+            title: "literal title".into(),
+            description: None,
+            class_name: classes.into(),
+        });
+        let content = dialog_content(DialogContentProps {
+            children: vec![header],
+            class_name: classes.into(),
+        });
+        let root = (content.mount)(&document).unwrap();
+        assert_eq!(
+            root.element.get_attribute("class").unwrap(),
+            format!("maestro-dialog-content {classes}")
+        );
+        assert_eq!(
+            root.element
+                .first_element_child()
+                .unwrap()
+                .get_attribute("class")
+                .unwrap(),
+            format!("maestro-dialog-header {classes}")
+        );
+        view.owner.set_class_name(classes.into());
+        view.owner.set_props(view.props.clone()).unwrap();
+        view.draw();
+        assert_eq!(
+            js("document.querySelector('.maestro-dialog-native').getAttribute('class')")
+                .as_string()
+                .unwrap(),
+            format!("maestro-dialog-native {classes}")
+        );
+        assert_eq!(js("document.querySelector('.maestro-dialog-native')===classRoot && getSelection().anchorNode===classHeading").as_bool(), Some(true));
+    }
+}
+
+/// Caller wrapper classes reach the native host literally, not the editable child's class list.
+#[wasm_bindgen]
+pub fn input_wrapper_classes_reach_host_wrapper_literally() {
+    use maestro_web::{Input, components::input::InputProps};
+    use std::cell::RefCell;
+    let view = View::new();
+    view.owner.close().unwrap();
+    let reference = Rc::new(RefCell::new(None));
+    let mut input = Input::new(InputProps::default(), view.host);
+    let mut frame = attachment_support::Frame::default();
+    for classes in CALLER_CLASSES {
+        input.set_props(InputProps {
+            class_name: classes.into(),
+            input_ref: Some(reference.clone()),
+            ..Default::default()
+        });
+        frame.run(vec![], |context, i18n, presentation| {
+            let mut ui = egui::Ui::new(
+                context.clone(),
+                egui::Id::new("literal-input-wrapper"),
+                egui::UiBuilder::new(),
+            );
+            input.render(&mut ui, i18n, presentation).unwrap();
+        });
+        let slot = reference.borrow();
+        let element = slot.as_ref().unwrap();
+        assert_eq!(
+            element
+                .parent_element()
+                .unwrap()
+                .get_attribute("class")
+                .as_deref(),
+            Some(classes)
+        );
+        assert_eq!(
+            element.get_attribute("class").as_deref(),
+            Some("maestro-input-control")
+        );
+    }
+}
+
+/// Browser classes remain per-owner through native removal, reopening and final release.
+#[wasm_bindgen]
+pub fn dialog_browser_class_lifetime_follows_its_owner() {
+    let first = View::new();
+    first.owner.set_class_name(CALLER_CLASSES[2].into());
+    first.draw();
+    let second = View::new();
+    second.draw();
+    assert_eq!(
+        js("document.querySelectorAll('.maestro-dialog-native').length").as_f64(),
+        Some(2.)
+    );
+    assert_eq!(
+        js("document.querySelectorAll('.maestro-dialog-native')[1].getAttribute('class')")
+            .as_string()
+            .as_deref(),
+        Some("maestro-dialog-native ")
+    );
+    first.owner.close().unwrap();
+    first.owner.open().unwrap();
+    first.draw();
+    assert_eq!(
+        js("document.querySelectorAll('.maestro-dialog-native')[1].getAttribute('class')")
+            .as_string()
+            .as_deref(),
+        Some("maestro-dialog-native caller one one")
+    );
+    drop(first);
+    assert_eq!(
+        js("document.querySelectorAll('.maestro-dialog-native').length").as_f64(),
+        Some(1.)
+    );
+    assert_eq!(
+        js("document.querySelector('.maestro-dialog-native').getAttribute('class')")
+            .as_string()
+            .as_deref(),
+        Some("maestro-dialog-native ")
     );
 }

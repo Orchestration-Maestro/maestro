@@ -1,25 +1,25 @@
 //! Request preparation of the content-generation provider through its public operations.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::content_preparation;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::environment_rows;
 
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use content_preparation::assert_rows;
+#[cfg(not(target_arch = "wasm32"))]
 use environment_rows::check_by_environment;
 use indexmap::IndexMap;
 use maestro_models::providers::content::google::{
     GoogleOptions, GoogleThinking, build_params, build_simple_options,
 };
 use maestro_models::{
-    CacheRetention, Cancellation, Context, Fetch, OnPayload, OnResponse, SimpleStreamOptions,
-    StreamOptions, ThinkingLevel, Transport,
+    CacheRetention, Cancellation, Context, Fetch, OnPayload, OnResponse, SharedHandle,
+    SimpleStreamOptions, StreamOptions, ThinkingLevel, Transport,
 };
 use serde_json::json;
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -33,126 +33,151 @@ fn context() -> TestResult<Context> {
     }))?)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn raw_parameters_keep_empty_config_and_model_identity() -> TestResult {
     assert_rows("raw_parameters_keep_empty_config_and_model_identity")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn generation_fields_preserve_supplied_numbers() -> TestResult {
     assert_rows("generation_fields_preserve_supplied_numbers")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn system_instruction_omits_only_empty_text() -> TestResult {
     assert_rows("system_instruction_omits_only_empty_text")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_choice_requires_nonempty_declarations() -> TestResult {
     assert_rows("tool_choice_requires_nonempty_declarations")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_schemas_keep_the_full_schema_field() -> TestResult {
     assert_rows("tool_schemas_keep_the_full_schema_field")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn thinking_requires_an_explicit_request_and_reasoning_support() -> TestResult {
     assert_rows("thinking_requires_an_explicit_request_and_reasoning_support")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn explicit_thinking_levels_override_budget_values() -> TestResult {
     assert_rows("explicit_thinking_levels_override_budget_values")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn explicit_thinking_budgets_are_not_clamped() -> TestResult {
     assert_rows("explicit_thinking_budgets_are_not_clamped")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn disabled_thinking_uses_the_lowest_family_setting() -> TestResult {
     assert_rows("disabled_thinking_uses_the_lowest_family_setting")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn model_family_recognition_uses_unanchored_ascii_patterns() -> TestResult {
     assert_rows("model_family_recognition_uses_unanchored_ascii_patterns")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_efforts_select_each_family_level() -> TestResult {
     assert_rows("simple_efforts_select_each_family_level")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_efforts_select_each_family_budget() -> TestResult {
     assert_rows("simple_efforts_select_each_family_budget")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn custom_budgets_override_only_the_selected_slot() -> TestResult {
     assert_rows("custom_budgets_override_only_the_selected_slot")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn level_families_ignore_custom_budgets() -> TestResult {
     assert_rows("level_families_ignore_custom_budgets")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_absent_reasoning_disables_family_thinking() -> TestResult {
     assert_rows("simple_absent_reasoning_disables_family_thinking")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_token_limits_use_the_base_option_owner() -> TestResult {
     assert_rows("simple_token_limits_use_the_base_option_owner")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn supported_effort_clamping_precedes_family_mapping() -> TestResult {
     assert_rows("supported_effort_clamping_precedes_family_mapping")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn supported_extra_high_uses_the_high_policy() -> TestResult {
     assert_rows("supported_extra_high_uses_the_high_policy")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn nonreasoning_models_never_gain_thinking_config() -> TestResult {
     assert_rows("nonreasoning_models_never_gain_thinking_config")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_key_resolution_preserves_nonempty_values() -> TestResult {
     assert_rows("simple_key_resolution_preserves_nonempty_values")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_missing_key_fails_before_parameter_preparation() -> TestResult {
     assert_rows("simple_missing_key_fails_before_parameter_preparation")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn raw_signal_checks_happen_at_preparation() -> TestResult {
     assert_rows("raw_signal_checks_happen_at_preparation")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_signal_checks_wait_until_parameter_building() -> TestResult {
     assert_rows("simple_signal_checks_wait_until_parameter_building")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_tool_selection_does_not_leak_into_raw_options() -> TestResult {
     assert_rows("simple_tool_selection_does_not_leak_into_raw_options")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn numeric_payloads_use_the_existing_json_number_semantics() -> TestResult {
     assert_rows("numeric_payloads_use_the_existing_json_number_semantics")
@@ -202,12 +227,12 @@ fn prepared_signals_share_the_callers_cancellation() -> TestResult {
 /// Hook and transport handles that count their invocations in `calls`.
 fn counting_handles(calls: &Arc<AtomicUsize>) -> (OnPayload, OnResponse, Fetch) {
     let payload_calls = Arc::clone(calls);
-    let on_payload: OnPayload = Arc::new(move |payload, _| {
+    let on_payload: OnPayload = SharedHandle::new(move |payload, _| {
         payload_calls.fetch_add(1, Ordering::SeqCst);
         Box::pin(std::future::ready(Ok(payload)))
     });
     let response_calls = Arc::clone(calls);
-    let on_response: OnResponse = Arc::new(move |_, _| {
+    let on_response: OnResponse = SharedHandle::new(move |_, _| {
         response_calls.fetch_add(1, Ordering::SeqCst);
         Box::pin(std::future::ready(Ok(())))
     });
@@ -217,11 +242,6 @@ fn counting_handles(calls: &Arc<AtomicUsize>) -> (OnPayload, OnResponse, Fetch) 
         Box::pin(std::future::ready(Err(maestro_models::FetchError::Aborted)))
     });
     (on_payload, on_response, fetch)
-}
-
-/// Whether two shared handles are the same allocation.
-fn same_handle<T: ?Sized>(first: &Arc<T>, second: &Arc<T>) -> bool {
-    std::ptr::addr_eq(Arc::as_ptr(first), Arc::as_ptr(second))
 }
 
 /// Check the plain-data common settings the simple operation must keep.
@@ -290,15 +310,15 @@ fn simple_options_keep_common_settings_and_hook_handles_without_invocation() -> 
     let common = selected.common;
     assert_scalar_settings(&common, metadata.as_ref());
     assert!(common.signal.is_some());
-    assert!(same_handle(
+    assert!(SharedHandle::ptr_eq(
         &common.on_payload.ok_or("payload hook")?,
         &on_payload
     ));
-    assert!(same_handle(
+    assert!(SharedHandle::ptr_eq(
         &common.on_response.ok_or("response hook")?,
         &on_response
     ));
-    assert!(same_handle(&common.fetch.ok_or("transport")?, &fetch));
+    assert!(Arc::ptr_eq(&common.fetch.ok_or("transport")?, &fetch));
     Ok(())
 }
 
@@ -323,6 +343,7 @@ fn prepared_values_do_not_mutate_the_supplied_context() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn absent_options_prepare_like_empty_options() -> TestResult {
     let model = chat::model(&json!({"api": "google-generative-ai", "provider": "google"}))?;

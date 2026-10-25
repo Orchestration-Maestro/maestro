@@ -1,7 +1,7 @@
 //! Shared measure/readback/allocate/publish flow for mixed native reading content.
 use super::{ReadingContent, ReadingPhase, ReadingPlacement};
 use crate::browser::attachment_content::{
-    AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError,
+    AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
 };
 use std::rc::Rc;
 
@@ -17,6 +17,8 @@ pub(crate) enum ReadingHeight {
 pub(crate) struct ControlledReading<'a> {
     /// Native flow or explicitly bounded viewport.
     pub height: ReadingHeight,
+    /// Shrink to the bounded intrinsic native width instead of filling the row.
+    pub intrinsic_width: bool,
     /// Existing platform transaction owner.
     pub host: &'a dyn AttachmentHost,
     /// Retained surface identity.
@@ -45,7 +47,7 @@ impl ControlledReading<'_> {
         rect: egui::Rect,
         phase: ReadingPhase,
         holes: Vec<egui::Rect>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.host.present(
             AttachmentSurface {
                 id: self.id,
@@ -57,6 +59,7 @@ impl ControlledReading<'_> {
                 content: AttachmentContent::Reading(ReadingPlacement {
                     content: Rc::clone(self.content),
                     phase,
+                    intrinsic_width: self.intrinsic_width,
                     sizes: self.sizes,
                     modal: self.modal,
                     context: ui.ctx(),
@@ -66,7 +69,7 @@ impl ControlledReading<'_> {
         )
     }
     /// Use one measured snapshot for allocation, publication and controls.
-    pub(crate) fn draw(&self, ui: &mut egui::Ui) -> Result<ControlledLayout, AttachmentUiError> {
+    pub(crate) fn draw(&self, ui: &mut egui::Ui) -> Result<ControlledLayout, AttachmentHostError> {
         let mut available = ui.available_size_before_wrap().max(egui::Vec2::ZERO);
         if matches!(self.height, ReadingHeight::Flow)
             && ui
@@ -84,7 +87,11 @@ impl ControlledReading<'_> {
         )?;
         let layout = self.host.reading_layout(self.id)?;
         let (id, rect) = ui.allocate_space(egui::vec2(
-            available.x,
+            if self.intrinsic_width {
+                layout.width.min(available.x).max(0.)
+            } else {
+                available.x
+            },
             layout.height.min(available.y).max(0.),
         ));
         let controls: Vec<_> = layout

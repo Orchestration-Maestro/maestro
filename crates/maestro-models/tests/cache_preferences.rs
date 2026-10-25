@@ -1,11 +1,16 @@
 //! Controlled cache-preference qualification.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::cache_overflow_images;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
 
+#[cfg(not(target_arch = "wasm32"))]
 use cache_overflow_images::assert_rows;
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Default, explicit and environment retention reach every protocol request.
 #[test]
 fn maestro_cache_preferences_reach_each_protocol() -> TestResult {
@@ -15,9 +20,14 @@ fn maestro_cache_preferences_reach_each_protocol() -> TestResult {
         .iter()
         .filter(|row| row["kind"] == "retention")
         .collect();
-    if let Some(case) = crate::child_process::child_case() {
-        if let Some(index) = case.strip_prefix("shared-retention:") {
-            return assert_retention_row(rows[index.parse::<usize>()?]);
+    let case = maestro_test_process::selection();
+    if case.is_child() {
+        if let Some((_, row)) = rows
+            .iter()
+            .enumerate()
+            .find(|(index, _)| case.runs_case(&format!("shared-retention:{index}")))
+        {
+            return assert_retention_row(row);
         }
         return assert_rows("maestro_cache_preferences_reach_each_protocol");
     }
@@ -28,27 +38,36 @@ fn maestro_cache_preferences_reach_each_protocol() -> TestResult {
             .map(|value| ("MAESTRO_CACHE_RETENTION", value))
             .into_iter()
             .collect();
-        crate::child_process::rerun(
-            "maestro_cache_preferences_reach_each_protocol",
-            &format!("shared-retention:{index}"),
-            &variables,
-        )?;
+        {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_cache_preferences_reach_each_protocol",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(variables.iter().copied())
+            .case(format!("shared-retention:{index}"))
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retention none removes cache markers and the affinity key.
 #[test]
 fn maestro_cache_none_omits_affinity_key() -> TestResult {
     assert_rows("maestro_cache_none_omits_affinity_key")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Long-retention support and marker format are independent.
 #[test]
 fn maestro_cache_flags_keep_independent_markers() -> TestResult {
     assert_rows("maestro_cache_flags_keep_independent_markers")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe retention through raw request construction in the isolated child environment.
 fn assert_retention_row(row: &serde_json::Value) -> TestResult {
     use crate::bundled;
@@ -81,7 +100,7 @@ fn assert_retention_row(row: &serde_json::Value) -> TestResult {
             },
             ..ProviderStreamOptions::default()
         };
-        let result = chat::block_on(false, async {
+        let result = crate::runtime::run::<crate::TestResult<_>>(async {
             Ok(stream(model, bundled::conversation()?, Some(options))?
                 .result()
                 .await)
@@ -101,6 +120,7 @@ fn assert_retention_row(row: &serde_json::Value) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check the independently selected marker and affinity policy of each protocol.
 fn assert_retention_payload(api: &str, body: &serde_json::Value, expected: &str) {
     use serde_json::json;

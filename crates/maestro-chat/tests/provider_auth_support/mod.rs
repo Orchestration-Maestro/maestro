@@ -1,6 +1,7 @@
 //! Complete recorded provider-picker replay through public interfaces.
 pub mod failures;
 mod records;
+use crate::bindings;
 use maestro_app::{AuthSource, AuthStatus, AuthStorage};
 use maestro_chat::{OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
@@ -32,16 +33,6 @@ pub fn colors(shift: u8) -> Rc<Theme> {
         )
         .unwrap(),
     )
-}
-/// Publish a fresh keybinding manager, including explicitly disabled actions.
-fn bindings(overrides: BTreeMap<String, Keys>) {
-    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_tui::TUI_KEYBINDINGS.clone(),
-        overrides
-            .into_iter()
-            .map(|(key, value)| (key, Some(value.into())))
-            .collect(),
-    ));
 }
 /// Mutable caller observations without a strong path back to the component.
 #[derive(Default)]
@@ -193,7 +184,7 @@ impl Replay {
             }
             Operation::Bindings {
                 bindings: overrides,
-            } => bindings(overrides),
+            } => bindings::replace_toolkit(&overrides),
             Operation::ChildSubmit { child_submit } => self.search().handle_input(&child_submit),
             Operation::Focus { focus } => self.panel.focus_flag().set(focus),
             Operation::InputFocus { input_focus } => self.search().focus_flag().set(input_focus),
@@ -258,23 +249,30 @@ fn cases(name: &str) -> Vec<Case> {
 /// Replay all rows owned by a named witness.
 pub fn replay(name: &str) {
     let _admission = super::keybindings::bindings_guard();
+    let selection = maestro_test_process::selection();
+    let mut matched = false;
     for (index, case) in cases(name).into_iter().enumerate() {
         let mut query: Query = serde_json::from_value(case.input).unwrap();
-        if let Ok(selected) = std::env::var("MAESTRO_AUTH_CASE") {
-            if index != selected.parse::<usize>().unwrap() {
+        if selection.is_child() {
+            if !selection.runs_case(&index.to_string()) {
                 continue;
             }
         } else if !query.env.is_empty() || name == "provider_environment_configuration_is_visible" {
             child(name, index, &query.env);
             continue;
         }
+        matched = true;
         run(case.expected, &mut query, name);
     }
+    assert!(
+        !selection.is_child() || matched,
+        "selected auth row missing"
+    );
 }
 /// Drive one constructor and compare full output without exposing credentials in failures.
 fn run(expected: serde_json::Value, query: &mut Query, name: &str) {
     let expected: Expected = serde_json::from_value(expected).unwrap();
-    bindings(std::mem::take(&mut query.bindings));
+    bindings::replace_toolkit(&query.bindings);
     let replay = Replay::new(query, name == "selector_focus_forwards_to_retained_input");
     let stored = replay.storage.get_all();
     let mut frames = vec![replay.snapshot()];
@@ -304,16 +302,14 @@ fn run(expected: serde_json::Value, query: &mut Query, name: &str) {
 }
 /// Isolate environment cases in the existing test executable, waiting for process completion.
 fn child(name: &str, index: usize, env: &BTreeMap<String, String>) {
-    let test = crate::child_process::selector(name).unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .arg("--exact")
-        .arg(&test)
-        .arg("--nocapture")
+    let output = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .nocapture()
         .env_remove("OPENAI_API_KEY")
         .env_remove("ANTHROPIC_API_KEY")
         .env_remove("ANTHROPIC_OAUTH_TOKEN")
         .envs(env)
-        .env("MAESTRO_AUTH_CASE", index.to_string())
+        .case(index.to_string())
         .output()
         .unwrap();
     assert!(
@@ -326,7 +322,7 @@ fn child(name: &str, index: usize, env: &BTreeMap<String, String>) {
 /// The corrected toolkit never overflows a one-cell viewport.
 pub fn narrow_rows_fit() {
     let _admission = super::keybindings::bindings_guard();
-    bindings(BTreeMap::new());
+    bindings::replace_toolkit(&BTreeMap::new());
     let panel = Replay::new(&mut Query::default(), false);
     let lines = panel.panel.render(1);
     assert!(!lines.is_empty());
@@ -339,7 +335,7 @@ pub fn narrow_rows_fit() {
 /// Actual writer focus forwards immediately, and retained children release captures on drop.
 pub fn writer_focus_and_teardown() {
     let _admission = super::keybindings::bindings_guard();
-    bindings(BTreeMap::new());
+    bindings::replace_toolkit(&BTreeMap::new());
     let replay = Replay::new(&mut Query::default(), false);
     let runtime = super::manual_runtime::ManualRuntime::new();
     let terminal = super::recording_terminal::RecordingTerminal::new(80, 24);
@@ -388,19 +384,14 @@ pub fn writer_focus_and_teardown() {
 /// Shipped themes color the new surface through their semantic roles.
 pub fn brand_roles() {
     let _admission = super::keybindings::bindings_guard();
-    bindings(BTreeMap::new());
+    bindings::replace_toolkit(&BTreeMap::new());
     for name in ["dark", "light"] {
         let path = format!(
             "{}/../maestro-theme/assets/theme/{name}.json",
             env!("CARGO_MANIFEST_DIR")
         );
         let theme = Rc::new(
-            maestro_theme::load_theme_from_path(
-                &path,
-                Some(ColorMode::Truecolor),
-                &maestro_theme::NativeThemeOperations,
-            )
-            .unwrap(),
+            maestro_theme::load_theme_from_path(&path, Some(ColorMode::Truecolor)).unwrap(),
         );
         let (_state, live) = super::published::published(&theme);
         let panel = brand_panel(live);

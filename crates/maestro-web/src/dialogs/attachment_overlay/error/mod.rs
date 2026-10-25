@@ -1,6 +1,6 @@
 //! One literal native error owner for attachment and artifact bodies.
 use crate::browser::attachment_content::{
-    AttachmentHost, AttachmentUiError, ReadingContent, reading,
+    AttachmentHost, AttachmentHostError, ReadingContent, reading,
 };
 use std::{cell::RefCell, rc::Rc};
 /// Current literal text and its stable native nodes.
@@ -28,10 +28,16 @@ impl Error {
         ui: &egui::Ui,
         surface: (egui::Id, Option<egui::Id>, bool),
         operands: ([String; 2], &maestro_theme::BrandPresentation<'_>),
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, AttachmentHostError> {
         self.text.borrow_mut().values = operands.0;
         #[cfg(target_arch = "wasm32")]
-        browser::sync(&self.text.borrow());
+        {
+            let text = self.text.borrow();
+            crate::browser::attachment_content::browser::sync_text(
+                text.nodes.as_ref(),
+                &text.values,
+            );
+        }
         let reading = self.reading.as_ref().map_or_else(
             || {
                 #[cfg(target_arch = "wasm32")]
@@ -52,7 +58,9 @@ impl Error {
 #[cfg(target_arch = "wasm32")]
 mod browser;
 #[cfg(target_arch = "wasm32")]
-pub(super) use browser::{mount, sync};
+pub(super) use browser::mount;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use browser::nodes;
 
 /// Preserve literal diagnostics, using the fallback only for absence.
 pub(super) fn failure_detail(message: Option<&str>, fallback: String) -> String {
@@ -65,6 +73,6 @@ pub(crate) fn detail<F: ?Sized>(
     message: &str,
     i: &crate::I18n<F>,
     fallback: &str,
-) -> Result<String, AttachmentUiError> {
+) -> Result<String, crate::I18nError> {
     Ok(failure_detail(Some(message), i.text(fallback)?))
 }

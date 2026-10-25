@@ -138,37 +138,61 @@ fn wayland_detection_uses_nonempty_display_or_exact_session_type() {
     }
 }
 
+/// A remote marker that is not valid UTF-8 still reaches the terminal frame.
+#[cfg(unix)]
+#[test]
+fn undecodable_remote_marker_still_emits_the_terminal_frame() {
+    use std::os::unix::ffi::OsStringExt as _;
+    if maestro_test_process::selection().is_child() {
+        controlled::run_undecodable_remote_marker();
+        return;
+    }
+    let output = maestro_test_process::TestProcess::current(
+        "undecodable_remote_marker_still_emits_the_terminal_frame",
+    )
+    .unwrap()
+    .env_clear()
+    .case("*")
+    .env(
+        "SSH_CONNECTION",
+        std::ffi::OsString::from_vec(b"client \xff server".to_vec()),
+    )
+    .output()
+    .unwrap();
+    assert!(
+        output.status.success(),
+        "the cleared child failed: {}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 /// Child mode keeps all environment changes outside the parallel parent process.
 #[cfg(target_os = "linux")]
 #[test]
 fn native_adapter_forwards_launches_without_clipboard_access() {
     use maestro_app::copy_to_clipboard;
-    if std::env::var_os("MAESTRO_CLIPBOARD_CHILD").is_some() {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(copy_to_clipboard("a\0é🙂"))
-            .unwrap();
+    if maestro_test_process::selection().is_child() {
+        crate::support::run_io(copy_to_clipboard("a\0é🙂")).unwrap();
         return;
     }
-    let test =
-        crate::child_process::selector("native_adapter_forwards_launches_without_clipboard_access")
-            .unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_CLIPBOARD_CHILD", "1")
-        .env_remove("SSH_CONNECTION")
-        .env_remove("SSH_CLIENT")
-        .env_remove("MOSH_CONNECTION")
-        .env_remove("TERMUX_VERSION")
-        .env_remove("DISPLAY")
-        .env_remove("WAYLAND_DISPLAY")
-        .env_remove("XDG_SESSION_TYPE")
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "native_adapter_forwards_launches_without_clipboard_access",
+    )
+    .unwrap()
+    .nocapture()
+    .case("*")
+    .env_remove("SSH_CONNECTION")
+    .env_remove("SSH_CLIENT")
+    .env_remove("MOSH_CONNECTION")
+    .env_remove("TERMUX_VERSION")
+    .env_remove("DISPLAY")
+    .env_remove("WAYLAND_DISPLAY")
+    .env_remove("XDG_SESSION_TYPE")
+    .output()
+    .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test).unwrap();
+
     let frame = b"\x1b]52;c;YQDDqfCfmYI=\x07";
     assert_eq!(
         output

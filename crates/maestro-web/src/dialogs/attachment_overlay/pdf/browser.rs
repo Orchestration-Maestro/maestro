@@ -1,16 +1,16 @@
 //! Stable native opaque PDF page images.
 use super::Pages;
-use crate::browser::attachment_content::{AttachmentUiError, ReadingRoot, browser::host_error};
+use crate::browser::attachment_content::{AttachmentHostError, ReadingRoot, browser::host_error};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use std::{cell::RefCell, rc::Rc};
 /// Append only newly completed pages, without remounting existing images.
-pub(super) fn sync(pages: &Pages) -> Result<(), AttachmentUiError> {
+pub(super) fn sync(pages: &Pages) -> Result<(), AttachmentHostError> {
     let Some(root) = &pages.root else {
         return Ok(());
     };
     let document = root
         .owner_document()
-        .ok_or_else(|| AttachmentUiError::Host("Missing page document".into()))?;
+        .ok_or_else(|| AttachmentHostError::Host("Missing page document".into()))?;
     let count = root.child_element_count().saturating_sub(1);
     for (index, page) in pages.values.iter().enumerate().skip(count as usize) {
         let container = document.create_element("div").map_err(|e| host_error(&e))?;
@@ -44,7 +44,7 @@ pub(super) fn mount(
     document: &web_sys::Document,
     pages: &Rc<RefCell<Pages>>,
     padded: bool,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let root = document
         .create_element("section")
         .map_err(|e| host_error(&e))?;
@@ -65,6 +65,8 @@ pub(super) fn mount(
     pages.borrow_mut().root = Some(root.clone());
     sync(&pages.borrow())?;
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         commit: None,
         owner: None,
         element: root,

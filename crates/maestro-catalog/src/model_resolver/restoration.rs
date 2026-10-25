@@ -24,6 +24,22 @@ pub struct RestoreModelFromSessionResult {
     /// Why a fallback was used; absent after a successful restore or with no model.
     pub fallback_message: Option<String>,
 }
+/// The saved model `provider`/`model_id` when the catalog has it with configured
+/// authentication; absent when it is gone or has no credentials.
+///
+/// # Errors
+/// Returns the authentication lookup failure.
+pub fn restore_saved_model(
+    model_registry: &ModelRegistry,
+    provider: &str,
+    model_id: &str,
+) -> Result<Option<Arc<RwLock<Model>>>, CatalogError> {
+    let Some(model) = model_registry.find(provider, model_id) else {
+        return Ok(None);
+    };
+    Ok(model_registry.has_configured_auth(&model)?.then_some(model))
+}
+
 /// Restore the saved model when it exists with configured authentication.
 ///
 /// Otherwise fall back to the current model without checking it, then to the first
@@ -42,20 +58,20 @@ pub fn restore_model_from_session(
         should_print_messages: print,
         model_registry,
     } = options;
-    let saved = model_registry.find(saved_provider, saved_model_id);
     let saved_label = format!("{saved_provider}/{saved_model_id}");
-    if let Some(model) = saved.as_ref()
-        && model_registry.has_configured_auth(model)?
-    {
+    if let Some(model) = restore_saved_model(model_registry, saved_provider, saved_model_id)? {
         if print {
             output.note(&format!("Restored model: {saved_label}"));
         }
         return Ok(RestoreModelFromSessionResult {
-            model: Some(Arc::clone(model)),
+            model: Some(model),
             fallback_message: None,
         });
     }
-    let reason = if saved.is_some() {
+    let reason = if model_registry
+        .find(saved_provider, saved_model_id)
+        .is_some()
+    {
         "no auth configured"
     } else {
         "model no longer exists"

@@ -3,28 +3,16 @@ use super::{
     CommandOutput, PackageFuture,
     operations::{NativePackageOperations, recover_environment},
 };
-use std::{
-    io,
-    process::{Command, Stdio},
-};
+use std::{io, process::Stdio};
 
 impl NativePackageOperations {
-    /// Builds a child with the selected shell form and the recovered environment.
-    pub(super) fn command(&self, command: &str, args: &[String]) -> Command {
-        let mut child = if (self.should_use_shell)(command) {
-            let mut shell = Command::new(if cfg!(windows) { "cmd.exe" } else { "/bin/sh" });
-            if cfg!(windows) {
-                shell.args(["/d", "/s", "/c"]);
-            } else {
-                shell.arg("-c");
-            }
-            shell.arg(format!("{command} {}", args.join(" ")));
-            shell
-        } else {
-            let mut child = Command::new(command);
-            child.args(args);
-            child
-        };
+    /// Collects package operands, the recovered environment and child directory for launch.
+    pub(super) fn command<'a>(
+        command: &str,
+        args: &[String],
+        overrides: &[(&str, &str)],
+        cwd: Option<&'a str>,
+    ) -> maestro_process::LaunchContext<'a, Vec<(String, String)>> {
         let inherited = std::env::vars_os()
             .map(|(key, value)| {
                 (
@@ -42,18 +30,26 @@ impl NativePackageOperations {
             inherited,
             || std::fs::read("/proc/self/environ"),
         );
-        child.env_clear().envs(environment);
-        child
+        let environment: Vec<_> = environment
+            .into_iter()
+            .chain(
+                overrides
+                    .iter()
+                    .map(|&(key, value)| (key.into(), value.into())),
+            )
+            .collect();
+        maestro_process::Launch {
+            executable: command.into(),
+            args: args.into(),
+            verbatim: false,
+        }
+        .with_context(environment, cwd.map(std::path::Path::new))
+        .clear_environment()
     }
 
     /// Waits for a child with ignored stdin and decoded captured streams.
-    pub(super) fn capture(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {
-        let output = self
-            .command(command, args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output()?;
+    pub(super) fn capture(command: &str, args: &[String]) -> io::Result<CommandOutput> {
+        let output = Self::command(command, args, &[], None).output()?;
         Ok(CommandOutput {
             status: output.status.code(),
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -70,17 +66,16 @@ impl NativePackageOperations {
         cwd: Option<&'a str>,
     ) -> PackageFuture<'a, Option<i32>> {
         Box::pin(async move {
-            let mut child = tokio::process::Command::from(self.command(command, args));
-            if let Some(cwd) = cwd {
-                child.current_dir(cwd);
-            }
-            if (self.is_stdout_taken_over)() {
-                child
-                    .stdin(Stdio::null())
-                    .stdout(stderr_stdio()?)
-                    .stderr(stderr_stdio()?);
-            }
-            Ok(child.spawn()?.wait().await?.code())
+            let stdio = if (self.is_stdout_taken_over)() {
+                [Stdio::null(), stderr_stdio()?, stderr_stdio()?]
+            } else {
+                [Stdio::inherit(), Stdio::inherit(), Stdio::inherit()]
+            };
+            Ok(Self::command(command, args, &[], cwd)
+                .spawn(stdio)?
+                .wait()
+                .await?
+                .code())
         })
     }
 }

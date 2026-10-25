@@ -6,32 +6,40 @@ use maestro_app::presentation_data::footer_data_provider::{
 };
 use std::{path::PathBuf, rc::Rc, time::Duration};
 
-fn directory(name: &str, content: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!("maestro-polling-{}-{name}", std::process::id()));
+/// One owned repository stand-in: its disposable root and the repository inside it.
+struct Repository(maestro_test_directory::Scratch, PathBuf);
+
+fn directory(content: &str) -> Repository {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().to_path_buf();
     std::fs::create_dir_all(root.join("refs")).unwrap();
     std::fs::write(root.join("refs/table"), content).unwrap();
-    root
+    Repository(scratch, root)
 }
 
 #[test]
 fn footer_native_effects_keep_admission_directory_after_cwd_change() {
     const CASE: &str = "footer-cwd-identity";
-    if crate::child_process::child_case().as_deref() != Some(CASE) {
+    if !maestro_test_process::selection().is_child() {
         let path = std::env::var("PATH").unwrap();
-        crate::child_process::rerun(
-            "footer_native_effects_keep_admission_directory_after_cwd_change",
-            CASE,
-            &[("PATH", &path)],
-        )
-        .unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(
+                "footer_native_effects_keep_admission_directory_after_cwd_change",
+            )
+            .unwrap()
+            .nocapture()
+            .env_clear()
+            .envs([("PATH", &path)].iter().copied())
+            .case(CASE)
+            .output()
+            .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
         return;
     }
-    let first = directory("first", "seven77");
-    let second = directory("second", "decoy");
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let Repository(_first_root, first) = directory("seven77");
+    let Repository(_second_root, second) = directory("decoy");
+    let runtime = crate::support::io_runtime();
     let local = Rc::new(tokio::task::LocalSet::new());
     let ops = NativeFooterOperations::new(local.clone());
     let original_cwd = std::env::current_dir().unwrap();
@@ -64,7 +72,4 @@ fn footer_native_effects_keep_admission_directory_after_cwd_change() {
     drop(watch);
     drop(ops);
     drop(local);
-    for root in [first, second] {
-        std::fs::remove_dir_all(root).unwrap();
-    }
 }

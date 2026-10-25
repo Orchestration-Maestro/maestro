@@ -2,8 +2,9 @@
 use super::artifact_element::{ArtifactElement, ArtifactView};
 use super::text_artifact::{SourceProfile, TextArtifact};
 use crate::components::markdown_block::MarkdownBlock;
+use crate::tools::artifacts::ArtifactUiError;
 use crate::{
-    browser::attachment_content::{AttachmentHost, AttachmentUiError},
+    browser::attachment_content::AttachmentHost,
     components::preview_code_toggle::{PreviewCodeToggle, ViewMode},
 };
 use std::rc::Rc;
@@ -33,15 +34,17 @@ impl MarkdownArtifact {
         }
     }
     /// Route the selected branch through its existing retained owner.
-    fn reconcile(&mut self) -> Result<(), AttachmentUiError> {
+    fn reconcile(&mut self) -> Result<(), ArtifactUiError> {
         self.source.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Code,
+            self.visible && self.toggle.mode() == ViewMode::Code,
             self.modal,
         )?;
-        self.preview.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Preview,
-            self.modal,
-        )
+        self.preview
+            .set_visibility(
+                self.visible && self.toggle.mode() == ViewMode::Preview,
+                self.modal,
+            )
+            .map_err(ArtifactUiError::Host)
     }
 }
 impl ArtifactElement for MarkdownArtifact {
@@ -62,43 +65,28 @@ impl ArtifactElement for MarkdownArtifact {
         &mut self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         self.visible = visible;
         self.modal = modal;
         self.reconcile()
     }
-    fn get_header_buttons(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
-        ui.scope(|ui| {
-            ui.spacing_mut().item_spacing.x =
-                crate::browser::attachment_content::points(view.presentation.spacing["sm"]);
-            self.toggle.render(ui, view.i18n, view.presentation)?;
-            self.reconcile()?;
-            self.source.get_header_buttons(ui, view)
-        })
-        .inner
-    }
-    fn render(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    super::retained::artifact_header_buttons!();
+    fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.reconcile()?;
-        if self.toggle.mode == ViewMode::Code {
+        if self.toggle.mode() == ViewMode::Code {
             self.source.render(ui, view)?;
         } else {
-            self.preview.render(
-                ui,
-                crate::components::code_block::CodeBlockView {
-                    i18n: view.i18n,
-                    presentation: view.presentation,
-                    highlighter: view.highlighter,
-                    modal: self.modal,
-                },
-            )?;
+            self.preview
+                .render(
+                    ui,
+                    crate::components::code_block::CodeBlockView {
+                        i18n: view.i18n,
+                        presentation: view.presentation,
+                        highlighter: view.highlighter,
+                        modal: self.modal,
+                    },
+                )
+                .map_err(ArtifactUiError::reading)?;
         }
         Ok(())
     }

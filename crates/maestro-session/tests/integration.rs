@@ -2,10 +2,8 @@
 #![cfg(test)]
 mod application_message_encoding;
 
+mod application_message_records;
 mod branch_summary;
-#[path = "../../maestro-catalog/tests/support/subprocess.rs"]
-mod subprocess;
-use subprocess::child_process;
 mod compaction_preparation;
 mod context_projection;
 mod converter_binding;
@@ -18,8 +16,11 @@ mod session_extraction;
 mod session_files;
 mod session_history;
 mod session_tree;
+#[path = "../../maestro-catalog/tests/support/subprocess.rs"]
+mod subprocess;
 mod summary_generation;
 mod summary_text;
+mod tool_argument_roots;
 /// Recorded corpus support shared by the test modules.
 mod support {
     /// Branch scenarios.
@@ -29,18 +30,19 @@ mod support {
     #[cfg(not(target_arch = "wasm32"))]
     pub mod discovery;
     /// Summary operation consumer.
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod generation;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod native;
-    /// Disposable directory.
-    pub mod scratch;
     /// Context corpus consumer.
     pub mod session_context;
     pub mod session_files;
     /// Memory-history corpus consumer.
     pub mod session_history;
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod session_tree;
     /// Consuming request controls.
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod summary_options;
     /// Full value comparison.
     pub mod value;

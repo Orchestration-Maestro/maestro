@@ -22,7 +22,7 @@ fn registered_tool_preserves_metadata_preparation_and_execution_capabilities() {
 /// Drives the real native definition and its fresh per-invocation context.
 async fn tool() {
     let (owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<Local>());
-    let (mut pump, admission) = Pump::new(super::support::credential_operations());
+    let (mut pump, admission) = Pump::new();
     let endpoint = pump.registry().api(api).unwrap();
     let (calls, incoming) = tokio::sync::mpsc::unbounded_channel();
     let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
@@ -144,7 +144,10 @@ async fn drive<F: std::future::Future>(pump: &mut Pump, work: F) -> F::Output {
 fn metadata(definition: &maestro_extensions::RegisteredTool<Local>) {
     let metadata = definition.definition.metadata();
     assert_eq!(metadata.definition.description, " desc ");
-    assert_eq!(metadata.definition.parameters, json!({"type":"object"}));
+    assert_eq!(
+        metadata.definition.parameters.as_json(),
+        &json!({"type":"object"})
+    );
     assert_eq!(metadata.prompt_snippet.as_deref(), Some(""));
     assert_eq!(metadata.prompt_guidelines, Some(Vec::new()));
     assert_eq!(metadata.execution_mode, Some(ToolExecutionMode::Parallel));
@@ -158,7 +161,7 @@ fn metadata(definition: &maestro_extensions::RegisteredTool<Local>) {
 fn malformed_tool_documents_never_register_a_native_definition() {
     tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(async {
         let (owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<Local>());
-        let (pump, admission) = Pump::new(super::support::credential_operations());
+        let (pump, admission) = Pump::new();
         let endpoint = pump.registry().api(api).unwrap();
         let (calls, _incoming) = tokio::sync::mpsc::unbounded_channel();
         let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());

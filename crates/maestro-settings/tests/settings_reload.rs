@@ -1,12 +1,9 @@
 //! Reload, external edits, error draining, ordered persistence and recovery.
 
 #[cfg(test)]
-mod support;
-
-#[cfg(test)]
 mod tests {
-    use super::support;
-    use super::support::{Backend, ControlledStorage, block_on, settings, text_entries};
+    use crate::support;
+    use crate::support::{Backend, ControlledStorage, block_on, settings, text_entries};
     use maestro_settings::{PackageSource, SettingsManager, SettingsScope, ThinkingLevel};
     use serde_json::{Value, json};
 
@@ -772,12 +769,14 @@ mod tests {
 
         #[cfg(unix)]
         {
-            let mut limited = support::shell_child_command(
-                "flush_observes_without_cancelling_dropped_waiter",
+            let limited = support::shell_child_command(
+                "settings_reload::tests::flush_observes_without_cancelling_dropped_waiter",
                 "limit",
                 "ulimit -u 1 2>/dev/null",
             );
-            let report = support::child_report(&limited.output().unwrap());
+            let output = limited.output().unwrap();
+            assert!(output.status.success());
+            let report = support::child_report(&output);
             if report != json!("limit not enforced") {
                 assert_eq!(
                     report,

@@ -1,9 +1,10 @@
 //! Attachment thumbnails with optional removal.
+use crate::dialogs::attachment_overlay::AttachmentUiError;
 use crate::{
     Attachment, AttachmentOverlay, I18n,
     browser::attachment_content::{
-        AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError, ImageFit, color,
-        glyph, identity, points, style,
+        AttachmentContent, AttachmentHost, AttachmentSurface, ImageFit, color, glyph, identity,
+        points, style,
     },
 };
 use maestro_app::{browser::utils::attachment_utils::AttachmentType, truncate_utf16};
@@ -34,6 +35,19 @@ impl AttachmentTile {
             id: identity(),
         }
     }
+    /// Rebind an emitted position without changing its retained widget identity.
+    pub(crate) fn retain_at(
+        tiles: &mut Vec<Self>,
+        position: usize,
+        attachment: Rc<RefCell<Attachment>>,
+        host: &Rc<dyn AttachmentHost>,
+    ) {
+        if let Some(tile) = tiles.get_mut(position) {
+            tile.attachment = attachment;
+        } else {
+            tiles.push(Self::new(attachment, Rc::clone(host)));
+        }
+    }
     /// Draw a tile, returning an independently retained overlay when opened.
     /// # Errors
     /// Propagates localization, glyph, platform and record-borrow failures.
@@ -43,7 +57,12 @@ impl AttachmentTile {
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
     ) -> Result<Option<AttachmentOverlay>, AttachmentUiError> {
-        ui.scope(|ui| self.draw(ui, i, p)).inner
+        ui.allocate_ui_with_layout(
+            egui::vec2(64., 64.),
+            egui::Layout::top_down(egui::Align::Min),
+            |ui| self.draw(ui, i, p),
+        )
+        .inner
     }
     /// Draw without retaining a record borrow across replaceable effects.
     fn draw<F: ?Sized>(
@@ -52,7 +71,7 @@ impl AttachmentTile {
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
     ) -> Result<Option<AttachmentOverlay>, AttachmentUiError> {
-        style(ui, p)?;
+        style(ui, p).map_err(|error| AttachmentUiError::Presentation(error.to_string()))?;
         let (name, preview, pdf, excel) = self.thumbnail_data()?;
         let (_, rect) = ui.allocate_space(egui::vec2(64., 64.));
         let badge = (pdf && preview.is_some()).then_some(rect.with_min_y(rect.bottom() - 19.));
@@ -64,12 +83,20 @@ impl AttachmentTile {
         let hovered = response.hovered()
             && ui.input(|i| i.pointer.hover_pos().is_some_and(|pos| image.contains(pos)));
         let opacity = if hovered { 0.8 } else { 1. };
-        let muted = color(p, "muted")?.gamma_multiply(opacity);
+        let muted = color(p, "muted")
+            .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?
+            .gamma_multiply(opacity);
         ui.painter().rect(
             rect,
             egui::CornerRadius::from(points(p.radii["panel"])),
-            color(p, "panel")?.gamma_multiply(opacity),
-            egui::Stroke::new(1., color(p, "border")?),
+            color(p, "panel")
+                .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?
+                .gamma_multiply(opacity),
+            egui::Stroke::new(
+                1.,
+                color(p, "border")
+                    .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+            ),
             egui::StrokeKind::Inside,
         );
         let (removed, remove_rect) = self.delete(ui, rect, i, p)?;
@@ -155,11 +182,22 @@ impl AttachmentTile {
             ui.painter().circle(
                 rect.center(),
                 10.,
-                color(p, "panel")?,
-                egui::Stroke::new(1., color(p, "border")?),
+                color(p, "panel")
+                    .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+                egui::Stroke::new(
+                    1.,
+                    color(p, "border")
+                        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+                ),
             );
             let role = if button.hovered() { "text" } else { "muted" };
-            glyph(ui, rect.shrink(4.), "X", color(p, role)?)?;
+            glyph(
+                ui,
+                rect.shrink(4.),
+                "X",
+                color(p, role)
+                    .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+            )?;
         }
         if button.clicked()
             && let Some(callback) = &self.on_delete
@@ -224,14 +262,15 @@ fn pdf_badge<F: ?Sized>(
         .rect_filled(
             tile,
             egui::CornerRadius::from(points(p.radii["panel"])),
-            color(p, "background")?,
+            color(p, "background")
+                .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
         );
     ui.painter().text(
         badge.center(),
         egui::Align2::CENTER_CENTER,
         i.text("PDF")?,
         caption(ui),
-        color(p, "muted")?,
+        color(p, "muted").map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
     );
     Ok(())
 }

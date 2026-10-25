@@ -1,24 +1,37 @@
 //! Selectable literal error text with one styling owner.
 use super::Text;
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
-    browser::{host_error, set_text_if_changed},
+    AttachmentHostError, ReadingRoot,
+    browser::{host_error, sync_text},
 };
 use std::{cell::RefCell, rc::Rc};
-/// Update changed text only, preserving unchanged native selection.
-pub(in crate::dialogs::attachment_overlay) fn sync(text: &Text) {
-    if let Some(nodes) = &text.nodes {
-        for (node, value) in nodes.iter().zip(&text.values) {
-            set_text_if_changed(node, value);
-        }
-    }
-}
 /// Mount a centered panel with literal heading and diagnostic.
 pub(in crate::dialogs::attachment_overlay) fn mount(
     document: &web_sys::Document,
     text: &Rc<RefCell<Text>>,
     padded: bool,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
+    let (root, nodes) = nodes(document, padded)?;
+    text.borrow_mut().nodes = Some(nodes);
+    {
+        let text = text.borrow();
+        sync_text(text.nodes.as_ref(), &text.values);
+    }
+    Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
+        commit: None,
+        owner: None,
+        element: root,
+        slots: vec![],
+    })
+}
+
+/// Build literal error nodes independently of retained placement.
+pub(crate) fn nodes(
+    document: &web_sys::Document,
+    padded: bool,
+) -> Result<(web_sys::Element, [web_sys::Element; 2]), AttachmentHostError> {
     let create = |tag| document.create_element(tag).map_err(|e| host_error(&e));
     let root = create("section")?;
     root.set_attribute(
@@ -39,12 +52,5 @@ pub(in crate::dialogs::attachment_overlay) fn mount(
         panel.append_child(node).map_err(|e| host_error(&e))?;
     }
     root.append_child(&panel).map_err(|e| host_error(&e))?;
-    text.borrow_mut().nodes = Some(nodes);
-    sync(&text.borrow());
-    Ok(ReadingRoot {
-        commit: None,
-        owner: None,
-        element: root,
-        slots: vec![],
-    })
+    Ok((root, nodes))
 }

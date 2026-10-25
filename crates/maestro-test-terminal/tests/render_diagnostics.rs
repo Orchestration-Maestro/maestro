@@ -5,18 +5,9 @@ use std::rc::Rc;
 
 use maestro_tui::{TUI, TerminalImage};
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod components;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-}
-use support::components::Probe;
-use support::manual_runtime::{FileEffect, ManualRuntime};
-use support::recording_terminal::RecordingTerminal;
+use crate::support::components::Probe;
+use crate::support::manual_runtime::{FileEffect, ManualRuntime};
+use crate::support::recording_terminal::RecordingTerminal;
 
 /// Width of the terminals in these scenarios.
 const COLUMNS: usize = 10;

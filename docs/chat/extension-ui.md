@@ -91,9 +91,10 @@ The current text is written as UTF-8 to
 `maestro-extension-editor-{milliseconds}.md` in the native temporary directory.
 Creation is exclusive: an existing file or symlink is preserved, not overwritten
 or removed. Newly created Unix files have mode 0600; Windows keeps its native ACL.
-The terminal stops before launching, and only a successful zero exit replaces the
-text. Readback preserves a BOM and decodes invalid UTF-8 lossily. Exactly one final
-LF is removed before the toolkit normalizes line endings; no other whitespace is
+The dialog closes its write handle, stops the terminal, then launches the editor.
+Only a successful zero exit replaces the text. Readback preserves a BOM and
+decodes invalid UTF-8 lossily. Exactly one final LF is removed before the toolkit
+normalizes line endings; no other whitespace is
 trimmed until submission.
 
 Nonzero exit, signal termination and native spawn failure preserve the buffer.
@@ -105,3 +106,139 @@ including file creation failure; a restart failure takes precedence. Successful
 restart requests a full redraw. External editing never submits or cancels.
 
 Interactive dialog presentation and settlement are separate from this component.
+
+# Extension UI host in the interactive mode
+
+`maestro_chat::InteractiveMode` implements the extension UI port, so a host
+retains it with the existing `ExtensionUIContext::new(mode.clone())` and gives it
+to the session's extension bindings. The bindings carry the originating event
+capability, so the host only calls the bound handles it receives; it never
+obtains an event bus.
+
+This section covers the operations that exist today: dialogs, editor access,
+theme queries and selection, the terminal title, tool expansion, notifications,
+terminal input listeners, status text and widgets. Custom headers, footers and
+editors keep their own owners and their published components.
+
+## Dialogs
+
+`select`, `input` and `editor` show the selector, the text input or the
+multiline editor described above in place of the editor before they return.
+Focus moves to the dialog and the mode requests a frame. Answering, cancelling,
+a countdown expiring or the signal aborting settles the dialog once. The
+countdown stops, the mode's current editor returns with focus, the mode requests
+a frame and the result becomes available. A cancelled, expired or aborted dialog
+answers `None`. The multiline editor takes neither a countdown nor a signal and
+answers with the text its editor submits.
+
+`confirm` shows the selector with the title and message on two lines and the
+options `Yes` and `No`, in that order. Only `Yes` answers true; `No`,
+cancelling, expiry and abort answer false.
+
+An already-aborted signal answers at once: the mode shows nothing, keeps focus
+and requests no frame. A countdown starts only when the timeout is greater than
+zero. Aborting after the dialog settled does nothing. The shown dialog holds its
+own settlement, so dropping the returned future leaves it working: a later key
+still settles it and restores the editor. Settled dialogs keep neither the mode
+nor its terminal alive.
+
+`prompt_for_missing_session_cwd` asks whether to continue when a session's
+stored directory no longer exists. The title is `Session cwd not found`,
+followed by the session's own prompt text from
+`format_missing_session_cwd_prompt`. `Yes` returns the offered directory
+unchanged, even when it is empty, without checking it; `No` or cancelling
+returns `None`.
+
+## Editor access
+
+`set_editor_text` replaces the editor text unchanged, and `get_editor_text`
+returns the expanded text the editor renders. `paste_to_editor` delivers the
+text as a bracketed paste, so the editor applies its own paste rules. Nothing is
+trimmed and no history entry is written.
+
+## Themes
+
+`theme` returns the live view of the published theme, so a holder sees later
+switches. `get_all_themes` lists every shipped, custom and loaded name with the
+path of the first owner of that name. `get_theme` loads a name for reading and
+publishes nothing; a name with no document or loaded theme is absent.
+
+`set_theme` accepts a name or a prepared instance.
+
+- A name is loaded and published, then watched through the effects the
+  constructor was given. The name is saved only when it differs from the saved
+  theme, and a frame is requested only on success. A rejected name publishes the
+  fallback theme, reports the loader's own message, saves nothing and requests
+  no frame.
+- An instance is published as given, which stops a named theme's watch, and a
+  frame is requested. The saved name is left alone.
+
+Reading a theme never publishes one, and a failed load stays silent to the saved
+name.
+
+## Title and tool expansion
+
+`set_title` forwards the supplied text to the terminal unchanged; there is no
+formatter. `get_tools_expanded` reads the mode's own flag, and
+`set_tools_expanded` applies the value to the startup help and every expandable
+transcript row through the existing walk, then requests a frame.
+
+## Notifications and terminal input
+
+`notify` sends absent or `Info` severity to the transcript's dim status line.
+Adjacent status notices reuse the last spacer and text; a warning, error or
+other intervening transcript row makes the next status append a new pair.
+`Warning` and `Error` use the existing labelled notice helpers. Each successful
+notice requests a frame.
+
+`on_terminal_input` adapts a bound handler to the toolkit's input dispatcher.
+Registering the same handle twice invokes it once per chunk. Either remover
+removes that registration; an old remover also removes a later registration
+of the same handle. Dropping a remover alone leaves the registration active.
+The callback may pass, replace or consume a chunk. An empty replacement reaches
+later listeners but not the editor unless a later listener replaces it again.
+A callback failure consumes the chunk and sends the original error to the
+terminal runtime; later listeners and the editor do not receive that chunk.
+
+The mode tracks only extension registrations for cleanup, leaving unrelated
+terminal listeners intact. Cleanup is repeatable, and retained removers remain
+safe to call afterwards. `stop` clears these registrations after releasing the
+working loader and before disposing the footer or stopping the UI. A terminal
+progress failure leaves them active; a UI-stop failure does not restore them.
+Reinitializing the mode does not restore cleared callbacks. Releasing the mode
+also clears its registrations.
+
+## Failures
+
+Both notice helpers and the status formatting keep the theme error as their own
+failure, and tool expansion keeps the row's diagnostic, so a caller can
+downcast the original error instead of receiving a formatted string. Prior
+effects stay: an expansion sets the flag before a row's formatting can fail, and
+a rejected notice adds no row.
+
+## Status text and widgets
+
+`set_status(key, text)` updates the footer's live status view. Replacing text
+keeps its insertion position; removing and reinserting a key appends it. `None`
+removes the key, while empty keys and empty text remain values. Every call
+requests a frame.
+
+`set_widget` accepts fixed text lines or a bound component factory. Widgets
+appear in insertion order above the editor by default, or below it with
+`WidgetPlacement::BelowEditor`. Each text widget shows at most ten supplied
+strings, followed by the muted `... (widget truncated)` line when more were
+supplied. Embedded newlines and styling remain the Text component's input;
+the cap counts supplied strings, not their wrapped screen rows. An empty list
+is a retained widget, not removal. The above container keeps one leading
+spacer, including when empty; the below container has no spacer.
+
+Replacing a widget calls its old disposer before removing it from either side,
+then builds and appends the new component in the selected placement. Passing
+`None` removes the key from both sides. Factories receive the live terminal
+and theme through their originating callback capability. Disposer and factory
+failures return the original error and keep effects already performed. A
+failed disposer stops before removal; a failed factory leaves the old entry
+removed. Neither failure rebuilds the last painted containers.
+
+Headers, footers, custom editors and custom-view installation are separate
+operations; these setters do not implement session replacement or reset.

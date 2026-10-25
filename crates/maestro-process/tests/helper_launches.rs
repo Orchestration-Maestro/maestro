@@ -242,19 +242,18 @@ fn inherited_launch_keeps_descriptors_operands_and_status() {
         return;
     }
     for code in ["0", "7", "signal"] {
-        let mut child = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "inherited_launch_keeps_descriptors_operands_and_status",
-                "--nocapture",
-            ])
-            .env(CHILD, "1")
-            .env("MAESTRO_EXIT", code)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .unwrap();
+        let mut child = maestro_test_process::TestProcess::current(
+            "inherited_launch_keeps_descriptors_operands_and_status",
+        )
+        .unwrap()
+        .nocapture()
+        .env(CHILD, "1")
+        .env("MAESTRO_EXIT", code)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
         child
             .stdin
             .take()

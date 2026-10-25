@@ -52,10 +52,14 @@ fn repeated_conversion_is_inert_after_current_version() {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[test]
 fn converted_context_uses_existing_local_timestamp_policy() {
-    if let Ok(zone) = std::env::var("MAESTRO_CONVERSION_TIME_CHILD") {
+    if maestro_test_process::selection().is_child() {
+        let zone = ["UTC", "America/New_York"]
+            .into_iter()
+            .find(|zone| maestro_test_process::selection().runs_case(zone))
+            .expect("selected timezone");
         let local = if zone == "America/New_York" {
             1_735_711_200_000_i64
         } else {
@@ -68,23 +72,21 @@ fn converted_context_uses_existing_local_timestamp_policy() {
         return;
     }
     for zone in ["UTC", "America/New_York"] {
-        let test = crate::child_process::selector(
+        let output = maestro_test_process::TestProcess::current(
             "converted_context_uses_existing_local_timestamp_policy",
         )
+        .unwrap()
+        .nocapture()
+        .env("TZ", zone)
+        .case(zone)
+        .output()
         .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .env("TZ", zone)
-            .env("MAESTRO_CONVERSION_TIME_CHILD", zone)
-            .output()
-            .unwrap();
         assert!(
             output.status.success(),
             "stdout: {}\nstderr: {}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test).unwrap();
     }
 }
 
@@ -101,6 +103,7 @@ fn converted_context_uses_existing_local_timestamp_policy() {
 }
 
 /// Compare converted timestamps against the platform's local-time expectation.
+#[cfg(not(target_arch = "wasm32"))]
 fn check_converted_timestamps(local: i64) {
     for case in
         support::session_files::cases("converted_context_uses_existing_local_timestamp_policy")

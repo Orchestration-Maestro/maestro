@@ -316,19 +316,16 @@ fn workbook_shared_operand_attachment_composition() {
         .unwrap();
     }
     let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
-    let attachment = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(load_attachment(
-            AttachmentSource::File {
-                bytes: BYTES,
-                name: "operands.xlsx",
-                mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            },
-            None,
-            &fetch,
-        ))
-        .unwrap();
+    let attachment = super::run(load_attachment(
+        AttachmentSource::File {
+            bytes: BYTES,
+            name: "operands.xlsx",
+            mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        },
+        None,
+        &fetch,
+    ))
+    .unwrap();
     assert_eq!(
         attachment.extracted_text.as_deref(),
         Some(format!("<excel filename=\"operands.xlsx\">{expected}\n</excel>").as_str())

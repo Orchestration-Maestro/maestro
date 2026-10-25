@@ -3,8 +3,8 @@
 `maestro-packages` manages configured sources and acquires or removes their
 contents; see [package installation and removal](packages.md). Supply a live
 `SettingsManager` and `PackageOperations`; native callers can use
-`NativePackageOperations` with their own shell-selection function and stdout
-takeover query and a caller-driven `Rc<tokio::task::LocalSet>`.
+`NativePackageOperations` with their own stdout takeover query and a caller-driven
+`Rc<tokio::task::LocalSet>`.
 For read-only availability and configured execution, see [package updates](package-updates.md).
 
 The direct `parse_git_url` parser accepts explicit HTTP, HTTPS, SSH and Git URLs;
@@ -20,18 +20,20 @@ segments, such as a trailing slash, stay accepted. Components follow the checkou
 platform: both slash and backslash separate on Windows; on POSIX, a backslash
 is an ordinary name character.
 
-Ordinary local paths use the supplied working directory as their input base;
+Ordinary local paths use the configured working directory as their input base;
 stored locals use their scope's base. Local storage uses `maestro-path` relative-path calculation from the
 user agent directory or project `.maestro` directory; see the
 [shared path module](../crates/maestro-path/src/lib.rs) documentation for root handling. The manager trims local
-inputs and expands `~`, `~/name` and `~name` using the supplied home operation.
-Storage resolves incomplete bases and home-derived paths through the supplied
-ambient-context operations. Lexical path operations belong to `maestro-path`;
+inputs and expands `~`, `~/name` and `~name` with the home directory: a nonempty
+`HOME`, else the platform's home lookup. Expansion keeps a relative home as written.
+Stored sources resolve a relative base or home against the process working directory,
+which the manager reads only when a path needs it.
+Lexical path operations belong to `maestro-path`;
 persistence belongs to `maestro-settings`.
 
 Listing returns user rows before project rows, preserving order, duplicates and
-object-entry flags. Existing-content lookup returns a path only when the supplied
-existence operation succeeds. Consumed malformed source fields fail; ignored
+object-entry flags. Existing-content lookup returns a path only when it exists on
+the file system. Consumed malformed source fields fail; ignored
 filter fields remain untouched. Adding a changed npm pin or Git ref replaces only
 the first identity match, in place, preserving other object members and their
 order. Same parsed pins and local aliases, or an absent removal, do not call a
@@ -59,7 +61,7 @@ let packages = DefaultPackageManager::new(
         agent_dir: "/agent".into(),
         settings_manager: settings,
     },
-    NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+    NativePackageOperations::new(Rc::new(|| false), &local),
 );
 assert!(packages.add_source_to_settings("https://github.com/user/repository", None)?);
 assert!(!packages.add_source_to_settings("ssh://git@github.com/user/repository", None)?);

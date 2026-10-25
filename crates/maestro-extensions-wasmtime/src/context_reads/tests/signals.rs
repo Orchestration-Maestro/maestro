@@ -19,7 +19,7 @@ fn retained_signal_survives_rebind_and_retirement() {
 /// Selects unequal signals before retiring the guarded context.
 async fn retained_signal(command: bool) {
     let runner = runner("/signal");
-    let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    let (mut pump, admission) = Pump::new();
     let context = if command {
         Owner::Command(runner.create_command_context())
     } else {

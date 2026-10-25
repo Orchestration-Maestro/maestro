@@ -26,7 +26,7 @@ internal `maestro-agent`, `maestro-models`, `maestro-theme` and `maestro-tui`
 crates, workspace `serde_json` (now also a normal dependency) and workspace
 `futures-util =0.3.34` (`std`, `sink`). The read family is native-only:
 `icu_normalizer =2.3.0` with `compiled_data` supplies NFD for read paths and NFKC for
-[edit matching](../tools-edit.md#original-snapshot-matching), `tokio =1.53.2` with
+[edit matching](../tools-edit.md#original-snapshot-matching), `tokio =1.53.3` with
 `rt`, `fs` and `sync` supplies file reads, file writes, blocking probes and the
 one-shot wake-ups of the [file mutation queue](../tools-edit.md#file-mutation-queue)
 (`sync` adds no package and was already enabled in the workspace), and on Unix
@@ -43,16 +43,16 @@ runs only when `HOME` is absent; Windows always uses that platform lookup. A mis
 ## Directory listing
 
 The [`ls` tool](../tools-search.md) adds no package, feature or version. It orders names with
-`maestro-theme`'s [collator](../theme.md#replaceable-operations), which uses the theme crate's
-existing `icu_collator`/`icu_locale_core` pins, reads native names through
-`NativeThemeOperations`, spells numbers with `ryu-js` and runs blocking file effects on the
+`maestro-theme`'s [collator](../theme.md#files-environment-and-sorting), which uses the theme crate's
+existing `icu_collator`/`icu_locale_core` pins, reads native names through the shared
+directory listing (`maestro-listing`), spells numbers with `ryu-js` and runs blocking file effects on the
 existing `tokio` blocking pool. Its call and result renderers reuse the read renderers' shared
 display helpers rather than adding their own.
 
 ## Display strings
 
-`maestro-tools` uses `regex =1.13.1` with default features (MIT or Apache-2.0), already
-in the lockfile through `maestro-models`, to run one cached expression that removes the terminal
+`maestro-text` and `maestro-tools` use `regex =1.13.1` with default features (MIT or Apache-2.0), already
+in the lockfile through `maestro-models`, for the text leaf's cached expression that removes the terminal
 escape sequences it matches from [display text](../tools-read.md#display-helpers). Its existing
 closure is `regex-automata 0.4.18`, `regex-syntax 0.8.11`, `aho-corasick 1.1.5` and
 `memchr 2.8.3`; the last two are Unlicense OR MIT, used under MIT. No other package is added.

@@ -1,14 +1,19 @@
 //! Real queued factories preserve hooks, order and their retained registration.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use super::registered::{CallbackInput, Trace, local_hooks, record, threaded_hooks};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::*;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
     sync::{Arc, Mutex},
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The same factory body runs with either invocation family's original options.
 struct Factory {
     /// Observations belong to the current request, not a synthesized result label.
@@ -16,6 +21,7 @@ struct Factory {
     /// Caller-selected failure after the hooks have completed.
     outcome: String,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Erase only the associated future; factory logic never selects execution modes.
 macro_rules! factory {
     ($mode:ty) => {
@@ -34,8 +40,11 @@ macro_rules! factory {
         }
     };
 }
+#[cfg(not(target_arch = "wasm32"))]
 factory!(Local);
+#[cfg(not(target_arch = "wasm32"))]
 factory!(Threaded);
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe live state after the response hook, then retain it across a real yield.
 fn factory_body<E: ProviderExecution>(
     input: FauxResponseInput<E>,
@@ -81,6 +90,7 @@ fn factory_body<E: ProviderExecution>(
         ))
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Deterministic short chunks use the existing simulator pacing owner.
 fn registration() -> FauxProviderRegistration {
     register_faux_provider(RegisterFauxProviderOptions {
@@ -96,6 +106,7 @@ fn registration() -> FauxProviderRegistration {
         ..Default::default()
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Retain one callback alias while replacing and removing its registry entry.
 fn enqueue(
     registration: &FauxProviderRegistration,
@@ -110,6 +121,7 @@ fn enqueue(
     registration.set_responses(vec![FauxResponseStep::Factory(factory)]);
     weak
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Record only the fields present in the source recording, keeping all events.
 fn observation(
     trace: &Trace,
@@ -130,35 +142,34 @@ fn observation(
     }
     value
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn scripted_factories_keep_hooks_across_suspension() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            for row in super::corpus::load().scripted.rows {
-                let input: CallbackInput = serde_json::from_value(row.input)?;
-                for local in [true, false] {
-                    let trace = Trace::default();
-                    let registration = registration();
-                    let weak = enqueue(&registration, &trace, &input.outcome);
-                    let retained = get_api_provider(&registration.api).unwrap();
-                    registration.unregister();
-                    assert!(trace.lock().unwrap().is_empty());
-                    let result = run(&registration, &retained, &trace, &input, local).await?;
-                    assert_eq!(
-                        crate::json::canonical(observation(&trace, &registration, result)),
-                        row.expected,
-                        "{} local={local}",
-                        row.name
-                    );
-                    assert!(weak.upgrade().is_none());
-                }
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        for row in super::corpus::load().scripted.rows {
+            let input: CallbackInput = serde_json::from_value(row.input)?;
+            for local in [true, false] {
+                let trace = Trace::default();
+                let registration = registration();
+                let weak = enqueue(&registration, &trace, &input.outcome);
+                let retained = get_api_provider(&registration.api).unwrap();
+                registration.unregister();
+                assert!(trace.lock().unwrap().is_empty());
+                let result = run(&registration, &retained, &trace, &input, local).await?;
+                assert_eq!(
+                    crate::json::canonical(observation(&trace, &registration, result)),
+                    row.expected,
+                    "{} local={local}",
+                    row.name
+                );
+                assert!(weak.upgrade().is_none());
             }
-            Ok(())
-        }),
-    )
+        }
+        Ok(())
+    }))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Local and supplied threaded routes both close admission before counting the queue.
 async fn run(
     registration: &FauxProviderRegistration,
@@ -176,6 +187,7 @@ async fn run(
         run_threaded(registration, provider, trace, input).await
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Execute the retained local callback with non-Send hook futures.
 async fn run_local(
     registration: &FauxProviderRegistration,
@@ -202,6 +214,7 @@ async fn run_local(
     }
     Ok(result)
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Threaded hooks use the same factory and never fall back to simulator admission.
 async fn run_threaded(
     registration: &FauxProviderRegistration,
@@ -228,6 +241,7 @@ async fn run_threaded(
     }
     Ok(result)
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// The real callback pops and increments synchronously before either producer can run.
 fn invoke<E: ProviderExecution>(
     registration: &FauxProviderRegistration,
@@ -273,46 +287,44 @@ fn invoke<E: ProviderExecution>(
     );
     Ok(stream)
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn scripted_queue_and_registration_survive_cleanup_across_families() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            let trace = Trace::default();
-            let registration = registration();
-            let factory = Arc::new(Factory {
-                trace: trace.clone(),
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        let trace = Trace::default();
+        let registration = registration();
+        let factory = Arc::new(Factory {
+            trace: trace.clone(),
+            outcome: "success".into(),
+        });
+        let weak = Arc::downgrade(&factory);
+        registration.set_responses(vec![FauxResponseStep::Factory(factory.clone())]);
+        registration.append_responses(vec![FauxResponseStep::Factory(factory)]);
+        let retained = get_api_provider(&registration.api).unwrap();
+        registration.unregister();
+        assert!(get_api_provider(&registration.api).is_none());
+        let corpus = super::corpus::load().retained_sequence;
+        assert_eq!(corpus.observations.len(), 2);
+        for (index, (form, local)) in [("raw", true), ("simple", false)].into_iter().enumerate() {
+            trace.lock().unwrap().clear();
+            let input = CallbackInput {
+                form: form.into(),
                 outcome: "success".into(),
-            });
-            let weak = Arc::downgrade(&factory);
-            registration.set_responses(vec![FauxResponseStep::Factory(factory.clone())]);
-            registration.append_responses(vec![FauxResponseStep::Factory(factory)]);
-            let retained = get_api_provider(&registration.api).unwrap();
-            registration.unregister();
-            assert!(get_api_provider(&registration.api).is_none());
-            let corpus = super::corpus::load().retained_sequence;
-            assert_eq!(corpus.observations.len(), 2);
-            for (index, (form, local)) in [("raw", true), ("simple", false)].into_iter().enumerate()
-            {
-                trace.lock().unwrap().clear();
-                let input = CallbackInput {
-                    form: form.into(),
-                    outcome: "success".into(),
-                };
-                let result = run(&registration, &retained, &trace, &input, local).await?;
-                let mut observed = observation(&trace, &registration, result);
-                observed.as_object_mut().unwrap().shift_remove("events");
-                assert_eq!(crate::json::canonical(observed), corpus.observations[index]);
-                assert_eq!(weak.upgrade().is_some(), index == 0);
-            }
-            check_last_alias(registration, retained, trace);
-            assert!(weak.upgrade().is_none());
-            Ok(())
-        }),
-    )
+            };
+            let result = run(&registration, &retained, &trace, &input, local).await?;
+            let mut observed = observation(&trace, &registration, result);
+            observed.as_object_mut().unwrap().shift_remove("events");
+            assert_eq!(crate::json::canonical(observed), corpus.observations[index]);
+            assert_eq!(weak.upgrade().is_some(), index == 0);
+        }
+        check_last_alias(registration, retained, trace);
+        assert!(weak.upgrade().is_none());
+        Ok(())
+    }))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Pending captures survive each raw/simple alias and release only after the last owner.
 fn check_last_alias(registration: FauxProviderRegistration, retained: ApiProvider, trace: Trace) {
     let pending = Arc::new(Factory {
@@ -334,6 +346,7 @@ fn check_last_alias(registration: FauxProviderRegistration, retained: ApiProvide
     assert!(weak.upgrade().is_none());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Recorded source-factory outcomes, not a second callback dispatch mechanism.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -341,8 +354,10 @@ struct SourceInput {
     /// Async context, supplied exception, or exhausted FIFO.
     outcome: String,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// The factory reads the live context/state after suspension.
 struct SourceFactory(String);
+#[cfg(not(target_arch = "wasm32"))]
 /// Erase only each concrete factory return.
 macro_rules! source_factory {
     ($mode:ty) => {
@@ -357,8 +372,11 @@ macro_rules! source_factory {
         }
     };
 }
+#[cfg(not(target_arch = "wasm32"))]
 source_factory!(Local);
+#[cfg(not(target_arch = "wasm32"))]
 source_factory!(Threaded);
+#[cfg(not(target_arch = "wasm32"))]
 /// Preserve caller error text and the selected live context/count.
 async fn source_body<E: ProviderExecution>(
     input: FauxResponseInput<E>,
@@ -378,38 +396,37 @@ async fn source_body<E: ProviderExecution>(
         _ => panic!("only source factory inputs are admitted"),
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn recorded_source_factories_keep_all_fields() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            for row in super::corpus::load()
-                .dispatch
-                .rows
-                .into_iter()
-                .filter(|row| row.input.get("outcome").is_some())
-            {
-                let input: SourceInput = serde_json::from_value(row.input)?;
-                for local in [true, false] {
-                    let registration = registration();
-                    queue_source(&registration, &input.outcome);
-                    let provider = get_api_provider(&registration.api).unwrap();
-                    let trace = Trace::default();
-                    let call = CallbackInput {
-                        form: "raw".into(),
-                        outcome: "success".into(),
-                    };
-                    let result = run(&registration, &provider, &trace, &call, local).await?;
-                    let observed = source_observation(&trace, &registration, result);
-                    assert_eq!(observed, row.expected, "{} local={local}", row.name);
-                    registration.unregister();
-                }
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        for row in super::corpus::load()
+            .dispatch
+            .rows
+            .into_iter()
+            .filter(|row| row.input.get("outcome").is_some())
+        {
+            let input: SourceInput = serde_json::from_value(row.input)?;
+            for local in [true, false] {
+                let registration = registration();
+                queue_source(&registration, &input.outcome);
+                let provider = get_api_provider(&registration.api).unwrap();
+                let trace = Trace::default();
+                let call = CallbackInput {
+                    form: "raw".into(),
+                    outcome: "success".into(),
+                };
+                let result = run(&registration, &provider, &trace, &call, local).await?;
+                let observed = source_observation(&trace, &registration, result);
+                assert_eq!(observed, row.expected, "{} local={local}", row.name);
+                registration.unregister();
             }
-            Ok(())
-        }),
-    )
+        }
+        Ok(())
+    }))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Exhaustion is represented by an empty real queue, not by a fabricated factory error.
 fn queue_source(registration: &FauxProviderRegistration, outcome: &str) {
     if outcome == "exhausted" {
@@ -420,6 +437,7 @@ fn queue_source(registration: &FauxProviderRegistration, outcome: &str) {
     )))]);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The source-factory recording names the actual error field `error` and has no phase trace.
 fn source_observation(
     trace: &Trace,

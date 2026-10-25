@@ -21,7 +21,7 @@ async fn sessions() {
     let runner = crate::tests::runner("/sessions");
     let calls = Rc::new(RefCell::new(Vec::new()));
     runner.bind_command_context(Some(actions(&calls)));
-    let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    let (pump, admission) = Pump::new();
     let endpoint = pump
         .registry()
         .context(Owner::Command(runner.create_command_context()))
@@ -126,7 +126,7 @@ fn actions(calls: &Rc<RefCell<Vec<String>>>) -> ExtensionCommandContextActions {
     let new_calls = calls.clone();
     let fork_calls = calls.clone();
     let switch_calls = calls.clone();
-    ExtensionCommandContextActions {
+    ExtensionCommandContextActions::new(maestro_extensions::CommandContextOperations {
         new_session: Rc::new(move |options| {
             let value = options.map_or_else(
                 || "absent".to_owned(),
@@ -164,6 +164,6 @@ fn actions(calls: &Rc<RefCell<Vec<String>>>) -> ExtensionCommandContextActions {
                 Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
             })
         }),
-        ..ExtensionCommandContextActions::default()
-    }
+        ..crate::context_actions::silent_command_operations()
+    })
 }

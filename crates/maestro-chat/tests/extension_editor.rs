@@ -1,6 +1,7 @@
 //! Multiline dialog behavior through public construction, input and child handles.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::bindings;
 use crate::input_support;
 use crate::published;
 use crate::recording_terminal;
@@ -267,6 +268,7 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
     assert_eq!(host.terminal.events(), ["start"]);
     #[cfg(unix)]
     {
+        use std::os::unix::fs::PermissionsExt;
         use std::os::unix::fs::symlink;
         let target = std::env::temp_dir().join("unrelated-target");
         std::fs::write(&target, b"unrelated target bytes").unwrap();
@@ -286,36 +288,33 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
         std::fs::remove_file(&path).unwrap();
         install_script(
             "inspect-mode",
-            "#!/bin/sh\nfor file; do :; done\n/usr/bin/stat -c '%a' \"$file\" > \"${0%/*}/mode\"\nexit 1\n",
+            "#!/bin/sh\nfor file; do :; done\n/bin/cp -p \"$file\" \"${0%/*}/mode\"\nexit 1\n",
         );
         host.spy.clock.set_environment("VISUAL", "inspect-mode");
         host.dialog.handle_input("\x07").unwrap();
-        assert_eq!(
-            std::fs::read_to_string(std::env::temp_dir().join("mode")).unwrap(),
-            "600\n"
-        );
+        let copied = std::fs::metadata(std::env::temp_dir().join("mode")).unwrap();
+        assert_eq!(copied.permissions().mode() & 0o7777, 0o600);
         assert!(!path.exists());
     }
 }
 /// Runs native effects in a fresh process with a private temporary directory and PATH.
 fn isolated(name: &str) -> bool {
-    if std::env::var("MAESTRO_EDITOR_CHILD").as_deref() == Ok(name) {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
+    {
         return false;
     }
-    let directory =
-        std::env::temp_dir().join(format!("maestro-dialog-{}-{name}", std::process::id()));
-    std::fs::create_dir(&directory).unwrap();
-    let test = crate::child_process::selector(name).unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_EDITOR_CHILD", name)
-        .env("TMPDIR", &directory)
-        .env("TEMP", &directory)
-        .env("TMP", &directory)
-        .env("PATH", &directory)
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let directory = scratch.path();
+    let output = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .nocapture()
+        .case(name)
+        .env_remove("MAESTRO_EDITOR_FILE")
+        .temp_dir(directory)
+        .env("PATH", directory)
         .output()
         .unwrap();
-    std::fs::remove_dir_all(directory).unwrap();
     assert!(
         output.status.success(),
         "isolated witness failed: {}",
@@ -368,32 +367,8 @@ fn editor_dialog_initializes_only_nonempty_prefill() {
         snapshot(&host, &expected);
     }
 }
-/// Scalar or list binding overrides accepted by the registry.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Binding {
-    /// One key.
-    One(String),
-    /// Ordered alternatives.
-    Many(Vec<String>),
-}
 /// Named caller overrides.
-type Bindings = std::collections::BTreeMap<String, Binding>;
-/// Converts retained input spelling to the public binding API.
-fn overrides(values: &Bindings) -> maestro_tui::KeybindingsConfig {
-    values
-        .iter()
-        .map(|(name, keys)| {
-            (
-                name.clone(),
-                Some(match keys {
-                    Binding::One(key) => maestro_tui::KeybindingKeys::Single(key.clone()),
-                    Binding::Many(keys) => maestro_tui::KeybindingKeys::Multiple(keys.clone()),
-                }),
-            )
-        })
-        .collect()
-}
+type Bindings = std::collections::BTreeMap<String, bindings::Binding>;
 /// An ordinary key event or an independently mutable owner.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -486,11 +461,10 @@ fn operation(host: &Host, operation: &Operation) {
                     .set_environment(key, value.environment.get(key).map_or("", String::as_str));
             }
         }
-        Operation::App(value) => host.manager.set_user_bindings(overrides(&value.values)),
-        Operation::Global(value) => maestro_tui::set_keybindings(KeybindingsManager::new(
-            maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-            overrides(&value.values),
-        )),
+        Operation::App(value) => host
+            .manager
+            .set_user_bindings(bindings::bindings(&value.values)),
+        Operation::Global(value) => bindings::replace(&value.values),
         Operation::Theme(value) => {
             host.theme.set_theme_instance(colors(value.theme)).unwrap();
         }
@@ -514,13 +488,10 @@ fn input_group(name: &str) {
     #[cfg(unix)]
     install_editor("vi", b"edited\n", 0);
     for (input, expected) in cases::<OpsInput, Frames>(name) {
-        maestro_tui::set_keybindings(KeybindingsManager::new(
-            maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-            overrides(&input.global),
-        ));
+        bindings::replace(&input.global);
         let application = KeybindingsManager::new(
             maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-            overrides(&input.app),
+            bindings::bindings(&input.app),
         );
         let host = configured_dialog(
             &RenderInput {
@@ -831,12 +802,7 @@ fn editor_dialog_uses_published_theme_roles() {
             env!("CARGO_MANIFEST_DIR")
         );
         let theme = Rc::new(
-            maestro_theme::load_theme_from_path(
-                &path,
-                Some(ColorMode::Truecolor),
-                &maestro_theme::NativeThemeOperations,
-            )
-            .unwrap(),
+            maestro_theme::load_theme_from_path(&path, Some(ColorMode::Truecolor)).unwrap(),
         );
         let host = dialog(&ordinary_input(), None, EditorOptions::default());
         host.theme.set_theme_instance(theme.clone()).unwrap();
@@ -1148,6 +1114,13 @@ fn external_editor_finally_cleans_and_restarts_after_io_failures() {
     }
     maestro_tui::set_keybindings(manager());
     let root = std::env::temp_dir();
+    // A privileged run ignores the write and unlink faults, so it has nothing to check.
+    if maestro_test_directory::deny(&root, 0o500)
+        .unwrap()
+        .is_none()
+    {
+        return;
+    }
     for (input, expected) in cases::<FaultInput, FaultExpected>(
         "external_editor_finally_cleans_and_restarts_after_io_failures",
     ) {
@@ -1209,7 +1182,7 @@ fn external_editor_finally_cleans_and_restarts_after_io_failures() {
 /// Controlled native process scenario, not a simulated bridge response.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 struct NativeInput {
     /// Recording protocol.
     mode: String,
@@ -1224,7 +1197,7 @@ struct NativeInput {
 /// Independent child observations in the native corpus.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 struct Observation {
     /// Exact file bytes before edit.
     before: String,
@@ -1236,7 +1209,7 @@ struct Observation {
 /// Native error, cleanup, child observation and full output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 struct NativeExpected {
     /// Whether a filesystem error escaped the action.
     failed: bool,
@@ -1495,3 +1468,31 @@ const OWNERS: [&str; 22] = [
     "external_editor_windows_uses_shell_while_unix_executes_directly",
     "editor_dialog_constructor_returns_theme_failure",
 ];
+
+#[test]
+#[cfg(windows)]
+fn external_editor_passes_environment_operand_to_native_child() {
+    let _guard = input_support::globals();
+    if isolated("external_editor_passes_environment_operand_to_native_child") {
+        return;
+    }
+    maestro_tui::set_keybindings(manager());
+    let host = dialog(
+        &RenderInput {
+            visual: Some("echo changed>".into()),
+            ..ordinary_input()
+        },
+        Some("before".into()),
+        EditorOptions::default(),
+    );
+    host.spy
+        .clock
+        .set_environment("comspec", &std::env::var("COMSPEC").unwrap());
+    host.dialog.handle_input("\x07").unwrap();
+    assert_eq!(text(&host.dialog), "changed\n");
+    assert!(
+        !std::env::temp_dir()
+            .join("maestro-extension-editor-1767323045006.md")
+            .exists()
+    );
+}

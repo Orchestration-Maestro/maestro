@@ -4,6 +4,7 @@ use crate::types::{AgentMessage, CustomAgentMessages, QueueMode, StreamFn};
 use crate::{
     AfterToolCall, BeforeToolCall, ConvertToLlm, GetApiKey, ToolExecutionMode, TransformContext,
 };
+use maestro_listeners::Listeners;
 use maestro_models::{OnPayload, OnResponse, ThinkingBudgets, Transport};
 use std::sync::Mutex;
 /// Prompt normalization and owned execution.
@@ -116,7 +117,7 @@ pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecu
     /// Reserved run and independent completion observers.
     active: Mutex<Option<execution::ActiveRun>>,
     /// Live callback registrations.
-    listeners: Mutex<maestro_models::records::listeners::Listeners<listeners::AgentListener<C, E>>>,
+    listeners: Mutex<Listeners<listeners::AgentListener<C, E>>>,
     /// Replacement stream captured at run admission.
     pub stream_fn: RwLock<Option<StreamFn<E>>>,
     /// Caller execution facility that retains submitted work independently.
@@ -160,7 +161,7 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
             get_api_key: RwLock::new(options.get_api_key),
             thinking_budgets: RwLock::new(options.thinking_budgets),
             active: Mutex::new(None),
-            listeners: Mutex::new(maestro_models::records::listeners::Listeners::default()),
+            listeners: Mutex::new(Listeners::default()),
             stream_fn: RwLock::new(options.stream_fn),
             spawn: RwLock::new(options.spawn),
             follow_up: RwLock::new(VecDeque::new()),
@@ -176,45 +177,27 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
     }
     /// The current steering policy.
     pub fn steering_mode(&self) -> QueueMode {
-        *self
-            .steering_mode
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        *read(&self.steering_mode)
     }
     /// Replace the steering policy.
     pub fn set_steering_mode(&self, mode: QueueMode) {
-        *self
-            .steering_mode
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = mode;
+        *write(&self.steering_mode) = mode;
     }
     /// The current follow-up policy.
     pub fn follow_up_mode(&self) -> QueueMode {
-        *self
-            .follow_up_mode
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        *read(&self.follow_up_mode)
     }
     /// Replace the follow-up policy.
     pub fn set_follow_up_mode(&self, mode: QueueMode) {
-        *self
-            .follow_up_mode
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = mode;
+        *write(&self.follow_up_mode) = mode;
     }
     /// Store steering input without appending it to history.
     pub fn steer(&self, message: AgentMessage<C>) {
-        self.steering
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push_back(message);
+        write(&self.steering).push_back(message);
     }
     /// Store follow-up input without appending it to history.
     pub fn follow_up(&self, message: AgentMessage<C>) {
-        self.follow_up
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push_back(message);
+        write(&self.follow_up).push_back(message);
     }
     /// Move steering entries according to the policy at this poll.
     pub(crate) fn drain_steering(&self) -> Vec<AgentMessage<C>> {
@@ -234,22 +217,12 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
     }
     /// Clear steering input, releasing retired entries after unlocking.
     pub fn clear_steering_queue(&self) {
-        let retired = std::mem::take(
-            &mut *self
-                .steering
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        );
+        let retired = std::mem::take(&mut *write(&self.steering));
         drop(retired);
     }
     /// Clear follow-up input, releasing retired entries after unlocking.
     pub fn clear_follow_up_queue(&self) {
-        let retired = std::mem::take(
-            &mut *self
-                .follow_up
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        );
+        let retired = std::mem::take(&mut *write(&self.follow_up));
         drop(retired);
     }
     /// Clear both input queues.
@@ -260,10 +233,7 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
     /// Clear history and runtime observations while preserving configuration.
     pub fn reset(&self) {
         let retired = {
-            let mut state = self
-                .state
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut state = write(&self.state);
             state.is_streaming = false;
             (
                 std::mem::replace(&mut state.messages, Arc::new(RwLock::new(Vec::new()))),
@@ -277,16 +247,7 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
     }
     /// Whether either input queue contains entries.
     pub fn has_queued_messages(&self) -> bool {
-        !self
-            .steering
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .is_empty()
-            || !self
-                .follow_up
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .is_empty()
+        !read(&self.steering).is_empty() || !read(&self.follow_up).is_empty()
     }
 }
 

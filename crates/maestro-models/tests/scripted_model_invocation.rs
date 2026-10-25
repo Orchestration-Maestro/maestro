@@ -2,8 +2,10 @@
 /// Offline public-interface behavior checks.
 mod tests {
     use maestro_models::*;
+    #[cfg(not(target_arch = "wasm32"))]
     mod families;
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Erase only the future representation of the same generic response body.
     macro_rules! factory {
         ($owner:ty, $erase:expr) => {
@@ -30,7 +32,7 @@ mod tests {
                 AssistantContent::Thinking(faux_thinking("plan")),
                 AssistantContent::ToolCall(faux_tool_call(
                     "lookup",
-                    JsonObject::new(),
+                    JsonObject::new().into(),
                     FauxToolCallOptions::default(),
                 )),
                 AssistantContent::Text(faux_text("answer")),
@@ -44,7 +46,7 @@ mod tests {
             matches!(&message.content[0], AssistantContent::Thinking(value) if value.thinking == "plan")
         );
         assert!(
-            matches!(&message.content[1], AssistantContent::ToolCall(value) if value.name == "lookup" && value.arguments.is_empty())
+            matches!(&message.content[1], AssistantContent::ToolCall(value) if value.name == "lookup" && value.arguments.as_object().is_some_and(serde_json::Map::is_empty))
         );
         assert!(
             matches!(&message.content[2], AssistantContent::Text(value) if value.text == "answer")
@@ -52,13 +54,7 @@ mod tests {
         assert_eq!(message.stop_reason, StopReason::ToolUse);
     }
 
-    /// Exercise wait through the public invocation boundary.
-    fn wait<T>(future: impl std::future::Future<Output = T>) -> T {
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(future)
-    }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise context through the public invocation boundary.
     fn context(text: &str) -> Context {
         Context {
@@ -70,6 +66,7 @@ mod tests {
             tools: None,
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise scripted through the public invocation boundary.
     fn scripted(text: &str) -> FauxResponseStep {
         FauxResponseStep::Message(Box::new(faux_assistant_message(
@@ -77,13 +74,14 @@ mod tests {
             FauxAssistantMessageOptions::default(),
         )))
     }
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise registration estimates usage through the public invocation boundary.
     fn maestro_registration_estimates_usage() {
         let _serial = crate::bundled::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         registration.set_responses(vec![scripted("answer")]);
-        let message = wait(complete(
+        let message = crate::runtime::run(complete(
             registration.get_model(None).unwrap().clone(),
             context("hello"),
             None,
@@ -96,7 +94,7 @@ mod tests {
         );
         number(message.usage.input, 3.0);
         number(message.usage.output, 2.0);
-        number(message.usage.total_tokens, 5.0);
+        number(message.usage.total_tokens.present().copied().unwrap(), 5.0);
         assert_eq!(registration.state.call_count(), 1);
         registration.unregister();
     }
@@ -112,25 +110,27 @@ mod tests {
     fn model(registration: &FauxProviderRegistration) -> Model {
         registration.get_model(None).unwrap().clone()
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise invoke through the public invocation boundary.
     fn invoke(
         registration: &FauxProviderRegistration,
         context: Context,
         options: Option<ProviderStreamOptions>,
     ) -> AssistantMessage {
-        wait(complete(model(registration), context, options))
+        crate::runtime::run(complete(model(registration), context, options))
             .unwrap()
             .read()
             .unwrap()
             .clone()
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise events through the public invocation boundary.
     fn events(
         registration: &FauxProviderRegistration,
         options: Option<ProviderStreamOptions>,
     ) -> Vec<AssistantMessageEvent> {
         let stream = stream(model(registration), context("hello"), options).unwrap();
-        wait(async {
+        crate::runtime::run(async {
             let mut events = Vec::new();
             while let Some(event) = stream.next().await {
                 events.push(event);
@@ -138,6 +138,7 @@ mod tests {
             events
         })
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise fixed through the public invocation boundary.
     fn fixed(speed: Option<f64>) -> FauxProviderRegistration {
         register_faux_provider(RegisterFauxProviderOptions {
@@ -149,6 +150,7 @@ mod tests {
             ..RegisterFauxProviderOptions::default()
         })
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise session through the public invocation boundary.
     fn session(id: &str, retention: Option<CacheRetention>) -> ProviderStreamOptions {
         ProviderStreamOptions {
@@ -160,6 +162,7 @@ mod tests {
             ..ProviderStreamOptions::default()
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise failure through the public invocation boundary.
     fn failure(text: &str) -> DiagnosticErrorInfo {
         DiagnosticErrorInfo {
@@ -188,7 +191,11 @@ mod tests {
         assert_recorded_zero_usage(&message.usage);
         let text = faux_text("text");
         let thinking = faux_thinking("thinking");
-        let tool = faux_tool_call("tool", JsonObject::new(), FauxToolCallOptions::default());
+        let tool = faux_tool_call(
+            "tool",
+            JsonObject::new().into(),
+            FauxToolCallOptions::default(),
+        );
         for content in [
             FauxAssistantContent::from(String::from("text")),
             FauxAssistantContent::from(text.clone()),
@@ -200,7 +207,7 @@ mod tests {
             assert_eq!(message.content.len(), 1);
             assert_eq!(message.stop_reason, StopReason::Stop);
             assert!(message.timestamp > 0.0);
-            number(message.usage.total_tokens, 0.0);
+            number(message.usage.total_tokens.present().copied().unwrap(), 0.0);
         }
         assert!(
             faux_assistant_message(Vec::new(), FauxAssistantMessageOptions::default())
@@ -311,7 +318,11 @@ mod tests {
             std::num::FpCategory::Zero,
             "clock uses integral milliseconds"
         );
-        let tool = faux_tool_call("t", JsonObject::new(), FauxToolCallOptions::default());
+        let tool = faux_tool_call(
+            "t",
+            JsonObject::new().into(),
+            FauxToolCallOptions::default(),
+        );
         for (id, prefix) in [(&first.api, "faux"), (&tool.id, "tool")] {
             let parts: Vec<_> = id.split(':').collect();
             assert_eq!(parts.len(), 3);
@@ -329,7 +340,7 @@ mod tests {
         assert_eq!(
             faux_tool_call(
                 "t",
-                JsonObject::new(),
+                JsonObject::new().into(),
                 FauxToolCallOptions {
                     id: Some(String::new())
                 }
@@ -342,6 +353,7 @@ mod tests {
         empty.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise responses keep invocation identity through the public invocation boundary.
     fn maestro_responses_keep_invocation_identity() {
@@ -379,6 +391,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise queue exhaustion counts requests through the public invocation boundary.
     fn maestro_queue_exhaustion_counts_requests() {
@@ -399,7 +412,7 @@ mod tests {
             Some("No more faux responses queued")
         );
         number(result.usage.cache_write, 2.0);
-        number(result.usage.total_tokens, 2.0);
+        number(result.usage.total_tokens.present().copied().unwrap(), 2.0);
         assert_eq!(registration.state.call_count(), 3);
         assert_eq!(registration.get_pending_response_count(), 0);
         let result = invoke(&registration, context("hi"), Some(session("exhaust", None)));
@@ -407,6 +420,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise queue replacement and append through the public invocation boundary.
     fn maestro_queue_replacement_and_append() {
@@ -432,6 +446,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise caches do not cross sessions through the public invocation boundary.
     fn maestro_caches_do_not_cross_sessions() {
@@ -461,6 +476,7 @@ mod tests {
         second.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise session prefix cache reuses prompt through the public invocation boundary.
     fn maestro_session_prefix_cache_reuses_prompt() {
@@ -482,6 +498,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise disabled cache leaves no state through the public invocation boundary.
     fn maestro_disabled_cache_leaves_no_state() {
@@ -507,6 +524,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise cache totals count prompt once through the public invocation boundary.
     fn maestro_cache_totals_count_prompt_once() {
@@ -529,12 +547,13 @@ mod tests {
             number(usage.cache_read, read);
             number(usage.cache_write, prompt - read);
             number(usage.input, 0.0);
-            number(usage.total_tokens, prompt + 2.0);
+            number(usage.total_tokens.present().copied().unwrap(), prompt + 2.0);
             number(usage.cost.total, 0.0);
         }
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise event name through the public invocation boundary.
     fn event_name(event: &AssistantMessageEvent) -> String {
         serde_json::to_value(event).unwrap()["type"]
@@ -542,6 +561,7 @@ mod tests {
             .unwrap()
             .into()
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise partial through the public invocation boundary.
     fn partial(event: &AssistantMessageEvent) -> SharedAssistantMessage {
         match event {
@@ -558,6 +578,7 @@ mod tests {
             _ => unreachable!(),
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise mixed through the public invocation boundary.
     fn mixed() -> AssistantMessage {
         faux_assistant_message(
@@ -578,6 +599,7 @@ mod tests {
             },
         )
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise collect cancel through the public invocation boundary.
     async fn collect_cancel(
         stream: &AssistantMessageEventStream,
@@ -593,9 +615,11 @@ mod tests {
         }
         observed
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Poll the consumer synchronously when the producer publishes an event.
     struct InlineObserver(std::sync::Mutex<Option<BoxFuture<()>>>);
 
+    #[cfg(not(target_arch = "wasm32"))]
     impl std::task::Wake for InlineObserver {
         fn wake(self: std::sync::Arc<Self>) {
             self.wake_by_ref();
@@ -614,6 +638,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Suspend the actual response factory until the observer is ready.
     fn gated_response(
         message: AssistantMessage,
@@ -633,6 +658,7 @@ mod tests {
         (step, entered_rx, release_tx)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Cancel on the producer's publishing thread before it can schedule another chunk.
     fn observe_cancel(
         stream: AssistantMessageEventStream,
@@ -652,6 +678,7 @@ mod tests {
         received.recv().unwrap()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise check cancel through the public invocation boundary.
     fn check_cancel(block: AssistantContent, delta_name: &str) {
         let registration = fixed(Some(100.0));
@@ -683,7 +710,7 @@ mod tests {
                 .iter()
                 .any(|event| event_name(event).ends_with("_end") || event_name(event) == "done")
         );
-        let result = wait(stream.result());
+        let result = crate::runtime::run(stream.result());
         let message = result.read().unwrap();
         assert_eq!(message.stop_reason, StopReason::Aborted);
         assert_eq!(
@@ -697,11 +724,17 @@ mod tests {
         match &message.content[0] {
             AssistantContent::Text(value) => assert_eq!(value.text, "abcd"),
             AssistantContent::Thinking(value) => assert_eq!(value.thinking, "abcd"),
-            AssistantContent::ToolCall(value) => assert!(value.arguments.is_empty()),
+            AssistantContent::ToolCall(value) => assert!(
+                value
+                    .arguments
+                    .as_object()
+                    .is_some_and(serde_json::Map::is_empty)
+            ),
         }
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise mixed content streams argument chunks through the public invocation boundary.
     fn maestro_mixed_content_streams_argument_chunks() {
@@ -734,6 +767,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise fixed chunks have ordered events through the public invocation boundary.
     fn maestro_fixed_chunks_have_ordered_events() {
@@ -777,6 +811,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise tool blocks keep distinct indices through the public invocation boundary.
     fn maestro_tool_blocks_keep_distinct_indices() {
@@ -787,7 +822,7 @@ mod tests {
             .map(|id| {
                 AssistantContent::ToolCall(faux_tool_call(
                     id,
-                    JsonObject::new(),
+                    JsonObject::new().into(),
                     FauxToolCallOptions {
                         id: Some(id.into()),
                     },
@@ -821,6 +856,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise explicit error retains message through the public invocation boundary.
     fn maestro_explicit_error_retains_message() {
@@ -836,8 +872,8 @@ mod tests {
         );
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(authored))]);
         let stream = stream(model(&registration), context("hi"), None).unwrap();
-        let result = wait(stream.result());
-        let observed = wait(async {
+        let result = crate::runtime::run(stream.result());
+        let observed = crate::runtime::run(async {
             let mut observed = Vec::new();
             while let Some(event) = stream.next().await {
                 observed.push(event);
@@ -858,6 +894,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise explicit abort retains message through the public invocation boundary.
     fn maestro_explicit_abort_retains_message() {
@@ -900,6 +937,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced text cancel keeps prefix through the public invocation boundary.
     fn maestro_paced_text_cancel_keeps_prefix() {
@@ -910,6 +948,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced thinking cancel keeps prefix through the public invocation boundary.
     fn maestro_paced_thinking_cancel_keeps_prefix() {
@@ -920,6 +959,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced tool cancel keeps empty arguments through the public invocation boundary.
     fn maestro_paced_tool_cancel_keeps_empty_arguments() {
@@ -934,6 +974,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise partials retain block membership through the public invocation boundary.
     fn maestro_partials_retain_block_membership() {
@@ -979,6 +1020,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise empty blocks still finish through the public invocation boundary.
     fn maestro_empty_blocks_still_finish() {
@@ -1001,7 +1043,7 @@ mod tests {
                     AssistantContent::Thinking(faux_thinking("")),
                     AssistantContent::ToolCall(faux_tool_call(
                         "t",
-                        JsonObject::new(),
+                        JsonObject::new().into(),
                         FauxToolCallOptions::default(),
                     )),
                 ],
@@ -1029,6 +1071,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise scalar boundaries keep text valid through the public invocation boundary.
     fn maestro_scalar_boundaries_keep_text_valid() {
@@ -1051,11 +1094,12 @@ mod tests {
             number(usage.cache_read, read);
             number(usage.cache_write, write);
             number(usage.output, 2.0);
-            number(usage.total_tokens, 5.0);
+            number(usage.total_tokens.present().copied().unwrap(), 5.0);
         }
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise chunk bounds preserve unpaced delivery through the public invocation boundary.
     fn maestro_chunk_bounds_preserve_unpaced_delivery() {
@@ -1088,6 +1132,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise factories observe selected model through the public invocation boundary.
     fn maestro_factories_observe_selected_model() {
@@ -1113,7 +1158,7 @@ mod tests {
             registration.append_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
                 SelectedModelFactory,
             ))]);
-            let result = wait(complete(
+            let result = crate::runtime::run(complete(
                 registration.get_model(Some(id)).unwrap().clone(),
                 context("hi"),
                 None,
@@ -1131,6 +1176,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise async factories observe live state through the public invocation boundary.
     fn maestro_async_factories_observe_live_state() {
@@ -1153,22 +1199,24 @@ mod tests {
         assert_eq!(registration.state.call_count(), 2);
         release_tx.send(()).unwrap();
         assert_eq!(
-            wait(first).unwrap().read().unwrap().content,
+            crate::runtime::run(first).unwrap().read().unwrap().content,
             vec![AssistantContent::Text(faux_text("2"))]
         );
         assert_eq!(
-            wait(second).unwrap().read().unwrap().content,
+            crate::runtime::run(second).unwrap().read().unwrap().content,
             vec![AssistantContent::Text(faux_text("second"))]
         );
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `GatedFactory`.
     struct GatedFactory {
         release: std::sync::Mutex<Option<tokio::sync::oneshot::Receiver<()>>>,
         entered: std::sync::mpsc::Sender<()>,
         message: AssistantMessage,
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl GatedFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1187,10 +1235,13 @@ mod tests {
             }
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(GatedFactory, |owner: &GatedFactory, input| owner
         .respond(input));
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `SelectedModelFactory`.
     struct SelectedModelFactory;
+    #[cfg(not(target_arch = "wasm32"))]
     impl SelectedModelFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1204,14 +1255,17 @@ mod tests {
             )))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(SelectedModelFactory, |_: &SelectedModelFactory, input| {
         SelectedModelFactory::respond(&input)
     });
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `LiveStateFactory`.
     struct LiveStateFactory {
         release: std::sync::Arc<std::sync::Mutex<Option<tokio::sync::oneshot::Receiver<()>>>>,
         entered: std::sync::mpsc::Sender<()>,
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl LiveStateFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1234,10 +1288,13 @@ mod tests {
             }
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(LiveStateFactory, |owner: &LiveStateFactory, input| owner
         .respond(input));
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `CountingFactory`.
     struct CountingFactory(std::sync::Arc<std::sync::atomic::AtomicUsize>);
+    #[cfg(not(target_arch = "wasm32"))]
     impl CountingFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1253,10 +1310,13 @@ mod tests {
             )))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(CountingFactory, |owner: &CountingFactory, input| owner
         .respond(input));
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `ForwardedOptionsFactory`.
     struct ForwardedOptionsFactory;
+    #[cfg(not(target_arch = "wasm32"))]
     impl ForwardedOptionsFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1267,12 +1327,15 @@ mod tests {
             std::future::ready(Ok(check_forwarded_options(input.options)))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(
         ForwardedOptionsFactory,
         |_: &ForwardedOptionsFactory, input| ForwardedOptionsFactory::respond(input)
     );
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `OrderedFactory`.
     struct OrderedFactory(std::sync::Arc<std::sync::Mutex<Vec<&'static str>>>);
+    #[cfg(not(target_arch = "wasm32"))]
     impl OrderedFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1288,10 +1351,13 @@ mod tests {
             )))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(OrderedFactory, |owner: &OrderedFactory, input| owner
         .respond(input));
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `TimedFactory`.
     struct TimedFactory;
+    #[cfg(not(target_arch = "wasm32"))]
     impl TimedFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1302,11 +1368,14 @@ mod tests {
             timed_message()
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(TimedFactory, |_: &TimedFactory, input| {
         TimedFactory::respond(input)
     });
+    #[cfg(not(target_arch = "wasm32"))]
     /// Factory failure supplied by the caller, not a simulator setup failure.
     struct FailingFactory;
+    #[cfg(not(target_arch = "wasm32"))]
     impl FailingFactory {
         /// Return the original caller failure.
         fn respond<E: ProviderExecution>(
@@ -1317,10 +1386,12 @@ mod tests {
             std::future::ready(Err(failure("boom")))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(FailingFactory, |_: &FailingFactory, input| {
         FailingFactory::respond(input)
     });
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise factory failure is terminal through the public invocation boundary.
     fn maestro_factory_failure_is_terminal() {
@@ -1331,7 +1402,7 @@ mod tests {
             FailingFactory,
         ))]);
         let stream = stream(model(&registration), context("hi"), None).unwrap();
-        let observed = wait(async {
+        let observed = crate::runtime::run(async {
             let mut events = Vec::new();
             while let Some(event) = stream.next().await {
                 events.push(event);
@@ -1339,15 +1410,16 @@ mod tests {
             events
         });
         assert_eq!(observed.len(), 1);
-        let result = wait(stream.result());
+        let result = crate::runtime::run(stream.result());
         let message = result.read().unwrap();
         assert_eq!(message.stop_reason, StopReason::Error);
         assert_eq!(message.error_message.as_deref(), Some("boom"));
         assert!(message.content.is_empty());
-        number(message.usage.total_tokens, 0.0);
+        number(message.usage.total_tokens.present().copied().unwrap(), 0.0);
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise preaborted request consumes response through the public invocation boundary.
     fn maestro_preaborted_request_consumes_response() {
@@ -1404,6 +1476,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise unregister only removes owned source through the public invocation boundary.
     fn maestro_unregister_only_removes_owned_source() {
@@ -1430,21 +1503,28 @@ mod tests {
             vec![AssistantContent::Text(faux_text("replacement"))]
         );
         assert_eq!(
-            wait(pending).unwrap().read().unwrap().content,
+            crate::runtime::run(pending)
+                .unwrap()
+                .read()
+                .unwrap()
+                .content,
             vec![AssistantContent::Text(faux_text("pending"))]
         );
         second.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Signal when the producer releases its response hook after publication.
     struct ProducerFinished(std::sync::mpsc::Sender<()>);
 
+    #[cfg(not(target_arch = "wasm32"))]
     impl Drop for ProducerFinished {
         fn drop(&mut self) {
             self.0.send(()).unwrap();
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Dropped observers leave production and the detached session cache intact.
     #[test]
     fn maestro_production_survives_dropped_observers() {
@@ -1479,6 +1559,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise context with all roles through the public invocation boundary.
     fn context_with_all_roles() -> Context {
         let image = |mime: &str, data: &str| {
@@ -1529,11 +1610,12 @@ mod tests {
             tools: Some(vec![Tool {
                 name: "lookup".into(),
                 description: "Find".into(),
-                parameters: serde_json::json!({"type":"object"}),
+                parameters: serde_json::json!({"type":"object"}).into(),
             }]),
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise serialized context drives usage through the public invocation boundary.
     fn maestro_serialized_context_drives_usage() {
@@ -1544,7 +1626,7 @@ mod tests {
         let usage = invoke(&registration, context, None).usage;
         number(usage.input, 58.0);
         number(usage.output, 10.0);
-        number(usage.total_tokens, 68.0);
+        number(usage.total_tokens.present().copied().unwrap(), 68.0);
         assert_eq!(
             usage.cost,
             UsageCost {
@@ -1561,13 +1643,122 @@ mod tests {
             messages: vec![],
             tools: Some(vec![]),
         };
-        number(invoke(&registration, empty, None).usage.total_tokens, 0.0);
+        number(
+            invoke(&registration, empty, None)
+                .usage
+                .total_tokens
+                .present()
+                .copied()
+                .unwrap(),
+            0.0,
+        );
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    /// Exercise serialization retains native values through the public invocation boundary.
-    fn maestro_serialization_retains_native_values() {
+    /// A scripted call keeps every root kind through its streamed bytes and its final call.
+    fn scripted_calls_retain_scalar_and_array_roots() {
+        let _serial = crate::bundled::registry();
+        let registration = fixed(None);
+        for (arguments, encoded) in [
+            (serde_json::json!(42), "42"),
+            (serde_json::Value::Null, "null"),
+            (serde_json::json!([1, 1]), "[1,1]"),
+            (serde_json::json!(false), "false"),
+            (serde_json::json!("text"), "\"text\""),
+            (serde_json::json!(-0.0), "0"),
+            (serde_json::json!(42.0), "42"),
+            (serde_json::json!(1e20), "100000000000000000000"),
+            (serde_json::json!({"10": 1, "2": 2}), "{\"2\":2,\"10\":1}"),
+        ] {
+            registration.set_responses(vec![FauxResponseStep::Message(Box::new(
+                faux_assistant_message(
+                    faux_tool_call(
+                        "t",
+                        arguments.clone(),
+                        FauxToolCallOptions {
+                            id: Some("call".into()),
+                        },
+                    ),
+                    FauxAssistantMessageOptions::default(),
+                ),
+            ))]);
+            let stream = stream(model(&registration), context("hello"), None)
+                .expect("the scripted provider streams");
+            let observed = crate::runtime::run(observe_tool(stream));
+            assert!(observed.started, "{arguments}");
+            assert_eq!(observed.streamed, encoded, "{arguments}");
+            let ended = observed.ended.expect("the call ends");
+            assert_eq!(ended.id, "call");
+            assert_eq!(ended.name, "t");
+            assert_eq!(ended.arguments, arguments);
+        }
+        registration.unregister();
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    /// Estimated output usage counts the canonical argument text a scripted call streams.
+    fn scripted_usage_counts_canonical_argument_text() {
+        let _serial = crate::bundled::registry();
+        let registration = fixed(None);
+        registration.set_responses(vec![FauxResponseStep::Message(Box::new(
+            faux_assistant_message(
+                faux_tool_call(
+                    "t",
+                    serde_json::json!(1e20),
+                    FauxToolCallOptions {
+                        id: Some("call".into()),
+                    },
+                ),
+                FauxAssistantMessageOptions::default(),
+            ),
+        ))]);
+        // `t:100000000000000000000` is 23 scalars, counted as six tokens.
+        number(
+            invoke(&registration, context("hello"), None).usage.output,
+            6.0,
+        );
+        registration.unregister();
+    }
+
+    /// What one scripted tool-call stream published.
+    struct Observed {
+        /// Whether the call started.
+        started: bool,
+        /// Concatenated delta text.
+        streamed: String,
+        /// The final call.
+        ended: Option<maestro_models::ToolCall>,
+    }
+
+    /// Consume one scripted stream and record its tool-call events.
+    async fn observe_tool(stream: maestro_models::AssistantMessageEventStream) -> Observed {
+        let mut observed = Observed {
+            started: false,
+            streamed: String::new(),
+            ended: None,
+        };
+        while let Some(event) = stream.next().await {
+            match event {
+                AssistantMessageEvent::ToolcallStart { .. } => observed.started = true,
+                AssistantMessageEvent::ToolcallDelta { delta, .. } => {
+                    observed.streamed.push_str(&delta);
+                }
+                AssistantMessageEvent::ToolcallEnd { tool_call, .. } => {
+                    observed.ended = Some(tool_call);
+                }
+                _ => {}
+            }
+        }
+        observed
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    /// Canonical streamed argument text keeps every supplied value.
+    fn maestro_serialization_keeps_supplied_values() {
         let _serial = crate::bundled::registry();
         let registration = fixed(None);
         let mut arguments = JsonObject::new();
@@ -1577,10 +1768,15 @@ mod tests {
             "a".into(),
             serde_json::json!([true,null,"line\n\"😀",{"nested":false}]),
         );
-        let expected = r#"{"10":-0.0,"2":1e+20,"a":[true,null,"line\n\"😀",{"nested":false}]}"#;
+        let expected =
+            r#"{"2":100000000000000000000,"10":0,"a":[true,null,"line\n\"😀",{"nested":false}]}"#;
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
             faux_assistant_message(
-                faux_tool_call("t", arguments.clone(), FauxToolCallOptions::default()),
+                faux_tool_call(
+                    "t",
+                    arguments.clone().into(),
+                    FauxToolCallOptions::default(),
+                ),
                 FauxAssistantMessageOptions::default(),
             ),
         ))]);
@@ -1594,11 +1790,12 @@ mod tests {
             .collect();
         assert_eq!(serialized, expected);
         assert!(
-            matches!(observed.iter().find(|event|matches!(event,AssistantMessageEvent::ToolcallEnd{..})),Some(AssistantMessageEvent::ToolcallEnd{tool_call,..}) if tool_call.arguments==arguments)
+            matches!(observed.iter().find(|event|matches!(event,AssistantMessageEvent::ToolcallEnd{..})),Some(AssistantMessageEvent::ToolcallEnd{tool_call,..}) if tool_call.arguments==serde_json::Value::Object(arguments.clone()))
         );
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise check forwarded options through the public invocation boundary.
     fn check_forwarded_options<E: ProviderExecution>(
         options: Option<FauxResponseOptions<E>>,
@@ -1623,6 +1820,7 @@ mod tests {
         faux_assistant_message(text, FauxAssistantMessageOptions::default())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise raw and simple options reach factory through the public invocation boundary.
     fn maestro_raw_and_simple_options_reach_factory() {
@@ -1665,7 +1863,7 @@ mod tests {
             }),
             ..SimpleStreamOptions::default()
         };
-        let result = wait(complete_simple(
+        let result = crate::runtime::run(complete_simple(
             model(&registration),
             context("hi"),
             Some(simple),
@@ -1687,6 +1885,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise check exhausted hook through the public invocation boundary.
     fn check_exhausted_hook(registration: &FauxProviderRegistration) {
         let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -1711,6 +1910,7 @@ mod tests {
         );
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise check rejected hook through the public invocation boundary.
     fn check_rejected_hook(registration: &FauxProviderRegistration) {
         registration.set_responses(vec![scripted("discard")]);
@@ -1730,12 +1930,13 @@ mod tests {
             AssistantMessageEvent::Error { error, .. } => {
                 let error = error.read().unwrap();
                 assert_eq!(error.error_message.as_deref(), Some("hook failed"));
-                number(error.usage.total_tokens, 0.0);
+                number(error.usage.total_tokens.present().copied().unwrap(), 0.0);
             }
             _ => unreachable!(),
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise response hook precedes factory through the public invocation boundary.
     fn maestro_response_hook_precedes_factory() {
@@ -1779,7 +1980,7 @@ mod tests {
         entered_rx.recv().unwrap();
         assert_eq!(*order.lock().unwrap(), ["hook start"]);
         release_tx.send(()).unwrap();
-        drop(wait(result));
+        drop(crate::runtime::run(result));
         assert_eq!(
             *order.lock().unwrap(),
             ["hook start", "hook end", "factory"]
@@ -1789,6 +1990,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise timed message through the public invocation boundary.
     async fn timed_message() -> Result<AssistantMessage, DiagnosticErrorInfo> {
         tokio::time::sleep(std::time::Duration::from_millis(2)).await;
@@ -1797,11 +1999,13 @@ mod tests {
             FauxAssistantMessageOptions::default(),
         ))
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise timed hook through the public invocation boundary.
     async fn timed_hook() -> Result<(), DiagnosticErrorInfo> {
         tokio::time::sleep(std::time::Duration::from_millis(2)).await;
         Ok(())
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise complete in caller through the public invocation boundary.
     async fn complete_in_caller(
         registration: &FauxProviderRegistration,
@@ -1814,6 +2018,7 @@ mod tests {
             .unwrap()
             .clone()
     }
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise pacing needs no caller timer through the public invocation boundary.
     fn maestro_pacing_needs_no_caller_timer() {
@@ -1832,7 +2037,7 @@ mod tests {
             });
             let start = std::time::Instant::now();
             let result = if caller_runtime {
-                wait(complete_in_caller(&registration, options))
+                crate::runtime::run(complete_in_caller(&registration, options))
             } else {
                 invoke(&registration, context("hi"), options)
             };
@@ -1845,6 +2050,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented context through the public invocation boundary.
     fn documented_context() -> Context {
         Context {
@@ -1856,6 +2062,7 @@ mod tests {
             tools: None,
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented tool response through the public invocation boundary.
     fn documented_tool_response() -> Vec<FauxResponseStep> {
         let arguments =
@@ -1877,6 +2084,7 @@ mod tests {
             },
         )))]
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented summary response through the public invocation boundary.
     fn documented_summary_response() -> Vec<FauxResponseStep> {
         vec![FauxResponseStep::Message(Box::new(faux_assistant_message(
@@ -1887,6 +2095,7 @@ mod tests {
             FauxAssistantMessageOptions::default(),
         )))]
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented multi model through the public invocation boundary.
     fn documented_multi_model() -> FauxProviderRegistration {
         register_faux_provider(RegisterFauxProviderOptions {
@@ -1905,6 +2114,7 @@ mod tests {
             ..RegisterFauxProviderOptions::default()
         })
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise append documented result through the public invocation boundary.
     fn append_documented_result(
         context: &mut Context,
@@ -1931,6 +2141,7 @@ mod tests {
             }));
         Ok(())
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented flow through the public invocation boundary.
     async fn documented_flow() -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let mut output = Vec::new();
@@ -1980,11 +2191,12 @@ mod tests {
         Ok(output)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise documented flow runs offline through the public invocation boundary.
     fn maestro_documented_flow_runs_offline() {
         let _serial = crate::bundled::registry();
-        let output = wait(documented_flow()).unwrap();
+        let output = crate::runtime::run(documented_flow()).unwrap();
         assert_eq!(&output[output.len() - 3..], ["true", "0", "2"]);
         assert_eq!(output[0], "start");
         assert_eq!(output[1], "thinking_start");

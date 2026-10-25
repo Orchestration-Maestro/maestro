@@ -4,7 +4,6 @@ use super::{
     protocol::{resolved, scopes},
     records::Scopes,
 };
-use maestro_app::NativeResourceOperations;
 use maestro_chat::components::config_selector::ConfigSelectorOptions;
 use maestro_theme::Collator;
 use maestro_tui::{Component, tui::InputHandler};
@@ -12,7 +11,7 @@ use serde_json::json;
 use std::{path::Path, rc::Rc};
 /// Run cwd mutations only inside the existing isolated child seam.
 pub fn paths() {
-    if std::env::var_os("MAESTRO_RESOURCE_DIRECTORY_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         child();
         println!("\nPROBE native directory outcomes matched");
         return;
@@ -21,12 +20,13 @@ pub fn paths() {
     let scratch = crate::scratch::Scratch::new().unwrap();
     assert_eq!(
         crate::session_picker_support::native_child::probe(
-            &crate::child_process::selector(
+            maestro_test_process::TestProcess::current(
                 "resource_relative_paths_observe_live_directory_and_preserve_failures"
             )
-            .unwrap(),
-            &scratch.0,
-            &[("MAESTRO_RESOURCE_DIRECTORY_CHILD", "1")],
+            .unwrap()
+            .case("*"),
+            scratch.path(),
+            &[],
             &[]
         ),
         ["native directory outcomes matched"]
@@ -41,7 +41,6 @@ fn native(path: &str, base: &str, settings: &Scopes) -> Harness {
         ConfigSelectorOptions {
             cwd: "/unrelated/project".into(),
             agent_dir: "/unrelated/agent".into(),
-            path_operations: Rc::new(NativeResourceOperations),
             theme,
             collator: Rc::new(Collator::new(&|_| Some("en_US.UTF-8".into())).unwrap()),
             styles_enabled: Rc::new(|| true),
@@ -61,9 +60,7 @@ fn child() {
     let root = std::env::current_dir().unwrap();
     let a = root.join("a");
     let b = a.join("b");
-    let gone = root.join("gone");
     std::fs::create_dir_all(&b).unwrap();
-    std::fs::create_dir(&gone).unwrap();
     let target = a
         .join("target/extensions/a.wasm")
         .to_string_lossy()
@@ -79,8 +76,8 @@ fn child() {
     std::env::set_current_dir(&root).unwrap();
     let failed = native(&target, "", &scopes());
     let before = failed.frame(80);
-    std::env::set_current_dir(&gone).unwrap();
-    std::fs::remove_dir(&gone).unwrap();
+    let removed = maestro_test_directory::Scratch::new_in(&root).unwrap();
+    removed.enter_removed("gone").unwrap();
     failures(&failed, &before);
     no_directory_needed(&target, &a);
     std::env::set_current_dir(&root).unwrap();

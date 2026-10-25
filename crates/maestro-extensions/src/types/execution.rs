@@ -1,12 +1,16 @@
 //! Execution-family declarations for retained extension callbacks.
+#[cfg(not(target_arch = "wasm32"))]
+use super::registration::ExtensionFactory;
 use super::registration::{ExtensionAPI, ExtensionHandler, RegisteredToolInput};
 use super::{ExtensionActions, ProviderConfig};
 use crate::loader::runtime::{NOT_INITIALIZED, SET_MODEL_NOT_INITIALIZED};
 use crate::{
     CallbackEmitter, EventBus, EventError, EventTail,
-    types::{ExtensionCommandContext, ExtensionContext, MessageRenderer},
+    types::{
+        ExtensionCommandContext, ExtensionContext, MessageRenderer, renderers::MessageRendererCall,
+    },
 };
-use maestro_models::{Execution, Local, Threaded};
+use maestro_models::{Execution, Local, SharedHandle, Threaded};
 use maestro_models::{Model, ModelThinkingLevel as ThinkingLevel, ToolInfo, UserContent};
 use maestro_resources::SlashCommandInfo;
 use maestro_session::messages::{CustomMessage, MessageRenderOptions};
@@ -70,6 +74,10 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
         + ?Sized;
     /// Factory callback.
     type Factory: Fn(ExtensionAPI<Self>) -> Self::Future<'static, Result<(), EventError>> + ?Sized;
+    /// Module loader callback: a resolved path to its factory, or none when the module exports none.
+    #[cfg(not(target_arch = "wasm32"))]
+    type ModuleLoader: Fn(&str) -> Self::Future<'static, Result<Option<ExtensionFactory<Self>>, EventError>>
+        + ?Sized;
     /// Retain the concrete definition without erasing its typed state or details.
     fn retain_definition<
         P: DeserializeOwned + 'static,
@@ -117,8 +125,9 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
     type GetThinkingLevel: Fn() -> Result<ThinkingLevel, EventError> + ?Sized;
     /// Sets the thinking level.
     type SetThinkingLevel: Fn(ThinkingLevel) -> Result<(), EventError> + ?Sized;
-    /// Registers a provider.
-    type RegisterProvider: Fn(String, Arc<RwLock<ProviderConfig>>) -> Result<(), EventError>
+    /// Registers a provider; the configuration is the platform handle, browser-local or
+    /// natively shared.
+    type RegisterProvider: Fn(String, SharedHandle<RwLock<ProviderConfig>>) -> Result<(), EventError>
         + ?Sized;
     /// Unregisters a provider.
     type UnregisterProvider: Fn(String) -> Result<(), EventError> + ?Sized;
@@ -152,14 +161,19 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
         + ?Sized;
     /// A renderer stored without its details type.
     type RendererRegistration;
-    /// Stores a typed renderer.
+    /// Stores a typed renderer with the bus that invokes it.
     fn erase_message_renderer<T: 'static>(
         renderer: MessageRenderer<T, Self>,
+        events: EventBus<Self>,
     ) -> Self::RendererRegistration;
     /// Returns the stored renderer when it has exactly this details type.
     fn recover_message_renderer<T: 'static>(
         registration: &Self::RendererRegistration,
     ) -> Option<MessageRenderer<T, Self>>;
+    /// Returns the stored renderer with the bus that invokes it.
+    fn recover_message_renderer_call<T: 'static>(
+        registration: &Self::RendererRegistration,
+    ) -> Option<MessageRendererCall<T, Self>>;
     /// Erases the shared tail settlement, which keeps the bus alive until it finishes.
     fn tail_task(
         tail: EventTail<Self>,
@@ -176,8 +190,10 @@ macro_rules! family {
             type HandlerRegistration=Box<dyn std::any::Any $($bound)*>;
             type Handler<V,R>=dyn for<'a> Fn(&'a mut V,ExtensionContext)-><Local as Execution>::Future<'a,Result<Option<R>,EventError>> $($bound)*;
             type Factory=dyn Fn(ExtensionAPI<Self>)->Self::Future<'static,Result<(),EventError>> $($bound)*;
+            #[cfg(not(target_arch = "wasm32"))]
+            type ModuleLoader=dyn Fn(&str)->Self::Future<'static,Result<Option<ExtensionFactory<Self>>,EventError>> $($bound)*;
             fn retain_definition<P:DeserializeOwned+'static,D:Serialize+'static,S:Default+'static>(input:RegisteredToolInput<P,D,S,Self>)->Self::Shared<Self::RegisteredDefinition> {
-                let definition=match input.definition { ToolDefinitionInput::Owned(x)=>Self::share(RwLock::new(x)),ToolDefinitionInput::Retained(x)=>x };
+                let definition=match input.definition { ToolDefinitionInput::Owned(x)=>Self::share(RwLock::new(*x)),ToolDefinitionInput::Retained(x)=>x };
                 Self::share(super::registration::tools::Definition::<P,D,S,Self>{definition,project_renderers:input.project_renderers})
             }
             fn erase_handler<V:'static,R:'static>(handler:ExtensionHandler<V,R,Self>)->Self::HandlerRegistration { Box::new(handler) }
@@ -199,7 +215,7 @@ macro_rules! family {
             type SetModel = dyn Fn(Arc<RwLock<Model>>) -> Self::Future<'static, Result<bool, EventError>> $($bound)*;
             type GetThinkingLevel = dyn Fn() -> Result<ThinkingLevel, EventError> $($bound)*;
             type SetThinkingLevel = dyn Fn(ThinkingLevel) -> Result<(), EventError> $($bound)*;
-            type RegisterProvider = dyn Fn(String, Arc<RwLock<ProviderConfig>>) -> Result<(), EventError> $($bound)*;
+            type RegisterProvider = dyn Fn(String, SharedHandle<RwLock<ProviderConfig>>) -> Result<(), EventError> $($bound)*;
             type UnregisterProvider = dyn Fn(String) -> Result<(), EventError> $($bound)*;
             fn unbound_actions() -> ExtensionActions<Self> {
                 ExtensionActions {
@@ -244,13 +260,21 @@ macro_rules! family {
             type RendererRegistration = Box<dyn Any $($bound)*>;
             fn erase_message_renderer<T: 'static>(
                 renderer: MessageRenderer<T, Self>,
+                events: EventBus<Self>,
             ) -> Self::RendererRegistration {
-                Box::new(renderer)
+                Box::new(MessageRendererCall::<T, Self>::new(renderer, events))
             }
             fn recover_message_renderer<T: 'static>(
                 registration: &Self::RendererRegistration,
             ) -> Option<MessageRenderer<T, Self>> {
-                registration.downcast_ref::<MessageRenderer<T, Self>>().cloned()
+                Self::recover_message_renderer_call::<T>(registration).map(|call| call.renderer)
+            }
+            fn recover_message_renderer_call<T: 'static>(
+                registration: &Self::RendererRegistration,
+            ) -> Option<MessageRendererCall<T, Self>> {
+                registration
+                    .downcast_ref::<MessageRendererCall<T, Self>>()
+                    .cloned()
             }
             fn tail_task(
                 tail: EventTail<Self>,

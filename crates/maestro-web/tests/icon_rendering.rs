@@ -209,9 +209,9 @@ fn undeclared_svg_prefixes_return_parser_errors() {
 
 #[test]
 fn icon_raster_uses_requested_size_density_and_color() {
-    use maestro_theme::{BrandMode, NativeThemeOperations, load_brand_pack};
+    use maestro_theme::BrandMode;
     use maestro_web::icons::{IconSize, icon};
-    let pack = load_brand_pack("../../assets/brand/brand.json", &NativeThemeOperations).unwrap();
+    let pack = crate::support::brand::pack("../../assets/brand/brand.json").unwrap();
     let mut colors: Vec<_> = [BrandMode::Dark, BrandMode::Light]
         .into_iter()
         .map(|mode| {

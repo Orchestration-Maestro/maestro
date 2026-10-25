@@ -1,16 +1,9 @@
 //! Actual-document source and image artifacts through the retained panel boundary.
 #![cfg(all(test, target_arch = "wasm32"))]
 #[cfg(test)]
-pub mod reading_browser_support;
-#[cfg(test)]
-pub mod support;
-#[path = "artifact_support/text_image.rs"]
-#[cfg(test)]
-pub mod text_image_support;
-#[cfg(test)]
 mod tests {
-    use crate::reading_browser_support::{View, check, event, js, quoted};
-    use crate::text_image_support::corpus;
+    use crate::reading_browser_support::{View, check, event, js, quoted, run};
+    use crate::text_image_support::browser_records::corpus;
     use wasm_bindgen::prelude::*;
 
     /// Construct the explicit text view, independent of the application's file classifier.
@@ -116,7 +109,7 @@ mod tests {
             &"line......................................................\n".repeat(100),
         );
         view.draw(false, vec![]);
-        js(
+        run(
             "globalThis.savedRoot=document.querySelector('.maestro-text-artifact');globalThis.viewport=savedRoot.parentElement;viewport.scrollTop=50;globalThis.savedScroll=viewport.scrollTop",
         );
         check("savedScroll>0");
@@ -133,7 +126,7 @@ mod tests {
             view.element
                 .set_content("const message = \"hello & goodbye\";".into());
             view.draw(false, vec![]);
-            js(
+            run(
                 "const code=savedRoot.querySelector('code');const range=document.createRange();range.selectNodeContents(code);getSelection().removeAllRanges();getSelection().addRange(range)",
             );
             check("getSelection().toString()==='const message = \"hello & goodbye\";'");
@@ -197,7 +190,7 @@ mod tests {
                 "document.querySelector('.maestro-image-artifact img').decode()",
             ))
             .await;
-            js(
+            run(
                 "globalThis.sourceWrites=0;globalThis.sourceObserver=new MutationObserver(records=>sourceWrites+=records.filter(r=>r.attributeName==='src').length);sourceObserver.observe(document.querySelector('.maestro-image-artifact img'),{attributes:true})",
             );
             for _ in 0..2 {
@@ -205,7 +198,7 @@ mod tests {
             }
             event(js("Promise.resolve()")).await;
             check("sourceWrites===0");
-            js("sourceObserver.disconnect()");
+            run("sourceObserver.disconnect()");
             check(&format!(
                 "document.querySelector('.maestro-image-artifact img').getAttribute('src')==={}",
                 quoted(&fallback)

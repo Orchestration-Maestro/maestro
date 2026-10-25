@@ -1,15 +1,24 @@
 //! Device authorization with a controlled wall clock and native timer ownership.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use super::*;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::tests::runtime::run_paused_after_start;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::{Cancellation, HttpResponse, OAuthLoginCallbacks};
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::VecDeque;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicUsize, Ordering},
 };
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Interaction witness for publication and cancellation.
 #[derive(Default)]
 struct Interaction {
@@ -20,6 +29,7 @@ struct Interaction {
     /// Abort at authorization publication.
     abort_auth: bool,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl OAuthLoginCallbacks for Interaction {
     fn on_prompt(&self, _: OAuthPrompt) -> BoxFuture<Result<String, OAuthError>> {
         Box::pin(async { Ok(String::new()) })
@@ -36,18 +46,7 @@ impl OAuthLoginCallbacks for Interaction {
     }
 }
 
-/// Run a controlled native timer scenario.
-fn run(work: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            tokio::time::pause();
-            work.await;
-        });
-}
-
+#[cfg(not(target_arch = "wasm32"))]
 /// Device response with supplied numeric spellings.
 fn device(interval: &str, lifetime: &str) -> String {
     format!(
@@ -55,6 +54,7 @@ fn device(interval: &str, lifetime: &str) -> String {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read a complete controlled response.
 fn response(text: String) -> HttpResponse {
     HttpResponse {
@@ -65,6 +65,7 @@ fn response(text: String) -> HttpResponse {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Execute the actual login policy with a finite sequence of wall-clock observations.
 async fn exercise(
     device: String,
@@ -76,6 +77,7 @@ async fn exercise(
     exercise_with(interaction, device, polls, reads, waits).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Drive exact requested waits at the owned login seam, allowing one native timer tick.
 async fn exercise_with(
     interaction: Arc<Interaction>,
@@ -130,11 +132,13 @@ async fn exercise_with(
     output.expect("controlled operation settled")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_device_login_uses_remaining_lifetime() {
-    run(maestro_device_login_uses_remaining_lifetime_scenario());
+    run_paused_after_start(maestro_device_login_uses_remaining_lifetime_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn maestro_device_login_uses_remaining_lifetime_scenario() {
     let error = exercise(
@@ -167,11 +171,13 @@ async fn maestro_device_login_uses_remaining_lifetime_scenario() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_polling_rounds_clamps_and_resamples_clock() {
-    run(device_polling_rounds_clamps_and_resamples_clock_scenario());
+    run_paused_after_start(device_polling_rounds_clamps_and_resamples_clock_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_polling_rounds_clamps_and_resamples_clock_scenario() {
     for (interval, wait) in [
@@ -212,11 +218,13 @@ async fn device_polling_rounds_clamps_and_resamples_clock_scenario() {
     clock_adjustments().await;
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_slow_down_accepts_positive_interval_or_adds_delay() {
-    run(device_slow_down_accepts_positive_interval_or_adds_delay_scenario());
+    run_paused_after_start(device_slow_down_accepts_positive_interval_or_adds_delay_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_slow_down_accepts_positive_interval_or_adds_delay_scenario() {
     for (interval, wait) in [
@@ -278,11 +286,13 @@ async fn device_slow_down_accepts_positive_interval_or_adds_delay_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_timeouts_depend_on_observed_slow_down() {
-    run(device_timeouts_depend_on_observed_slow_down_scenario());
+    run_paused_after_start(device_timeouts_depend_on_observed_slow_down_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_timeouts_depend_on_observed_slow_down_scenario() {
     for lifetime in ["-1", "0"] {
@@ -342,11 +352,13 @@ async fn device_timeouts_depend_on_observed_slow_down_scenario() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_long_and_fractional_waits_avoid_runtime_clamping() {
-    run(device_long_and_fractional_waits_avoid_runtime_clamping_scenario());
+    run_paused_after_start(device_long_and_fractional_waits_avoid_runtime_clamping_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_long_and_fractional_waits_avoid_runtime_clamping_scenario() {
     for (interval, lifetime, wait) in [
@@ -387,11 +399,13 @@ async fn device_long_and_fractional_waits_avoid_runtime_clamping_scenario() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_invalid_durations_fail_at_the_consuming_branch() {
-    run(device_invalid_durations_fail_at_the_consuming_branch_scenario());
+    run_paused_after_start(device_invalid_durations_fail_at_the_consuming_branch_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Caller Waker with destruction and notification witnesses.
 struct Observer {
     /// Number of destroyed observers.
@@ -399,6 +413,7 @@ struct Observer {
     /// Number of delivered wake calls.
     wakes: AtomicUsize,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl std::task::Wake for Observer {
     fn wake(self: Arc<Self>) {
         self.wakes.fetch_add(1, Ordering::SeqCst);
@@ -407,12 +422,14 @@ impl std::task::Wake for Observer {
         self.wakes.fetch_add(1, Ordering::SeqCst);
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Observer {
     fn drop(&mut self) {
         self.drops.fetch_add(1, Ordering::SeqCst);
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Poll with a distinct observer identity, releasing the caller's temporary Waker.
 fn observe<F: std::future::Future>(
     future: std::pin::Pin<&mut F>,
@@ -422,6 +439,7 @@ fn observe<F: std::future::Future>(
     future.poll(&mut std::task::Context::from_waker(&waker))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_invalid_durations_fail_at_the_consuming_branch_scenario() {
     for (interval, lifetime, reads, auth) in [
@@ -474,11 +492,13 @@ async fn device_invalid_durations_fail_at_the_consuming_branch_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_waits_release_cancellation_observers() {
-    run(device_waits_release_cancellation_observers_scenario());
+    run_paused_after_start(device_waits_release_cancellation_observers_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_waits_release_cancellation_observers_scenario() {
     let interaction = Arc::new(Interaction::default());
@@ -535,6 +555,7 @@ async fn device_waits_release_cancellation_observers_scenario() {
     later_wait_cancels(&previous);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Forward, backward and straddled wall-clock observations.
 async fn clock_adjustments() {
     assert_eq!(
@@ -587,6 +608,7 @@ async fn clock_adjustments() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A fresh wait still observes abort after earlier observer cleanup.
 fn later_wait_cancels(previous: &Arc<Observer>) {
     let later = Arc::new(Interaction::default());
@@ -601,6 +623,7 @@ fn later_wait_cancels(previous: &Arc<Observer>) {
     assert_eq!(Arc::strong_count(previous), 1);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Multi-cycle responses for the observer cleanup witness.
 fn cleanup_fetch() -> Fetch {
     let bodies = Mutex::new(VecDeque::from([

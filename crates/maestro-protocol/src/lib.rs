@@ -2,6 +2,8 @@
 //! Adapted for Maestro: names, module layout and Rust documentation changed.
 /// Build info.
 pub mod build_info;
+/// Browser contribution records.
+pub mod contributions;
 /// Events.
 pub mod events;
 /// Frames.
@@ -20,3 +22,6 @@ pub mod rpc_types;
 
 /// Shared command and binary-channel protocol version.
 pub const PROTOCOL_VERSION: u32 = 21;
+
+#[cfg(test)]
+mod tests;

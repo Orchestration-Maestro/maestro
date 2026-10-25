@@ -32,8 +32,13 @@ mod session_imports;
 mod tool_registration;
 mod tree_imports;
 mod tree_reads;
+mod ui_imports;
+mod ui_reads;
 mod writer_imports;
 mod writer_reads;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+use tests::context_actions;

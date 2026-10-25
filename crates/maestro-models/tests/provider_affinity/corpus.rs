@@ -3,6 +3,7 @@
 use serde::Deserialize;
 use serde_json::Value;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The four independently recorded invocation surfaces.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -34,6 +35,7 @@ pub(super) struct Row {
     /// Compared as a complete tree, including ordering and duplicates.
     pub expected: Value,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Sequential observations of one retained queue.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -41,6 +43,7 @@ pub(super) struct Sequence {
     /// The first and second invocation's complete observations.
     pub observations: Vec<Value>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Load the byte-preserving, pretty-printed committed recording.
 pub(super) fn load() -> Corpus {
     serde_json::from_str(include_str!("../fixtures/provider_affinity.json")).unwrap()
@@ -53,4 +56,9 @@ pub(super) struct HookInput {
     pub payload: bool,
     /// Include a response callback.
     pub response: bool,
+}
+
+/// Read the portable hook-identity observations.
+pub(super) fn hooks() -> Rows {
+    serde_json::from_str(include_str!("../fixtures/provider_affinity_hooks.json")).unwrap()
 }

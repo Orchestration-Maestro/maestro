@@ -6,20 +6,6 @@ use serde_json::{Value, json};
 /// Fallible test body result.
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-/// Drive a future to completion on a fresh single-threaded runtime.
-///
-/// With `paused` set, timers advance only when every task is waiting, so waits take no real time.
-pub fn block_on<T>(
-    paused: bool,
-    future: impl std::future::Future<Output = TestResult<T>>,
-) -> TestResult<T> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(paused)
-        .build()?
-        .block_on(future)
-}
-
 /// Rows of a fixture file owned by one test.
 pub fn rows(fixture: &str, test: &str) -> TestResult<Vec<Value>> {
     let all: Vec<Value> = serde_json::from_str(fixture)?;

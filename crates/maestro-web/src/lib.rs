@@ -2,14 +2,21 @@
 
 pub mod browser;
 pub mod components;
+pub mod contributions;
 pub mod dialogs;
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "Stylesheet composition is not installed yet")
-)]
-mod docx_preview;
+pub mod docx_preview;
+pub mod dom;
 pub use components::attachment_tile::AttachmentTile;
+pub use components::custom_provider_card::CustomProviderCard;
 pub use components::input::Input;
+pub use components::message_renderer_registry::{
+    MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
+};
+pub use components::messages::{
+    AbortedMessage, AssistantMessage, AssistantMessageProps, ToolMessage, ToolMessageDebugView,
+    ToolMessageProps, UserMessage, UserMessageInput,
+};
+pub use components::thinking_block::ThinkingBlock;
 pub use dialogs::attachment_overlay::AttachmentOverlay;
 pub mod export_html;
 pub mod icons;
@@ -51,6 +58,7 @@ pub use components::sandbox::runtime_message_bridge::RuntimeMessageBridge;
 pub use components::sandbox::runtime_message_router::RUNTIME_MESSAGE_ROUTER;
 
 pub use maestro_app::browser::components::sandbox::{
+    artifacts_runtime_provider::ArtifactsRuntimeProvider,
     attachments_runtime_provider::AttachmentsRuntimeProvider,
     console_runtime_provider::{ConsoleLog, ConsoleRuntimeProvider},
     file_download_runtime_provider::{DownloadableFile, FileDownloadRuntimeProvider},
@@ -80,3 +88,14 @@ pub use tools::types::{ToolRenderResult, ToolRenderer};
 pub use tools::{get_tool_renderer, register_tool_renderer, render_tool, set_show_json_mode};
 
 pub use components::console_block::ConsoleBlock;
+
+pub use components::expandable_section::ExpandableSection;
+pub use tools::renderers::bash_renderer::BashRenderer;
+pub use tools::renderers::calculate_renderer::CalculateRenderer;
+pub use tools::renderers::get_current_time_renderer::GetCurrentTimeRenderer;
+
+pub use tools::artifacts::{
+    artifact_pill::artifact_pill, artifacts_tool_renderer::ArtifactsToolRenderer,
+};
+
+mod ui_error;

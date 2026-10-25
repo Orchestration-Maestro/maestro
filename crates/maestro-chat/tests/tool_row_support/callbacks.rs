@@ -38,7 +38,7 @@ impl Callbacks {
             let kind = kind.clone();
             Rc::new(
                 move |_: Option<&Value>,
-                      _: &maestro_theme::Theme,
+                      _: &maestro_theme::LiveTheme,
                       context: &ToolRenderContext<'_, ToolRendererState>| {
                     owner.call("call", &kind, context, None)
                 },
@@ -50,7 +50,7 @@ impl Callbacks {
             Rc::new(
                 move |result: &maestro_app::ToolRenderResultLike<'_, Value>,
                       options: maestro_app::ToolRenderResultOptions,
-                      _: &maestro_theme::Theme,
+                      _: &maestro_theme::LiveTheme,
                       context: &ToolRenderContext<'_, ToolRendererState>| {
                     let value = result_value(result);
                     owner.call(

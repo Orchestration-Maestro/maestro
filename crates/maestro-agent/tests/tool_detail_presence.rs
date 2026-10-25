@@ -1,21 +1,18 @@
 //! Absent, null and valued tool details through typed, erased and loop paths.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support;
+use crate::{support, tool_callbacks::completed};
 use maestro_agent::{
     AfterToolCall, AfterToolCallResult, AgentEvent, AgentMessage, AgentTool, AgentToolResult,
     ExecuteTool, ToolExecutionMode, run_agent_loop, run_agent_loop_continue,
 };
 use maestro_models::{
-    AssistantContent, BoxFuture, DiagnosticErrorInfo, TextContent, Tool, ToolCall,
-    ToolResultMessage, UserBlock,
+    AssistantContent, DiagnosticErrorInfo, TextContent, Tool, ToolCall, ToolResultMessage,
+    UserBlock,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::{
-    sync::{Arc, Mutex},
-    task::{Context, Poll, Waker},
-};
+use std::sync::{Arc, Mutex};
 use support::*;
 
 /// A structured typed detail.
@@ -47,40 +44,22 @@ fn expected_state(index: usize) -> Option<Value> {
 }
 /// Text content naming a result.
 fn text(text: &str) -> Vec<UserBlock> {
-    vec![UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    })]
+    vec![UserBlock::Text(TextContent::new(text.into()))]
 }
 /// The call index encoded in an id such as `c2`.
 fn index_of(id: &str) -> usize {
     id[1..].parse().unwrap()
 }
-/// Poll a callback future that is already ready.
-fn completed<T>(mut future: BoxFuture<T>) -> T {
-    match future
-        .as_mut()
-        .poll(&mut Context::from_waker(Waker::noop()))
-    {
-        Poll::Ready(value) => value,
-        Poll::Pending => panic!("controlled callback must be ready"),
-    }
-}
 /// A caller failure with exact text.
 fn diagnostic(message: &str) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: None,
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::new(None, message)
 }
 /// A declaration for the typed callback tests.
 fn definition() -> Tool {
     Tool {
         name: "echo".into(),
         description: String::new(),
-        parameters: json!({"type":"object"}),
+        parameters: json!({"type":"object"}).into(),
     }
 }
 /// A typed tool whose details follow `typed_result` and which reports every state as progress when supplied an observer.
@@ -184,7 +163,7 @@ fn calls(ids: &[&str]) -> maestro_models::SharedAssistantMessage {
             AssistantContent::ToolCall(ToolCall {
                 id: (*id).into(),
                 name: "echo".into(),
-                arguments: maestro_models::JsonObject::new(),
+                arguments: maestro_models::JsonObject::new().into(),
                 thought_signature: None,
             })
         })

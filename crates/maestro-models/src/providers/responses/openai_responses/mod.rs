@@ -123,14 +123,7 @@ pub(crate) fn dispatch(
     context: Context,
     invocation: ProviderInvocation<OpenAIResponsesOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            produce::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            produce::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, produce::<Local>, produce::<Threaded>)
 }
 
 /// Box the same producer with this concrete family's future bounds.

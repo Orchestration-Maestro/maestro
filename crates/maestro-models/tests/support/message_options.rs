@@ -2,11 +2,8 @@
 
 //! Controlled option calls and exact request/stream observations.
 
-use crate::{
-    chat::TestResult,
-    child_process::{child_case, rerun},
-    messages,
-};
+#![cfg(not(target_arch = "wasm32"))]
+use crate::{chat::TestResult, messages};
 use maestro_models::providers::messages::anthropic::{AnthropicEffort, stream_simple_anthropic};
 use maestro_models::{
     AnthropicOptions, AnthropicThinkingDisplay, HttpResponse, SimpleStreamOptions, StreamOptions,
@@ -585,23 +582,10 @@ pub async fn assert_rows(test: &str) -> TestResult {
     }
     let owned: Vec<_> = rows.iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty());
-    if let Some(selected) = child_case() {
-        for row in owned.iter().filter(|row| {
-            (selected == "*" && row.input.env.is_empty()) || selected == row.id.to_string()
-        }) {
-            run(row).await?;
-        }
-    } else {
-        rerun(test, "*", &[])?;
-        for row in owned.into_iter().filter(|row| !row.input.env.is_empty()) {
-            let env: Vec<_> = row
-                .input
-                .env
-                .iter()
-                .map(|(k, v)| (k.as_str(), v.as_str()))
-                .collect();
-            rerun(test, &row.id.to_string(), &env)?;
-        }
+    let group =
+        maestro_test_process::run_per_environment(test, owned, |row| row.input.env.clone())?;
+    for row in group.into_iter().flatten() {
+        run(row).await?;
     }
     Ok(())
 }

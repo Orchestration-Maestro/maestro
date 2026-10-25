@@ -1,0 +1,132 @@
+[
+  {
+    "input": {
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": "literal",
+        "old_str": {
+          "unused": true
+        },
+        "new_str": "next"
+      },
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [
+          {
+            "type": "text",
+            "text": "Error detail"
+          }
+        ],
+        "isError": true,
+        "timestamp": 0
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "branch": "rendered",
+      "card": {
+        "isCustom": false
+      }
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "rewrite",
+        "filename": "a.html",
+        "content": "literal",
+        "old_str": {
+          "unused": true
+        },
+        "new_str": "next"
+      },
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [
+          {
+            "type": "text",
+            "text": "Error detail"
+          }
+        ],
+        "isError": true,
+        "timestamp": 0
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "branch": "rendered",
+      "card": {
+        "isCustom": false
+      }
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "update",
+        "filename": "a.html",
+        "content": "literal",
+        "old_str": {
+          "unused": true
+        },
+        "new_str": "next"
+      },
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [
+          {
+            "type": "text",
+            "text": "Error detail"
+          }
+        ],
+        "isError": true,
+        "timestamp": 0
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "get",
+        "filename": "a.html",
+        "content": "literal",
+        "old_str": {
+          "unused": true
+        },
+        "new_str": "next"
+      },
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [
+          {
+            "type": "text",
+            "text": "Error detail"
+          }
+        ],
+        "isError": true,
+        "timestamp": 0
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "branch": "rendered",
+      "card": {
+        "isCustom": false
+      }
+    }
+  }
+]

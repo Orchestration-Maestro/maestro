@@ -1,23 +1,19 @@
 //! Native shell consumption, artifacts and cleanup through the agent factories.
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
+#![cfg(unix)]
 use crate::agent_shell_support;
 use crate::process_support;
 use crate::read_support;
+use crate::runtime;
 
-#[cfg(unix)]
+use crate::runtime::run;
 use agent_shell_support::{Immediate, result_value};
-#[cfg(unix)]
 use maestro_tools::{BashExecResult, BashSpawnContext, BashToolOptions, create_bash_tool};
-#[cfg(unix)]
-use read_support::{TempDir, run};
-#[cfg(unix)]
+use read_support::{Fixture, Scratch};
 use serde_json::json;
-#[cfg(unix)]
 use std::sync::{Arc, Mutex};
 
 /// Invoke a fresh native tool where definition retention is not under test.
-#[cfg(unix)]
 async fn invoke(
     cwd: String,
     command: &str,
@@ -28,16 +24,20 @@ async fn invoke(
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_native_uses_factory_shell_path_and_override_precedence() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
-        let error = invoke(dir.text(), "exit 7", shell_path("/bin/false".into()))
+        let error = invoke(dir.text(), "exit 7", shell_path("/usr/bin/false".into()))
             .await
             .err()
             .unwrap();
         assert_eq!(error.message, "(no output)\n\nCommand exited with code 1");
-        let missing = dir.0.join("missing-shell").to_str().unwrap().to_owned();
+        let missing = dir
+            .path()
+            .join("missing-shell")
+            .to_str()
+            .unwrap()
+            .to_owned();
         assert!(
             invoke(dir.text(), "printf wrong", shell_path(missing.clone()))
                 .await
@@ -84,7 +84,6 @@ fn bash_native_uses_factory_shell_path_and_override_precedence() {
 }
 
 /// Expected native PATH, retaining the captured value if the tool directory is present.
-#[cfg(unix)]
 fn expected_native_path() -> String {
     let initial = std::env::var("PATH").unwrap_or_default();
     if initial.split(':').any(|entry| entry == "/maestro/tool-bin") {
@@ -97,7 +96,6 @@ fn expected_native_path() -> String {
 }
 
 /// Hook replacement observed through the local operation's real environment.
-#[cfg(unix)]
 fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
     let initial_hook_value = std::env::var_os("MAESTRO_HOOK_ONLY");
     let expected_path = expected_native_path();
@@ -125,9 +123,8 @@ fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_native_combines_prefix_output_and_environment_hook() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         native_prefix(&dir).await;
         let tool = create_bash_tool(
@@ -173,7 +170,6 @@ fn bash_native_combines_prefix_output_and_environment_hook() {
 }
 
 /// Read the complete artifact immediately after native settlement.
-#[cfg(unix)]
 async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
     let updates = Arc::new(Mutex::new(Vec::new()));
     let seen = updates.clone();
@@ -205,9 +201,8 @@ async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_native_returns_raw_success_and_chatty_failure() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         for (command, expected) in [
             ("printf hello", "hello"),
@@ -243,7 +238,6 @@ fn bash_native_returns_raw_success_and_chatty_failure() {
 }
 
 /// Readiness output precedes the requested abort or native fractional timeout.
-#[cfg(unix)]
 async fn native_cancel(cwd: String, timeout: Option<f64>) {
     let tool = create_bash_tool(cwd, String::new(), BashToolOptions::default());
     let signal = maestro_models::Cancellation::new();
@@ -282,9 +276,8 @@ async fn native_cancel(cwd: String, timeout: Option<f64>) {
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_native_timeout_and_abort_report_output_after_cleanup() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         for timeout in [None, Some(1.5)] {
             native_cancel(dir.text(), timeout).await;
@@ -296,7 +289,7 @@ fn bash_native_timeout_and_abort_report_output_after_cleanup() {
 #[cfg(target_os = "linux")]
 fn bash_tool_finishes_after_inherited_pipe_grace() {
     use tokio::io::AsyncWriteExt;
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
             .await
@@ -343,12 +336,10 @@ fn bash_tool_finishes_after_inherited_pipe_grace() {
 }
 
 /// Keeps the failed data callback's operation alive until explicit settlement.
-#[cfg(unix)]
 struct ArtifactPending {
     release: Arc<tokio::sync::Notify>,
     settled: Arc<std::sync::atomic::AtomicBool>,
 }
-#[cfg(unix)]
 impl maestro_tools::BashOperations for ArtifactPending {
     fn exec<'a>(
         &'a self,
@@ -378,26 +369,24 @@ impl maestro_tools::BashOperations for ArtifactPending {
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_artifact_creation_failure_is_reported() {
-    if std::env::var_os("MAESTRO_ARTIFACT_CHILD").is_none() {
-        let dir = TempDir::new();
-        let missing = dir.0.join("missing");
-        let test =
-            crate::child_process::selector("bash_artifact_creation_failure_is_reported").unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .env("MAESTRO_ARTIFACT_CHILD", "1")
-            .env("TMPDIR", &missing)
-            .env("TMP", &missing)
-            .env("TEMP", &missing)
-            .output()
-            .unwrap();
+    if !maestro_test_process::selection().is_child() {
+        let dir = Scratch::new().unwrap();
+        let missing = dir.path().join("missing");
+        let output = maestro_test_process::TestProcess::current(
+            "bash_artifact_creation_failure_is_reported",
+        )
+        .unwrap()
+        .nocapture()
+        .case("*")
+        .temp_dir(&missing)
+        .output()
+        .unwrap();
         assert!(output.status.success());
-        crate::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
-    agent_shell_support::runtime().block_on(async {
+    runtime::run_paused(async {
         let release = Arc::new(tokio::sync::Notify::new());
         let settled = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let tool = create_bash_tool(
@@ -430,12 +419,12 @@ fn bash_artifact_creation_failure_is_reported() {
             .expect_err("artifact I/O failure must not become success");
         assert!(settled.load(std::sync::atomic::Ordering::SeqCst));
         assert!(error.code.is_some(), "original native I/O code survives");
+        assert_eq!(error.name.as_deref(), Some("Error"));
     });
 }
 
 /// Exercise absent and present prefix through native execution.
-#[cfg(unix)]
-async fn native_prefix(dir: &TempDir) {
+async fn native_prefix(dir: &Scratch) {
     for prefix in [None, Some("printf prefix".into())] {
         let expected = if prefix.is_some() {
             "prefixcommand"
@@ -460,7 +449,6 @@ async fn native_prefix(dir: &TempDir) {
 }
 
 /// Select an explicit local executable for native constructor witnesses.
-#[cfg(unix)]
 fn shell_path(path: String) -> BashToolOptions {
     BashToolOptions {
         shell_path: Some(path),

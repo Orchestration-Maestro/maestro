@@ -75,6 +75,7 @@ pub fn ansi() -> MarkdownTheme {
 
 /// One component invocation and its recorded rows.
 #[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Case {
     /// Authored Markdown.
     pub text: String,
@@ -100,6 +101,8 @@ pub fn corpus(name: &str) -> Vec<Case> {
     for json in [
         include_str!("../fixtures/markdown_core.json"),
         include_str!("../fixtures/markdown_tables.json"),
+        include_str!("../fixtures/markdown_containers.json"),
+        include_str!("../fixtures/markdown_quote_width.json"),
     ] {
         let decoded: Result<std::collections::BTreeMap<String, Vec<Case>>, _> =
             serde_json::from_str(json);
@@ -131,6 +134,7 @@ pub fn component(case: &Case) -> maestro_tui::Markdown {
     Markdown::new(
         case.text.clone(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: case.padding_x,
             padding_y: case.padding_y,
             default_text_style: default_style(&case.profile),
@@ -143,6 +147,7 @@ pub fn component(case: &Case) -> maestro_tui::Markdown {
 /// Asserts every recorded component invocation for a named behavior.
 pub fn cases(name: &str) {
     use maestro_tui::Component;
+    let mut failures = Vec::new();
     for case in corpus(name) {
         let rows = component(&case).render(case.width);
         let suppressed = match case.profile.as_str() {
@@ -157,12 +162,14 @@ pub fn cases(name: &str) {
                 "{name}: base foreground leaked"
             );
         }
-        assert_eq!(
-            rows, case.lines,
-            "{name}: {:?}, width {}",
-            case.text, case.width
-        );
+        if rows != case.lines {
+            failures.push(format!(
+                "{name}: {:?}, {} width {}: {rows:?} != {:?}",
+                case.text, case.profile, case.width, case.lines
+            ));
+        }
     }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
 /// Supplies the base style carried by a recorded callback profile.

@@ -1,0 +1,273 @@
+[
+  {
+    "level": "WARN",
+    "fields": {
+      "event": "api.request.fail",
+      "subsystem": "api",
+      "outcome": "error",
+      "request_id": "r",
+      "method": "pane.send",
+      "err": "bad",
+      "message": "api request failed"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "api.wait.start",
+      "subsystem": "api",
+      "outcome": "started",
+      "request_id": "r",
+      "pane_id": "p",
+      "timeout_ms": 42,
+      "message": "api output wait started"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "api.wait.start",
+      "subsystem": "api",
+      "outcome": "started",
+      "request_id": "r",
+      "pane_id": "p",
+      "message": "api output wait started"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "api.wait.complete",
+      "subsystem": "api",
+      "outcome": "ok",
+      "request_id": "r",
+      "pane_id": "p",
+      "message": "api output wait finished"
+    }
+  },
+  {
+    "level": "WARN",
+    "fields": {
+      "event": "api.wait.timeout",
+      "subsystem": "api",
+      "outcome": "timeout",
+      "request_id": "r",
+      "pane_id": "p",
+      "message": "api output wait timed out"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "pane.spawn.start",
+      "subsystem": "pane",
+      "outcome": "started",
+      "pane_id": 1,
+      "rows": 24,
+      "cols": 80,
+      "scrollback_limit_bytes": 1000,
+      "message": "spawning pane terminal"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "pane.spawned",
+      "subsystem": "pane",
+      "outcome": "ok",
+      "pane_id": 1,
+      "pid": 2,
+      "message": "pane child spawned"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "pane.exit",
+      "subsystem": "pane",
+      "outcome": "completed",
+      "pane_id": 1,
+      "status": "exit 0",
+      "message": "pane child exited"
+    }
+  },
+  {
+    "level": "ERROR",
+    "fields": {
+      "event": "pane.exit",
+      "subsystem": "pane",
+      "outcome": "error",
+      "pane_id": 1,
+      "err": "bad",
+      "message": "pane child wait failed"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "workspace.create",
+      "subsystem": "workspace",
+      "outcome": "ok",
+      "workspace_id": "w",
+      "pane_id": 1,
+      "message": "workspace created"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "workspace.focus",
+      "subsystem": "workspace",
+      "outcome": "ok",
+      "workspace_id": "w",
+      "message": "workspace focused"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "workspace.close",
+      "subsystem": "workspace",
+      "outcome": "ok",
+      "workspace_id": "w",
+      "message": "workspace closed"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "workspace.rename",
+      "subsystem": "workspace",
+      "outcome": "ok",
+      "workspace_id": "w",
+      "message": "workspace renamed"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "tab.focus",
+      "subsystem": "tab",
+      "outcome": "ok",
+      "workspace_id": "w",
+      "tab_id": "t",
+      "message": "tab focused"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "tab.rename",
+      "subsystem": "tab",
+      "outcome": "ok",
+      "workspace_id": "w",
+      "tab_id": "t",
+      "message": "tab renamed"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "persist.save",
+      "subsystem": "persist",
+      "outcome": "ok",
+      "path": "snapshot.json",
+      "workspaces": 3,
+      "message": "session saved"
+    }
+  },
+  {
+    "level": "ERROR",
+    "fields": {
+      "event": "persist.save",
+      "subsystem": "persist",
+      "outcome": "error",
+      "path": "snapshot.json",
+      "err": "bad",
+      "message": "failed to save session"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "persist.clear",
+      "subsystem": "persist",
+      "outcome": "ok",
+      "path": "snapshot.json",
+      "message": "session cleared"
+    }
+  },
+  {
+    "level": "ERROR",
+    "fields": {
+      "event": "persist.clear",
+      "subsystem": "persist",
+      "outcome": "error",
+      "path": "snapshot.json",
+      "err": "bad",
+      "message": "failed to clear session"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "persist.restore",
+      "subsystem": "persist",
+      "outcome": "partial",
+      "workspaces": 3,
+      "message": "session restore evaluated"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "update.check.start",
+      "subsystem": "update",
+      "outcome": "started",
+      "message": "checking for updates"
+    }
+  },
+  {
+    "level": "WARN",
+    "fields": {
+      "event": "update.check.complete",
+      "subsystem": "update",
+      "outcome": "error",
+      "err": "bad",
+      "message": "update check failed"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "update.available",
+      "subsystem": "update",
+      "outcome": "ok",
+      "version": "1.2.3",
+      "message": "update available"
+    }
+  },
+  {
+    "level": "WARN",
+    "fields": {
+      "event": "config.write",
+      "subsystem": "config",
+      "outcome": "error",
+      "path": "snapshot.json",
+      "context": "reload",
+      "err": "bad",
+      "message": "failed to write config"
+    }
+  },
+  {
+    "level": "INFO",
+    "fields": {
+      "event": "integration.action",
+      "subsystem": "integration",
+      "outcome": "ok",
+      "action": "install",
+      "target": "shell",
+      "message": "integration action finished"
+    }
+  }
+]

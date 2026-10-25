@@ -2,25 +2,20 @@
 
 use super::*;
 use maestro_agent::AgentToolResult;
-#[path = "../../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../../../maestro-test-terminal/src/manual_runtime.rs"]
 #[allow(dead_code)] // shared host exposes operations unused by pure witnesses
 mod manual_runtime;
 #[path = "../../../tests/edit_render_support/mod.rs"]
 mod support;
-use maestro_theme::{
-    LiveTheme, NativeThemeOperations, SyntectHighlighter, ThemeDirectories, ThemeState,
-};
+use maestro_theme::{LiveTheme, SyntectHighlighter, ThemeDirectories, ThemeState};
 use serde_json::json;
 
 /// Publish a controlled theme for one test.
 fn live(theme: Rc<Theme>) -> LiveTheme {
-    let state = ThemeState::new(
-        ThemeDirectories {
-            themes_dir: String::new(),
-            custom_themes_dir: String::new(),
-        },
-        Rc::new(NativeThemeOperations),
-    );
+    let state = ThemeState::new(ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
     state.set_theme_instance(theme).unwrap();
     state.theme()
 }
@@ -144,7 +139,7 @@ fn result_cases(name: &str) {
                     &crate::output::render_utils::ToolRenderResultLike::from(&result(
                         &case.input["result"]
                     )),
-                    &theme,
+                    &live(Rc::clone(&theme)),
                     &ctx
                 )
                 .unwrap()

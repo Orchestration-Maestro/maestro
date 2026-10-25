@@ -1,6 +1,6 @@
 //! Recorded cache recipes replayed through the public resolver.
 #![cfg(test)]
-use super::{resource_output, scratch, support};
+use super::{native_support, resource_output, support};
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions, SourceScope};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -34,10 +34,6 @@ struct Expected {
     events: Vec<Value>,
     /// All surviving authored files.
     files: BTreeMap<String, String>,
-    /// Whether temporary-path selection was demanded.
-    temporary_path_observed: bool,
-    /// Exact reads for the two-decision witness.
-    offline_reads: Option<usize>,
 }
 /// Input kind chosen by the recipe.
 #[derive(Clone, Deserialize, PartialEq)]
@@ -100,12 +96,16 @@ struct Recipe {
     npm_command_after_clone: Option<Vec<String>>,
     /// Initial offline value.
     offline: Option<String>,
-    /// Live offline after command completion.
-    offline_after_command: Option<String>,
-    /// Controlled offline decisions.
-    offline_sequence: Option<Vec<String>>,
+    /// Startup offline selection supplied to the manager.
+    selection: Option<bool>,
     /// Explicit source sequence, including an empty sequence.
     multiple: Option<Vec<String>>,
+}
+/// Places a recorded `$ROOT`-anchored path in `base`, joining its remainder by components.
+fn recorded(base: &str, recorded: &str) -> String {
+    native_support::under(base, recorded.trim_start_matches("$ROOT"))
+        .to_string_lossy()
+        .into_owned()
 }
 /// Creates package contents with distinct before/after markers.
 fn package(target: &str, version: &str, marker: &str, bad: bool) {
@@ -161,10 +161,10 @@ fn files(root: &Path, dir: &Path, out: &mut BTreeMap<String, String>) {
         }
     }
 }
-/// Replaces only the owning disposable root in observations.
+/// Replaces only the owning disposable root in observations, then folds native separators.
 fn normalize(value: Value, root: &str) -> Value {
     match value {
-        Value::String(s) => s.replace(root, "$ROOT").into(),
+        Value::String(s) => s.replace(root, "$ROOT").replace('\\', "/").into(),
         Value::Array(a) => a.into_iter().map(|v| normalize(v, root)).collect(),
         Value::Object(o) => o
             .into_iter()
@@ -183,15 +183,19 @@ fn manager(
     cwd: &str,
     settings: Rc<RefCell<maestro_settings::SettingsManager>>,
     effects: &Rc<support::Effects>,
+    selection: Option<bool>,
 ) -> DefaultPackageManager<support::Controlled> {
     DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: cwd.into(),
-            agent_dir: format!("{base}/user"),
+            agent_dir: native_support::under(base, "user")
+                .to_string_lossy()
+                .into_owned(),
             settings_manager: settings,
         },
         support::Controlled(Rc::clone(effects)),
     )
+    .with_offline(selection)
 }
 /// Replays each selected recipe exactly once.
 pub async fn cases(names: &[&str]) {
@@ -209,7 +213,7 @@ fn setup(case: &Recorded, base: &str) {
         put(base, "local.ts", "fixture");
     }
     if r.existing == Some(true) {
-        let target = case.target.as_ref().unwrap().replace("$ROOT", base);
+        let target = recorded(base, case.target.as_ref().unwrap());
         package(
             &target,
             r.version.as_deref().unwrap_or("1.0.0"),
@@ -230,7 +234,9 @@ fn setup(case: &Recorded, base: &str) {
         }
     }
     if r.existing_root == Some(true) {
-        let root = format!("{base}/temp/maestro-extensions/npm/f35b2129");
+        let root = native_support::under(base, "temp/maestro-extensions/npm/f35b2129")
+            .to_string_lossy()
+            .into_owned();
         put(&root, ".gitignore", "keep-ignore\n");
         put(&root, "package.json", "{\"keep\":true}\n");
     }
@@ -242,16 +248,11 @@ fn hooks(
     effects: &Rc<support::Effects>,
     settings: &Rc<RefCell<maestro_settings::SettingsManager>>,
 ) {
-    let weak = Rc::downgrade(effects);
     let settings = Rc::clone(settings);
     let root = base.to_owned();
     let r = Rc::clone(&recipe);
     *effects.run_hook.borrow_mut() = Some(Rc::new(move |command, args, cwd| {
-        let e = weak.upgrade().unwrap();
         let outcome = run(&r, &root, &settings, (command, args, cwd));
-        if let Some(value) = &r.offline_after_command {
-            *e.offline.borrow_mut() = Some(value.clone());
-        }
         Box::pin(async move { outcome.map(|()| Some(0)) })
     }));
     *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, args, _| {
@@ -333,10 +334,14 @@ fn install(r: &Recipe, root: &str, args: &[String], index: usize) {
     });
     let name = suffix.map_or(spec.as_str(), |i| &spec[..i]);
     let version = suffix.map_or("1.0.0", |i| &spec[i + 1..]);
-    let prefix = args
-        .iter()
-        .position(|a| a == "--prefix")
-        .map_or_else(|| format!("{root}/global"), |i| args[i + 1].clone());
+    let prefix = args.iter().position(|a| a == "--prefix").map_or_else(
+        || {
+            native_support::under(root, "global")
+                .to_string_lossy()
+                .into_owned()
+        },
+        |i| args[i + 1].clone(),
+    );
     let target = maestro_path::join(&[&prefix, "node_modules", name]);
     if r.manifest_mode.as_deref() == Some("directory") {
         std::fs::remove_dir(Path::new(&target).join("package.json")).unwrap();
@@ -350,10 +355,25 @@ fn install(r: &Recipe, root: &str, args: &[String], index: usize) {
         );
     }
 }
+/// The child's `HOME`, inside its own tree.
+pub fn home(base: &str) -> (&'static str, Option<String>) {
+    (
+        "HOME",
+        Some(
+            native_support::under(base, "home")
+                .to_string_lossy()
+                .into_owned(),
+        ),
+    )
+}
 /// Compares ordered effects, surviving files, errors and complete returned trees.
 async fn replay(case: &Recorded) {
-    let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.0.to_string_lossy().into_owned();
+    let Some(tree) = super::resolution_support::case_in_child(&case.case, |base| {
+        vec![home(base), ("MAESTRO_OFFLINE", case.recipe.offline.clone())]
+    }) else {
+        return;
+    };
+    let base = tree.to_string_lossy().into_owned();
     setup(case, &base);
     let (_, settings, _) = support::manager(&json!({}));
     let r = Rc::new(case.recipe.clone());
@@ -375,10 +395,6 @@ fn configure(
                 .collect(),
         ));
     }
-    *effects.offline.borrow_mut() = r.offline.clone();
-    if let Some(values) = &r.offline_sequence {
-        *effects.offline_sequence.borrow_mut() = values.iter().cloned().map(Some).collect();
-    }
     effects
         .outputs
         .borrow_mut()
@@ -386,7 +402,7 @@ fn configure(
             Err(io::Error::other("root lookup failed"))
         } else {
             Ok(support::output(
-                &format!("{base}/global/node_modules"),
+                &native_support::under(base, "global/node_modules").to_string_lossy(),
                 "",
                 Some(0),
             ))
@@ -400,14 +416,10 @@ async fn replay_ready(
     r: Rc<Recipe>,
     settings: Rc<RefCell<maestro_settings::SettingsManager>>,
 ) {
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        temp_root: RefCell::new(Some(format!("{base}/temp"))),
-        ..Default::default()
-    });
+    let effects = Rc::new(support::Effects::default());
     configure(&r, base, &effects, &settings);
     let events = Rc::new(RefCell::new(Vec::new()));
-    let m = manager(base, base, Rc::clone(&settings), &effects);
+    let m = manager(base, base, Rc::clone(&settings), &effects, r.selection);
     progress(&m, &r, &events);
     let mut sources = r.multiple.clone().unwrap_or_else(|| vec![source(&r)]);
     if r.second == Some(true) {
@@ -438,9 +450,10 @@ async fn replay_ready(
             drop(m);
             let next = manager(
                 base,
-                &format!("{base}/other-cwd"),
+                &native_support::under(base, "other-cwd").to_string_lossy(),
                 Rc::clone(&settings),
                 &effects,
+                r.selection,
             );
             progress(&next, &r, &events);
             let sources = r.second_manager_ref.as_ref().map_or(sources, |reference| {
@@ -522,8 +535,9 @@ fn compare(
         "{} second",
         case.case
     );
+    let commands = normalize(json!(*effects.transcript.borrow()), base).to_string();
     assert_eq!(
-        normalize(json!(*effects.transcript.borrow()), base),
+        serde_json::from_str::<Value>(&support::recorded_stages(&commands)).unwrap(),
         json!(case.expected.commands),
         "{} commands",
         case.case
@@ -537,39 +551,6 @@ fn compare(
     let mut actual_files = BTreeMap::new();
     files(Path::new(base), Path::new(base), &mut actual_files);
     assert_eq!(actual_files, case.expected.files, "{} files", case.case);
-    assert_reads(case, effects);
 }
-/// Checks branch-local avoided observations separately from returned values.
-fn assert_reads(case: &Recorded, effects: &support::Effects) {
-    if case.case.starts_with("npm_existing_") {
-        assert!(
-            effects.file_reads.borrow().is_empty(),
-            "unpinned versions are unread"
-        );
-        assert_eq!(effects.offline_reads.get(), 0);
-    }
-    if case.recipe.kind == Kind::Local || case.recipe.multiple.as_ref().is_some_and(Vec::is_empty) {
-        assert_eq!(effects.offline_reads.get(), 0);
-        assert!(effects.reads.borrow().is_empty());
-    }
-    assert_eq!(
-        effects.reads.borrow().contains(&"temp"),
-        case.expected.temporary_path_observed,
-        "{} temp",
-        case.case
-    );
-    if let Some(count) = case.expected.offline_reads {
-        assert_eq!(effects.offline_reads.get(), count);
-    }
-}
-
-/// Drives a recipe on a caller-owned runtime without generated test hooks.
-pub fn block_on(operation: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(operation);
-}
-
 #[cfg(unix)]
 pub mod native;

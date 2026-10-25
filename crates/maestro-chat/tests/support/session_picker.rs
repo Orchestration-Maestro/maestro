@@ -2,15 +2,28 @@
 use maestro_tui::tui::InputHandler;
 #[allow(
     dead_code,
+    reason = "The library tests use only the override shape and its conversion."
+)]
+#[path = "recorded_keys/bindings.rs"]
+pub(crate) mod bindings;
+#[allow(
+    dead_code,
     reason = "The controlled host supports other terminal effects."
 )]
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../../maestro-test-terminal/src/manual_runtime.rs"]
 pub(crate) mod manual_runtime;
 #[allow(dead_code, reason = "Only theme publication helpers are shared.")]
 #[path = "../../../maestro-theme/tests/published/mod.rs"]
 pub(crate) mod published;
+#[allow(
+    dead_code,
+    reason = "Shared terminal support exposes controls used by other crates."
+)]
+#[path = "../../../maestro-test-terminal/src/recording_terminal.rs"]
+pub(crate) mod recording_terminal;
 #[path = "registry.rs"]
 pub(crate) mod registry;
+use bindings::Binding;
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;
 use maestro_chat::{
     NameFilter, SessionScope, SessionSelectorHeader, SessionSelectorHeaderOptions, SortMode,
@@ -33,7 +46,10 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
     decode_cases(include_str!("../fixtures/session-picker.json"), name)
 }
 /// Strict shared decoder for both session-picker corpora.
-fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(text: &str, name: &str) -> Vec<(I, E)> {
+pub(crate) fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(
+    text: &str,
+    name: &str,
+) -> Vec<(I, E)> {
     let all: Vec<Case> = serde_json::from_str(text).unwrap();
     let rows: Vec<_> = all
         .into_iter()
@@ -202,30 +218,11 @@ struct HeaderInput {
     delay: Option<u64>,
     next: Option<String>,
 }
-/// The registry accepts a scalar key or ordered key list.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Binding {
-    One(String),
-    Many(Vec<String>),
-}
-/// Preserve the registry's input shape.
+/// Recorded overrides, none when absent.
 fn overrides(
     values: Option<&std::collections::BTreeMap<String, Binding>>,
 ) -> maestro_tui::KeybindingsConfig {
-    values
-        .into_iter()
-        .flatten()
-        .map(|(id, v)| {
-            (
-                id.clone(),
-                Some(match v {
-                    Binding::One(s) => maestro_tui::KeybindingKeys::Single(s.clone()),
-                    Binding::Many(s) => maestro_tui::KeybindingKeys::Multiple(s.clone()),
-                }),
-            )
-        })
-        .collect()
+    values.map(bindings::bindings).unwrap_or_default()
 }
 /// Strict possible header observation fields.
 #[derive(Deserialize)]
@@ -519,7 +516,6 @@ pub fn age(name: &str) {
                 theme: theme.clone(),
                 now_ms: Rc::new(move || i.now),
                 home: Rc::new(|| "/oracle-home".into()),
-                paths: Rc::new(maestro_app::NativeResourceOperations),
                 styles_enabled: Rc::new(|| true),
             },
         );
@@ -705,7 +701,6 @@ impl World {
                 theme: self.theme.clone(),
                 now_ms: Rc::new(move || now.get()),
                 home: Rc::new(move || home.borrow().clone()),
-                paths: Rc::new(maestro_app::NativeResourceOperations),
                 styles_enabled: Rc::new(move || styles.get()),
             },
         )
@@ -1240,26 +1235,24 @@ fn focus(
 /// Disposable native path aliases used only by native corpus witnesses.
 struct Filesystem {
     root: String,
+    /// The disposable root that removes the padded tree.
+    scratch: maestro_test_directory::Scratch,
     saved_records: std::cell::RefCell<Option<Vec<maestro_app::SessionInfo>>>,
 }
 impl Filesystem {
-    /// Uses exclusive directory creation; the fixed width retains oracle padding.
+    /// Creates the fixture below the disposable root; the fixed width retains oracle padding.
     fn new() -> Self {
-        use std::sync::atomic::{AtomicUsize, Ordering};
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let mut root = std::env::temp_dir()
-            .join(format!(
-                "maestro-session-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, Ordering::Relaxed)
-            ))
-            .to_string_lossy()
-            .into_owned();
-        root.push_str(&"x".repeat(100 - root.len()));
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let parent = scratch.path().to_string_lossy().into_owned();
+        let root = format!(
+            "{parent}/{}",
+            "x".repeat(100_usize.saturating_sub(parent.len() + 1))
+        );
         assert_eq!(root.len(), 100);
         std::fs::create_dir(&root).unwrap();
         let fs = Self {
             root,
+            scratch,
             saved_records: std::cell::RefCell::new(Some(Vec::new())),
         };
         for directory in ["real", "real-b"] {
@@ -1277,23 +1270,20 @@ impl Filesystem {
         fs
     }
     /// Real native symlinks exercise the resource owner, not a selector mock.
-    #[cfg(unix)]
+    ///
+    /// Only Windows and Unix hosts create links. Every other host, the browser
+    /// target included, resolves both paths and discards them.
     fn link(&self, alias: &str, target: &str) {
-        std::os::unix::fs::symlink(
-            self.expand(&format!("$FS/{target}")),
-            self.expand(&format!("$FS/{alias}")),
-        )
-        .unwrap();
+        let target = self.expand(&format!("$FS/{target}"));
+        let alias = self.expand(&format!("$FS/{alias}"));
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(target, alias).unwrap();
+        #[cfg(windows)]
+        std::os::windows::fs::symlink_dir(target, alias).unwrap();
+        #[cfg(not(any(unix, windows)))]
+        let _ = (alias, target);
     }
-    /// Windows native scenarios run only where link creation is admitted by the host.
-    #[cfg(not(unix))]
-    fn link(&self, alias: &str, target: &str) {
-        std::os::windows::fs::symlink_dir(
-            self.expand(&format!("$FS/{target}")),
-            self.expand(&format!("$FS/{alias}")),
-        )
-        .unwrap();
-    }
+
     /// Replaces only the fixture root, preserving authored aliases and all metadata.
     fn expand(&self, value: &str) -> String {
         value.replace("$FS", &self.root)
@@ -1340,7 +1330,11 @@ impl Filesystem {
 }
 impl Drop for Filesystem {
     fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.root).unwrap();
+        // The padded tree lies inside the disposable root, which removes it on drop.
+        assert!(
+            self.root
+                .starts_with(self.scratch.path().to_string_lossy().as_ref())
+        );
     }
 }
 /// Normalizes only the disposable native root, retaining every byte otherwise.

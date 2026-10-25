@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use pulldown_cmark::{Event, Parser, Tag};
+use maestro_markdown::{Kind, MarkedOptions, Node, parse_with_options};
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::visit::Visit;
 
@@ -10,8 +10,7 @@ use crate::source::{Member, Source, cfg_test, test_layout};
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
         for source in &member.sources {
-            let generated_bindings = member.name == "maestro-extensions-wasm"
-                && source.path == member.directory.join("src/bindings.rs");
+            let generated_bindings = crate::generated::bindings_source(member, source);
             documentation(source, generated_bindings)?;
             check_test_layout(source, &member.directory)?;
         }
@@ -22,6 +21,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 /// Check documentation tokens without interpreting comment-like text in literals.
 fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String> {
     let mut offset = ra_ap_rustc_lexer::strip_shebang(&source.contents).unwrap_or(0);
+    let mut line = crate::source::line(&source.contents, offset);
     let mut block = Documentation::default();
     let mut style = None;
     for token in ra_ap_rustc_lexer::tokenize(&source.contents[offset..], FrontmatterAllowed::No) {
@@ -33,7 +33,6 @@ fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String
             TokenKind::BlockComment {
                 doc_style: Some(_), ..
             } if !generated_bindings => {
-                let line = crate::source::line(&source.contents, offset);
                 return Err(format!(
                     "{}:{line}: block documentation: use /// or //!",
                     source.path.display()
@@ -53,9 +52,9 @@ fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String
                 block = Documentation::default();
                 style = Some(owner);
             }
-            let start = crate::source::line(&source.contents, offset);
-            block.comment(body, start);
+            block.comment(body, line);
         }
+        line += crate::source::count_newlines(&source.contents[offset..end]);
         offset = end;
     }
     block.check(source)
@@ -81,12 +80,9 @@ impl Documentation {
 
     /// Compare physical lines, excluding parser-selected code block ranges.
     fn check(&self, source: &Source) -> Result<(), String> {
-        let code: Vec<_> = Parser::new(&self.markdown)
-            .into_offset_iter()
-            .filter_map(|(event, range)| {
-                matches!(event, Event::Start(Tag::CodeBlock(_))).then_some(range)
-            })
-            .collect();
+        let document = parse_with_options(self.markdown.clone(), MarkedOptions::Documentation);
+        let mut code = Vec::new();
+        code_ranges(&document.nodes, &mut code);
         let mut previous = None;
         let mut offset = 0;
         for (index, text) in self.markdown.lines().enumerate() {
@@ -115,6 +111,22 @@ impl Documentation {
             previous = Some((text, line));
         }
         Ok(())
+    }
+}
+
+/// Collect original code-block ranges, including those inside list and quote containers.
+fn code_ranges(nodes: &[Node], ranges: &mut Vec<std::ops::Range<usize>>) {
+    let mut pending = vec![nodes];
+    while let Some(nodes) = pending.pop() {
+        for node in nodes {
+            match &node.kind {
+                Kind::CodeBlock(..) => ranges.push(node.range.clone()),
+                Kind::List(_, children) | Kind::Item(children) | Kind::Quote(children, _) => {
+                    pending.push(children);
+                }
+                _ => {}
+            }
+        }
     }
 }
 
@@ -165,5 +177,43 @@ impl<'ast> Visit<'ast> for TestLayout<'_> {
             ));
         }
         syn::visit::visit_item_mod(self, item);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::code_ranges;
+    use maestro_markdown::{Kind, MappedText, Node};
+
+    #[test]
+    fn deep_markdown_containers_keep_checks_on_a_small_stack() {
+        let ranges = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(|| {
+                let mut node = Node {
+                    kind: Kind::CodeBlock(String::new(), None),
+                    authored: MappedText::default(),
+                    range: 4..8,
+                };
+                for level in 0..100_000 {
+                    let kind = match level % 3 {
+                        0 => Kind::Quote(vec![node], MappedText::default()),
+                        1 => Kind::Item(vec![node]),
+                        _ => Kind::List(None, vec![node]),
+                    };
+                    node = Node {
+                        kind,
+                        authored: MappedText::default(),
+                        range: 0..0,
+                    };
+                }
+                let mut ranges = Vec::new();
+                code_ranges(&[node], &mut ranges);
+                ranges
+            })
+            .expect("worker thread")
+            .join()
+            .expect("worker panicked");
+        assert_eq!(ranges, vec![4..8]);
     }
 }

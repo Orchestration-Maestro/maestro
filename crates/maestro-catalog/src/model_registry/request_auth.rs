@@ -2,8 +2,7 @@
 use super::{CatalogError, ModelRegistry, read_provider};
 use indexmap::IndexMap;
 use maestro_credentials::{
-    ConfigValueOperations, resolve_config_value_or_throw, resolve_config_value_uncached,
-    resolve_headers_or_throw,
+    resolve_config_value_or_throw, resolve_config_value_uncached, resolve_headers_or_throw,
 };
 use maestro_models::Model;
 use std::sync::{Arc, PoisonError, RwLock};
@@ -19,18 +18,18 @@ pub(super) struct ProviderRequestConfig {
 }
 pub use maestro_request::model_registry::ResolvedRequestAuth;
 impl ModelRegistry {
-    /// Select a provider key with the credentials fallback disabled.
+    /// Select a provider key with the credentials fallback disabled, running
+    /// configured commands through the catalog's own handle.
     ///
     /// # Errors
     /// Returns a catalog error wrapping a lower-layer account extraction failure.
     pub async fn get_api_key_for_provider(
         &self,
         provider: &str,
-        operations: &dyn ConfigValueOperations,
     ) -> Result<Option<String>, CatalogError> {
         let key = self
             .auth_storage
-            .get_api_key(provider, false, operations)
+            .get_api_key(provider, false, &*self.config_values)
             .await?;
         if key.is_some() {
             return Ok(key);
@@ -40,46 +39,38 @@ impl ModelRegistry {
             .as_ref()
             .and_then(|c| c.api_key.as_deref())
             .filter(|v| !v.is_empty())
-            .and_then(|v| resolve_config_value_uncached(v, operations)))
+            .and_then(|v| resolve_config_value_uncached(v, &*self.config_values)))
     }
 }
 
 impl ModelRegistry {
-    /// Resolve keys and headers in layer order, returning the winning error.
-    pub async fn get_api_key_and_headers(
-        &self,
-        model: &Arc<RwLock<Model>>,
-        operations: &dyn ConfigValueOperations,
-    ) -> ResolvedRequestAuth {
-        match self.resolve_request(model, operations).await {
+    /// Resolve keys and headers in layer order through the catalog's own handle,
+    /// returning the winning error.
+    pub async fn get_api_key_and_headers(&self, model: &Arc<RwLock<Model>>) -> ResolvedRequestAuth {
+        match self.resolve_request(model).await {
             Ok((api_key, headers)) => ResolvedRequestAuth::Ok { api_key, headers },
             Err(error) => ResolvedRequestAuth::Error { error },
         }
     }
     /// Read request fields at their consuming phase without retaining guards across effects.
-    async fn resolve_request(
-        &self,
-        model: &Arc<RwLock<Model>>,
-        operations: &dyn ConfigValueOperations,
-    ) -> Result<RequestValues, String> {
+    async fn resolve_request(&self, model: &Arc<RwLock<Model>>) -> Result<RequestValues, String> {
         let provider = read_provider(model);
         let config = self.request_config(&provider);
         let stored = self
             .auth_storage
-            .get_api_key(&provider, false, operations)
+            .get_api_key(&provider, false, &*self.config_values)
             .await
             .map_err(|error| error.to_string())?;
-        let api_key = resolve_key(
+        let api_key = self.resolve_key(
             stored,
             config.as_ref().and_then(|c| c.api_key.as_deref()),
             model,
-            operations,
         )?;
         let provider = read_provider(model);
         let provider_headers = resolve_headers_or_throw(
             config.as_ref().and_then(|c| c.headers.as_ref()),
             &format!("provider \"{provider}\""),
-            operations,
+            &*self.config_values,
         )
         .map_err(|error| error.to_string())?;
         let identity = {
@@ -96,7 +87,7 @@ impl ModelRegistry {
         let model_headers = resolve_headers_or_throw(
             model_sources.as_ref(),
             &format!("model \"{}/{}\"", identity.0, identity.1),
-            operations,
+            &*self.config_values,
         )
         .map_err(|error| error.to_string())?;
         let mut headers: IndexMap<_, _> = model
@@ -117,31 +108,30 @@ impl ModelRegistry {
         let headers = super::composition::ordered(Some(headers)).filter(|h| !h.is_empty());
         Ok((api_key, headers))
     }
+    /// Resolve configured fallback only when storage supplied no key.
+    fn resolve_key(
+        &self,
+        stored: Option<String>,
+        config: Option<&str>,
+        model: &Arc<RwLock<Model>>,
+    ) -> Result<Option<String>, String> {
+        let api_key = match (stored, config.filter(|value| !value.is_empty())) {
+            (Some(key), _) => Some(key),
+            (None, Some(value)) => {
+                let provider = read_provider(model);
+                Some(
+                    resolve_config_value_or_throw(
+                        value,
+                        &format!("API key for provider \"{provider}\""),
+                        &*self.config_values,
+                    )
+                    .map_err(|error| error.to_string())?,
+                )
+            }
+            (None, None) => None,
+        };
+        Ok(api_key)
+    }
 }
 /// Internal success payload before conversion to the public result.
 type RequestValues = (Option<String>, Option<IndexMap<String, String>>);
-
-/// Resolve configured fallback only when storage supplied no key.
-fn resolve_key(
-    stored: Option<String>,
-    config: Option<&str>,
-    model: &Arc<RwLock<Model>>,
-    operations: &dyn ConfigValueOperations,
-) -> Result<Option<String>, String> {
-    let api_key = match (stored, config.filter(|value| !value.is_empty())) {
-        (Some(key), _) => Some(key),
-        (None, Some(value)) => {
-            let provider = read_provider(model);
-            Some(
-                resolve_config_value_or_throw(
-                    value,
-                    &format!("API key for provider \"{provider}\""),
-                    operations,
-                )
-                .map_err(|error| error.to_string())?,
-            )
-        }
-        (None, None) => None,
-    };
-    Ok(api_key)
-}

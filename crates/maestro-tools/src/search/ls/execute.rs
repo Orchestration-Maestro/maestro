@@ -2,17 +2,14 @@
 
 use super::{DEFAULT_LIMIT, LsOperations, LsToolDetails, LsToolInput};
 use crate::{
-    output::{
-        render_parts::{float, num},
-        text_block,
-    },
-    path_utils::resolve_to_cwd,
+    output::render_parts::{float, num},
+    path_utils::resolve_existing_path,
     utils::diagnostics::{aborted, blocking, diagnostic, failure, guarded},
 };
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use maestro_path::join;
-use maestro_theme::{Collator, NativeThemeOperations, ThemeOperations};
+use maestro_theme::Collator;
 use std::{path::Path, sync::Arc};
 
 /// The settings every listing shares.
@@ -23,19 +20,10 @@ pub(super) struct Lister {
     pub(super) operations: Arc<dyn LsOperations>,
 }
 
-/// A result of one text block.
-fn text_result(text: String, details: Option<LsToolDetails>) -> AgentToolResult<LsToolDetails> {
-    AgentToolResult {
-        content: vec![text_block(text)],
-        details,
-        terminate: None,
-    }
-}
-
 /// The listing text and details for `entries`, which stopped at `limit` when `reached`.
 fn format_entries(entries: &[String], reached: bool, limit: f64) -> AgentToolResult<LsToolDetails> {
     if entries.is_empty() {
-        return text_result("(empty directory)".into(), None);
+        return AgentToolResult::text_result("(empty directory)".into(), None);
     }
     let notices = if reached {
         vec![format!(
@@ -53,7 +41,7 @@ fn format_entries(entries: &[String], reached: bool, limit: f64) -> AgentToolRes
         entry_limit_reached: reached.then_some(limit),
     };
     let reported = details.truncation.is_some() || details.entry_limit_reached.is_some();
-    text_result(output, reported.then_some(details))
+    AgentToolResult::text_result(output, reported.then_some(details))
 }
 
 impl Lister {
@@ -69,7 +57,7 @@ impl Lister {
             return Err(aborted());
         }
         let requested = input.path.as_deref().filter(|path| !path.is_empty());
-        let directory = resolve_to_cwd(requested.unwrap_or("."), &self.cwd)
+        let directory = resolve_existing_path(requested.unwrap_or("."), &self.cwd)
             .map_err(|error| diagnostic(&error))?;
         let limit = input.limit.unwrap_or(DEFAULT_LIMIT);
         let operations = &self.operations;
@@ -133,7 +121,10 @@ impl LsOperations for NativeLsOperations {
         absolute_path: String,
     ) -> BoxFuture<Result<Vec<String>, DiagnosticErrorInfo>> {
         Box::pin(blocking(move || {
-            NativeThemeOperations.read_dir(&absolute_path)
+            Ok(maestro_listing::read_dir(absolute_path)?
+                .iter()
+                .map(|entry| entry.file_name().to_string_lossy().into_owned())
+                .collect())
         }))
     }
 }

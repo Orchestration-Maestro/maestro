@@ -133,17 +133,14 @@ fn rejected_move_returns_original_pane() {
 #[test]
 fn display_label_uses_admitted_identity_cache() {
     let mut owner = workspace();
-    let directory = std::env::temp_dir().join(format!(
-        "maestro-label-{}-{}",
-        std::process::id(),
-        owner.workspaces[0].id
-    ));
-    std::fs::create_dir(&directory).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let directory = scratch.path().to_path_buf();
     let ws = &mut owner.workspaces[0];
     ws.identity_cwd = directory.clone();
-    ws.cached_identity_cwd = directory.clone();
+    ws.cached_identity_cwd = directory;
     ws.cached_auto_label = "cached-checkout".into();
-    std::fs::remove_dir(directory).unwrap();
+    // With the directory gone, the admitted cache is the label's only source.
+    drop(scratch);
     assert_eq!(ws.display_name(None), "cached-checkout");
 }
 
@@ -167,6 +164,13 @@ fn tab_reorder_preserves_selection_and_public_numbers() {
     assert_eq!(
         ws.tabs.iter().map(|t| t.number).collect::<Vec<_>>(),
         [2, 3, 1]
+    );
+    assert_eq!(
+        ws.tabs
+            .iter()
+            .map(|t| t.custom_name.as_deref())
+            .collect::<Vec<_>>(),
+        [Some("custom"), None, None]
     );
     assert_eq!(ws.tabs[2].root_pane, moved_root);
     assert_eq!(ws.tabs[ws.active_tab].root_pane, active);

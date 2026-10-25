@@ -5,23 +5,6 @@ use maestro_extensions::{
 };
 use std::rc::Rc;
 
-/// Explicit controlled effects for fixtures that do not resolve credentials.
-pub fn credential_operations() -> Rc<dyn maestro_credentials::ConfigValueOperations> {
-    Rc::new(NoCredentials)
-}
-
-/// A fixture must not accidentally invoke an ambient environment or shell.
-struct NoCredentials;
-
-impl maestro_credentials::ConfigValueOperations for NoCredentials {
-    fn environment(&self, _: &str) -> Option<String> {
-        panic!("fixture requests no credential environment");
-    }
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        panic!("fixture requests no credential shell");
-    }
-}
-
 /// Binds a prompt reader without replacing command-specific operations.
 pub fn bind_prompt(runner: &ExtensionRunner<Local>, prompt: &'static str) {
     runner

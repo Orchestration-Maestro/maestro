@@ -37,10 +37,7 @@ impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
             let state = read(&agent.state);
             let model = read(&state.model);
             AgentMessage::Assistant(Arc::new(RwLock::new(AssistantMessage {
-                content: vec![AssistantContent::Text(TextContent {
-                    text: String::new(),
-                    text_signature: None,
-                })],
+                content: vec![AssistantContent::Text(TextContent::new(String::new()))],
                 api: model.api.clone(),
                 provider: model.provider.clone(),
                 model: model.id.clone(),

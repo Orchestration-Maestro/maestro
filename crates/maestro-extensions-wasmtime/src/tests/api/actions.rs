@@ -29,7 +29,7 @@ fn scalar_actions_keep_values_order_and_catchable_errors() {
             let output = seen.clone();
             actions.set_thinking_level = Rc::new(move |level| { output.borrow_mut().push(serde_json::json!(["thinking", level])); Err("selected failure".into()) });
         }
-        let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+        let (pump, admission) = Pump::new();
         let endpoint = pump.registry().api(api).unwrap();
         let worker = std::thread::spawn(move || {
             endpoint.read(|reply| Request::SetSessionName(" raw\u{feff}\u{85} ".into(), reply)).unwrap();
@@ -72,7 +72,7 @@ fn admitted_model_selection_survives_rebind_and_retirement() {
                     Ok(false)
                 })
             });
-            let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (mut pump, admission) = Pump::new();
             let endpoint = pump.registry().api(api).unwrap();
             let model = model_support::model(" selected ").read().unwrap().clone();
             let reader = endpoint.clone();
@@ -115,7 +115,7 @@ fn thinking_levels_use_canonical_json_in_both_directions() {
                 *set.borrow_mut() = level;
                 Ok(())
             });
-            let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let endpoint = pump.registry().api(api).unwrap();
             let worker = std::thread::spawn(move || {
                 assert_eq!(endpoint.read(Request::Thinking).unwrap(), "\"off\"");

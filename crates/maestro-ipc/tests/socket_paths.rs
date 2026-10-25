@@ -42,9 +42,18 @@ fn socket_client_path_uses_supplied_folder() {
     for folder in ["relative/daemon", "/tmp/named"] {
         assert_eq!(
             client_socket_path(None, None, None, Path::new(folder)),
-            Path::new(folder).join("maestro-client.sock")
+            Path::new(folder).join("daemon-client.sock")
         );
     }
+}
+
+#[test]
+fn socket_client_path_default_matches_default_api_derivation() {
+    let folder = Path::new("relative/daemon");
+    assert_eq!(
+        client_socket_path(None, None, None, folder),
+        client_socket_path(None, Some("relative/daemon/daemon.sock"), None, folder)
+    );
 }
 
 #[test]
@@ -98,6 +107,6 @@ fn socket_client_path_preserves_native_components() {
     );
     assert_eq!(
         client_socket_path(None, None, None, folder),
-        folder.join("maestro-client.sock")
+        folder.join("daemon-client.sock")
     );
 }

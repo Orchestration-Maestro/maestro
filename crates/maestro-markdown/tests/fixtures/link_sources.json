@@ -1,0 +1,2186 @@
+[
+  {
+    "id": "web-order:4",
+    "input": "www.no_dot/a@b.c",
+    "targets": [
+      [
+        [
+          "www.no_dot/a@b.c",
+          "http://www.no_dot/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.no_dot/a@b.c",
+          "http://www.no_dot/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.no_dot/a@b.c",
+          "http://www.no_dot/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.no_dot/a@b.c",
+          "http://www.no_dot/a@b.c"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "web-order:5",
+    "input": "xwww.a.io/a@b.c",
+    "targets": [
+      [
+        [
+          "www.a.io/a@b.c",
+          "http://www.a.io/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.a.io/a@b.c",
+          "http://www.a.io/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.a.io/a@b.c",
+          "http://www.a.io/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.a.io/a@b.c",
+          "http://www.a.io/a@b.c"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "web-order:20",
+    "input": "www.a.b",
+    "targets": [
+      [
+        [
+          "www.a.b",
+          "http://www.a.b"
+        ]
+      ],
+      [
+        [
+          "www.a.b",
+          "http://www.a.b"
+        ]
+      ],
+      [
+        [
+          "www.a.b",
+          "http://www.a.b"
+        ]
+      ],
+      [
+        [
+          "www.a.b",
+          "http://www.a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:0",
+    "input": "https://a",
+    "targets": [
+      [
+        [
+          "https://a",
+          "https://a"
+        ]
+      ],
+      [
+        [
+          "https://a",
+          "https://a"
+        ]
+      ],
+      [
+        [
+          "https://a",
+          "https://a"
+        ]
+      ],
+      [
+        [
+          "https://a",
+          "https://a"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:1",
+    "input": "https://-",
+    "targets": [
+      [
+        [
+          "https://-",
+          "https://-"
+        ]
+      ],
+      [
+        [
+          "https://-",
+          "https://-"
+        ]
+      ],
+      [
+        [
+          "https://-",
+          "https://-"
+        ]
+      ],
+      [
+        [
+          "https://-",
+          "https://-"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:2",
+    "input": "https://9",
+    "targets": [
+      [
+        [
+          "https://9",
+          "https://9"
+        ]
+      ],
+      [
+        [
+          "https://9",
+          "https://9"
+        ]
+      ],
+      [
+        [
+          "https://9",
+          "https://9"
+        ]
+      ],
+      [
+        [
+          "https://9",
+          "https://9"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:3",
+    "input": "https://_a",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "host-prefix:4",
+    "input": "https://é.test",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "host-prefix:5",
+    "input": "https://aé.test/中",
+    "targets": [
+      [
+        [
+          "https://aé.test/中",
+          "https://aé.test/中"
+        ]
+      ],
+      [
+        [
+          "https://aé.test/中",
+          "https://aé.test/中"
+        ]
+      ],
+      [
+        [
+          "https://aé.test/中",
+          "https://aé.test/中"
+        ]
+      ],
+      [
+        [
+          "https://aé.test/中",
+          "https://aé.test/中"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:7",
+    "input": "https://a..b/x",
+    "targets": [
+      [
+        [
+          "https://a..b/x",
+          "https://a..b/x"
+        ]
+      ],
+      [
+        [
+          "https://a..b/x",
+          "https://a..b/x"
+        ]
+      ],
+      [
+        [
+          "https://a..b/x",
+          "https://a..b/x"
+        ]
+      ],
+      [
+        [
+          "https://a..b/x",
+          "https://a..b/x"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:8",
+    "input": "https://localhost/x",
+    "targets": [
+      [
+        [
+          "https://localhost/x",
+          "https://localhost/x"
+        ]
+      ],
+      [
+        [
+          "https://localhost/x",
+          "https://localhost/x"
+        ]
+      ],
+      [
+        [
+          "https://localhost/x",
+          "https://localhost/x"
+        ]
+      ],
+      [
+        [
+          "https://localhost/x",
+          "https://localhost/x"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:9",
+    "input": "www.a",
+    "targets": [
+      [
+        [
+          "www.a",
+          "http://www.a"
+        ]
+      ],
+      [
+        [
+          "www.a",
+          "http://www.a"
+        ]
+      ],
+      [
+        [
+          "www.a",
+          "http://www.a"
+        ]
+      ],
+      [
+        [
+          "www.a",
+          "http://www.a"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:10",
+    "input": "www._a",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "host-prefix:11",
+    "input": "www.é.test",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "host-prefix:12",
+    "input": "www.aé.test/x",
+    "targets": [
+      [
+        [
+          "www.aé.test/x",
+          "http://www.aé.test/x"
+        ]
+      ],
+      [
+        [
+          "www.aé.test/x",
+          "http://www.aé.test/x"
+        ]
+      ],
+      [
+        [
+          "www.aé.test/x",
+          "http://www.aé.test/x"
+        ]
+      ],
+      [
+        [
+          "www.aé.test/x",
+          "http://www.aé.test/x"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "host-prefix:14",
+    "input": "https://",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "host-prefix:15",
+    "input": "www.",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "host-prefix:16",
+    "input": "https://中/x",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "cursor:0",
+    "input": "xhttps://a.b",
+    "targets": [
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cursor:1",
+    "input": "xHTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "cursor:2",
+    "input": "xHtTpS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HtTpS://a.b",
+          "HtTpS://a.b"
+        ]
+      ],
+      [
+        [
+          "HtTpS://a.b",
+          "HtTpS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "cursor:3",
+    "input": "HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cursor:4",
+    "input": "WWW.a.b",
+    "targets": [
+      [
+        [
+          "WWW.a.b",
+          "WWW.a.b"
+        ]
+      ],
+      [],
+      [],
+      [
+        [
+          "WWW.a.b",
+          "WWW.a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cursor:5",
+    "input": "xWWW.a.b",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "cursor:6",
+    "input": "FTP://a.b",
+    "targets": [
+      [
+        [
+          "FTP://a.b",
+          "FTP://a.b"
+        ]
+      ],
+      [
+        [
+          "FTP://a.b",
+          "FTP://a.b"
+        ]
+      ],
+      [
+        [
+          "FTP://a.b",
+          "FTP://a.b"
+        ]
+      ],
+      [
+        [
+          "FTP://a.b",
+          "FTP://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cursor:7",
+    "input": "xFTP://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "FTP://a.b",
+          "FTP://a.b"
+        ]
+      ],
+      [
+        [
+          "FTP://a.b",
+          "FTP://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "cursor:8",
+    "input": "éhttps://a.b",
+    "targets": [
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cursor:9",
+    "input": "-https://a.b",
+    "targets": [
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cursor:10",
+    "input": "<https://a.b/a b>",
+    "targets": [
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cursor:11",
+    "input": "https://a.b https://c.d",
+    "targets": [
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ],
+        [
+          "https://c.d",
+          "https://c.d"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ],
+        [
+          "https://c.d",
+          "https://c.d"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ],
+        [
+          "https://c.d",
+          "https://c.d"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ],
+        [
+          "https://c.d",
+          "https://c.d"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cursor:12",
+    "input": "https://a.b,https://c.d",
+    "targets": [
+      [
+        [
+          "https://a.b,https://c.d",
+          "https://a.b,https://c.d"
+        ]
+      ],
+      [
+        [
+          "https://a.b,https://c.d",
+          "https://a.b,https://c.d"
+        ]
+      ],
+      [
+        [
+          "https://a.b,https://c.d",
+          "https://a.b,https://c.d"
+        ]
+      ],
+      [
+        [
+          "https://a.b,https://c.d",
+          "https://a.b,https://c.d"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "whitespace:0",
+    "input": "﻿www.a.b",
+    "targets": [
+      [
+        [
+          "www.a.b",
+          "http://www.a.b"
+        ]
+      ],
+      [
+        [
+          "www.a.b",
+          "http://www.a.b"
+        ]
+      ],
+      [
+        [
+          "www.a.b",
+          "http://www.a.b"
+        ]
+      ],
+      [
+        [
+          "www.a.b",
+          "http://www.a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "whitespace:2",
+    "input": "https://a.b/﻿tail",
+    "targets": [
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "whitespace:3",
+    "input": "https://a.b/tail",
+    "targets": [
+      [
+        [
+          "https://a.b/tail",
+          "https://a.b/tail"
+        ]
+      ],
+      [
+        [
+          "https://a.b/tail",
+          "https://a.b/tail"
+        ]
+      ],
+      [
+        [
+          "https://a.b/tail",
+          "https://a.b/tail"
+        ]
+      ],
+      [
+        [
+          "https://a.b/tail",
+          "https://a.b/tail"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "whitespace:4",
+    "input": "https://a.b/\ttail",
+    "targets": [
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "whitespace:5",
+    "input": "https://a.b/ tail",
+    "targets": [
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ],
+      [
+        [
+          "https://a.b/",
+          "https://a.b/"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "precedence:1",
+    "input": "https://_x/a@b.c",
+    "targets": [
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "precedence:2",
+    "input": "https://é/a@b.c",
+    "targets": [
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "precedence:3",
+    "input": "https://a.b/path a@b.c",
+    "targets": [
+      [
+        [
+          "https://a.b/path",
+          "https://a.b/path"
+        ],
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "https://a.b/path",
+          "https://a.b/path"
+        ],
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "https://a.b/path",
+          "https://a.b/path"
+        ],
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "https://a.b/path",
+          "https://a.b/path"
+        ],
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "precedence:4",
+    "input": "a@b.c https://x.y",
+    "targets": [
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ],
+        [
+          "https://x.y",
+          "https://x.y"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ],
+        [
+          "https://x.y",
+          "https://x.y"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ],
+        [
+          "https://x.y",
+          "https://x.y"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ],
+        [
+          "https://x.y",
+          "https://x.y"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "precedence:5",
+    "input": "www.a.b/a@b.c",
+    "targets": [
+      [
+        [
+          "www.a.b/a@b.c",
+          "http://www.a.b/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.a.b/a@b.c",
+          "http://www.a.b/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.a.b/a@b.c",
+          "http://www.a.b/a@b.c"
+        ]
+      ],
+      [
+        [
+          "www.a.b/a@b.c",
+          "http://www.a.b/a@b.c"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "precedence:6",
+    "input": "<https://a.b>",
+    "targets": [
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "precedence:7",
+    "input": "<a@b.c>",
+    "targets": [
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ],
+      [
+        [
+          "a@b.c",
+          "mailto:a@b.c"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "precedence:8",
+    "input": "<https://é.test/中>",
+    "targets": [
+      [
+        [
+          "https://é.test/中",
+          "https://é.test/中"
+        ]
+      ],
+      [
+        [
+          "https://é.test/中",
+          "https://é.test/中"
+        ]
+      ],
+      [
+        [
+          "https://é.test/中",
+          "https://é.test/中"
+        ]
+      ],
+      [
+        [
+          "https://é.test/中",
+          "https://é.test/中"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "boundaries:0",
+    "input": "https://a.b/a(b)c",
+    "targets": [
+      [
+        [
+          "https://a.b/a(b)c",
+          "https://a.b/a(b)c"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a(b)c",
+          "https://a.b/a(b)c"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a(b)c",
+          "https://a.b/a(b)c"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a(b)c",
+          "https://a.b/a(b)c"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "boundaries:1",
+    "input": "https://a.b/a(b",
+    "targets": [
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "boundaries:2",
+    "input": "https://a.b/x;",
+    "targets": [
+      [
+        [
+          "https://a.b/x",
+          "https://a.b/x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/x",
+          "https://a.b/x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/x",
+          "https://a.b/x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/x",
+          "https://a.b/x"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "boundaries:3",
+    "input": "https://a.b/a&amp;b tail",
+    "targets": [
+      [
+        [
+          "https://a.b/a&amp;b",
+          "https://a.b/a&amp;b"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a&amp;b",
+          "https://a.b/a&amp;b"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a&amp;b",
+          "https://a.b/a&amp;b"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a&amp;b",
+          "https://a.b/a&amp;b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "boundaries:4",
+    "input": "https://a.b/a&amp;",
+    "targets": [
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ],
+      [
+        [
+          "https://a.b/a",
+          "https://a.b/a"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "boundaries:5",
+    "input": "https://a.b/_x_",
+    "targets": [
+      [
+        [
+          "https://a.b/_x",
+          "https://a.b/_x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/_x",
+          "https://a.b/_x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/_x",
+          "https://a.b/_x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/_x",
+          "https://a.b/_x"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "boundaries:6",
+    "input": "https://a.b/__x__",
+    "targets": [
+      [
+        [
+          "https://a.b/__x",
+          "https://a.b/__x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/__x",
+          "https://a.b/__x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/__x",
+          "https://a.b/__x"
+        ]
+      ],
+      [
+        [
+          "https://a.b/__x",
+          "https://a.b/__x"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "contexts:0",
+    "input": "`ahttps://x.y`",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "contexts:1",
+    "input": "[ahttps://x.y](/u)",
+    "targets": [
+      [
+        [
+          "ahttps://x.y",
+          "/u"
+        ]
+      ],
+      [
+        [
+          "ahttps://x.y",
+          "/u"
+        ]
+      ],
+      [
+        [
+          "ahttps://x.y",
+          "/u"
+        ]
+      ],
+      [
+        [
+          "ahttps://x.y",
+          "/u"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "contexts:2",
+    "input": "![ahttps://x.y](/img)",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "contexts:3",
+    "input": "<a href=\"/u\">ahttps://x.y</a> https://a.b",
+    "targets": [
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://x.y",
+          "https://x.y"
+        ],
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ],
+      [
+        [
+          "https://x.y",
+          "https://x.y"
+        ],
+        [
+          "https://a.b",
+          "https://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "contexts:4",
+    "input": "**ahttps://x.y**",
+    "targets": [
+      [
+        [
+          "https://x.y",
+          "https://x.y"
+        ]
+      ],
+      [
+        [
+          "https://x.y",
+          "https://x.y"
+        ]
+      ],
+      [
+        [
+          "https://x.y",
+          "https://x.y"
+        ]
+      ],
+      [
+        [
+          "https://x.y",
+          "https://x.y"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "contexts:5",
+    "input": "[https://a_b.c_d/x][r]\n\n[r]: /u",
+    "targets": [
+      [
+        [
+          "https://a_b.c_d/x",
+          "/u"
+        ]
+      ],
+      [
+        [
+          "https://a_b.c_d/x",
+          "/u"
+        ]
+      ],
+      [
+        [
+          "https://a_b.c_d/x",
+          "/u"
+        ]
+      ],
+      [
+        [
+          "https://a_b.c_d/x",
+          "/u"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "contexts:6",
+    "input": "https://a.b/\\* tail",
+    "targets": [
+      [
+        [
+          "https://a.b/\\",
+          "https://a.b/\\"
+        ]
+      ],
+      [
+        [
+          "https://a.b/\\",
+          "https://a.b/\\"
+        ]
+      ],
+      [
+        [
+          "https://a.b/\\",
+          "https://a.b/\\"
+        ]
+      ],
+      [
+        [
+          "https://a.b/\\",
+          "https://a.b/\\"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "image-export:0",
+    "input": "![a `[b]` [c][r]](/img \"tip\")\n\n[r]: /c \"child\"",
+    "targets": [
+      [
+        [
+          "c",
+          "/c"
+        ]
+      ],
+      [
+        [
+          "c",
+          "/c"
+        ]
+      ],
+      [
+        [
+          "c",
+          "/c"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "image-export:1",
+    "input": "[go](/u) ![a `[b]` [c][r]](/img \"tip\")\n\n[r]: /c \"child\"",
+    "targets": [
+      [
+        [
+          "go",
+          "/u"
+        ],
+        [
+          "c",
+          "/c"
+        ]
+      ],
+      [
+        [
+          "go",
+          "/u"
+        ],
+        [
+          "c",
+          "/c"
+        ]
+      ],
+      [
+        [
+          "go",
+          "/u"
+        ],
+        [
+          "c",
+          "/c"
+        ]
+      ],
+      [
+        [
+          "go",
+          "/u"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "image-export:2",
+    "input": "![plain](/img)",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "image-export:3",
+    "input": "![**bold**](/img)",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "image-export:4",
+    "input": "![escaped \\[x\\]](/img)",
+    "targets": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:0",
+    "input": " HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:1",
+    "input": "a HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:2",
+    "input": "a\nHTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "reached-cursor:3",
+    "input": "\nHTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "reached-cursor:4",
+    "input": "*HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:5",
+    "input": "_HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:6",
+    "input": "__HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:7",
+    "input": "!HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:8",
+    "input": "<HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:9",
+    "input": "&amp;HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:10",
+    "input": "\\*HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "reached-cursor:11",
+    "input": "a\\*HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "reached-cursor:12",
+    "input": "\\* HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:13",
+    "input": "`x`HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "reached-cursor:14",
+    "input": "[x](/u)HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "x",
+          "/u"
+        ],
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "x",
+          "/u"
+        ],
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "x",
+          "/u"
+        ],
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "x",
+          "/u"
+        ],
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "reached-cursor:15",
+    "input": "![x](/img)HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "reached-cursor:16",
+    "input": "**x**HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "reached-cursor:17",
+    "input": "<b>HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:18",
+    "input": "</a>HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:19",
+    "input": "[HTTPS://a.b",
+    "targets": [
+      [],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": "reached-cursor:20",
+    "input": "\\\\HTTPS://a.b",
+    "targets": [
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ],
+      [
+        [
+          "HTTPS://a.b",
+          "HTTPS://a.b"
+        ]
+      ]
+    ]
+  }
+]

@@ -394,6 +394,8 @@ fn installed_call_result(
                 .any(|line| line.contains("installed call"))
         );
         let text = theme
+            .get()
+            .unwrap()
             .fg(&maestro_theme::ThemeColor::ToolTitle, "new theme")
             .unwrap();
         assert_eq!(text, "\x1b[38;5;61mnew theme\x1b[39m");

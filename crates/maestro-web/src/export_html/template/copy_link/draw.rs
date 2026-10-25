@@ -1,10 +1,44 @@
 //! Full-slot canvas interaction and selected-pack decoration.
 use super::{CopyLinkState, build_share_url};
+use crate::browser::control_paint::{self, Glyph, GlyphKey, PaintBounds};
 use crate::browser::{
-    attachment_content::{self, AttachmentUiError, channel, color},
+    attachment_content::{self, channel, color},
     transition::{Transition, TransitionStyle},
 };
+use egui::emath::GuiRounding as _;
 use maestro_theme::BrandPresentation;
+use std::sync::Arc;
+mod raster;
+
+/// Raster operands retained beside the control's policy.
+#[derive(PartialEq)]
+pub(super) struct CopyKey {
+    /// Drawable extent independent of caller clipping.
+    bounds: PaintBounds,
+    /// Full border box.
+    rect: egui::Rect,
+    /// Unquantized selected corner radius.
+    radius: f32,
+    /// Physical density.
+    density: f32,
+    /// Background role after transition sampling.
+    background: egui::Color32,
+    /// Immediate border role.
+    border: egui::Color32,
+    /// Sampled glyph role.
+    color: egui::Color32,
+    /// Selected glyph and retained layout identity.
+    glyph: CopyGlyphKey,
+}
+/// Native glyph identity, including live font replacement.
+#[derive(PartialEq)]
+enum CopyGlyphKey {
+    /// Catalog Link glyph.
+    Link,
+    /// Selected success-symbol layout.
+    Check(GlyphKey),
+}
+
 /// Borrowed activation and placement operands for one frame.
 #[derive(Clone, Copy)]
 pub struct CopyLinkView<'a> {
@@ -29,7 +63,7 @@ pub fn render_copy_link_button(
     entry_id: &str,
     state: &mut CopyLinkState,
     view: CopyLinkView<'_>,
-) -> Result<egui::Response, AttachmentUiError> {
+) -> Result<egui::Response, std::io::Error> {
     let response = ui
         .interact(view.rect, state.id, egui::Sense::click())
         .on_hover_text("Copy link to this message")
@@ -67,7 +101,7 @@ fn paint(
     state: &mut CopyLinkState,
     view: &CopyLinkView<'_>,
     response: &egui::Response,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), std::io::Error> {
     let copied = state.feedback.copied();
     let hovered = response.hovered() || response.has_focus();
     let operands = Operands::resolve(view, response, copied)?;
@@ -90,6 +124,15 @@ fn paint(
     if sampled.active {
         ui.ctx().request_repaint();
     }
+    draw_control(ui, state, view, (sampled, border, copied))
+}
+/// Prepare selected glyph metadata and submit one retained composed image.
+fn draw_control(
+    ui: &mut egui::Ui,
+    state: &mut CopyLinkState,
+    view: &CopyLinkView<'_>,
+    (sampled, border, copied): (Paint, egui::Color32, bool),
+) -> Result<(), std::io::Error> {
     let Paint {
         opacity,
         background,
@@ -100,31 +143,36 @@ fn paint(
         return Ok(());
     }
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(view.rect));
-    attachment_content::style(&mut child, p)?;
-    child.set_opacity(opacity);
-    child.painter().rect(
-        view.rect,
-        egui::CornerRadius::from(attachment_content::points(p.radii["control"])),
+    attachment_content::style(&mut child, view.presentation)?;
+    let density = ui.ctx().pixels_per_point();
+    let (glyph, bounds) = glyph_layout(&child, view.rect, copied, view.presentation, foreground);
+    let Some(bounds) = control_paint::raster_bounds(&child, view.rect, bounds) else {
+        return Ok(());
+    };
+    let key = CopyKey {
+        bounds,
+        rect: view.rect,
+        radius: attachment_content::points(view.presentation.radii["control"]),
+        density,
         background,
-        egui::Stroke::new(1., border),
-        egui::StrokeKind::Inside,
-    );
-    if copied {
-        child.painter().text(
-            view.rect.center(),
-            egui::Align2::CENTER_CENTER,
-            p.glyphs["passed"].symbol,
-            egui::TextStyle::Button.resolve(child.style()),
-            foreground,
-        );
-    } else {
-        attachment_content::glyph(
-            &child,
-            egui::Rect::from_center_size(view.rect.center(), egui::vec2(14., 14.)),
-            "Link",
-            foreground,
-        )?;
-    }
+        border,
+        color: foreground,
+        glyph,
+    };
+    state
+        .painter
+        .draw(&child, (key, opacity), |key| {
+            let glyph = match &key.glyph {
+                CopyGlyphKey::Link => raster::link(key)?,
+                CopyGlyphKey::Check(galley) => Glyph::Text {
+                    galley: Arc::clone(&galley.0),
+                    pos: key.rect.center() - galley.0.size() / 2.,
+                    color: key.color,
+                },
+            };
+            control_paint::compose(&child, raster::background(&child, key)?, glyph)
+        })
+        .map_err(std::io::Error::other)?;
     Ok(())
 }
 
@@ -143,7 +191,7 @@ impl Operands {
         view: &CopyLinkView<'_>,
         response: &egui::Response,
         copied: bool,
-    ) -> Result<Self, AttachmentUiError> {
+    ) -> Result<Self, std::io::Error> {
         let hovered = response.hovered() || response.has_focus();
         let background = color(
             view.presentation,
@@ -206,6 +254,7 @@ impl CopyLinkTransitions {
     }
 }
 /// Final paint operands, released from the retained transition borrow.
+#[derive(Clone, Copy)]
 struct Paint {
     /// Whole-control opacity.
     opacity: f32,
@@ -220,4 +269,30 @@ struct Paint {
 fn opaque_color(value: [f32; 3]) -> egui::Color32 {
     let [r, g, b] = value.map(channel);
     egui::Color32::from_rgb(r, g, b)
+}
+
+/// Resolve native glyph metadata without rasterization or an atlas snapshot.
+fn glyph_layout(
+    ui: &egui::Ui,
+    rect: egui::Rect,
+    copied: bool,
+    p: &BrandPresentation<'_>,
+    color: egui::Color32,
+) -> (CopyGlyphKey, egui::Rect) {
+    let density = ui.ctx().pixels_per_point();
+    if !copied {
+        return (
+            CopyGlyphKey::Link,
+            egui::Rect::from_center_size(rect.center(), egui::vec2(14., 14.))
+                .round_to_pixels(density),
+        );
+    }
+    let galley = ui.painter().layout_no_wrap(
+        p.glyphs["passed"].symbol.into(),
+        egui::TextStyle::Button.resolve(ui.style()),
+        color,
+    );
+    let origin = (rect.center() - galley.size() / 2.).round_to_pixels(density);
+    let bounds = galley.mesh_bounds.translate(origin.to_vec2());
+    (CopyGlyphKey::Check(GlyphKey(galley)), bounds)
 }

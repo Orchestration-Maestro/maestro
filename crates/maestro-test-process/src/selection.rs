@@ -13,7 +13,7 @@ pub(crate) fn current_name(test: &str) -> Result<String, TestProcessError> {
     let name = thread
         .name()
         .ok_or_else(|| TestProcessError::new(test, "the current thread is not a named test"))?;
-    if name != test && !name.ends_with(&format!("::{test}")) {
+    if !matches_name(name, test) {
         return Err(TestProcessError::new(
             test,
             format!("the selection does not match the running test {name}"),
@@ -80,6 +80,11 @@ fn lists(executable: &Path, test: &str, ignored: bool) -> Result<bool, TestProce
         .any(|line| line == wanted))
 }
 
+/// Whether a full test identity matches a full name or its leaf at a module boundary.
+pub(crate) fn matches_name(name: &str, test: &str) -> bool {
+    name == test || name.ends_with(&format!("::{test}"))
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -99,7 +104,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn failing_listing_fails_the_discovery() {
-        let error = require_eligible(Path::new("/bin/false"), "t", false).unwrap_err();
+        let error = require_eligible(Path::new("/usr/bin/false"), "t", false).unwrap_err();
         assert!(
             error.to_string().contains("the test listing failed"),
             "{error}"

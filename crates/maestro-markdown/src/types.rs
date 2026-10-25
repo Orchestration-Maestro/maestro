@@ -1,18 +1,115 @@
 //! Owned native source records.
-use pulldown_cmark::LinkType;
 use std::ops::Range;
+
+/// Immutable grammar selection for an existing Markdown consumer.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum MarkedOptions {
+    /// Terminal grammar and strict double-tilde deletion.
+    #[default]
+    Terminal,
+    /// Browser grammar with caller-selected authored HTML handling.
+    Browser {
+        /// Show authored tags as text instead of live markup.
+        escape_html: bool,
+    },
+    /// Standalone document grammar and strict double-tilde deletion.
+    Export,
+    /// Code-block source ranges for documentation checks.
+    Documentation,
+}
+
+/// A caller-admitted block extension token.
+pub struct BlockToken {
+    /// Authored input prefix; admission requires it to be nonempty.
+    pub raw: String,
+    /// Caller-owned token classification.
+    pub kind: String,
+    /// Parsed content retained for the caller's renderer.
+    pub text: String,
+}
+
+/// A resolved, first-wins document reference definition.
+#[derive(Clone)]
+pub(crate) struct Definition {
+    /// Authored destination, decoded only when resolving an operand.
+    pub(crate) destination: String,
+    /// Authored optional title, decoded only when resolving an operand.
+    pub(crate) title: String,
+}
+
+/// Alignment of a table column.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Alignment {
+    /// No authored alignment.
+    None,
+    /// Left alignment.
+    Left,
+    /// Center alignment.
+    Center,
+    /// Right alignment.
+    Right,
+}
+
+/// Handling class of a link.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LinkType {
+    /// Authored link label, including resolved document references.
+    Inline,
+    /// Automatic URI or email destination, angle-enclosed or bare.
+    Autolink,
+}
 
 /// A native node together with its source extent.
 pub struct Node {
     /// Semantic content.
     pub kind: Kind,
     /// Authored content with enclosing native continuation prefixes removed.
-    pub authored: String,
+    pub authored: crate::MappedText,
     /// Extent in the normalized source.
     pub range: Range<usize>,
 }
+impl Drop for Node {
+    /// Release nested children without one native frame per container level.
+    fn drop(&mut self) {
+        let mut pending = Vec::new();
+        detach(&mut self.kind, &mut pending);
+        while let Some(mut node) = pending.pop() {
+            detach(&mut node.kind, &mut pending);
+        }
+    }
+}
+
+/// Move a container's children onto the teardown worklist.
+fn detach(kind: &mut Kind, pending: &mut Vec<Node>) {
+    match kind {
+        Kind::Quote(children, _)
+        | Kind::List(_, children)
+        | Kind::Item(children)
+        | Kind::Paragraph(children)
+        | Kind::Inline(children)
+        | Kind::Heading(_, children, _)
+        | Kind::Strong(children)
+        | Kind::Strike(children)
+        | Kind::Emphasis(children)
+        | Kind::Link(children, _, _, _) => pending.append(children),
+        Kind::Image(_, metadata) => pending.append(&mut metadata.children),
+        Kind::Table(table) => {
+            for cell in table
+                .header
+                .iter_mut()
+                .chain(table.rows.iter_mut().flatten())
+            {
+                pending.append(&mut cell.children);
+            }
+        }
+        _ => {}
+    }
+}
+
 /// Block and inline structures admitted by the configured parser.
 pub enum Kind {
+    /// Caller-owned block classification and parsed content.
+    CustomBlock(String, String),
     /// Opaque atom in a locally interpreted inline run, indexed by that run.
     Atom(usize),
     /// Ordinary paragraph children.
@@ -34,7 +131,7 @@ pub enum Kind {
     /// Authored blank gap.
     Gap,
     /// Quote children and authored content without quote markers.
-    Quote(Vec<Node>, String),
+    Quote(Vec<Node>, crate::MappedText),
     /// Decoded text.
     Text(Text),
     /// Code text and optional full fence information.
@@ -60,12 +157,10 @@ pub enum Kind {
 }
 /// Inline children of each cell in one table row.
 pub type Cells = Vec<Cell>;
-/// One table cell with its original inline source and native extent.
+/// One table cell with its inline children and original source extent.
 pub struct Cell {
     /// Complete inline operands.
     pub children: Vec<Node>,
-    /// Container-local authored bytes, not reconstructed decoded text.
-    pub authored: String,
     /// Native source coordinates.
     pub range: Range<usize>,
 }
@@ -74,7 +169,7 @@ pub struct Table {
     /// Header cells in column order.
     pub header: Cells,
     /// Per-column native alignment.
-    pub alignments: Vec<pulldown_cmark::Alignment>,
+    pub alignments: Vec<Alignment>,
     /// Body rows in authored order.
     pub rows: Vec<Cells>,
     /// Authored rows without container prefixes or the final line terminator.
@@ -91,10 +186,8 @@ pub struct Text {
 pub struct LinkMetadata {
     /// Optional tooltip; empty means absent.
     pub title: String,
-    /// Native source classification.
+    /// Link handling class.
     pub link_type: LinkType,
-    /// Native reference identity.
-    pub id: String,
 }
 /// Complete image operands retained beside the authored terminal label.
 pub struct ImageMetadata {
@@ -102,15 +195,15 @@ pub struct ImageMetadata {
     pub destination: String,
     /// Decoded tooltip.
     pub title: String,
-    /// Native link classification.
-    pub link_type: LinkType,
-    /// Native reference identity.
-    pub id: String,
     /// Alt-label inline structure.
     pub children: Vec<Node>,
 }
 /// Owned shared document; source coordinates name this exact string.
 pub struct Document {
+    /// Grammar retained for local inline interpretation.
+    pub(crate) options: MarkedOptions,
+    /// Definitions shared by all inline scopes, including forward references.
+    pub(crate) definitions: std::collections::HashMap<String, Definition>,
     /// Captured inline source provenance, owned by this document.
     pub(crate) scopes:
         std::collections::HashMap<crate::inline::ScopeKey, crate::source::ScopeSource>,

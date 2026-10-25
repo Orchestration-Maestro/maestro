@@ -1,6 +1,7 @@
 //! Public option conversion and preparation order.
 
 use super::super::*;
+use crate::tests::runtime::run;
 use crate::{ModelThinkingLevel, SimpleStreamOptions, StreamOptions};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -203,7 +204,7 @@ async fn assert_case(row: Case, simple: bool) {
 
 #[test]
 fn maestro_response_sessions_simple_reasoning() {
-    super::socket_transport::run_native(maestro_response_sessions_simple_reasoning_scenario());
+    run(maestro_response_sessions_simple_reasoning_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -245,7 +246,7 @@ struct VariantCase {
 
 #[test]
 fn maestro_response_sessions_raw_options_and_nulls() {
-    super::socket_transport::run_native(maestro_response_sessions_raw_options_and_nulls_scenario());
+    run(maestro_response_sessions_raw_options_and_nulls_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -307,7 +308,7 @@ async fn maestro_response_sessions_raw_options_and_nulls_scenario() {
 
 #[test]
 fn maestro_response_sessions_simple_common_options() {
-    super::socket_transport::run_native(maestro_response_sessions_simple_common_options_scenario());
+    run(maestro_response_sessions_simple_common_options_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -367,7 +368,7 @@ async fn maestro_response_sessions_simple_common_options_scenario() {
 
 #[test]
 fn maestro_response_sessions_simple_signal_reaches_execution() {
-    super::socket_transport::run_native(async {
+    run(async {
         let (model, context, mut options) = corpus_setup();
         let signal = crate::Cancellation::new();
         signal.abort();
@@ -399,7 +400,7 @@ fn maestro_response_sessions_simple_signal_reaches_execution() {
 
 #[test]
 fn maestro_response_sessions_preparation_order() {
-    super::socket_transport::run_native(maestro_response_sessions_preparation_order_scenario());
+    run(maestro_response_sessions_preparation_order_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -444,9 +445,7 @@ struct AffinityCase {
 
 #[test]
 fn maestro_response_sessions_forward_session_affinity() {
-    super::socket_transport::run_native(
-        maestro_response_sessions_forward_session_affinity_scenario(),
-    );
+    run(maestro_response_sessions_forward_session_affinity_scenario());
 }
 
 /// Execute the controlled public-operation scenario.

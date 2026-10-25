@@ -37,9 +37,9 @@ pub(super) struct State {
 
 impl State {
     /// The state of `cwd`, with its repository discovered and no branch looked up.
-    fn new(operations: &dyn FooterOperations, cwd: String) -> Self {
+    fn new(cwd: String) -> Self {
         Self {
-            git_paths: find_git_paths(operations, &cwd),
+            git_paths: find_git_paths(&cwd),
             cwd,
             branch: Lookup::Pending,
         }
@@ -51,7 +51,7 @@ impl State {
 pub struct FooterDataProvider {
     /// Watch lifecycle shared by provider and unsubscribe aliases.
     watch: Rc<super::watch::Watching>,
-    /// The supplied file-system and process effects.
+    /// The supplied watch registration, timer scheduling, polling and Git process effects.
     operations: Rc<dyn FooterOperations>,
     /// The working directory, repository and cached branch.
     state: Rc<RefCell<State>>,
@@ -68,7 +68,7 @@ impl FooterDataProvider {
     /// remains lazy until a getter or refresh.
     #[must_use]
     pub fn new(cwd: String, operations: Rc<dyn FooterOperations>) -> Self {
-        let state = Rc::new(RefCell::new(State::new(operations.as_ref(), cwd)));
+        let state = Rc::new(RefCell::new(State::new(cwd)));
         let callbacks = Live::new();
         let watch = super::watch::Watching::new(
             Rc::clone(&operations),
@@ -90,7 +90,7 @@ impl FooterDataProvider {
     pub fn set_extension_status(&self, key: &str, text: Option<&str>) {
         match text {
             Some(text) => self.statuses.insert(key.to_owned(), text.to_owned()),
-            None => self.statuses.remove(key),
+            None => drop(self.statuses.remove(key)),
         }
     }
 
@@ -112,7 +112,7 @@ impl FooterDataProvider {
             return;
         }
         self.watch.changed_cwd();
-        *self.state.borrow_mut() = State::new(self.operations.as_ref(), cwd);
+        *self.state.borrow_mut() = State::new(cwd);
         self.watch.setup();
         for (_, callback) in &self.callbacks {
             callback();
@@ -152,6 +152,8 @@ impl ReadonlyFooterDataProvider for FooterDataProvider {
         self.callbacks
             .insert(identity(&callback), Rc::clone(&callback));
         let watch = Rc::clone(&self.watch);
-        Box::new(move || watch.callbacks.remove(&identity(&callback)))
+        Box::new(move || {
+            drop(watch.callbacks.remove(&identity(&callback)));
+        })
     }
 }

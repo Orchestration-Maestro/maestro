@@ -149,21 +149,8 @@ fn compute_credentials(clock: &Arc<AtomicU64>) -> (Credentials, Seen) {
             Ok(response)
         })
     });
-    let metadata = super::metadata::metadata(
-        Some("assume-present"),
-        false,
-        (None, Some("controlled.invalid")),
-        0,
-    );
-    let source = super::super::compute_client::Compute::new(metadata);
-    let credentials = Credentials::from(
-        super::super::base_external_client::BaseExternalAccountClient::new(
-            source,
-            effects(wrapped, clock),
-            None,
-            None,
-        ),
-    );
+    let credentials =
+        super::metadata::compute("controlled.invalid", effects(wrapped, clock), false);
     (credentials, seen)
 }
 
@@ -300,7 +287,7 @@ fn certificate_refresh_coalesces_concurrent_acquisition() {
 }
 
 /// Prepare a minimal content request through `credentials` and return its failure.
-async fn failure_of(credentials: Credentials) -> crate::DiagnosticErrorInfo {
+pub(super) async fn failure_of(credentials: Credentials) -> crate::DiagnosticErrorInfo {
     let client = super::client(credentials, indexmap::IndexMap::new());
     let projected = super::super::super::project_content_request(
         serde_json::json!({"model":"model","contents":"hello"}),
@@ -329,9 +316,16 @@ fn exchange_failures_carry_typed_status_and_transience() {
         ] {
             let send: crate::Fetch =
                 Arc::new(move |_| Box::pin(std::future::ready(outcome(status))));
-            let error = failure_of(workforce(effects(send, &clock))).await;
-            assert_eq!(error.name.as_deref(), Some(name));
-            assert_eq!(error.code, code.map(crate::DiagnosticCode::Number));
+            let compute = super::metadata::compute(
+                "controlled.invalid",
+                effects(send.clone(), &clock),
+                false,
+            );
+            for credentials in [workforce(effects(send, &clock)), compute] {
+                let error = failure_of(credentials).await;
+                assert_eq!(error.name.as_deref(), Some(name));
+                assert_eq!(error.code, code.map(crate::DiagnosticCode::Number));
+            }
         }
     });
 }
@@ -361,7 +355,13 @@ fn token_responses_must_be_objects_with_a_text_access_token() {
 fn lazy_configuration_failures_keep_their_fixed_messages() {
     super::run(async {
         let files = super::Files::new();
-        let missing = files.0.join("missing.json").to_str().unwrap().to_owned();
+        let missing = files
+            .0
+            .path()
+            .join("missing.json")
+            .to_str()
+            .unwrap()
+            .to_owned();
         let certificate = serde_json::json!({"type":"external_account","audience":"//a","subject_token_type":"t","credential_source":{"certificate":{"certificate_config_location":missing}}});
         let credentials =
             super::super::google_auth::from_json(certificate, Effects::default()).unwrap();

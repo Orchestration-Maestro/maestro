@@ -1,7 +1,5 @@
 //! Owned registration and current query behavior.
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "support/limited_host.rs"]
-mod limited_host;
 #[path = "support/registration.rs"]
 mod support;
 use maestro_extensions::types::RegisteredCommandOptions;
@@ -208,9 +206,7 @@ fn callback_lifetimes_end_after_last_retained_owner() {
     owners.write().unwrap().clear();
     let context = runner.create_command_context();
     drop((api, owner, runner, owners, bus));
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let executor = crate::runtime_support::runtime();
     executor
         .block_on((command.handler)("raw args".into(), context))
         .unwrap();
@@ -237,10 +233,7 @@ mod tests {
     }
 
     fn run_captured_facade(kind: &str) {
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(captured_facade_releases_owner(kind));
+        crate::runtime_support::runtime().block_on(captured_facade_releases_owner(kind));
     }
 
     use maestro_extensions::types::{
@@ -334,7 +327,7 @@ mod tests {
         ExtensionRunner::<maestro_models::Threaded>::new(
             Arc::new(RwLock::new(Vec::new())),
             maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(),
-            crate::support::session::runner_session("/workspace").0,
+            crate::session::runner_session("/workspace").0,
             Arc::new(|_| {}),
             maestro_theme::LiveTheme::default(),
         )

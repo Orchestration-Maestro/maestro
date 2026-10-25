@@ -5,10 +5,10 @@ mod fake;
 use crate::live;
 
 use fake::Fake;
-use live::{Ops, Scratch, custom_json, state};
+use live::{Scratch, TRUECOLOR, custom_json, in_child, per_environment, state};
 use maestro_theme::{
-    ColorMode, Theme, ThemeChangeResult, ThemeColor, ThemeOperations, ThemeState,
-    ThemeWatchOperations, load_theme_from_path,
+    ColorMode, Theme, ThemeChangeResult, ThemeColor, ThemeState, ThemeWatchOperations,
+    load_theme_from_path,
 };
 use std::cell::{Cell, RefCell};
 use std::error::Error;
@@ -66,21 +66,19 @@ fn put(scratch: &Scratch, file: &str, name: &str, accent: &str) {
 
 /// A named instance loaded from a file outside the custom directory.
 #[cfg(test)]
-fn instance(scratch: &Scratch, ops: &Rc<Ops>, name: &str) -> Rc<Theme> {
+fn instance(scratch: &Scratch, name: &str) -> Rc<Theme> {
     let path = scratch.path(&format!("elsewhere/{name}.json"));
     scratch.write(
         &format!("elsewhere/{name}.json"),
         &custom_theme(name, "#010203"),
     );
-    let ops: Rc<dyn ThemeOperations> = Rc::clone(ops) as Rc<dyn ThemeOperations>;
-    Rc::new(load_theme_from_path(&path, Some(ColorMode::Truecolor), ops.as_ref()).unwrap())
+    Rc::new(load_theme_from_path(&path, Some(ColorMode::Truecolor)).unwrap())
 }
 
 #[test]
 fn theme_live_view_follows_publication() {
-    let scratch = Scratch::new("live-view");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let live = state.theme();
     let error = live.get().err().unwrap();
     assert_eq!(
@@ -99,7 +97,7 @@ fn theme_live_view_follows_publication() {
     assert!(Rc::ptr_eq(&cloned.get().unwrap(), &live.get().unwrap()));
     assert_eq!(first.name(), Some("dark"));
 
-    let direct = instance(&scratch, &ops, "direct");
+    let direct = instance(&scratch, "direct");
     state.set_theme_instance(Rc::clone(&direct)).unwrap();
     assert!(Rc::ptr_eq(&live.get().unwrap(), &direct));
     let independent = state.get_theme_by_name("dark").unwrap();
@@ -110,79 +108,77 @@ fn theme_live_view_follows_publication() {
 
 #[test]
 fn theme_default_uses_the_second_background_field() {
-    let scratch = Scratch::new("default");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
-    let cases = [
-        ("", "dark"),
-        ("7", "dark"),
-        ("x;y", "dark"),
-        ("0;7", "dark"),
-        ("0;8", "light"),
-        ("0;7;8", "dark"),
-        ("0;8;7", "light"),
-        ("0;+8", "light"),
-        ("0;-8", "dark"),
-        ("0;0008", "light"),
-        ("0;0007", "dark"),
-        ("0;8.5", "light"),
-        ("0;7.9", "dark"),
-        ("0;1e9", "dark"),
-        ("0;0x10", "dark"),
-        ("0;10", "light"),
-        ("0; 8", "light"),
-        ("0;\t\n8", "light"),
-        ("0;\u{feff}8", "light"),
-        ("0;\u{2028}8", "light"),
-        ("0;\u{85}8", "dark"),
-        ("0;\u{200b}8", "dark"),
-        ("0;99999999999999999999", "light"),
+    let cases: [(&[(&str, &str)], &str); 24] = [
+        (&[], "dark"),
+        (&[("COLORFGBG", "")], "dark"),
+        (&[("COLORFGBG", "7")], "dark"),
+        (&[("COLORFGBG", "x;y")], "dark"),
+        (&[("COLORFGBG", "0;7")], "dark"),
+        (&[("COLORFGBG", "0;8")], "light"),
+        (&[("COLORFGBG", "0;7;8")], "dark"),
+        (&[("COLORFGBG", "0;8;7")], "light"),
+        (&[("COLORFGBG", "0;+8")], "light"),
+        (&[("COLORFGBG", "0;-8")], "dark"),
+        (&[("COLORFGBG", "0;0008")], "light"),
+        (&[("COLORFGBG", "0;0007")], "dark"),
+        (&[("COLORFGBG", "0;8.5")], "light"),
+        (&[("COLORFGBG", "0;7.9")], "dark"),
+        (&[("COLORFGBG", "0;1e9")], "dark"),
+        (&[("COLORFGBG", "0;0x10")], "dark"),
+        (&[("COLORFGBG", "0;10")], "light"),
+        (&[("COLORFGBG", "0; 8")], "light"),
+        (&[("COLORFGBG", "0;\t\n8")], "light"),
+        (&[("COLORFGBG", "0;\u{feff}8")], "light"),
+        (&[("COLORFGBG", "0;\u{2028}8")], "light"),
+        (&[("COLORFGBG", "0;\u{85}8")], "dark"),
+        (&[("COLORFGBG", "0;\u{200b}8")], "dark"),
+        (&[("COLORFGBG", "0;99999999999999999999")], "light"),
     ];
-    state.init_theme(None, None).unwrap();
-    assert_eq!(published(&state), "dark");
-    for (index, (value, expected)) in cases.into_iter().enumerate() {
-        ops.set("COLORFGBG", value);
+    let test = "theme_default_uses_the_second_background_field";
+    for (env, expected) in per_environment(test, cases, |(env, _)| env).unwrap_or_default() {
+        let scratch = Scratch::new();
+        let state = state(&scratch);
         state.init_theme(None, None).unwrap();
-        assert_eq!(published(&state), expected, "case {index}");
+        assert_eq!(published(&state), expected, "{env:?}");
     }
 }
 
 #[test]
 fn theme_initialization_falls_back_without_notifying() {
-    let scratch = Scratch::new("init-fallback");
-    let ops = Ops::new(&[("COLORFGBG", "0;8")]);
-    let state = state(&scratch, &ops);
+    if !in_child(
+        "theme_initialization_falls_back_without_notifying",
+        &[("COLORFGBG", "0;8")],
+    ) {
+        return;
+    }
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let calls = Rc::new(Cell::new(0));
     state.on_theme_change(counting(&calls));
 
     state.init_theme(None, None).unwrap();
     assert_eq!(published(&state), "light");
-    assert!(ops.read("COLORFGBG"));
-    ops.env_reads.borrow_mut().clear();
 
+    // The light background selects light only by default: an explicit name that fails
+    // to load falls back to dark.
     for name in ["", "missing"] {
         state.init_theme(Some(name), None).unwrap();
         assert_eq!(published(&state), "dark", "name {name:?}");
     }
-    assert!(!ops.read("COLORFGBG"));
     state.init_theme(Some("light"), None).unwrap();
     assert_eq!(calls.get(), 0);
 
-    let broken = ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: scratch.path("absent"),
-            custom_themes_dir: scratch.path("custom"),
-        },
-        Rc::clone(&ops) as Rc<dyn ThemeOperations>,
-    );
+    let broken = ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: scratch.path("absent"),
+        custom_themes_dir: scratch.path("custom"),
+    });
     assert!(Rc::new(broken).init_theme(Some("missing"), None).is_err());
 }
 
 #[test]
 fn theme_named_switch_reports_failure_after_fallback() {
-    let scratch = Scratch::new("named-switch");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     put(&scratch, "custom.json", "custom", "#112233");
     let seen = Rc::new(RefCell::new(Vec::new()));
     let fail = Rc::new(Cell::new(false));
@@ -228,7 +224,7 @@ fn theme_named_switch_reports_failure_after_fallback() {
         ThemeChangeResult::Failure { error } => error,
         ThemeChangeResult::Success => panic!("an unparsable file must not load"),
     };
-    let broken = broken_shipped_state(&scratch, &ops);
+    let broken = broken_shipped_state(&scratch);
     let error = broken.set_theme("invalid", None).unwrap_err().to_string();
     assert_ne!(error, selection);
     assert_eq!(error, "No such file or directory (os error 2)");
@@ -237,107 +233,44 @@ fn theme_named_switch_reports_failure_after_fallback() {
 
 /// A state whose shipped theme directory does not exist, so no fallback can load.
 #[cfg(test)]
-fn broken_shipped_state(scratch: &Scratch, ops: &Rc<Ops>) -> Rc<ThemeState> {
-    Rc::new(ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: scratch.path("absent"),
-            custom_themes_dir: scratch.path("custom"),
-        },
-        Rc::clone(ops) as Rc<dyn ThemeOperations>,
-    ))
+fn broken_shipped_state(scratch: &Scratch) -> Rc<ThemeState> {
+    Rc::new(ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: scratch.path("absent"),
+        custom_themes_dir: scratch.path("custom"),
+    }))
 }
 
 #[test]
 fn theme_failed_initialization_reports_the_fallback_error_not_the_selection_error() {
-    let scratch = Scratch::new("init-errors");
-    let ops = Ops::new(&[]);
+    let scratch = Scratch::new();
     scratch.write("custom/invalid.json", "{");
-    let healthy = state(&scratch, &ops);
+    let healthy = state(&scratch);
     healthy.init_theme(Some("invalid"), None).unwrap();
     assert_eq!(published(&healthy), "dark");
 
-    let broken = broken_shipped_state(&scratch, &ops);
+    let broken = broken_shipped_state(&scratch);
     let error = broken.init_theme(Some("invalid"), None).unwrap_err();
     assert_eq!(error.to_string(), "No such file or directory (os error 2)");
     assert!(broken.theme().get().is_err());
 }
 
-/// Effects that run `during_load` once, inside the first read of the custom file.
-#[cfg(test)]
-struct ProbeOps {
-    /// Real effects.
-    inner: Rc<Ops>,
-    /// File whose first read triggers the probe.
-    target: String,
-    /// Probe to run, taken on first use.
-    during_load: RefCell<Option<Box<dyn FnOnce()>>>,
-}
-
-#[cfg(test)]
-impl ThemeOperations for ProbeOps {
-    fn read_to_string(&self, path: &str) -> std::io::Result<String> {
-        let probe = if path == self.target {
-            self.during_load.borrow_mut().take()
-        } else {
-            None
-        };
-        if let Some(probe) = probe {
-            probe();
-        }
-        self.inner.read_to_string(path)
-    }
-    fn environment(&self, name: &str) -> Option<String> {
-        self.inner.environment(name)
-    }
-    fn exists(&self, path: &str) -> bool {
-        self.inner.exists(path)
-    }
-    fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>> {
-        self.inner.read_dir(path)
-    }
-    fn sort_by_name(&self, themes: &mut [maestro_theme::ThemeInfo]) -> std::io::Result<()> {
-        self.inner.sort_by_name(themes)
-    }
-}
-
 #[test]
 fn theme_selected_name_is_recorded_before_loading() {
-    let scratch = Scratch::new("select-first");
-    let ops = Ops::new(&[]);
+    let scratch = Scratch::new();
     put(&scratch, "a.json", "a", "#112233");
-    let seen = Rc::new(RefCell::new(None));
-    let slot: Rc<RefCell<Option<Rc<ThemeState>>>> = Rc::default();
-    let (probe_state, probe_seen) = (Rc::clone(&slot), Rc::clone(&seen));
-    let probe = Rc::new(ProbeOps {
-        inner: Rc::clone(&ops),
-        target: custom_path(&scratch, "a.json"),
-        during_load: RefCell::new(Some(Box::new(move || {
-            let state = probe_state.borrow().clone().unwrap();
-            *probe_seen.borrow_mut() = Some(state.get_resolved_theme_colors(None));
-        }))),
-    });
-    let state = Rc::new(ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme").to_owned(),
-            custom_themes_dir: scratch.path("custom"),
-        },
-        probe as Rc<dyn ThemeOperations>,
-    ));
-    *slot.borrow_mut() = Some(Rc::clone(&state));
+    let state = state(&scratch);
     state.init_theme(Some("dark"), None).unwrap();
 
     state.init_theme(Some("a"), None).unwrap();
-    let resolved = seen.borrow_mut().take().unwrap().unwrap();
+    let resolved = state.get_resolved_theme_colors(None).unwrap();
     let accent = resolved.iter().find(|(key, _)| key == "accent").unwrap();
     assert_eq!(accent.1, "#112233");
-    *slot.borrow_mut() = None;
 }
 
 #[test]
 fn theme_construction_reports_integer_keys_before_authored_order() {
-    let scratch = Scratch::new("key-order");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let mut json = custom_json("ordered", "missingAccent");
     json["colors"]["0"] = "missingIndex".into();
     scratch.write("custom/ordered.json", &json.to_string());
@@ -352,16 +285,15 @@ fn theme_construction_reports_integer_keys_before_authored_order() {
 
 #[test]
 fn theme_direct_instance_publishes_before_callback() {
-    let scratch = Scratch::new("direct");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "a.json", "a", "#112233");
     state.init_theme(Some("a"), Some(effects(&fake))).unwrap();
     fake.emit(0, Some("a.json"));
     assert_eq!(fake.pending(), 1);
 
-    let direct = instance(&scratch, &ops, "memory");
+    let direct = instance(&scratch, "memory");
     let inside = Rc::new(RefCell::new(None));
     let (live, weak) = (state.theme(), Rc::downgrade(&state));
     let (fake_view, expected, slot) = (Rc::clone(&fake), Rc::clone(&direct), Rc::clone(&inside));
@@ -392,9 +324,8 @@ fn theme_direct_instance_publishes_before_callback() {
 
 #[test]
 fn theme_callback_registration_replaces_the_old_callback() {
-    let scratch = Scratch::new("replace-callback");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let log = Rc::new(RefCell::new(Vec::new()));
     let token = Rc::new(());
     let released = Rc::downgrade(&token);
@@ -434,9 +365,8 @@ fn theme_callback_registration_replaces_the_old_callback() {
 
 #[test]
 fn theme_callback_allows_reentrant_publication() {
-    let scratch = Scratch::new("reentrant");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let seen = Rc::new(RefCell::new(Vec::new()));
     let (log, weak, live) = (Rc::clone(&seen), Rc::downgrade(&state), state.theme());
     state.on_theme_change(Rc::new(move || {
@@ -458,9 +388,8 @@ fn theme_callback_allows_reentrant_publication() {
 
 #[test]
 fn theme_watch_disabled_switch_retains_existing_watch_state() {
-    let scratch = Scratch::new("disabled");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "a.json", "a", "#112233");
     put(&scratch, "b.json", "b", "#223344");
@@ -505,9 +434,8 @@ fn keeps_old_watch_on_load_failure_and_new_watch_on_callback_failure(
 
 #[test]
 fn theme_watch_start_replaces_old_handles_and_timers() {
-    let scratch = Scratch::new("start-replaces");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "a.json", "a", "#112233");
     put(&scratch, "b.json", "b", "#223344");
@@ -523,22 +451,16 @@ fn theme_watch_start_replaces_old_handles_and_timers() {
 
     put(&scratch, ".json", "", "#010203");
     for name in ["dark", "light", "registered", ""] {
-        let fresh = Rc::new(ThemeState::new(
-            maestro_theme::ThemeDirectories {
-                themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme").to_owned(),
-                custom_themes_dir: scratch.path("custom"),
-            },
-            Rc::clone(&ops) as Rc<dyn ThemeOperations>,
-        ));
+        let fresh = live::state(&scratch);
         let fake = Fake::new();
-        fresh.set_registered_themes(vec![instance(&scratch, &ops, "registered")]);
+        fresh.set_registered_themes(vec![instance(&scratch, "registered")]);
         fresh.init_theme(Some("a"), Some(effects(&fake))).unwrap();
         fresh.set_theme(name, Some(effects(&fake))).unwrap();
         assert!(fake.watches.borrow()[0].closed.get(), "name {name:?}");
         assert_eq!(fake.watches.borrow().len(), 1, "name {name:?}");
     }
     state
-        .set_theme_instance(instance(&scratch, &ops, "direct"))
+        .set_theme_instance(instance(&scratch, "direct"))
         .unwrap();
     state.stop_theme_watcher();
     state.stop_theme_watcher();
@@ -547,12 +469,11 @@ fn theme_watch_start_replaces_old_handles_and_timers() {
 
 #[test]
 fn theme_registered_watch_uses_the_custom_directory() {
-    let scratch = Scratch::new("registered-dir");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "registered.json", "on-disk", "#112233");
-    let registered = instance(&scratch, &ops, "registered");
+    let registered = instance(&scratch, "registered");
     state.set_registered_themes(vec![Rc::clone(&registered)]);
 
     state
@@ -565,12 +486,11 @@ fn theme_registered_watch_uses_the_custom_directory() {
 
 #[test]
 fn theme_notifications_filter_names_before_debouncing() {
-    let scratch = Scratch::new("filter");
-    let ops = Ops::new(&[]);
+    let scratch = Scratch::new();
     put(&scratch, "a.json", "a", "#112233");
     put(&scratch, "b.json", "b", "#223344");
     let pending_after = |filename: Option<&str>, switch_away: bool| {
-        let state = state(&scratch, &ops);
+        let state = state(&scratch);
         let fake = Fake::new();
         state.init_theme(Some("a"), Some(effects(&fake))).unwrap();
         if switch_away {
@@ -595,9 +515,8 @@ fn theme_notifications_filter_names_before_debouncing() {
 
 #[test]
 fn theme_reload_waits_for_the_full_debounce() {
-    let scratch = Scratch::new("debounce");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "a.json", "a", "#112233");
     state.init_theme(Some("a"), Some(effects(&fake))).unwrap();
@@ -628,9 +547,8 @@ fn theme_reload_waits_for_the_full_debounce() {
 
 #[test]
 fn maestro_theme_keeps_last_good_file_on_reload_error() {
-    let scratch = Scratch::new("last-good");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     let file = custom_path(&scratch, "a.json");
     put(&scratch, "a.json", "a", "#112233");
@@ -684,12 +602,17 @@ fn maestro_theme_keeps_last_good_file_on_reload_error() {
 
 #[test]
 fn theme_reload_refreshes_registration_before_notifying() {
-    let scratch = Scratch::new("registration");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    if !in_child(
+        "theme_reload_refreshes_registration_before_notifying",
+        TRUECOLOR,
+    ) {
+        return;
+    }
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "a.json", "authored-other", "#445566");
-    let old = instance(&scratch, &ops, "a");
+    let old = instance(&scratch, "a");
     state.set_registered_themes(vec![Rc::clone(&old)]);
     state.init_theme(Some("a"), Some(effects(&fake))).unwrap();
     assert!(Rc::ptr_eq(&state.theme().get().unwrap(), &old));
@@ -724,9 +647,8 @@ fn theme_reload_refreshes_registration_before_notifying() {
 
 #[test]
 fn theme_reload_callback_failure_keeps_published_theme() {
-    let scratch = Scratch::new("callback-failure");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "a.json", "a", "#112233");
     state.init_theme(Some("a"), Some(effects(&fake))).unwrap();
@@ -747,13 +669,12 @@ fn theme_reload_callback_failure_keeps_published_theme() {
 
 #[test]
 fn theme_watcher_error_closes_without_retrying() {
-    let scratch = Scratch::new("watch-error");
-    let ops = Ops::new(&[]);
+    let scratch = Scratch::new();
     put(&scratch, "a.json", "a", "#112233");
 
     let created = Fake::new();
     created.fail_create.set(true);
-    let state_a = state(&scratch, &ops);
+    let state_a = state(&scratch);
     state_a
         .init_theme(Some("a"), Some(effects(&created)))
         .unwrap();
@@ -764,7 +685,7 @@ fn theme_watcher_error_closes_without_retrying() {
         put(&scratch, "a.json", "a", "#112233");
         let fake = Fake::new();
         fake.fail_close.set(close_fails);
-        let state = state(&scratch, &ops);
+        let state = state(&scratch);
         state.init_theme(Some("a"), Some(effects(&fake))).unwrap();
         put(&scratch, "a.json", "timer-survives", "#abcdef");
         fake.emit(0, Some("a.json"));
@@ -779,9 +700,8 @@ fn theme_watcher_error_closes_without_retrying() {
 
 #[test]
 fn theme_watch_stop_releases_retained_callbacks() {
-    let scratch = Scratch::new("stop-releases");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "a.json", "a", "#112233");
     state.init_theme(Some("a"), Some(effects(&fake))).unwrap();
@@ -803,9 +723,8 @@ fn theme_watch_stop_releases_retained_callbacks() {
 
 #[test]
 fn theme_drop_cancels_pending_reload() {
-    let scratch = Scratch::new("drop");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let fake = Fake::new();
     put(&scratch, "a.json", "a", "#112233");
     state.init_theme(Some("a"), Some(effects(&fake))).unwrap();
@@ -827,9 +746,8 @@ fn theme_drop_cancels_pending_reload() {
 
 #[test]
 fn theme_native_watch_stop_releases_operations_and_task_set_without_reads() {
-    let scratch = Scratch::new("native-stop");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     put(&scratch, "a.json", "a", "#112233");
     let local = Rc::new(tokio::task::LocalSet::new());
     let native: Rc<dyn ThemeWatchOperations> = Rc::new(

@@ -5,18 +5,16 @@ mod agent_shell_native;
 mod agent_shell_progress;
 #[cfg(not(target_arch = "wasm32"))]
 mod agent_shell_support;
+mod authored_schemas;
 mod cancellable_delay;
-#[allow(
-    dead_code,
-    reason = "This binary uses part of the shared child-process helper."
-)]
-#[path = "../../maestro-models/tests/support/child_process.rs"]
-mod child_process;
 mod command_execution;
 mod diff_rendering;
 mod diff_support;
 mod direct_shell_execution;
+mod display_cases;
+mod display_context;
 mod display_helpers;
+mod display_palette;
 mod display_support;
 mod edit_execution;
 #[cfg(not(target_arch = "wasm32"))]
@@ -47,6 +45,7 @@ mod ls_execution;
 mod ls_rendering;
 mod ls_support;
 mod maestro_tool_factories;
+mod path_spelling;
 mod process_support;
 mod queue_ordering;
 mod read_execution;
@@ -56,6 +55,7 @@ mod read_rendering;
 mod read_support;
 mod search_tool_lookup;
 mod shell_tree_cleanup;
+mod startup_environment;
 mod streamed_output;
 mod support;
 mod tool_definition_contract;
@@ -73,3 +73,6 @@ mod bash_rendering;
 mod renderer_projection;
 
 mod renderer_projection_support;
+
+#[path = "support/runtime.rs"]
+mod runtime;

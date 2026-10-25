@@ -84,7 +84,7 @@ fn responses(agent: &Agent, requests: &Arc<Mutex<Vec<Vec<maestro_models::Message
                     AssistantContent::ToolCall(ToolCall {
                         id: id.into(),
                         name: "echo".into(),
-                        arguments: JsonObject::new(),
+                        arguments: JsonObject::new().into(),
                         thought_signature: None,
                     })
                 })
@@ -117,7 +117,7 @@ fn tools(agent: &Arc<Agent>) -> (Permits, Receipts, Receipts) {
         definition: maestro_models::Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         label: "Echo".into(),
         prepare_arguments: None,
@@ -138,10 +138,7 @@ fn tools(agent: &Arc<Agent>) -> (Permits, Receipts, Receipts) {
                 enter.send(()).unwrap();
                 permission.await.unwrap();
                 let result = maestro_agent::AgentToolResult {
-                    content: vec![UserBlock::Text(TextContent {
-                        text: format!("result:{id}"),
-                        text_signature: None,
-                    })],
+                    content: vec![UserBlock::Text(TextContent::new(format!("result:{id}")))],
                     details: Some(serde_json::Value::Null),
                     terminate: None,
                 };

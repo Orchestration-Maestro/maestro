@@ -97,7 +97,7 @@ struct Failure {
     kind: String,
 }
 /// Exclusively creates one setup file.
-fn write(path: &Path, text: &str) {
+pub(crate) fn write(path: &Path, text: &str) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::OpenOptions::new()
         .write(true)
@@ -193,24 +193,18 @@ fn cases(test: &str) {
         })
         .collect();
     assert!(!rows.is_empty(), "test must own recorded cases");
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async move {
-            for row in rows {
-                run_case(row).await;
-            }
-        });
+    crate::runtime::run(async move {
+        for row in rows {
+            run_case(row).await;
+        }
+    });
 }
 /// Drives one recipe and checks only its completed invocation.
 async fn run_case(row: Row) {
     let scratch = scratch::Scratch::new().unwrap();
-    let root = scratch.0.to_string_lossy();
+    let root = scratch.path().to_string_lossy();
     let (_, settings, _) = support::manager(&serde_json::json!({}));
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        ..Default::default()
-    });
+    let effects = Rc::new(support::Effects::default());
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: maestro_path::join(&[&root, "project"]),

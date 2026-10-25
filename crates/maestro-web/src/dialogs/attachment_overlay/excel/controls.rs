@@ -1,7 +1,7 @@
 //! Canvas sheet tabs occupying measured native slots.
 use super::Excel;
 use crate::browser::attachment_content::{
-    AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError, ReadingPhase,
+    AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface, ReadingPhase,
     ReadingPlacement, color, points, reading::controls::pointer_actions, style,
 };
 /// Measure, publish and activate one retained workbook's sheet controls.
@@ -11,12 +11,15 @@ pub(super) fn present(
     ui: &mut egui::Ui,
     surface: (egui::Id, egui::Rect, Option<egui::Id>, bool),
     presentation: &maestro_theme::BrandPresentation<'_>,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), AttachmentHostError> {
     let mut body = ui.new_child(egui::UiBuilder::new().max_rect(surface.1));
     let ui = &mut body;
-    style(ui, presentation)?;
-    ui.visuals_mut().widgets.inactive.fg_stroke.color = color(presentation, "muted")?;
-    ui.visuals_mut().selection.stroke.color = color(presentation, "accent")?;
+    style(ui, presentation)
+        .map_err(|error| AttachmentHostError::Presentation(error.to_string()))?;
+    ui.visuals_mut().widgets.inactive.fg_stroke.color = color(presentation, "muted")
+        .map_err(|error| AttachmentHostError::Presentation(error.to_string()))?;
+    ui.visuals_mut().selection.stroke.color = color(presentation, "accent")
+        .map_err(|error| AttachmentHostError::Presentation(error.to_string()))?;
     if let Some(font) = ui.style_mut().text_styles.get_mut(&egui::TextStyle::Button) {
         font.size *= 0.875;
     }
@@ -38,6 +41,7 @@ pub(super) fn present(
                 opacity: 1.,
                 occluders: holes,
                 content: AttachmentContent::Reading(ReadingPlacement {
+                    intrinsic_width: false,
                     content: reading.clone(),
                     phase,
                     sizes: &sizes,
@@ -70,7 +74,7 @@ fn draw_tabs(
     ui: &mut egui::Ui,
     placement: (egui::Id, egui::Rect, &[(egui::Id, egui::Rect)]),
     presentation: &maestro_theme::BrandPresentation<'_>,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), AttachmentHostError> {
     let (identity, rect, controls) = placement;
     let mut slots = Vec::new();
     for (index, (label, _)) in excel
@@ -96,7 +100,8 @@ fn draw_tabs(
         }
         let active = selected || response.hovered() || response.has_focus();
         if active {
-            let ink = color(presentation, if selected { "accent" } else { "border" })?;
+            let ink = color(presentation, if selected { "accent" } else { "border" })
+                .map_err(|error| AttachmentHostError::Presentation(error.to_string()))?;
             child.painter().hline(
                 full.x_range(),
                 full.bottom() - 1.,

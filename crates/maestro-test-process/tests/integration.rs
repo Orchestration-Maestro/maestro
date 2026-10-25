@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod checked_runs;
+mod environment_groups;
 
 use std::ffi::OsStr;
 use std::fmt::Write as _;

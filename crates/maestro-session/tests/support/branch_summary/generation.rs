@@ -46,7 +46,7 @@ fn adapter(script: Value) -> Arc<Adapter> {
 }
 /// Forward the exact supplied configuration to a uniquely registered model.
 fn options(args: &Value, api: &str) -> GenerateBranchSummaryOptions {
-    let base = corpus()
+    let base = recording()
         .rows
         .into_iter()
         .find(|row| !row.calls.is_empty())
@@ -79,7 +79,7 @@ fn options(args: &Value, api: &str) -> GenerateBranchSummaryOptions {
     }
 }
 /// Execute and compare the complete generated object and eager requests.
-pub(super) fn run(row: &Row) {
+pub(super) fn run(row: &NativeRow) {
     let state = adapter(row.response.clone().unwrap());
     let options = options(&row.args, &state.api);
     let entries = row.args["entries"].as_array().unwrap();
@@ -114,7 +114,7 @@ pub(super) fn run(row: &Row) {
 }
 /// Compare full model/context, exact options, ordered headers and live shared signal.
 fn compare_calls(
-    row: &Row,
+    row: &NativeRow,
     state: &Adapter,
     supplied: &GenerateBranchSummaryOptions,
     clock: std::ops::RangeInclusive<f64>,
@@ -144,7 +144,7 @@ fn compare_calls(
 
 /// Hold the producer across caller input release, then observe its original signal.
 pub(super) fn lifetime() {
-    let case = corpus().lifetime;
+    let case = recording().lifetime;
     assert_eq!(
         case.test,
         "branch_completion_owns_request_after_inputs_drop"

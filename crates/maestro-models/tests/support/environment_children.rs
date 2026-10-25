@@ -1,37 +1,11 @@
+#![cfg(not(target_arch = "wasm32"))]
 use std::ffi::OsString;
-use std::path::PathBuf;
-use std::process::Command;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use maestro_models::{find_env_keys, get_env_api_key};
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-pub struct Directory(pub PathBuf);
-
-impl Directory {
-    pub fn new() -> TestResult<Self> {
-        static NEXT: AtomicU64 = AtomicU64::new(0);
-        loop {
-            let path = std::env::temp_dir().join(format!(
-                "maestro-environment-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, Ordering::Relaxed)
-            ));
-            match std::fs::create_dir(&path) {
-                Ok(()) => return Ok(Self(path)),
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(error) => return Err(error.into()),
-            }
-        }
-    }
-}
-
-impl Drop for Directory {
-    fn drop(&mut self) {
-        assert!(std::fs::remove_dir_all(&self.0).is_ok());
-    }
-}
+pub use maestro_test_directory::Scratch as Directory;
 
 pub fn child() -> TestResult<bool> {
     let Ok(expectation) = std::env::var("MAESTRO_ENV_EXPECTATION") else {
@@ -59,24 +33,19 @@ pub fn child() -> TestResult<bool> {
 }
 
 pub fn run(
-    test: &str,
+    process: maestro_test_process::TestProcess,
     directory: &Directory,
     variables: &[(OsString, OsString)],
     provider: &str,
     expected: (Option<Vec<&str>>, Option<&str>),
 ) -> TestResult {
-    let test = crate::child_process::selector(test)?;
-    let mut command = Command::new(std::env::current_exe()?);
-    command.env_clear().current_dir(&directory.0);
-    command
-        .env("HOME", &directory.0)
-        .env("USERPROFILE", &directory.0);
-    if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
-        command.env("LLVM_PROFILE_FILE", profile);
-    }
-    let output = command
-        .args(["--exact", &test, "--nocapture"])
-        .envs(variables.iter().cloned())
+    let test = process.name().to_owned();
+    let output = process
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("USERPROFILE", directory.path())
+        .nocapture()
+        .envs(variables.iter().map(|(key, value)| (key, value)))
         .env(
             "MAESTRO_ENV_EXPECTATION",
             serde_json::to_string(&(provider, expected.0, expected.1))?,
@@ -88,7 +57,6 @@ pub fn run(
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test)?;
     Ok(())
 }
 

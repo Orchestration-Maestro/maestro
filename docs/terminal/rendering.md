@@ -42,7 +42,7 @@ use maestro_tui::{Component, Terminal, TerminalImage, TUI};
 #     fn start(&mut self, _: Box<dyn FnMut(&str)>, _: Box<dyn FnMut()>) -> io::Result<()> { Ok(()) }
 #     fn stop(&mut self) -> io::Result<()> { Ok(()) }
 #     fn drain_input(&mut self, _: Option<Duration>, _: Option<Duration>)
-#         -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> { Box::pin(async { Ok(()) }) }
+#         -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> { Box::pin(async { Ok(()) }) }
 #     fn write(&mut self, data: &str) -> io::Result<()> { self.0.borrow_mut().push(data.to_owned()); Ok(()) }
 #     fn columns(&self) -> usize { 12 }
 #     fn rows(&self) -> usize { 4 }
@@ -186,7 +186,10 @@ A full redraw deletes every image of the previous frame before clearing the scre
 
 `request_render(false)` queues a frame at least 16 ms after the previous one starts
 and merges any further request until then. `request_render(true)` forgets the
-retained frame and queues an immediate redraw of everything. The host always defers
+retained frame and queues an immediate redraw of everything. Both routes defer
+composition while the terminal reports more than 256 KiB of pending output, retrying
+after 10 ms without consuming redraw intent or advancing frame cadence. The retry
+composes the latest state. The host always defers
 the callback, even for a zero delay, and the callback's `io::Result` is returned to
 whoever drives the host. A component may request another frame while it renders; the
 request is kept and queued after the current frame. `stop` cancels the pending frame,
@@ -206,7 +209,11 @@ weakly, so it never keeps a dropped writer alive.
    even an empty one, is what the later listeners see; input that is still empty after
    the last listener is delivered to nothing.
    `add_input_listener` returns a function that removes the listener and may be called
-   again harmlessly; dropping it does not remove the listener.
+   again harmlessly; dropping it does not remove the listener. Registration admits one
+   callback per identity, so adding a live one again keeps its first position, and a
+   callback removed and added again takes the last position. The listeners live in the
+   shared [collection](../architecture.md); clearing them all costs work proportional to
+   their number.
 2. The cell-size reply check. A chunk that is exactly `ESC [ 6 ; height ; width t`
    with ASCII digits is a reply and is never forwarded. A zero value or one beyond
    32 bits is dropped and leaves the measured size alone; any other reply updates the

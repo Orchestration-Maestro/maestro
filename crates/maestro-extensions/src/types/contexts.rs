@@ -23,7 +23,8 @@ type CompactionComplete = Rc<dyn Fn(CompactionResult) -> Result<(), EventError>>
 type CompactionError = Rc<dyn Fn(EventError) -> Result<(), EventError>>;
 
 /// Current context-window usage of the active model.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ContextUsage {
     /// Estimated context tokens, or `None` when unknown.
     pub tokens: Option<f64>,
@@ -114,9 +115,9 @@ pub struct ExtensionContext {
 /// The local future returned by command and replacement operations.
 pub(crate) type ContextFuture<T> = <Local as Execution>::Future<'static, Result<T, EventError>>;
 /// Prepares a new session through its writable history.
-type SetupSession = Rc<dyn Fn(Rc<RefCell<SessionManager>>) -> ContextFuture<()>>;
+pub type SetupSession = Rc<dyn Fn(Rc<RefCell<SessionManager>>) -> ContextFuture<()>>;
 /// Continues against the replacement session.
-type WithSession = Rc<dyn Fn(ReplacedSessionContext) -> ContextFuture<()>>;
+pub type WithSession = Rc<dyn Fn(ReplacedSessionContext) -> ContextFuture<()>>;
 /// Sends a custom message to the creating session.
 type SendCustomMessage =
     Rc<dyn Fn(CustomMessageInput, Option<SendMessageOptions>) -> ContextFuture<()>>;
@@ -174,8 +175,9 @@ pub type ReloadHandler = Rc<dyn Fn() -> ContextFuture<()>>;
 /// Requests a graceful shutdown.
 pub type ShutdownHandler = Rc<dyn Fn() -> Result<(), EventError>>;
 
-/// Application operations behind every command context.
-pub struct ExtensionCommandContextActions {
+/// The application operations a command context runs.
+#[derive(Clone)]
+pub struct CommandContextOperations {
     /// Waits for the agent to finish streaming.
     pub wait_for_idle: Rc<dyn Fn() -> ContextFuture<()>>,
     /// Starts a new session.
@@ -190,9 +192,9 @@ pub struct ExtensionCommandContextActions {
     pub reload: ReloadHandler,
 }
 
-impl Default for ExtensionCommandContextActions {
+impl CommandContextOperations {
     /// The results a runner gives before operations are bound or after they are unbound.
-    fn default() -> Self {
+    pub(crate) fn unbound() -> Self {
         let uncancelled = || -> ContextFuture<SessionChangeResult> {
             Box::pin(ready(Ok(SessionChangeResult::default())))
         };
@@ -204,6 +206,47 @@ impl Default for ExtensionCommandContextActions {
             switch_session: Rc::new(move |_, _| uncancelled()),
             reload: Rc::new(|| Box::pin(ready(Ok(())))),
         }
+    }
+}
+
+/// The command-context operations bound to a session.
+///
+/// A runner serves the operations the application runtime built, so a caller asks the
+/// runtime for them instead of supplying its own.
+///
+/// ```compile_fail,E0451
+/// use maestro_extensions::ExtensionCommandContextActions as Actions;
+///
+/// let _ = Actions { operations: todo!() };
+/// ```
+///
+/// ```compile_fail,E0277
+/// use maestro_extensions::ExtensionCommandContextActions as Actions;
+///
+/// let _ = <Actions as Default>::default();
+/// ```
+#[derive(Clone)]
+pub struct ExtensionCommandContextActions {
+    /// The operations a session command runs.
+    operations: CommandContextOperations,
+}
+
+impl ExtensionCommandContextActions {
+    /// Wraps the operations an application supplies for its sessions.
+    #[must_use]
+    pub fn new(operations: CommandContextOperations) -> Self {
+        Self { operations }
+    }
+
+    /// The operations a session command runs.
+    #[must_use]
+    pub fn operations(&self) -> &CommandContextOperations {
+        &self.operations
+    }
+
+    /// The results a runner gives before operations are bound or after they are unbound.
+    pub(crate) fn unbound() -> Self {
+        Self::new(CommandContextOperations::unbound())
     }
 }
 

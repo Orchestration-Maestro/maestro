@@ -4,7 +4,6 @@ use super::{
     processor::{Context, Processor, Target},
 };
 use maestro_pattern::{Minimatch, Platform};
-use maestro_resources::skills::ResourceOperations;
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -18,14 +17,9 @@ enum Phase {
     Read(Target, Vec<Pattern>),
 }
 /// Emits literals before scans, and completes current matches before subwalks.
-pub(super) fn walk(
-    matcher: &Minimatch,
-    root: &str,
-    platform: Platform,
-    operations: &dyn ResourceOperations,
-) -> io::Result<Vec<String>> {
-    let root = super::super::resource_discovery::resolve_entry_path(root, "", operations)?;
-    let observed = operations.symlink_metadata(Path::new(&root));
+pub(super) fn walk(matcher: &Minimatch, root: &str, platform: Platform) -> io::Result<Vec<String>> {
+    let root = maestro_resources::paths::resolve(&[root])?;
+    let observed = maestro_resources::symlink_metadata(Path::new(&root));
     let missing = observed.as_ref().is_err_and(|e| {
         matches!(
             e.kind(),
@@ -47,7 +41,6 @@ pub(super) fn walk(
         matcher,
         nocase: platform != Platform::Posix,
         children: HashMap::new(),
-        operations,
         walked: HashSet::new(),
         followed: HashSet::new(),
     };
@@ -69,7 +62,7 @@ pub(super) fn walk(
                 false
             }
         };
-        emit(processor.matches, operations, &mut seen, &mut result);
+        emit(processor.matches, &mut seen, &mut result);
         for (target, patterns) in processor.subwalks.into_iter().rev() {
             pending.push(if scanning {
                 Phase::Read(target, patterns)
@@ -91,7 +84,7 @@ fn scan(
     let names = context.children.entry(target.path.clone()).or_default();
     let mut kinds = HashMap::new();
     if !names.complete {
-        let Ok(entries) = context.operations.read_dir(Path::new(&target.path)) else {
+        let Ok(entries) = maestro_resources::read_entries(Path::new(&target.path)) else {
             return;
         };
         let mut listing = Vec::new();
@@ -109,7 +102,7 @@ fn scan(
             let path = maestro_path::join(&[&target.path, &child.authored_name]);
             let kind = kinds
                 .remove(&child.name)
-                .or_else(|| context.operations.symlink_metadata(Path::new(&path)).ok());
+                .or_else(|| maestro_resources::symlink_metadata(Path::new(&path)).ok());
             (Target { path, kind }, child.name.clone())
         })
         .collect();
@@ -121,15 +114,10 @@ fn scan(
 }
 
 /// Publishes admitted authored identities after no-follow terminal checks.
-fn emit(
-    matches: Vec<(Target, bool)>,
-    operations: &dyn ResourceOperations,
-    seen: &mut HashSet<String>,
-    result: &mut Vec<String>,
-) {
+fn emit(matches: Vec<(Target, bool)>, seen: &mut HashSet<String>, result: &mut Vec<String>) {
     for (mut target, directory) in matches {
         if target.kind.is_none() {
-            target.kind = operations.symlink_metadata(Path::new(&target.path)).ok();
+            target.kind = maestro_resources::symlink_metadata(Path::new(&target.path)).ok();
         }
         if target.kind.is_some()
             && (!directory || target.can_read())

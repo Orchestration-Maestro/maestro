@@ -11,6 +11,9 @@ framing to this leaf.
   the empty string are false; every other string, array and object is true. A number
   beyond the range of a double is an infinity and so true, and one below it is zero and
   so false. Absence and nullish defaults stay with the caller.
+- **Selected values.** `display_truthy` returns no text for absent or falsy values,
+  borrows nonempty strings unchanged, and owns the compact JSON spelling of other
+  truthy values. Callers choose the field and fallback.
 - **Keys.** `array_index` accepts ASCII decimal spellings with no sign and no leading
   zero, from `0` to `4294967294`. `canonical_entries` stably places those keys first in
   ascending numeric order and leaves every other entry in the order given; it never drops
@@ -38,7 +41,9 @@ The optional-field helper that keeps null apart from absence is `present` in
 ## JSONL framing
 
 `jsonl::serialize_json_line` uses the compact writer above and appends one LF.
-U+2028 and U+2029 remain literal characters inside JSON strings.
+`jsonl::serialize_native_json_line` retains exact signed and unsigned integers for
+native workspace requests; keys and floating-point values use the same canonical
+writer. U+2028 and U+2029 remain literal characters inside JSON strings in both modes.
 
 `jsonl::JsonlLineSplitter` accepts byte chunks and returns owned lines, splitting
 only on LF and removing one terminal CR. It retains incomplete bytes across

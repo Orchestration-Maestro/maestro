@@ -422,12 +422,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 The desktop clipboard uses clipboard-rs 0.2.4 under MIT. Its Windows backend
 includes these packages by Douman <douman@gmx.se>, under BSL-1.0:
 
-- [clipboard-win 5.4.1](https://github.com/DoumanAsh/clipboard-win)
+- [clipboard-win 5.4.3](https://github.com/DoumanAsh/clipboard-win)
 - [error-code 3.4.0](https://github.com/DoumanAsh/error-code)
 - [windows-win 3.0.0](https://github.com/DoumanAsh/windows-win-rs)
-
-This license approval is limited to these exact versions as the clipboard
-Windows backend. It is not a general license allowance.
 
 ```text
 Boost Software License - Version 1.0 - August 17th, 2003
@@ -455,14 +452,41 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ```
 
+## Browser element bridge
+
+Browser builds emit `createCustomElement.js`, the 43-line subclass shim of
+[custom-element 0.1.5](https://github.com/austintheriot/custom-element), beside
+their bindings. The crate is dual-licensed MIT OR Apache-2.0 and is used under
+MIT; it ships no copyright line.
+
+```text
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## PDF processing
 
 hayro 0.8.0 and hayro-interpret 0.8.0 are used under Apache-2.0.
-The complete published hayro-interpret package is preserved in
-[vendor/hayro-interpret](vendor/hayro-interpret), including its original licenses,
-font notices and color profile. A local patch adds a default decoded text-show
-hook and forwards it through the stencil and shape-glyph adapters; the application
-uses it for text extraction without altering paint dispatch.
+Both packages are unmodified registry dependencies. The application owns logical
+text-show traversal and uses hayro-interpret for font decoding; hayro owns page
+rendering. Their embedded font notices and color-profile obligations still apply.
 Their resolved dependencies and selected license alternatives are documented in
 [document-format libraries](docs/libraries/document-formats.md#pdf-processing).
 
@@ -689,6 +713,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 `crates/maestro-web/assets/katex/` embeds the stylesheet and `woff2` fonts of
 KaTeX 0.18.5, edited only to keep the `woff2` font source of each face.
+The typed math adapter in `crates/maestro-web/src/components/markdown_block/math/`
+also derives from KaTeX 0.16.45's radical, sizing, macro and error-handling code.
 
 ```text
 The MIT License (MIT)
@@ -716,16 +742,125 @@ SOFTWARE.
 
 ## herdr workspace daemon
 
+Terminal construction, state reads, palette updates and effective-colour rules in
+`crates/maestro-terminal/` derive from the terminal wrapper in herdr v0.8.2
+under Apache-2.0. The implementation uses owned Rust screen storage instead of
+foreign-library handles.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
 herdr v0.8.2 under Apache-2.0. The topology derives from layout, metadata tokens,
 pane state, terminal identity, workspace, tab and git label/status modules.
+Snapshot records and supplied-path storage derive from the persistence modules;
+the byte-replacement helper in `crates/maestro-lock/` derives from persistence
+and detection-manifest publication.
+The agent catalogue and foreground-job recognition in `crates/maestro-detection/`
+derive from the agent detection module under the same license. Detection
+manifest evaluation, catalog updates and the 20 embedded TOML documents derive
+from its manifest and manifest-update modules. Detection changes include
+caller-owned caches, supplied source roots, a supplied bounded transport and
+result callback, fallible bundled loading and reuse of atomic publication.
+The host colour query builders and reply parsing in
+`crates/maestro-tui/src/terminal_theme.rs` derive from the terminal theme module
+under the same license. Changes include shared framing, three-channel RGBA reply
+admission and checked string slicing for malformed non-ASCII hex replies.
+
+The application state, construction, internal event routing, notifications,
+metadata expiry, configuration reload and session scheduling in
+`crates/maestro-daemon/src/app/` derive from the application modules under the
+same license. Workspace attention ordering derives from the workspace aggregate
+module. The daemon's repository queries reuse workspace-owned discovery.
+
+The resume records and argument plans, retained pane state, presentation metadata,
+terminal title normalization and host theme in `crates/maestro-daemon/` derive from
+the agent resume, terminal state, terminal metadata, terminal title and terminal
+theme modules under the same license. Retained provenance uses Maestro's
+canonical source spelling; state arbitration retains the source's session and
+process-generation ownership rules.
+The pane terminal policy in `crates/maestro-daemon/src/pane/terminal/` and
+`pane/terminal.rs`, the OSC, cursor, input and capability-query modules under
+`pane/`, `selection.rs`, `render_prof.rs` and their tests derive from the pane
+terminal, OSC, cursor, input, XTGETTCAP, selection and render profiler sources
+under the same license. Changes include one locked concrete terminal, reuse of
+engine reads and encoders, supplied process facts and time observations, and
+caller-owned rendering and scheduling. Semantic character-key policy in
+`crates/maestro-terminal/src/input/key_encode/` derives from the input encoder;
+keyboard-stack replay in `src/kitty/key.rs` and `src/formatter/vt.rs` derives from
+the pane keyboard tracker. The encoder retains Unicode codepoints rather than
+truncating unmapped control characters to a byte.
+Render request coalescing in `crates/maestro-daemon/src/render_signal.rs` and its
+tests derives from the render signal module under the same license.
+The pane runtime, launch environment, shell selection, foreground probing and
+agent detection under `crates/maestro-daemon/src/pane/`, `events.rs`,
+`handoff_runtime.rs` and `terminal/runtime_registry.rs` derive from the pane,
+event, handoff-runtime and terminal-runtime-registry modules under the same
+license. The native child setup entry in `crates/maestro-process/src/pty/` uses
+safe re-execution in place of the source's post-fork setup.
+The input model and mouse geometry derive from the input model and mouse
+modules; decoded input events derive from the raw input module. Structured key
+conversions derive from the client input and protocol wire modules. The structured
+host key decoder in `crates/maestro-tui/src/keys/` derives from the input parser;
+shared SGR fields and admitted host mouse records in
+`crates/maestro-tui/src/stdin_buffer/mouse.rs` derive from the mouse and raw input
+modules. The retained byte framer, reply windows and mouse-tail handling in
+`crates/maestro-tui/src/stdin_buffer/` derive from the raw input module. The daemon projections in
+`crates/maestro-daemon/src/input/{parse,raw_input}.rs` derive from those input
+modules and reuse the toolkit decoders. Chat and
+host input share sequence recognition while retaining their different byte and
+paste policies. These reuse the existing protocol vocabulary rather than
+terminal-library records.
+The typed preference records in `crates/maestro-daemon/src/settings/model/`,
+sidebar rows in `settings/sidebar.rs`, notification sound selection in
+`settings/sound.rs`, theme data in
+`settings/theme.rs`, tab entries in `settings/tab_bar.rs`, window-title templates
+in `settings/window_title.rs`, global projection and diagnostics in `settings/io.rs`
+and `settings/io/`, annotated defaults in `settings/defaults.jsonc` and their
+settings tests derive from the configuration, configuration I/O, model, sidebar,
+sound, theme, tab-bar, window-title and default configuration sources under the
+same license.
+The supplied paths and named-daemon operations in `crates/maestro-daemon/src/paths.rs`
+and `instances.rs` derive from the session, persistence I/O, detection catalog,
+action paths, announcement and remote path sources. The action component encoder
+and its hash and reserved-stem helpers derive from the action paths and API
+schema helpers under the same license. Their tests retain the source cases.
+The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`
+and its tests derive from the API client under the same license. It reuses the
+shared JSONL framing and caller-supplied daemon selection.
+
+The environment vocabulary, structured events, synchronized rotating file writer
+and daemon snapshot wrappers in `crates/maestro-daemon/src/` derive from the pane,
+integration environment, action runtime/environment, logging and persistence I/O
+sources under the same license. The writer tests retain the source cases.
+
+The pane terminal, shell and foreground process code in `crates/maestro-process/`
+also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the
+noninteractive process builder, Linux platform operations, shared Unix quoting
+and PTY backend, descriptor and actor modules.
+
+The pane launch environment, shell, foreground probe, screen detection policy and
+async detector in
+`crates/maestro-daemon/src/pane/{launch_env,shell,probe,agent_detection,detection_task}.rs`,
+their submodules and their tests derive from the pane, platform and integration
+environment sources under the same license. Background pane records and delivery
+in `crates/maestro-daemon/src/events.rs` derive from the event and pane sources. Native login argument zero follows the terminal command builder
+(`vendor/portable-pty/src/cmdbuilder.rs`, MIT). The adapter uses Rust
+`CommandExt::arg0` rather than incorporating that library or its native calls.
+
+The pane render, dirty-row patches, frame-record conversions, frame encoder and
+chrome palettes in `crates/maestro-multiplexer/` and their tests derive from the
+pane terminal, protocol render, protocol wire, application state and theme
+configuration sources under the same license. Changes include one changed-cell
+walk shared by encoding and profiling, one colour policy shared by frames and
+patches, and checked slicing of non-ASCII colour strings.
+
 Changes include Maestro naming, module placement, required documentation,
 lint-compatible representations, owned identity allocation and separation of
 native runtime effects. Socket changes include supplied paths and overrides,
 preservation of occupied non-socket entries, and input termination through reads
-rather than a consuming peer probe.
+rather than a consuming peer probe. Persistence changes include version-1-only
+loading, one shared durable byte replacement, exclusive temporary creation,
+postcommit sync advisories and rejection of unresolved symbolic-link chains.
 The original licence follows.
 
 ```text
@@ -932,13 +1067,46 @@ The original licence follows.
    limitations under the License.
 ```
 
+## Native login shell arguments
+
+The native pane launch adapter follows the login argument-zero behavior of
+portable-pty 0.9.0 (`src/cmdbuilder.rs`), copyright Wez Furlong, licensed under MIT.
+It uses the standard Rust command API without adding portable-pty as a dependency.
+
+```text
+MIT License
+
+Copyright (c) 2018 Wez Furlong
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## Terminal emulator engine
 
-The terminal codepoint-width interface, image command parser, image-media loader
-and their fixtures in `crates/maestro-terminal` derive from the Ghostty terminal
-engine. Changes: ported to safe Rust under Maestro names, using compiled Unicode
-properties, owned I/O and Rust codecs; the width fixture projects widths into
-runs. Temporary-file containment and shared-memory range validation are corrected.
+The terminal codepoint-width interface, page storage, character mappings,
+VT/OSC and colour/SGR decoders, byte transition table, embedded X11 colour-name
+data, image command parser, image-media loader and their fixtures in
+`crates/maestro-terminal` derive from the Ghostty terminal engine. Changes: ported to safe Rust under Maestro names, with
+compiled Unicode properties, scalar-only text, packed records, owned style,
+cluster and link tables, owned I/O and Rust codecs; the width fixture projects
+widths into runs. Temporary-file containment and shared-memory range validation
+are corrected.
 
 ```text
 MIT License
@@ -964,11 +1132,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## Terminal Unicode width rules
+## Terminal Unicode rules
 
-The terminal Unicode width rules in `crates/maestro-terminal/src/unicode/props.rs`
-derive from uucode 0.2.0. Changes: ported to safe Rust using compiled Unicode
-properties, retaining terminal cell widths rather than the original table layout.
+The terminal Unicode property derivation and tailored grapheme-boundary rules in
+`crates/maestro-terminal/src/unicode/` derive from uucode 0.2.0.
+Changes: ported to safe Rust using compiled Unicode properties, retaining terminal
+cell widths, boundary results and sequence context rather than the original table
+layout. The property and transition fixtures retain captured values from these
+rules.
 
 ```text
 MIT License
@@ -993,3 +1164,155 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Terminal emoji variation data
+
+The 371 bases in `crates/maestro-terminal/src/unicode/variation.rs` derive from
+Unicode 17.0 `emoji-variation-sequences.txt`, dated 2025-01-30. The data is
+stored as inclusive ranges rather than paired selector rows.
+
+```text
+UNICODE LICENSE V3
+
+COPYRIGHT AND PERMISSION NOTICE
+
+Copyright © 2025 Unicode®, Inc.
+
+NOTICE TO USER: Carefully read the following legal agreement. BY
+DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING DATA FILES, AND/OR
+SOFTWARE, YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE
+TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE, DO NOT
+DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE THE DATA FILES OR SOFTWARE.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of data files and any associated documentation (the "Data Files") or
+software and any associated documentation (the "Software") to deal in the
+Data Files or Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, and/or sell
+copies of the Data Files or Software, and to permit persons to whom the
+Data Files or Software are furnished to do so, provided that either (a)
+this copyright and permission notice appear with all copies of the Data
+Files or Software, or (b) this copyright and permission notice appear in
+associated Documentation.
+
+THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF
+THIRD PARTY RIGHTS.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE
+BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES,
+OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA
+FILES OR SOFTWARE.
+
+Except as contained in this notice, the name of a copyright holder shall
+not be used in advertising or otherwise to promote the sale, use or other
+dealings in these Data Files or Software without prior written
+authorization of the copyright holder.
+
+SPDX-License-Identifier: Unicode-3.0
+```
+
+## Development skill content
+
+Copyright and permission notices for adapted skill text are in the
+[package notice](packages/maestro-skills/THIRD-PARTY-NOTICES.md).
+
+## Markdown grammar
+
+The shared Markdown grammar in `crates/maestro-markdown` derives from marked
+15.0.4, 15.0.12 and 16.4.2, under the MIT license.
+
+```text
+Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/)
+Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+## Terminal output backlog
+
+The terminal byte queue, bounded output writer, render-backlog gate and their tests
+derive from source licensed under the following terms:
+
+```text
+MIT License
+
+Copyright (c) 2025 Mario Zechner
+Copyright (c) 2025-2026 Can Bölük
+Copyright (c) 2026 Stencil Labs, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Frontmatter grammar
+
+The owned frontmatter grammar in `crates/maestro-resources/src/frontmatter/`
+derives from YAML 2.8.4, licensed under ISC. The package is not a runtime dependency.
+
+```text
+Copyright Eemeli Aro <eemeli@gmail.com>
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
+
+## Browser author fonts and tools
+
+Shared whole fonts in `assets/brand/fonts/` retain their original SIL Open Font
+License 1.1 notices:
+
+- Barlow Regular: [Barlow notice](assets/brand/fonts/barlow-OFL.txt).
+- Barlow Condensed Semibold/Bold: [Barlow Condensed notice](assets/brand/fonts/barlowcondensed-OFL.txt).
+- JetBrains Mono Regular v2.304: [JetBrains Mono notice](assets/brand/fonts/jetbrainsmono-official-OFL.txt).
+- Space Grotesk variable: [Space Grotesk notice](assets/brand/fonts/spacegrotesk-OFL.txt).
+- Noto Sans Symbols 2 Regular: [Noto notice](assets/brand/fonts/notosanssymbols2-OFL.txt).
+
+The external author binaries are not linked product dependencies. Trunk's
+lockfree-object-pool 0.1.6 retains its
+[Boost Software License 1.0 notice](docs/licenses/author-tools/lockfree-object-pool.txt).
+Versions and licence choices are recorded in the
+[repository-tooling library guide](docs/libraries/repository-tooling.md#external-browser-author-tools).

@@ -1,6 +1,7 @@
 //! Typed conversation messages and their tagged content.
-use super::{Api, JsonObject, Provider};
+use super::{Api, Provider};
 use crate::diagnostics::AssistantMessageDiagnostic;
+use crate::presence::Presence;
 use serde::{Deserialize, Serialize};
 /// Represent version-one text signature metadata and its optional phase.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -38,6 +39,16 @@ pub struct TextContent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text_signature: Option<String>,
 }
+impl TextContent {
+    /// Create text content without a model-specific signature.
+    #[must_use]
+    pub fn new(text: String) -> Self {
+        Self {
+            text,
+            text_signature: None,
+        }
+    }
+}
 /// Carry tagged reasoning, optional signature and redaction flag.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type", rename = "thinking")]
@@ -60,7 +71,7 @@ pub struct ImageContent {
     /// Mime type.
     pub mime_type: String,
 }
-/// Carry a tagged tool invocation with open argument fields.
+/// Carry a tagged tool invocation with its complete JSON argument value.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type", rename = "toolCall")]
 pub struct ToolCall {
@@ -68,8 +79,8 @@ pub struct ToolCall {
     pub id: String,
     /// Name.
     pub name: String,
-    /// Arguments.
-    pub arguments: JsonObject,
+    /// Arguments, of any JSON root kind.
+    pub arguments: serde_json::Value,
     /// Thought signature.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub thought_signature: Option<String>,
@@ -90,7 +101,7 @@ pub struct UsageCost {
     pub total: f64,
 }
 /// Store reported token counts and their supplied costs.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Usage {
     /// Input.
@@ -101,10 +112,25 @@ pub struct Usage {
     pub cache_read: f64,
     /// Cache write.
     pub cache_write: f64,
-    /// Total tokens.
-    pub total_tokens: f64,
+    /// Total tokens: absent when the report omits it, null when it is explicitly null, and
+    /// otherwise the supplied number. An absent total is never computed and stays absent when
+    /// the record is written again. A [`Usage::default`] total is an explicit zero.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub total_tokens: Presence<f64>,
     /// Cost.
     pub cost: UsageCost,
+}
+impl Default for Usage {
+    fn default() -> Self {
+        Self {
+            input: 0.0,
+            output: 0.0,
+            cache_read: 0.0,
+            cache_write: 0.0,
+            total_tokens: Presence::Present(0.0),
+            cost: UsageCost::default(),
+        }
+    }
 }
 /// Represent successful, tool-use, error and abort outcomes.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -248,15 +274,29 @@ pub enum Message {
     ToolResult(ToolResultMessage),
 }
 /// Describe a model-facing tool and its parameter schema.
+///
+/// The schema is the shared parameter-schema record, so a caller cannot pass ordinary JSON
+/// where a schema with authored nodes belongs.
+///
+/// ```compile_fail
+/// use maestro_request::types::Tool;
+/// let tool = Tool {
+///     name: "echo".to_owned(),
+///     description: String::new(),
+///     parameters: serde_json::json!({"type": "string"}),
+/// };
+/// # let _ = tool;
+/// ```
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Tool<TParameters = serde_json::Value> {
+pub struct Tool {
     /// Name.
     pub name: String,
     /// Description.
     pub description: String,
     /// Parameters.
-    pub parameters: TParameters,
+    pub parameters: crate::parameter_schema::ParameterSchema,
 }
 /// Supply conversation messages with optional system prompt and tools.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

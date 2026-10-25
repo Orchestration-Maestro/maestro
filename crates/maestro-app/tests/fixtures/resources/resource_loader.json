@@ -1,0 +1,2759 @@
+{
+  "cases": [
+    {
+      "name": "constructor_results_are_empty",
+      "tree": [
+        {
+          "path": "agent/skills/s.md",
+          "text": "---\nname: s\ndescription: d\n---\nSkill content here."
+        }
+      ],
+      "options": {},
+      "reload": false,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "user_skill_file_is_discovered",
+      "tree": [
+        {
+          "path": "agent/skills/test-skill.md",
+          "text": "---\nname: test-skill\ndescription: A test skill\n---\nSkill content here."
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "test-skill",
+            "description": "A test skill",
+            "filePath": "$ROOT/agent/skills/test-skill.md",
+            "baseDir": "$ROOT/agent/skills",
+            "sourceInfo": {
+              "path": "$ROOT/agent/skills/test-skill.md",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "warning",
+            "message": "name \"test-skill\" does not match parent directory \"skills\"",
+            "path": "$ROOT/agent/skills/test-skill.md"
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "auto_skill_directory_ignores_extra_markdown",
+      "tree": [
+        {
+          "path": "agent/skills/shared-skills/browser-tools/SKILL.md",
+          "text": "---\nname: browser-tools\ndescription: Browser tools\n---\nSkill content here."
+        },
+        {
+          "path": "agent/skills/shared-skills/browser-tools/EFFICIENCY.md",
+          "text": "No frontmatter here"
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "browser-tools",
+            "description": "Browser tools",
+            "filePath": "$ROOT/agent/skills/shared-skills/browser-tools/SKILL.md",
+            "baseDir": "$ROOT/agent/skills/shared-skills/browser-tools",
+            "sourceInfo": {
+              "path": "$ROOT/agent/skills/shared-skills/browser-tools/SKILL.md",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            }
+          }
+        ],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "user_prompt_is_discovered",
+      "tree": [
+        {
+          "path": "agent/prompts/test-prompt.md",
+          "text": "---\ndescription: A test prompt\n---\nPrompt content."
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [
+          {
+            "name": "test-prompt",
+            "description": "A test prompt",
+            "filePath": "$ROOT/agent/prompts/test-prompt.md",
+            "sourceInfo": {
+              "path": "$ROOT/agent/prompts/test-prompt.md",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            }
+          }
+        ],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "project_resources_win_name_collisions",
+      "tree": [
+        {
+          "path": "agent/prompts/commit.md",
+          "text": "User prompt"
+        },
+        {
+          "path": "project/$CONFIG/prompts/commit.md",
+          "text": "Project prompt"
+        },
+        {
+          "path": "agent/skills/collision-skill/SKILL.md",
+          "text": "---\nname: collision-skill\ndescription: user\n---\nUser skill"
+        },
+        {
+          "path": "project/$CONFIG/skills/collision-skill/SKILL.md",
+          "text": "---\nname: collision-skill\ndescription: project\n---\nProject skill"
+        },
+        {
+          "path": "agent/themes/collision.json",
+          "theme": {
+            "name": "collision-theme"
+          }
+        },
+        {
+          "path": "project/$CONFIG/themes/collision.json",
+          "theme": {
+            "name": "collision-theme",
+            "vars": {
+              "accent": "#ff00ff"
+            }
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "collision-skill",
+            "description": "project",
+            "filePath": "$ROOT/project/$CONFIG/skills/collision-skill/SKILL.md",
+            "baseDir": "$ROOT/project/$CONFIG/skills/collision-skill",
+            "sourceInfo": {
+              "path": "$ROOT/project/$CONFIG/skills/collision-skill/SKILL.md",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"collision-skill\" collision",
+            "path": "$ROOT/agent/skills/collision-skill/SKILL.md",
+            "collision": {
+              "resourceType": "skill",
+              "name": "collision-skill",
+              "winnerPath": "$ROOT/project/$CONFIG/skills/collision-skill/SKILL.md",
+              "loserPath": "$ROOT/agent/skills/collision-skill/SKILL.md"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "name": "commit",
+            "description": "Project prompt",
+            "filePath": "$ROOT/project/$CONFIG/prompts/commit.md",
+            "sourceInfo": {
+              "path": "$ROOT/project/$CONFIG/prompts/commit.md",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            }
+          }
+        ],
+        "promptDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"/commit\" collision",
+            "path": "$ROOT/agent/prompts/commit.md",
+            "collision": {
+              "resourceType": "prompt",
+              "name": "commit",
+              "winnerPath": "$ROOT/project/$CONFIG/prompts/commit.md",
+              "loserPath": "$ROOT/agent/prompts/commit.md"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "name": "collision-theme",
+            "sourcePath": "$ROOT/project/$CONFIG/themes/collision.json",
+            "sourceInfo": {
+              "path": "$ROOT/project/$CONFIG/themes/collision.json",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            }
+          }
+        ],
+        "themeDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"collision-theme\" collision",
+            "path": "$ROOT/agent/themes/collision.json",
+            "collision": {
+              "resourceType": "theme",
+              "name": "collision-theme",
+              "winnerPath": "$ROOT/project/$CONFIG/themes/collision.json",
+              "loserPath": "$ROOT/agent/themes/collision.json"
+            }
+          }
+        ],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "symlinked_extension_directories_load_once",
+      "tree": [
+        {
+          "path": "shared-extensions/shared.ts",
+          "extension": {
+            "commands": [
+              [
+                "shared",
+                "shared command"
+              ]
+            ]
+          }
+        },
+        {
+          "path": "agent/extensions",
+          "link": "$ROOT/shared-extensions"
+        },
+        {
+          "path": "project/$CONFIG/extensions",
+          "link": "$ROOT/shared-extensions"
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/project/$CONFIG/extensions/shared.ts",
+            "sourceInfo": {
+              "path": "$ROOT/project/$CONFIG/extensions/shared.ts",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            },
+            "commands": [
+              "shared"
+            ],
+            "tools": [],
+            "flags": [],
+            "sharedSourceInfo": true
+          }
+        ],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "colliding_commands_keep_both_extensions",
+      "tree": [
+        {
+          "path": "project/$CONFIG/extensions/project.ts",
+          "extension": {
+            "commands": [
+              [
+                "deploy",
+                "project deploy"
+              ],
+              [
+                "project-only",
+                "project only"
+              ]
+            ]
+          }
+        },
+        {
+          "path": "agent/extensions/user.ts",
+          "extension": {
+            "commands": [
+              [
+                "deploy",
+                "user deploy"
+              ],
+              [
+                "user-only",
+                "user only"
+              ]
+            ]
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/project/$CONFIG/extensions/project.ts",
+            "sourceInfo": {
+              "path": "$ROOT/project/$CONFIG/extensions/project.ts",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            },
+            "commands": [
+              "deploy",
+              "project-only"
+            ],
+            "tools": [],
+            "flags": [],
+            "sharedSourceInfo": true
+          },
+          {
+            "path": "$ROOT/agent/extensions/user.ts",
+            "sourceInfo": {
+              "path": "$ROOT/agent/extensions/user.ts",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            },
+            "commands": [
+              "deploy",
+              "user-only"
+            ],
+            "tools": [],
+            "flags": [],
+            "sharedSourceInfo": true
+          }
+        ],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": [],
+        "runner": {
+          "invocationNames": [
+            "deploy:1",
+            "project-only",
+            "deploy:2",
+            "user-only"
+          ],
+          "commands": {
+            "deploy:1": "project deploy",
+            "deploy:2": "user deploy",
+            "project-only": "project only",
+            "user-only": "user only"
+          },
+          "tools": {}
+        }
+      }
+    },
+    {
+      "name": "settings_exclusions_hide_automatic_resources",
+      "tree": [
+        {
+          "path": "agent/extensions/disabled.ts",
+          "extension": {}
+        },
+        {
+          "path": "agent/skills/skip-skill/SKILL.md",
+          "text": "---\nname: skip-skill\ndescription: Skip me\n---\nContent"
+        },
+        {
+          "path": "agent/prompts/skip.md",
+          "text": "Skip prompt"
+        },
+        {
+          "path": "agent/themes/skip.json",
+          "text": "{}"
+        }
+      ],
+      "options": {},
+      "inMemorySettings": {
+        "extensions": [
+          "-extensions/disabled.ts"
+        ],
+        "skills": [
+          "-skills/skip-skill"
+        ],
+        "prompts": [
+          "-prompts/skip.md"
+        ],
+        "themes": [
+          "-themes/skip.json"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "cwd_agents_file_is_discovered",
+      "tree": [
+        {
+          "path": "project/AGENTS.md",
+          "text": "# Project Guidelines\n\nBe helpful."
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [
+          {
+            "path": "$ROOT/project/AGENTS.md",
+            "content": "# Project Guidelines\n\nBe helpful."
+          }
+        ],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "no_context_files_skips_discovery",
+      "tree": [
+        {
+          "path": "project/AGENTS.md",
+          "text": "# Project Guidelines\n\nBe helpful."
+        },
+        {
+          "path": "project/CLAUDE.md",
+          "text": "# Claude Guidelines\n\nBe helpful."
+        }
+      ],
+      "options": {
+        "noContextFiles": true
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "project_system_file_is_discovered",
+      "tree": [
+        {
+          "path": "project/$CONFIG/SYSTEM.md",
+          "text": "You are a helpful assistant."
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": "You are a helpful assistant.",
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "project_append_file_is_discovered",
+      "tree": [
+        {
+          "path": "project/$CONFIG/APPEND_SYSTEM.md",
+          "text": "Additional instructions."
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": [
+          "Additional instructions."
+        ]
+      }
+    },
+    {
+      "name": "extended_resources_keep_extension_metadata",
+      "tree": [
+        {
+          "path": "extra-skills/extra-skill/SKILL.md",
+          "text": "---\nname: extra-skill\ndescription: Extra skill\n---\nExtra content"
+        },
+        {
+          "path": "extra-prompts/extra.md",
+          "text": "---\ndescription: Extra prompt\n---\nExtra prompt content"
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "extend": {
+        "skillPaths": [
+          [
+            "$ROOT/extra-skills/extra-skill",
+            {
+              "source": "extension:extra",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/extra-skills/extra-skill"
+            }
+          ]
+        ],
+        "promptPaths": [
+          [
+            "$ROOT/extra-prompts/extra.md",
+            {
+              "source": "extension:extra",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/extra-prompts"
+            }
+          ]
+        ]
+      },
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "extra-skill",
+            "description": "Extra skill",
+            "filePath": "$ROOT/extra-skills/extra-skill/SKILL.md",
+            "baseDir": "$ROOT/extra-skills/extra-skill",
+            "sourceInfo": {
+              "path": "$ROOT/extra-skills/extra-skill/SKILL.md",
+              "source": "extension:extra",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/extra-skills/extra-skill"
+            }
+          }
+        ],
+        "skillDiagnostics": [],
+        "prompts": [
+          {
+            "name": "extra",
+            "description": "Extra prompt",
+            "filePath": "$ROOT/extra-prompts/extra.md",
+            "sourceInfo": {
+              "path": "$ROOT/extra-prompts/extra.md",
+              "source": "extension:extra",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/extra-prompts"
+            }
+          }
+        ],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "no_skills_skips_discovery",
+      "tree": [
+        {
+          "path": "agent/skills/test-skill.md",
+          "text": "---\nname: test-skill\ndescription: A test skill\n---\nContent"
+        }
+      ],
+      "options": {
+        "noSkills": true
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "no_skills_keeps_additional_paths",
+      "tree": [
+        {
+          "path": "custom-skills/custom.md",
+          "text": "---\nname: custom\ndescription: Custom skill\n---\nContent"
+        }
+      ],
+      "options": {
+        "noSkills": true,
+        "additionalSkillPaths": [
+          "$ROOT/custom-skills"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "custom",
+            "description": "Custom skill",
+            "filePath": "$ROOT/custom-skills/custom.md",
+            "baseDir": "$ROOT/custom-skills",
+            "sourceInfo": {
+              "path": "$ROOT/custom-skills/custom.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/custom-skills"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "warning",
+            "message": "name \"custom\" does not match parent directory \"custom-skills\"",
+            "path": "$ROOT/custom-skills/custom.md"
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "duplicate_tools_report_conflicts",
+      "tree": [
+        {
+          "path": "agent/extensions/ext1/index.ts",
+          "extension": {
+            "tools": [
+              [
+                "duplicate-tool",
+                "First"
+              ]
+            ]
+          }
+        },
+        {
+          "path": "agent/extensions/ext2/index.ts",
+          "extension": {
+            "tools": [
+              [
+                "duplicate-tool",
+                "Second"
+              ]
+            ]
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/agent/extensions/ext1/index.ts",
+            "sourceInfo": {
+              "path": "$ROOT/agent/extensions/ext1/index.ts",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            },
+            "commands": [],
+            "tools": [
+              "duplicate-tool"
+            ],
+            "flags": [],
+            "sharedSourceInfo": true
+          },
+          {
+            "path": "$ROOT/agent/extensions/ext2/index.ts",
+            "sourceInfo": {
+              "path": "$ROOT/agent/extensions/ext2/index.ts",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            },
+            "commands": [],
+            "tools": [
+              "duplicate-tool"
+            ],
+            "flags": [],
+            "sharedSourceInfo": true
+          }
+        ],
+        "extensionErrors": [
+          {
+            "path": "$ROOT/agent/extensions/ext2/index.ts",
+            "error": "Tool \"duplicate-tool\" conflicts with $ROOT/agent/extensions/ext1/index.ts"
+          }
+        ],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "explicit_extensions_precede_discovered",
+      "tree": [
+        {
+          "path": "agent/extensions/global.ts",
+          "extension": {
+            "tools": [
+              [
+                "duplicate-tool",
+                "global tool"
+              ]
+            ],
+            "commands": [
+              [
+                "deploy",
+                "global command"
+              ]
+            ]
+          }
+        },
+        {
+          "path": "explicit-extension.ts",
+          "extension": {
+            "tools": [
+              [
+                "duplicate-tool",
+                "explicit tool"
+              ]
+            ],
+            "commands": [
+              [
+                "deploy",
+                "explicit command"
+              ]
+            ]
+          }
+        }
+      ],
+      "options": {
+        "additionalExtensionPaths": [
+          "$ROOT/explicit-extension.ts"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/explicit-extension.ts",
+            "sourceInfo": {
+              "path": "$ROOT/explicit-extension.ts",
+              "source": "cli",
+              "scope": "temporary",
+              "origin": "top-level"
+            },
+            "commands": [
+              "deploy"
+            ],
+            "tools": [
+              "duplicate-tool"
+            ],
+            "flags": [],
+            "sharedSourceInfo": true
+          },
+          {
+            "path": "$ROOT/agent/extensions/global.ts",
+            "sourceInfo": {
+              "path": "$ROOT/agent/extensions/global.ts",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            },
+            "commands": [
+              "deploy"
+            ],
+            "tools": [
+              "duplicate-tool"
+            ],
+            "flags": [],
+            "sharedSourceInfo": true
+          }
+        ],
+        "extensionErrors": [
+          {
+            "path": "$ROOT/agent/extensions/global.ts",
+            "error": "Tool \"duplicate-tool\" conflicts with $ROOT/explicit-extension.ts"
+          }
+        ],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": [],
+        "runner": {
+          "invocationNames": [
+            "deploy:1",
+            "deploy:2"
+          ],
+          "commands": {
+            "deploy:1": "explicit command",
+            "deploy:2": "global command"
+          },
+          "tools": {
+            "duplicate-tool": "explicit tool"
+          }
+        }
+      }
+    },
+    {
+      "name": "duplicate_flags_report_conflicts",
+      "tree": [
+        {
+          "path": "agent/extensions/a.ts",
+          "extension": {
+            "flags": [
+              [
+                "verbose",
+                "boolean"
+              ]
+            ]
+          }
+        },
+        {
+          "path": "agent/extensions/b.ts",
+          "extension": {
+            "flags": [
+              [
+                "verbose",
+                "string"
+              ]
+            ]
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/agent/extensions/a.ts",
+            "sourceInfo": {
+              "path": "$ROOT/agent/extensions/a.ts",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            },
+            "commands": [],
+            "tools": [],
+            "flags": [
+              "verbose"
+            ],
+            "sharedSourceInfo": true
+          },
+          {
+            "path": "$ROOT/agent/extensions/b.ts",
+            "sourceInfo": {
+              "path": "$ROOT/agent/extensions/b.ts",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            },
+            "commands": [],
+            "tools": [],
+            "flags": [
+              "verbose"
+            ],
+            "sharedSourceInfo": true
+          }
+        ],
+        "extensionErrors": [
+          {
+            "path": "$ROOT/agent/extensions/b.ts",
+            "error": "Flag \"--verbose\" conflicts with $ROOT/agent/extensions/a.ts"
+          }
+        ],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "missing_extra_extension_path_is_reported",
+      "tree": [],
+      "options": {
+        "additionalExtensionPaths": [
+          "$ROOT/missing-extension.ts"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [
+          {
+            "path": "$ROOT/missing-extension.ts",
+            "error": "Extension path does not exist: $ROOT/missing-extension.ts"
+          }
+        ],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "missing_extra_skill_path_is_reported",
+      "tree": [],
+      "options": {
+        "additionalSkillPaths": [
+          "$ROOT/missing-skills",
+          "npm:remote-skill"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [
+          {
+            "type": "warning",
+            "message": "skill path does not exist",
+            "path": "$ROOT/missing-skills"
+          },
+          {
+            "type": "warning",
+            "message": "skill path does not exist",
+            "path": "$ROOT/project/npm:remote-skill"
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "missing_extra_prompt_path_is_reported",
+      "tree": [],
+      "options": {
+        "additionalPromptTemplatePaths": [
+          "$ROOT/missing-prompts"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [
+          {
+            "type": "error",
+            "message": "Prompt template path does not exist",
+            "path": "$ROOT/missing-prompts"
+          }
+        ],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "missing_extra_theme_path_is_reported",
+      "tree": [],
+      "options": {
+        "additionalThemePaths": [
+          "$ROOT/missing-theme.json"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [
+          {
+            "type": "warning",
+            "message": "theme path does not exist",
+            "path": "$ROOT/missing-theme.json"
+          }
+        ],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "theme_path_must_be_json",
+      "tree": [
+        {
+          "path": "theme.txt",
+          "text": "{}"
+        }
+      ],
+      "options": {
+        "additionalThemePaths": [
+          "$ROOT/theme.txt"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [
+          {
+            "type": "warning",
+            "message": "theme path is not a json file",
+            "path": "$ROOT/theme.txt"
+          }
+        ],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "invalid_theme_file_warns",
+      "tree": [
+        {
+          "path": "bad.json",
+          "text": "{\"name\": \"bad\"}"
+        }
+      ],
+      "options": {
+        "additionalThemePaths": [
+          "$ROOT/bad.json"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [
+          {
+            "type": "warning",
+            "message": "Invalid theme \"$ROOT/bad.json\":\n\n\nOther errors:\n  - /: must have required properties colors",
+            "path": "$ROOT/bad.json"
+          }
+        ],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "theme_directory_admits_json_files_and_links",
+      "tree": [
+        {
+          "path": "themes/a.json",
+          "theme": {
+            "name": "a-theme"
+          }
+        },
+        {
+          "path": "themes/notes.md",
+          "text": "ignored"
+        },
+        {
+          "path": "themes/nested",
+          "dir": true
+        },
+        {
+          "path": "real/b.json",
+          "theme": {
+            "name": "b-theme"
+          }
+        },
+        {
+          "path": "themes/b.json",
+          "link": "$ROOT/real/b.json"
+        },
+        {
+          "path": "themes/broken.json",
+          "link": "$ROOT/real/absent.json"
+        }
+      ],
+      "options": {
+        "additionalThemePaths": [
+          "$ROOT/themes"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [
+          {
+            "name": "a-theme",
+            "sourcePath": "$ROOT/themes/a.json",
+            "sourceInfo": {
+              "path": "$ROOT/themes/a.json",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/themes"
+            }
+          },
+          {
+            "name": "b-theme",
+            "sourcePath": "$ROOT/themes/b.json",
+            "sourceInfo": {
+              "path": "$ROOT/themes/b.json",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/themes"
+            }
+          }
+        ],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "explicit_theme_name_collision",
+      "tree": [
+        {
+          "path": "one.json",
+          "theme": {
+            "name": "same"
+          }
+        },
+        {
+          "path": "two.json",
+          "theme": {
+            "name": "same"
+          }
+        }
+      ],
+      "options": {
+        "additionalThemePaths": [
+          "$ROOT/one.json",
+          "$ROOT/two.json"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [
+          {
+            "name": "same",
+            "sourcePath": "$ROOT/one.json",
+            "sourceInfo": {
+              "path": "$ROOT/one.json",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            }
+          }
+        ],
+        "themeDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"same\" collision",
+            "path": "$ROOT/two.json",
+            "collision": {
+              "resourceType": "theme",
+              "name": "same",
+              "winnerPath": "$ROOT/one.json",
+              "loserPath": "$ROOT/two.json"
+            }
+          }
+        ],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "prompt_name_collision_keeps_first",
+      "tree": [
+        {
+          "path": "a/commit.md",
+          "text": "first"
+        },
+        {
+          "path": "b/commit.md",
+          "text": "second"
+        }
+      ],
+      "options": {
+        "additionalPromptTemplatePaths": [
+          "$ROOT/a/commit.md",
+          "$ROOT/b/commit.md"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [
+          {
+            "name": "commit",
+            "description": "first",
+            "filePath": "$ROOT/a/commit.md",
+            "sourceInfo": {
+              "path": "$ROOT/a/commit.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/a"
+            }
+          }
+        ],
+        "promptDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"/commit\" collision",
+            "path": "$ROOT/b/commit.md",
+            "collision": {
+              "resourceType": "prompt",
+              "name": "commit",
+              "winnerPath": "$ROOT/a/commit.md",
+              "loserPath": "$ROOT/b/commit.md"
+            }
+          }
+        ],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "global_system_file_is_fallback",
+      "tree": [
+        {
+          "path": "agent/SYSTEM.md",
+          "text": "global system"
+        },
+        {
+          "path": "agent/APPEND_SYSTEM.md",
+          "text": "global append"
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": "global system",
+        "appendSystemPrompt": [
+          "global append"
+        ]
+      }
+    },
+    {
+      "name": "project_system_files_win_over_global",
+      "tree": [
+        {
+          "path": "agent/SYSTEM.md",
+          "text": "global system"
+        },
+        {
+          "path": "project/$CONFIG/SYSTEM.md",
+          "text": "project system"
+        },
+        {
+          "path": "agent/APPEND_SYSTEM.md",
+          "text": "global append"
+        },
+        {
+          "path": "project/$CONFIG/APPEND_SYSTEM.md",
+          "text": "project append"
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": "project system",
+        "appendSystemPrompt": [
+          "project append"
+        ]
+      }
+    },
+    {
+      "name": "explicit_prompt_texts_and_files",
+      "tree": [
+        {
+          "path": "custom.md",
+          "text": "from file"
+        },
+        {
+          "path": "append.md",
+          "text": "appended file"
+        },
+        {
+          "path": "project/$CONFIG/SYSTEM.md",
+          "text": "ignored project system"
+        }
+      ],
+      "options": {
+        "systemPrompt": "$ROOT/custom.md",
+        "appendSystemPrompt": [
+          "inline append",
+          "$ROOT/append.md"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": "from file",
+        "appendSystemPrompt": [
+          "inline append",
+          "appended file"
+        ]
+      }
+    },
+    {
+      "name": "explicit_prompt_text_is_kept",
+      "tree": [
+        {
+          "path": "project/$CONFIG/APPEND_SYSTEM.md",
+          "text": "ignored append"
+        }
+      ],
+      "options": {
+        "systemPrompt": "Literal prompt",
+        "appendSystemPrompt": []
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": "Literal prompt",
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "explicit_empty_prompt_skips_discovery",
+      "tree": [
+        {
+          "path": "project/$CONFIG/SYSTEM.md",
+          "text": "ignored project system"
+        }
+      ],
+      "options": {
+        "systemPrompt": "",
+        "appendSystemPrompt": [
+          ""
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "unreadable_system_file_keeps_its_path",
+      "tree": [
+        {
+          "path": "project/$CONFIG/SYSTEM.md",
+          "dir": true
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": "$ROOT/project/$CONFIG/SYSTEM.md",
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "inline_factories_follow_path_extensions",
+      "tree": [
+        {
+          "path": "path-ext.ts",
+          "extension": {
+            "commands": [
+              [
+                "from-path",
+                "path"
+              ]
+            ]
+          }
+        }
+      ],
+      "options": {
+        "additionalExtensionPaths": [
+          "$ROOT/path-ext.ts"
+        ]
+      },
+      "reload": true,
+      "inline": [
+        {
+          "commands": [
+            [
+              "from-inline",
+              "inline"
+            ]
+          ],
+          "tools": [
+            [
+              "inline-tool",
+              "inline tool"
+            ]
+          ]
+        },
+        {
+          "fail": "inline factory failed"
+        }
+      ],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/path-ext.ts",
+            "sourceInfo": {
+              "path": "$ROOT/path-ext.ts",
+              "source": "cli",
+              "scope": "temporary",
+              "origin": "top-level"
+            },
+            "commands": [
+              "from-path"
+            ],
+            "tools": [],
+            "flags": [],
+            "sharedSourceInfo": true
+          },
+          {
+            "path": "<inline:1>",
+            "sourceInfo": {
+              "path": "<inline:1>",
+              "source": "inline",
+              "scope": "temporary",
+              "origin": "top-level"
+            },
+            "commands": [
+              "from-inline"
+            ],
+            "tools": [
+              "inline-tool"
+            ],
+            "flags": [],
+            "sharedSourceInfo": true
+          }
+        ],
+        "extensionErrors": [
+          {
+            "path": "<inline:2>",
+            "error": "inline factory failed"
+          }
+        ],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "no_extensions_keeps_explicit_paths",
+      "tree": [
+        {
+          "path": "agent/extensions/auto.ts",
+          "extension": {
+            "commands": [
+              [
+                "auto",
+                "auto"
+              ]
+            ]
+          }
+        },
+        {
+          "path": "cli.ts",
+          "extension": {
+            "commands": [
+              [
+                "cli",
+                "cli"
+              ]
+            ]
+          }
+        }
+      ],
+      "options": {
+        "noExtensions": true,
+        "additionalExtensionPaths": [
+          "$ROOT/cli.ts"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/cli.ts",
+            "sourceInfo": {
+              "path": "$ROOT/cli.ts",
+              "source": "cli",
+              "scope": "temporary",
+              "origin": "top-level"
+            },
+            "commands": [
+              "cli"
+            ],
+            "tools": [],
+            "flags": [],
+            "sharedSourceInfo": true
+          }
+        ],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "no_prompts_and_no_themes_keep_extra_paths",
+      "tree": [
+        {
+          "path": "agent/prompts/auto.md",
+          "text": "auto"
+        },
+        {
+          "path": "agent/themes/auto.json",
+          "theme": {
+            "name": "auto"
+          }
+        },
+        {
+          "path": "p.md",
+          "text": "extra prompt"
+        },
+        {
+          "path": "t.json",
+          "theme": {
+            "name": "extra-theme"
+          }
+        }
+      ],
+      "options": {
+        "noPromptTemplates": true,
+        "noThemes": true,
+        "additionalPromptTemplatePaths": [
+          "$ROOT/p.md"
+        ],
+        "additionalThemePaths": [
+          "$ROOT/t.json"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [],
+        "skillDiagnostics": [],
+        "prompts": [
+          {
+            "name": "p",
+            "description": "extra prompt",
+            "filePath": "$ROOT/p.md",
+            "sourceInfo": {
+              "path": "$ROOT/p.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            }
+          }
+        ],
+        "promptDiagnostics": [],
+        "themes": [
+          {
+            "name": "extra-theme",
+            "sourcePath": "$ROOT/t.json",
+            "sourceInfo": {
+              "path": "$ROOT/t.json",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            }
+          }
+        ],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "tilde_and_whitespace_extra_paths_resolve",
+      "tree": [
+        {
+          "path": "$HOME/home-skills/h.md",
+          "text": "---\nname: home-skill\ndescription: h\n---\nSkill content here."
+        },
+        {
+          "path": "trimmed/t.md",
+          "text": "---\nname: trimmed-skill\ndescription: t\n---\nSkill content here."
+        }
+      ],
+      "options": {
+        "additionalSkillPaths": [
+          "  ~/home-skills  ",
+          "~",
+          "﻿$ROOT/trimmed　"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "home-skill",
+            "description": "h",
+            "filePath": "$HOME/home-skills/h.md",
+            "baseDir": "$HOME/home-skills",
+            "sourceInfo": {
+              "path": "$HOME/home-skills/h.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$HOME/home-skills"
+            }
+          },
+          {
+            "name": "trimmed-skill",
+            "description": "t",
+            "filePath": "$ROOT/trimmed/t.md",
+            "baseDir": "$ROOT/trimmed",
+            "sourceInfo": {
+              "path": "$ROOT/trimmed/t.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/trimmed"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "warning",
+            "message": "name \"home-skill\" does not match parent directory \"home-skills\"",
+            "path": "$HOME/home-skills/h.md"
+          },
+          {
+            "type": "warning",
+            "message": "name \"trimmed-skill\" does not match parent directory \"trimmed\"",
+            "path": "$ROOT/trimmed/t.md"
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "aliased_extra_skill_path_is_deduplicated",
+      "tree": [
+        {
+          "path": "agent/skills/s/SKILL.md",
+          "text": "---\nname: s\ndescription: d\n---\nSkill content here."
+        },
+        {
+          "path": "alias",
+          "link": "$ROOT/agent/skills/s"
+        }
+      ],
+      "options": {
+        "additionalSkillPaths": [
+          "$ROOT/alias"
+        ]
+      },
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "s",
+            "description": "d",
+            "filePath": "$ROOT/agent/skills/s/SKILL.md",
+            "baseDir": "$ROOT/agent/skills/s",
+            "sourceInfo": {
+              "path": "$ROOT/agent/skills/s/SKILL.md",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "warning",
+            "message": "name \"s\" does not match parent directory \"alias\"",
+            "path": "$ROOT/alias/SKILL.md"
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "package_resources_keep_package_metadata",
+      "tree": [
+        {
+          "path": "pkg/package.json",
+          "json": {
+            "name": "pkg",
+            "version": "1.0.0",
+            "maestro": {
+              "skills": [
+                "skills/pkg-skill"
+              ],
+              "prompts": [
+                "prompts"
+              ],
+              "themes": [
+                "themes"
+              ],
+              "extensions": [
+                "ext.ts"
+              ]
+            }
+          }
+        },
+        {
+          "path": "pkg/skills/pkg-skill/SKILL.md",
+          "text": "---\nname: pkg-skill\ndescription: package skill\n---\nSkill content here."
+        },
+        {
+          "path": "pkg/prompts/pkg.md",
+          "text": "package prompt"
+        },
+        {
+          "path": "pkg/themes/pkg.json",
+          "theme": {
+            "name": "pkg-theme"
+          }
+        },
+        {
+          "path": "pkg/ext.ts",
+          "extension": {
+            "commands": [
+              [
+                "pkg-command",
+                "pkg"
+              ]
+            ],
+            "tools": [
+              [
+                "pkg-tool",
+                "pkg tool"
+              ]
+            ]
+          }
+        },
+        {
+          "path": "agent/settings.json",
+          "json": {
+            "packages": [
+              "$ROOT/pkg"
+            ]
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/ext.ts",
+            "sourceInfo": {
+              "path": "$ROOT/pkg/ext.ts",
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            },
+            "commands": [
+              "pkg-command"
+            ],
+            "tools": [
+              "pkg-tool"
+            ],
+            "flags": [],
+            "sharedSourceInfo": true
+          }
+        ],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "pkg-skill",
+            "description": "package skill",
+            "filePath": "$ROOT/pkg/skills/pkg-skill/SKILL.md",
+            "baseDir": "$ROOT/pkg/skills/pkg-skill",
+            "sourceInfo": {
+              "path": "$ROOT/pkg/skills/pkg-skill/SKILL.md",
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skillDiagnostics": [],
+        "prompts": [
+          {
+            "name": "pkg",
+            "description": "package prompt",
+            "filePath": "$ROOT/pkg/prompts/pkg.md",
+            "sourceInfo": {
+              "path": "$ROOT/pkg/prompts/pkg.md",
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "promptDiagnostics": [],
+        "themes": [
+          {
+            "name": "pkg-theme",
+            "sourcePath": "$ROOT/pkg/themes/pkg.json",
+            "sourceInfo": {
+              "path": "$ROOT/pkg/themes/pkg.json",
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "extension_resources_after_reload_keep_package_metadata",
+      "tree": [
+        {
+          "path": "pkg/package.json",
+          "json": {
+            "name": "pkg",
+            "version": "1.0.0",
+            "maestro": {
+              "skills": [
+                "skills/pkg-skill"
+              ],
+              "themes": [
+                "themes"
+              ]
+            }
+          }
+        },
+        {
+          "path": "pkg/skills/pkg-skill/SKILL.md",
+          "text": "---\nname: pkg-skill\ndescription: package skill\n---\nSkill content here."
+        },
+        {
+          "path": "pkg/themes/pkg.json",
+          "theme": {
+            "name": "pkg-theme"
+          }
+        },
+        {
+          "path": "agent/settings.json",
+          "json": {
+            "packages": [
+              "$ROOT/pkg"
+            ]
+          }
+        },
+        {
+          "path": "extra/x/SKILL.md",
+          "text": "---\nname: x\ndescription: extension skill\n---\nSkill content here."
+        },
+        {
+          "path": "extra-themes/x.json",
+          "theme": {
+            "name": "x-theme"
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "extend": {
+        "skillPaths": [
+          [
+            "$ROOT/extra/x",
+            {
+              "source": "extension:x",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/extra/x"
+            }
+          ]
+        ],
+        "themePaths": [
+          [
+            "$ROOT/extra-themes/x.json",
+            {
+              "source": "extension:x",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/extra-themes"
+            }
+          ]
+        ]
+      },
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "pkg-skill",
+            "description": "package skill",
+            "filePath": "$ROOT/pkg/skills/pkg-skill/SKILL.md",
+            "baseDir": "$ROOT/pkg/skills/pkg-skill",
+            "sourceInfo": {
+              "path": "$ROOT/pkg/skills/pkg-skill/SKILL.md",
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "name": "x",
+            "description": "extension skill",
+            "filePath": "$ROOT/extra/x/SKILL.md",
+            "baseDir": "$ROOT/extra/x",
+            "sourceInfo": {
+              "path": "$ROOT/extra/x/SKILL.md",
+              "source": "extension:x",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/extra/x"
+            }
+          }
+        ],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [
+          {
+            "name": "pkg-theme",
+            "sourcePath": "$ROOT/pkg/themes/pkg.json",
+            "sourceInfo": {
+              "path": "$ROOT/pkg/themes/pkg.json",
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "name": "x-theme",
+            "sourcePath": "$ROOT/extra-themes/x.json",
+            "sourceInfo": {
+              "path": "$ROOT/extra-themes/x.json",
+              "source": "extension:x",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/extra-themes"
+            }
+          }
+        ],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "ancestor_agents_skills_are_discovered",
+      "tree": [
+        {
+          "path": ".agents/skills/anc/SKILL.md",
+          "text": "---\nname: anc\ndescription: ancestor skill\n---\nSkill content here."
+        },
+        {
+          "path": "project/.agents/skills/near/SKILL.md",
+          "text": "---\nname: near\ndescription: nearest skill\n---\nSkill content here."
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "near",
+            "description": "nearest skill",
+            "filePath": "$ROOT/project/.agents/skills/near/SKILL.md",
+            "baseDir": "$ROOT/project/.agents/skills/near",
+            "sourceInfo": {
+              "path": "$ROOT/project/.agents/skills/near/SKILL.md",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            }
+          },
+          {
+            "name": "anc",
+            "description": "ancestor skill",
+            "filePath": "$ROOT/.agents/skills/anc/SKILL.md",
+            "baseDir": "$ROOT/.agents/skills/anc",
+            "sourceInfo": {
+              "path": "$ROOT/.agents/skills/anc/SKILL.md",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            }
+          }
+        ],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "relative_extra_paths_use_loader_cwd",
+      "tree": [
+        {
+          "path": "project/rel-skills/r.md",
+          "text": "---\nname: rel-skill\ndescription: r\n---\nSkill content here."
+        },
+        {
+          "path": "project/rel-prompts/r.md",
+          "text": "rel prompt"
+        },
+        {
+          "path": "project/rel.json",
+          "theme": {
+            "name": "rel-theme"
+          }
+        }
+      ],
+      "options": {
+        "additionalSkillPaths": [
+          "rel-skills"
+        ],
+        "additionalPromptTemplatePaths": [
+          "rel-prompts"
+        ],
+        "additionalThemePaths": [
+          "rel.json"
+        ]
+      },
+      "reload": true,
+      "processCwd": "$ROOT",
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "rel-skill",
+            "description": "r",
+            "filePath": "$ROOT/project/rel-skills/r.md",
+            "baseDir": "$ROOT/project/rel-skills",
+            "sourceInfo": {
+              "path": "$ROOT/project/rel-skills/r.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/rel-skills"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "warning",
+            "message": "name \"rel-skill\" does not match parent directory \"rel-skills\"",
+            "path": "$ROOT/project/rel-skills/r.md"
+          }
+        ],
+        "prompts": [
+          {
+            "name": "r",
+            "description": "rel prompt",
+            "filePath": "$ROOT/project/rel-prompts/r.md",
+            "sourceInfo": {
+              "path": "$ROOT/project/rel-prompts/r.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/rel-prompts"
+            }
+          }
+        ],
+        "promptDiagnostics": [],
+        "themes": [
+          {
+            "name": "rel-theme",
+            "sourcePath": "$ROOT/project/rel.json",
+            "sourceInfo": {
+              "path": "$ROOT/project/rel.json",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project"
+            }
+          }
+        ],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    }
+  ],
+  "overrides": [
+    {
+      "name": "overrides_receive_base_and_replace_results",
+      "seen": [
+        0,
+        [
+          "auto-skill"
+        ],
+        0,
+        0,
+        0,
+        null,
+        []
+      ],
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [
+          {
+            "path": "<override>",
+            "error": "override note"
+          }
+        ],
+        "skills": [
+          {
+            "name": "injected",
+            "description": "Injected skill",
+            "filePath": "/fake/path",
+            "baseDir": "/fake",
+            "sourceInfo": {
+              "path": "/fake/path",
+              "source": "custom",
+              "scope": "temporary",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skillDiagnostics": [],
+        "prompts": [],
+        "promptDiagnostics": [
+          {
+            "type": "warning",
+            "message": "prompts replaced"
+          }
+        ],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [
+          {
+            "path": "/virtual/AGENTS.md",
+            "content": "virtual"
+          }
+        ],
+        "systemPrompt": "Custom system prompt",
+        "appendSystemPrompt": [
+          "added"
+        ]
+      }
+    },
+    {
+      "name": "missing_override_extension_path_uses_parent_directory",
+      "expected": {
+        "extensionPath": "$ROOT/missing/ext.ts",
+        "sourceInfo": {
+          "path": "$ROOT/missing/ext.ts",
+          "source": "local",
+          "scope": "temporary",
+          "origin": "top-level",
+          "baseDir": "$ROOT/missing"
+        }
+      },
+      "reference": {
+        "thrown": "ENOENT: no such file or directory, stat '$ROOT/missing/ext.ts'"
+      }
+    }
+  ],
+  "precedence": [
+    {
+      "name": "user_skill_beats_package_skill",
+      "tree": [
+        {
+          "path": "fake-package-web-fetch/package.json",
+          "json": {
+            "name": "fake-pkg-web-fetch",
+            "version": "1.0.0",
+            "maestro": {
+              "skills": [
+                "skills/web-fetch"
+              ]
+            }
+          }
+        },
+        {
+          "path": "fake-package-web-fetch/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: Package web-fetch skill\n---\nPackage skill content"
+        },
+        {
+          "path": "agent/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: User web-fetch override\n---\nUser skill content"
+        },
+        {
+          "path": "agent/settings.json",
+          "json": {
+            "packages": [
+              "$ROOT/fake-package-web-fetch"
+            ]
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "web-fetch",
+            "description": "User web-fetch override",
+            "filePath": "$ROOT/agent/skills/web-fetch/SKILL.md",
+            "baseDir": "$ROOT/agent/skills/web-fetch",
+            "sourceInfo": {
+              "path": "$ROOT/agent/skills/web-fetch/SKILL.md",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"web-fetch\" collision",
+            "path": "$ROOT/fake-package-web-fetch/skills/web-fetch/SKILL.md",
+            "collision": {
+              "resourceType": "skill",
+              "name": "web-fetch",
+              "winnerPath": "$ROOT/agent/skills/web-fetch/SKILL.md",
+              "loserPath": "$ROOT/fake-package-web-fetch/skills/web-fetch/SKILL.md"
+            }
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "project_skill_beats_package_skill",
+      "tree": [
+        {
+          "path": "fake-package-web-fetch/package.json",
+          "json": {
+            "name": "fake-pkg-web-fetch",
+            "version": "1.0.0",
+            "maestro": {
+              "skills": [
+                "skills/web-fetch"
+              ]
+            }
+          }
+        },
+        {
+          "path": "fake-package-web-fetch/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: Package web-fetch skill\n---\nPackage skill content"
+        },
+        {
+          "path": "project/$CONFIG/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: Project web-fetch override\n---\nProject skill content"
+        },
+        {
+          "path": "agent/settings.json",
+          "json": {
+            "packages": [
+              "$ROOT/fake-package-web-fetch"
+            ]
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "web-fetch",
+            "description": "Project web-fetch override",
+            "filePath": "$ROOT/project/$CONFIG/skills/web-fetch/SKILL.md",
+            "baseDir": "$ROOT/project/$CONFIG/skills/web-fetch",
+            "sourceInfo": {
+              "path": "$ROOT/project/$CONFIG/skills/web-fetch/SKILL.md",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"web-fetch\" collision",
+            "path": "$ROOT/fake-package-web-fetch/skills/web-fetch/SKILL.md",
+            "collision": {
+              "resourceType": "skill",
+              "name": "web-fetch",
+              "winnerPath": "$ROOT/project/$CONFIG/skills/web-fetch/SKILL.md",
+              "loserPath": "$ROOT/fake-package-web-fetch/skills/web-fetch/SKILL.md"
+            }
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "project_beats_user_beats_package",
+      "tree": [
+        {
+          "path": "fake-package-web-fetch/package.json",
+          "json": {
+            "name": "fake-pkg-web-fetch",
+            "version": "1.0.0",
+            "maestro": {
+              "skills": [
+                "skills/web-fetch"
+              ]
+            }
+          }
+        },
+        {
+          "path": "fake-package-web-fetch/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: Package web-fetch skill\n---\nPackage skill content"
+        },
+        {
+          "path": "agent/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: User web-fetch override\n---\nUser skill content"
+        },
+        {
+          "path": "project/$CONFIG/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: Project web-fetch override\n---\nProject skill content"
+        },
+        {
+          "path": "agent/settings.json",
+          "json": {
+            "packages": [
+              "$ROOT/fake-package-web-fetch"
+            ]
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "web-fetch",
+            "description": "Project web-fetch override",
+            "filePath": "$ROOT/project/$CONFIG/skills/web-fetch/SKILL.md",
+            "baseDir": "$ROOT/project/$CONFIG/skills/web-fetch",
+            "sourceInfo": {
+              "path": "$ROOT/project/$CONFIG/skills/web-fetch/SKILL.md",
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$ROOT/project/$CONFIG"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"web-fetch\" collision",
+            "path": "$ROOT/agent/skills/web-fetch/SKILL.md",
+            "collision": {
+              "resourceType": "skill",
+              "name": "web-fetch",
+              "winnerPath": "$ROOT/project/$CONFIG/skills/web-fetch/SKILL.md",
+              "loserPath": "$ROOT/agent/skills/web-fetch/SKILL.md"
+            }
+          },
+          {
+            "type": "collision",
+            "message": "name \"web-fetch\" collision",
+            "path": "$ROOT/fake-package-web-fetch/skills/web-fetch/SKILL.md",
+            "collision": {
+              "resourceType": "skill",
+              "name": "web-fetch",
+              "winnerPath": "$ROOT/project/$CONFIG/skills/web-fetch/SKILL.md",
+              "loserPath": "$ROOT/fake-package-web-fetch/skills/web-fetch/SKILL.md"
+            }
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    },
+    {
+      "name": "package_skill_reported_as_collision_loser",
+      "tree": [
+        {
+          "path": "fake-package-web-fetch/package.json",
+          "json": {
+            "name": "fake-pkg-web-fetch",
+            "version": "1.0.0",
+            "maestro": {
+              "skills": [
+                "skills/web-fetch"
+              ]
+            }
+          }
+        },
+        {
+          "path": "fake-package-web-fetch/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: Package web-fetch skill\n---\nPackage skill content"
+        },
+        {
+          "path": "agent/skills/web-fetch/SKILL.md",
+          "text": "---\nname: web-fetch\ndescription: User web-fetch override\n---\nUser skill content"
+        },
+        {
+          "path": "agent/settings.json",
+          "json": {
+            "packages": [
+              "$ROOT/fake-package-web-fetch"
+            ]
+          }
+        }
+      ],
+      "options": {},
+      "reload": true,
+      "expected": {
+        "extensions": [],
+        "extensionErrors": [],
+        "skills": [
+          {
+            "name": "web-fetch",
+            "description": "User web-fetch override",
+            "filePath": "$ROOT/agent/skills/web-fetch/SKILL.md",
+            "baseDir": "$ROOT/agent/skills/web-fetch",
+            "sourceInfo": {
+              "path": "$ROOT/agent/skills/web-fetch/SKILL.md",
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$ROOT/agent"
+            }
+          }
+        ],
+        "skillDiagnostics": [
+          {
+            "type": "collision",
+            "message": "name \"web-fetch\" collision",
+            "path": "$ROOT/fake-package-web-fetch/skills/web-fetch/SKILL.md",
+            "collision": {
+              "resourceType": "skill",
+              "name": "web-fetch",
+              "winnerPath": "$ROOT/agent/skills/web-fetch/SKILL.md",
+              "loserPath": "$ROOT/fake-package-web-fetch/skills/web-fetch/SKILL.md"
+            }
+          }
+        ],
+        "prompts": [],
+        "promptDiagnostics": [],
+        "themes": [],
+        "themeDiagnostics": [],
+        "agentsFiles": [],
+        "systemPrompt": null,
+        "appendSystemPrompt": []
+      }
+    }
+  ],
+  "settings": {
+    "name": "in_memory_settings_survive_loader_reload",
+    "expected": {
+      "defaultThinkingLevel": "high",
+      "imageAutoResize": false,
+      "compactionEnabled": false
+    }
+  }
+}

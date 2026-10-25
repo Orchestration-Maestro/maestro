@@ -17,7 +17,7 @@ use maestro_tools::{
     create_write_tool_definition, key_hint, output::render_utils::strip_ansi,
 };
 use maestro_tui::{Component, Container, Text, tui::ComponentHandle};
-use read_support::TempDir;
+use read_support::{Fixture, Scratch};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{any::Any, rc::Rc, sync::Arc};
@@ -59,7 +59,7 @@ fn draw_call(
     last: Option<ComponentHandle>,
 ) -> ComponentHandle {
     let ctx = context(args, setup, env, last);
-    (tool().render_call.unwrap())(Some(args), &env.theme, &ctx).unwrap()
+    (tool().render_call.unwrap())(Some(args), &env.live, &ctx).unwrap()
 }
 
 /// Draw a result, reusing `last`.
@@ -78,7 +78,7 @@ fn draw_result(
         &(tool().render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(result),
         options,
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .unwrap()
@@ -205,10 +205,7 @@ fn result_of(content: Vec<UserBlock>) -> AgentToolResult<()> {
 
 /// A text block.
 fn text_block(text: &str) -> UserBlock {
-    UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    })
+    UserBlock::Text(TextContent::new(text.into()))
 }
 
 /// The blocks of a recorded result.
@@ -394,7 +391,7 @@ fn write_renderers_reuse_call_and_result_components() {
 
 #[test]
 fn write_preview_callbacks_never_mutate_files() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let existing = dir.file("existing.txt", b"original");
     let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
     let tool: Tool = create_write_tool_definition(
@@ -417,7 +414,7 @@ fn write_preview_callbacks_never_mutate_files() {
             &env,
             None,
         );
-        (tool.render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
+        (tool.render_call.as_ref().unwrap())(Some(&args), &env.live, &ctx).unwrap();
     }
     let mut failing = settled(setup(false));
     failing.is_error = true;
@@ -432,12 +429,12 @@ fn write_preview_callbacks_never_mutate_files() {
             text_block("denied"),
         ])),
         options,
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .unwrap();
     assert_eq!(
-        std::fs::read(dir.0.join("existing.txt")).unwrap(),
+        std::fs::read(dir.path().join("existing.txt")).unwrap(),
         b"original"
     );
     assert!(ops.calls().is_empty());

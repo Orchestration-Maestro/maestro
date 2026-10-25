@@ -28,10 +28,7 @@ fn application_launches_use_the_shared_process_interfaces() {
     assert!(output.stdout.is_empty());
     assert!(output.stderr.is_empty());
     spawn(Command::new("true"), None).unwrap().join().unwrap();
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::support::io_runtime();
     let options: maestro_tools::process::exec::ExecOptions<'_> = ExecOptions::default();
     let output: ExecResult = runtime
         .block_on(exec_command(

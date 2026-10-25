@@ -1,0 +1,491 @@
+[
+  {
+    "input": {
+      "from": {
+        "command": null,
+        "phase": "pending"
+      },
+      "to": {
+        "command": "create",
+        "phase": "pending"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": null,
+      "collapsed": true,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "pending"
+      },
+      "to": {
+        "command": "update",
+        "phase": "pending"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": false,
+      "collapsed": true,
+      "codeRetained": false
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "update",
+        "phase": "pending"
+      },
+      "to": {
+        "command": "get",
+        "phase": "pending"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": false,
+      "collapsed": true,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "get",
+        "phase": "pending"
+      },
+      "to": {
+        "command": "delete",
+        "phase": "pending"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": null,
+      "collapsed": null,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "delete",
+        "phase": "pending"
+      },
+      "to": {
+        "command": "get",
+        "phase": "success"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": null,
+      "collapsed": true,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "get",
+        "phase": "success"
+      },
+      "to": {
+        "command": "logs",
+        "phase": "success"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": false,
+      "collapsed": true,
+      "codeRetained": false
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "logs",
+        "phase": "success"
+      },
+      "to": {
+        "command": "create",
+        "phase": "success"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": false,
+      "collapsed": true,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "success"
+      },
+      "to": {
+        "command": "update",
+        "phase": "success"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": false,
+      "collapsed": true,
+      "codeRetained": false
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "update",
+        "phase": "success"
+      },
+      "to": {
+        "command": "delete",
+        "phase": "success"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": null,
+      "collapsed": null,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "delete",
+        "phase": "success"
+      },
+      "to": {
+        "command": "create",
+        "phase": "error"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": null,
+      "collapsed": true,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "error"
+      },
+      "to": {
+        "command": "get",
+        "phase": "error"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": null,
+      "collapsed": null,
+      "codeRetained": false
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "get",
+        "phase": "error"
+      },
+      "to": {
+        "command": null,
+        "phase": "pending"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": null,
+      "collapsed": null,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "pending"
+      },
+      "to": {
+        "command": "rewrite",
+        "phase": "pending"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": true,
+      "collapsed": false,
+      "codeRetained": true
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "get",
+        "phase": "pending"
+      },
+      "to": {
+        "command": "logs",
+        "phase": "pending"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": true,
+      "collapsed": false,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "delete",
+        "phase": "pending"
+      },
+      "to": {
+        "command": "other",
+        "phase": "pending"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": null,
+      "collapsed": null,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "success"
+      },
+      "to": {
+        "command": "rewrite",
+        "phase": "success"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": true,
+      "collapsed": false,
+      "codeRetained": true
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "delete",
+        "phase": "success"
+      },
+      "to": {
+        "command": "other",
+        "phase": "success"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": null,
+      "collapsed": null,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "error"
+      },
+      "to": {
+        "command": "rewrite",
+        "phase": "error"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": true,
+      "collapsed": false,
+      "codeRetained": true
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "error"
+      },
+      "to": {
+        "command": "update",
+        "phase": "error"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": true,
+      "collapsed": false,
+      "codeRetained": false
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": null,
+        "phase": "pending"
+      },
+      "to": {
+        "command": null,
+        "phase": "pending",
+        "present": true
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": null,
+      "collapsed": null,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "delete",
+        "phase": "pending",
+        "streaming": true
+      },
+      "to": {
+        "command": "delete",
+        "phase": "pending",
+        "streaming": false
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": null,
+      "collapsed": null,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "pending",
+        "streaming": true
+      },
+      "to": {
+        "command": "create",
+        "phase": "pending",
+        "streaming": false
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": true,
+      "collapsed": false,
+      "codeRetained": true
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "pending",
+        "streaming": true,
+        "content": "first"
+      },
+      "to": {
+        "command": "rewrite",
+        "phase": "pending",
+        "streaming": true,
+        "content": "next"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": true,
+      "collapsed": false,
+      "codeRetained": true
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "create",
+        "phase": "pending",
+        "streaming": true,
+        "content": "first"
+      },
+      "to": {
+        "command": "create",
+        "phase": "success",
+        "streaming": true,
+        "content": "next"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": false,
+      "collapsed": true,
+      "codeRetained": false
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "get",
+        "phase": "pending",
+        "streaming": true,
+        "content": "first"
+      },
+      "to": {
+        "command": "logs",
+        "phase": "pending",
+        "streaming": true,
+        "content": "next"
+      }
+    },
+    "expected": {
+      "headerRetained": true,
+      "bodyRetained": true,
+      "collapsed": false,
+      "codeRetained": null
+    }
+  },
+  {
+    "input": {
+      "from": {
+        "command": "get",
+        "phase": "pending",
+        "streaming": true,
+        "content": "first"
+      },
+      "to": {
+        "command": "get",
+        "phase": "success",
+        "streaming": true,
+        "content": "next"
+      }
+    },
+    "expected": {
+      "headerRetained": false,
+      "bodyRetained": false,
+      "collapsed": true,
+      "codeRetained": null
+    }
+  }
+]

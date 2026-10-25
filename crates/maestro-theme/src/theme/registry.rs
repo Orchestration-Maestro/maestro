@@ -1,12 +1,14 @@
 //! Theme registration, discovery and lookup over supplied directories.
 use super::lifecycle::Lifecycle;
-use super::loading::{build_theme, parse_custom};
-use super::{Theme, ThemeError, ThemeOperations, ThemeOptions};
+use super::loading::{build_theme, parse_custom, read_text};
+use super::{Theme, ThemeError, ThemeOptions};
 use indexmap::IndexMap;
 use maestro_path::join;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
+use std::io;
+use std::path::Path;
 use std::rc::Rc;
 
 /// Shipped theme names in discovery order.
@@ -28,12 +30,10 @@ pub struct ThemeInfo {
     /// Source path of the first owner of the name, when it has one.
     pub path: Option<String>,
 }
-/// Lazy shipped data, registrations and effects for one set of theme directories.
+/// Lazy shipped data and registrations for one set of theme directories.
 pub struct ThemeState {
     /// Supplied roots.
     pub(super) directories: ThemeDirectories,
-    /// File, environment and sorting effects.
-    pub(super) operations: Rc<dyn ThemeOperations>,
     /// Shipped documents, filled only after every one was read and parsed.
     builtins: OnceCell<[Value; 2]>,
     /// Registered instances by name, in first-registration order.
@@ -42,12 +42,11 @@ pub struct ThemeState {
     pub(super) lifecycle: Lifecycle,
 }
 impl ThemeState {
-    /// Retain the roots and effects; nothing is read until a query needs it.
+    /// Retain the roots; nothing is read until a query needs it.
     #[must_use]
-    pub fn new(directories: ThemeDirectories, operations: Rc<dyn ThemeOperations>) -> Self {
+    pub fn new(directories: ThemeDirectories) -> Self {
         Self {
             directories,
-            operations,
             builtins: OnceCell::new(),
             registered: RefCell::default(),
             lifecycle: Lifecycle::default(),
@@ -83,9 +82,7 @@ impl ThemeState {
             .into_iter()
             .map(|(name, path)| ThemeInfo { name, path })
             .collect();
-        self.operations
-            .sort_by_name(&mut themes)
-            .map_err(ThemeError::io)?;
+        sort_by_name(&mut themes).map_err(ThemeError::io)?;
         Ok(themes)
     }
     /// Return the registered instance, else a new instance from shipped or custom data.
@@ -103,7 +100,7 @@ impl ThemeState {
         }
         let document = self.document(name)?;
         let options = ThemeOptions::default();
-        build_theme(&document, None, self.operations.as_ref(), options).map(Rc::new)
+        build_theme(&document, None, options).map(Rc::new)
     }
 
     /// Select each name's first owner: shipped, then custom entry, then registration.
@@ -128,10 +125,10 @@ impl ThemeState {
         owners: &mut IndexMap<String, Option<String>>,
     ) -> Result<(), ThemeError> {
         let custom = &self.directories.custom_themes_dir;
-        if !self.operations.exists(custom) {
+        if !Path::new(custom).exists() {
             return Ok(());
         }
-        for file in self.operations.read_dir(custom).map_err(ThemeError::io)? {
+        for file in entry_names(custom).map_err(ThemeError::io)? {
             if let Some(name) = file.strip_suffix(".json") {
                 owners
                     .entry(name.to_owned())
@@ -152,10 +149,7 @@ impl ThemeState {
     /// Read one shipped file without custom-file admission.
     fn read_builtin(&self, name: &str) -> Result<Value, ThemeError> {
         let path = join(&[&self.directories.themes_dir, &format!("{name}.json")]);
-        let content = self
-            .operations
-            .read_to_string(&path)
-            .map_err(ThemeError::io)?;
+        let content = read_text(&path).map_err(ThemeError::io)?;
         serde_json::from_str(&content)
             .map_err(|cause| ThemeError::caused_by(cause.to_string(), cause))
     }
@@ -184,16 +178,38 @@ impl ThemeState {
             Some(path) => (path, None),
             None => {
                 let path = join(&[&self.directories.custom_themes_dir, &format!("{name}.json")]);
-                if !self.operations.exists(&path) {
+                if !Path::new(&path).exists() {
                     return Err(ThemeError::message(format!("Theme not found: {name}")));
                 }
                 (path, Some(name))
             }
         };
-        let content = self
-            .operations
-            .read_to_string(&path)
-            .map_err(ThemeError::io)?;
+        let content = read_text(&path).map_err(ThemeError::io)?;
         parse_custom(label.unwrap_or(&path), &content).map(Cow::Owned)
     }
+}
+/// The entry names of a directory, in name order.
+#[cfg(not(target_arch = "wasm32"))]
+fn entry_names(dir: &str) -> io::Result<Vec<String>> {
+    Ok(maestro_listing::read_dir(dir)?
+        .iter()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect())
+}
+/// wasm32 has no file system, so no custom directory exists to list.
+#[cfg(target_arch = "wasm32")]
+fn entry_names(_dir: &str) -> io::Result<Vec<String>> {
+    Err(io::ErrorKind::Unsupported.into())
+}
+/// Sort an inventory by name with a stable comparison in the process locale.
+#[cfg(not(target_arch = "wasm32"))]
+fn sort_by_name(themes: &mut [ThemeInfo]) -> io::Result<()> {
+    let collator = super::Collator::new(&|name| std::env::var(name).ok())?;
+    themes.sort_by(|a, b| collator.compare(&a.name, &b.name));
+    Ok(())
+}
+/// wasm32 has no shipped files, so an inventory never reaches sorting.
+#[cfg(target_arch = "wasm32")]
+fn sort_by_name(_themes: &mut [ThemeInfo]) -> io::Result<()> {
+    Err(io::ErrorKind::Unsupported.into())
 }

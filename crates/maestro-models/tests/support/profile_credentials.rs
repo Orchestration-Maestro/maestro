@@ -9,8 +9,6 @@ use serde::Deserialize;
 
 use crate::TestResult;
 use crate::bedrock;
-use crate::chat::block_on;
-use crate::child_process;
 use crate::profile_files::Workdir;
 use crate::profile_services::{Log, RoleRequest, Sent, SigninRequest, SsoRequest, serve};
 use crate::transport;
@@ -219,7 +217,15 @@ fn check_outside(test: &str, row: &Row) -> TestResult {
         .iter()
         .map(|(name, value)| (name.as_str(), value.as_str()))
         .collect();
-    child_process::rerun(test, &row.id, &variables)?;
+    {
+        let output = maestro_test_process::TestProcess::current(test)?
+            .nocapture()
+            .env_clear()
+            .envs(variables.iter().copied())
+            .case(&row.id)
+            .output()?;
+        assert!(output.status.success(), "{output:?}");
+    };
     services.finish()?;
     let log = log.lock().map_err(|error| error.to_string())?;
     let (id, expected) = (&row.id, &row.expected);
@@ -289,14 +295,21 @@ pub fn check_rows(test: &str) -> TestResult {
     let all = parse_rows(FIXTURE)?;
     let owned: Vec<Row> = all.into_iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty(), "{test} owns no rows");
-    if let Some(case) = child_process::child_case() {
+    let case = maestro_test_process::selection();
+    if case.is_child() {
         let row = owned
             .iter()
-            .find(|row| row.id == case)
+            .find(|row| case.runs_case(&row.id))
             .ok_or("unknown row")?;
-        return block_on(false, converse(row));
+        return crate::runtime::run(converse(row));
     }
-    owned.iter().try_for_each(|row| check_outside(test, row))
+    // A privileged run writes a read-only cache anyway, so such a row has nothing to check.
+    let probe = maestro_test_directory::Scratch::new()?;
+    let denials = maestro_test_directory::deny(probe.path(), 0o555)?.is_some();
+    owned
+        .iter()
+        .filter(|row| denials || row.input.read_only.is_none())
+        .try_for_each(|row| check_outside(test, row))
 }
 
 /// Reject a fixture whose ids repeat.

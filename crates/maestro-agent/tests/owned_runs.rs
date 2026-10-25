@@ -561,7 +561,7 @@ fn pending_call_sets_preserve_old_snapshots() {
                 maestro_models::AssistantContent::ToolCall(maestro_models::ToolCall {
                     id: id.into(),
                     name: "echo".into(),
-                    arguments: maestro_models::JsonObject::new(),
+                    arguments: maestro_models::JsonObject::new().into(),
                     thought_signature: None,
                 })
             })
@@ -737,7 +737,10 @@ fn assert_failed_state(agent: &Agent) {
     assert_eq!(last.stop_reason, StopReason::Error);
     assert_eq!(last.error_message.as_deref(), Some("original"));
     assert_eq!(last.model, "unknown");
-    assert_eq!(last.usage.total_tokens.to_bits(), 0.0_f64.to_bits());
+    assert_eq!(
+        last.usage.total_tokens.present().unwrap().to_bits(),
+        0.0_f64.to_bits()
+    );
     assert!(state.streaming_message().is_none());
     assert!(state.pending_tool_calls().is_empty());
 }
@@ -783,20 +786,14 @@ async fn native_tool_progress(continuation: bool) {
         let context = support::with_execute(Arc::new(|_, _, _, update| {
             update.unwrap()(maestro_agent::AgentToolResult {
                 content: vec![maestro_models::UserBlock::Text(
-                    maestro_models::TextContent {
-                        text: "native partial".into(),
-                        text_signature: None,
-                    },
+                    maestro_models::TextContent::new("native partial".into()),
                 )],
                 details: Some(serde_json::json!({"phase":"progress"})),
                 terminate: None,
             });
             support::ready(Ok(maestro_agent::AgentToolResult {
                 content: vec![maestro_models::UserBlock::Text(
-                    maestro_models::TextContent {
-                        text: "native final".into(),
-                        text_signature: None,
-                    },
+                    maestro_models::TextContent::new("native final".into()),
                 )],
                 details: Some(serde_json::json!({"phase":"final"})),
                 terminate: Some(true),

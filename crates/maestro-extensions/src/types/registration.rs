@@ -26,7 +26,8 @@ pub enum FlagType {
     String,
 }
 /// A flag value, independent of its declared kind.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(untagged)]
 pub enum FlagValue {
     /// A boolean value.
     Boolean(bool),
@@ -198,6 +199,7 @@ impl<E: ExtensionExecution> Clone for ExtensionAPI<E> {
 
 /// Retained tool projections.
 pub(crate) mod tools;
+pub use tools::ToolDefinitionMetadata;
 
 /// Extension-owned typed definition. Callback ownership and invocation are independent.
 type Definition<P = Value, D = Value, S = Value, E = Threaded> =
@@ -210,6 +212,30 @@ pub type ExtensionHandler<V, R, E = Threaded> =
 /// Controlled factory callback with synchronous-ready or suspended initialization.
 pub type ExtensionFactory<E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::Factory>;
+/// Turns a resolved extension path into its factory, or none when the module exports none.
+#[cfg(not(target_arch = "wasm32"))]
+pub type ModuleLoader<E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::ModuleLoader>;
+
+/// One path that failed to load.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExtensionLoadError {
+    /// The path as supplied.
+    pub path: String,
+    /// The complete failure message.
+    pub error: String,
+}
+/// Extensions loaded in path order, the paths that failed, and the runtime they share.
+#[cfg(not(target_arch = "wasm32"))]
+pub struct LoadExtensionsResult<E: ExtensionExecution = Threaded> {
+    /// Loaded extensions in path order.
+    pub extensions: Vec<ExtensionHandle<E>>,
+    /// Failed paths in path order.
+    pub errors: Vec<ExtensionLoadError>,
+    /// The shared runtime; its actions fail until a runner binds it.
+    pub runtime: E::Shared<super::ExtensionRuntime<E>>,
+}
 
 /// Existing renderer-binding choice retained without changing execution or registration ownership.
 type RendererProjection<P, D, S, E> =
@@ -249,7 +275,7 @@ impl<P, D: DeserializeOwned + 'static, S: Default + 'static, E: ExtensionExecuti
     From<Definition<P, D, S, E>> for RegisteredToolInput<P, D, S, E>
 {
     fn from(definition: Definition<P, D, S, E>) -> Self {
-        Self::from(ToolDefinitionInput::Owned(definition))
+        Self::from(ToolDefinitionInput::Owned(Box::new(definition)))
     }
 }
 
@@ -259,6 +285,22 @@ pub struct RegisteredTool<E: ExtensionExecution = Threaded> {
     pub definition: E::Shared<E::RegisteredDefinition>,
     /// The source info owner.
     pub source_info: Arc<RwLock<SourceInfo>>,
+}
+impl<E: ExtensionExecution> RegisteredTool<E> {
+    /// The definition's current model-facing declaration, label, prompt text and options.
+    #[must_use]
+    pub fn metadata(&self) -> ToolDefinitionMetadata {
+        tools::RetainedDefinition::metadata(&*self.definition)
+    }
+    /// The definition's renderers, bound for row rendering.
+    ///
+    /// # Errors
+    /// Returns the lower binding diagnostic for a typed result slot on the raw route.
+    pub fn renderer_binding(
+        &self,
+    ) -> Result<ToolRendererBinding, maestro_models::DiagnosticErrorInfo> {
+        tools::RetainedDefinition::renderer_binding(&*self.definition)
+    }
 }
 impl<E: ExtensionExecution> Clone for RegisteredTool<E> {
     fn clone(&self) -> Self {
@@ -279,7 +321,7 @@ impl<E: ExtensionExecution> Clone for RegisteredTool<E> {
 ///
 /// let tool: ToolDefinition<Value, Value, ()> = define_tool(ToolDefinition {
 ///     definition: Tool { name: "echo".into(), description: "Echo arguments".into(),
-///         parameters: json!({"type":"object"}) },
+///         parameters: json!({"type":"object"}).into() },
 ///     label: "Echo".into(), prompt_snippet: None, prompt_guidelines: None,
 ///     render_shell: None, prepare_arguments: None, execution_mode: None,
 ///     execute: Arc::new(|_, params, _, _, context| Box::pin(async move {

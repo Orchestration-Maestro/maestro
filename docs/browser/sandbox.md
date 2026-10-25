@@ -4,6 +4,11 @@ The browser sandbox modules provide `RuntimeMessageRouter`, `MessageConsumer`
 and `RuntimeMessageBridge`. The crate root exports `RuntimeMessageBridge` and,
 on WebAssembly, the browser-local `RUNTIME_MESSAGE_ROUTER` singleton.
 
+The [browser integration command](../development.md#browser-integration-qualification)
+builds and runs the existing execution and loading assertions with supplied
+Chromium tools. It documents the selected exports, expected policy error and
+cleanup behavior.
+
 ## Retained HTML loading
 
 On WebAssembly, `maestro_web::SandboxIframe` retains a caller-supplied native
@@ -172,6 +177,11 @@ the injected document owns those browser effects. Native collection aliases stay
 live until reset replaces the current collection.
 
 ## Qualification boundary
+
+The [browser test command](../development.md#browser-integration-qualification)
+fetches the checkout's locked dependencies before offline scratch preparation.
+An initially empty Cargo home is supported when the configured dependency sources
+are reachable. The command installs no browser tools.
 
 Native tests exercise document envelopes, ordered result collection and shared routing. The browser-executed
 loading witnesses cover native listener removal, current-window admission,

@@ -258,17 +258,20 @@ fn persisted_rewrite_uses_shared_order_and_json_bytes() {
     filesystem::run_order("persisted_rewrite_uses_shared_order_and_json_bytes");
 }
 
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct WarningInput {
     warnings: Vec<String>,
 }
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct WarningExpected {
     before: WarningPhase,
     after: WarningPhase,
 }
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct WarningPhase {

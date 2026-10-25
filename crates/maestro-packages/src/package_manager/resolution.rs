@@ -1,5 +1,5 @@
 //! Explicit source resolution with resource provenance.
-use maestro_resources::PathMetadata;
+use maestro_resources::{PathMetadata, paths::CONFIG_DIR_NAME};
 /// One discovered resource with its original path and provenance.
 pub struct ResolvedResource {
     /// The authored resource path.
@@ -20,6 +20,8 @@ pub struct ResolvedPaths {
     pub prompts: Vec<ResolvedResource>,
     /// Theme files.
     pub themes: Vec<ResolvedResource>,
+    /// Browser contribution files.
+    pub contributions: Vec<ResolvedResource>,
 }
 use super::{
     DefaultPackageManager, PackageOperations,
@@ -63,7 +65,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             )
             .await?;
         }
-        Ok(result.finish(self.operations.resource_operations()))
+        Ok(result.finish())
     }
     /// Admits local sources and acquires or refreshes remote contents before collection.
     pub(super) async fn resolve_source<'a>(
@@ -87,17 +89,17 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if let Source::Local(path) = parsed {
             let base = match scope {
                 SourceScope::User => std::borrow::Cow::Borrowed(self.options.agent_dir.as_str()),
-                SourceScope::Project => join(&[&self.options.cwd, ".maestro"]).into(),
+                SourceScope::Project => join(&[&self.options.cwd, CONFIG_DIR_NAME]).into(),
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
-            let path = self.resolve_local(path, &base)?;
-            self.collect_local(path, &mut metadata, filter, result);
+            let path = super::paths::resolve_local(path, &base, super::operations::home_dir)?;
+            Self::collect_local(path, &mut metadata, filter, result);
             return Ok(());
         }
         let path = self.remote_path(&parsed, scope)?;
-        let exists = self.operations.exists(&path);
+        let exists = Path::new(&path).exists();
         let mismatched = exists
-            && matches!(&parsed, Source::Npm { spec, name } if spec != name && self.installed_npm_version(&path).as_deref() != Some(&spec[name.len()+1..]));
+            && matches!(&parsed, Source::Npm { spec, name } if spec != name && super::npm::installed_npm_version(&path).as_deref() != Some(&spec[name.len()+1..]));
         if !exists || mismatched {
             if !self.admit_missing(source, on_missing).await? {
                 return Ok(());
@@ -117,7 +119,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             self.refresh_temporary_git(git, source).await;
         }
         metadata.base_dir = Some(path.clone());
-        self.collect_package(&path, &metadata, filter, result)?;
+        Self::collect_package(&path, &metadata, filter, result)?;
         Ok(())
     }
     /// Applies offline refusal before invoking the operation-local missing callback.
@@ -143,24 +145,22 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Suppresses local stat and discovery failures after path resolution.
     fn collect_local(
-        &self,
         path: String,
         metadata: &mut PathMetadata,
         filter: Option<&serde_json::Map<String, serde_json::Value>>,
         result: &mut Accumulator,
     ) {
-        let operations = self.operations.resource_operations();
-        if !operations.exists(Path::new(&path)) {
+        if !Path::new(&path).exists() {
             return;
         }
-        match operations.metadata(Path::new(&path)) {
+        match maestro_resources::metadata(Path::new(&path)) {
             Ok(ResourceFileType::File) => {
                 metadata.base_dir = Some(dirname(&path));
                 result.insert(ResourceType::Extensions, path, metadata);
             }
             Ok(ResourceFileType::Directory) => {
                 metadata.base_dir = Some(path.clone());
-                if let Ok(false) = self.collect_package(&path, metadata, filter, result) {
+                if let Ok(false) = Self::collect_package(&path, metadata, filter, result) {
                     result.insert(ResourceType::Extensions, path, metadata);
                 }
             }
@@ -169,19 +169,15 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Inserts each selected kind only after its complete candidate selection succeeds.
     fn collect_manifest(
-        &self,
         manifest: &super::manifest::Manifest,
         path: &str,
         metadata: &PathMetadata,
         result: &mut Accumulator,
     ) -> io::Result<()> {
-        let operations = self.operations.resource_operations();
         for kind in ResourceType::ALL {
             let entries = manifest.entries(kind.name())?;
-            let files =
-                super::manifest::collect_manifest_entries(&entries, path, kind, operations)?;
-            let enabled =
-                super::resource_patterns::apply_patterns(&files, &entries, path, operations)?;
+            let files = super::manifest::collect_manifest_entries(&entries, path, kind)?;
+            let enabled = super::resource_patterns::apply_patterns(&files, &entries, path)?;
             for file in files.iter().filter(|file| enabled.contains(file.as_str())) {
                 result.insert(kind, file.clone(), metadata);
             }
@@ -190,26 +186,24 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Collects conventional paths, retaining results produced by earlier kinds.
     pub(super) fn collect_conventional(
-        &self,
         path: &str,
         metadata: &PathMetadata,
         result: &mut Accumulator,
     ) -> io::Result<bool> {
-        let operations = self.operations.resource_operations();
         if let Some(manifest) =
-            super::manifest::read_maestro_manifest_file(&join(&[path, "package.json"]), operations)
+            super::manifest::read_maestro_manifest_file(&join(&[path, "package.json"]))
         {
-            self.collect_manifest(&manifest, path, metadata, result)?;
+            Self::collect_manifest(&manifest, path, metadata, result)?;
             return Ok(true);
         }
         let mut found = false;
         for kind in ResourceType::ALL {
             let dir = join(&[path, kind.name()]);
-            if !operations.exists(Path::new(&dir)) {
+            if !Path::new(&dir).exists() {
                 continue;
             }
             found = true;
-            for path in collect_resource_files(&dir, kind, operations)? {
+            for path in collect_resource_files(&dir, kind)? {
                 result.insert(kind, path, metadata);
             }
         }
@@ -224,6 +218,7 @@ impl ResolvedPaths {
             ResourceType::Skills => &mut self.skills,
             ResourceType::Prompts => &mut self.prompts,
             ResourceType::Themes => &mut self.themes,
+            ResourceType::Contributions => &mut self.contributions,
         }
     }
 }
@@ -234,19 +229,16 @@ pub(super) struct Accumulator {
     /// Ordered resources.
     paths: ResolvedPaths,
     /// Authored identities already admitted for each kind.
-    seen: [HashMap<String, usize>; 4],
+    seen: [HashMap<String, usize>; 5],
 }
 impl Accumulator {
     /// Stably ranks resources before retaining the first canonical identity.
-    pub(super) fn finish(
-        mut self,
-        operations: &dyn maestro_resources::skills::ResourceOperations,
-    ) -> ResolvedPaths {
+    pub(super) fn finish(mut self) -> ResolvedPaths {
         for kind in ResourceType::ALL {
             let items = self.paths.items(kind);
             items.sort_by_key(|resource| precedence(&resource.metadata));
             let mut seen = HashSet::new();
-            items.retain(|resource| seen.insert(canonicalize_path(&resource.path, operations)));
+            items.retain(|resource| seen.insert(canonicalize_path(&resource.path)));
         }
         self.paths
     }

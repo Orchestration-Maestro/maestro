@@ -2,9 +2,7 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::{Endpoint, Owner, Request};
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{
-    ConfigValueOperations, Model, ReadonlySessionManager, ResolvedRequestAuth,
-};
+use maestro_extensions::{Model, ReadonlySessionManager, ResolvedRequestAuth};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -33,13 +31,11 @@ pub(super) struct State {
     pub(super) waker: RefCell<std::task::Waker>,
     /// Typed completion storage for active synchronous guest invocations.
     pub(super) synchronous: super::synchronous::Returns,
-    /// Effects supplied by the composition caller, never constructed inside the adapter.
-    credential_operations: Rc<dyn ConfigValueOperations>,
 }
 
 impl Pump {
     /// Separates startup admission from the local owner without spawning work.
-    pub(crate) fn new(credential_operations: Rc<dyn ConfigValueOperations>) -> (Self, Admission) {
+    pub(crate) fn new() -> (Self, Admission) {
         let (requests, receiver) = unbounded_channel();
         let state = Rc::new_cyclic(|state| State {
             registry: Registry {
@@ -52,7 +48,6 @@ impl Pump {
             staging: RefCell::default(),
             waker: RefCell::new(std::task::Waker::noop().clone()),
             synchronous: super::synchronous::Returns::default(),
-            credential_operations,
         });
         (
             Self { state },
@@ -172,6 +167,7 @@ impl State {
             }
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
+            Message::Ui(id, request) => self.ui(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Release(id) => {
                 let removed = self.registry.resources.borrow_mut().entries.remove(&id);
@@ -308,15 +304,24 @@ impl State {
             return;
         };
         let catalog = catalog.clone();
-        let operations = self.credential_operations.clone();
         let model = Arc::new(std::sync::RwLock::new(model));
         self.admit(
             Box::pin(async move {
-                let result = catalog.get_api_key_and_headers(&model, &*operations).await;
+                let result = catalog.get_api_key_and_headers(&model).await;
                 let _ = reply.send(Ok(result));
             }),
             admission,
         );
+    }
+
+    /// Serves retained UI methods after releasing the capability table borrow.
+    fn ui(&self, id: u64, request: crate::ui_reads::Request) {
+        let capability = self.registry.capability(id);
+        if let Some(Capability::Ui(ui)) = capability.as_deref() {
+            request.answer(ui);
+        } else {
+            request.reject("extension UI resource ended");
+        }
     }
 
     /// Applies a mutation to the original setup owner, never to its reader.

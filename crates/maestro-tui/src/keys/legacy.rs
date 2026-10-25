@@ -112,7 +112,7 @@ fn identify(data: &str, kitty: bool) -> Option<KeyId> {
     let row = ROWS
         .iter()
         .find(|row| row.applies(kitty) && row.sequences.contains(&data))?;
-    with_modifiers(&row.key.name(), row.modifier)
+    with_modifiers(&row.key.name()?, row.modifier)
 }
 
 /// Whether the session is a local Windows Terminal, where a raw backspace byte is ctrl+backspace.
@@ -179,4 +179,67 @@ fn prefixed_or_raw(data: &str, kitty: bool) -> Option<KeyId> {
         [code @ 32..=126] => Some(char::from(*code).to_string()),
         _ => None,
     }
+}
+
+/// Finds an unmodified host special in the shared legacy table.
+pub(super) fn host_special(data: &str) -> Option<Named> {
+    let supported = data.strip_prefix("\x1bO").is_some_and(|tail| {
+        matches!(
+            tail,
+            "A" | "B" | "C" | "D" | "H" | "F" | "P" | "Q" | "R" | "S"
+        )
+    }) || data.strip_prefix("\x1b[").is_some_and(|tail| {
+        matches!(tail, "A" | "B" | "C" | "D" | "H" | "F")
+            || tail
+                .strip_suffix('~')
+                .is_some_and(|number| number.bytes().all(|byte| byte.is_ascii_digit()))
+    });
+    let row = supported.then(|| {
+        ROWS.iter()
+            .find(|row| row.modifier == 0 && row.sequences.contains(&data))
+    })??;
+    Some(row.key)
+}
+
+/// Decodes application keypad bytes without changing chat identifiers.
+pub(super) fn host_keypad(data: &str) -> Option<super::Code> {
+    use super::Code;
+    match data.strip_prefix("\x1bO")?.as_bytes() {
+        [digit @ b'p'..=b'y'] => Some(Code::Char(char::from(b'0' + digit - b'p'))),
+        b"n" => Some(Code::Char('.')),
+        b"l" => Some(Code::Char(',')),
+        b"m" => Some(Code::Char('-')),
+        b"k" => Some(Code::Char('+')),
+        b"j" => Some(Code::Char('*')),
+        b"o" => Some(Code::Char('/')),
+        b"M" => Some(Code::Key(Named::Enter)),
+        _ => None,
+    }
+}
+
+/// Reads one legacy character, with an optional Escape prefix for Alt.
+pub(super) fn host_character(data: &str) -> Option<super::Sequence> {
+    let (text, alt) = data
+        .strip_prefix('\x1b')
+        .filter(|rest| !rest.is_empty())
+        .map_or((data, 0), |rest| (rest, ALT));
+    let mut chars = text.chars();
+    let ch = chars.next()?;
+    if chars.next().is_some() {
+        return None;
+    }
+    let (code, modifier) = match ch {
+        '\r' => (super::Code::Key(Named::Enter), 0),
+        '\t' => (super::Code::Key(Named::Tab), 0),
+        '\x7f' => (super::Code::Key(Named::Backspace), 0),
+        '\0' => (super::Code::Char(' '), CTRL),
+        '\x01'..='\x1a' => (super::Code::Char(char::from_u32(u32::from(ch) + 96)?), CTRL),
+        '\x1b' => (super::Code::Key(Named::Escape), 0),
+        '\x1c'..='\x1f' => (super::Code::Char(char::from_u32(u32::from(ch) + 64)?), CTRL),
+        _ => (
+            super::Code::Char(ch),
+            u32::from(ch.is_ascii_uppercase()) * SHIFT,
+        ),
+    };
+    Some(super::Sequence::host(code, alt | modifier))
 }

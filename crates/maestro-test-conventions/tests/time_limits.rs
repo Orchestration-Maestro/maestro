@@ -3,17 +3,15 @@
 use crate::support;
 
 use maestro_test_conventions::check_workspace;
-use support::Workspace;
+use support::{Workspace, source};
 
 /// Writes each authored source and compares the complete located diagnostics.
 fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)]) {
     let workspace = Workspace::new();
     workspace.foundation(&[member]);
-    let directory = workspace.root.join("crates").join(member);
+    let directory = workspace.root.path().join("crates").join(member);
     for (file, contents) in files {
-        let path = directory.join(file);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(path, contents).unwrap();
+        source(&workspace, member, file, contents);
     }
     if member == "maestro-tui"
         && files.iter().any(|(file, _)| {
@@ -30,6 +28,8 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
             .map(|(file, line, api)| {
                 if *api == "optional-poll" {
                     format!("{}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())", directory.join(file).display())
+                } else if api.starts_with("tracing::") {
+                    format!("{}:{line}: scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead", directory.join(file).display())
                 } else {
                     format!("{}:{line}: test-owned time limit: {api}; wait for completion instead", directory.join(file).display())
                 }
@@ -37,7 +37,7 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
             .collect::<Vec<_>>()
             .join("\n"))
     };
-    assert_eq!(check_workspace(&workspace.root), result);
+    assert_eq!(check_workspace(workspace.root.path()), result);
 }
 
 #[test]
@@ -766,4 +766,88 @@ fn optional_poll_locations_survive_source_normalization() {
 #[test]
 fn standard_library_single_poll_is_allowed() {
     check_optional_poll("standard_library_single_poll_is_allowed");
+}
+
+#[test]
+fn qualified_scoped_tracing_captures_are_rejected() {
+    check(
+        "maestro-tui",
+        &[(
+            "src/tests.rs",
+            "fn sample() {\n    tracing::subscriber::with_default(subscriber, action);\n    tracing::subscriber::set_default(subscriber);\n    ::tracing::dispatcher::with_default(&dispatch, action);\n    tracing::dispatcher::set_default(&dispatch);\n}\n",
+        )],
+        &[
+            ("src/tests.rs", 2, "tracing::subscriber::with_default"),
+            ("src/tests.rs", 3, "tracing::subscriber::set_default"),
+            ("src/tests.rs", 4, "tracing::dispatcher::with_default"),
+            ("src/tests.rs", 5, "tracing::dispatcher::set_default"),
+        ],
+    );
+}
+
+#[test]
+fn imported_scoped_tracing_captures_keep_their_identity() {
+    check(
+        "maestro-tui",
+        &[(
+            "src/tests.rs",
+            "use tracing::subscriber::with_default as scoped;\nuse tracing::dispatcher;\nfn sample() {\n    scoped(subscriber, action);\n    dispatcher::set_default(&dispatch);\n}\n",
+        )],
+        &[
+            ("src/tests.rs", 4, "tracing::subscriber::with_default"),
+            ("src/tests.rs", 5, "tracing::dispatcher::set_default"),
+        ],
+    );
+    check(
+        "maestro-tui",
+        &[(
+            "src/tests.rs",
+            "use tracing::subscriber::*;\nfn sample() {\n    set_default(subscriber);\n}\n",
+        )],
+        &[("src/tests.rs", 3, "tracing::subscriber::set_default")],
+    );
+}
+
+#[test]
+fn future_subscriber_method_is_rejected_at_the_method() {
+    check(
+        "maestro-tui",
+        &[(
+            "src/tests.rs",
+            "async fn sample() {\n    operation\n        .with_subscriber(subscriber)\n        .await;\n}\n",
+        )],
+        &[(
+            "src/tests.rs",
+            3,
+            "tracing::instrument::WithSubscriber::with_subscriber",
+        )],
+    );
+}
+
+#[test]
+fn owner_captures_and_production_dispatch_are_allowed() {
+    check(
+        "maestro-tui",
+        &[(
+            "src/tests.rs",
+            "use maestro_test_tracing::with_subscriber;\nasync fn sample() {\n    maestro_test_tracing::with_default(subscriber, action);\n    with_subscriber(operation, subscriber).await;\n}\n",
+        )],
+        &[],
+    );
+    check(
+        "maestro-test-tracing",
+        &[(
+            "src/lib.rs",
+            "fn sample() {\n    tracing::subscriber::with_default(subscriber, action);\n    operation.with_subscriber(subscriber);\n}\n",
+        )],
+        &[],
+    );
+    check(
+        "maestro-tui",
+        &[(
+            "src/lib.rs",
+            "fn sample() {\n    tracing::dispatcher::with_default(&dispatch, action);\n}\n",
+        )],
+        &[],
+    );
 }

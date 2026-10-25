@@ -1,47 +1,43 @@
 //! Private request preparation and one-attempt sending.
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::super::request;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn request_hooks_keep_phase_and_response_hook_is_unused() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let mut options = crate::MistralOptions::<crate::Threaded>::default();
-            options.common.api_key = Some(String::new());
-            let mut model = super::request_corpus::model(&serde_json::json!({}));
-            model.provider = "missing-synthetic-provider".into();
-            let context = serde_json::from_value(serde_json::json!({"messages":[]})).unwrap();
-            let error = request::prepare(std::sync::Arc::new(model), &context, &options, None)
-                .await
-                .err()
-                .unwrap();
-            assert_eq!(
-                error.message,
-                "No API key for provider: missing-synthetic-provider"
-            );
-            super::request_corpus::async_corpus(
-                "request_hooks_keep_phase_and_response_hook_is_unused",
-                15,
-            )
-            .await;
-        });
+    crate::tests::runtime::run(async {
+        let mut options = crate::MistralOptions::<crate::Threaded>::default();
+        options.common.api_key = Some(String::new());
+        let mut model = super::request_corpus::model(&serde_json::json!({}));
+        model.provider = "missing-synthetic-provider".into();
+        let context = serde_json::from_value(serde_json::json!({"messages":[]})).unwrap();
+        let error = request::prepare(std::sync::Arc::new(model), &context, &options, None)
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(
+            error.message,
+            "No API key for provider: missing-synthetic-provider"
+        );
+        super::request_corpus::async_corpus(
+            "request_hooks_keep_phase_and_response_hook_is_unused",
+            15,
+        )
+        .await;
+    });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn request_send_resolves_header_case_and_affinity() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(super::request_corpus::async_corpus(
-            "request_send_resolves_header_case_and_affinity",
-            31,
-        ));
+    crate::tests::runtime::run(super::request_corpus::async_corpus(
+        "request_send_resolves_header_case_and_affinity",
+        31,
+    ));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn request_send_has_one_attempt_and_signal_dependent_deadline() {
     tokio::runtime::Builder::new_current_thread()
@@ -55,30 +51,25 @@ fn request_send_has_one_attempt_and_signal_dependent_deadline() {
     super::request_lifetime::verify();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn request_failure_keeps_status_body_and_fallback() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(super::request_corpus::async_corpus(
-            "request_failure_keeps_status_body_and_fallback",
-            45,
-        ));
+    crate::tests::runtime::run(super::request_corpus::async_corpus(
+        "request_failure_keeps_status_body_and_fallback",
+        45,
+    ));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn request_rejects_nonfinite_raw_numbers_without_null_sanitizing() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(super::request_corpus::async_corpus(
-            "request_rejects_nonfinite_raw_numbers_without_null_sanitizing",
-            15,
-        ));
+    crate::tests::runtime::run(super::request_corpus::async_corpus(
+        "request_rejects_nonfinite_raw_numbers_without_null_sanitizing",
+        15,
+    ));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn request_send_uses_relative_endpoint_and_default_origin() {
     let url = request::transport::base_url("///https://example.test/{not.a-template}").unwrap();
@@ -103,14 +94,11 @@ fn request_send_uses_relative_endpoint_and_default_origin() {
         ));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn request_admission_checks_status_and_content_type() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(super::request_corpus::async_corpus(
-            "request_admission_checks_status_and_content_type",
-            54,
-        ));
+    crate::tests::runtime::run(super::request_corpus::async_corpus(
+        "request_admission_checks_status_and_content_type",
+        54,
+    ));
 }

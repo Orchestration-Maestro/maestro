@@ -10,23 +10,14 @@ use maestro_models::{
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-/// Run `future` to completion on a fresh current-thread runtime.
-fn block_on<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
+#[path = "../../../tests/support/runtime.rs"]
+mod runtime;
+use runtime::block_on;
 
 /// Operations that never resolve anything.
 struct Nothing;
 
 impl ConfigValueOperations for Nothing {
-    fn environment(&self, _name: &str) -> Option<String> {
-        None
-    }
-
     fn execute(&self, _command: &str) -> Option<Vec<u8>> {
         None
     }

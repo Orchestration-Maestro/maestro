@@ -72,17 +72,17 @@ impl AttachmentHost for Host {
         &self,
     ) -> Result<
         Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentUiError,
+        AttachmentHostError,
     > {
         unreachable!("no dialog focus in this adapter")
     }
     fn restore_focus(
         &self,
         _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!("no dialog focus in this adapter")
     }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentUiError> {
+    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
         unreachable!("no dialog measurement in this adapter")
     }
     fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
@@ -92,8 +92,10 @@ impl AttachmentHost for Host {
     fn reading_layout(
         &self,
         _: egui::Id,
-    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentHostError> {
         Ok(ReadingLayout {
+            width: 0.,
+            border: egui::epaint::MarginF32::ZERO,
             height: 0.,
             controls: vec![],
         })
@@ -102,7 +104,7 @@ impl AttachmentHost for Host {
         &self,
         s: AttachmentSurface<'_>,
         p: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let content = match s.content {
             AttachmentContent::Reading(reading) => Content::Reading(reading.content, reading.phase),
             AttachmentContent::Input { .. } => {
@@ -129,7 +131,7 @@ impl AttachmentHost for Host {
             css: p.css_properties(),
         });
         if let Some(message) = self.fail.borrow_mut().take() {
-            return Err(AttachmentUiError::Presentation(message));
+            return Err(AttachmentHostError::Presentation(message));
         }
         Ok(())
     }
@@ -138,16 +140,16 @@ impl AttachmentHost for Host {
         _: egui::Id,
         _: bool,
         _: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentHostError> {
         self.effects
             .borrow_mut()
             .push(format!("modal:{id:?}:{visible}"));
         Ok(())
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         Ok(self.hover.get())
     }
     fn remove(&self, id: egui::Id) {
@@ -161,19 +163,19 @@ impl AttachmentHost for Host {
         _: i32,
         _: bool,
         _: Rc<dyn Fn()>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!("attachment suite does not arm timers")
     }
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!("attachment suite does not dispatch futures")
     }
-    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
+    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
-    fn download(&self, a: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, a: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
         self.downloads.borrow_mut().push(a);
         if self.fail_download.get() {
-            Err(AttachmentUiError::Host("download rejected".into()))
+            Err(AttachmentHostError::Host("download rejected".into()))
         } else {
             Ok(())
         }
@@ -221,13 +223,10 @@ impl Default for Frame {
         let host = Rc::new(crate::support::Host::default());
         Self {
             ctx: Context::default(),
-            pack: maestro_theme::load_brand_pack(
-                concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-                #[cfg(not(target_arch = "wasm32"))]
-                &maestro_theme::theme::NativeThemeOperations,
-                #[cfg(target_arch = "wasm32")]
-                &crate::support::brand::Pack,
-            )
+            pack: crate::support::brand::pack(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../assets/brand/brand.json"
+            ))
             .unwrap(),
             mode: BrandMode::Dark,
             i18n: I18n::new(host).unwrap(),
@@ -268,16 +267,7 @@ impl Frame {
         );
         let mut output = self.ctx.end_pass();
         self.paint.update(&output);
-        self.images = output
-            .textures_delta
-            .set
-            .values()
-            .flatten()
-            .filter(|delta| delta.image.size() == [20, 20])
-            .map(|delta| match &delta.image {
-                egui::ImageData::Color(image) => (**image).clone(),
-            })
-            .collect();
+        self.images = self.paint.images(&output.shapes);
         output.textures_delta.clear();
         self.shapes = output.shapes;
         value
@@ -289,7 +279,7 @@ impl Frame {
         &mut self,
         o: &mut maestro_web::AttachmentOverlay,
         events: Vec<Event>,
-    ) -> Result<bool, AttachmentUiError> {
+    ) -> Result<bool, maestro_web::dialogs::attachment_overlay::AttachmentUiError> {
         self.run(events, |ctx, i, p| o.render(ctx, i, p))
     }
     /// Draw one tile at a deterministic position.
@@ -299,7 +289,10 @@ impl Frame {
         &mut self,
         t: &mut maestro_web::AttachmentTile,
         events: Vec<Event>,
-    ) -> Result<Option<maestro_web::AttachmentOverlay>, AttachmentUiError> {
+    ) -> Result<
+        Option<maestro_web::AttachmentOverlay>,
+        maestro_web::dialogs::attachment_overlay::AttachmentUiError,
+    > {
         self.run(events, |ctx, i, p| {
             let mut ui = egui::Ui::new(
                 ctx.clone(),

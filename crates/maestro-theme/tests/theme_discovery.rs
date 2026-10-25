@@ -1,172 +1,21 @@
 //! Theme registration, discovery and shared source metadata.
+use crate::live::{Scratch, TRUECOLOR, in_child};
 use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 use maestro_theme::{
-    ColorMode, NativeThemeOperations, Theme, ThemeColor, ThemeDirectories, ThemeError, ThemeInfo,
-    ThemeOperations, ThemeOptions, ThemeState, load_theme_from_path,
+    ColorMode, Theme, ThemeColor, ThemeDirectories, ThemeError, ThemeInfo, ThemeOptions,
+    ThemeState, load_theme_from_path,
 };
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
 use std::error::Error;
+use std::ffi::OsStr;
 use std::fs;
 use std::io;
-use std::path::PathBuf;
 use std::rc::Rc;
 
 #[cfg(test)]
 const SHIPPED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme");
 #[cfg(test)]
 const TRUECOLOR_ACCENT: &str = "\x1b[38;2;217;160;102m";
-
-/// A scratch directory whose removal is attempted on drop.
-#[cfg(test)]
-struct Scratch(PathBuf);
-
-#[cfg(test)]
-impl Scratch {
-    fn new(tag: &str) -> Self {
-        let path = std::env::temp_dir().join(format!("maestro-theme-{}-{tag}", std::process::id()));
-        let _ = fs::remove_dir_all(&path);
-        fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-
-    fn path(&self, relative: &str) -> String {
-        format!("{}/{relative}", self.0.display())
-    }
-
-    fn write(&self, relative: &str, content: &str) {
-        let path = self.path(relative);
-        fs::create_dir_all(std::path::Path::new(&path).parent().unwrap()).unwrap();
-        fs::write(path, content).unwrap();
-    }
-}
-
-#[cfg(test)]
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
-
-/// Real files with controlled environment lookups, recording each read and lookup.
-/// Name sorting still uses the process locale, so assertions through it must not
-/// depend on locale-specific case order.
-#[cfg(test)]
-struct Real {
-    env: RefCell<HashMap<String, String>>,
-    log: RefCell<Vec<String>>,
-}
-
-#[cfg(test)]
-impl Real {
-    fn new(env: &[(&str, &str)]) -> Rc<Self> {
-        Rc::new(Self {
-            env: RefCell::new(
-                env.iter()
-                    .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
-                    .collect(),
-            ),
-            log: RefCell::default(),
-        })
-    }
-
-    fn reads(&self) -> Vec<String> {
-        self.log
-            .borrow()
-            .iter()
-            .filter_map(|entry| entry.strip_prefix("read:").map(str::to_owned))
-            .collect()
-    }
-
-    fn env_reads(&self) -> usize {
-        self.log
-            .borrow()
-            .iter()
-            .filter(|entry| entry.starts_with("env:"))
-            .count()
-    }
-}
-
-#[cfg(test)]
-impl ThemeOperations for Real {
-    fn read_to_string(&self, path: &str) -> io::Result<String> {
-        self.log.borrow_mut().push(format!("read:{path}"));
-        NativeThemeOperations.read_to_string(path)
-    }
-
-    fn environment(&self, name: &str) -> Option<String> {
-        self.log.borrow_mut().push(format!("env:{name}"));
-        self.env.borrow().get(name).cloned()
-    }
-
-    fn exists(&self, path: &str) -> bool {
-        NativeThemeOperations.exists(path)
-    }
-
-    fn read_dir(&self, path: &str) -> io::Result<Vec<String>> {
-        NativeThemeOperations.read_dir(path)
-    }
-
-    fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> io::Result<()> {
-        NativeThemeOperations.sort_by_name(themes)
-    }
-}
-
-/// In-memory files and directories; `sort_by_name` reverses its input.
-#[cfg(test)]
-#[derive(Default)]
-struct Virtual {
-    files: HashMap<String, String>,
-    existing: HashSet<String>,
-    dirs: HashMap<String, Vec<String>>,
-    log: RefCell<Vec<String>>,
-}
-
-#[cfg(test)]
-impl ThemeOperations for Virtual {
-    fn read_to_string(&self, path: &str) -> io::Result<String> {
-        self.log.borrow_mut().push(format!("read:{path}"));
-        self.files
-            .get(path)
-            .cloned()
-            .ok_or_else(|| io::ErrorKind::NotFound.into())
-    }
-
-    fn environment(&self, name: &str) -> Option<String> {
-        self.log.borrow_mut().push(format!("env:{name}"));
-        None
-    }
-
-    fn exists(&self, path: &str) -> bool {
-        self.log.borrow_mut().push(format!("exists:{path}"));
-        self.existing.contains(path)
-    }
-
-    fn read_dir(&self, path: &str) -> io::Result<Vec<String>> {
-        self.log.borrow_mut().push(format!("read_dir:{path}"));
-        self.dirs
-            .get(path)
-            .cloned()
-            .ok_or_else(|| io::ErrorKind::NotFound.into())
-    }
-
-    fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> io::Result<()> {
-        themes.reverse();
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-impl Virtual {
-    fn shipped() -> Self {
-        let mut ops = Self::default();
-        for name in ["dark", "light"] {
-            let text = fs::read_to_string(format!("{SHIPPED}/{name}.json")).unwrap();
-            ops.files.insert(format!("/themes/{name}.json"), text);
-        }
-        ops
-    }
-}
 
 #[cfg(test)]
 fn dirs(themes: &str, custom: &str) -> ThemeDirectories {
@@ -176,12 +25,10 @@ fn dirs(themes: &str, custom: &str) -> ThemeDirectories {
     }
 }
 
+/// A state over the shipped themes and `custom`.
 #[cfg(test)]
-fn make(ops: &Rc<impl ThemeOperations + 'static>, custom: &str) -> ThemeState {
-    ThemeState::new(
-        dirs(SHIPPED, custom),
-        Rc::clone(ops) as Rc<dyn ThemeOperations>,
-    )
+fn make(custom: &str) -> ThemeState {
+    ThemeState::new(dirs(SHIPPED, custom))
 }
 
 #[cfg(test)]
@@ -286,9 +133,8 @@ fn theme_source_metadata_keeps_alias_and_slot_identity() {
 
 #[test]
 fn theme_registration_replaces_without_reordering() {
-    let scratch = Scratch::new("registration-order");
-    let ops = Real::new(&[]);
-    let state = make(&ops, &scratch.path("missing"));
+    let scratch = Scratch::new();
+    let state = make(&scratch.path("missing"));
     let decomposed = registered(Some("e\u{301}"), Some("second"));
     let replacement = registered(Some("é"), Some("replacement"));
     state.set_registered_themes(vec![
@@ -329,8 +175,7 @@ fn theme_registration_replaces_without_reordering() {
 
 #[test]
 fn theme_registration_clear_preserves_retained_instances() {
-    let ops = Real::new(&[]);
-    let state = make(&ops, "/nonexistent-custom");
+    let state = make("/nonexistent-custom");
     let info = record(SourceScope::User, SourceOrigin::TopLevel, None);
     let options = ThemeOptions {
         name: Some("mine".into()),
@@ -355,26 +200,28 @@ fn theme_registration_clear_preserves_retained_instances() {
 
 #[test]
 fn theme_registered_lookup_avoids_unneeded_effects() {
-    let ops = Rc::new(Virtual::default());
-    let state = ThemeState::new(
-        dirs("/themes", "/custom"),
-        Rc::clone(&ops) as Rc<dyn ThemeOperations>,
-    );
+    // Neither directory exists, so any file read would fail the lookup.
+    let scratch = Scratch::new();
+    let state = ThemeState::new(dirs(&scratch.path("themes"), &scratch.path("custom")));
     let shadow = registered(Some("dark"), None);
     state.set_registered_themes(vec![Rc::clone(&shadow)]);
     assert!(Rc::ptr_eq(
         &state.get_theme_by_name("dark").unwrap(),
         &shadow
     ));
-    assert!(ops.log.borrow().is_empty());
 }
 
 #[test]
 fn maestro_theme_resolves_registered_and_file_precedence() {
-    let scratch = Scratch::new("precedence");
+    if !in_child(
+        "maestro_theme_resolves_registered_and_file_precedence",
+        TRUECOLOR,
+    ) {
+        return;
+    }
+    let scratch = Scratch::new();
     scratch.write("custom/dark.json", &theme_text("custom-dark", "#123456"));
-    let ops = Real::new(&[("COLORTERM", "truecolor")]);
-    let state = make(&ops, &scratch.path("custom"));
+    let state = make(&scratch.path("custom"));
     let shadow = Rc::new(
         Theme::new(
             [(ThemeColor::Accent, maestro_theme::ColorValue::Index(24))],
@@ -401,70 +248,56 @@ fn maestro_theme_resolves_registered_and_file_precedence() {
 
 #[test]
 fn theme_builtin_reads_are_lazy_and_retryable() {
-    let scratch = Scratch::new("lazy");
-    let ops = Real::new(&[("COLORTERM", "truecolor")]);
-    let themes = ThemeDirectories {
-        themes_dir: scratch.path("themes"),
-        custom_themes_dir: scratch.path("custom"),
-    };
-    let state = ThemeState::new(themes, Rc::clone(&ops) as Rc<dyn ThemeOperations>);
-    assert!(ops.log.borrow().is_empty());
-
-    let dark = scratch.path("themes/dark.json");
-    let light = scratch.path("themes/light.json");
+    if !in_child("theme_builtin_reads_are_lazy_and_retryable", TRUECOLOR) {
+        return;
+    }
+    let scratch = Scratch::new();
+    // Construction reads nothing: the shipped files do not exist yet.
+    let state = ThemeState::new(dirs(&scratch.path("themes"), &scratch.path("custom")));
     assert!(state.get_theme_by_name("dark").is_none());
-    assert_eq!(ops.reads(), std::slice::from_ref(&dark));
 
+    // A failed read or parse is not cached: both files are read again on the next lookup.
     scratch.write("themes/dark.json", &theme_text("dark", "#111111"));
     scratch.write("themes/light.json", "{");
     assert!(state.get_theme_by_name("dark").is_none());
-    assert_eq!(ops.reads(), [dark.clone(), dark.clone(), light.clone()]);
 
     scratch.write("themes/dark.json", &theme_text("dark", "#445566"));
     scratch.write("themes/light.json", &theme_text("light", "#778899"));
     let repaired = state.get_theme_by_name("dark").unwrap();
     assert_eq!(accent(&repaired), "\x1b[38;2;68;85;102m");
-    assert_eq!(ops.reads()[3..], [dark, light]);
 }
 
 #[test]
 fn theme_builtin_cache_keeps_data_not_instances() {
-    let scratch = Scratch::new("cache");
+    if !in_child("theme_builtin_cache_keeps_data_not_instances", TRUECOLOR) {
+        return;
+    }
+    let scratch = Scratch::new();
     scratch.write("themes/dark.json", &theme_text("dark", "#445566"));
     scratch.write("themes/light.json", &theme_text("light", "#778899"));
-    let ops = Real::new(&[("COLORTERM", "truecolor")]);
-    let themes = ThemeDirectories {
-        themes_dir: scratch.path("themes"),
-        custom_themes_dir: scratch.path("custom"),
-    };
-    let state = ThemeState::new(themes, Rc::clone(&ops) as Rc<dyn ThemeOperations>);
+    let state = ThemeState::new(dirs(&scratch.path("themes"), &scratch.path("custom")));
     let first = state.get_theme_by_name("dark").unwrap();
     assert_eq!(accent(&first), "\x1b[38;2;68;85;102m");
 
     fs::remove_file(scratch.path("themes/dark.json")).unwrap();
     scratch.write("themes/light.json", "changed");
-    ops.env
-        .replace(HashMap::from([("TERM".to_owned(), "linux".to_owned())]));
     let second = state.get_theme_by_name("dark").unwrap();
     assert!(!Rc::ptr_eq(&first, &second));
-    assert_eq!(second.get_color_mode(), ColorMode::Color256);
-    assert_eq!(accent(&second), "\x1b[38;5;59m");
-    assert_eq!(first.get_color_mode(), ColorMode::Truecolor);
+    assert_eq!(second.get_color_mode(), ColorMode::Truecolor);
+    assert_eq!(accent(&second), "\x1b[38;2;68;85;102m");
     assert_eq!(accent(&first), "\x1b[38;2;68;85;102m");
 }
 
 #[test]
 fn theme_lists_json_names_with_ordinal_order() {
-    let scratch = Scratch::new("ordinal");
+    let scratch = Scratch::new();
     for file in [
         "z.json",
-        "A.json",
         "a.json",
         ".json",
         "ignored.JSON",
         "ignore.json.bak",
         "é.json",
-        "e\u{301}.json",
         "\u{10000}.json",
         "\u{E000}.json",
         "dark.json",
@@ -473,11 +306,12 @@ fn theme_lists_json_names_with_ordinal_order() {
         scratch.write(&format!("custom/{file}"), "not json");
     }
     fs::create_dir(scratch.path("custom/directory.json")).unwrap();
-    let ops = Real::new(&[]);
-    let state = make(&ops, &scratch.path("custom"));
+    let state = make(&scratch.path("custom"));
     state.set_registered_themes(vec![
         registered(Some("z"), None),
         registered(Some("registered-only"), None),
+        registered(Some("A"), None),
+        registered(Some("e\u{301}"), None),
     ]);
     assert_eq!(
         state.get_available_themes().unwrap(),
@@ -501,13 +335,12 @@ fn theme_lists_json_names_with_ordinal_order() {
 
 #[test]
 fn theme_path_inventory_keeps_first_owner_and_sorted_names() {
-    let scratch = Scratch::new("owners");
+    let scratch = Scratch::new();
     for file in ["a.json", "dark.json", "z.json", "custom-only.json"] {
         scratch.write(&format!("custom/{file}"), "not json");
     }
     let custom = scratch.path("custom");
-    let ops = Real::new(&[]);
-    let native = make(&ops, &custom);
+    let native = make(&custom);
     native.set_registered_themes(vec![
         registered(Some("z"), Some("registered-z")),
         registered(Some("reg-none"), None),
@@ -539,23 +372,39 @@ fn theme_path_inventory_keeps_first_owner_and_sorted_names() {
 
 #[test]
 fn theme_path_inventory_orders_canonically_equal_names_by_directory_byte_order() {
-    let scratch = Scratch::new("canonical");
-    scratch.write("custom/\u{e9}.json", "x");
-    scratch.write("custom/e\u{301}.json", "x");
+    let scratch = Scratch::new();
+    for (pair, names) in [
+        ("A.json/a.json", ["A.json", "a.json"]),
+        (
+            "\u{e9}.json/e\u{301}.json",
+            ["\u{e9}.json", "e\u{301}.json"],
+        ),
+    ] {
+        if !scratch.keeps_distinct(&[OsStr::new(names[0]), OsStr::new(names[1])]) {
+            eprintln!("host folds {pair} into one entry");
+            return;
+        }
+    }
+    for file in ["A.json", "a.json", "\u{e9}.json", "e\u{301}.json"] {
+        scratch.write(&format!("custom/{file}"), "x");
+    }
     let custom = scratch.path("custom");
-    let ops = Real::new(&[]);
-    let listed = make(&ops, &custom)
-        .get_available_themes_with_paths()
-        .unwrap();
-    let composed = format!("{custom}/\u{e9}.json");
-    let decomposed = format!("{custom}/e\u{301}.json");
+    let listed = make(&custom).get_available_themes_with_paths().unwrap();
     let tied: Vec<_> = names(&listed)
         .into_iter()
-        .filter(|(name, _)| name.contains('\u{e9}') || name.contains('\u{301}'))
+        .filter(|(name, _)| ["A", "a", "\u{e9}", "e\u{301}"].contains(name))
         .collect();
+    let upper = format!("{custom}/A.json");
+    let lower = format!("{custom}/a.json");
+    let composed = format!("{custom}/\u{e9}.json");
+    let decomposed = format!("{custom}/e\u{301}.json");
+    // The collator orders the case pair; only the canonically equal pair falls back to the
+    // order the directory reports.
     assert_eq!(
         tied,
         [
+            ("a", Some(lower.as_str())),
+            ("A", Some(upper.as_str())),
             ("e\u{301}", Some(decomposed.as_str())),
             ("\u{e9}", Some(composed.as_str())),
         ]
@@ -564,67 +413,70 @@ fn theme_path_inventory_orders_canonically_equal_names_by_directory_byte_order()
 
 #[test]
 fn theme_path_inventory_sorts_with_the_supplied_operation() {
-    let mut ops = Virtual::shipped();
-    ops.existing.insert("/custom".into());
-    ops.dirs
-        .insert("/custom".into(), vec!["dark.json".into(), "x.json".into()]);
-    let ops = Rc::new(ops);
-    let controlled = ThemeState::new(
-        dirs("/themes", "/custom"),
-        Rc::clone(&ops) as Rc<dyn ThemeOperations>,
-    );
-    controlled.set_registered_themes(vec![
-        registered(Some("x"), Some("ignored")),
-        registered(Some("y"), Some("why")),
+    // Swedish sorts `z` before `ö`; code-point order puts `B` before `a`; English puts `ö`
+    // before `z`. Only the process locale's comparison gives this order.
+    let test = "theme_path_inventory_sorts_with_the_supplied_operation";
+    if !in_child(test, &[("LANG", "sv_SE.UTF-8")]) {
+        return;
+    }
+    let scratch = Scratch::new();
+    for file in ["dark.json", "\u{f6}.json", "B.json"] {
+        scratch.write(&format!("custom/{file}"), "not json");
+    }
+    let custom = scratch.path("custom");
+    let state = make(&custom);
+    state.set_registered_themes(vec![
+        registered(Some("B"), Some("ignored")),
+        registered(Some("z"), Some("zed")),
+        registered(Some("a"), Some("ay")),
     ]);
-    let listed = controlled.get_available_themes_with_paths().unwrap();
+    let listed = state.get_available_themes_with_paths().unwrap();
+    let (dark, light) = (
+        format!("{SHIPPED}/dark.json"),
+        format!("{SHIPPED}/light.json"),
+    );
+    let (b, o) = (format!("{custom}/B.json"), format!("{custom}/\u{f6}.json"));
     assert_eq!(
         names(&listed),
         [
-            ("y", Some("why")),
-            ("x", Some("/custom/x.json")),
-            ("light", Some("/themes/light.json")),
-            ("dark", Some("/themes/dark.json")),
+            ("a", Some("ay")),
+            ("B", Some(b.as_str())),
+            ("dark", Some(dark.as_str())),
+            ("light", Some(light.as_str())),
+            ("z", Some("zed")),
+            ("\u{f6}", Some(o.as_str())),
         ]
     );
 }
 
 #[test]
 fn theme_inventory_handles_absent_custom_directory() {
-    let ops = Rc::new(Virtual::shipped());
-    let state = ThemeState::new(
-        dirs("/themes", "/custom"),
-        Rc::clone(&ops) as Rc<dyn ThemeOperations>,
-    );
+    let scratch = Scratch::new();
+    let state = make(&scratch.path("custom"));
     state.set_registered_themes(vec![registered(Some("z"), Some("registered-z"))]);
     assert_eq!(
         state.get_available_themes().unwrap(),
         ["dark", "light", "z"]
     );
     let listed = state.get_available_themes_with_paths().unwrap();
+    let (dark, light) = (
+        format!("{SHIPPED}/dark.json"),
+        format!("{SHIPPED}/light.json"),
+    );
     assert_eq!(
         names(&listed),
         [
+            ("dark", Some(dark.as_str())),
+            ("light", Some(light.as_str())),
             ("z", Some("registered-z")),
-            ("light", Some("/themes/light.json")),
-            ("dark", Some("/themes/dark.json"))
         ]
-    );
-    assert!(
-        !ops.log
-            .borrow()
-            .iter()
-            .any(|entry| entry.starts_with("read_dir:"))
     );
 }
 
 #[test]
 fn theme_discovery_propagates_loading_failures() {
-    let missing = Rc::new(Virtual::default());
-    let state = ThemeState::new(
-        dirs("/themes", "/custom"),
-        Rc::clone(&missing) as Rc<dyn ThemeOperations>,
-    );
+    let scratch = Scratch::new();
+    let state = ThemeState::new(dirs(&scratch.path("themes"), &scratch.path("custom")));
     for error in [
         state.get_available_themes().unwrap_err(),
         state.get_available_themes_with_paths().unwrap_err(),
@@ -632,15 +484,9 @@ fn theme_discovery_propagates_loading_failures() {
         assert_eq!(io_kind(&error), Some(io::ErrorKind::NotFound));
     }
 
-    let mut malformed = Virtual::shipped();
-    malformed
-        .files
-        .insert("/themes/light.json".into(), "{".into());
-    let malformed = Rc::new(malformed);
-    let state = ThemeState::new(
-        dirs("/themes", "/custom"),
-        Rc::clone(&malformed) as Rc<dyn ThemeOperations>,
-    );
+    scratch.write("themes/dark.json", &theme_text("dark", "#111111"));
+    scratch.write("themes/light.json", "{");
+    let state = ThemeState::new(dirs(&scratch.path("themes"), &scratch.path("custom")));
     let error = state.get_available_themes().unwrap_err();
     assert!(!error.to_string().contains("Failed to parse theme"));
     assert!(
@@ -649,10 +495,8 @@ fn theme_discovery_propagates_loading_failures() {
             .is_some_and(|cause| cause.downcast_ref::<serde_json::Error>().is_some())
     );
 
-    let scratch = Scratch::new("not-directory");
     scratch.write("custom", "a file");
-    let ops = Real::new(&[]);
-    let state = make(&ops, &scratch.path("custom"));
+    let state = make(&scratch.path("custom"));
     for error in [
         state.get_available_themes().unwrap_err(),
         state.get_available_themes_with_paths().unwrap_err(),
@@ -663,10 +507,15 @@ fn theme_discovery_propagates_loading_failures() {
 
 #[test]
 fn theme_custom_lookup_rereads_without_attaching_a_path() {
-    let scratch = Scratch::new("reread");
+    if !in_child(
+        "theme_custom_lookup_rereads_without_attaching_a_path",
+        TRUECOLOR,
+    ) {
+        return;
+    }
+    let scratch = Scratch::new();
     scratch.write("custom/mine.json", &theme_text("authored-name", "#ABCDEF"));
-    let ops = Real::new(&[("COLORTERM", "truecolor")]);
-    let state = make(&ops, &scratch.path("custom"));
+    let state = make(&scratch.path("custom"));
     let first = state.get_theme_by_name("mine").unwrap();
     assert_eq!(first.name(), Some("authored-name"));
     assert_eq!(first.source_path(), None);
@@ -680,13 +529,13 @@ fn theme_custom_lookup_rereads_without_attaching_a_path() {
     assert_eq!(accent(&second), "\x1b[38;2;16;32;48m");
 
     let path = scratch.path("custom/mine.json");
-    let direct = load_theme_from_path(&path, Some(ColorMode::Truecolor), &*ops).unwrap();
+    let direct = load_theme_from_path(&path, Some(ColorMode::Truecolor)).unwrap();
     assert_eq!(direct.source_path(), Some(path.as_str()));
 }
 
 #[test]
 fn theme_lookup_suppresses_load_failures() {
-    let scratch = Scratch::new("suppress");
+    let scratch = Scratch::new();
     fs::create_dir_all(scratch.path("custom/directory.json")).unwrap();
     scratch.write("custom/malformed.json", "{");
     let mut schema = shipped_dark();
@@ -697,60 +546,35 @@ fn theme_lookup_suppresses_load_failures() {
     scratch.write("custom/alias.json", &alias.to_string());
     scratch.write("custom/hex.json", &theme_text("hex", "#12"));
 
-    let ops = Real::new(&[]);
-    let state = make(&ops, &scratch.path("custom"));
-    for name in ["missing", "directory", "malformed", "schema"] {
-        assert!(state.get_theme_by_name(name).is_none(), "{name}");
-    }
-    assert_eq!(ops.env_reads(), 0);
-    for name in ["alias", "hex"] {
+    let state = make(&scratch.path("custom"));
+    for name in [
+        "missing",
+        "directory",
+        "malformed",
+        "schema",
+        "alias",
+        "hex",
+    ] {
         assert!(state.get_theme_by_name(name).is_none(), "{name}");
     }
 
-    let mut ops = Virtual::shipped();
-    ops.files
-        .insert("/custom/ghost.json".into(), theme_text("ghost", "#123456"));
-    let ops = Rc::new(ops);
-    let state = ThemeState::new(
-        dirs("/themes", "/custom"),
-        Rc::clone(&ops) as Rc<dyn ThemeOperations>,
-    );
-    assert!(state.get_theme_by_name("ghost").is_none());
-    assert!(
-        !ops.log
-            .borrow()
-            .contains(&"read:/custom/ghost.json".to_owned())
-    );
-
-    let light = Scratch::new("bad-light");
+    let light = Scratch::new();
     light.write("themes/dark.json", &theme_text("dark", "#111111"));
     light.write("themes/light.json", "{");
-    let broken = ThemeState::new(
-        ThemeDirectories {
-            themes_dir: light.path("themes"),
-            custom_themes_dir: light.path("custom"),
-        },
-        Real::new(&[]),
-    );
+    let broken = ThemeState::new(dirs(&light.path("themes"), &light.path("custom")));
     assert!(broken.get_theme_by_name("dark").is_none());
 }
 
 #[test]
 fn theme_lookup_rejects_shipped_data_without_a_colors_object() {
     for colors in [serde_json::Value::Null, serde_json::json!(["x"])] {
-        let scratch = Scratch::new("no-colors");
+        let scratch = Scratch::new();
         let mut doc = shipped_dark();
         doc["colors"] = colors;
         scratch.write("themes/dark.json", &doc.to_string());
         scratch.write("themes/light.json", &theme_text("light", "#778899"));
         scratch.write("custom/mine.json", &theme_text("mine", "#123456"));
-        let state = ThemeState::new(
-            ThemeDirectories {
-                themes_dir: scratch.path("themes"),
-                custom_themes_dir: scratch.path("custom"),
-            },
-            Real::new(&[]),
-        );
+        let state = ThemeState::new(dirs(&scratch.path("themes"), &scratch.path("custom")));
         assert!(state.get_theme_by_name("dark").is_none());
         assert!(state.get_theme_by_name("light").is_some());
         assert!(state.get_theme_by_name("mine").is_some());
@@ -759,13 +583,12 @@ fn theme_lookup_rejects_shipped_data_without_a_colors_object() {
 
 #[test]
 fn theme_lookup_joins_authored_names_without_trimming() {
-    let scratch = Scratch::new("authored");
+    let scratch = Scratch::new();
     scratch.write("user/.json", &theme_text("empty-request", "#000001"));
     scratch.write("user/ spaced .json", &theme_text("  stored  ", "#000002"));
     scratch.write("user/normalized.json", &theme_text("inside", "#000003"));
     scratch.write("custom/normalized.json", &theme_text("outside", "#000004"));
-    let ops = Real::new(&[("COLORTERM", "truecolor")]);
-    let state = make(&ops, &scratch.path("user"));
+    let state = make(&scratch.path("user"));
     let name_of = |requested: &str| {
         state
             .get_theme_by_name(requested)

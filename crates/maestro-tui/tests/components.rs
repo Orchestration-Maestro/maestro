@@ -734,6 +734,108 @@ fn editor_contracts_keep_required_input_and_optional_hooks() {
     assert_editor_callbacks_may_reenter_their_editor();
 }
 
+/// Ordered child occurrence, method and width observations.
+type RenderCalls = Rc<RefCell<Vec<(&'static str, &'static str, usize)>>>;
+
+/// Records the ordinary and fallible child operations separately.
+struct RenderRouteProbe {
+    /// Distinguishable child occurrence.
+    name: &'static str,
+    /// Ordered method and width observations.
+    calls: RenderCalls,
+    /// Original error moved through the owning component.
+    error: RefCell<Option<Box<dyn std::error::Error>>>,
+}
+impl Component for RenderRouteProbe {
+    fn render(&self, width: usize) -> Vec<String> {
+        self.calls.borrow_mut().push((self.name, "render", width));
+        vec![width.to_string()]
+    }
+    fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        self.calls
+            .borrow_mut()
+            .push((self.name, "try_render", width));
+        Err(self.error.borrow_mut().take().unwrap())
+    }
+}
+
+/// Builds the real composed owner around distinguishable child operations.
+fn render_route_owner(
+    kind: &str,
+    first: Rc<RenderRouteProbe>,
+    later: Rc<RenderRouteProbe>,
+) -> Rc<dyn Component> {
+    use maestro_tui::{Box as PaddedBox, SettingsList};
+    match kind {
+        "container" => {
+            let container = Rc::new(Container::new());
+            container.add_child(first);
+            container.add_child(later);
+            container
+        }
+        "settings" => {
+            let mut items = crate::list_support::settings();
+            items[0].submenu = Some(Rc::new(move |_, _| first.clone()));
+            let list = Rc::new(SettingsList::new(
+                items,
+                3,
+                crate::list_support::settings_theme(false, &Rc::default()),
+                (Rc::new(|_, _| {}), Rc::new(|| {})),
+                maestro_tui::components::settings_list::SettingsListOptions::default(),
+            ));
+            list.handle_input("\r");
+            list
+        }
+        _ => {
+            let padded = Rc::new(PaddedBox::new(1, 0, None));
+            padded.add_child(first);
+            padded.add_child(later);
+            padded
+        }
+    }
+}
+
+/// Exercises each composed owner without replacing its child walk or submenu branch.
+fn assert_composed_render_routes() {
+    let _keys = crate::list_support::KEYS.lock().unwrap();
+    for kind in ["container", "settings", "box"] {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let error = Box::new(io::Error::other("original child error"));
+        let original = std::ptr::from_ref(error.as_ref());
+        let first = Rc::new(RenderRouteProbe {
+            name: "first",
+            calls: calls.clone(),
+            error: RefCell::new(Some(error)),
+        });
+        let later = Rc::new(RenderRouteProbe {
+            name: "later",
+            calls: calls.clone(),
+            error: RefCell::new(Some(io::Error::other("later child error").into())),
+        });
+        let owner = render_route_owner(kind, first, later);
+        let width = if kind == "box" { 9 } else { 7 };
+        assert_eq!(
+            owner.render(width),
+            match kind {
+                "settings" => vec!["7"],
+                "box" => vec![" 7       ", " 7       "],
+                _ => vec!["7", "7"],
+            }
+        );
+        let mut expected_calls = vec![("first", "render", 7)];
+        if kind != "settings" {
+            expected_calls.push(("later", "render", 7));
+        }
+        assert_eq!(calls.take(), expected_calls);
+        let returned = owner.try_render(width).unwrap_err();
+        assert!(std::ptr::eq(
+            returned.downcast_ref::<io::Error>().unwrap(),
+            original
+        ));
+        assert_eq!(calls.take(), [("first", "try_render", 7)]);
+    }
+}
+
 #[test]
 fn fallible_components_keep_infallible_defaults() {
     struct DefaultComponent(Cell<usize>);
@@ -759,4 +861,5 @@ fn fallible_components_keep_infallible_defaults() {
         Fallible.try_render(7).unwrap_err().to_string(),
         "render failed"
     );
+    assert_composed_render_routes();
 }

@@ -1,6 +1,7 @@
 //! Explicit resource resolution through the manager boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
 use crate::native_support;
 use crate::resolution_support;
 use crate::resource_cases;
@@ -155,12 +156,7 @@ fn entry_manifests_keep_literal_paths_and_directory_entries() {
 #[test]
 fn directory_failures_preserve_already_collected_resources() {
     block_on(Box::pin(async {
-        resource_cases::cases(&[
-            "read_dir_partial",
-            "native_permission_partial",
-            "local_stat_failure",
-        ])
-        .await;
+        resource_cases::cases(&["native_permission_partial"]).await;
         Ok(())
     }))
     .unwrap();
@@ -283,143 +279,34 @@ fn installed_sources_keep_scope_paths_without_acquisition() {
     .unwrap();
 }
 
-/// Canonical effects happen after collection, and failures retain authored identity.
-#[test]
-fn canonical_failures_preserve_authored_identity() {
-    block_on(Box::pin(async {
-        use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
-        use std::{cell::Cell, rc::Rc};
-        let dir = scratch::Scratch::new().unwrap();
-        let a = dir.0.join("a.ts");
-        let b = dir.0.join("b.ts");
-        std::fs::write(&a, "").unwrap();
-        std::fs::write(&b, "").unwrap();
-        let base = dir.0.to_string_lossy().into_owned();
-        let calls = Rc::new(Cell::new(0));
-        let observed = Rc::clone(&calls);
-        let remove = b.clone();
-        let resources = resolution_support::Filesystem {
-            canonical: Some(Rc::new(move |path| {
-                observed.set(observed.get() + 1);
-                if path.ends_with("a.ts") {
-                    std::fs::remove_file(&remove)?;
-                }
-                Err(std::io::ErrorKind::PermissionDenied.into())
-            })),
-            ..Default::default()
-        };
-        let (_, settings, _) = support::manager(&serde_json::json!({}));
-        let manager = DefaultPackageManager::new(
-            PackageManagerOptions {
-                cwd: base.clone(),
-                agent_dir: base.clone(),
-                settings_manager: settings,
-            },
-            support::Controlled(Rc::new(support::Effects {
-                resources: Some(Rc::new(resources)),
-                ..Default::default()
-            })),
-        );
-        let sources = vec![
-            a.to_string_lossy().into_owned(),
-            a.to_string_lossy().into_owned(),
-            b.to_string_lossy().into_owned(),
-        ];
-        let result = manager
-            .resolve_extension_sources(&sources, None)
-            .await
-            .unwrap();
-        assert_eq!(
-            result
-                .extensions
-                .into_iter()
-                .map(|r| r.path)
-                .collect::<Vec<_>>(),
-            [sources[0].clone(), sources[2].clone()]
-        );
-        assert_eq!(
-            calls.get(),
-            2,
-            "one canonical observation per authored path"
-        );
-        Ok(())
-    }))
-    .unwrap();
-}
-
-/// Replacement filesystem adapters retain their supplied extension-entry sequence.
-#[test]
-fn swapped_filesystem_adapters_keep_supplied_entry_order() {
-    block_on(Box::pin(async {
-        use maestro_packages::PackageManager;
-        let dir = scratch::Scratch::new().unwrap();
-        std::fs::create_dir(dir.0.join("extensions")).unwrap();
-        for name in ["a.ts", "z.ts"] {
-            std::fs::write(dir.0.join("extensions").join(name), "").unwrap();
-        }
-        let base = dir.0.to_string_lossy().into_owned();
-        let (manager, _) = resolution_support::manager(
-            &base,
-            resolution_support::Filesystem {
-                order: vec!["z.ts".into(), "a.ts".into()],
-                ..Default::default()
-            },
-        );
-        let result = manager
-            .resolve_extension_sources(std::slice::from_ref(&base), None)
-            .await
-            .unwrap();
-        assert_eq!(
-            result
-                .extensions
-                .into_iter()
-                .map(|r| r.path)
-                .collect::<Vec<_>>(),
-            [
-                format!("{base}/extensions/z.ts"),
-                format!("{base}/extensions/a.ts")
-            ]
-        );
-        Ok(())
-    }))
-    .unwrap();
-}
-
-/// Absolute operands avoid ambient reads; relative and tilde inputs propagate required failures.
+/// Absolute operands avoid ambient reads; relative inputs propagate the required failure.
+#[cfg(unix)]
 #[test]
 fn ambient_inputs_are_observed_only_at_their_consuming_branch() {
+    let Some((_tree, _unlock, process)) = resolution_support::unreadable_cwd(
+        "ambient_inputs_are_observed_only_at_their_consuming_branch",
+    ) else {
+        return;
+    };
     block_on(Box::pin(async {
         use maestro_packages::PackageManager;
         let dir = scratch::Scratch::new().unwrap();
-        let path = dir.0.join("opaque.data");
+        let path = dir.path().join("opaque.data");
         std::fs::write(&path, "").unwrap();
         let absolute = path.to_string_lossy().into_owned();
-        let (manager, effects) =
-            resolution_support::manager("unanchored", resolution_support::Filesystem::default());
-        effects.fail_ambient.set(true);
+        let (manager, _) = resolution_support::manager("unanchored");
         let result = manager
             .resolve_extension_sources(std::slice::from_ref(&absolute), None)
             .await
             .unwrap();
         assert_eq!(result.extensions[0].path, absolute);
-        assert!(effects.reads.borrow().is_empty());
         let error = manager
             .resolve_extension_sources(&["relative".into()], None)
             .await
             .err()
             .unwrap();
-        assert_eq!(error.kind(), std::io::ErrorKind::Other);
-        assert_eq!(&*effects.reads.borrow(), &["cwd"]);
-        let start = effects.reads.borrow().len();
-        assert!(
-            manager
-                .resolve_extension_sources(&["~/path".into()], None)
-                .await
-                .is_err()
-        );
-        assert_eq!(&effects.reads.borrow()[start..], &["home"]);
-        #[cfg(unix)]
-        resource_cases::ambient_entry_resolution().await;
+        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+        resource_cases::ambient_entry_resolution(&process).await;
         Ok(())
     }))
     .unwrap();
@@ -595,27 +482,22 @@ fn ignore_ingress_preserves_a_second_rule_bom() {
     .unwrap();
 }
 
-/// Builds installed resources while keeping the package base authored relative.
+/// Builds installed resources while keeping the package base authored relative to the
+/// working directory `current`.
 async fn resolve_relative_manifest(
     entries: serde_json::Value,
-    fail_current: bool,
-    current_error_code: Option<i32>,
-) -> (
-    std::io::Result<maestro_packages::ResolvedPaths>,
-    usize,
-    String,
-) {
-    let current = std::env::current_dir().unwrap();
-    let scratch = scratch::Scratch::new_in(&current).unwrap();
+    current: &std::path::Path,
+) -> (std::io::Result<maestro_packages::ResolvedPaths>, String) {
+    let scratch = scratch::Scratch::new().unwrap();
     let agent = maestro_path::relative(
         &current.to_string_lossy(),
-        &scratch.0.to_string_lossy(),
+        &scratch.path().to_string_lossy(),
         &maestro_path::Cwd {
             current: "",
             drive_directories: &[],
         },
     );
-    let root = scratch.0.join("git/example.com/org/pkg");
+    let root = scratch.path().join("git/example.com/org/pkg");
     fs::create_dir_all(root.join("src")).unwrap();
     fs::create_dir_all(root.join("skills/demo")).unwrap();
     fs::write(root.join("src/a.ts"), "").unwrap();
@@ -628,7 +510,6 @@ async fn resolve_relative_manifest(
             .replace("$ROOT", &encoded_root[1..encoded_root.len() - 1]),
     )
     .unwrap();
-    let reads = Rc::new(std::cell::Cell::new(0));
     let (_, settings, _) = support::manager(&serde_json::json!({}));
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
@@ -636,21 +517,12 @@ async fn resolve_relative_manifest(
             agent_dir: agent,
             settings_manager: settings,
         },
-        support::Controlled(Rc::new(support::Effects {
-            native_exists: true,
-            resources: Some(Rc::new(resolution_support::Filesystem {
-                fail_current,
-                current_error_code,
-                current_reads: reads.clone(),
-                ..Default::default()
-            })),
-            ..Default::default()
-        })),
+        support::Controlled(Rc::new(support::Effects::default())),
     );
     let result = manager
         .resolve_extension_sources(&["git:https://example.com/org/pkg".into()], None)
         .await;
-    (result, reads.get(), root.to_string_lossy().into_owned())
+    (result, root.to_string_lossy().into_owned())
 }
 
 /// Relative modifiers select candidate and skill parent identities, not configured cwd.
@@ -670,10 +542,9 @@ fn relative_installed_roots_apply_each_override() {
             extensions.extend(modifiers.into_iter().map(str::to_owned));
             let mut skills = vec!["$ROOT/skills/demo/SKILL.md".to_owned()];
             skills.extend(skill_modifiers);
-            let (result, reads, root) = resolve_relative_manifest(
+            let (result, root) = resolve_relative_manifest(
                 serde_json::json!({"extensions":extensions,"skills":skills}),
-                false,
-                None,
+                &std::env::current_dir()?,
             )
             .await;
             let result = result.unwrap();
@@ -701,7 +572,6 @@ fn relative_installed_roots_apply_each_override() {
                     vec![]
                 }
             );
-            assert!(reads > 0, "relative matcher views require ambient cwd");
             for resource in result.extensions.iter().chain(&result.skills) {
                 assert!(!maestro_path::is_absolute(
                     resource.metadata.base_dir.as_deref().unwrap()
@@ -715,31 +585,27 @@ fn relative_installed_roots_apply_each_override() {
 }
 
 /// Empty candidate sets avoid ambient reads; matching propagates required cwd failure.
+#[cfg(unix)]
 #[test]
 fn relative_manifest_matching_reads_ambient_only_for_candidates() {
+    let Some((tree, _unlock, process)) = resolution_support::unreadable_cwd(
+        "relative_manifest_matching_reads_ambient_only_for_candidates",
+    ) else {
+        return;
+    };
     block_on(Box::pin(async {
-        let (result, reads, _) =
-            resolve_relative_manifest(serde_json::json!({"extensions":["!src/a.ts"]}), true, None)
+        let (result, _) =
+            resolve_relative_manifest(serde_json::json!({"extensions":["!src/a.ts"]}), &process)
                 .await;
         assert!(result.unwrap().extensions.is_empty());
-        assert_eq!(reads, 0);
-        let (result, reads, _) = resolve_relative_manifest(
-            serde_json::json!({"extensions":["$ROOT/src/a.ts","!src/a.ts"]}),
-            true,
-            None,
-        )
-        .await;
+        let matching = serde_json::json!({"extensions":["$ROOT/src/a.ts","!src/a.ts"]});
+        let (result, _) = resolve_relative_manifest(matching.clone(), &process).await;
         assert_eq!(
             result.err().expect("required matcher cwd must fail").kind(),
             std::io::ErrorKind::PermissionDenied
         );
-        assert_eq!(reads, 1);
-        let (result, reads, _) = resolve_relative_manifest(
-            serde_json::json!({"extensions":["$ROOT/src/a.ts","!src/a.ts"]}),
-            false,
-            Some(2),
-        )
-        .await;
+        let removed = tree.enter_removed("removed")?;
+        let (result, _) = resolve_relative_manifest(matching, &removed).await;
         assert_eq!(
             result
                 .err()
@@ -747,8 +613,6 @@ fn relative_manifest_matching_reads_ambient_only_for_candidates() {
                 .raw_os_error(),
             Some(2)
         );
-        assert_eq!(reads, 1);
-
         Ok(())
     }))
     .unwrap();
@@ -758,83 +622,87 @@ fn relative_manifest_matching_reads_ambient_only_for_candidates() {
 #[test]
 fn relative_manifest_literals_are_excluded_from_installed_packages() {
     block_on(Box::pin(async {
-    let (result, reads, _) = resolve_relative_manifest(
+    let (result, _) = resolve_relative_manifest(
         serde_json::json!({"extensions":["src/a.ts","!src/a.ts"],"skills":["skills/demo","!skills/demo"]}),
-        false,
-        None,
+        &std::env::current_dir()?,
     ).await;
     let result = result.unwrap();
     assert!(result.extensions.is_empty());
     assert!(result.skills.is_empty());
-    assert!(reads > 0);
 
         Ok(())
     })).unwrap();
 }
 
 /// Unfiltered absolute candidates under a relative root do not need ambient context.
+#[cfg(unix)]
 #[test]
 fn unfiltered_relative_manifest_does_not_read_ambient_context() {
-    block_on(Box::pin(assert_context_free_manifest(false))).unwrap();
+    assert_context_free_manifest(
+        "unfiltered_relative_manifest_does_not_read_ambient_context",
+        false,
+    );
 }
 
 /// Already admitted candidates do not need exact restoration matching.
+#[cfg(unix)]
 #[test]
 fn restoration_only_relative_manifest_does_not_read_ambient_context() {
-    block_on(Box::pin(assert_context_free_manifest(true))).unwrap();
+    assert_context_free_manifest(
+        "restoration_only_relative_manifest_does_not_read_ambient_context",
+        true,
+    );
 }
 
-/// Checks every returned field for an installed absolute candidate with unavailable cwd.
-async fn assert_context_free_manifest(restore: bool) -> std::io::Result<()> {
-    let mut entries = vec!["$ROOT/src/a.ts"];
-    if restore {
-        entries.push("+src/a.ts");
-    }
-    let (result, reads, root) =
-        resolve_relative_manifest(serde_json::json!({"extensions": entries}), true, None).await;
-    let result = result.expect("selection without matching must not require cwd");
-    assert_eq!(reads, 0);
-    assert_eq!(result.extensions.len(), 1);
-    let extension = &result.extensions[0];
-    assert_eq!(extension.path, maestro_path::join(&[&root, "src/a.ts"]));
-    assert!(extension.enabled);
-    assert_eq!(extension.metadata.source, "git:https://example.com/org/pkg");
-    assert_eq!(
-        extension.metadata.scope,
-        maestro_resources::SourceScope::User
-    );
-    assert_eq!(
-        extension.metadata.origin,
-        maestro_resources::SourceOrigin::Package
-    );
-    let current = std::env::current_dir().unwrap();
-    let base = maestro_path::relative(
-        &current.to_string_lossy(),
-        &root,
-        &maestro_path::Cwd {
-            current: "",
-            drive_directories: &[],
-        },
-    );
-    assert_eq!(extension.metadata.base_dir.as_deref(), Some(base.as_str()));
-    assert!(result.skills.is_empty());
-    assert!(result.prompts.is_empty());
-    assert!(result.themes.is_empty());
-    Ok(())
-}
-
-/// Resolves the package at `root` with metadata reads failing under the given suffixes.
+/// Checks every returned field for an installed absolute candidate with an unreadable cwd.
 #[cfg(unix)]
-fn resolved_relative(root: &std::path::Path, failing: &[&str]) -> [Vec<String>; 4] {
-    let base = root.to_string_lossy().into_owned();
-    let resources = resolution_support::Filesystem {
-        fail: std::collections::BTreeMap::from([(
-            "statSync".into(),
-            failing.iter().map(|s| (*s).to_owned()).collect(),
-        )]),
-        ..Default::default()
+fn assert_context_free_manifest(test: &str, restore: bool) {
+    let Some((_tree, _unlock, process)) = resolution_support::unreadable_cwd(test) else {
+        return;
     };
-    let (manager, _) = resolution_support::manager(&base, resources);
+    block_on(Box::pin(async {
+        let mut entries = vec!["$ROOT/src/a.ts"];
+        if restore {
+            entries.push("+src/a.ts");
+        }
+        let (result, root) =
+            resolve_relative_manifest(serde_json::json!({"extensions": entries}), &process).await;
+        let result = result.expect("selection without matching must not require cwd");
+        assert_eq!(result.extensions.len(), 1);
+        let extension = &result.extensions[0];
+        assert_eq!(extension.path, maestro_path::join(&[&root, "src/a.ts"]));
+        assert!(extension.enabled);
+        assert_eq!(extension.metadata.source, "git:https://example.com/org/pkg");
+        assert_eq!(
+            extension.metadata.scope,
+            maestro_resources::SourceScope::User
+        );
+        assert_eq!(
+            extension.metadata.origin,
+            maestro_resources::SourceOrigin::Package
+        );
+        let base = maestro_path::relative(
+            &process.to_string_lossy(),
+            &root,
+            &maestro_path::Cwd {
+                current: "",
+                drive_directories: &[],
+            },
+        );
+        assert_eq!(extension.metadata.base_dir.as_deref(), Some(base.as_str()));
+        assert!(result.skills.is_empty());
+        assert!(result.prompts.is_empty());
+        assert!(result.themes.is_empty());
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Resolves the package at `root`.
+#[cfg(unix)]
+fn resolved_relative(root: &std::path::Path) -> [Vec<String>; 4] {
+    let base = root.to_string_lossy().into_owned();
+    let (manager, _) = resolution_support::manager(&base);
     let mut result = None;
     resolution_support::run(async {
         result = Some(
@@ -866,8 +734,8 @@ fn package_entry_links_preserve_admission_and_failure_fallback() {
     use std::os::unix::fs::symlink;
     let put = |path: &std::path::Path| native_support::write(path.to_str().unwrap(), "{}");
     let dir = scratch::Scratch::new().unwrap();
-    let root = dir.0.join("pkg");
-    let outside = dir.0.join("outside");
+    let root = dir.path().join("pkg");
+    let outside = dir.path().join("outside");
     for (kind, file, nested) in [
         ("extensions", "t.ts", "index.ts"),
         ("skills", "t.md", "SKILL.md"),
@@ -886,14 +754,18 @@ fn package_entry_links_preserve_admission_and_failure_fallback() {
         .unwrap();
         symlink(outside.join(kind).join("dir"), entries.join("dir")).unwrap();
         symlink("missing", entries.join(format!("broken.{ext}"))).unwrap();
+        put(&dir.path().join("locked").join(kind).join(file));
         symlink(
-            outside.join(kind).join(file),
+            dir.path().join("locked").join(kind).join(file),
             entries.join(format!("denied.{ext}")),
         )
         .unwrap();
     }
-    let failing = ["denied.ts", "denied.md", "denied.json"];
-    let [extensions, skills, prompts, themes] = resolved_relative(&root, &failing);
+    let Some(_locked) = maestro_test_directory::deny(dir.path().join("locked"), 0o0).unwrap()
+    else {
+        return;
+    };
+    let [extensions, skills, prompts, themes] = resolved_relative(&root);
     assert_eq!(
         extensions,
         [
@@ -920,18 +792,22 @@ fn package_entry_links_preserve_admission_and_failure_fallback() {
 #[test]
 fn package_skill_root_links_follow_the_target_kind() {
     use std::os::unix::{fs::symlink, net::UnixListener};
-    let cases: [(&str, &[&str], &[&str]); 5] = [
-        ("file", &[], &["/skills/SKILL.md"]),
-        ("directory", &[], &["/skills/child/SKILL.md"]),
-        ("socket", &[], &["/skills/child/SKILL.md"]),
-        ("dangling", &[], &["/skills/child/SKILL.md"]),
-        ("denied", &["skills/SKILL.md"], &["/skills/child/SKILL.md"]),
+    let cases: [(&str, &[&str]); 5] = [
+        ("file", &["/skills/SKILL.md"]),
+        ("directory", &["/skills/child/SKILL.md"]),
+        ("socket", &["/skills/child/SKILL.md"]),
+        ("dangling", &["/skills/child/SKILL.md"]),
+        ("denied", &["/skills/child/SKILL.md"]),
     ];
-    for (name, failing, expected) in cases {
+    for (name, expected) in cases {
         let dir = scratch::Scratch::new().unwrap();
-        let root = dir.0.join("pkg");
+        let root = dir.path().join("pkg");
         native_support::write(root.join("skills/child/SKILL.md").to_str().unwrap(), "{}");
-        let target = dir.0.join("target");
+        let target = dir.path().join(if name == "denied" {
+            "locked/target"
+        } else {
+            "target"
+        });
         let entry = root.join("skills/SKILL.md");
         let _socket;
         match name {
@@ -941,6 +817,11 @@ fn package_skill_root_links_follow_the_target_kind() {
             _ => {}
         }
         symlink(&target, &entry).unwrap();
-        assert_eq!(resolved_relative(&root, failing)[1], expected, "{name}");
+        let locked = (name == "denied")
+            .then(|| maestro_test_directory::deny(dir.path().join("locked"), 0o0).unwrap());
+        if matches!(locked, Some(None)) {
+            continue;
+        }
+        assert_eq!(resolved_relative(&root)[1], expected, "{name}");
     }
 }

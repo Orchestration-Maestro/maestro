@@ -26,13 +26,15 @@ use std::{
 const NOT_INITIALIZED: &str =
     "Extension runtime not initialized. Action methods cannot be called during extension loading.";
 
+pub(crate) use crate::session::NoCommands;
+
 pub(crate) fn catalog() -> SharedHandle<ModelRegistry> {
-    let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::default()));
-    SharedHandle::new(ModelRegistry::in_memory(auth).unwrap())
+    let auth = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::default()));
+    SharedHandle::new(ModelRegistry::in_memory(auth, SharedHandle::new(NoCommands)).unwrap())
 }
 
-pub(crate) fn good(id: &str) -> Arc<RwLock<ProviderConfig>> {
-    Arc::new(RwLock::new(ProviderConfig {
+pub(crate) fn good(id: &str) -> SharedHandle<RwLock<ProviderConfig>> {
+    SharedHandle::new(RwLock::new(ProviderConfig {
         base_url: Some("https://provider.test/v1".into()),
         api_key: Some("PROVIDER_TEST_KEY".into()),
         api: Some("openai-completions".into()),
@@ -336,13 +338,11 @@ fn exec_runs_in_the_extension_directory_unless_overridden() {
     {
         return;
     }
-    let dir = std::env::temp_dir();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let dir = directory.path();
     let runtime = create_extension_runtime::<Local>();
     let (_owner, api) = local_api(runtime, &dir.display().to_string());
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let executor = crate::runtime_support::io_runtime();
     let args: Vec<String> = Vec::new();
     let out = executor
         .block_on(
@@ -726,8 +726,6 @@ fn verify_immediate_after_flush(
     assert_eq!(seen.borrow().len(), 1);
 }
 
-#[path = "support/context_actions.rs"]
-mod context_actions;
+use crate::context_actions;
 
-#[path = "support/model.rs"]
-mod model_support;
+use crate::model_support;

@@ -1,9 +1,7 @@
 //! Typed replacement hooks through registered native callbacks.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod support;
+use crate::local_support as support;
 use maestro_extensions::*;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};

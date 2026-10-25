@@ -51,7 +51,6 @@ pub struct Input {
     pub stdout_error: bool,
     #[serde(default)]
     pub backpressure: bool,
-    pub env_after_native: Option<BTreeMap<String, String>>,
 }
 /// Ordered trace, exact frame bytes and final outcome.
 #[derive(Deserialize)]
@@ -87,7 +86,6 @@ pub use recorded::platform;
 /// A single operation's effects; no process-global state is mutated.
 pub struct Effects<'a> {
     pub case: &'a Case,
-    pub env: RefCell<BTreeMap<String, String>>,
     pub trace: RefCell<Vec<Value>>,
     pub stdout: RefCell<Vec<String>>,
     pub release: RefCell<Option<oneshot::Receiver<()>>>,
@@ -119,9 +117,6 @@ impl ClipboardModule for Effects<'_> {
 impl ClipboardOperations for Effects<'_> {
     fn platform(&self) -> ClipboardPlatform {
         platform(&self.case.input.platform)
-    }
-    fn env(&self, name: &str) -> Option<String> {
-        self.env.borrow().get(name).cloned()
     }
     fn clipboard(&self) -> Option<&dyn ClipboardModule> {
         (self.case.input.native != "absent").then_some(self)
@@ -211,16 +206,57 @@ impl ClipboardOperations for Effects<'_> {
 use crate::clipboard_status as completed;
 use completed::status;
 
-/// Replays the exact rows assigned to one behavior through the root export.
-pub async fn replay(name: &str) {
-    let corpus = corpus();
-    let cases: Vec<_> = corpus
+/// Runs the remote row a fixture cannot hold, whose marker is not valid UTF-8.
+///
+/// The native write succeeds, so the marker alone decides whether the terminal frame
+/// follows it.
+#[cfg(unix)]
+pub fn run_undecodable_remote_marker() {
+    let case = Case {
+        id: "remote-undecodable-marker".to_owned(),
+        test: "undecodable_remote_marker_still_emits_the_terminal_frame".to_owned(),
+        input: Input {
+            platform: "darwin".to_owned(),
+            env: BTreeMap::new(),
+            native: "success".to_owned(),
+            text: "hello".to_owned(),
+            fail: Vec::new(),
+            spawn_fail: false,
+            stdout_error: false,
+            backpressure: false,
+        },
+        expected: Expected {
+            trace: vec![
+                json!(["native", "hello"]),
+                json!(["native-done"]),
+                json!(["stdout"]),
+            ],
+            stdout: vec!["\x1b]52;c;aGVsbG8=\x07".to_owned()],
+            result: json!("ok"),
+        },
+    };
+    crate::support::run_io(replay(vec![case]));
+}
+
+/// Runs one behavior's rows, each in a cleared child holding its environment.
+pub fn run(name: &str) {
+    let cases: Vec<Case> = corpus()
         .copy
-        .iter()
+        .into_iter()
         .filter(|case| case.test == name)
         .collect();
     assert!(!cases.is_empty());
-    for case in cases {
+    let selected =
+        maestro_test_process::run_per_environment(name, cases, |case| case.input.env.clone())
+            .unwrap();
+    if let Some(cases) = selected {
+        crate::support::run_io(replay(cases));
+    }
+}
+
+/// Replays the exact rows assigned to one behavior through the root export.
+async fn replay(cases: Vec<Case>) {
+    for case in &cases {
         // Nonzero completion and process failure must enter the same fallback.
         for process_error in [false, true]
             .into_iter()
@@ -231,22 +267,12 @@ pub async fn replay(name: &str) {
     }
 }
 
-/// Drives one controlled behavior without runtime attribute expansion.
-pub fn run(name: &str) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(replay(name));
-}
-
 /// Drives one invocation and preserves its ordered observable transcript.
 async fn replay_case(case: &Case, process_error: bool) {
     let (sender, receiver) = oneshot::channel();
     let pending = case.input.native == "pending";
     let effects = Effects {
         case,
-        env: RefCell::new(case.input.env.clone()),
         trace: RefCell::default(),
         stdout: RefCell::default(),
         release: RefCell::new(pending.then_some(receiver)),
@@ -261,9 +287,6 @@ async fn replay_case(case: &Case, process_error: bool) {
             vec![json!(["native", case.input.text])]
         );
         assert!(effects.stdout.borrow().is_empty());
-        if let Some(env) = &case.input.env_after_native {
-            *effects.env.borrow_mut() = env.clone();
-        }
         sender.send(()).unwrap();
     }
     let result = copy.await;

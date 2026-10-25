@@ -65,23 +65,9 @@ fn event(v: &AgentEvent) -> &'static str {
         _ => panic!("unexpected control event"),
     }
 }
-/// Ordered common roles without casting custom payloads.
+/// Ordered common roles of the retained history.
 fn roles(agent: &Agent) -> Vec<&'static str> {
-    agent
-        .state()
-        .read()
-        .unwrap()
-        .messages()
-        .read()
-        .unwrap()
-        .iter()
-        .map(|v| match v {
-            AgentMessage::User(_) => "user",
-            AgentMessage::Assistant(_) => "assistant",
-            AgentMessage::ToolResult(_) => "toolResult",
-            AgentMessage::Custom(_) => unreachable!(),
-        })
-        .collect()
+    super::observable::roles(&agent.state().read().unwrap().messages().read().unwrap())
 }
 /// Pause the first credential request without retaining an internal guard.
 fn key_gate(
@@ -96,10 +82,7 @@ fn key_gate(
     *agent.get_api_key.write().unwrap() = Some(Arc::new(move |_| {
         let gate = gates.lock().unwrap().take();
         Box::pin(async move {
-            if let Some((entered, released)) = gate {
-                entered.send(()).unwrap();
-                released.await.unwrap();
-            }
+            super::wait_gate(gate).await;
             Ok(None)
         })
     }));
@@ -311,7 +294,7 @@ fn tagged_stream(
                 maestro_models::ToolCall {
                     id: format!("call-{call}"),
                     name: "echo".into(),
-                    arguments: maestro_models::JsonObject::new(),
+                    arguments: maestro_models::JsonObject::new().into(),
                     thought_signature: None,
                 },
             )];
@@ -466,10 +449,7 @@ fn retained_requests(
         let gate = gates.lock().unwrap().take();
         let turn = requests.lock().unwrap().len();
         Box::pin(async move {
-            if let Some((entered, released)) = gate {
-                entered.send(()).unwrap();
-                released.await.unwrap();
-            }
+            super::wait_gate(gate).await;
             Ok(Some(format!("key-{turn}")))
         })
     }));

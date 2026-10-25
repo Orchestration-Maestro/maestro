@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use crate::clock::epoch_millis;
     use maestro_models::*;
     use serde_json::json;
 
@@ -45,10 +46,7 @@ mod tests {
     }
 
     fn text(value: &str) -> TextContent {
-        TextContent {
-            text: value.into(),
-            text_signature: None,
-        }
+        TextContent::new(value.into())
     }
 
     fn thinking(value: &str, signature: Option<&str>, redacted: Option<bool>) -> AssistantContent {
@@ -583,21 +581,14 @@ mod tests {
             panic!()
         };
         call.arguments
+            .as_object_mut()
+            .expect("projected object root")
             .insert("nested".into(), json!({"changed":true}));
         assistant.response_id = Some("changed".into());
         let Message::User(user) = &mut output[0] else {
             panic!()
         };
         user.content = UserContent::Text("changed".into());
-    }
-
-    fn now() -> f64 {
-        (std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs_f64()
-            * 1000.0)
-            .floor()
     }
 
     #[test]
@@ -619,7 +610,8 @@ mod tests {
             tools: Some(vec![Tool {
                 name: "first".into(),
                 description: "supplied".into(),
-                parameters: json!({"type":"object", "properties":{"nested":{"type":"object"}}}),
+                parameters: json!({"type":"object", "properties":{"nested":{"type":"object"}}})
+                    .into(),
             }]),
         };
         let original = context.clone();
@@ -629,9 +621,9 @@ mod tests {
             seen.borrow_mut().push(id.to_owned());
             format!("normalized-{id}")
         };
-        let before = now();
+        let before = epoch_millis();
         let mut output = transform_messages(&context.messages, &model(), Some(&normalize));
-        let after = now();
+        let after = epoch_millis();
         assert_eq!(*seen.borrow(), vec!["a", "b"]);
         assert_eq!(context, original);
         assert_eq!(output.len(), 4);

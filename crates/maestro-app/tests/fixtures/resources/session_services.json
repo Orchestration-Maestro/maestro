@@ -1,0 +1,126 @@
+{
+  "cases": [
+    {
+      "name": "boolean_flag_is_set_true_even_with_text",
+      "flagValues": {
+        "bool-flag": "yes"
+      },
+      "expected": {
+        "diagnostics": [],
+        "runtimeFlags": {
+          "bool-flag": true
+        }
+      }
+    },
+    {
+      "name": "boolean_flag_with_false_is_set_true",
+      "flagValues": {
+        "bool-flag": false
+      },
+      "expected": {
+        "diagnostics": [],
+        "runtimeFlags": {
+          "bool-flag": true
+        }
+      }
+    },
+    {
+      "name": "string_flag_takes_text",
+      "flagValues": {
+        "text-flag": "value"
+      },
+      "expected": {
+        "diagnostics": [],
+        "runtimeFlags": {
+          "text-flag": "value"
+        }
+      }
+    },
+    {
+      "name": "string_flag_without_text_requires_value",
+      "flagValues": {
+        "text-flag": true
+      },
+      "expected": {
+        "diagnostics": [
+          {
+            "type": "error",
+            "message": "Extension flag \"--text-flag\" requires a value"
+          }
+        ],
+        "runtimeFlags": {}
+      }
+    },
+    {
+      "name": "one_unknown_option",
+      "flagValues": {
+        "nope": true
+      },
+      "expected": {
+        "diagnostics": [
+          {
+            "type": "error",
+            "message": "Unknown option: --nope"
+          }
+        ],
+        "runtimeFlags": {}
+      }
+    },
+    {
+      "name": "several_unknown_options",
+      "flagValues": {
+        "a": true,
+        "text-flag": "v",
+        "b": "x"
+      },
+      "expected": {
+        "diagnostics": [
+          {
+            "type": "error",
+            "message": "Unknown options: --a, --b"
+          }
+        ],
+        "runtimeFlags": {
+          "text-flag": "v"
+        }
+      }
+    },
+    {
+      "name": "absent_flag_values_add_nothing",
+      "flagValues": null,
+      "expected": {
+        "diagnostics": [],
+        "runtimeFlags": {}
+      }
+    },
+    {
+      "name": "provider_registrations_apply_individually",
+      "expected": {
+        "diagnostics": [
+          {
+            "type": "error",
+            "message": "Extension \"<inline:2>\" error: Provider bad-provider: \"baseUrl\" is required when defining models."
+          }
+        ],
+        "pending": 0,
+        "goodModel": "good-model",
+        "badModel": null
+      }
+    },
+    {
+      "name": "services_bind_auth_models_settings_and_resources",
+      "expected": {
+        "cwd": "$ROOT/project",
+        "agentDir": "$ROOT/agent",
+        "apiKey": "FILE_KEY",
+        "model": "file-model",
+        "registryError": null,
+        "thinking": "low",
+        "skills": [
+          "service-skill"
+        ],
+        "diagnostics": []
+      }
+    }
+  ]
+}

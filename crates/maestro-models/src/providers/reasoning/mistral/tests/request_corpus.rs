@@ -2,6 +2,7 @@
 
 use super::super::request;
 use crate::{Context, MistralOptions, Model, StreamOptions};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_test_process::{TestProcess, test_name};
 use serde::Deserialize;
 use serde_json::Value;
@@ -148,11 +149,16 @@ pub(super) fn corpus(name: &str, count: usize) {
     assert_eq!(selected, count);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run one transport owner's unique cases with isolated credential environments.
 pub(super) async fn async_corpus(name: &str, count: usize) {
     let cases = cases();
     let mut selected = 0;
-    for case in cases.into_iter().filter(|case| case.test == name) {
+    for (index, case) in cases
+        .into_iter()
+        .enumerate()
+        .filter(|(_, case)| case.test == name)
+    {
         selected += 1;
         if case.operation == "endpoint" {
             endpoint_case(&case);
@@ -176,13 +182,7 @@ pub(super) async fn async_corpus(name: &str, count: usize) {
                 .ignored()
                 .nocapture()
                 .env("MISTRAL_API_KEY", key)
-                .env(
-                    "MAESTRO_REQUEST_CASE",
-                    serde_json::to_string(
-                        &serde_json::json!({"input":case.input,"expected":case.expected}),
-                    )
-                    .unwrap(),
-                )
+                .case(index.to_string())
                 .output()
                 .unwrap();
             assert!(
@@ -197,21 +197,25 @@ pub(super) async fn async_corpus(name: &str, count: usize) {
     assert_eq!(selected, count);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 #[ignore = "executed in a subprocess with controlled credentials"]
 fn credential_child() {
-    let Ok(text) = std::env::var("MAESTRO_REQUEST_CASE") else {
+    let selection = maestro_test_process::selection();
+    if !selection.is_child() {
         return;
-    };
-    let case: Value = serde_json::from_str(&text).unwrap();
+    }
+    let case = cases()
+        .into_iter()
+        .enumerate()
+        .find(|(index, _)| selection.runs_case(&index.to_string()))
+        .expect("selected request row")
+        .1;
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap()
-        .block_on(super::request_sending::check(
-            &case["input"],
-            &case["expected"],
-        ));
+        .block_on(super::request_sending::check(&case.input, &case.expected));
 }
 
 /// Check the request options boundary.
@@ -300,6 +304,7 @@ fn pure_case(case: &Case) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check URL success or the native failing phase.
 fn endpoint_case(case: &Case) {
     let result = request::transport::base_url(case.input["baseUrl"].as_str().unwrap())
@@ -329,6 +334,6 @@ fn cases() -> Vec<Case> {
             serde_json::to_string(&case.input).unwrap()
         )));
     }
-    assert_eq!(cases.len(), 467);
+    assert_eq!(cases.len(), 470);
     cases
 }

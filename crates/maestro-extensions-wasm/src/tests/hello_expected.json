@@ -1,0 +1,198 @@
+{
+  "metadata": {
+    "name": "hello",
+    "label": "Hello",
+    "description": "A simple greeting tool",
+    "parameters": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name to greet"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "input": {
+        "name": "Ada"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, Ada!"
+          }
+        ],
+        "details": {
+          "greeted": "Ada"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": ""
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, !"
+          }
+        ],
+        "details": {
+          "greeted": ""
+        }
+      }
+    },
+    {
+      "input": {
+        "name": " \t\n"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello,  \t\n!"
+          }
+        ],
+        "details": {
+          "greeted": " \t\n"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": "Zoë 世界👋"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, Zoë 世界👋!"
+          }
+        ],
+        "details": {
+          "greeted": "Zoë 世界👋"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": "\"\\\n"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, \"\\\n!"
+          }
+        ],
+        "details": {
+          "greeted": "\"\\\n"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": "${name}"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, ${name}!"
+          }
+        ],
+        "details": {
+          "greeted": "${name}"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": "﻿"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, ﻿!"
+          }
+        ],
+        "details": {
+          "greeted": "﻿"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": "null"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, null!"
+          }
+        ],
+        "details": {
+          "greeted": "null"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": "42"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, 42!"
+          }
+        ],
+        "details": {
+          "greeted": "42"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": "true"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, true!"
+          }
+        ],
+        "details": {
+          "greeted": "true"
+        }
+      }
+    },
+    {
+      "input": {
+        "name": "Grace",
+        "unused": "not displayed"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, Grace!"
+          }
+        ],
+        "details": {
+          "greeted": "Grace"
+        }
+      }
+    }
+  ]
+}

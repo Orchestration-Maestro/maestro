@@ -1,0 +1,192 @@
+[
+  {
+    "name": "steering expands skill commands and templates",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [
+        "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>\n\nlook",
+        "Plan alpha"
+      ],
+      "followUp": [],
+      "pendingMessageCount": 2,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [],
+    "entries": [],
+    "sessionEvents": [
+      {
+        "type": "queue_update",
+        "steering": [
+          "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>\n\nlook"
+        ],
+        "followUp": []
+      },
+      {
+        "type": "queue_update",
+        "steering": [
+          "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>\n\nlook",
+          "Plan alpha"
+        ],
+        "followUp": []
+      }
+    ],
+    "extensionEvents": [],
+    "errorEvents": []
+  },
+  {
+    "name": "queuing a registered command is refused",
+    "results": [
+      {
+        "error": "Extension command \"/hello\" cannot be queued. Use prompt() or execute the command when not streaming."
+      },
+      {
+        "error": "Extension command \"/hello\" cannot be queued. Use prompt() or execute the command when not streaming."
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [],
+    "entries": [],
+    "sessionEvents": [],
+    "extensionEvents": [],
+    "errorEvents": []
+  },
+  {
+    "name": "a slash text that names no command still queues",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [
+        "/notacommand text"
+      ],
+      "followUp": [
+        "/nothing"
+      ],
+      "pendingMessageCount": 2,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [],
+    "entries": [],
+    "sessionEvents": [
+      {
+        "type": "queue_update",
+        "steering": [
+          "/notacommand text"
+        ],
+        "followUp": []
+      },
+      {
+        "type": "queue_update",
+        "steering": [
+          "/notacommand text"
+        ],
+        "followUp": [
+          "/nothing"
+        ]
+      }
+    ],
+    "extensionEvents": [],
+    "errorEvents": []
+  },
+  {
+    "name": "clearing the queue returns the texts and publishes",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "label": "before",
+        "value": {
+          "steering": [
+            "one"
+          ],
+          "followUp": [
+            "two"
+          ],
+          "pendingMessageCount": 2,
+          "isStreaming": false,
+          "systemPrompt": "$BASE"
+        }
+      },
+      {
+        "ok": {
+          "steering": [
+            "one"
+          ],
+          "followUp": [
+            "two"
+          ]
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [],
+    "entries": [],
+    "sessionEvents": [
+      {
+        "type": "queue_update",
+        "steering": [
+          "one"
+        ],
+        "followUp": []
+      },
+      {
+        "type": "queue_update",
+        "steering": [
+          "one"
+        ],
+        "followUp": [
+          "two"
+        ]
+      },
+      {
+        "type": "queue_update",
+        "steering": [],
+        "followUp": []
+      }
+    ],
+    "extensionEvents": [],
+    "errorEvents": []
+  }
+]

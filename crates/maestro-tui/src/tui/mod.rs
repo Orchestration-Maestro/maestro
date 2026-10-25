@@ -26,6 +26,7 @@ use schedule::Schedule;
 use screen::Screen;
 
 pub use crate::text::utils::visible_width;
+pub(crate) use component::render_infallible;
 pub use component::{CURSOR_MARKER, Component, FocusFlag, Focusable, InputHandler, is_focusable};
 pub use container::{ChildArray, ComponentHandle, Container};
 pub use input::{InputListener, InputListenerResult};

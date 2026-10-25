@@ -2,8 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_resources::{
-    LoadSkillsFromDirOptions, NativeResourceOperations, SourceOrigin, SourceScope,
-    load_skills_from_dir,
+    LoadSkillsFromDirOptions, SourceOrigin, SourceScope, load_skills_from_dir,
 };
 use support::{Directory, strings};
 
@@ -16,14 +15,11 @@ fn maestro_skills_load_valid_metadata_and_source() {
         "---\nname: calendar\ndescription: Schedule meetings\n---\nRead this.",
     );
     let base = file.parent().unwrap();
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(base),
-            source: "user",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(base),
+        source: "user",
+    });
     assert!(result.diagnostics.is_empty());
     assert_eq!(result.skills.len(), 1);
     let skill = &result.skills[0];
@@ -50,14 +46,11 @@ fn maestro_skills_warn_on_parent_mismatch() {
         "calendar/SKILL.md",
         "---\nname: other\ndescription: Meetings\n---",
     );
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.diagnostics.len(), 1);
     assert_eq!(
@@ -84,14 +77,11 @@ fn maestro_skills_keep_name_warning_order() {
         "parent/SKILL.md",
         &format!("---\nname: {name}\ndescription: Useful\n---"),
     );
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "custom",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "custom",
+    });
     assert_eq!(result.skills.len(), 1);
     assert_eq!(
         result
@@ -124,14 +114,11 @@ fn maestro_skills_keep_name_warning_order() {
             &format!("{parent}/SKILL.md"),
             &format!("---\nname: {name}\ndescription: Useful\n---"),
         );
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(file.parent().unwrap()),
-                source: "path",
-            },
-            &NativeResourceOperations,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(file.parent().unwrap()),
+            source: "path",
+        });
         assert_eq!(result.diagnostics.len(), expected, "{name}");
     }
 }
@@ -147,14 +134,11 @@ fn maestro_skills_validate_description_before_name() {
         "---\nname: Other\ndescription: '\u{feff}'\n---",
     ] {
         let file = dir.file("parent/SKILL.md", header);
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(file.parent().unwrap()),
-                source: "path",
-            },
-            &NativeResourceOperations,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(file.parent().unwrap()),
+            source: "path",
+        });
         assert!(result.skills.is_empty());
         assert_eq!(result.diagnostics[0].message, "description is required");
         if header.is_empty() {
@@ -175,14 +159,11 @@ fn maestro_skills_validate_description_before_name() {
         }
     }
     let file = dir.file("parent/SKILL.md", "---\ndescription: \"\\u0085\"\n---");
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     assert_eq!(result.skills[0].description, "\u{85}");
     assert!(result.diagnostics.is_empty());
 }
@@ -198,14 +179,11 @@ fn maestro_skills_keep_overlong_descriptions() {
                 "parent/SKILL.md",
                 &format!("---\ndescription: {description}\n---"),
             );
-            let result = load_skills_from_dir(
-                LoadSkillsFromDirOptions {
-                    cwd: support::text(&std::env::temp_dir()),
-                    dir: support::text(file.parent().unwrap()),
-                    source: "path",
-                },
-                &NativeResourceOperations,
-            );
+            let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+                cwd: support::text(&std::env::temp_dir()),
+                dir: support::text(file.parent().unwrap()),
+                source: "path",
+            });
             assert_eq!(result.skills[0].description, description);
             assert_eq!(
                 result
@@ -235,14 +213,11 @@ fn maestro_skills_reject_nonstring_metadata_fields() {
                 format!("description: {value}")
             };
             let file = dir.file("parent/SKILL.md", &format!("---\n{content}\n---"));
-            let result = load_skills_from_dir(
-                LoadSkillsFromDirOptions {
-                    cwd: support::text(&std::env::temp_dir()),
-                    dir: support::text(file.parent().unwrap()),
-                    source: "path",
-                },
-                &NativeResourceOperations,
-            );
+            let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+                cwd: support::text(&std::env::temp_dir()),
+                dir: support::text(file.parent().unwrap()),
+                source: "path",
+            });
             assert!(result.skills.is_empty());
             assert_eq!(result.diagnostics.len(), 1);
             assert_eq!(
@@ -254,14 +229,11 @@ fn maestro_skills_reject_nonstring_metadata_fields() {
         }
     }
     let file = dir.file("parent/SKILL.md", "---\nname: true\ndescription: 42\n---");
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     assert_eq!(result.diagnostics.len(), 1);
     assert_eq!(
         result.diagnostics[0].message,
@@ -282,14 +254,11 @@ fn maestro_skills_ignore_unrelated_metadata() {
     let dir = Directory::new();
     let text = "---\ndescription: Useful\ncustom: {nested: [true, 4]}\n---";
     let file = dir.file("parent/SKILL.md", text);
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "custom",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "custom",
+    });
     assert_eq!(result.skills.len(), 1);
     assert!(result.diagnostics.is_empty());
     assert_eq!(result.skills[0].source_info.source, "custom");
@@ -318,14 +287,11 @@ fn maestro_skills_find_nested_entry_files() {
         "nested/calendar/SKILL.md",
         "---\ndescription: Meetings\n---",
     );
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "project",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "project",
+    });
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, file);
     assert_eq!(result.skills[0].source_info.scope, SourceScope::Project);
@@ -338,14 +304,11 @@ fn maestro_skills_prefer_the_root_candidate() {
     let dir = Directory::new();
     let _ = dir.file("parent/child/SKILL.md", "---\ndescription: Child\n---");
     let file = dir.file("parent/SKILL.md", "---\ndescription: Parent\n---");
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, file);
     assert!(result.diagnostics.is_empty());
@@ -362,32 +325,34 @@ fn maestro_skills_root_failure_stops_descent() {
         "---\ndescription: Unreadable\n---",
     ] {
         let file = dir.file("parent/SKILL.md", text);
-        let failures = if text.contains("Unreadable") {
-            vec![("read_file", file.clone())]
+        #[cfg(unix)]
+        let (_guard, denied) = if text.contains("Unreadable") {
+            let Some((guard, message)) = support::deny(&file) else {
+                continue; // a privileged run still reads it
+            };
+            (Some(guard), Some(message))
         } else {
-            vec![]
+            (None, None)
         };
-        let ops = support::Controlled {
-            reads: std::sync::Mutex::default(),
-            failures,
-            order: vec![(file.parent().unwrap().into(), vec!["child", "SKILL.md"])],
+        #[cfg(not(unix))]
+        let denied: Option<String> = if text.contains("Unreadable") {
+            continue;
+        } else {
+            None
         };
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(file.parent().unwrap()),
-                source: "path",
-            },
-            &ops,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(file.parent().unwrap()),
+            source: "path",
+        });
         assert!(result.skills.is_empty());
         assert_eq!(result.diagnostics.len(), 1);
         assert_eq!(
             result.diagnostics[0].path.as_deref(),
             Some(support::text(&file))
         );
-        if text.contains("Unreadable") {
-            assert_eq!(result.diagnostics[0].message, "injected read_file");
+        if let Some(message) = &denied {
+            assert_eq!(&result.diagnostics[0].message, message);
         } else if text.contains("name:") {
             assert_eq!(result.diagnostics[0].message, "description is required");
         } else {
@@ -403,24 +368,21 @@ fn maestro_skills_skip_nonfile_or_ignored_root_candidates() {
         let dir = Directory::new();
         let child = dir.file("child/SKILL.md", "---\ndescription: Child\n---");
         match branch {
-            "directory" => std::fs::create_dir(dir.0.join("SKILL.md")).unwrap(),
+            "directory" => std::fs::create_dir(dir.0.path().join("SKILL.md")).unwrap(),
             "ignored" => {
                 let _ = dir.file("SKILL.md", "---\ndescription: Root\n---");
                 let _ = dir.file(".ignore", "SKILL.md\n!child/SKILL.md\n");
             }
             _ => {
                 #[cfg(unix)]
-                std::os::unix::fs::symlink("missing", dir.0.join("SKILL.md")).unwrap();
+                std::os::unix::fs::symlink("missing", dir.0.path().join("SKILL.md")).unwrap();
             }
         }
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(&dir.0),
-                source: "path",
-            },
-            &NativeResourceOperations,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(dir.0.path()),
+            source: "path",
+        });
         assert_eq!(result.skills.len(), 1, "{branch}");
         assert_eq!(result.skills[0].file_path, child, "{branch}");
         assert!(result.diagnostics.is_empty());
@@ -435,14 +397,11 @@ fn maestro_skills_preserve_multiline_descriptions() {
         "parent/SKILL.md",
         "---\ndescription: |\n  First line\n  Second line\n---",
     );
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     assert_eq!(result.skills[0].description, "First line\nSecond line\n");
     assert!(result.diagnostics.is_empty());
 }
@@ -451,14 +410,11 @@ fn maestro_skills_preserve_multiline_descriptions() {
 #[test]
 fn maestro_skills_return_empty_for_missing_directories() {
     let dir = Directory::new();
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0.join("absent")),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(&dir.0.path().join("absent")),
+        source: "path",
+    });
     assert!(result.skills.is_empty());
     assert!(result.diagnostics.is_empty());
 }
@@ -472,14 +428,11 @@ fn maestro_skills_use_basename_when_name_is_absent() {
             "parent/SKILL.md",
             &format!("---\n{name}description: Useful\n---"),
         );
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(file.parent().unwrap()),
-                source: "path",
-            },
-            &NativeResourceOperations,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(file.parent().unwrap()),
+            source: "path",
+        });
         assert_eq!(result.skills[0].name, "parent");
         assert!(result.diagnostics.is_empty());
     }
@@ -494,14 +447,11 @@ fn maestro_skills_disable_only_explicit_boolean_true() {
             "parent/SKILL.md",
             &format!("---\ndescription: Useful\ndisable-model-invocation: {flag}\n---"),
         );
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(file.parent().unwrap()),
-                source: "path",
-            },
-            &NativeResourceOperations,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(file.parent().unwrap()),
+            source: "path",
+        });
         assert_eq!(result.skills[0].disable_model_invocation, flag == "true");
         assert!(result.diagnostics.is_empty());
     }
@@ -516,14 +466,11 @@ fn maestro_skills_empty_or_hidden_lists_have_no_prompt() {
         "parent/SKILL.md",
         "---\ndescription: Useful\ndisable-model-invocation: true\n---",
     );
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     assert_eq!(
         maestro_resources::format_skills_for_prompt(&result.skills),
         ""
@@ -535,14 +482,11 @@ fn maestro_skills_empty_or_hidden_lists_have_no_prompt() {
 fn maestro_skills_render_exact_prompt_instructions() {
     let dir = Directory::new();
     let file = dir.file("parent/SKILL.md", "---\ndescription: Useful\n---");
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     let expected = format!(
         "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>parent</name>\n    <description>Useful</description>\n    <location>{}</location>\n  </skill>\n</available_skills>",
         file.display()
@@ -558,14 +502,11 @@ fn maestro_skills_render_exact_prompt_instructions() {
 fn maestro_skills_escape_every_xml_field() {
     let dir = Directory::new();
     let file = dir.file("parent/SKILL.md", "---\ndescription: Useful\n---");
-    let mut result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let mut result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     let skill = &mut result.skills[0];
     skill.name = "&<>\"'😀&amp;".into();
     skill.description = "&<>\"'😀&amp;".into();
@@ -586,14 +527,11 @@ fn maestro_skills_preserve_prompt_order() {
     for name in ["second", "first"] {
         let file = dir.file(&format!("{name}/SKILL.md"), "---\ndescription: Useful\n---");
         skills.extend(
-            load_skills_from_dir(
-                LoadSkillsFromDirOptions {
-                    cwd: support::text(&std::env::temp_dir()),
-                    dir: support::text(file.parent().unwrap()),
-                    source: "path",
-                },
-                &NativeResourceOperations,
-            )
+            load_skills_from_dir(LoadSkillsFromDirOptions {
+                cwd: support::text(&std::env::temp_dir()),
+                dir: support::text(file.parent().unwrap()),
+                source: "path",
+            })
             .skills,
         );
     }
@@ -617,14 +555,11 @@ fn maestro_skills_filter_hidden_prompt_members() {
             ),
         );
         skills.extend(
-            load_skills_from_dir(
-                LoadSkillsFromDirOptions {
-                    cwd: support::text(&std::env::temp_dir()),
-                    dir: support::text(file.parent().unwrap()),
-                    source: "path",
-                },
-                &NativeResourceOperations,
-            )
+            load_skills_from_dir(LoadSkillsFromDirOptions {
+                cwd: support::text(&std::env::temp_dir()),
+                dir: support::text(file.parent().unwrap()),
+                source: "path",
+            })
             .skills,
         );
     }
@@ -641,17 +576,14 @@ fn maestro_skills_accept_explicit_files_and_directories() {
     let first = dir.file("calendar/SKILL.md", "---\ndescription: Meetings\n---");
     let second = dir.file("notes/notes.md", "---\ndescription: Notes\n---");
     let paths = vec![first.parent().unwrap().into(), second.clone()];
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0.join("agent")),
-            config_dir_name: ".maestro",
-            skill_paths: &strings(&paths),
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(&dir.0.path().join("agent")),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
     .unwrap();
     assert_eq!(
         result
@@ -675,41 +607,35 @@ fn maestro_skills_accept_explicit_files_and_directories() {
 fn maestro_skills_report_explicit_path_failures() {
     let dir = Directory::new();
     let upper = dir.file("upper.MD", "---\ndescription: Not loaded\n---");
-    let stat = dir.file("stat.md", "---\ndescription: Not loaded\n---");
-    let missing = dir.0.join("absent");
-    let mut paths = vec![missing.clone(), upper.clone(), stat.clone()];
+    let missing = dir.0.path().join("absent");
+    let paths = vec![missing.clone(), upper.clone()];
     #[cfg(unix)]
-    let _socket = {
-        let other = dir.0.join("other.md");
+    let (paths, _socket) = {
+        let mut paths = paths;
+        let other = dir.0.path().join("other.md");
         let listener = std::os::unix::net::UnixListener::bind(&other).unwrap();
         paths.push(other);
-        listener
+        (paths, listener)
     };
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![("metadata", stat.clone())],
-        order: vec![],
-    };
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0),
-            config_dir_name: ".maestro",
-            skill_paths: &strings(&paths),
-            include_defaults: false,
-        },
-        &ops,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(dir.0.path()),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
     .unwrap();
     assert!(result.skills.is_empty());
-    let mut expected = vec![
+    let expected = [
         ("skill path does not exist", missing),
         ("skill path is not a markdown file", upper),
-        ("injected metadata", stat),
+        #[cfg(unix)]
+        (
+            "skill path is not a markdown file",
+            dir.0.path().join("other.md"),
+        ),
     ];
-    #[cfg(unix)]
-    expected.push(("skill path is not a markdown file", dir.0.join("other.md")));
     assert_eq!(
         result
             .diagnostics
@@ -733,7 +659,7 @@ fn maestro_skills_report_explicit_path_failures() {
 fn maestro_skills_expand_all_home_path_forms() {
     let dir = Directory::new();
     let file = dir.file("home/calendar/SKILL.md", "---\ndescription: Meetings\n---");
-    let home = dir.0.join("home");
+    let home = dir.0.path().join("home");
     for (raw, target) in [
         ("~".into(), file.clone()),
         ("~/calendar".into(), file.clone()),
@@ -744,39 +670,33 @@ fn maestro_skills_expand_all_home_path_forms() {
         (home.join("calendar/../calendar"), file),
     ] {
         let paths = [raw];
-        let result = maestro_resources::load_skills(
-            maestro_resources::LoadSkillsOptions {
-                cwd: support::text(&dir.0),
-                home: support::text(&home),
-                agent_dir: support::text(&dir.0),
-                config_dir_name: ".maestro",
-                skill_paths: &strings(&paths),
-                include_defaults: false,
-            },
-            &NativeResourceOperations,
-        )
+        let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+            cwd: support::text(dir.0.path()),
+            home: support::text(&home),
+            agent_dir: support::text(dir.0.path()),
+            config_dir_name: ".maestro",
+            skill_paths: &strings(&paths),
+            include_defaults: false,
+        })
         .unwrap();
         assert_eq!(result.skills.len(), 1);
         assert_eq!(result.skills[0].file_path.as_str(), support::text(&target));
         assert!(result.diagnostics.is_empty());
     }
     let paths = [std::path::PathBuf::from("\u{85}~/calendar")];
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&home),
-            agent_dir: support::text(&dir.0),
-            config_dir_name: ".maestro",
-            skill_paths: &strings(&paths),
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(&home),
+        agent_dir: support::text(dir.0.path()),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
     .unwrap();
     assert!(result.skills.is_empty());
     assert_eq!(
         result.diagnostics[0].path.as_deref(),
-        Some(support::text(&dir.0.join("\u{85}~/calendar")))
+        Some(support::text(&dir.0.path().join("\u{85}~/calendar")))
     );
 }
 
@@ -784,14 +704,11 @@ fn maestro_skills_expand_all_home_path_forms() {
 #[test]
 fn maestro_skills_load_the_complete_fixture_tree() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/skills");
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&root),
-            source: "fixture",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(&root),
+        source: "fixture",
+    });
     let mut names = result
         .skills
         .iter()
@@ -824,17 +741,14 @@ fn maestro_skills_keep_first_discovered_name() {
     let root =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/skills-collision");
     let paths = [root.join("first/calendar"), root.join("second/calendar")];
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&root),
-            home: support::text(&root),
-            agent_dir: support::text(&root),
-            config_dir_name: ".maestro",
-            skill_paths: &strings(&paths),
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(&root),
+        home: support::text(&root),
+        agent_dir: support::text(&root),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
     .unwrap();
     assert_eq!(result.skills.len(), 1);
     let winner = paths[0].join("SKILL.md");
@@ -878,22 +792,14 @@ fn maestro_skills_load_defaults_before_explicit_paths() {
         "---\ndescription: Other\n---",
     );
     let paths = [explicit.clone()];
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![],
-        order: vec![(dir.0.join("agent/skills"), vec!["calendar", "other"])],
-    };
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0.join("agent")),
-            config_dir_name: ".maestro",
-            skill_paths: &strings(&paths),
-            include_defaults: true,
-        },
-        &ops,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(&dir.0.path().join("agent")),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: true,
+    })
     .unwrap();
     assert_eq!(
         result
@@ -925,17 +831,14 @@ fn maestro_skills_classify_explicit_source_scopes() {
     ] {
         let file = dir.file(relative, "---\ndescription: Useful\n---");
         let paths = [file.clone()];
-        let result = maestro_resources::load_skills(
-            maestro_resources::LoadSkillsOptions {
-                cwd: support::text(&dir.0),
-                home: support::text(&dir.0),
-                agent_dir: support::text(&dir.0.join("agent")),
-                config_dir_name: ".maestro",
-                skill_paths: &strings(&paths),
-                include_defaults: false,
-            },
-            &NativeResourceOperations,
-        )
+        let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
+            agent_dir: support::text(&dir.0.path().join("agent")),
+            config_dir_name: ".maestro",
+            skill_paths: &strings(&paths),
+            include_defaults: false,
+        })
         .unwrap();
         assert_eq!(result.skills[0].source_info.scope, scope);
         assert_eq!(result.skills[0].source_info.source, "local");
@@ -946,17 +849,14 @@ fn maestro_skills_classify_explicit_source_scopes() {
         "---\ndescription: Useful\n---",
     );
     let paths = [file];
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0.join("overlap")),
-            config_dir_name: "overlap",
-            skill_paths: &strings(&paths),
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(&dir.0.path().join("overlap")),
+        config_dir_name: "overlap",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
     .unwrap();
     assert_eq!(result.skills[0].source_info.scope, SourceScope::User);
 }
@@ -966,37 +866,25 @@ fn maestro_skills_classify_explicit_source_scopes() {
 fn maestro_skills_deduplicate_paths_before_names() {
     let dir = Directory::new();
     let file = dir.file("parent/SKILL.md", "---\ndescription: Useful\n---");
-    let alias = dir.0.join("parent/alias.md");
+    let alias = dir.0.path().join("parent/alias.md");
     #[cfg(unix)]
     std::os::unix::fs::symlink(&file, &alias).unwrap();
     #[cfg(not(unix))]
     std::fs::copy(&file, &alias).unwrap();
-    let paths = [file.clone(), file.clone(), alias.clone()];
+    let paths = [file.clone(), file, alias];
     let authored_paths = strings(&paths);
     let options = || maestro_resources::LoadSkillsOptions {
-        cwd: support::text(&dir.0),
-        home: support::text(&dir.0),
-        agent_dir: support::text(&dir.0),
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(dir.0.path()),
         config_dir_name: ".maestro",
         skill_paths: &authored_paths,
         include_defaults: false,
     };
-    let result = maestro_resources::load_skills(options(), &NativeResourceOperations).unwrap();
+    let result = maestro_resources::load_skills(options()).unwrap();
     assert_eq!(result.skills.len(), 1);
     #[cfg(unix)]
     assert!(result.diagnostics.is_empty());
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![("canonicalize", file), ("canonicalize", alias.clone())],
-        order: vec![],
-    };
-    let result = maestro_resources::load_skills(options(), &ops).unwrap();
-    assert_eq!(result.skills.len(), 1);
-    assert_eq!(result.diagnostics.len(), 1);
-    assert_eq!(
-        result.diagnostics[0].collision.as_ref().unwrap().loser_path,
-        alias
-    );
 }
 
 /// Repeated losing paths repeat collisions after all ordinary diagnostics.
@@ -1005,19 +893,16 @@ fn maestro_skills_repeat_collisions_for_losing_paths() {
     let dir = Directory::new();
     let winner = dir.file("first/calendar/SKILL.md", "---\ndescription: Winner\n---");
     let loser = dir.file("second/calendar/SKILL.md", "---\ndescription: Loser\n---");
-    let missing = dir.0.join("missing");
+    let missing = dir.0.path().join("missing");
     let paths = [winner, loser.clone(), missing.clone(), loser.clone()];
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0),
-            config_dir_name: ".maestro",
-            skill_paths: &strings(&paths),
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(dir.0.path()),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
     .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.diagnostics.len(), 3);
@@ -1050,19 +935,11 @@ fn maestro_skills_limit_loose_markdown_to_the_scan_root() {
         let _ = dir.file(relative, "---\ndescription: Hidden\n---");
     }
     let target = dir.file("outside/calendar/SKILL.md", "---\ndescription: Linked\n---");
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![],
-        order: vec![(dir.0.clone(), vec!["loose.md", "nested", "outside"])],
-    };
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "path",
-        },
-        &ops,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "path",
+    });
     assert_eq!(
         result
             .skills
@@ -1080,28 +957,19 @@ fn maestro_skills_limit_loose_markdown_to_the_scan_root() {
 fn maestro_skills_follow_native_links_and_skip_broken_links() {
     let dir = Directory::new();
     let target = dir.file("outside/calendar/SKILL.md", "---\ndescription: Linked\n---");
-    let scan = dir.0.join("scan");
+    let scan = dir.0.path().join("scan");
     std::fs::create_dir(&scan).unwrap();
     std::os::unix::fs::symlink(&target, scan.join("linked.md")).unwrap();
-    std::os::unix::fs::symlink(&target, scan.join("denied.md")).unwrap();
+    let Some(_locked) = support::denied_link(&dir, &scan.join("denied.md")) else {
+        return;
+    };
     std::os::unix::fs::symlink(target.parent().unwrap(), scan.join("calendar")).unwrap();
     std::os::unix::fs::symlink("absent", scan.join("broken")).unwrap();
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![("metadata", scan.join("denied.md"))],
-        order: vec![(
-            scan.clone(),
-            vec!["denied.md", "calendar", "broken", "linked.md"],
-        )],
-    };
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&scan),
-            source: "path",
-        },
-        &ops,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(&scan),
+        source: "path",
+    });
     assert_eq!(
         result
             .skills
@@ -1126,34 +994,29 @@ fn skill_entry_links_preserve_precedence_and_failure_fallback() {
         ("denied", false),
     ] {
         let dir = Directory::new();
-        let scan = dir.0.join("scan");
+        let scan = dir.0.path().join("scan");
         let child = dir.file("scan/child/SKILL.md", "---\ndescription: Child\n---");
-        let target = dir.0.join("target");
+        let target = dir.0.path().join("target");
         let _socket;
+        let mut _locked = None;
         match branch {
-            "file" | "denied" => drop(dir.file("target", "---\ndescription: Root\n---")),
+            "file" => drop(dir.file("target", "---\ndescription: Root\n---")),
             "directory" => std::fs::create_dir(&target).unwrap(),
             "socket" => _socket = UnixListener::bind(&target).unwrap(),
+            "denied" => match support::denied_link(&dir, &scan.join("SKILL.md")) {
+                Some(guard) => _locked = Some(guard),
+                None => continue,
+            },
             _ => {}
         }
-        symlink(&target, scan.join("SKILL.md")).unwrap();
-        let ops = support::Controlled {
-            reads: std::sync::Mutex::default(),
-            failures: if branch == "denied" {
-                vec![("metadata", scan.join("SKILL.md"))]
-            } else {
-                vec![]
-            },
-            order: vec![],
-        };
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(&scan),
-                source: "path",
-            },
-            &ops,
-        );
+        if branch != "denied" {
+            symlink(&target, scan.join("SKILL.md")).unwrap();
+        }
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(&scan),
+            source: "path",
+        });
         let paths = result
             .skills
             .iter()
@@ -1172,51 +1035,41 @@ fn skill_entry_links_preserve_precedence_and_failure_fallback() {
 #[cfg(unix)]
 #[test]
 fn entry_classification_uses_supplied_observations() {
+    use maestro_resources::ResourceFileType as Kind;
     use maestro_resources::skills::observed_type;
-    use maestro_resources::{ResourceFileType as Kind, ResourceOperations};
     use std::os::unix::{fs::symlink, net::UnixListener};
     let dir = Directory::new();
     let file = dir.file("file", "x");
-    let sub = dir.0.join("dir");
+    let sub = dir.0.path().join("dir");
     std::fs::create_dir(&sub).unwrap();
-    let socket = dir.0.join("sock");
+    let socket = dir.0.path().join("sock");
     let _listener = UnixListener::bind(&socket).unwrap();
-    symlink(&file, dir.0.join("link-file")).unwrap();
-    symlink(&sub, dir.0.join("link-dir")).unwrap();
-    symlink(&socket, dir.0.join("link-sock")).unwrap();
-    symlink("absent", dir.0.join("link-dangling")).unwrap();
-    symlink(&file, dir.0.join("link-denied")).unwrap();
-    symlink("link-loop", dir.0.join("link-loop")).unwrap();
-    let controlled = support::Controlled {
-        failures: vec![("metadata", dir.0.join("link-denied"))],
-        ..Default::default()
+    symlink(&file, dir.0.path().join("link-file")).unwrap();
+    symlink(&sub, dir.0.path().join("link-dir")).unwrap();
+    symlink(&socket, dir.0.path().join("link-sock")).unwrap();
+    symlink("absent", dir.0.path().join("link-dangling")).unwrap();
+    let Some(_locked) = support::denied_link(&dir, &dir.0.path().join("link-denied")) else {
+        return;
     };
-    let ops: &dyn ResourceOperations = &controlled;
-    let entries = NativeResourceOperations.read_dir(&dir.0).unwrap();
+    symlink("link-loop", dir.0.path().join("link-loop")).unwrap();
+    let entries = maestro_resources::read_entries(dir.0.path()).unwrap();
     let observed = |name: &str| {
         let entry = entries.iter().find(|e| e.name == name).unwrap();
-        observed_type(entry, support::text(&dir.0.join(name)), ops)
+        observed_type(entry, support::text(&dir.0.path().join(name)))
     };
     let cases = [
-        ("file", Some(Kind::File), 0),
-        ("dir", Some(Kind::Directory), 0),
-        ("sock", Some(Kind::Other), 0),
-        ("link-file", Some(Kind::File), 1),
-        ("link-dir", Some(Kind::Directory), 1),
-        ("link-sock", Some(Kind::Other), 1),
-        ("link-dangling", None, 1),
-        ("link-denied", None, 1),
-        ("link-loop", None, 1),
+        ("file", Some(Kind::File)),
+        ("dir", Some(Kind::Directory)),
+        ("sock", Some(Kind::Other)),
+        ("link-file", Some(Kind::File)),
+        ("link-dir", Some(Kind::Directory)),
+        ("link-sock", Some(Kind::Other)),
+        ("link-dangling", None),
+        ("link-denied", None),
+        ("link-loop", None),
     ];
-    let mut reads = 0;
-    for (name, expected, count) in cases {
+    for (name, expected) in cases {
         assert_eq!(observed(name), expected, "{name}");
-        let seen = controlled.reads.lock().unwrap();
-        assert_eq!(seen.len() - reads, count, "{name}");
-        if count == 1 {
-            assert_eq!(seen[reads], dir.0.join(name), "{name}");
-        }
-        reads = seen.len();
     }
 }
 
@@ -1230,19 +1083,11 @@ fn maestro_skills_apply_all_ignore_files_in_order() {
     let _ = dir.file(".gitignore", "a/SKILL.md\nb/SKILL.md\nc/SKILL.md\n");
     let _ = dir.file(".ignore", "!a/SKILL.md\n!b/SKILL.md\n");
     let _ = dir.file(".fdignore", "b/SKILL.md\n!c/SKILL.md\n");
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![],
-        order: vec![(dir.0.clone(), vec!["a", "b", "c"])],
-    };
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "path",
-        },
-        &ops,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "path",
+    });
     assert_eq!(
         result
             .skills
@@ -1262,30 +1107,19 @@ fn maestro_skills_scope_nested_ignore_rules() {
     let keep = dir.file("sibling/drop/SKILL.md", "---\ndescription: Keep\n---");
     let _ = dir.file("nested/#literal/SKILL.md", "---\ndescription: Hash\n---");
     let _ = dir.file("nested/.ignore", "\n  \n# comment\n/drop/\n\\#literal/\n");
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![],
-        order: vec![(dir.0.clone(), vec!["nested", "sibling"])],
-    };
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "path",
-        },
-        &ops,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "path",
+    });
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
     assert!(result.diagnostics.is_empty());
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0.join("sibling")),
-            source: "path",
-        },
-        &ops,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(&dir.0.path().join("sibling")),
+        source: "path",
+    });
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
 }
@@ -1306,26 +1140,18 @@ fn maestro_skills_preserve_escaped_exclamation_rules() {
     let nested = dir.file("nested/ordinary/SKILL.md", "---\ndescription: Visible\n---");
     let _ = dir.file(".ignore", "\\!literal.md\n");
     let _ = dir.file("nested/.ignore", "\\!literal/\n");
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![],
-        order: vec![(dir.0.clone(), vec!["ordinary.md", "nested"])],
-    };
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "path",
-        },
-        &ops,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "path",
+    });
     assert_eq!(
         result
             .skills
             .iter()
             .map(|s| &s.file_path)
             .collect::<Vec<_>>(),
-        vec![&ordinary, &nested]
+        vec![&nested, &ordinary]
     );
 }
 
@@ -1342,14 +1168,11 @@ fn maestro_skills_respect_excluded_parent_directories() {
         "---\ndescription: Blocked at entry\n---",
     );
     let _ = dir.file("self-blocked/.ignore", "/\n!SKILL.md\n");
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "path",
+    });
     assert_eq!(result.skills.len(), 2);
     assert_eq!(result.skills[0].file_path, keep);
     assert_eq!(result.skills[1].file_path, local);
@@ -1363,31 +1186,26 @@ fn maestro_skills_ignore_invalid_rules_without_panicking() {
     let keep = dir.file("keep/SKILL.md", "---\ndescription: Keep\n---");
     let _ = dir.file("drop/SKILL.md", "---\ndescription: Drop\n---");
     let _ = dir.file(".ignore", "[unclosed\ndrop/\n");
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "path",
+    });
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
     assert!(result.diagnostics.is_empty());
     let _ = dir.file(".ignore", &"?".repeat(250_000));
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "path",
+    });
     assert_eq!(result.skills.len(), 2);
     assert!(result.diagnostics.is_empty());
 }
 
 /// I/O failures preserve earlier discoveries and the quiet-versus-warning routes.
+#[cfg(unix)]
 #[test]
 fn maestro_skills_keep_partial_results_after_io_failures() {
     let dir = Directory::new();
@@ -1395,29 +1213,19 @@ fn maestro_skills_keep_partial_results_after_io_failures() {
     let unreadable = dir.file("unreadable/SKILL.md", "---\ndescription: Unreadable\n---");
     let _ = dir.file("blocked/SKILL.md", "---\ndescription: Blocked\n---");
     let ignore = dir.file(".ignore", "keep/\n");
-    let mut failures = vec![
-        ("read_file", ignore),
-        ("read_dir", dir.0.join("blocked")),
-        ("read_file", unreadable.clone()),
-    ];
-    #[cfg(unix)]
-    {
-        std::os::unix::fs::symlink(keep.parent().unwrap(), dir.0.join("link")).unwrap();
-        failures.push(("metadata", dir.0.join("link")));
-    }
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures,
-        order: vec![(dir.0.clone(), vec!["keep", "blocked", "link", "unreadable"])],
+    let (Some(_ignore), Some(_blocked), Some((_unreadable, message)), Some(_link)) = (
+        support::deny(&ignore),
+        support::deny(&dir.0.path().join("blocked")),
+        support::deny(&unreadable),
+        support::denied_link(&dir, &dir.0.path().join("link")),
+    ) else {
+        return;
     };
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "path",
-        },
-        &ops,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "path",
+    });
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
     assert_eq!(result.diagnostics.len(), 1);
@@ -1425,65 +1233,37 @@ fn maestro_skills_keep_partial_results_after_io_failures() {
         result.diagnostics[0].path.as_deref(),
         Some(support::text(&unreadable))
     );
-    assert_eq!(result.diagnostics[0].message, "injected read_file");
+    assert_eq!(result.diagnostics[0].message, message);
     std::fs::write(&keep, b"---\ndescription: Replaced \xff byte\n---").unwrap();
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(keep.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(keep.parent().unwrap()),
+        source: "path",
+    });
     assert_eq!(result.skills[0].description, "Replaced \u{fffd} byte");
 }
 
-/// Native and controlled operations share one loading interface and conformance.
+/// Skills of a custom directory carry its source metadata, in name order.
 #[test]
-fn maestro_skills_share_native_and_controlled_operations() {
+fn custom_skill_directories_keep_source_metadata_and_name_order() {
     let dir = Directory::new();
     let second = dir.file("second/SKILL.md", "---\ndescription: Second\n---");
     let first = dir.file("first/SKILL.md", "---\ndescription: First\n---");
-    let ops = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: vec![],
-        order: vec![(dir.0.clone(), vec!["second", "first"])],
-    };
-    for operations in [
-        &NativeResourceOperations as &dyn maestro_resources::ResourceOperations,
-        &ops,
-    ] {
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(&dir.0),
-                source: "custom",
-            },
-            operations,
-        );
-        assert_eq!(result.skills.len(), 2);
-        assert!(result.diagnostics.is_empty());
-        assert!(
-            result
-                .skills
-                .iter()
-                .all(|s| s.source_info.source == "custom"
-                    && s.source_info.scope == SourceScope::Temporary
-                    && s.source_info.origin == SourceOrigin::TopLevel
-                    && s.source_info.path == s.file_path
-                    && s.source_info.base_dir.as_ref() == Some(&s.base_dir))
-        );
-        for path in [&first, &second] {
-            assert!(result.skills.iter().any(|s| &s.file_path == path));
-        }
-    }
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0),
-            source: "custom",
-        },
-        &ops,
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "custom",
+    });
+    assert!(result.diagnostics.is_empty());
+    assert!(
+        result
+            .skills
+            .iter()
+            .all(|s| s.source_info.source == "custom"
+                && s.source_info.scope == SourceScope::Temporary
+                && s.source_info.origin == SourceOrigin::TopLevel
+                && s.source_info.path == s.file_path
+                && s.source_info.base_dir.as_ref() == Some(&s.base_dir))
     );
     assert_eq!(
         result
@@ -1491,58 +1271,34 @@ fn maestro_skills_share_native_and_controlled_operations() {
             .iter()
             .map(|s| &s.file_path)
             .collect::<Vec<_>>(),
-        vec![&second, &first]
+        vec![&first, &second]
     );
-}
-
-/// Failed canonicalization compares authored spellings, not native path equality.
-#[test]
-fn maestro_skills_keep_authored_collision_keys() {
-    let dir = Directory::new();
-    let file = dir.file("calendar/SKILL.md", "---\ndescription: Useful\n---");
-    let repeated = std::path::PathBuf::from(format!(
-        "{}{}{}SKILL.md",
-        file.parent().unwrap().display(),
-        std::path::MAIN_SEPARATOR,
-        std::path::MAIN_SEPARATOR,
-    ));
-    let paths = [file.clone(), file.clone(), repeated.clone()];
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0),
-            config_dir_name: ".maestro",
-            skill_paths: &strings(&paths),
-            include_defaults: false,
-        },
-        &support::Unresolvable,
-    )
-    .unwrap();
-    assert_eq!(result.skills.len(), 1);
-    assert_eq!(result.diagnostics.len(), 1);
-    let collision = result.diagnostics[0].collision.as_ref().unwrap();
-    assert_eq!(collision.winner_path.as_str(), support::text(&file));
-    assert_eq!(collision.loser_path.as_str(), support::text(&repeated));
-    assert_eq!(result.diagnostics[0].message, "name \"calendar\" collision");
 }
 
 /// Relative dot roots retain their literal basename after child normalization.
 #[test]
 fn maestro_skills_use_literal_dot_root_names() {
-    let dir = Directory::new();
-    let _ = dir.file("SKILL.md", "---\ndescription: Parent\n---");
-    let _ = dir.file("child/SKILL.md", "---\ndescription: Child\n---");
-    let ops = support::Rooted(dir.0.join("child"));
+    if !maestro_test_process::selection().is_child() {
+        let dir = Directory::new();
+        let _ = dir.file("SKILL.md", "---\ndescription: Parent\n---");
+        let _ = dir.file("child/SKILL.md", "---\ndescription: Child\n---");
+        let output =
+            maestro_test_process::TestProcess::current("maestro_skills_use_literal_dot_root_names")
+                .unwrap()
+                .nocapture()
+                .case("child-directory")
+                .current_dir(dir.0.path().join("child"))
+                .output()
+                .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        return;
+    }
     for (root, expected_file) in [(".", "SKILL.md"), ("..", "../SKILL.md")] {
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&std::env::temp_dir()),
-                dir: support::text(std::path::Path::new(root)),
-                source: "path",
-            },
-            &ops,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(std::path::Path::new(root)),
+            source: "path",
+        });
         assert_eq!(result.skills.len(), 1);
         let skill = &result.skills[0];
         assert_eq!(skill.name, root);
@@ -1556,23 +1312,19 @@ fn maestro_skills_use_literal_dot_root_names() {
     }
 }
 
-/// Relative project configuration parts resolve against the working directory.
 #[test]
 fn maestro_skills_resolve_authored_project_roots() {
     let dir = Directory::new();
     let file = dir.file("config/skills/SKILL.md", "---\ndescription: Project\n---");
     let config = "./config/../config";
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0.join("absent")),
-            config_dir_name: config,
-            skill_paths: &[],
-            include_defaults: true,
-        },
-        &NativeResourceOperations,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(&dir.0.path().join("absent")),
+        config_dir_name: config,
+        skill_paths: &[],
+        include_defaults: true,
+    })
     .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path.as_str(), support::text(&file));
@@ -1583,7 +1335,7 @@ fn maestro_skills_resolve_authored_project_roots() {
 #[test]
 fn maestro_skills_classify_skipped_default_children_as_temporary() {
     let dir = Directory::new();
-    let agent = dir.0.join("agent");
+    let agent = dir.0.path().join("agent");
     let _ = dir.file(
         "agent/skills/SKILL.md",
         "---\nname: user-root\ndescription: User\n---",
@@ -1603,17 +1355,14 @@ fn maestro_skills_classify_skipped_default_children_as_temporary() {
     let outside = dir.file("elsewhere/item/SKILL.md", "---\ndescription: Outside\n---");
     let paths = [user.clone(), project.clone(), outside.clone()];
     for include_defaults in [false, true] {
-        let result = maestro_resources::load_skills(
-            maestro_resources::LoadSkillsOptions {
-                cwd: support::text(&dir.0),
-                home: support::text(&dir.0),
-                agent_dir: support::text(&agent),
-                config_dir_name: ".maestro",
-                skill_paths: &strings(&paths),
-                include_defaults,
-            },
-            &NativeResourceOperations,
-        )
+        let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
+            agent_dir: support::text(&agent),
+            config_dir_name: ".maestro",
+            skill_paths: &strings(&paths),
+            include_defaults,
+        })
         .unwrap();
         assert_eq!(result.skills.len(), if include_defaults { 5 } else { 3 });
         for (file, disabled_scope) in [
@@ -1646,24 +1395,21 @@ fn maestro_skills_preserve_authored_dot_basename_and_provenance() {
     use maestro_resources::{LoadSkillsOptions, load_skills};
     let dir = Directory::new();
     let _ = dir.file("calendar/SKILL.md", "---\ndescription: Meetings\n---");
-    let paths = [dir.0.join("calendar/./SKILL.md")];
-    let result = load_skills(
-        LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0),
-            config_dir_name: ".maestro",
-            skill_paths: &strings(&paths),
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let paths = [dir.0.path().join("calendar/./SKILL.md")];
+    let result = load_skills(LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(dir.0.path()),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
     .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].name, ".");
     assert_eq!(
         result.skills[0].base_dir.as_str(),
-        support::text(&dir.0.join("calendar/."))
+        support::text(&dir.0.path().join("calendar/."))
     );
     assert_eq!(
         result.skills[0]
@@ -1672,7 +1418,7 @@ fn maestro_skills_preserve_authored_dot_basename_and_provenance() {
             .as_ref()
             .unwrap()
             .as_str(),
-        support::text(&dir.0.join("calendar/."))
+        support::text(&dir.0.path().join("calendar/."))
     );
 }
 
@@ -1686,21 +1432,18 @@ fn maestro_skills_keep_repeated_separator_paths_temporary() {
             &format!("{root}/calendar/SKILL.md"),
             "---\nname: calendar\ndescription: Meetings\n---",
         );
-        let paths = [dir.0.join(format!(
+        let paths = [dir.0.path().join(format!(
             "{}/calendar/SKILL.md",
             root.replace("/skills", "//skills")
         ))];
-        let result = load_skills(
-            LoadSkillsOptions {
-                cwd: support::text(&dir.0),
-                home: support::text(&dir.0),
-                agent_dir: support::text(&dir.0.join("agent")),
-                config_dir_name: ".maestro",
-                skill_paths: &strings(&paths),
-                include_defaults: false,
-            },
-            &NativeResourceOperations,
-        )
+        let result = load_skills(LoadSkillsOptions {
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
+            agent_dir: support::text(&dir.0.path().join("agent")),
+            config_dir_name: ".maestro",
+            skill_paths: &strings(&paths),
+            include_defaults: false,
+        })
         .unwrap();
         assert_eq!(result.skills.len(), 1);
         assert_eq!(
@@ -1724,14 +1467,11 @@ fn maestro_skills_match_ignore_rules_below_a_dotted_scan_root() {
         "skills/nested/keep/SKILL.md",
         "---\nname: keep\ndescription: Retained\n---",
     );
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(&dir.0.join("skills/../skills")),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(&dir.0.path().join("skills/../skills")),
+        source: "path",
+    });
     assert!(result.diagnostics.is_empty());
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
@@ -1742,22 +1482,19 @@ fn maestro_skills_match_ignore_rules_below_a_dotted_scan_root() {
 fn maestro_skills_resolve_absolute_project_configuration() {
     use maestro_resources::{LoadSkillsOptions, load_skills};
     let dir = Directory::new();
-    let config = dir.0.join("config");
+    let config = dir.0.path().join("config");
     let file = dir.file(
         "config/skills/calendar/SKILL.md",
         "---\nname: calendar\ndescription: Meetings\n---",
     );
-    let result = load_skills(
-        LoadSkillsOptions {
-            cwd: support::text(&dir.0.join("work")),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0.join("agent")),
-            config_dir_name: support::text(&config),
-            skill_paths: &[],
-            include_defaults: true,
-        },
-        &NativeResourceOperations,
-    )
+    let result = load_skills(LoadSkillsOptions {
+        cwd: support::text(&dir.0.path().join("work")),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(&dir.0.path().join("agent")),
+        config_dir_name: support::text(&config),
+        skill_paths: &[],
+        include_defaults: true,
+    })
     .unwrap();
     assert!(result.diagnostics.is_empty());
     assert_eq!(result.skills.len(), 1);
@@ -1778,18 +1515,15 @@ fn maestro_skills_classify_exact_default_roots() {
             &format!("{root}/SKILL.md"),
             "---\nname: skills\ndescription: Meetings\n---",
         );
-        let paths = [support::text(&dir.0.join(root)).to_owned()];
-        let result = load_skills(
-            LoadSkillsOptions {
-                cwd: support::text(&dir.0),
-                home: support::text(&dir.0),
-                agent_dir: support::text(&dir.0.join("agent/../agent")),
-                config_dir_name: ".maestro",
-                skill_paths: &paths,
-                include_defaults: false,
-            },
-            &NativeResourceOperations,
-        )
+        let paths = [support::text(&dir.0.path().join(root)).to_owned()];
+        let result = load_skills(LoadSkillsOptions {
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
+            agent_dir: support::text(&dir.0.path().join("agent/../agent")),
+            config_dir_name: ".maestro",
+            skill_paths: &paths,
+            include_defaults: false,
+        })
         .unwrap();
         assert!(result.diagnostics.is_empty());
         assert_eq!(result.skills.len(), 1);
@@ -1804,17 +1538,14 @@ fn native_skill_discovery_uses_ordered_directory_entries() {
     let dir = Directory::new();
     let loser = dir.file("z/SKILL.md", "---\nname: common\ndescription: Last\n---");
     let winner = dir.file("a/SKILL.md", "---\nname: common\ndescription: First\n---");
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: "",
-            config_dir_name: ".maestro",
-            skill_paths: &[support::text(&dir.0).into()],
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: "",
+        config_dir_name: ".maestro",
+        skill_paths: &[support::text(dir.0.path()).into()],
+        include_defaults: false,
+    })
     .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, winner);
@@ -1853,14 +1584,11 @@ fn maestro_skills_render_the_recorded_escaped_prompt() {
         serde_json::from_str(include_str!("fixtures/skill_prompt.json")).unwrap();
     let dir = Directory::new();
     let file = dir.file("parent/SKILL.md", "---\ndescription: Useful\n---");
-    let mut result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(file.parent().unwrap()),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
+    let mut result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(file.parent().unwrap()),
+        source: "path",
+    });
     let skill = &mut result.skills[0];
     skill.name = recorded.input.name;
     skill.description = recorded.input.description;
@@ -1869,4 +1597,28 @@ fn maestro_skills_render_the_recorded_escaped_prompt() {
         maestro_resources::format_skills_for_prompt(&result.skills),
         recorded.expected
     );
+}
+
+/// Skills load in the name order of their directories, whatever order the file system lists.
+#[test]
+fn maestro_skills_load_in_directory_name_order() {
+    let dir = Directory::new();
+    // NTFS lists these case-insensitively (a, b, C, _x); name order is byte order.
+    for name in ["b", "_x", "a", "C"] {
+        let _ = dir.file(
+            &format!("{name}/SKILL.md"),
+            &format!("---\nname: {name}\ndescription: Order\n---\n"),
+        );
+    }
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(&std::env::temp_dir()),
+        dir: support::text(dir.0.path()),
+        source: "user",
+    });
+    let names: Vec<_> = result
+        .skills
+        .iter()
+        .map(|skill| skill.name.as_str())
+        .collect();
+    assert_eq!(names, ["C", "_x", "a", "b"]);
 }

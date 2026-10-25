@@ -1,6 +1,6 @@
 //! Native local application-to-view adapter used only by composition tests.
 use maestro_app::browser::tools::artifacts::{
-    ArtifactLogError, ArtifactLogReader, ArtifactPresentation, Artifacts,
+    ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanelState,
 };
 use maestro_web::{ArtifactElement, tools::artifacts::create_artifact_element};
 use std::{
@@ -40,7 +40,12 @@ impl ArtifactPresentation for Presentation {
     fn now(&self) -> chrono::DateTime<chrono::Utc> {
         chrono::DateTime::from_timestamp_millis(0).unwrap()
     }
-    fn get_or_create_artifact_element(&self, filename: &str, content: &str, _: Artifacts) {
+    fn get_or_create_artifact_element(
+        &self,
+        filename: &str,
+        content: &str,
+        _: ArtifactsPanelState,
+    ) {
         if let Some(panel) = &self.panel {
             panel
                 .get_or_create_artifact_element(filename, content)
@@ -69,7 +74,7 @@ impl ArtifactPresentation for Presentation {
         let view = self.view.borrow_mut().take();
         drop(view);
     }
-    fn reload_all_html_artifacts(&self, _: Artifacts) {}
+    fn reload_all_html_artifacts(&self, _: ArtifactsPanelState) {}
     fn get_logs(&self, _: &str) -> Result<ArtifactLogReader, ArtifactLogError> {
         Err(ArtifactLogError::NotHtml)
     }

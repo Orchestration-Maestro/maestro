@@ -102,7 +102,6 @@ impl Harness {
             request_render: Rc::new(|| {}),
             now_ms: Rc::new(|| 1_767_225_600_000.0),
             home: Rc::new(|| "/oracle-home".into()),
-            paths: Rc::new(maestro_app::NativeResourceOperations),
             styles_enabled: Rc::new(|| true),
         };
         configure(&mut options);

@@ -27,6 +27,24 @@ the body. MIME selection uses the last literal dot-delimited segment with Unicod
 lowercase, not path normalization or a MIME database. The native byte operation
 preserves the literal name and selected bytes.
 
+The header's download control and the preview/source selection are also
+component-owned native controls: `components::download_button::dom::download_button`
+and `DomContent for PreviewCodeToggle` publish them as page content. The generic
+file body also mounts natively through `DomContent for GenericArtifact`, and its
+independent header is `GenericArtifact::get_header_buttons(view: &DomView)`. The
+Word body and artifact console have separate native interfaces described below.
+The remaining bodies, the panel and the Chat integration still use their retained
+canvas owners until their own deliveries mount those controls.
+
+A mounted native body owns its `<section class="maestro-generic-artifact">` nodes,
+so an update rewrites only the changed filename and guidance text. The header owns
+only its controlled row and the download activation behind it: dropping the
+returned root detaches that activation even while the caller keeps the node in the
+document. Both roots take their nodes from `dom::DomView` and reach no host
+surface, so mounting them publishes nothing and draws nothing through the retained
+canvas. `dom.rs` installs the artifact header row and generic body rules with the
+page stylesheet for mounted page content.
+
 `GenericArtifact` is also available through its module for direct construction.
 Its initial filename and content are empty. Caller-supplied packs and localization
 apply on each draw; there is no global theme or new runtime.
@@ -219,3 +237,70 @@ rebuilds it from retained text, even when code remains selected. Final owner rel
 removes its native surfaces and URL without affecting another view. These attachment
 callbacks are distinct from retained visibility; the other views inherit no-op
 callbacks.
+
+## Error ownership
+
+`tools::artifacts::ArtifactUiError` composes localization, shared controls, native
+host effects, presentation preparation and local view-borrow failures. Native
+reading factories return `browser::attachment_content::AttachmentHostError`.
+Header/save failures remain independent of body-load diagnostics.
+
+The Presentation variant carries `PresentationCause`: a literal Message or a typed
+Reading or Control preparation error. `Error::source` retains the original cause
+for code/Markdown rendering and localized copy or preview/source controls. Rust
+callers must update error paths and nested Host/Presentation matches; messages,
+retained views and recovery remain unchanged.
+
+## Native Word body
+
+On browser targets, `tools::artifacts::docx_artifact::DocxArtifact` implements
+`DomContent` directly. Create it with `new` or `default`, set its public `filename`
+and call `set_content` with the original base64 document. Mount its body and its
+independent `get_header_buttons(&DomView)` root separately. This direct interface
+does not install a Word viewer in the retained panel factory.
+
+The body reuses the document renderer with page width ignored and the other
+renderer defaults retained. Pages have white backgrounds, black text and 2em
+padding in both brand modes. Surrounding chrome uses the supplied brand roles.
+The body and header use the same complete original-byte decoder; the header saves
+with the Word document MIME type. A rejected header does not prevent mounting a
+body that displays the reached diagnostic.
+
+Call `update` after editing fields. Equal successful content and filename-only
+updates preserve page nodes. Empty content keeps a successful document, but
+clears a failed body. Assigning failed content again retries rendering and keeps
+the diagnostic if it fails again. Each mounted root owns its document URLs and
+pending shape sizing; replacement or root release drops those resources without
+affecting siblings. Errors share the attachment preview's literal node builder.
+The [shared Word renderer](../application/document-formats.md#word-page-rendering)
+still owns document parsing and safe link output.
+
+## Native artifact console
+
+On browser targets, `tools::artifacts::console::Console` mounts directly through
+`DomContent`. Create it with `new` or `default`, append `LogEntry` records to its
+shared `logs` collection, then call `update` after changing the collection.
+`LogType::Log` and `LogType::Error` select the label and text role;
+`BrowserSandboxValue` retains each native operand without a JSON conversion.
+
+The console starts collapsed with following enabled. Its summary counts errors
+when any are present, otherwise all lines. Expanded rows are selectable literal
+text in a viewport bounded by 12rem. Arrays and other native iterables paint their
+children in order; null and undefined paint no value. Ordinary objects are text,
+never host templates. An active iterable cycle contributes no further text, while
+a completed shared iterable contributes again at its next occurrence.
+
+Copy uses whole-value native String conversion, not the flattened painted text.
+It writes ordered `[log] value` and `[error] value` lines separated by newlines,
+through the [shared copy control](transcript.md). That control owns clipboard
+writes and two-second icon-only success feedback. Following scrolls every expanded
+update to the bottom, including unchanged updates; disabling it preserves manual
+scroll. Collapse removes the auxiliary controls without resetting the following
+selection.
+
+An update may replace the log handle or use another console and localization.
+Subsequent controls use those current operands, and unchanged positional rows,
+selection and keyboard focus survive. Each mounted root owns its subscriptions;
+releasing one does not release a sibling. This direct body does not register an
+`artifact-console` tag or install the HTML body, panel or Chat integration.
+Those integrations remain in [#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761).

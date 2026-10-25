@@ -4,7 +4,7 @@ mod tests {
         ApiProvider, register_api_provider, unregister_api_providers,
     };
     use maestro_models::records::stream::{stream, stream_simple};
-    use maestro_models::{AssistantMessageEventStream, Context, Model};
+    use maestro_models::{AssistantMessageEventStream, Context, Model, SharedHandle};
     use serde_json::{Value, json};
     use std::sync::{Arc, Mutex};
 
@@ -17,8 +17,8 @@ mod tests {
         register_api_provider(
             ApiProvider {
                 api: model.api.clone(),
-                stream: Arc::new(ObserveCompatibility(Arc::clone(&observed))),
-                stream_simple: Arc::new(ObserveCompatibility(Arc::clone(&observed))),
+                stream: SharedHandle::new(ObserveCompatibility(Arc::clone(&observed))),
+                stream_simple: SharedHandle::new(ObserveCompatibility(Arc::clone(&observed))),
             },
             Some("compatibility-observation".into()),
         );

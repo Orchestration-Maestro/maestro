@@ -1,9 +1,10 @@
 //! Native literal header composition and locale binding.
 use super::{HELP, LABELS, Prepared};
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
+    AttachmentHostError, ReadingRoot,
     browser::{append, element as create, host_error},
 };
+use crate::browser::invoke0;
 use std::io;
 use web_sys::{Document, Element};
 mod details;
@@ -13,7 +14,7 @@ fn element(
     tag: &str,
     class: &str,
     text: &str,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let e = create(document, tag, class)?;
     e.set_text_content(Some(text));
     Ok(e)
@@ -23,7 +24,7 @@ pub(super) fn mount(
     document: &Document,
     prepared: &Prepared,
     ids: [egui::Id; 3],
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let root = element(document, "section", "maestro-session-header", "")?;
     let style = element(document, "style", "", include_str!("../header.css"))?;
     append(&root, &style)?;
@@ -53,6 +54,8 @@ pub(super) fn mount(
     append(&flow, &root)?;
     let owner = details::mount(document, &flow, prepared)?;
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         commit: None,
         owner,
         element: flow,
@@ -83,14 +86,4 @@ pub fn localize_header_date(timestamp: &serde_json::Value) -> io::Result<String>
     result
         .as_string()
         .ok_or_else(|| io::Error::other("nonstring localized date"))
-}
-
-/// Invoke an owning native object's zero-argument operation without coercion.
-fn invoke0(
-    value: &wasm_bindgen::JsValue,
-    name: &str,
-) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
-    js_sys::Reflect::get(value, &name.into())
-        .and_then(wasm_bindgen::JsCast::dyn_into::<js_sys::Function>)
-        .and_then(|f| f.call0(value))
 }

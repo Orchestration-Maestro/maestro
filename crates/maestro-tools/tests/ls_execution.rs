@@ -5,15 +5,19 @@
 use crate::ls_support;
 use crate::read_support;
 
-use ls_support::{
-    Case, Scripted, assert_effects, cases, check_execute, check_native, execute, execute_input,
-};
+#[cfg(unix)]
+use ls_support::check_native;
+#[cfg(unix)]
+use ls_support::{Case, assert_effects, execute};
+use ls_support::{Scripted, cases, check_execute, execute_input};
 use maestro_models::Cancellation;
 use maestro_tools::{
     LsToolDetails, LsToolInput, LsToolOptions, create_ls_tool_definition,
     output::truncate::{TruncationBy, TruncationResult},
 };
-use read_support::{TempDir, isolated};
+use read_support::isolated;
+#[cfg(unix)]
+use read_support::{Fixture, Scratch};
 use serde_json::json;
 use std::{collections::BTreeSet, sync::Arc};
 
@@ -37,7 +41,7 @@ fn ls_definition_keeps_schema_metadata_and_optional_inputs() {
         tool.prompt_snippet.as_deref(),
         expected["promptSnippet"].as_str()
     );
-    assert_eq!(tool.definition.parameters, expected["parameters"]);
+    assert_eq!(*tool.definition.parameters, expected["parameters"]);
     assert!(tool.prompt_guidelines.is_none() && tool.prepare_arguments.is_none());
     assert!(tool.execution_mode.is_none() && tool.render_shell.is_none());
 
@@ -163,10 +167,10 @@ fn ls_cancellation_rejects_before_and_during_operations() {
 
 /// A temporary directory with the entries the native listing cases name.
 #[cfg(unix)]
-fn native_root() -> TempDir {
-    let root = TempDir::new();
+fn native_root() -> Scratch {
+    let root = Scratch::new().unwrap();
     for dir in [".git", ".hidden-dir"] {
-        std::fs::create_dir(root.0.join(dir)).unwrap();
+        std::fs::create_dir(root.path().join(dir)).unwrap();
     }
     for file in [
         ".gitignore",
@@ -180,8 +184,8 @@ fn native_root() -> TempDir {
         root.file(file, b"");
     }
     root.file(".gitignore", b"ignored\n");
-    std::os::unix::fs::symlink(".git", root.0.join("linked-dir")).unwrap();
-    std::os::unix::fs::symlink("missing-target", root.0.join("dangling")).unwrap();
+    std::os::unix::fs::symlink(".git", root.path().join("linked-dir")).unwrap();
+    std::os::unix::fs::symlink("missing-target", root.path().join("dangling")).unwrap();
     root
 }
 
@@ -207,8 +211,8 @@ fn ls_native_missing_and_file_paths_fail() {
 #[test]
 fn ls_native_non_utf8_names_follow_stat_filtering() {
     use std::os::unix::ffi::OsStrExt;
-    let root = TempDir::new();
-    let invalid = root.0.join("invalid");
+    let root = Scratch::new().unwrap();
+    let invalid = root.path().join("invalid");
     std::fs::create_dir(&invalid).unwrap();
     std::fs::write(invalid.join("ok"), b"").unwrap();
     std::fs::write(invalid.join(std::ffi::OsStr::from_bytes(b"bad-\xff")), b"").unwrap();
@@ -217,15 +221,15 @@ fn ls_native_non_utf8_names_follow_stat_filtering() {
     }
 }
 
+#[cfg(unix)]
 #[test]
 fn ls_resolution_reads_host_cwd_only_when_needed() {
     let test = "ls_resolution_reads_host_cwd_only_when_needed";
     if !isolated(test, "removed", &[]) {
         return;
     }
-    let scratch = TempDir::new();
-    std::env::set_current_dir(&scratch.0).unwrap();
-    std::fs::remove_dir(&scratch.0).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    scratch.enter_removed("removed").unwrap();
     assert!(std::env::current_dir().is_err());
     for case in cases(test) {
         assert!(execute_input(&case).removes_cwd());
@@ -239,6 +243,7 @@ fn ls_resolution_reads_host_cwd_only_when_needed() {
 
 /// A relative operand needs the removed directory: the call fails before any operation, with
 /// the platform's own message.
+#[cfg(unix)]
 fn require_failure(case: &Case) {
     let outcome = execute(case);
     assert_ne!(outcome.result.as_ref().unwrap_err(), "Operation aborted");

@@ -7,20 +7,11 @@ use maestro_models::UserContent;
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::io;
 use support::native::broken_history;
-use support::scratch::Scratch;
-
-/// Member names of an object in order.
-fn keys(value: &Value) -> Vec<&str> {
-    value
-        .as_object()
-        .unwrap()
-        .keys()
-        .map(String::as_str)
-        .collect()
-}
+use support::session_history::keys;
 
 /// An append under test, given the manager and an existing entry identity.
 type Append = fn(&mut SessionManager, &str) -> io::Result<String>;
@@ -74,7 +65,7 @@ fn remaining_appends_keep_accepted_memory_after_io_failure() {
         }),
     ];
     for (kind, append) in cases {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let (mut manager, root) = broken_history(&scratch);
         let before = manager.get_entries().len();
         append(&mut manager, &root).unwrap_err();
@@ -203,8 +194,9 @@ fn assert_reopened(manager: &SessionManager, path: &str, root: &str) {
 
 #[test]
 fn all_appends_round_trip_through_native_jsonl() {
-    let scratch = Scratch::new();
-    let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
+    let scratch = Scratch::new().unwrap();
+    let mut manager =
+        SessionManager::create("/work", Some(scratch.path().to_str().unwrap()), "unused").unwrap();
     let root = manager
         .append_message(json!({"role": "user", "content": "root", "timestamp": 1}))
         .unwrap();

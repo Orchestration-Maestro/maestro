@@ -1,29 +1,36 @@
 //! Session-document behavior through public export operations.
 #![cfg(test)]
-mod support;
+#![cfg(not(target_arch = "wasm32"))]
+use crate::support;
 use maestro_export::*;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use serde_json::{Value, json};
-use std::{collections::VecDeque, io};
-use support::*;
+use std::{cell::RefCell, collections::VecDeque, io};
+use support::{
+    ASSETS, CSS, Fixture, NativeObserved, Operations, Renderer, Returns, Scratch, View,
+    adapter_swap, brand_swap, bundle, call_view, corpus, document, export_document, native_theme,
+    output_path, payload, published, read_document, record,
+};
 
 #[test]
 fn preconditions_precede_render_assets_and_write() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let session = SessionManager::in_memory(Some("/work")).unwrap();
     let operations = Operations::default();
     assert!(matches!(
-        export_session_to_html(&session, None, None, &operations),
+        export_session_to_html(&RefCell::new(session), None, None, &operations),
         Err(ExportError::InMemorySession)
     ));
     let unpublished =
-        SessionManager::create("/work", Some(scratch.0.to_str().unwrap()), "/unused").unwrap();
-    let missing = Operations {
-        present: false,
-        ..Operations::default()
-    };
+        SessionManager::create("/work", Some(scratch.path().to_str().unwrap()), "/unused").unwrap();
+    let output = scratch.at("out.html");
     assert!(matches!(
-        export_session_to_html(&unpublished, None, None, &missing),
+        export_session_to_html(
+            &RefCell::new(unpublished),
+            None,
+            Some(output.as_str().into()),
+            &operations
+        ),
         Err(ExportError::UnpublishedSession)
     ));
     let empty = View {
@@ -31,72 +38,139 @@ fn preconditions_precede_render_assets_and_write() {
         ..View::default()
     };
     assert!(matches!(
-        export_session_to_html(&empty, None, None, &operations),
+        export_session_to_html(
+            &RefCell::new(empty),
+            None,
+            Some(output.as_str().into()),
+            &operations
+        ),
         Err(ExportError::InMemorySession)
     ));
     assert!(operations.events.borrow().is_empty());
-    assert!(missing.events.borrow().is_empty());
     let renderer = Renderer::from(Returns {
         call: vec![json!("must not render")],
         result: Vec::new(),
     });
-    for file in [None, Some(String::new()), Some("unpublished.jsonl".into())] {
+    for file in [None, Some(String::new()), Some(scratch.at("absent.jsonl"))] {
         let view = View {
             file,
             ..call_view("unreached")
         };
         assert!(
             export_session_to_html(
-                &view,
+                &RefCell::new(view),
                 None,
                 Some(ExportOptions {
+                    output_path: Some(&output),
                     tool_renderer: Some(&renderer),
                     ..ExportOptions::default()
                 }),
-                &missing
+                &operations
             )
             .is_err()
         );
     }
     assert!(renderer.calls.borrow().is_empty());
+    assert!(!std::path::Path::new(&output).exists());
 }
 #[test]
 fn file_precondition_precedes_session_open() {
-    let scratch = Scratch::new();
-    let operations = Operations {
-        present: false,
-        ..Operations::default()
-    };
-    let path = scratch.path("missing.jsonl");
+    let scratch = Scratch::new().unwrap();
+    let operations = Operations::default();
+    let path = scratch.at("missing.jsonl");
+    let output = scratch.at("out.html");
     assert!(
-        matches!(export_from_file(&path, None, &operations), Err(ExportError::MissingFile(ref input)) if input == &path)
+        matches!(export_from_file(&path, Some(output.as_str().into()), &operations), Err(ExportError::MissingFile(ref input)) if input == &path)
     );
     assert!(!std::path::Path::new(&path).exists());
+    assert!(!std::path::Path::new(&output).exists());
     assert!(operations.events.borrow().is_empty());
 }
 #[test]
 fn complete_tree_and_selected_leaf_survive_export() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let entries = vec![
         json!({"type":"custom","id":"root","parentId":null,"data":null,"unknown":""}),
         json!({"type":"custom","id":"left","parentId":"root","data":[]}),
         json!({"type":"unknown","id":"right","parentId":"root","data":{"nested":null}}),
     ];
     let path = scratch.session("branched.jsonl", &entries);
-    let mut session = SessionManager::open(&path, None, None).unwrap();
-    session.branch("left").unwrap();
+    let session = RefCell::new(SessionManager::open(&path, None, None).unwrap());
+    session.borrow_mut().branch("left").unwrap();
     let operations = Operations::default();
-    export_session_to_html(&session, None, None, &operations).unwrap();
-    let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    let output = scratch.at("out.html");
+    export_session_to_html(&session, None, Some(output.as_str().into()), &operations).unwrap();
+    let data: Value = serde_json::from_str(&payload(&read_document(&output))).unwrap();
     assert_eq!(data["entries"], json!(entries));
     assert_eq!(data["leafId"], "left");
-    assert_eq!(data["header"], *session.get_header().unwrap());
-    let view = View::default();
-    export_session_to_html(&view, None, None, &operations).unwrap();
+    assert_eq!(data["header"], *session.borrow().get_header().unwrap());
+    let view = published(&scratch, View::default());
+    export_session_to_html(
+        &RefCell::new(view),
+        None,
+        Some(output.as_str().into()),
+        &operations,
+    )
+    .unwrap();
     assert_eq!(
-        serde_json::from_str::<Value>(&payload(&html(&operations))).unwrap()["leafId"],
+        serde_json::from_str::<Value>(&payload(&read_document(&output))).unwrap()["leafId"],
         Value::Null
     );
+}
+/// A renderer recording, per call, whether the session it renders could change.
+struct Probe<'a> {
+    /// The rendered session.
+    session: &'a RefCell<View>,
+    /// One observation per call and result rendering.
+    free: RefCell<Vec<bool>>,
+}
+impl ToolHtmlRenderer for Probe<'_> {
+    fn render_call(
+        &self,
+        _: &str,
+        _: &str,
+        _: Option<&Value>,
+    ) -> Result<Option<String>, Box<dyn std::error::Error>> {
+        self.free
+            .borrow_mut()
+            .push(self.session.try_borrow_mut().is_ok());
+        Ok(None)
+    }
+    fn render_result(
+        &self,
+        _: &str,
+        _: &str,
+        _: ToolHtmlResultInput<'_>,
+    ) -> Result<Option<ToolHtmlResult>, Box<dyn std::error::Error>> {
+        self.free
+            .borrow_mut()
+            .push(self.session.try_borrow_mut().is_ok());
+        Ok(None)
+    }
+}
+#[test]
+fn renderers_run_with_the_session_free_to_change() {
+    let scratch = Scratch::new().unwrap();
+    let output = scratch.at("out.html");
+    let mut view = published(&scratch, call_view("a"));
+    view.data["entries"].as_array_mut().unwrap().push(json!({"type":"message","message":{"role":"toolResult","toolCallId":"a","toolName":"custom","content":[],"isError":false}}));
+    let session = RefCell::new(view);
+    let renderer = Probe {
+        session: &session,
+        free: RefCell::default(),
+    };
+    export_session_to_html(
+        &session,
+        None,
+        Some(ExportOptions {
+            output_path: Some(&output),
+            tool_renderer: Some(&renderer),
+            ..ExportOptions::default()
+        }),
+        &Operations::default(),
+    )
+    .unwrap();
+    assert_eq!(*renderer.free.borrow(), [true, true]);
 }
 #[test]
 fn state_projection_preserves_optional_metadata() {
@@ -110,8 +184,16 @@ fn state_projection_preserves_optional_metadata() {
             tools: tools.as_deref(),
         });
         let operations = Operations::default();
-        export_session_to_html(&View::default(), state, None, &operations).unwrap();
-        let mut data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+        let scratch = Scratch::new().unwrap();
+        let document = export_document(
+            &scratch,
+            &published(&scratch, View::default()),
+            state,
+            None,
+            &operations,
+        )
+        .unwrap();
+        let mut data: Value = serde_json::from_str(&payload(&document)).unwrap();
         let object = data.as_object_mut().unwrap();
         for key in ["header", "entries", "leafId"] {
             object.shift_remove(key);
@@ -125,21 +207,26 @@ fn canonical_payload_is_utf8_base64() {
 }
 #[test]
 fn default_names_and_option_routes_preserve_authored_paths() {
+    let scratch = Scratch::new().unwrap();
+    let previous = std::env::current_dir().unwrap();
+    std::env::set_current_dir(scratch.path()).unwrap();
+    std::fs::create_dir(scratch.at("sub")).unwrap();
+    std::fs::create_dir(scratch.at("sessions")).unwrap();
     for row in corpus().names {
         let operations = Operations {
             app: row.app_name.unwrap_or_else(|| "maestro".into()),
             ..Operations::default()
         };
         let view = View {
-            file: Some(format!("/sessions/{}", row.input)),
+            file: Some(scratch.session(&format!("sessions/{}", row.input), &[])),
             ..View::default()
         };
         assert_eq!(
-            export_session_to_html(&view, None, None, &operations).unwrap(),
+            export_session_to_html(&RefCell::new(view), None, None, &operations).unwrap(),
             row.expected
         );
+        std::fs::remove_file(&row.expected).unwrap();
     }
-    let scratch = Scratch::new();
     let path = scratch.session("tree.jsonl", &[]);
     for row in corpus().options {
         let options = if row.input.get("absent") == Some(&json!(true)) {
@@ -154,18 +241,24 @@ fn default_names_and_option_routes_preserve_authored_paths() {
         };
         let operations = Operations::default();
         let result = if row.operation == "session" {
-            export_session_to_html(&View::default(), None, options, &operations)
+            export_session_to_html(
+                &RefCell::new(published(&scratch, View::default())),
+                None,
+                options,
+                &operations,
+            )
         } else {
             assert_eq!(row.operation, "file");
             export_from_file(&path, options, &operations)
         };
         assert_eq!(result.unwrap(), row.expected);
-        assert_eq!(operations.output.borrow().as_ref().unwrap().0, row.expected);
+        std::fs::remove_file(&row.expected).unwrap();
     }
+    std::env::set_current_dir(previous).unwrap();
 }
 #[test]
 fn file_export_uses_session_open_and_omits_renderer() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let entries = vec![
         json!({"type":"message","id":"a","parentId":null,"message":{"role":"assistant","content":[{"type":"toolCall","id":"tool","name":"custom","arguments":{}}]}}),
     ];
@@ -175,16 +268,18 @@ fn file_export_uses_session_open_and_omits_renderer() {
         result: Vec::new(),
     });
     let operations = Operations::default();
+    let output = scratch.at("out.html");
     export_from_file(
         &path,
         Some(ExportOptions {
+            output_path: Some(&output),
             tool_renderer: Some(&renderer),
             ..ExportOptions::default()
         }),
         &operations,
     )
     .unwrap();
-    let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    let data: Value = serde_json::from_str(&payload(&read_document(&output))).unwrap();
     assert_eq!(data["entries"], json!(entries));
     assert_eq!(data["leafId"], "a");
     for field in ["systemPrompt", "tools", "renderedTools"] {
@@ -194,25 +289,26 @@ fn file_export_uses_session_open_and_omits_renderer() {
 }
 #[test]
 fn file_open_recovery_is_visible() {
-    let scratch = Scratch::new();
-    let empty = scratch.path("empty.jsonl");
+    let scratch = Scratch::new().unwrap();
+    let empty = scratch.at("empty.jsonl");
     std::fs::write(&empty, "").unwrap();
     let operations = Operations::default();
-    export_from_file(&empty, None, &operations).unwrap();
+    let output = scratch.at("out.html");
+    export_from_file(&empty, Some(output.as_str().into()), &operations).unwrap();
     let recovered = std::fs::read_to_string(&empty).unwrap();
     assert!(recovered.contains("\"type\":\"session\""));
-    let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    let data: Value = serde_json::from_str(&payload(&read_document(&output))).unwrap();
     assert_eq!(data["header"]["type"], "session");
     let failed = Operations::default();
     assert!(matches!(
-        export_from_file(scratch.0.to_str().unwrap(), None, &failed),
+        export_from_file(scratch.path().to_str().unwrap(), None, &failed),
         Err(ExportError::Io(_))
     ));
     assert!(failed.events.borrow().is_empty());
 }
 #[test]
 fn output_write_overwrites_and_propagates_failure() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let theme = native_theme(&scratch);
     let bundle = bundle(&scratch, &Operations::default().assets);
     let native = NativeExportOperations {
@@ -221,7 +317,7 @@ fn output_write_overwrites_and_propagates_failure() {
         theme: &theme,
     };
     let input = scratch.session("tree.jsonl", &[]);
-    let output = scratch.path("out.html");
+    let output = scratch.at("out.html");
     std::fs::write(&output, "old").unwrap();
     export_from_file(&input, Some(output.as_str().into()), &native).unwrap();
     assert!(
@@ -229,27 +325,24 @@ fn output_write_overwrites_and_propagates_failure() {
             .unwrap()
             .contains("id=\"session-data\"")
     );
-    let missing = scratch.path("absent/out.html");
+    let missing = scratch.at("absent/out.html");
     assert!(
         matches!(export_from_file(&input, Some(missing.as_str().into()), &native), Err(ExportError::Io(error)) if error.kind() == io::ErrorKind::NotFound)
     );
-    assert!(!std::path::Path::new(&scratch.path("absent")).exists());
-    assert!(export_from_file(&input, Some(scratch.0.to_str().unwrap().into()), &native).is_err());
-    let failing = Operations {
-        write_failure: true,
-        ..Operations::default()
-    };
-    assert!(matches!(
-        export_session_to_html(&View::default(), None, None, &failing),
-        Err(ExportError::Io(_))
-    ));
-    assert_eq!(failing.events.borrow().last().unwrap(), "write");
-    assert_eq!(failing.themes.borrow().len(), 4);
+    assert!(!std::path::Path::new(&scratch.at("absent")).exists());
+    assert!(
+        export_from_file(
+            &input,
+            Some(scratch.path().to_str().unwrap().into()),
+            &native
+        )
+        .is_err()
+    );
 }
 #[test]
 fn asset_reads_stop_before_theme_on_failure() {
     for (index, row) in corpus().asset_failures.into_iter().enumerate() {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let theme = native_theme(&scratch);
         let directory = bundle(&scratch, &Operations::default().assets);
         std::fs::remove_file(maestro_path::join(&[&directory, &row.asset])).unwrap();
@@ -270,7 +363,7 @@ fn asset_reads_stop_before_theme_on_failure() {
         assert_eq!(*observed.events.borrow(), ASSETS[..=index]);
         assert!(row.expected.theme_calls.is_empty());
     }
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let theme = native_theme(&scratch);
     let directory = bundle(&scratch, &Operations::default().assets);
     let row = corpus().asset_utf8;
@@ -280,23 +373,37 @@ fn asset_reads_stop_before_theme_on_failure() {
         template_dir: &directory,
         theme: &theme,
     };
-    let output = scratch.path("utf8.html");
+    let output = scratch.at("utf8.html");
     let input = scratch.session("tree.jsonl", &[]);
     let view = View {
         file: Some(input),
         ..View::default()
     };
-    export_session_to_html(&view, None, Some(output.as_str().into()), &native).unwrap();
+    export_session_to_html(
+        &RefCell::new(view),
+        None,
+        Some(output.as_str().into()),
+        &native,
+    )
+    .unwrap();
     assert_eq!(std::fs::read_to_string(output).unwrap(), row.expected);
 }
 #[test]
 fn theme_observations_are_not_cached() {
     let row = corpus().observations.remove(0);
     let operations = Operations::default();
+    let scratch = Scratch::new().unwrap();
     *operations.resolved.borrow_mut() = row.resolved.into();
     *operations.explicit.borrow_mut() = row.explicit.into();
-    export_session_to_html(&View::default(), None, None, &operations).unwrap();
-    assert_eq!(html(&operations), row.expected.html.unwrap());
+    let document = export_document(
+        &scratch,
+        &published(&scratch, View::default()),
+        None,
+        None,
+        &operations,
+    )
+    .unwrap();
+    assert_eq!(document, row.expected.html.unwrap());
     assert!(row.expected.error.is_none());
     assert_eq!(*operations.themes.borrow(), row.expected.calls);
 }
@@ -304,17 +411,20 @@ fn theme_observations_are_not_cached() {
 fn theme_failure_follows_renderer_and_precedes_write() {
     for row in corpus().observations.into_iter().skip(1) {
         let operations = Operations::default();
+        let scratch = Scratch::new().unwrap();
+        let output = scratch.at("out.html");
         *operations.resolved.borrow_mut() = row.resolved.into();
         *operations.explicit.borrow_mut() = row.explicit.into();
         let renderer = Renderer::from(Returns {
             call: vec![json!("C")],
             result: Vec::new(),
         });
-        let view = call_view("a");
+        let view = published(&scratch, call_view("a"));
         let result = export_session_to_html(
-            &view,
+            &RefCell::new(view),
             None,
             Some(ExportOptions {
+                output_path: Some(&output),
                 tool_renderer: Some(&renderer),
                 ..ExportOptions::default()
             }),
@@ -322,6 +432,7 @@ fn theme_failure_follows_renderer_and_precedes_write() {
         );
         assert_eq!(result.unwrap_err().to_string(), row.expected.error.unwrap());
         assert!(row.expected.html.is_none());
+        assert!(!std::path::Path::new(&output).exists());
         assert_eq!(*operations.themes.borrow(), row.expected.calls);
         assert_eq!(renderer.calls.borrow().len(), 1);
         assert_eq!(
@@ -334,9 +445,16 @@ fn theme_failure_follows_renderer_and_precedes_write() {
 fn derived_colors_cover_parser_and_luminance_boundaries() {
     for row in corpus().colors {
         let operations = Operations::default();
+        let scratch = Scratch::new().unwrap();
         *operations.resolved.borrow_mut() = VecDeque::from([json!({"userMessageBg":row.input})]);
-        export_session_to_html(&View::default(), None, None, &operations).unwrap();
-        let html = html(&operations);
+        let html = export_document(
+            &scratch,
+            &published(&scratch, View::default()),
+            None,
+            None,
+            &operations,
+        )
+        .unwrap();
         for (key, value) in row.expected.as_object().unwrap() {
             let property = match key.as_str() {
                 "pageBg" => "exportPageBg",
@@ -383,13 +501,17 @@ fn document_slots_keep_literal_assets_and_payload() {
         operations.assets[index] = row.assets[name].as_str().unwrap().into();
     }
     *operations.resolved.borrow_mut() = VecDeque::from([row.colors]);
-    let view = View {
-        data: row.data,
-        ..View::default()
-    };
-    export_session_to_html(&view, None, None, &operations).unwrap();
-    assert_eq!(html(&operations), row.expected);
-    let decoded: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let view = published(
+        &scratch,
+        View {
+            data: row.data,
+            ..View::default()
+        },
+    );
+    let document = export_document(&scratch, &view, None, None, &operations).unwrap();
+    assert_eq!(document, row.expected);
+    let decoded: Value = serde_json::from_str(&payload(&document)).unwrap();
     assert_eq!(decoded["header"], view.data["header"]);
     for row in corpus().slot_shapes {
         let operations = Operations {
@@ -402,8 +524,15 @@ fn document_slots_keep_literal_assets_and_payload() {
             ],
             ..Operations::default()
         };
-        export_session_to_html(&View::default(), None, None, &operations).unwrap();
-        assert_eq!(html(&operations), row.expected);
+        let document = export_document(
+            &scratch,
+            &published(&scratch, View::default()),
+            None,
+            None,
+            &operations,
+        )
+        .unwrap();
+        assert_eq!(document, row.expected);
     }
 }
 #[test]
@@ -471,7 +600,8 @@ fn repeated_ids_replace_calls_and_merge_results() {
 }
 #[test]
 fn repeated_results_restore_declared_field_order() {
-    let mut view = call_view("x");
+    let scratch = Scratch::new().unwrap();
+    let mut view = published(&scratch, call_view("x"));
     for _ in 0..2 {
         view.data["entries"].as_array_mut().unwrap().push(json!({
             "type": "message",
@@ -486,17 +616,8 @@ fn repeated_results_restore_declared_field_order() {
         ],
     });
     let operations = Operations::default();
-    export_session_to_html(
-        &view,
-        None,
-        Some(ExportOptions {
-            tool_renderer: Some(&renderer),
-            ..ExportOptions::default()
-        }),
-        &operations,
-    )
-    .unwrap();
-    let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    let document = export_document(&scratch, &view, None, Some(&renderer), &operations).unwrap();
+    let data: Value = serde_json::from_str(&payload(&document)).unwrap();
     assert_eq!(
         serde_json::to_string(&data["renderedTools"]).unwrap(),
         r#"{"x":{"callHtml":"C","resultHtmlCollapsed":"C2","resultHtmlExpanded":"E2"}}"#
@@ -519,7 +640,8 @@ fn direct_renderer_failure_aborts_export() {
 fn late_invalid_record_keeps_prior_renderer_effects() {
     record("malformed_later_record");
     record("malformed_later_block");
-    let mut view = call_view("a");
+    let scratch = Scratch::new().unwrap();
+    let mut view = published(&scratch, call_view("a"));
     view.data["entries"]
         .as_array_mut()
         .unwrap()
@@ -529,19 +651,11 @@ fn late_invalid_record_keeps_prior_renderer_effects() {
         result: Vec::new(),
     });
     let operations = Operations::default();
-    let error = export_session_to_html(
-        &view,
-        None,
-        Some(ExportOptions {
-            tool_renderer: Some(&renderer),
-            ..ExportOptions::default()
-        }),
-        &operations,
-    )
-    .unwrap_err();
+    let error = export_document(&scratch, &view, None, Some(&renderer), &operations).unwrap_err();
     assert!(matches!(error, ExportError::Renderer(_)));
     assert_eq!(renderer.calls.borrow().len(), 1);
     assert!(operations.events.borrow().is_empty());
+    assert!(!std::path::Path::new(&output_path(&scratch)).exists());
 }
 #[test]
 fn ordinary_call_ids_cannot_access_prototypes() {
@@ -554,21 +668,13 @@ fn outputs_and_bundles_swap_without_caller_changes() {
 }
 #[test]
 fn empty_renderer_map_is_omitted_without_filtering_entries() {
-    let view = call_view("a");
+    let scratch = Scratch::new().unwrap();
+    let view = published(&scratch, call_view("a"));
     let renderer = Renderer::from(Returns::default());
     for supplied in [None, Some(&renderer as &dyn ToolHtmlRenderer)] {
         let operations = Operations::default();
-        export_session_to_html(
-            &view,
-            None,
-            Some(ExportOptions {
-                tool_renderer: supplied,
-                ..ExportOptions::default()
-            }),
-            &operations,
-        )
-        .unwrap();
-        let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+        let document = export_document(&scratch, &view, None, supplied, &operations).unwrap();
+        let data: Value = serde_json::from_str(&payload(&document)).unwrap();
         assert!(data.get("renderedTools").is_none());
         assert_eq!(data["entries"], view.data["entries"]);
     }
@@ -576,27 +682,22 @@ fn empty_renderer_map_is_omitted_without_filtering_entries() {
         call: Vec::new(),
         result: vec![json!({})],
     });
-    let result_view = View {
-        data: json!({"header":null,"entries":[{"type":"message","message":{"role":"toolResult","toolCallId":"empty","toolName":"custom"}}],"leafId":null}),
-        ..View::default()
-    };
+    let result_view = published(
+        &scratch,
+        View {
+            data: json!({"header":null,"entries":[{"type":"message","message":{"role":"toolResult","toolCallId":"empty","toolName":"custom"}}],"leafId":null}),
+            ..View::default()
+        },
+    );
     let operations = Operations::default();
-    export_session_to_html(
-        &result_view,
-        None,
-        Some(ExportOptions {
-            tool_renderer: Some(&empty),
-            ..ExportOptions::default()
-        }),
-        &operations,
-    )
-    .unwrap();
-    let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    let document =
+        export_document(&scratch, &result_view, None, Some(&empty), &operations).unwrap();
+    let data: Value = serde_json::from_str(&payload(&document)).unwrap();
     assert_eq!(data["renderedTools"], json!({"empty":{}}));
 }
 #[test]
 fn public_options_forward_theme_and_renderer() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let path = scratch.session("tree.jsonl", &[]);
     for name in ["bright", "", "dark"] {
         let renderer = Renderer::from(Returns {
@@ -604,15 +705,23 @@ fn public_options_forward_theme_and_renderer() {
             result: Vec::new(),
         });
         let operations = Operations::default();
+        let chosen = scratch.at("chosen.html");
         let options = ExportOptions {
-            output_path: Some("chosen.html"),
+            output_path: Some(&chosen),
             theme_name: Some(name),
             tool_renderer: Some(&renderer),
         };
         assert_eq!(
-            export_session_to_html(&call_view("a"), None, Some(options), &operations).unwrap(),
-            "chosen.html"
+            export_session_to_html(
+                &RefCell::new(published(&scratch, call_view("a"))),
+                None,
+                Some(options),
+                &operations
+            )
+            .unwrap(),
+            chosen.as_str()
         );
+        std::fs::remove_file(&chosen).unwrap();
         assert_eq!(renderer.calls.borrow().len(), 1);
         assert_eq!(
             *operations.themes.borrow(),
@@ -624,15 +733,17 @@ fn public_options_forward_theme_and_renderer() {
             ]
         );
         let operations = Operations::default();
+        let file_output = scratch.at("file.html");
         let options = ExportOptions {
-            output_path: Some("file.html"),
+            output_path: Some(&file_output),
             theme_name: Some(name),
             tool_renderer: Some(&renderer),
         };
         assert_eq!(
             export_from_file(&path, Some(options), &operations).unwrap(),
-            "file.html"
+            file_output.as_str()
         );
+        std::fs::remove_file(&file_output).unwrap();
         assert_eq!(renderer.calls.borrow().len(), 1);
         assert_eq!(
             *operations.themes.borrow(),
@@ -646,9 +757,7 @@ fn public_options_forward_theme_and_renderer() {
     }
 }
 
-#[path = "component_support/mod.rs"]
-#[allow(dead_code)]
-mod component_support;
+use crate::component_support;
 
 #[test]
 fn standard_renderer_integrates_with_document_export() {
@@ -660,7 +769,7 @@ fn standard_renderer_integrates_with_document_export() {
             vec!["custom result".into()]
         }
     }
-    let theme = component_support::theme();
+    let theme = Rc::new(component_support::theme());
     let mut tool = component_support::definition::<(), Value, Value, Value>();
     tool.render_result = Some(
         maestro_tools::ToolRenderResult::<_, _, maestro_models::Local>::Typed(Rc::new(
@@ -673,27 +782,23 @@ fn standard_renderer_integrates_with_document_export() {
             get_tool_definition: |_: &str| {
                 Ok(available.then(|| maestro_tools::ToolRendererBinding::from_definition(&tool)))
             },
-            theme: &theme,
+            theme: maestro_theme::LiveTheme::from_theme(Rc::clone(&theme)),
             cwd: "/work",
             width: None,
             environment: component_support::environment(),
         });
-        let view = View {
-            data: json!({"header":null,"leafId":null,"entries":[{"type":"message","message":{"role":"toolResult","toolCallId":"id","toolName":"custom","content":[],"isError":false}}]}),
-            ..View::default()
-        };
+        let scratch = Scratch::new().unwrap();
+        let view = published(
+            &scratch,
+            View {
+                data: json!({"header":null,"leafId":null,"entries":[{"type":"message","message":{"role":"toolResult","toolCallId":"id","toolName":"custom","content":[],"isError":false}}]}),
+                ..View::default()
+            },
+        );
         let operations = Operations::default();
-        export_session_to_html(
-            &view,
-            None,
-            Some(ExportOptions {
-                tool_renderer: Some(&renderer),
-                ..ExportOptions::default()
-            }),
-            &operations,
-        )
-        .unwrap();
-        let decoded: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+        let document =
+            export_document(&scratch, &view, None, Some(&renderer), &operations).unwrap();
+        let decoded: Value = serde_json::from_str(&payload(&document)).unwrap();
         if available {
             assert_eq!(
                 decoded["renderedTools"],
@@ -714,27 +819,22 @@ fn mixed_bindings_populate_document_custom_html() {
     let bindings = registry();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
         get_tool_definition: |name: &str| Ok(bindings.get(name).cloned()),
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(theme),
         cwd: "/work",
         width: Some(80),
         environment,
     });
-    let view = View {
-        data: json!({"header":null,"leafId":null,"entries":case.input.entries}),
-        ..View::default()
-    };
+    let scratch = Scratch::new().unwrap();
+    let view = published(
+        &scratch,
+        View {
+            data: json!({"header":null,"leafId":null,"entries":case.input.entries}),
+            ..View::default()
+        },
+    );
     let operations = Operations::default();
-    export_session_to_html(
-        &view,
-        None,
-        Some(ExportOptions {
-            tool_renderer: Some(&renderer),
-            ..ExportOptions::default()
-        }),
-        &operations,
-    )
-    .unwrap();
-    let decoded: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    let document = export_document(&scratch, &view, None, Some(&renderer), &operations).unwrap();
+    let decoded: Value = serde_json::from_str(&payload(&document)).unwrap();
     assert_eq!(decoded["renderedTools"], case.expected);
     assert_eq!(decoded["entries"], view.data["entries"]);
 }

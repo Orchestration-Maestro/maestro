@@ -1,16 +1,15 @@
 //! Consumers of the shared JSON boundary keep their caller-owned decisions.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bundled;
 use crate::chat;
 
+#[cfg(not(target_arch = "wasm32"))]
 use bundled::PROTOCOLS;
-use chat::{TestResult, block_on};
+use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{MistralOptions, OnPayload, StopReason, StreamOptions};
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
 /// Nested numeric keys and numbers that only the canonical writer spells this way.
@@ -26,6 +25,7 @@ fn compact_json_reexport_keeps_wire_bytes() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run one Mistral request whose payload the hook replaces with `edit` of the built payload.
 async fn run(
     edit: impl Fn(Value) -> Value + Send + Sync + 'static,
@@ -70,6 +70,7 @@ async fn run(
     Ok((outcome, bundled::recorded(&requests)))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A built payload with `fields` set over it.
 fn with(mut payload: Value, fields: Value) -> Value {
     if let (Some(payload), Value::Object(fields)) = (payload.as_object_mut(), fields) {
@@ -78,9 +79,10 @@ fn with(mut payload: Value, fields: Value) -> Value {
     payload
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn mistral_checks_object_fields_after_payload_hook() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let (text, sent) = run(|payload| {
             with(
                 payload,

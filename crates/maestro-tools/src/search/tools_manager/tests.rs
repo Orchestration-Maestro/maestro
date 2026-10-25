@@ -3,8 +3,11 @@
 
 #[cfg(unix)]
 mod archive_security;
+#[path = "../../../tests/support/runtime.rs"]
+mod runtime;
 
 use super::*;
+use runtime::{run, run_paused};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -447,8 +450,28 @@ fn installed_matches(row: &Install, bin: &str, result: Option<&String>) {
     assert!(!Path::new(bin).parent().unwrap().join("outside").exists());
 }
 
+/// Runs the calling test again in a child without `MAESTRO_OFFLINE`, so an offline flag in
+/// the developer's shell never reaches the install. True in that child; false in the caller
+/// once the child passed.
+fn online(test: &str) -> bool {
+    if maestro_test_process::selection().is_child() {
+        return true;
+    }
+    let child = maestro_test_process::TestProcess::current(test).unwrap();
+    let output = child
+        .case("*")
+        .env_remove("MAESTRO_OFFLINE")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    false
+}
+
 /// Run the named installation group on its chosen hosts.
 async fn installs(name: &str) {
+    if !online(name) {
+        return;
+    }
     for row in cases::<Install>(name) {
         let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "unit").unwrap();
         let bin = maestro_path::join(&[
@@ -622,54 +645,56 @@ fn windows_binary_directory_entries_carry_the_exe_suffix() {
 
 #[test]
 fn lookup_and_download_deadlines_cover_the_whole_body() {
-    unit_runtime()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(async {
-            for phase in 0..3 {
-                let scratch =
-                    Staging::create(std::env::temp_dir().to_str().unwrap(), "deadline").unwrap();
-                let bin = maestro_path::join(&[&scratch.path, "bin"]);
-                let fetch = stalled_fetch(phase);
-                let mut manager = ToolsManager::new(bin.clone(), Some(fetch));
-                manager.host = Host {
-                    os: "linux",
-                    arch: "x86_64",
-                };
-                let mut output = Vec::new();
-                let started = tokio::time::Instant::now();
-                assert_eq!(
-                    manager
-                        .install_missing(
-                            SearchTool::Fd,
-                            Some(ToolsManagerOutput {
-                                stdout: &mut output,
-                                color: false
-                            })
-                        )
-                        .await,
-                    None
-                );
-                assert_eq!(
-                    started.elapsed().as_millis(),
-                    if phase == 2 { 120_000 } else { 10_000 }
-                );
-                assert_eq!(
-                    String::from_utf8(output).unwrap(),
-                    "fd not found. Downloading...\nFailed to download fd: Request timed out.\n"
-                );
-                if phase == 2 {
-                    assert_eq!(std::fs::read_dir(&bin).unwrap().count(), 0);
-                } else {
-                    assert!(!Path::new(&bin).exists());
-                }
+    if !online("lookup_and_download_deadlines_cover_the_whole_body") {
+        return;
+    }
+    run_paused(async {
+        for phase in 0..3 {
+            let scratch =
+                Staging::create(std::env::temp_dir().to_str().unwrap(), "deadline").unwrap();
+            let bin = maestro_path::join(&[&scratch.path, "bin"]);
+            let fetch = stalled_fetch(phase);
+            let mut manager = ToolsManager::new(bin.clone(), Some(fetch));
+            manager.host = Host {
+                os: "linux",
+                arch: "x86_64",
+            };
+            let mut output = Vec::new();
+            let started = tokio::time::Instant::now();
+            assert_eq!(
+                manager
+                    .install_missing(
+                        SearchTool::Fd,
+                        Some(ToolsManagerOutput {
+                            stdout: &mut output,
+                            color: false
+                        })
+                    )
+                    .await,
+                None
+            );
+            assert_eq!(
+                started.elapsed().as_millis(),
+                if phase == 2 { 120_000 } else { 10_000 }
+            );
+            assert_eq!(
+                String::from_utf8(output).unwrap(),
+                "fd not found. Downloading...\nFailed to download fd: Request timed out.\n"
+            );
+            if phase == 2 {
+                assert_eq!(std::fs::read_dir(&bin).unwrap().count(), 0);
+            } else {
+                assert!(!Path::new(&bin).exists());
             }
-        });
+        }
+    });
 }
 
 #[test]
 fn concurrent_installs_stage_in_separate_directories() {
+    if !online("concurrent_installs_stage_in_separate_directories") {
+        return;
+    }
     run(async {
         let scratch =
             Staging::create(std::env::temp_dir().to_str().unwrap(), "concurrent").unwrap();
@@ -714,11 +739,6 @@ fn concurrent_installs_stage_in_separate_directories() {
         assert_ne!(messages[0], messages[1], "staging names must differ");
         assert_eq!(std::fs::read_dir(bin).unwrap().count(), 0);
     });
-}
-
-/// Complete unit-test work on an enabled current-thread runtime.
-pub(crate) fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    unit_runtime().build().unwrap().block_on(future)
 }
 
 /// Transport stalling headers or the body at the selected phase.
@@ -770,11 +790,4 @@ fn concurrent_fetch(stage_root: String) -> Fetch {
             Ok(response(200, archive("linux-missing.tar.gz")))
         })
     })
-}
-
-/// The enabled runtime builder shared by unit-test clock policies.
-fn unit_runtime() -> tokio::runtime::Builder {
-    let mut builder = tokio::runtime::Builder::new_current_thread();
-    builder.enable_all();
-    builder
 }

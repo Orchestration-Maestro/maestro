@@ -45,6 +45,7 @@ pub fn call(
             args: vec![],
             value: args[0].clone(),
             raw: None,
+            error: None,
         });
     }
     Ok(observed.setup.value.clone())
@@ -61,6 +62,7 @@ pub fn reader(name: &str) -> Reader {
         args: vec![],
         value: json!(name),
         raw: None,
+        error: None,
     });
     reader
 }

@@ -1,6 +1,7 @@
 //! Panel shell, ordered tabs and selected-view drawing.
-use super::{ArtifactPresentation, ArtifactView, ArtifactsPanel, AttachmentUiError, with_element};
+use super::{ArtifactPresentation, ArtifactView, ArtifactsPanel, with_element};
 use crate::browser::attachment_content::{GHOST_SIZE, color, ghost, points, style};
+use crate::tools::artifacts::ArtifactUiError;
 impl ArtifactsPanel {
     /// Draw retained views using the caller's current map and selected filename.
     /// # Errors
@@ -10,7 +11,7 @@ impl ArtifactsPanel {
         ui: &mut egui::Ui,
         caller: &maestro_app::browser::tools::artifacts::ArtifactsPanel<P>,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError>
+    ) -> Result<(), ArtifactUiError>
     where
         P: Clone + std::ops::Deref,
         P::Target: ArtifactPresentation,
@@ -70,7 +71,7 @@ impl ArtifactsPanel {
         ui: &mut egui::Ui,
         active: Option<&str>,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         if let Some(element) = active
             .filter(|name| !name.is_empty())
             .and_then(|name| self.element(name))
@@ -86,8 +87,9 @@ impl ArtifactsPanel {
         names: &[String],
         active: Option<&str>,
         view: ArtifactView<'_>,
-    ) -> Result<Option<String>, AttachmentUiError> {
-        style(ui, view.presentation)?;
+    ) -> Result<Option<String>, ArtifactUiError> {
+        style(ui, view.presentation)
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))?;
         let bounds = ui.available_rect_before_wrap();
         self.background(ui, bounds, view)?;
         let content_left = bounds.left() + if self.overlay() { 0. } else { 1. };
@@ -124,20 +126,19 @@ impl ArtifactsPanel {
             ui.ctx()
                 .request_discard("artifact header controls changed width");
         }
+        let border = color(view.presentation, "border")
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))?;
         ui.painter().hline(
             header.x_range(),
             header.bottom() + 0.5,
-            egui::Stroke::new(1., color(view.presentation, "border")?),
+            egui::Stroke::new(1., border),
         );
-        if let Some(element) = active.and_then(|name| self.element(name)) {
-            let rect = egui::Rect::from_min_max(
-                egui::pos2(content_left, header.bottom() + 1.),
-                bounds.max,
-            );
-            let mut body = ui.new_child(egui::UiBuilder::new().max_rect(rect));
-            body.set_clip_rect(rect.intersect(ui.clip_rect()));
-            with_element(&element, |element| element.render(&mut body, view))?;
-        }
+        self.draw_body(
+            ui,
+            active,
+            (content_left, header.bottom() + 1., bounds.max),
+            view,
+        )?;
         ui.advance_cursor_after_rect(bounds);
         if close.clicked() {
             let callback = self.on_close.borrow().clone();
@@ -147,6 +148,22 @@ impl ArtifactsPanel {
         }
         Ok(clicked)
     }
+    /// Draw the selected retained view below the header.
+    fn draw_body(
+        &self,
+        ui: &mut egui::Ui,
+        active: Option<&str>,
+        bounds: (f32, f32, egui::Pos2),
+        view: ArtifactView<'_>,
+    ) -> Result<(), ArtifactUiError> {
+        if let Some(element) = active.and_then(|name| self.element(name)) {
+            let rect = egui::Rect::from_min_max(egui::pos2(bounds.0, bounds.1), bounds.2);
+            let mut body = ui.new_child(egui::UiBuilder::new().max_rect(rect));
+            body.set_clip_rect(rect.intersect(ui.clip_rect()));
+            with_element(&element, |element| element.render(&mut body, view))?;
+        }
+        Ok(())
+    }
     /// Draw caller controls once per toolkit pass, followed by the close control.
     fn controls(
         &self,
@@ -154,7 +171,7 @@ impl ArtifactsPanel {
         rect: egui::Rect,
         active: Option<&str>,
         view: ArtifactView<'_>,
-    ) -> Result<(egui::Response, f32), AttachmentUiError> {
+    ) -> Result<(egui::Response, f32), ArtifactUiError> {
         let gap = points(view.presentation.spacing["xs"]);
         let close_rect = rect.with_min_x((rect.right() - GHOST_SIZE.x).max(rect.left()));
         let header_rect = rect.with_max_x((close_rect.left() - gap).max(rect.left()));
@@ -185,11 +202,16 @@ impl ArtifactsPanel {
         ui: &egui::Ui,
         rect: egui::Rect,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
-        let border = color(view.presentation, "border")?;
+    ) -> Result<(), ArtifactUiError> {
+        let border = color(view.presentation, "border")
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))?;
         crate::browser::attachment_content::panel_shadow(ui, rect, 0., border);
-        ui.painter()
-            .rect_filled(rect, 0., color(view.presentation, "background")?);
+        ui.painter().rect_filled(
+            rect,
+            0.,
+            color(view.presentation, "background")
+                .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))?,
+        );
         if !self.overlay() {
             ui.painter().vline(
                 rect.left() + 0.5,
@@ -207,7 +229,7 @@ fn tabs(
     names: &[String],
     active: Option<&str>,
     view: ArtifactView<'_>,
-) -> Result<Option<String>, AttachmentUiError> {
+) -> Result<Option<String>, ArtifactUiError> {
     let request = panel.scroll.borrow_mut().take();
     let mut clicked = None;
     let mut scrolled = false;
@@ -226,7 +248,7 @@ fn tabs(
                     scrolled = true;
                 }
             }
-            Ok::<_, AttachmentUiError>(clicked)
+            Ok::<_, ArtifactUiError>(clicked)
         })
         .inner
 }
@@ -236,11 +258,14 @@ fn tab_button(
     name: &str,
     selected: bool,
     view: ArtifactView<'_>,
-) -> Result<egui::Response, AttachmentUiError> {
+) -> Result<egui::Response, ArtifactUiError> {
     ui.scope(|ui| {
-        let accent = color(view.presentation, "accent")?;
-        let resting = color(view.presentation, if selected { "accent" } else { "muted" })?;
-        let hovered = color(view.presentation, if selected { "accent" } else { "text" })?;
+        let accent = color(view.presentation, "accent")
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))?;
+        let resting = color(view.presentation, if selected { "accent" } else { "muted" })
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))?;
+        let hovered = color(view.presentation, if selected { "accent" } else { "text" })
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))?;
         ui.visuals_mut().widgets.inactive.fg_stroke.color = resting;
         ui.visuals_mut().widgets.hovered.fg_stroke.color = hovered;
         ui.visuals_mut().widgets.active.fg_stroke.color = hovered;

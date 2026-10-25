@@ -1,5 +1,6 @@
 //! Strict recorded renderer inputs and their public-output driver.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 use crate::display_support::{Env, NoLanguages};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};

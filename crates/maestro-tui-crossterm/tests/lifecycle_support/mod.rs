@@ -178,9 +178,4 @@ pub fn stdin_flags() -> OFlags {
     fcntl_getfl(stdin()).expect("flags read")
 }
 
-/// How many descriptors this process holds open.
-pub fn open_descriptors() -> usize {
-    std::fs::read_dir("/dev/fd")
-        .expect("descriptors list")
-        .count()
-}
+pub use crate::support::open_descriptors;

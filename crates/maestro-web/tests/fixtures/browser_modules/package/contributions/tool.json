@@ -1,0 +1,13 @@
+{
+  "id": "fixture-tool",
+  "kind": "tool-renderer",
+  "target": "fixture_tool",
+  "requires": [
+    "fixture.greeting"
+  ],
+  "module": {
+    "entry": "modules/a/module.js",
+    "wasm": "modules/a/module_bg.wasm",
+    "register": "register"
+  }
+}

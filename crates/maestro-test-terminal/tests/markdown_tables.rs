@@ -1,15 +1,5 @@
 //! Markdown tables through the public component interface and an emulated screen.
-#[path = "support/markdown_cases.rs"]
-mod markdown;
-#[allow(
-    dead_code,
-    reason = "Screen support is shared by several test targets."
-)]
-mod support {
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod virtual_terminal;
-}
+use crate::support::markdown_cases as markdown;
 use maestro_tui::{TerminalImage, extract_ansi_code};
 use std::rc::Rc;
 
@@ -33,9 +23,11 @@ fn shown(row: &str) -> String {
 fn table_cases(name: &str) {
     markdown::cases(name);
     for case in markdown::corpus(name) {
-        let terminal =
-            support::virtual_terminal::VirtualTerminal::new(case.width, case.lines.len() + 1);
-        let runtime = support::manual_runtime::ManualRuntime::new();
+        let terminal = crate::support::virtual_terminal::VirtualTerminal::new(
+            case.width,
+            case.lines.len() + 1,
+        );
+        let runtime = crate::support::manual_runtime::ManualRuntime::new();
         let tui = maestro_tui::TUI::new(
             terminal.handle(),
             runtime.handle(),
@@ -192,8 +184,8 @@ fn markdown_table_inside_list_item_keeps_source_rows() {
 }
 
 #[test]
-fn markdown_table_lazy_lines_follow_commonmark() {
-    markdown::cases("markdown_table_lazy_lines_follow_commonmark");
+fn markdown_table_lazy_lines_follow_container_dispatch() {
+    markdown::cases("markdown_table_lazy_lines_follow_container_dispatch");
 }
 
 /// Renders `text` with the supplied theme and hyperlink capability.
@@ -212,6 +204,7 @@ fn render(
     Markdown::new(
         text.to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,

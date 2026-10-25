@@ -1,0 +1,590 @@
+[
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html"
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html"
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html"
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": null
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": null
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": null
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": "literal"
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "literal"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": "literal"
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "literal"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": "literal"
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "literal"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": ""
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": ""
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": ""
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 1.25
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "1.25"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 1.25
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "1.25"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 1.25
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "1.25"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 0
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 0
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 0
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": -0.0
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": -0.0
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": -0.0
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": false
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": false
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": false
+      }
+    },
+    "expected": {
+      "branch": "omitted"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": true
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "true"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": true
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "true"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": true
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "true"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {}
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "{}"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {}
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "{}"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {}
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "{}"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {
+          "z": 1,
+          "a": 2
+        }
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "{\"z\":1,\"a\":2}"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {
+          "z": 1,
+          "a": 2
+        }
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "{\"z\":1,\"a\":2}"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {
+          "z": 1,
+          "a": 2
+        }
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "{\"z\":1,\"a\":2}"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": []
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "[]"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": []
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "[]"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": []
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "[]"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": [
+          "b",
+          "a",
+          "b"
+        ]
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "[\"b\",\"a\",\"b\"]"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": [
+          "b",
+          "a",
+          "b"
+        ]
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "[\"b\",\"a\",\"b\"]"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": [
+          "b",
+          "a",
+          "b"
+        ]
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": "[\"b\",\"a\",\"b\"]"
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": " \t\n"
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": " \t\n"
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": " \t\n"
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": " \t\n"
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": " \t\n"
+      }
+    },
+    "expected": {
+      "branch": "text",
+      "text": " \t\n"
+    }
+  }
+]

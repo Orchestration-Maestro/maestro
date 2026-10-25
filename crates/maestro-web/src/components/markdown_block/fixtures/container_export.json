@@ -1,0 +1,38 @@
+[
+  {
+    "input": "- item\n| a | b |\n|---|---|",
+    "html": "<ul>\n<li>item<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n</li>\n</ul>\n"
+  },
+  {
+    "input": "> q\n[r]: https://r.s\n\n[r]\n",
+    "html": "<blockquote>\n<p>q<br>[r]: <a href=\"https://r.s\">https://r.s</a></p>\n</blockquote>\n<p>[r]</p>\n"
+  },
+  {
+    "input": "> - a\n      p\n> [s]: /y\ne",
+    "html": "<blockquote>\n<ul>\n<li>a<br>p</li>\n</ul>\n<p>e</p>\n</blockquote>\n"
+  },
+  {
+    "input": "- item\n>",
+    "html": "<ul>\n<li>item<blockquote>\n</blockquote>\n</li>\n</ul>\n"
+  },
+  {
+    "input": "- >",
+    "html": "<ul>\n<li><blockquote>\n</blockquote>\n</li>\n</ul>\n"
+  },
+  {
+    "input": "> q\n[r]: /x\n> y",
+    "html": "<blockquote>\n<p>q<br>[r]: /x<br>y</p>\n</blockquote>\n"
+  },
+  {
+    "input": ">\n> - item\n      deep\n> [s]: /y\n    code\n> > nested\n---\n",
+    "html": "<blockquote>\n<ul>\n<li>item<br>deep<br>  code</li>\n</ul>\n<blockquote>\n<p>nested</p>\n</blockquote>\n</blockquote>\n<hr>\n"
+  },
+  {
+    "input": "> - item\n[r]: /x \"t\"\n      deep\n> [s]: /y\n  ==\nmore text\n1. one\n",
+    "html": "<blockquote>\n<ul>\n<li>item<br>[r]: /x &quot;t&quot;<br>deep<br>==</li>\n</ul>\n<p>more text</p>\n</blockquote>\n<ol>\n<li>one</li>\n</ol>\n"
+  },
+  {
+    "input": "1. step\n| a | b |\n|---|---|\n| 1 | 2 |",
+    "html": "<ol>\n<li>step<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>1</td>\n<td>2</td>\n</tr>\n</tbody></table>\n</li>\n</ol>\n"
+  }
+]

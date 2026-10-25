@@ -13,3 +13,10 @@ max-threads = 1
 [[profile.default.overrides]]
 filter = "package(maestro-models) & test(/(^|::)oauth_callback::/)"
 test-group = "oauth-callback"
+
+[test-groups.browser-author]
+max-threads = 1
+
+[[profile.default.overrides]]
+filter = "package(maestro-tooling) & test(/^browser_author_build::/)"
+test-group = "browser-author"

@@ -15,7 +15,7 @@ fn unknown_event_name_keeps_guest_handle_but_no_native_event_dispatches_it() {
         .block_on(async {
             let runtime = maestro_extensions::create_extension_runtime::<Local>();
             let (owner, api) = super::api::api(runtime.clone());
-            let (pump, admission) = Pump::new(super::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let callback = callbacks.allocate().unwrap();

@@ -6,17 +6,17 @@ use crate::display_support;
 use crate::edit_render_support;
 use crate::edit_support;
 use crate::read_support;
+use crate::runtime;
 
 use display_support::{Env, NoLanguages, Setup, context};
 use edit_render_support::{Details, ResultRecord, cases, palette, theme};
 use maestro_agent::AgentToolResult;
-use maestro_models::{TextContent, UserBlock};
 use maestro_tools::{
     EditRenderState, EditToolDetails, EditToolInput, EditToolOptions, ToolDefinition,
     ToolRenderContext, ToolRenderResultOptions, create_edit_tool_definition,
 };
 use maestro_tui::{Text, tui::ComponentHandle};
-use read_support::TempDir;
+use read_support::{Fixture, Scratch};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -34,7 +34,7 @@ struct Row {
     /// Controlled live theme and runtime.
     env: Env,
     /// Directory used by previews.
-    dir: TempDir,
+    dir: Scratch,
     /// Shared renderer state.
     state: Rc<RefCell<EditRenderState>>,
     /// Accepted completion notifications.
@@ -43,7 +43,7 @@ struct Row {
 impl Row {
     /// A controlled row with distinguishable source text.
     fn new() -> Self {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         dir.file("file", b"alpha\n");
         Self {
             tool: create_edit_tool_definition(
@@ -75,7 +75,7 @@ impl Row {
     fn call(&self, args: &Value, last: Option<ComponentHandle>) -> ComponentHandle {
         (self.tool.render_call.as_ref().unwrap())(
             Some(args),
-            &self.env.theme,
+            &self.env.live,
             &self.context(args, last),
         )
         .unwrap()
@@ -97,7 +97,7 @@ impl Row {
                 expanded: false,
                 is_partial: false,
             },
-            &self.env.theme,
+            &self.env.live,
             &ctx,
         )
         .unwrap()
@@ -115,17 +115,13 @@ fn args(new: &str) -> Value {
 }
 /// A successful result with optional details.
 fn result(diff: Option<&str>) -> AgentToolResult<EditToolDetails> {
-    AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text: "execution message".into(),
-            text_signature: None,
-        })],
-        details: diff.map(|diff| EditToolDetails {
+    AgentToolResult::text_result(
+        "execution message".into(),
+        diff.map(|diff| EditToolDetails {
             diff: diff.into(),
             first_changed_line: Some(1),
         }),
-        terminate: None,
-    }
+    )
 }
 /// Convert strictly recorded details through the existing native result type.
 fn recorded_result(value: &Value) -> AgentToolResult<EditToolDetails> {
@@ -174,7 +170,7 @@ fn edit_renderers_retain_call_and_result_slots() {
 
 #[test]
 fn edit_preview_waits_for_complete_args_and_deduplicates() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         for invalid in [
             Value::Null,
@@ -187,7 +183,7 @@ fn edit_preview_waits_for_complete_args_and_deduplicates() {
         let input = args("beta");
         let mut ctx = row.context(&input, None);
         ctx.phase.args_complete = false;
-        (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
+        (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx).unwrap();
         assert_eq!(row.env.runtime.futures(), 0);
         let call = row.call(&input, None);
         for flag in 0..3 {
@@ -197,7 +193,7 @@ fn edit_preview_waits_for_complete_args_and_deduplicates() {
                 1 => ctx.expanded = true,
                 _ => ctx.phase.is_partial = true,
             }
-            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
+            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx).unwrap();
             assert_eq!(row.env.runtime.futures(), 1);
         }
         let mut alias = input.clone();
@@ -220,7 +216,7 @@ fn edit_preview_waits_for_complete_args_and_deduplicates() {
 
 #[test]
 fn edit_changed_inputs_replace_pending_request() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         row.dir.file("other", b"alpha\n");
         let original = args("beta");
@@ -262,7 +258,7 @@ fn edit_changed_inputs_replace_pending_request() {
 
 #[test]
 fn edit_incomplete_arguments_discard_pending_preview() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         let input = args("beta");
         let call = row.call(&input, None);
@@ -281,7 +277,7 @@ fn edit_incomplete_arguments_discard_pending_preview() {
 
 #[test]
 fn edit_completion_publishes_before_reentrant_invalidation() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Rc::new(Row::new());
         let input = args("beta");
         let weak = Rc::downgrade(&row);
@@ -295,7 +291,7 @@ fn edit_completion_publishes_before_reentrant_invalidation() {
             assert_eq!(row.env.runtime.futures(), 0);
         });
         let _call =
-            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
+            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx).unwrap();
         row.finish().await;
         assert!(observed.get());
     });
@@ -303,7 +299,7 @@ fn edit_completion_publishes_before_reentrant_invalidation() {
 
 #[test]
 fn edit_settled_result_rejects_late_preview() {
-    read_support::run(async {
+    runtime::run(async {
         for (error, diff, partial) in [
             (false, Some("+1 SETTLED"), false),
             (true, None, false),
@@ -325,7 +321,7 @@ fn edit_settled_result_rejects_late_preview() {
                         expanded: false,
                         is_partial: partial,
                     },
-                    &row.env.theme,
+                    &row.env.live,
                     &ctx,
                 )
                 .unwrap();
@@ -343,7 +339,7 @@ fn edit_settled_result_rejects_late_preview() {
 
 #[test]
 fn edit_returned_arguments_reject_obsolete_generation() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         let a = args("newest A");
         let call = row.call(&a, None);
@@ -400,15 +396,10 @@ async fn native(name: &str) {
     assert_eq!(cases.len(), 4);
     let case = cases.into_iter().find(|case| case.name == name).unwrap();
     let mut row = Row::new();
-    let definition_dir = TempDir::new();
+    let definition_dir = Scratch::new().unwrap();
     definition_dir.file("file", b"definition decoy\n");
     let operations = Arc::new(edit_support::Operations::new(b"execution decoy\n"));
-    row.tool = create_edit_tool_definition(
-        definition_dir.text(),
-        EditToolOptions {
-            operations: Some(operations.clone()),
-        },
-    );
+    row.tool = edit_support::tool(&operations, &definition_dir.text());
     if let Some(file) = &case.file {
         row.dir.file("file", file.as_bytes());
     } else {
@@ -426,7 +417,7 @@ async fn native(name: &str) {
     let mut ctx = row.context(&case.input, None);
     ctx.phase.args_complete = case.expected.file_exists.is_none();
     let call =
-        (row.tool.render_call.as_ref().unwrap())(Some(&case.input), &row.env.theme, &ctx).unwrap();
+        (row.tool.render_call.as_ref().unwrap())(Some(&case.input), &row.env.live, &ctx).unwrap();
     if let Some(exists) = case.expected.file_exists {
         replay_native(&row, &case, exists);
     } else {
@@ -436,7 +427,7 @@ async fn native(name: &str) {
     assert!(operations.events.entries().is_empty());
     assert!(operations.script.calls().is_empty());
     assert_eq!(
-        std::fs::read_to_string(definition_dir.0.join("file")).unwrap(),
+        std::fs::read_to_string(definition_dir.path().join("file")).unwrap(),
         "definition decoy\n"
     );
     if let Some(expected) = case.expected.invalidations {
@@ -445,7 +436,7 @@ async fn native(name: &str) {
 }
 /// Reconstruct a native replay after deleting its source.
 fn replay_native(row: &Row, case: &NativeCase, exists: bool) {
-    std::fs::remove_file(row.dir.0.join("file")).unwrap();
+    std::fs::remove_file(row.dir.path().join("file")).unwrap();
     let details: Details = serde_json::from_value(case.expected.preview.clone()).unwrap();
     let out = row.result(
         &case.input,
@@ -461,7 +452,7 @@ fn replay_native(row: &Row, case: &NativeCase, exists: bool) {
         None,
     );
     assert_eq!(out.render(80), *case.expected.result_rows.as_ref().unwrap());
-    assert_eq!(row.dir.0.join("file").exists(), exists);
+    assert_eq!(row.dir.path().join("file").exists(), exists);
     assert_eq!(row.env.runtime.futures(), 0);
 }
 /// Complete and compare the native preview and optional result.
@@ -470,7 +461,7 @@ async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
     assert!(Rc::ptr_eq(call, &row.call(&case.input, None)));
     assert_eq!(call.render(80), case.expected.rows);
     assert_eq!(
-        std::fs::read_to_string(row.dir.0.join("file")).unwrap(),
+        std::fs::read_to_string(row.dir.path().join("file")).unwrap(),
         case.expected.file_after.as_ref().unwrap().as_str()
     );
     if let Some(expected) = &case.expected.result_rows {
@@ -511,25 +502,25 @@ async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
 
 #[test]
 fn edit_preview_reads_local_file_without_execution() {
-    read_support::run(async {
+    runtime::run(async {
         native("edit_preview_reads_local_file_without_execution").await;
     });
 }
 #[test]
 fn edit_preflight_error_replaces_preview_body() {
-    read_support::run(async {
+    runtime::run(async {
         native("edit_preflight_error_replaces_preview_body").await;
     });
 }
 #[test]
 fn edit_large_preview_settles_without_duplicate_content() {
-    read_support::run(async {
+    runtime::run(async {
         native("edit_large_preview_settles_without_duplicate_content").await;
     });
 }
 #[test]
 fn edit_replay_reconstructs_preview_without_reading() {
-    read_support::run(async {
+    runtime::run(async {
         native("edit_replay_reconstructs_preview_without_reading").await;
     });
 }
@@ -554,7 +545,7 @@ fn edit_result_without_call_renders_detached_output() {
                 &case.input["result"],
             )),
             options,
-            &row.env.theme,
+            &row.env.live,
             &ctx,
         )
         .unwrap();
@@ -579,7 +570,7 @@ fn edit_result_without_call_renders_detached_output() {
 
 #[test]
 fn edit_settlement_preserves_existing_preview_priority() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         let input = args("beta");
         let call = row.call(&input, None);
@@ -627,7 +618,10 @@ fn supplied_theme_routes() {
     {
         let row = Row::new();
         assert_eq!(case.op, "theme_routes");
-        let supplied = theme(&case.input["titleColors"], &json!({}));
+        let supplied = maestro_theme::LiveTheme::from_theme(Rc::new(theme(
+            &case.input["titleColors"],
+            &json!({}),
+        )));
         let mut ctx = row.context(&case.input["args"], None);
         ctx.phase.args_complete = false;
         let call = (row.tool.render_call.as_ref().unwrap())(ctx.args, &supplied, &ctx).unwrap();
@@ -658,7 +652,7 @@ fn supplied_theme_routes() {
 
 #[test]
 fn edit_theme_replacement_updates_background_and_rebuilt_text() {
-    read_support::run(async {
+    runtime::run(async {
         supplied_theme_routes();
         let row = Row::new();
         let input = json!({"path":"file"});
@@ -672,7 +666,7 @@ fn edit_theme_replacement_updates_background_and_rebuilt_text() {
         assert_ne!(before, live);
         assert!(live[1].contains("38;5;1m"));
         let ctx = row.context(&input, None);
-        let supplied = palette(20);
+        let supplied = maestro_theme::LiveTheme::from_theme(Rc::new(palette(20)));
         (row.tool.render_call.as_ref().unwrap())(Some(&input), &supplied, &ctx).unwrap();
         assert!(call.render(80)[1].contains("38;5;21m"));
         let failed = Row::new();
@@ -688,7 +682,7 @@ fn edit_theme_replacement_updates_background_and_rebuilt_text() {
             .set_theme_instance(Rc::new(palette(20)))
             .unwrap();
         assert!(call.render(80)[0].contains("48;5;33m"));
-        let selected = palette(20);
+        let selected = maestro_theme::LiveTheme::from_theme(Rc::new(palette(20)));
         let ctx = failed.context(&input, None);
         (failed.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx).unwrap();
         assert!(call.render(80).join("\n").contains("38;5;24m"));
@@ -697,7 +691,7 @@ fn edit_theme_replacement_updates_background_and_rebuilt_text() {
 
 #[test]
 fn edit_preview_teardown_releases_owned_callbacks() {
-    read_support::run(async {
+    runtime::run(async {
         let mut row = Row::new();
         let input = args("beta");
         let alias = row.call(&input, None);
@@ -722,7 +716,7 @@ fn edit_preview_teardown_releases_owned_callbacks() {
             let _ = &capture;
         });
         let call =
-            (queued.tool.render_call.as_ref().unwrap())(Some(&input), &queued.env.theme, &ctx)
+            (queued.tool.render_call.as_ref().unwrap())(Some(&input), &queued.env.live, &ctx)
                 .unwrap();
         drop(ctx);
         drop(call);
@@ -746,7 +740,7 @@ async fn selected_preview_theme_error(missing: &str) {
         .set_theme_instance(Rc::clone(&selected))
         .unwrap();
     let ctx = row.context(&input, None);
-    let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx)
+    let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx)
         .err()
         .unwrap();
     let kind = if missing.ends_with("Bg") {
@@ -770,7 +764,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
             .set_theme_instance(Rc::clone(&selected))
             .unwrap();
         let ctx = row.context(&input, None);
-        let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx)
+        let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx)
             .err()
             .unwrap();
         let kind = if missing.starts_with("toolPending") {
@@ -782,7 +776,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
         assert_eq!(row.env.runtime.futures(), 1);
         drop(row.env.runtime.take_futures());
     }
-    read_support::run(async {
+    runtime::run(async {
         for missing in ["toolDiffAdded", "toolSuccessBg", "toolErrorBg"] {
             selected_preview_theme_error(missing).await;
         }
@@ -795,7 +789,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
         .set_theme_instance(Rc::clone(&selected))
         .unwrap();
     let ctx = row.context(&input, None);
-    let call = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx).unwrap();
+    let call = (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx).unwrap();
     assert!(call.render(80)[1].contains("38;5;1m"));
     row.env
         .state

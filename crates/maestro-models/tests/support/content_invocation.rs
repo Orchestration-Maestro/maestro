@@ -1,5 +1,5 @@
 //! Recorded invocation inputs and complete public observations.
-use crate::{chat, child_process};
+use crate::chat;
 use chat::TestResult;
 use maestro_models::{
     Cancellation, Context, DiagnosticErrorInfo, FetchError, HttpRequest, HttpResponse,
@@ -381,8 +381,8 @@ async fn observe(input: &Input) -> TestResult<Value> {
 }
 
 /// Compare expected fields after normalizing native diagnostics and JSON numeric representation.
-fn check(row: &Row) -> TestResult {
-    let mut actual = chat::block_on(false, observe(&row.input))?;
+fn check((index, row): (usize, &Row)) -> TestResult {
+    let mut actual = crate::runtime::run_paused(observe(&row.input))?;
     if let Some(expected) = row.expected["output"]["errorMessage"]
         .as_str()
         .filter(|text| text.starts_with('<'))
@@ -412,7 +412,7 @@ fn check(row: &Row) -> TestResult {
     let expected: Value = serde_json::from_str(&maestro_models::compact_json(&row.expected)?)?;
     assert!(
         actual == expected,
-        "case output differs: test={} events={} output={}",
+        "case output differs: test={} row={index} events={} output={}",
         row.test,
         actual["events"],
         actual["output"]
@@ -420,33 +420,28 @@ fn check(row: &Row) -> TestResult {
     Ok(())
 }
 
-/// Evaluate named rows in isolated processes with their specified environment.
+/// Evaluate named rows in one cleared child per distinct environment.
 pub fn assert_rows(test: &str) -> TestResult {
     let rows: Vec<Row> = serde_json::from_str(include_str!(
         "../fixtures/content_generation_invocation.json"
     ))?;
-    if let Some(case) = child_process::child_case() {
-        let row = &rows[case.parse::<usize>()?];
-        assert_eq!(row.test, test);
-        return check(row);
-    }
-    let mut count = 0;
-    for (index, row) in rows.iter().enumerate().filter(|(_, row)| row.test == test) {
-        count += 1;
-        let mut env = Vec::new();
-        for (key, value) in [
+    let owned: Vec<_> = rows
+        .iter()
+        .enumerate()
+        .filter(|(_, row)| row.test == test)
+        .collect();
+    assert!(!owned.is_empty(), "no fixture rows");
+    let group = maestro_test_process::run_per_environment(test, owned, |(_, row)| {
+        [
             ("GEMINI_API_KEY", &row.input.env_key),
             ("GOOGLE_GEMINI_BASE_URL", &row.input.env_base),
             ("GOOGLE_VERTEX_BASE_URL", &row.input.env_vertex_base),
-        ] {
-            if let Some(value) = value {
-                env.push((key, value.as_str()));
-            }
-        }
-        child_process::rerun(test, &index.to_string(), &env)?;
-    }
-    assert!(count > 0, "no fixture rows");
-    Ok(())
+        ]
+        .into_iter()
+        .filter_map(|(key, value)| Some((key, value.clone()?)))
+        .collect::<std::collections::BTreeMap<_, _>>()
+    })?;
+    group.into_iter().flatten().try_for_each(check)
 }
 
 /// Consume terminal output without retaining emission-time snapshots of live aliases.

@@ -5,6 +5,7 @@ use maestro_agent::{
     AgentContext, AgentEventSink, AgentLoopConfig, AgentLoopOptions, AgentMessage,
     CustomAgentMessages, run_agent_loop,
 };
+use maestro_models::SharedHandle;
 use maestro_models::{JsonObject, Model, ModelCost, ProviderObjects, SimpleStreamOptions};
 use std::{
     rc::Rc,
@@ -23,7 +24,7 @@ fn browser_callbacks_admit_local_payloads() {
     let local = Rc::new(());
     let observed = Rc::clone(&local);
     let config = local_config(observed, &local);
-    let emit: AgentEventSink<Notice> = Arc::new(move |event| {
+    let emit: AgentEventSink<Notice> = SharedHandle::new(move |event| {
         if let maestro_agent::AgentEvent::MessageStart {
             message: AgentMessage::Custom(value),
         } = event
@@ -49,7 +50,7 @@ fn browser_callbacks_admit_local_payloads() {
 
 /// Construct a local queue carrying the same non-Send custom payload type.
 fn local_queue(local: Rc<()>) -> maestro_agent::GetSteeringMessages<Notice> {
-    Arc::new(move || {
+    SharedHandle::new(move || {
         let local = Rc::clone(&local);
         Box::pin(async move {
             Ok(vec![AgentMessage::Custom(Arc::new(RwLock::new(Notice(
@@ -61,7 +62,7 @@ fn local_queue(local: Rc<()>) -> maestro_agent::GetSteeringMessages<Notice> {
 
 /// Build a local before tool call callback.
 fn local_before_tool_call(local: Rc<()>) -> maestro_agent::BeforeToolCall<Notice> {
-    Arc::new(move |c, _| {
+    SharedHandle::new(move |c, _| {
         let captured = Rc::clone(&local);
         Box::pin(async move {
             c.args["edited"] = serde_json::json!(Rc::strong_count(&captured));
@@ -72,7 +73,7 @@ fn local_before_tool_call(local: Rc<()>) -> maestro_agent::BeforeToolCall<Notice
 
 /// Build a local after tool call callback.
 fn local_after_tool_call(local: Rc<()>) -> maestro_agent::AfterToolCall<Notice> {
-    Arc::new(move |c, _| {
+    SharedHandle::new(move |c, _| {
         let captured = Rc::clone(&local);
         Box::pin(async move {
             assert!(Rc::strong_count(&captured) >= 1);
@@ -84,7 +85,7 @@ fn local_after_tool_call(local: Rc<()>) -> maestro_agent::AfterToolCall<Notice> 
 
 /// Build a local should stop after turn callback.
 fn local_should_stop_after_turn(local: Rc<()>) -> maestro_agent::ShouldStopAfterTurn<Notice> {
-    Arc::new(move |c| {
+    SharedHandle::new(move |c| {
         let captured = Rc::clone(&local);
         Box::pin(async move {
             assert!(Rc::strong_count(&captured) >= 1);
@@ -113,7 +114,7 @@ fn local_config(observed: Rc<()>, local: &Rc<()>) -> AgentLoopConfig<Notice> {
         get_steering_messages: Some(local_queue(Rc::clone(local))),
         get_follow_up_messages: Some(local_queue(Rc::clone(local))),
         tool_execution: None,
-        convert_to_llm: Arc::new(move |_| {
+        convert_to_llm: SharedHandle::new(move |_| {
             let local = Rc::clone(&observed);
             Box::pin(async move {
                 drop(local);
@@ -146,10 +147,11 @@ fn local_model() -> Model {
 #[test]
 fn maestro_browser_raw_wrappers_accept_local_captures() {
     let local = Rc::new(());
-    let config = Arc::new(local_config(Rc::clone(&local), &local));
+    let config = SharedHandle::new(local_config(Rc::clone(&local), &local));
     let tasks = Rc::new(std::cell::RefCell::new(Vec::new()));
     let captured = Rc::clone(&tasks);
-    let spawn: maestro_agent::AgentSpawner = Arc::new(move |task| captured.borrow_mut().push(task));
+    let spawn: maestro_agent::AgentSpawner =
+        SharedHandle::new(move |task| captured.borrow_mut().push(task));
     let context = AgentContext {
         system_prompt: String::new(),
         messages: Arc::new(RwLock::new(vec![AgentMessage::Custom(Arc::new(
@@ -160,9 +162,9 @@ fn maestro_browser_raw_wrappers_accept_local_captures() {
     let prompt = maestro_agent::agent_loop(
         vec![],
         context.clone(),
-        Arc::clone(&config),
+        SharedHandle::clone(&config),
         AgentLoopOptions::default(),
-        Arc::clone(&spawn),
+        SharedHandle::clone(&spawn),
     );
     let continuation =
         maestro_agent::agent_loop_continue(context, config, AgentLoopOptions::default(), spawn)

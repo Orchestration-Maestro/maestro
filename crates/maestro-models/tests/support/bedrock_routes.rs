@@ -1,5 +1,6 @@
 //! Requests sent by the default client to loopback origins and proxies, from a child process.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::net::TcpListener;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -8,8 +9,7 @@ use maestro_models::StreamOptions;
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
 
 use crate::bedrock;
-use crate::chat::{TestResult, block_on};
-use crate::child_process;
+use crate::chat::TestResult;
 use crate::loopback::{Loopback, Step, serve};
 use crate::transport;
 
@@ -69,7 +69,7 @@ pub struct Route {
 /// Send one conversation to the origin the environment names; with `MAESTRO_REFUSED` set the
 /// conversation must end in an error without the response hook having run.
 fn converse() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let origin = std::env::var("MAESTRO_ORIGIN")?;
         let refused = std::env::var_os("MAESTRO_REFUSED").is_some();
         let hooked = Arc::new(AtomicBool::new(false));
@@ -105,7 +105,7 @@ fn converse() -> TestResult {
 
 /// Run each route in a child and check which loopback peer it reached.
 pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
-    if child_process::child_case().is_some() {
+    if maestro_test_process::selection().is_child() {
         return converse();
     }
     for route in routes {
@@ -128,7 +128,15 @@ pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
             .chain([("MAESTRO_ORIGIN".to_owned(), origin_url.clone())])
             .collect();
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-        child_process::rerun(test, route.id, &vars)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(vars.iter().copied())
+                .case(route.id)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
         let (reached, untouched) = if route.proxied {
             (proxy, origin)
         } else {
@@ -160,7 +168,7 @@ pub struct Refusal {
 /// Run each refusal in a child; the origin sees a request only when it redirects, and the
 /// second peer is never contacted.
 pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
-    if child_process::child_case().is_some() {
+    if maestro_test_process::selection().is_child() {
         return converse();
     }
     for refusal in refusals {
@@ -181,7 +189,15 @@ pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
             ])
             .collect();
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-        child_process::rerun(test, refusal.id, &vars)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(vars.iter().copied())
+                .case(refusal.id)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
         let line = origin.request_line()?;
         let expected = refusal.redirects.then(|| format!("POST {PATH} HTTP/1.1"));
         assert_eq!(line, expected, "{}", refusal.id);

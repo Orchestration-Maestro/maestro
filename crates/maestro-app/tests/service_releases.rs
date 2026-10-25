@@ -89,6 +89,8 @@ async fn release_request_keeps_endpoint_headers_and_version_run() {
         let options = VersionCheckOptions {
             timeout_ms: case.input["timeout"].as_u64(),
             fetch: Some(transport.fetch.clone()),
+            offline: None,
+            skip_version_check: None,
         };
         let result = get_latest_maestro_release("1.2.3", ORIGIN, &options).await;
         if case.output["branch"] == "error" {
@@ -320,7 +322,7 @@ async fn malformed_bodies() {
 #[cfg(unix)]
 #[test]
 fn release_deadline_covers_headers_and_body() {
-    services::run_paused(release_deadline_covers_headers_and_body_run());
+    crate::support::paused_io_runtime().block_on(release_deadline_covers_headers_and_body_run());
 }
 async fn release_deadline_covers_headers_and_body_run() {
     if services::isolated("release_deadline_covers_headers_and_body") {
@@ -338,6 +340,8 @@ async fn release_deadline_covers_headers_and_body_run() {
     let options = VersionCheckOptions {
         timeout_ms: Some(0),
         fetch: Some(t.fetch.clone()),
+        offline: None,
+        skip_version_check: None,
     };
     assert_eq!(
         get_latest_maestro_version("1.2.3", ORIGIN, &options)
@@ -354,7 +358,7 @@ fn default_release_transport_reaches_the_controlled_server() {
 }
 async fn default_release_transport_reaches_the_controlled_server_run() {
     const NAME: &str = "default_release_transport_reaches_the_controlled_server";
-    if std::env::var("MAESTRO_SERVICE_PROBE").as_deref() != Ok(NAME) {
+    if !maestro_test_process::selection().is_child() {
         let mut removed = services::FLAGS.to_vec();
         removed.extend([
             "HTTP_PROXY",
@@ -366,7 +370,7 @@ async fn default_release_transport_reaches_the_controlled_server_run() {
             "NO_PROXY",
             "no_proxy",
         ]);
-        services::native_probe(NAME, &[("MAESTRO_SERVICE_PROBE", NAME)], &removed);
+        services::native_probe(NAME, &[], &removed);
         return;
     }
     let server = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
@@ -377,7 +381,7 @@ async fn default_release_transport_reaches_the_controlled_server_run() {
     let settings =
         maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
     maestro_app::configuration::telemetry::report_install_telemetry(
-        "1.2.3", &settings, &origin, None,
+        "1.2.3", &settings, &origin, None, None,
     )
     .await;
     let observed = peer.join().unwrap();
@@ -414,6 +418,8 @@ async fn deadline(timeout: Option<u64>, mode: &str) {
     let options = VersionCheckOptions {
         timeout_ms: timeout,
         fetch: Some(t.fetch.clone()),
+        offline: None,
+        skip_version_check: None,
     };
     let mut work = std::pin::pin!(get_latest_maestro_release("1.2.3", ORIGIN, &options));
     let mut context = std::task::Context::from_waker(std::task::Waker::noop());

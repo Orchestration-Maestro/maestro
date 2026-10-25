@@ -1,19 +1,20 @@
 //! Descriptors, destination projection and independently supplied options.
 
-use crate::{
-    bundled,
-    chat::{TestResult, block_on},
-};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::{bundled, chat::TestResult};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{ProviderStreamOptions, complete, get_model, get_models};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_invokes_custom_descriptors() -> TestResult {
     let _registry = bundled::registry();
     assert!(get_model("openai", "gpt-4o-mini").is_some());
     assert!(get_models("missing-guide-provider").is_empty());
     assert!(get_model("openai", "missing-guide-model").is_none());
-    block_on(false, async {
+    crate::runtime::run(async {
         let model = crate::chat::model(&json!({
             "id":"local-weather", "provider":"local-guide", "baseUrl":"https://controlled.invalid/v1",
             "compat":{"supportsStore":false,"supportsDeveloperRole":false,"supportsUsageInStreaming":false,"maxTokensField":"max_tokens"}
@@ -57,6 +58,7 @@ fn maestro_guide_invokes_custom_descriptors() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Eight destination projections and one complete persisted conversation.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -67,6 +69,7 @@ struct Histories {
     context: ContextRoundtrip,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One typed input to the public projection operation.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -79,6 +82,7 @@ struct Projection {
     expected: serde_json::Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The input and exact output of context serialization.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -89,6 +93,7 @@ struct ContextRoundtrip {
     expected: serde_json::Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_projects_and_serializes_history() -> TestResult {
     use maestro_models::{Context, Message, transform_messages};
@@ -110,7 +115,7 @@ fn maestro_guide_projects_and_serializes_history() -> TestResult {
         crate::json::canonical(serde_json::to_value(context)?),
         histories.context.expected
     );
-    block_on(false, async {
+    crate::runtime::run(async {
         let (assistant, call) = super::tools::invalid_completed_call().await?;
         let mut history = bundled::conversation()?;
         history.messages.push(Message::Assistant(assistant));
@@ -144,6 +149,7 @@ fn maestro_guide_projects_and_serializes_history() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_selects_thinking_and_transport_options() -> TestResult {
     use maestro_models::{
@@ -196,10 +202,11 @@ fn maestro_guide_selects_thinking_and_transport_options() -> TestResult {
     check_invocation_options()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Independently chosen raw and simple controls reach the actual HTTP request.
 fn check_invocation_options() -> TestResult {
     use maestro_models::{SimpleStreamOptions, ThinkingLevel, complete_simple};
-    block_on(false, async {
+    crate::runtime::run(async {
         let model = crate::chat::model(&json!({"compat":{"supportsReasoningEffort":true}}))?;
         let (mut raw, requests) = super::response_options(&model.api, "Raw");
         raw.temperature = Some(0.0);

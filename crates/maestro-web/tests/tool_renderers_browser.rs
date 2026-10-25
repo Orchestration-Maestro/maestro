@@ -1,13 +1,10 @@
 //! Real-browser tool recipes using the retained native reading host.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod markdown_support;
-pub mod support;
-#[cfg(test)]
-pub mod tool_renderer_support;
+use crate::markdown_support;
+use crate::support::tool_output::TextOnlyOutput as _;
+use crate::tool_renderer_support;
 
-use tests::{Aliased, surface};
+pub(crate) use tests::{Aliased, surface};
 
 #[cfg(test)]
 mod tests {
@@ -20,10 +17,7 @@ mod tests {
     use serde_json::Value;
     use wasm_bindgen::prelude::*;
 
-    pub(super) fn surface() -> Surface {
-        let _ = js(
-            "if (!document.getElementById('canvas')) { const canvas = document.createElement('canvas'); canvas.id = 'canvas'; canvas.width=800; canvas.height=600; document.body.appendChild(canvas); }",
-        );
+    pub(crate) fn surface() -> Surface {
         Surface::new()
     }
 
@@ -215,9 +209,9 @@ mod tests {
     }
 
     /// Keep an explicit alias of the same typed owner passed to native child recipes.
-    pub(super) struct Aliased {
-        pub(super) inner: Box<dyn maestro_web::tools::types::ToolContent>,
-        pub(super) alias: std::rc::Rc<std::cell::RefCell<Option<maestro_app::ToolRendererState>>>,
+    pub(crate) struct Aliased {
+        pub(crate) inner: Box<dyn maestro_web::tools::types::ToolContent>,
+        pub(crate) alias: std::rc::Rc<std::cell::RefCell<Option<maestro_app::ToolRendererState>>>,
     }
     impl maestro_web::tools::types::ToolContent for Aliased {
         fn render(
@@ -225,8 +219,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             state: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>
-        {
+        ) -> maestro_web::tools::types::ToolContentOutput {
             let old = self.alias.replace(Some(state.clone()));
             drop(old);
             self.inner.render(ui, view, state)
@@ -239,9 +232,12 @@ mod tests {
             ui: &mut egui::Ui,
             _: ToolRenderView<'_>,
             _: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>
-        {
-            Ok(ui.label("replacement"))
+        ) -> maestro_web::tools::types::ToolContentOutput {
+            let response = Ok(ui.label("replacement"));
+            maestro_web::tools::types::ToolContentOutput {
+                response,
+                overlays: Vec::new(),
+            }
         }
     }
 
@@ -259,7 +255,7 @@ mod tests {
             false,
         )
         .unwrap();
-        let recipe = ToolRenderResult {
+        let recipe: ToolRenderResult = ToolRenderResult {
             content: Box::new(Aliased {
                 inner: inner.content,
                 alias: alias.clone(),
@@ -272,7 +268,7 @@ mod tests {
             "globalThis.oldToolRoot=document.querySelector('.maestro-code'); if (!oldToolRoot) throw new Error('missing native listing')",
         );
         drop(recipe);
-        let replacement = ToolRenderResult {
+        let replacement: ToolRenderResult = ToolRenderResult {
             content: Box::new(Replacement),
             is_custom: true,
         };
@@ -297,8 +293,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             _: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>
-        {
+        ) -> maestro_web::tools::types::ToolContentOutput {
             let mut row = self.row.take();
             let result = self.recipe.render(ui, view, &mut row);
             let old = self.row.replace(row);
@@ -320,7 +315,7 @@ mod tests {
             false,
         )
         .unwrap();
-        let recipe = ToolRenderResult {
+        let recipe: ToolRenderResult = ToolRenderResult {
             content: Box::new(Nested {
                 recipe: inner,
                 row: std::cell::RefCell::default(),
@@ -332,7 +327,7 @@ mod tests {
         let _ = js(
             "globalThis.nestedToolRoot=document.querySelector('.maestro-code'); if (!nestedToolRoot) throw new Error('missing nested listing')",
         );
-        let replacement = ToolRenderResult {
+        let replacement: ToolRenderResult = ToolRenderResult {
             content: Box::new(Replacement),
             is_custom: true,
         };
@@ -355,7 +350,7 @@ mod tests {
         use maestro_web::tools::types::ToolRenderResult;
         let mut surface = surface();
         let input = serde_json::json!({"nested":42});
-        let recipe = ToolRenderResult {
+        let recipe: ToolRenderResult = ToolRenderResult {
             content: Box::new(Nested {
                 recipe: render_tool::<Value, Value>(
                     "unknown",
@@ -373,7 +368,7 @@ mod tests {
         let _ = js(
             "globalThis.detachedRoot=document.querySelector('.maestro-tool-caption'); globalThis.detachedFrame=detachedRoot.closest('.maestro-reading-frame')",
         );
-        let replacement = ToolRenderResult {
+        let replacement: ToolRenderResult = ToolRenderResult {
             content: Box::new(Replacement),
             is_custom: true,
         };
@@ -388,7 +383,10 @@ mod tests {
                 &mut row,
             )
         });
-        assert!(result.is_err(), "zero-width canvas rejects placement");
+        assert!(
+            result.assert_no_overlays().is_err(),
+            "zero-width canvas rejects placement"
+        );
         check("!detachedFrame.isConnected");
         check("!detachedRoot.isConnected");
         let _ = js("document.getElementById('canvas').width=800");
@@ -405,8 +403,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             state: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>
-        {
+        ) -> maestro_web::tools::types::ToolContentOutput {
             self.0.render(ui, view, state)
         }
     }
@@ -425,11 +422,11 @@ mod tests {
             .unwrap(),
             row: std::cell::RefCell::default(),
         });
-        let first = ToolRenderResult {
+        let first: ToolRenderResult = ToolRenderResult {
             content: Box::new(SharedNested(nested.clone())),
             is_custom: true,
         };
-        let second = ToolRenderResult {
+        let second: ToolRenderResult = ToolRenderResult {
             content: Box::new(SharedNested(nested.clone())),
             is_custom: true,
         };

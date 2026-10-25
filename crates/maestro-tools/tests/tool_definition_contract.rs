@@ -11,9 +11,7 @@ use maestro_agent::{
     ToolExecutionMode,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, TextContent, Tool, UserBlock};
-use maestro_theme::{
-    ColorMode, NativeThemeOperations, Theme, ThemeDirectories, ThemeOptions, ThemeState,
-};
+use maestro_theme::{ColorMode, LiveTheme, Theme, ThemeDirectories, ThemeOptions, ThemeState};
 use maestro_tools::{
     ToolContextFactory, ToolDefinition, ToolRenderContext, ToolRenderPhase,
     ToolRenderResultOptions, ToolRenderShell, create_tool_definition_from_agent_tool, define_tool,
@@ -46,10 +44,7 @@ type Seen = (String, u32, Option<bool>, Option<u32>);
 
 /// Text content for a result.
 fn text(text: &str) -> Vec<UserBlock> {
-    vec![UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    })]
+    vec![UserBlock::Text(TextContent::new(text.into()))]
 }
 
 /// A caller failure with every field set.
@@ -75,7 +70,7 @@ fn definition(name: &str, log: &Arc<Mutex<Vec<Seen>>>) -> ToolDefinition<u32, Ar
         definition: Tool {
             name: name.into(),
             description: "Transform input".into(),
-            parameters: json!({"type": "object"}),
+            parameters: json!({"type": "object"}).into(),
         },
         label: "Transform".into(),
         prompt_snippet: Some("snippet".into()),
@@ -133,7 +128,7 @@ fn wrapper_forwards_metadata_preparation_progress_and_fresh_context() {
     let tool = wrap_tool_definition(source, Some(counting_factory()));
     assert_eq!(tool.definition.name, "transform");
     assert_eq!(tool.definition.description, "Transform input");
-    assert_eq!(tool.definition.parameters, json!({"type": "object"}));
+    assert_eq!(*tool.definition.parameters, json!({"type": "object"}));
     assert_eq!(tool.label, "Transform");
     assert_eq!(tool.execution_mode, Some(ToolExecutionMode::Parallel));
     assert!(Arc::ptr_eq(
@@ -261,7 +256,7 @@ fn agent_tool(log: &Arc<Mutex<Vec<Call>>>, prepare: &PrepareArguments) -> AgentT
         definition: Tool {
             name: "transform".into(),
             description: "Transform input".into(),
-            parameters: json!({"type": "object"}),
+            parameters: json!({"type": "object"}).into(),
         },
         label: "Transform".into(),
         prepare_arguments: Some(Arc::clone(prepare)),
@@ -408,7 +403,7 @@ fn render_definition(
         definition: Tool {
             name: "render".into(),
             description: String::new(),
-            parameters: Value::Null,
+            parameters: Value::Null.into(),
         },
         label: "render".into(),
         prompt_snippet: None,
@@ -460,13 +455,10 @@ fn row_context<'a>(
     invalidations: &Rc<RefCell<u32>>,
 ) -> ToolRenderContext<'a, u32> {
     let counter = Rc::clone(invalidations);
-    let themes = ThemeState::new(
-        ThemeDirectories {
-            themes_dir: String::new(),
-            custom_themes_dir: String::new(),
-        },
-        Rc::new(NativeThemeOperations),
-    );
+    let themes = ThemeState::new(ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
     ToolRenderContext {
         renderer_state: None,
         args: Some(args),
@@ -496,7 +488,7 @@ fn row_context<'a>(
 /// A failing call reports its error, and typed execution takes its own parameter type.
 fn assert_failure_and_typed_execution(
     tool: &ToolDefinition<(), CallArgs, Value, u32>,
-    theme: &Theme,
+    theme: &LiveTheme,
     invalidations: &Rc<RefCell<u32>>,
 ) {
     let failing = json!({"fail": true});
@@ -520,13 +512,15 @@ fn assert_failure_and_typed_execution(
 fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
     let observed = Arc::new(Mutex::new(Vec::new()));
     let tool = define_tool(render_definition(&observed));
-    let theme = Theme::new(
-        Vec::new(),
-        Vec::new(),
-        ColorMode::Truecolor,
-        ThemeOptions::default(),
-    )
-    .unwrap();
+    let theme = LiveTheme::from_theme(Rc::new(
+        Theme::new(
+            Vec::new(),
+            Vec::new(),
+            ColorMode::Truecolor,
+            ThemeOptions::default(),
+        )
+        .unwrap(),
+    ));
     let empty = AgentToolResult {
         content: Vec::new(),
         details: None,
@@ -582,7 +576,6 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
     let args = Value::Null;
     let setup = display_support::Setup {
         readme: "/opt/maestro/README.md".into(),
-        bindings: Vec::new(),
         expanded: false,
         cwd: "/work".into(),
         images: None,
@@ -597,7 +590,7 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
     };
     let mut context = display_support::context::<Value>(&args, &setup, &env, None);
     let expected = Rc::clone(&context.environment);
-    let selected = Rc::clone(&env.theme);
+    let selected = env.live.get().unwrap();
     let observations = Rc::new(RefCell::new(Vec::new()));
     let seen = Rc::clone(&observations);
     let callback: maestro_tools::ToolRenderCall<Value> = Rc::new(move |args, _, context| {
@@ -625,9 +618,9 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
         Ok(Rc::new(Row))
     });
     assert!(context.args.is_some_and(Value::is_null));
-    callback(Some(&args), &env.theme, &context).unwrap();
+    callback(Some(&args), &env.live, &context).unwrap();
     context.args = None;
-    callback(None, &env.theme, &context).unwrap();
+    callback(None, &env.live, &context).unwrap();
     assert_eq!(*observations.borrow(), [(true, true), (false, false)]);
     assert_eq!(
         env.terminal.get_capabilities().images,

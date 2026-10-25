@@ -1,5 +1,4 @@
 //! Controlled OAuth providers and callbacks shared by the key selection and refresh tests.
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 use maestro_models::{
     BoxFuture, DiagnosticErrorInfo, OAuthCredentials, OAuthError, OAuthProviderInterface,
     register_oauth_provider, unregister_oauth_provider,

@@ -1,18 +1,6 @@
 //! Styles never leak from one drawn line into the next.
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod checks;
-    pub mod components;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod scene;
-    pub mod virtual_terminal;
-}
-use support::scene::Scene;
+use crate::support::scene::Scene;
 
 #[test]
 fn maestro_frames_not_leak_styles_when_a_trailing_reset_sits_beyond_the_last_visible_column_no_overlay()

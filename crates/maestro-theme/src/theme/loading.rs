@@ -1,90 +1,39 @@
 //! Custom-file theme admission and alias resolution.
-use super::{
-    ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeInfo, ThemeOptions,
-};
+use super::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeOptions};
 use maestro_json::canonical_entries;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::collections::HashSet;
+use std::io::{self, IsTerminal};
 
-/// Replaceable file and environment effects for theme loading.
-pub trait ThemeOperations {
-    /// Read the supplied authored path.
-    ///
-    /// # Errors
-    /// Returns the adapter's I/O failure.
-    fn read_to_string(&self, path: &str) -> std::io::Result<String>;
-    /// Read one optional environment variable.
-    fn environment(&self, name: &str) -> Option<String>;
-    /// Report whether the supplied authored path exists.
-    fn exists(&self, path: &str) -> bool;
-    /// List the entry names of a directory, in the adapter's order and without file-kind filtering.
-    ///
-    /// # Errors
-    /// Returns the adapter's I/O failure, such as a path that is not a directory.
-    fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>>;
-    /// Sort inventory entries by name with a stable locale comparison.
-    ///
-    /// # Errors
-    /// Returns the adapter's failure to prepare its comparison.
-    fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()>;
-}
-/// Native file bytes decoded lossily as UTF-8, with native environment access.
-#[cfg(not(target_arch = "wasm32"))]
-pub struct NativeThemeOperations;
-#[cfg(not(target_arch = "wasm32"))]
-impl ThemeOperations for NativeThemeOperations {
-    fn read_to_string(&self, path: &str) -> std::io::Result<String> {
-        std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
-    }
-    fn environment(&self, name: &str) -> Option<String> {
-        std::env::var(name).ok()
-    }
-    fn exists(&self, path: &str) -> bool {
-        std::path::Path::new(path).exists()
-    }
-    fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>> {
-        let mut names = std::fs::read_dir(path)?
-            .map(|entry| entry.map(|entry| entry.file_name()))
-            .collect::<std::io::Result<Vec<_>>>()?;
-        names.sort();
-        Ok(names
-            .into_iter()
-            .map(|name| name.to_string_lossy().into_owned())
-            .collect())
-    }
-    fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()> {
-        let collator = super::Collator::new(&|name| self.environment(name))?;
-        themes.sort_by(|a, b| collator.compare(&a.name, &b.name));
-        Ok(())
-    }
+/// Read a file as UTF-8 text, replacing invalid sequences.
+///
+/// # Errors
+/// Returns the native I/O failure.
+pub(super) fn read_text(path: &str) -> std::io::Result<String> {
+    std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
 }
 /// Read, validate, resolve and construct an independent terminal theme.
 ///
 /// Explicit mode avoids environment lookup. The supplied path is retained verbatim.
 ///
 /// ```
-/// use maestro_theme::{ColorMode, NativeThemeOperations, ThemeColor, load_theme_from_path};
+/// use maestro_theme::{ColorMode, ThemeColor, load_theme_from_path};
 ///
 /// let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme/dark.json");
-/// let theme = load_theme_from_path(path, Some(ColorMode::Truecolor), &NativeThemeOperations)?;
+/// let theme = load_theme_from_path(path, Some(ColorMode::Truecolor))?;
 /// assert_eq!(theme.fg(&ThemeColor::Accent, "hi")?, "\x1b[38;2;217;160;102mhi\x1b[39m");
 /// # Ok::<(), maestro_theme::ThemeError>(())
 /// ```
 ///
 /// # Errors
 /// Returns native I/O failures, labeled JSON/schema errors, or color/alias errors.
-pub fn load_theme_from_path(
-    path: &str,
-    mode: Option<ColorMode>,
-    operations: &dyn ThemeOperations,
-) -> Result<Theme, ThemeError> {
-    let content = operations.read_to_string(path).map_err(ThemeError::io)?;
+pub fn load_theme_from_path(path: &str, mode: Option<ColorMode>) -> Result<Theme, ThemeError> {
+    let content = read_text(path).map_err(ThemeError::io)?;
     let json = parse_custom(path, &content)?;
     build_theme(
         &json,
         mode,
-        operations,
         ThemeOptions {
             source_path: Some(path.to_owned()),
             ..ThemeOptions::default()
@@ -105,10 +54,9 @@ pub(super) fn parse_custom(label: &str, content: &str) -> Result<Value, ThemeErr
 pub(super) fn build_theme(
     json: &Value,
     mode: Option<ColorMode>,
-    operations: &dyn ThemeOperations,
     mut options: ThemeOptions,
 ) -> Result<Theme, ThemeError> {
-    let mode = mode.unwrap_or_else(|| detect_mode(operations));
+    let mode = mode.unwrap_or_else(detect_mode);
     let mut fg = Vec::new();
     let mut bg = Vec::new();
     let colors = json["colors"]
@@ -138,24 +86,19 @@ fn is_background(key: &str) -> bool {
     )
 }
 /// Sample environment in terminal capability precedence order.
-fn detect_mode(operations: &dyn ThemeOperations) -> ColorMode {
-    if matches!(
-        operations.environment("COLORTERM").as_deref(),
-        Some("truecolor" | "24bit")
-    ) {
+fn detect_mode() -> ColorMode {
+    let env = |name| std::env::var(name).ok();
+    if matches!(env("COLORTERM").as_deref(), Some("truecolor" | "24bit")) {
         return ColorMode::Truecolor;
     }
-    if operations
-        .environment("WT_SESSION")
-        .is_some_and(|value| !value.is_empty())
-    {
+    if env("WT_SESSION").is_some_and(|value| !value.is_empty()) {
         return ColorMode::Truecolor;
     }
-    let term = operations.environment("TERM").unwrap_or_default();
+    let term = env("TERM").unwrap_or_default();
     if matches!(term.as_str(), "" | "dumb" | "linux") {
         return ColorMode::Color256;
     }
-    if operations.environment("TERM_PROGRAM").as_deref() == Some("Apple_Terminal")
+    if env("TERM_PROGRAM").as_deref() == Some("Apple_Terminal")
         || term == "screen"
         || term.starts_with("screen-")
         || term.starts_with("screen.")
@@ -163,6 +106,103 @@ fn detect_mode(operations: &dyn ThemeOperations) -> ColorMode {
         return ColorMode::Color256;
     }
     ColorMode::Truecolor
+}
+/// Whether text written for the terminal takes colour, decided on standard output, the
+/// process environment and the platform.
+#[must_use]
+pub fn supports_color() -> bool {
+    color_supported(
+        io::stdout().is_terminal(),
+        |name| std::env::var_os(name).map(|value| value.to_string_lossy().into_owned()),
+        std::env::consts::OS,
+    )
+}
+/// Decide colour in order: a `FORCE_COLOR` of `0` or `false` forbids it, an Azure Pipelines
+/// agent allows it, a captured stream without `FORCE_COLOR` forbids it, and then the terminal,
+/// platform, continuous-integration service and terminal names decide, falling back to
+/// whether `FORCE_COLOR` asked for colour.
+fn color_supported(
+    stdout_is_terminal: bool,
+    env: impl Fn(&str) -> Option<String>,
+    os: &str,
+) -> bool {
+    let force = env("FORCE_COLOR").map(|level| match level.as_str() {
+        "true" | "" => 1,
+        "false" => 0,
+        // Text that is not a whole number still counts as set, without asking for colour.
+        level => level.parse::<i64>().unwrap_or(-1),
+    });
+    if force == Some(0) {
+        return false;
+    }
+    if env("TF_BUILD").is_some() && env("AGENT_NAME").is_some() {
+        return true;
+    }
+    if !stdout_is_terminal && force.is_none() {
+        return false;
+    }
+    let forced = force.is_some_and(|level| level > 0);
+    let term = env("TERM").unwrap_or_default();
+    if term == "dumb" {
+        return forced;
+    }
+    if os == "windows" {
+        return true;
+    }
+    if env("CI").is_some() {
+        return CI_SERVICES.iter().any(|name| env(name).is_some())
+            || env("CI_NAME").as_deref() == Some("codeship")
+            || forced;
+    }
+    if let Some(version) = env("TEAMCITY_VERSION") {
+        return teamcity_colors(&version);
+    }
+    env("COLORTERM").is_some()
+        || matches!(
+            env("TERM_PROGRAM").as_deref(),
+            Some("iTerm.app" | "Apple_Terminal")
+        )
+        || term == "wezterm"
+        || term_names_color(&term)
+        || forced
+}
+/// Continuous-integration services whose logs show colour.
+const CI_SERVICES: [&str; 8] = [
+    "GITHUB_ACTIONS",
+    "GITEA_ACTIONS",
+    "CIRCLECI",
+    "TRAVIS",
+    "APPVEYOR",
+    "GITLAB_CI",
+    "BUILDKITE",
+    "DRONE",
+];
+/// The `TeamCity` build log shows colour from version 9.1.
+fn teamcity_colors(version: &str) -> bool {
+    let digits = |text: &str| !text.is_empty() && text.bytes().all(|byte| byte.is_ascii_digit());
+    let Some((major, rest)) = version.split_once('.') else {
+        return false;
+    };
+    if major.len() >= 2 && digits(major) {
+        return true;
+    }
+    major == "9"
+        && rest
+            .split_once('.')
+            .is_some_and(|(minor, _)| digits(minor) && minor.bytes().any(|byte| byte != b'0'))
+}
+/// Whether a `TERM` name, read case-insensitively, belongs to a colour terminal family
+/// (`xterm-kitty` and `xterm-ghostty` among the `xterm` names).
+fn term_names_color(term: &str) -> bool {
+    let term = term.to_ascii_lowercase();
+    term.ends_with("-256")
+        || term.ends_with("-256color")
+        || ["screen", "xterm", "vt100", "vt220", "rxvt"]
+            .iter()
+            .any(|family| term.starts_with(family))
+        || ["color", "ansi", "cygwin", "linux"]
+            .iter()
+            .any(|part| term.contains(part))
 }
 /// Admit selected runtime fields with the native schema validator.
 fn validate(path: &str, json: &Value) -> Result<(), ThemeError> {
@@ -240,3 +280,5 @@ pub(super) fn resolve(value: &Value, vars: &Value) -> Result<ColorValue, ThemeEr
     }
     authored(current)
 }
+#[cfg(test)]
+mod tests;

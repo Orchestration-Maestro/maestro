@@ -1,6 +1,7 @@
 //! Device-account authorization through controlled interaction and transport.
 #![cfg(test)]
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_device_login_preserves_enterprise_endpoints() {
     use maestro_models::normalize_domain;
@@ -47,9 +48,12 @@ fn maestro_device_login_preserves_enterprise_endpoints() {
             Some("example.com")
         );
     }
-    run(maestro_device_login_preserves_enterprise_endpoints_scenario());
+    crate::runtime::run_paused_after_start(
+        maestro_device_login_preserves_enterprise_endpoints_scenario(),
+    );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn maestro_device_login_preserves_enterprise_endpoints_scenario() {
     for (input, expected) in [
@@ -155,21 +159,13 @@ fn device_base_urls_follow_token_priority() {
     }
 }
 
-use maestro_models::{BoxFuture, Fetch, HttpResponse, OAuthCredentials, OAuthError};
+use maestro_models::OAuthCredentials;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_models::{BoxFuture, Fetch, HttpResponse, OAuthError};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
-/// Run deterministic native futures with paused timers.
-fn run(work: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            tokio::time::pause();
-            work.await;
-        });
-}
-
+#[cfg(not(target_arch = "wasm32"))]
 /// One complete controlled JSON response.
 fn response(text: impl Into<Vec<u8>>) -> HttpResponse {
     HttpResponse {
@@ -180,11 +176,15 @@ fn response(text: impl Into<Vec<u8>>) -> HttpResponse {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_refresh_preserves_tokens_expiry_and_domain() {
-    run(device_refresh_preserves_tokens_expiry_and_domain_scenario());
+    crate::runtime::run_paused_after_start(
+        device_refresh_preserves_tokens_expiry_and_domain_scenario(),
+    );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_refresh_preserves_tokens_expiry_and_domain_scenario() {
     for (expiry, expected) in [
@@ -214,18 +214,24 @@ async fn device_refresh_preserves_tokens_expiry_and_domain_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_refresh_selects_surviving_fields() {
-    run(device_refresh_selects_surviving_fields_scenario());
+    crate::runtime::run_paused_after_start(device_refresh_selects_surviving_fields_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     Cancellation, OAuthAuthInfo, OAuthCallbacks, OAuthLoginCallbacks, OAuthPrompt,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::VecDeque;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Mutex;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled interaction recording each delivered callback.
 #[derive(Default)]
 struct Interaction {
@@ -240,6 +246,7 @@ struct Interaction {
     /// Delivered interaction events.
     events: Mutex<Vec<String>>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl OAuthLoginCallbacks for Interaction {
     fn on_prompt(&self, prompt: OAuthPrompt) -> BoxFuture<Result<String, OAuthError>> {
         self.events.lock().unwrap().push(format!(
@@ -292,11 +299,14 @@ impl OAuthLoginCallbacks for Interaction {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Standard device authorization response.
 const DEVICE: &str = r#"{"device_code":"dev","user_code":"USER","verification_uri":"https://verify.example/a","interval":5,"expires_in":900}"#;
+#[cfg(not(target_arch = "wasm32"))]
 /// Standard exchanged service token.
 const SERVICE: &str = r#"{"token":"proxy-ep=proxy.test;","expires_at":1234}"#;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Consume controlled responses for the protocol, and immediately finish policies.
 fn scripted(texts: Vec<String>) -> Fetch {
     let queue = Mutex::new(VecDeque::from(texts));
@@ -315,6 +325,7 @@ fn scripted(texts: Vec<String>) -> Fetch {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_refresh_selects_surviving_fields_scenario() {
     for (text, expected) in [
@@ -368,11 +379,13 @@ async fn device_refresh_selects_surviving_fields_scenario() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_device_login_waits_before_polling() {
-    run(maestro_device_login_waits_before_polling_scenario());
+    crate::runtime::run_paused_after_start(maestro_device_login_waits_before_polling_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn maestro_device_login_waits_before_polling_scenario() {
     let start = tokio::time::Instant::now();
@@ -418,6 +431,7 @@ async fn maestro_device_login_waits_before_polling_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_provider_exposes_shared_contract() {
     let provider = maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER;
@@ -445,9 +459,10 @@ fn device_provider_exposes_shared_contract() {
     let _: fn(OAuthCallbacks, Option<Fetch>) -> BoxFuture<Result<OAuthCredentials, OAuthError>> =
         maestro_models::oauth::login_github_copilot;
 
-    run(device_provider_exposes_shared_contract_scenario());
+    crate::runtime::run_paused_after_start(device_provider_exposes_shared_contract_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Caller-authored diagnostic used by controlled effects.
 fn failure(message: &str) -> OAuthError {
     maestro_models::DiagnosticErrorInfo {
@@ -459,6 +474,7 @@ fn failure(message: &str) -> OAuthError {
     .into()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_provider_exposes_shared_contract_scenario() {
     let result = maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER
@@ -475,11 +491,13 @@ async fn device_provider_exposes_shared_contract_scenario() {
     assert_eq!(result.refresh, "refresh");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_requests_keep_wire_fields() {
-    run(device_requests_keep_wire_fields_scenario());
+    crate::runtime::run_paused_after_start(device_requests_keep_wire_fields_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_requests_keep_wire_fields_scenario() {
     let interaction = Arc::new(Interaction {
@@ -505,11 +523,13 @@ async fn device_requests_keep_wire_fields_scenario() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_prompt_precedes_cancellation() {
-    run(device_prompt_precedes_cancellation_scenario());
+    crate::runtime::run_paused_after_start(device_prompt_precedes_cancellation_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_prompt_precedes_cancellation_scenario() {
     for (preabort, abort, fail, expected) in [
@@ -540,11 +560,13 @@ async fn device_prompt_precedes_cancellation_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_callbacks_preserve_order_and_failures() {
-    run(device_callbacks_preserve_order_and_failures_scenario());
+    crate::runtime::run_paused_after_start(device_callbacks_preserve_order_and_failures_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_callbacks_preserve_order_and_failures_scenario() {
     for fail in [None, Some("auth"), Some("progress")] {
@@ -603,11 +625,15 @@ async fn device_callbacks_preserve_order_and_failures_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_code_fields_are_selected_before_decoding() {
-    run(device_code_fields_are_selected_before_decoding_scenario());
+    crate::runtime::run_paused_after_start(
+        device_code_fields_are_selected_before_decoding_scenario(),
+    );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_code_fields_are_selected_before_decoding_scenario() {
     device_root_errors().await;
@@ -655,11 +681,13 @@ async fn device_code_fields_are_selected_before_decoding_scenario() {
     assert_eq!(result.to_string(), "Invalid device code response fields");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_token_poll_selects_access_before_error() {
-    run(device_token_poll_selects_access_before_error_scenario());
+    crate::runtime::run_paused_after_start(device_token_poll_selects_access_before_error_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_token_poll_selects_access_before_error_scenario() {
     for (text, expected) in [
@@ -696,11 +724,13 @@ async fn device_token_poll_selects_access_before_error_scenario() {
     assert_eq!(result.refresh, "next");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_unknown_token_bodies_keep_polling() {
-    run(device_unknown_token_bodies_keep_polling_scenario());
+    crate::runtime::run_paused_after_start(device_unknown_token_bodies_keep_polling_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_unknown_token_bodies_keep_polling_scenario() {
     for text in [
@@ -745,11 +775,13 @@ async fn device_unknown_token_bodies_keep_polling_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_errors_keep_status_reason_and_body() {
-    run(device_errors_keep_status_reason_and_body_scenario());
+    crate::runtime::run_paused_after_start(device_errors_keep_status_reason_and_body_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_errors_keep_status_reason_and_body_scenario() {
     for stage in ["/device/code", "/access_token", "/token"] {
@@ -772,11 +804,13 @@ async fn device_errors_keep_status_reason_and_body_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_errors_keep_server_description() {
-    run(device_errors_keep_server_description_scenario());
+    crate::runtime::run_paused_after_start(device_errors_keep_server_description_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_errors_keep_server_description_scenario() {
     for error in ["access_denied", "expired_token", "unknown", ""] {
@@ -832,11 +866,15 @@ async fn device_errors_keep_server_description_scenario() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_refresh_delegation_keeps_raw_enterprise_domain() {
-    run(device_refresh_delegation_keeps_raw_enterprise_domain_scenario());
+    crate::runtime::run_paused_after_start(
+        device_refresh_delegation_keeps_raw_enterprise_domain_scenario(),
+    );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_refresh_delegation_keeps_raw_enterprise_domain_scenario() {
     for domain in [
@@ -943,12 +981,14 @@ fn device_provider_changes_only_matching_models() {
     modifier_rejects_metadata(&models);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A policy request paired with the sender controlling its eventual response.
 type HeldPolicy = (
     maestro_models::HttpRequest,
     tokio::sync::oneshot::Sender<Result<maestro_models::HttpResponse, maestro_models::FetchError>>,
 );
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Hold every policy response while preceding account requests complete normally.
 fn catalog_policy_fetch(started: tokio::sync::mpsc::UnboundedSender<HeldPolicy>) -> Fetch {
     Arc::new(move |request| {
@@ -969,11 +1009,13 @@ fn catalog_policy_fetch(started: tokio::sync::mpsc::UnboundedSender<HeldPolicy>)
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_device_tokens_enable_catalog_models() {
-    run(maestro_device_tokens_enable_catalog_models_scenario());
+    crate::runtime::run_paused_after_start(maestro_device_tokens_enable_catalog_models_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn maestro_device_tokens_enable_catalog_models_scenario() {
     let models = maestro_models::get_models("github-copilot");
@@ -1031,11 +1073,13 @@ async fn maestro_device_tokens_enable_catalog_models_scenario() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_cancel_does_not_race_fetch() {
-    run(device_cancel_does_not_race_fetch_scenario());
+    crate::runtime::run_paused_after_start(device_cancel_does_not_race_fetch_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_cancel_does_not_race_fetch_scenario() {
     for (stage, pending) in [
@@ -1072,11 +1116,13 @@ async fn device_cancel_does_not_race_fetch_scenario() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_device_login_cancels_scoped_waits() {
-    run(maestro_device_login_cancels_scoped_waits_scenario());
+    crate::runtime::run_paused_after_start(maestro_device_login_cancels_scoped_waits_scenario());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn maestro_device_login_cancels_scoped_waits_scenario() {
     for completed in 0..3 {
@@ -1105,11 +1151,15 @@ async fn maestro_device_login_cancels_scoped_waits_scenario() {
     assert_eq!(result.to_string(), "Login cancelled");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn device_decode_uses_native_json_causes_and_shared_text() {
-    run(device_decode_uses_native_json_causes_and_shared_text_scenario());
+    crate::runtime::run_paused_after_start(
+        device_decode_uses_native_json_causes_and_shared_text_scenario(),
+    );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled scenario for the named authorization behavior.
 async fn device_decode_uses_native_json_causes_and_shared_text_scenario() {
     for stage in ["/device/code", "/access_token", "/token"] {
@@ -1150,6 +1200,7 @@ async fn device_decode_uses_native_json_causes_and_shared_text_scenario() {
     response_text_decoding().await;
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One selected transport or body failure at a protocol phase.
 fn failure_fetch(stage: &'static str, mode: &'static str) -> Fetch {
     Arc::new(move |request| {
@@ -1185,6 +1236,7 @@ fn failure_fetch(stage: &'static str, mode: &'static str) -> Fetch {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Hold the first selected request behind its release channel.
 fn held_fetch(
     stage: &'static str,
@@ -1220,6 +1272,7 @@ fn held_fetch(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Pending then slow-down responses that never complete login.
 fn pending_fetch(count: Arc<std::sync::atomic::AtomicUsize>) -> Fetch {
     let observed = count;
@@ -1239,6 +1292,7 @@ fn pending_fetch(count: Arc<std::sync::atomic::AtomicUsize>) -> Fetch {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One missing or wrong-typed required device field.
 fn invalid_device_fields(key: &str, wrong: bool) -> String {
     let mut fields: serde_json::Value = serde_json::from_str(DEVICE).unwrap();
@@ -1253,6 +1307,7 @@ fn invalid_device_fields(key: &str, wrong: bool) -> String {
     }
     fields.to_string()
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// A reusable fixed response, independently owned per request.
 fn fixed_fetch(text: String) -> Fetch {
     Arc::new(move |_| {
@@ -1261,6 +1316,7 @@ fn fixed_fetch(text: String) -> Fetch {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert local wire framing and delegate phase-specific fields.
 fn wire_response(
     request: &maestro_models::HttpRequest,
@@ -1300,6 +1356,7 @@ fn wire_response(
     phases.lock().unwrap().push("poll");
     r#"{"access_token":"account"}"#
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert the account exchange's header operands.
 fn check_refresh_wire(request: &maestro_models::HttpRequest) {
     assert_eq!(
@@ -1373,6 +1430,7 @@ fn modifier_rejects_metadata(models: &[maestro_models::Model]) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Malformed enterprise operands fail before transport.
 async fn refresh_rejects_metadata() {
     for domain in [
@@ -1398,6 +1456,7 @@ async fn refresh_rejects_metadata() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Scalar roots and arrays keep their distinct validation messages.
 async fn device_root_errors() {
     for text in [
@@ -1426,6 +1485,7 @@ async fn device_root_errors() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Complete model policy wire operands.
 fn check_policy_wire(request: &maestro_models::HttpRequest) {
     assert_eq!(request.method, "POST");
@@ -1450,6 +1510,7 @@ fn check_policy_wire(request: &maestro_models::HttpRequest) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Shared UTF-8 text decoding precedes token selection.
 async fn response_text_decoding() {
     for (bytes, expected) in [
@@ -1485,6 +1546,7 @@ async fn response_text_decoding() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Mixed policy outcomes without readable bodies.
 fn policy_outcome(index: usize) -> Result<HttpResponse, maestro_models::FetchError> {
     if index.is_multiple_of(3) {

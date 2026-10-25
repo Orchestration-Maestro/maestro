@@ -1,25 +1,35 @@
 //! Reduction of response events into the shared assistant message.
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::super::{OpenAIResponsesStreamOptions, process_responses_stream};
-use super::{TestResult, block_on, responses};
+#[cfg(not(target_arch = "wasm32"))]
+use super::{TestResult, responses};
+#[cfg(not(target_arch = "wasm32"))]
 use crate as maestro_models;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
+#[cfg(not(target_arch = "wasm32"))]
 use futures_core::Stream;
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
-    AssistantMessageEvent, AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject,
-    SharedAssistantMessage,
+    AssistantMessageEvent, AssistantMessageEventStream, DiagnosticErrorInfo, SharedAssistantMessage,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use responses::Script;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Rows of reduction cases and the expectations they carry.
 const EVENTS: &str = include_str!("fixtures/events.json");
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Reduce every event row a test owns.
 fn event_rows(test: &str, count: usize) -> TestResult {
-    block_on(false, async {
+    crate::tests::runtime::run(async {
         for row in responses::rows(EVENTS, test, count)? {
             responses::check_events(row).await?;
         }
@@ -27,16 +37,19 @@ fn event_rows(test: &str, count: usize) -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_retain_response_identity() -> TestResult {
     event_rows("maestro_responses_events_retain_response_identity", 2)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_replace_final_text() -> TestResult {
     event_rows("maestro_responses_events_replace_final_text", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_encode_text_signature() -> TestResult {
     event_rows("maestro_responses_events_encode_text_signature", 3)?;
@@ -53,7 +66,7 @@ fn maestro_responses_events_encode_text_signature() -> TestResult {
             ),
             r#"{"type":"response.completed"}"#.to_owned(),
         ];
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         run.outcome?;
         assert_eq!(
             serde_json::to_value(&run.message.content)?[0]["textSignature"],
@@ -63,51 +76,61 @@ fn maestro_responses_events_encode_text_signature() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_accept_refusal_parts() -> TestResult {
     event_rows("maestro_responses_events_accept_refusal_parts", 2)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_gate_deltas_by_current_part() -> TestResult {
     event_rows("maestro_responses_events_gate_deltas_by_current_part", 37)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_accumulate_reasoning_parts() -> TestResult {
     event_rows("maestro_responses_events_accumulate_reasoning_parts", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_choose_final_reasoning_text() -> TestResult {
     event_rows("maestro_responses_events_choose_final_reasoning_text", 4)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_preserve_reasoning_item_json() -> TestResult {
     event_rows("maestro_responses_events_preserve_reasoning_item_json", 2)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_finish_argument_suffix() -> TestResult {
     event_rows("maestro_responses_events_finish_argument_suffix", 4)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_remove_tool_scratch() -> TestResult {
     event_rows("maestro_responses_events_remove_tool_scratch", 2)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_fallback_to_final_arguments() -> TestResult {
     event_rows("maestro_responses_events_fallback_to_final_arguments", 4)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_insert_final_only_tool() -> TestResult {
     event_rows("maestro_responses_events_insert_final_only_tool", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_map_completion_status() -> TestResult {
     event_rows("maestro_responses_events_map_completion_status", 10)?;
@@ -134,107 +157,127 @@ fn maestro_responses_events_map_completion_status() -> TestResult {
         ),
     ] {
         let event = format!(r#"{{"type":"response.completed","response":{{"status":{status}}}}}"#);
-        let run = block_on(false, responses::reduce(Script::of(vec![event])?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![event])?))?;
         assert_eq!(run.outcome.err().map(|e| e.message).as_deref(), error);
     }
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_preserve_tool_finish_priority() -> TestResult {
     event_rows("maestro_responses_events_preserve_tool_finish_priority", 3)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_account_usage_categories() -> TestResult {
     event_rows("maestro_responses_events_account_usage_categories", 4)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_keep_usage_when_absent() -> TestResult {
     event_rows("maestro_responses_events_keep_usage_when_absent", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_choose_service_tier() -> TestResult {
     event_rows("maestro_responses_events_choose_service_tier", 10)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_use_tier_resolver() -> TestResult {
     event_rows("maestro_responses_events_use_tier_resolver", 2)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_skip_resolver_without_pricing() -> TestResult {
     event_rows("maestro_responses_events_skip_resolver_without_pricing", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_render_direct_errors() -> TestResult {
     event_rows("maestro_responses_events_render_direct_errors", 16)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_render_failed_details() -> TestResult {
     event_rows("maestro_responses_events_render_failed_details", 24)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_incomplete_eof() -> TestResult {
     event_rows("maestro_responses_events_reject_incomplete_eof", 3)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_accept_incomplete_terminal() -> TestResult {
     event_rows("maestro_responses_events_accept_incomplete_terminal", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_ignore_unknown_events() -> TestResult {
     event_rows("maestro_responses_events_ignore_unknown_events", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_keep_current_item_order() -> TestResult {
     event_rows("maestro_responses_events_keep_current_item_order", 2)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_read_numeric_usage() -> TestResult {
     event_rows("maestro_responses_events_read_numeric_usage", 2)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_read_last_duplicate_fields() -> TestResult {
     event_rows("maestro_responses_events_read_last_duplicate_fields", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_responses_events_require_object_arguments() -> TestResult {
-    event_rows("maestro_responses_events_require_object_arguments", 6)
+fn maestro_responses_events_keep_argument_roots() -> TestResult {
+    event_rows("maestro_responses_events_keep_argument_roots", 6)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_malformed_json() -> TestResult {
     event_rows("maestro_responses_events_reject_malformed_json", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_lone_surrogates() -> TestResult {
     event_rows("maestro_responses_events_reject_lone_surrogates", 8)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_propagate_source_failure() -> TestResult {
     event_rows("maestro_responses_events_propagate_source_failure", 1)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// `containers` arrays nested around `0`.
 fn nested(containers: usize) -> String {
     format!("{}0{}", "[".repeat(containers), "]".repeat(containers))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_skip_unread_deep_values() -> TestResult {
     let deep = nested(100_000);
@@ -250,7 +293,7 @@ fn maestro_responses_events_skip_unread_deep_values() -> TestResult {
             r#"{{"type":"response.completed","response":{{"id":"done","status":"completed","output":{deep},"usage":{{"input_tokens":1,"ignored":{deep}}}}}}}"#
         ),
     ];
-    let run = block_on(false, responses::reduce(Script::of(events)?))?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
     run.outcome?;
     assert_eq!(run.message.response_id.as_deref(), Some("done"));
     let message = serde_json::to_value(&run.message)?;
@@ -259,9 +302,10 @@ fn maestro_responses_events_skip_unread_deep_values() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The arguments the reducer keeps for a call whose arguments arrive as `text`, streamed
 /// before the final item.
-fn arguments_kept(text: &str) -> TestResult<JsonObject> {
+fn arguments_kept(text: &str) -> TestResult<serde_json::Value> {
     let added = json!({"type": "response.output_item.added", "item": {"type": "function_call",
         "id": "fc_1", "call_id": "c", "name": "lookup", "arguments": ""}});
     let delta = json!({"type": "response.function_call_arguments.delta", "delta": text});
@@ -269,7 +313,7 @@ fn arguments_kept(text: &str) -> TestResult<JsonObject> {
     }});
     let completed = json!({"type": "response.completed", "response": {"status": "completed"}});
     let events = [added, delta, done, completed].map(|event| event.to_string());
-    let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(events.to_vec())?))?;
     run.outcome?;
     match run.message.content.first() {
         Some(maestro_models::AssistantContent::ToolCall(call)) => Ok(call.arguments.clone()),
@@ -277,6 +321,7 @@ fn arguments_kept(text: &str) -> TestResult<JsonObject> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_preserve_argument_boundaries() -> TestResult {
     for depth in [127_usize, 128, 100_000] {
@@ -289,7 +334,7 @@ fn maestro_responses_events_preserve_argument_boundaries() -> TestResult {
             };
             let arguments = arguments_kept(&text)?;
             if depth > 127 {
-                assert!(arguments.is_empty(), "{depth} containers, closed {closed}");
+                assert_eq!(arguments, json!({}), "{depth} containers, closed {closed}");
                 continue;
             }
             let (mut containers, mut child) = (1, arguments.get("x"));
@@ -321,9 +366,11 @@ fn maestro_responses_events_preserve_argument_boundaries() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The first update a reduction published, kept to inspect after the reduction ended.
 type KeptUpdate = Arc<Mutex<Option<SharedAssistantMessage>>>;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Take the first update off the stream while the source is paused, and check that it shares
 /// the watched message, which already holds the block the first event opened.
 ///
@@ -344,6 +391,7 @@ fn keep_first_update(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A source that yields `events` and, before its second event, keeps the first update.
 ///
 /// It is polled for its next event only after the reducer finished the previous one, so what
@@ -375,6 +423,7 @@ fn watching_source(
     }))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_share_live_output() -> TestResult {
     let events = [
@@ -389,7 +438,7 @@ fn maestro_responses_events_share_live_output() -> TestResult {
     let stream = AssistantMessageEventStream::new();
     let kept = KeptUpdate::default();
     let source = watching_source(events, &output, &stream, &kept);
-    block_on(false, async {
+    crate::tests::runtime::run::<TestResult<_>>(async {
         process_responses_stream(source, &output, &stream, &model, None).await?;
         Ok(())
     })?;
@@ -403,7 +452,7 @@ fn maestro_responses_events_share_live_output() -> TestResult {
         seen["content"][0]["text"], "final",
         "the handle shows later reductions"
     );
-    let tail = block_on(false, async { Ok(stream.next().await) })?;
+    let tail = crate::tests::runtime::run::<TestResult<_>>(async { Ok(stream.next().await) })?;
     let Some(AssistantMessageEvent::TextEnd {
         partial, content, ..
     }) = tail
@@ -415,6 +464,7 @@ fn maestro_responses_events_share_live_output() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
     event_rows(
@@ -431,7 +481,7 @@ fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
         r#"{"type":"response.function_call_arguments.done","arguments":"\ud800"}"#,
         r#"{"type":"response.completed","response":{"id":"kept","service_tier":"\ud800"}}"#,
     ].map(str::to_owned);
-    let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(events.to_vec())?))?;
     run.outcome?;
     assert_eq!(run.message.response_id.as_deref(), Some("kept"));
     let message = serde_json::to_value(&run.message)?;
@@ -440,6 +490,7 @@ fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Append through the acknowledged start's own partial handle before the next event.
 async fn append_caller_block(queue: &AssistantMessageEventStream, output: &SharedAssistantMessage) {
     let first = queue.next().await;
@@ -457,13 +508,11 @@ async fn append_caller_block(queue: &AssistantMessageEventStream, output: &Share
         .unwrap()
         .content
         .push(maestro_models::AssistantContent::Text(
-            maestro_models::TextContent {
-                text: "caller".to_owned(),
-                text_signature: None,
-            },
+            maestro_models::TextContent::new("caller".to_owned()),
         ));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A producer whose second poll acknowledges the already-published start.
 fn appending_source<'a>(
     events: &'a [String],
@@ -481,6 +530,7 @@ fn appending_source<'a>(
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_keep_started_block_identity() -> TestResult {
     for (item, delta, done, key, expected) in [
@@ -517,7 +567,7 @@ fn maestro_responses_events_keep_started_block_identity() -> TestResult {
         ]
         .map(|event| event.to_string());
         let source = appending_source(&events, &output, &queue);
-        block_on(false, async {
+        crate::tests::runtime::run::<TestResult<_>>(async {
             process_responses_stream(source, &output, &queue, &model, None).await?;
             Ok(())
         })?;
@@ -537,6 +587,7 @@ fn maestro_responses_events_keep_started_block_identity() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_publish_completion_before_callbacks() -> TestResult {
     for status in [r#""completed""#, r#""unknown""#, r#""\ud800""#] {
@@ -574,7 +625,7 @@ fn maestro_responses_events_publish_completion_before_callbacks() -> TestResult 
             r#"{{"type":"response.completed","response":{{"id":"final","status":{status},"usage":{{"input_tokens":10}},"service_tier":"flex"}}}}"#
         );
         let source = futures_util::stream::iter([Ok(event)]);
-        let outcome = block_on(false, async {
+        let outcome = crate::tests::runtime::run::<TestResult<_>>(async {
             Ok(process_responses_stream(source, &output, &updates, &model, Some(&options)).await)
         })?;
         match status {
@@ -594,6 +645,7 @@ fn maestro_responses_events_publish_completion_before_callbacks() -> TestResult 
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_diagnostic_container_types() -> TestResult {
     event_rows(
@@ -602,6 +654,7 @@ fn maestro_responses_events_reject_diagnostic_container_types() -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_ignore_unused_final_call_members() -> TestResult {
     event_rows(
@@ -613,7 +666,7 @@ fn maestro_responses_events_ignore_unused_final_call_members() -> TestResult {
         r#"{"type":"response.output_item.done","item":{"type":"function_call","id":"\ud800","name":"\ud800","arguments":"\ud800"}}"#,
         r#"{"type":"response.completed"}"#,
     ].map(str::to_owned);
-    let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(events.to_vec())?))?;
     run.outcome?;
     let message = serde_json::to_value(&run.message)?;
     assert_eq!(message["content"][0]["arguments"], json!({"x":1}));
@@ -621,6 +674,7 @@ fn maestro_responses_events_ignore_unused_final_call_members() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_defer_initial_part_decoding() -> TestResult {
     let start = r#"{"type":"response.output_item.added","item":{"type":"message","content":[{"type":"\ud800"}]}}"#;
@@ -630,7 +684,7 @@ fn maestro_responses_events_defer_initial_part_decoding() -> TestResult {
             events.push(r#"{"type":"response.output_text.delta","delta":"selected"}"#.to_owned());
         }
         events.push(r#"{"type":"response.completed"}"#.to_owned());
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         if selected {
             assert_eq!(run.outcome.unwrap_err().name, None);
         } else {
@@ -642,6 +696,7 @@ fn maestro_responses_events_defer_initial_part_decoding() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_mistyped_final_values() -> TestResult {
     for (kind, field, parts) in [
@@ -670,12 +725,9 @@ fn maestro_responses_events_reject_mistyped_final_values() -> TestResult {
         let mut done = json!({"type":"response.output_item.done","item":{"type":kind,"id":"m"}});
         done["item"][field] = parts;
         let completed = json!({"type":"response.completed"});
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(
-                [added, done, completed].map(|e| e.to_string()).to_vec(),
-            )?),
-        )?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(
+            [added, done, completed].map(|e| e.to_string()).to_vec(),
+        )?))?;
         let error = run.outcome.unwrap_err();
         assert_eq!(error.name, None);
         assert!(error.message.contains("expected a string"));
@@ -691,6 +743,7 @@ fn maestro_responses_events_reject_mistyped_final_values() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_preserve_phase_before_missing_call_identity() -> TestResult {
     let events = [
@@ -699,10 +752,9 @@ fn maestro_responses_events_preserve_phase_before_missing_call_identity() -> Tes
         r#"{"type":"response.output_item.done","item":{"type":"function_call","name":"lookup"}}"#,
         r#"{"type":"response.completed"}"#,
     ];
-    let run = block_on(
-        false,
-        responses::reduce(Script::of(events.map(str::to_owned).to_vec())?),
-    )?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(
+        events.map(str::to_owned).to_vec(),
+    )?))?;
     assert!(
         run.outcome
             .unwrap_err()
@@ -718,6 +770,7 @@ fn maestro_responses_events_preserve_phase_before_missing_call_identity() -> Tes
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_require_selected_containers() -> TestResult {
     for event in [
@@ -729,13 +782,10 @@ fn maestro_responses_events_require_selected_containers() -> TestResult {
         r#"{"type":"response.output_item.done"}"#,
         r#"{"type":"response.output_item.done","item":null}"#,
     ] {
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(vec![
-                event.to_owned(),
-                r#"{"type":"response.completed"}"#.to_owned(),
-            ])?),
-        )?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+            event.to_owned(),
+            r#"{"type":"response.completed"}"#.to_owned(),
+        ])?))?;
         assert!(run.outcome.is_err(), "{event}");
         assert!(run.events.is_empty());
     }
@@ -746,7 +796,7 @@ fn maestro_responses_events_require_selected_containers() -> TestResult {
                 r#"{{"type":"response.output_item.done","item":{{"type":"message"{content}}}}}"#
             ),
         ];
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         let error = run
             .outcome
             .err()
@@ -760,6 +810,7 @@ fn maestro_responses_events_require_selected_containers() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_mistyped_deltas() -> TestResult {
     for (kind, part, delta) in [
@@ -793,7 +844,7 @@ fn maestro_responses_events_reject_mistyped_deltas() -> TestResult {
                 json!({"type":delta,"delta":"kept"}).to_string(),
                 malformed.to_string(),
             ];
-            let run = block_on(false, responses::reduce(Script::of(events)?))?;
+            let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
             let error = run.outcome.unwrap_err();
             assert_eq!(error.name, None);
             assert!(error.message.contains("expected a string"));
@@ -807,6 +858,7 @@ fn maestro_responses_events_reject_mistyped_deltas() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_keep_final_text_when_signature_fails() -> TestResult {
     let events = [
@@ -814,10 +866,9 @@ fn maestro_responses_events_keep_final_text_when_signature_fails() -> TestResult
         r#"{"type":"response.output_text.delta","delta":"draft"}"#,
         r#"{"type":"response.output_item.done","item":{"type":"message","id":"\ud800","content":[{"type":"output_text","text":"final"}]}}"#,
     ];
-    let run = block_on(
-        false,
-        responses::reduce(Script::of(events.map(str::to_owned).to_vec())?),
-    )?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(
+        events.map(str::to_owned).to_vec(),
+    )?))?;
     assert!(run.outcome.is_err());
     assert_eq!(
         serde_json::to_value(&run.message.content)?,
@@ -833,6 +884,7 @@ fn maestro_responses_events_keep_final_text_when_signature_fails() -> TestResult
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_unrepresentable_assigned_strings() -> TestResult {
     for event in [
@@ -842,19 +894,16 @@ fn maestro_responses_events_reject_unrepresentable_assigned_strings() -> TestRes
         r#"{"type":"response.completed","response":{"id":true}}"#,
         r#"{"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":[]}}"#,
     ] {
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(vec![
-                event.to_owned(),
-                r#"{"type":"response.completed"}"#.to_owned(),
-            ])?),
-        )?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+            event.to_owned(),
+            r#"{"type":"response.completed"}"#.to_owned(),
+        ])?))?;
         assert!(run.outcome.is_err(), "{event}");
         assert!(run.message.content.is_empty());
         assert!(run.events.is_empty());
     }
     for value in [Value::Null, json!(false), json!(0), json!("")] {
-        let run = block_on(false, responses::reduce(Script::of(vec![json!({"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":value}}).to_string(),
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![json!({"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":value}}).to_string(),
             r#"{"type":"response.completed","response":{"id":false}}"#.to_owned()])?))?;
         run.outcome?;
         assert!(run.message.response_id.is_none());
@@ -866,6 +915,7 @@ fn maestro_responses_events_reject_unrepresentable_assigned_strings() -> TestRes
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_validate_initial_arrays_only_when_used() -> TestResult {
     for (kind, field, selected) in [
@@ -897,7 +947,7 @@ fn maestro_responses_events_validate_initial_arrays_only_when_used() -> TestResu
                 )];
                 events.extend(use_container.then(|| selected.to_owned()));
                 events.push(r#"{"type":"response.completed"}"#.to_owned());
-                let run = block_on(false, responses::reduce(Script::of(events)?))?;
+                let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
                 assert_eq!(run.outcome.is_err(), use_container);
                 assert_eq!(run.events.len(), 1);
                 assert_eq!(
@@ -917,6 +967,7 @@ fn maestro_responses_events_validate_initial_arrays_only_when_used() -> TestResu
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_selected_tier_and_argument_types() -> TestResult {
     for pricing in [false, true] {
@@ -924,7 +975,7 @@ fn maestro_responses_events_reject_selected_tier_and_argument_types() -> TestRes
             r#"{"type":"response.completed","response":{"service_tier":42}}"#.to_owned(),
         ])?;
         script.options = json!({"pricing":pricing});
-        let run = block_on(false, responses::reduce(script))?;
+        let run = crate::tests::runtime::run(responses::reduce(script))?;
         assert_eq!(run.outcome.is_err(), pricing);
         assert!(run.tiers.is_empty());
     }
@@ -932,7 +983,7 @@ fn maestro_responses_events_reject_selected_tier_and_argument_types() -> TestRes
         let events = vec![r#"{"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup"}}"#.to_owned(),
             r#"{"type":"response.function_call_arguments.delta","delta":"{\"x\":1}"}"#.to_owned(),
             format!(r#"{{"type":"response.function_call_arguments.done","arguments":{arguments}}}"#)];
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         let error = run
             .outcome
             .err()
@@ -956,6 +1007,7 @@ fn maestro_responses_events_reject_selected_tier_and_argument_types() -> TestRes
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_selected_identity_and_error_strings() -> TestResult {
     for event in [
@@ -966,10 +1018,8 @@ fn maestro_responses_events_reject_selected_identity_and_error_strings() -> Test
         json!({"type":"response.output_item.added","item":{"type":"function_call","call_id":"c","id":42,"name":"lookup"}}),
         json!({"type":"response.output_item.done","item":{"type":"function_call","call_id":"c","id":null,"name":"lookup"}}),
     ] {
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(vec![event.to_string()])?),
-        )?;
+        let run =
+            crate::tests::runtime::run(responses::reduce(Script::of(vec![event.to_string()])?))?;
         let error = run.outcome.unwrap_err();
         assert_eq!(error.name, None);
         assert!(error.message.contains("expected a string"));
@@ -979,32 +1029,28 @@ fn maestro_responses_events_reject_selected_identity_and_error_strings() -> Test
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_accept_nullable_error_code() -> TestResult {
-    let run = block_on(
-        false,
-        responses::reduce(Script::of(vec![
-            r#"{"type":"error","code":null,"message":"quota"}"#.to_owned(),
-        ])?),
-    )?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+        r#"{"type":"error","code":null,"message":"quota"}"#.to_owned(),
+    ])?))?;
     assert_eq!(run.outcome.unwrap_err().message, "Error Code null: quota");
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
-    let run = block_on(
-        false,
-        responses::reduce(Script::of(vec![
-            json!({"type":"response.completed","response":{"usage":{}}}).to_string(),
-        ])?),
-    )?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+        json!({"type":"response.completed","response":{"usage":{}}}).to_string(),
+    ])?))?;
     run.outcome?;
     assert_eq!(
         json!([
             run.message.usage.input,
             run.message.usage.output,
-            run.message.usage.total_tokens,
+            run.message.usage.total_tokens.present().copied().unwrap(),
             run.message.usage.cache_read
         ]),
         json!([0.0, 0.0, 0.0, 0.0])
@@ -1021,12 +1067,9 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
             if key == "cached_tokens" {
                 usage = json!({"input_tokens_details": usage});
             }
-            let run = block_on(
-                false,
-                responses::reduce(Script::of(vec![
-                    json!({"type": "response.completed", "response": {"usage": usage}}).to_string(),
-                ])?),
-            )?;
+            let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+                json!({"type": "response.completed", "response": {"usage": usage}}).to_string(),
+            ])?))?;
             if value.is_string() {
                 assert_eq!(
                     run.outcome.unwrap_err().message,
@@ -1040,7 +1083,10 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
             let (actual, expected) = match key {
                 "input_tokens" => (json!(counts.input), json!(expected)),
                 "output_tokens" => (json!(counts.output), json!(expected)),
-                "total_tokens" => (json!(counts.total_tokens), json!(expected)),
+                "total_tokens" => (
+                    json!(counts.total_tokens.present().copied().unwrap()),
+                    json!(expected),
+                ),
                 _ => (
                     json!([counts.input, counts.cache_read]),
                     json!([-expected, expected]),
@@ -1052,6 +1098,7 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
     for event_kind in ["response.output_item.added", "response.output_item.done"] {
@@ -1065,7 +1112,7 @@ fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
             );
         }
         events.push(json!({"type": "response.completed"}).to_string());
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         run.outcome?;
         let maestro_models::AssistantContent::ToolCall(call) = &run.message.content[0] else {
             panic!("missing tool call");
@@ -1090,18 +1137,16 @@ fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_reject_ambiguous_call_identity() -> TestResult {
     for event_kind in ["response.output_item.added", "response.output_item.done"] {
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(vec![
-                json!({"type":event_kind,"item":{"type":"function_call",
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+            json!({"type":event_kind,"item":{"type":"function_call",
                 "call_id":"c|i","name":"lookup","arguments":"{}"}})
-                .to_string(),
-                json!({"type":"response.completed"}).to_string(),
-            ])?),
-        )?;
+            .to_string(),
+            json!({"type":"response.completed"}).to_string(),
+        ])?))?;
         let error = run.outcome.unwrap_err();
         assert_eq!(error.name, None);
         assert_eq!(
@@ -1114,6 +1159,7 @@ fn maestro_responses_events_reject_ambiguous_call_identity() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_events_replay_complete_item_identity() -> TestResult {
     for event_kind in ["response.output_item.added", "response.output_item.done"] {
@@ -1129,7 +1175,7 @@ fn maestro_responses_events_replay_complete_item_identity() -> TestResult {
             );
         }
         events.push(json!({"type":"response.completed"}).to_string());
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         run.outcome?;
         let context = maestro_models::Context {
             system_prompt: None,

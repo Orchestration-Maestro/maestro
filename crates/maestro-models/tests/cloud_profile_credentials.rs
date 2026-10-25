@@ -395,12 +395,18 @@ fn bedrock_socks_reuses_credential_route() -> TestResult {
 
 #[test]
 fn idle_routed_shutdown_joins_without_connection_errors() -> TestResult {
-    if maestro_test_process::child_case().is_none() {
-        return maestro_test_process::rerun(
-            "idle_routed_shutdown_joins_without_connection_errors",
-            "idle",
-            &[],
-        );
+    if !maestro_test_process::selection().is_child() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "idle_routed_shutdown_joins_without_connection_errors",
+            )?
+            .nocapture()
+            .env_clear()
+            .case("idle")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     for iteration in 0..20_000 {
         let server = loopback::start_routed(std::sync::Arc::new(|_| {

@@ -193,10 +193,12 @@ Its optional error observation is supplied by the rendering host. Conversion fro
 execution result supplies no error flag. `str` returns a borrowed string, an empty string for
 an absent or null value and nothing for any other type. `shorten_path` (native only) shows
 the home directory as `~` for a path equal to it or below it and leaves a sibling whose
-name merely starts with the home path unchanged; it reads the home directory through
+name merely starts with the home path unchanged; a home directory that is empty or `/`
+abbreviates nothing, so the path stays as given. It reads the home directory through
 [`expand_path`](../crates/maestro-tools/src/path_utils.rs) only for a present path.
 `replace_tabs` turns every TAB into three spaces and `normalize_display_text` removes every
-carriage return. `strip_ansi` removes what one cached expression matches (OSC strings up to
+carriage return. The tool paths forward to the [text leaf](text.md)'s terminal cleaners.
+`strip_ansi` removes what one cached expression matches (OSC strings up to
 their first terminator, and CSI-style introducers with parameters and a final byte; `a\u001b[2Qb` becomes `aQb`), and [`utils::shell::sanitize_binary_output`](../crates/maestro-tools/src/utils/shell.rs)
 drops C0 controls except TAB, LF and CR and U+FFF9 to U+FFFB. `get_text_output` joins the
 cleaned text blocks with LF and, when the terminal cannot show images or they are hidden,
@@ -227,17 +229,41 @@ filesystem; a supplied implementation sees the same absolute path in the same
 
 The authored path is resolved when the tool is called, before the returned future
 is polled; see [`path_utils`](../crates/maestro-tools/src/path_utils.rs). A leading
-`@` is dropped, U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 become a space,
-and a bare `~` or `~/` becomes the home directory. Relative paths resolve
+`@` is dropped, a bare `~` or `~/` becomes the home directory, and the rest keeps
+the spelling it was written with. Relative paths resolve
 lexically through `maestro-path`, with no canonicalization. On Windows the
 per-drive directories (`=X:` variables) are resolution operands. The process
 working directory is read only when `cwd` and those directories cannot anchor a
 relative result (elsewhere: only for a relative `cwd`), and the home directory
 only for `~`. A cancellation observed after the bytes are read, including while
 converting them, still settles the read as cancelled, for results and failures.
-`resolve_read_path` then keeps the first existing spelling among the resolved
-path, the narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly
-apostrophes.
+`resolve_read_path` tries four candidates, in order: the answer of the shared rule
+below, the path as written, the space-replaced path, and the macOS variants of each.
+The variants are the narrow-space AM/PM form, NFD, curly apostrophes, and NFD with
+curly apostrophes. The first candidate on disk wins; with nothing on disk the rule's
+answer stands. So a file whose real name holds one of those spaces opens under that
+name while a typed name whose Unicode spaces stand for plain spaces still finds its
+file.
+
+Space replacement turns U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 into a
+space. `resolve_existing_path`, which the write, edit and search routes use, keeps the
+spelling the path was written with when the file system holds that path, and takes
+the space-replaced path when it holds that one instead. Otherwise the deepest
+directory the file system holds under the written spelling keeps that spelling and
+the rest of the path takes plain spaces, unless a directory of the space-replaced
+path reaches deeper; then the whole path takes plain spaces. So unless the
+space-replaced path reaches deeper, a new file lands inside the directory named with
+one of those spaces, not in a space-replaced twin. A relative path keeps the
+spelling of the directory it was resolved against, even when the file system no
+longer holds that directory (as after the working directory is removed), and that
+directory bounds the search. The whole path is reduced lexically first, and each
+parent segment it climbs then drops that directory's last component wherever the
+climb stands, while a name written after the climb takes plain spaces. A climb that
+would pass the root stops there, so an existing directory under the written spelling
+still supplies it.
+Expansion through `@` or `~` can make a path absolute; such a path was resolved
+against no directory, so nothing in its spelling comes from one. A directory the
+file system holds under the written spelling keeps it for absolute paths too.
 
 The signal is checked before each of the three operations and watched while one is
 pending. An abort seen there settles the read with `Operation aborted`, and a

@@ -1,15 +1,17 @@
 //! Call-scoped content placement with retained platform ownership.
 use crate::{
-    Attachment, I18nError,
-    icons::{self, IconError, IconSize},
+    Attachment,
+    icons::{self, IconSize},
 };
 use maestro_theme::BrandPresentation;
 use num_traits::ToPrimitive as _;
-use std::{cell::RefCell, fmt, io, rc::Rc};
+use std::{cell::RefCell, io, rc::Rc};
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod browser;
 #[cfg(target_arch = "wasm32")]
 pub use browser::BrowserAttachmentHost;
+mod control_error;
+pub use control_error::ControlError;
 mod placement_scope;
 pub use placement_scope::PlacementScope;
 
@@ -111,51 +113,31 @@ pub struct AttachmentSurface<'a> {
     /// Content operands copied or retained by the host.
     pub content: AttachmentContent<'a>,
 }
-/// Attachment drawing or effect failure.
+/// Native content or platform effect failure.
 #[derive(Debug)]
-pub enum AttachmentUiError {
-    /// Localization failed.
-    I18n(I18nError),
-    /// Glyph rendering failed.
-    Icon(IconError),
-    /// Browser effect failed.
+pub enum AttachmentHostError {
+    /// Native effect failed.
     Host(String),
-    /// File presentation failed.
+    /// Native content presentation failed.
     Presentation(String),
-    /// Caller holds an incompatible record borrow.
+    /// Caller holds an incompatible native reference borrow.
     BorrowConflict,
 }
-impl fmt::Display for AttachmentUiError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for AttachmentHostError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::I18n(e) => e.fmt(f),
-            Self::Icon(e) => e.fmt(f),
-            Self::Host(e) | Self::Presentation(e) => f.write_str(e),
+            Self::Host(error) | Self::Presentation(error) => std::fmt::Display::fmt(error, f),
             Self::BorrowConflict => f.write_str("Attachment is already borrowed"),
         }
     }
 }
-impl std::error::Error for AttachmentUiError {
+impl std::error::Error for AttachmentHostError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::I18n(e) => Some(e),
-            Self::Icon(e) => Some(e),
-            _ => None,
-        }
-    }
-}
-impl From<I18nError> for AttachmentUiError {
-    fn from(e: I18nError) -> Self {
-        Self::I18n(e)
-    }
-}
-impl From<io::Error> for AttachmentUiError {
-    fn from(error: io::Error) -> Self {
-        Self::Presentation(error.to_string())
+        None
     }
 }
 /// Captured native focus restoration, retaining the original target.
-pub type FocusTarget = dyn Fn() -> Result<(), AttachmentUiError>;
+pub type FocusTarget = dyn Fn() -> Result<(), AttachmentHostError>;
 /// Native clipboard failure policy selected by the caller.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ClipboardMode {
@@ -186,14 +168,14 @@ pub trait AttachmentHost {
     /// Capture the currently focused native target before modal admission.
     /// # Errors
     /// Returns native focus lookup failures.
-    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError>;
+    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError>;
     /// Defer restoration until the next frame after removal.
     /// # Errors
     /// Returns native frame registration failures.
     fn restore_focus(
         &self,
         target: Rc<FocusTarget>,
-    ) -> Result<crate::browser::timer::Timer, AttachmentUiError>;
+    ) -> Result<crate::browser::timer::Timer, AttachmentHostError>;
     /// Evaluate literal CSS dimensions against the staged reading body.
     /// # Errors
     /// Returns native measurement failures.
@@ -201,14 +183,14 @@ pub trait AttachmentHost {
         &self,
         id: egui::Id,
         dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentUiError>;
+    ) -> Result<egui::Rect, AttachmentHostError>;
     /// Admit native Escape through the same bridge used by editable fields.
     fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context);
 
     /// Measure the admitted reading root in the current canvas frame.
     /// # Errors
     /// Returns missing-surface or native geometry failures.
-    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError>;
+    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentHostError>;
     /// Update one retained content element.
     /// # Errors
     /// Returns platform or file-presentation failures.
@@ -216,7 +198,7 @@ pub trait AttachmentHost {
         &self,
         surface: AttachmentSurface<'_>,
         presentation: &BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError>;
+    ) -> Result<(), AttachmentHostError>;
     /// Record retained visibility independently from content publication.
     /// # Errors
     /// Returns platform failures without releasing the retained surface.
@@ -225,15 +207,15 @@ pub trait AttachmentHost {
         id: egui::Id,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError>;
+    ) -> Result<(), AttachmentHostError>;
     /// Change modal admission, releasing ordinary modal-owned children on close.
     /// # Errors
     /// Returns platform failures.
-    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError>;
+    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentHostError>;
     /// Query the platform hover media capability.
     /// # Errors
     /// Returns platform failures.
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError>;
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError>;
     /// Release the named surface.
     fn remove(&self, id: egui::Id);
     /// Consume Escape delivered by a native input outside canvas focus.
@@ -246,18 +228,22 @@ pub trait AttachmentHost {
         delay_ms: i32,
         repeat: bool,
         callback: Rc<dyn Fn()>,
-    ) -> Result<crate::browser::timer::Timer, AttachmentUiError>;
+    ) -> Result<crate::browser::timer::Timer, AttachmentHostError>;
     /// Dispatch owned browser-local asynchronous work.
     fn spawn_local(&self, future: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>);
     /// Download supplied bytes synchronously without attachment decoding.
     /// # Errors
     /// Returns platform failures.
-    fn download_bytes(&self, bytes: &[u8], name: &str, mime: &str)
-    -> Result<(), AttachmentUiError>;
+    fn download_bytes(
+        &self,
+        bytes: &[u8],
+        name: &str,
+        mime: &str,
+    ) -> Result<(), AttachmentHostError>;
     /// Download the original record.
     /// # Errors
     /// Returns decoding or platform failures.
-    fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError>;
+    fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError>;
 }
 /// Convert brand measurements for the drawing library.
 pub(crate) fn points(n: f64) -> f32 {
@@ -317,12 +303,17 @@ pub(crate) fn glyph(
     rect: egui::Rect,
     name: &str,
     tint: egui::Color32,
-) -> Result<(), AttachmentUiError> {
-    let catalog = icons::icons().map_err(|e| AttachmentUiError::Host(e.to_string()))?;
-    let node = catalog
-        .get(name)
-        .ok_or_else(|| AttachmentUiError::Host(format!("Missing glyph: {name}")))?;
-    paint_icon(ui, rect, node, (IconSize::Md, tint, 0.))
+) -> Result<(), ControlError> {
+    let node = glyph_node(name)?;
+    paint_icon(ui, rect, &node, (IconSize::Md, tint, 0.))
+}
+/// Resolve catalog geometry at the existing named-control error boundary.
+/// # Errors
+/// Returns the catalog or missing-glyph control failure.
+pub(crate) fn glyph_node(name: &str) -> Result<icons::IconNode, ControlError> {
+    icons::icon_node(name)
+        .map_err(|error| ControlError::Host(error.to_string()))?
+        .ok_or_else(|| ControlError::Host(format!("Missing glyph: {name}")))
 }
 /// Paint supplied geometry with a caller-selected size, tint and rotation.
 pub(crate) fn paint_icon(
@@ -330,9 +321,9 @@ pub(crate) fn paint_icon(
     rect: egui::Rect,
     node: &icons::IconNode,
     (size, tint, rotation): (IconSize, egui::Color32, f32),
-) -> Result<(), AttachmentUiError> {
-    let image = icons::icon(node, size, tint, ui.ctx().pixels_per_point())
-        .map_err(AttachmentUiError::Icon)?;
+) -> Result<(), ControlError> {
+    let image =
+        icons::icon(node, size, tint, ui.ctx().pixels_per_point()).map_err(ControlError::Icon)?;
     let texture = ui.ctx().load_texture(
         format!("{node:?}:{size:?}:{tint:?}"),
         image,
@@ -361,7 +352,7 @@ pub(crate) fn ghost(
     ui: &mut egui::Ui,
     p: &BrandPresentation<'_>,
     name: &str,
-) -> Result<egui::Response, AttachmentUiError> {
+) -> Result<egui::Response, ControlError> {
     ghost_sized(ui, p, name, GHOST_SIZE)
 }
 /// Draw a ghost control with a centered sixteen-point glyph.
@@ -370,7 +361,7 @@ pub(crate) fn ghost_sized(
     p: &BrandPresentation<'_>,
     name: &str,
     size: egui::Vec2,
-) -> Result<egui::Response, AttachmentUiError> {
+) -> Result<egui::Response, ControlError> {
     ghost_labeled(ui, p, (name, None), size)
 }
 /// Highlight treatment for the shared ghost-control painter.
@@ -387,14 +378,17 @@ pub(crate) fn ghost_labeled(
     p: &BrandPresentation<'_>,
     content: (&str, Option<&str>),
     size: egui::Vec2,
-) -> Result<egui::Response, AttachmentUiError> {
+) -> Result<egui::Response, ControlError> {
     let font = egui::TextStyle::Button.resolve(ui.style());
     ghost_labeled_tinted(
         ui,
         p,
         content,
         (size, 0., font),
-        (color(p, "text")?, GhostHover::Text),
+        (
+            color(p, "text").map_err(|error| ControlError::Presentation(error.to_string()))?,
+            GhostHover::Text,
+        ),
     )
 }
 /// Draw a shared ghost control with caller-selected idle tint and highlight treatment.
@@ -404,14 +398,15 @@ pub(crate) fn ghost_labeled_tinted(
     (name, label): (&str, Option<&str>),
     (size, label_padding, font): (egui::Vec2, f32, egui::FontId),
     (tint, hover): (egui::Color32, GhostHover),
-) -> Result<egui::Response, AttachmentUiError> {
+) -> Result<egui::Response, ControlError> {
     let response = ui
         .allocate_response(size, egui::Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
     let highlighted = response.hovered() || response.has_focus();
     let accent = matches!(hover, GhostHover::Accent);
     let foreground = if highlighted {
-        color(p, if accent { "on-accent" } else { "text" })?
+        color(p, if accent { "on-accent" } else { "text" })
+            .map_err(|error| ControlError::Presentation(error.to_string()))?
     } else {
         tint
     };
@@ -419,7 +414,8 @@ pub(crate) fn ghost_labeled_tinted(
         ui.painter().rect(
             response.rect,
             egui::CornerRadius::from(points(p.radii["control"])),
-            color(p, if accent { "accent" } else { "panel" })?,
+            color(p, if accent { "accent" } else { "panel" })
+                .map_err(|error| ControlError::Presentation(error.to_string()))?,
             egui::Stroke::new(
                 1.,
                 color(
@@ -429,7 +425,8 @@ pub(crate) fn ghost_labeled_tinted(
                     } else {
                         "border"
                     },
-                )?,
+                )
+                .map_err(|error| ControlError::Presentation(error.to_string()))?,
             ),
             egui::StrokeKind::Inside,
         );
@@ -455,7 +452,7 @@ pub(crate) fn ghost_labeled_tinted(
             if accent {
                 foreground
             } else {
-                color(p, "text")?
+                color(p, "text").map_err(|error| ControlError::Presentation(error.to_string()))?
             },
         );
     }

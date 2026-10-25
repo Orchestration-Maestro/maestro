@@ -2,13 +2,14 @@
 
 use std::borrow::Cow;
 
-use super::google_shared::invocation::{Setup, start};
+use super::google_shared::invocation::Setup;
 use super::google_shared::thinking::{effort, enabled_for_effort};
 use super::google_shared::{
     ApiClient, FunctionCallingConfigMode, GenerateContentParameters, GoogleThinkingLevel,
 };
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::initial_message_for_api;
+use crate::providers::content::google_shared::invocation::dispatch as dispatch_content;
 use crate::{
     Context, DiagnosticErrorInfo, Local, Model, ProviderExecution, ProviderInvocation,
     ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily, Threaded,
@@ -174,14 +175,13 @@ pub(crate) fn dispatch(
     context: Context,
     invocation: ProviderInvocation<GoogleOptions>,
 ) -> crate::AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            start::<Local>(setup(model, context, options), submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            start::<Threaded>(setup(model, context, options), submit)
-        }
-    }
+    dispatch_content(
+        model,
+        context,
+        invocation,
+        setup::<Local>,
+        setup::<Threaded>,
+    )
 }
 
 /// Resolve simple settings before starting content generation.
@@ -215,14 +215,7 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            simple::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            simple::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, simple::<Local>, simple::<Threaded>)
 }
 /// Prepare the original simple options once for either hook family.
 fn simple<E: ProviderExecution>(

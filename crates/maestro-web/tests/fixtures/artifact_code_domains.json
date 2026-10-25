@@ -1,0 +1,440 @@
+[
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html"
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html"
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html"
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": null
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": null
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": null
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": "literal"
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": "literal"
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": "literal"
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 1.25
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 1.25
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 1.25
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": -0.0
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": -0.0
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": -0.0
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": false
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": false
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": false
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": true
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": true
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": true
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {}
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {}
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {}
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {
+          "z": 1,
+          "a": 2
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {
+          "z": 1,
+          "a": 2
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": {
+          "z": 1,
+          "a": 2
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": []
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": []
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": []
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": [
+          "b",
+          "a",
+          "b"
+        ]
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": [
+          "b",
+          "a",
+          "b"
+        ]
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": [
+          "b",
+          "a",
+          "b"
+        ]
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "pending",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": " \t\n"
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "success",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": " \t\n"
+      }
+    }
+  },
+  {
+    "input": {
+      "phase": "error",
+      "params": {
+        "command": "create",
+        "filename": "a.html",
+        "content": " \t\n"
+      }
+    }
+  }
+]

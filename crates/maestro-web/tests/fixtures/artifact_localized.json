@@ -1,0 +1,736 @@
+[
+  {
+    "input": {
+      "params": {
+        "command": "create",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Erstelle Artefakt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [
+        {
+          "code": "x",
+          "language": "html",
+          "decoded": "x"
+        }
+      ],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "create",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": false,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Artefakt erstellt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [
+        {
+          "code": "x",
+          "language": "html",
+          "decoded": "x"
+        }
+      ],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "create",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Erstelle Artefakt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [
+        {
+          "code": "x",
+          "language": "html",
+          "decoded": "x"
+        }
+      ],
+      "console": [
+        {
+          "content": "Ein Fehler ist aufgetreten",
+          "variant": "error"
+        }
+      ],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "rewrite",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Überschreibe Artefakt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [
+        {
+          "code": "x",
+          "language": "html",
+          "decoded": "x"
+        }
+      ],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "rewrite",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": false,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Artefakt überschrieben",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [
+        {
+          "code": "x",
+          "language": "html",
+          "decoded": "x"
+        }
+      ],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "rewrite",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Überschreibe Artefakt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [
+        {
+          "code": "x",
+          "language": "html",
+          "decoded": "x"
+        }
+      ],
+      "console": [
+        {
+          "content": "Ein Fehler ist aufgetreten",
+          "variant": "error"
+        }
+      ],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "update",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Aktualisiere Artefakt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": [
+        {
+          "text": "- old",
+          "kind": "removed"
+        },
+        {
+          "text": "+ new",
+          "kind": "added"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "update",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": false,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Artefakt aktualisiert",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": [
+        {
+          "text": "- old",
+          "kind": "removed"
+        },
+        {
+          "text": "+ new",
+          "kind": "added"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "update",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Aktualisiere Artefakt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [],
+      "console": [
+        {
+          "content": "Ein Fehler ist aufgetreten",
+          "variant": "error"
+        }
+      ],
+      "errors": [],
+      "diff": [
+        {
+          "text": "- old",
+          "kind": "removed"
+        },
+        {
+          "text": "+ new",
+          "kind": "added"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "get",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Hole Artefakt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "get",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": false,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Artefakt geholt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [
+        {
+          "code": "(keine Ausgabe)",
+          "language": "html",
+          "decoded": "(keine Ausgabe)"
+        }
+      ],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "get",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Hole Artefakt",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "Ein Fehler ist aufgetreten"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "logs",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Hole Logs",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "logs",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": false,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Logs geholt",
+      "pill": "literal.html",
+      "collapsible": true,
+      "initiallyCollapsed": true,
+      "code": [],
+      "console": [
+        {
+          "content": "(keine Ausgabe)",
+          "variant": "default"
+        }
+      ],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "logs",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Hole Logs",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "Ein Fehler ist aufgetreten"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "delete",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Lösche Artefakt",
+      "pill": "literal.html",
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "delete",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": false,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Artefakt gelöscht",
+      "pill": "literal.html",
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "delete",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Lösche Artefakt",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "Ein Fehler ist aufgetreten"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "other",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Verarbeite Artefakt",
+      "pill": "literal.html",
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "other",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": false,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Artefakt verarbeitet",
+      "pill": "literal.html",
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "command": "other",
+        "filename": "literal.html",
+        "content": "x",
+        "old_str": "old",
+        "new_str": "new"
+      },
+      "language": "de",
+      "isStreaming": false,
+      "result": {
+        "role": "toolResult",
+        "toolCallId": "a",
+        "toolName": "artifacts",
+        "content": [],
+        "isError": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Verarbeite Artefakt",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "Ein Fehler ist aufgetreten"
+      ],
+      "diff": []
+    }
+  }
+]

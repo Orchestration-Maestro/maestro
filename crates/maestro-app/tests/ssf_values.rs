@@ -1,6 +1,7 @@
 //! Spreadsheet value formatting through the application interface.
 #![cfg(test)]
 
+use crate::ssf_support::date_code::DateObservation;
 use maestro_app::browser::ssf::init_table;
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -162,33 +163,7 @@ struct DateCase {
     value: String,
     #[serde(rename = "date1904")]
     date1904: bool,
-    expected: Option<ExpectedDate>,
-}
-
-/// The complete date-code record, retaining the fixture's field spelling.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ExpectedDate {
-    #[serde(rename = "D")]
-    serial_day: i32,
-    #[serde(rename = "T")]
-    seconds: i32,
-    #[serde(rename = "u")]
-    fraction: f64,
-    #[serde(rename = "y")]
-    year: i32,
-    #[serde(rename = "m")]
-    month: u32,
-    #[serde(rename = "d")]
-    day: u32,
-    #[serde(rename = "H")]
-    hour: u32,
-    #[serde(rename = "M")]
-    minute: u32,
-    #[serde(rename = "S")]
-    second: u32,
-    #[serde(rename = "q")]
-    weekday: u32,
+    expected: Option<DateObservation>,
 }
 
 /// Mutually exclusive date corpus partitions.
@@ -224,18 +199,7 @@ fn check_dates(partition: DatePartition) {
         .enumerate()
         .filter(|(_, case)| date_partition(case) == partition)
     {
-        let expected = case.expected.map(|d| DateCode {
-            serial_day: d.serial_day,
-            seconds: d.seconds,
-            fraction: d.fraction,
-            year: d.year,
-            month: d.month,
-            day: d.day,
-            hour: d.hour,
-            minute: d.minute,
-            second: d.second,
-            weekday: d.weekday,
-        });
+        let expected = case.expected.map(DateCode::from);
         assert_eq!(
             parse_date_code(case.value.parse().unwrap(), case.date1904),
             expected,

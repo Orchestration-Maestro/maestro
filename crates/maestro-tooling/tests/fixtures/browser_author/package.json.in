@@ -1,0 +1,11 @@
+{
+  "name": "@orchestration-maestro/maestro-web",
+  "version": "@VERSION@",
+  "type": "module",
+  "main": "@MODULE_ENTRY@",
+  "types": "@TYPE_ENTRY@",
+  "exports": {
+    ".": "@MODULE_ENTRY@",
+    "./app.css": "@STYLESHEET_ENTRY@"
+  }
+}

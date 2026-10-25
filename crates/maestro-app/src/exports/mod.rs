@@ -10,6 +10,10 @@ mod clipboard;
 mod configuration;
 /// Existing credentials re-exports.
 mod credentials;
+/// Workspace daemon re-export, named separately from the exported module.
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "daemon.rs"]
+mod daemon_exports;
 /// Existing extensions re-exports.
 mod extensions;
 /// Existing json re-exports.
@@ -27,12 +31,22 @@ mod presentation_data;
 mod process;
 /// Existing resources re-exports.
 mod resources;
+/// The JSONL protocol records and server.
+#[cfg(not(target_arch = "wasm32"))]
+mod rpc;
 /// Existing session re-exports.
 mod session;
 /// Existing settings re-exports.
 mod settings;
+/// Terminal emulator re-export, named separately from the exported module.
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "terminal.rs"]
+mod terminal_exports;
 /// Existing text re-exports.
 mod text;
+/// Existing theme re-exports.
+#[cfg(not(target_arch = "wasm32"))]
+mod theme;
 /// Existing tools re-exports.
 mod tools;
 
@@ -42,6 +56,8 @@ pub use browser_tools::*;
 pub use clipboard::*;
 pub use configuration::*;
 pub use credentials::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use daemon_exports::*;
 pub use extensions::*;
 pub use json::*;
 pub use markdown_exports::*;
@@ -52,7 +68,19 @@ pub use presentation_data::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::*;
 pub use resources::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use rpc::*;
 pub use session::*;
 pub use settings::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use terminal_exports::*;
 pub use text::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use theme::*;
 pub use tools::*;
+
+/// Changelog utility re-exports.
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::utils::changelog::{
+    ChangelogEntry, compare_versions, get_changelog_path, get_new_entries, parse_changelog,
+};

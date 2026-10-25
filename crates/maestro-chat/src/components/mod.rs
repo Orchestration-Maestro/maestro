@@ -23,12 +23,18 @@ pub mod tree_selector;
 
 pub mod user_message;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod footer;
+
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor, paint};
 use maestro_tui::{
     Component, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TerminalImage,
     TextDecoration,
 };
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 
 /// Paints a row using the current background, leaving absent themes unstyled.
 fn background(theme: LiveTheme, key: ThemeBg) -> Rc<dyn Fn(&str) -> String> {
@@ -56,10 +62,17 @@ pub mod assistant_message;
 
 pub mod branch_summary_message;
 
+pub mod custom_message;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod skill_invocation_message;
+
 pub mod compaction_summary_message;
 
 /// Shared constructor inputs and Markdown composition for transcript widgets.
 struct MessageRendering {
+    /// Filters decoded authored Markdown before applying terminal styles.
+    clean_content: bool,
     /// Styling slot sampled by foreground callbacks.
     theme: LiveTheme,
     /// Caller-supplied Markdown callbacks.
@@ -71,6 +84,7 @@ impl MessageRendering {
     /// Retains the caller's rendering inputs.
     fn new(theme: LiveTheme, markdown: Rc<MarkdownTheme>, terminal: TerminalImage) -> Self {
         Self {
+            clean_content: false,
             theme,
             markdown,
             terminal,
@@ -108,6 +122,7 @@ impl MessageRendering {
                 padding_x: padding,
                 padding_y: 0,
                 default_text_style: style,
+                clean_content: self.clean_content,
             },
             self.markdown.clone(),
             self.terminal.clone(),
@@ -247,26 +262,40 @@ fn list_window(selected: usize, total: usize, capacity: usize) -> std::ops::Rang
     start..start.saturating_add(capacity).min(total)
 }
 
-/// Replaces a nonempty supplied raw home prefix for display.
-fn shorten_home_path(path: &str, home: Option<&str>) -> String {
-    home.filter(|home| !home.is_empty())
+/// Replaces the first usable home variable's raw prefix for display.
+fn shorten_path_with_home(path: &str, environment: &dyn Fn(&str) -> Option<String>) -> String {
+    let home = environment("HOME")
+        .filter(|home| !home.is_empty())
+        .or_else(|| environment("USERPROFILE").filter(|home| !home.is_empty()));
+    shorten_home_path(path, home.as_deref())
+}
+
+/// Replaces a supplied raw home prefix for display, unless that home abbreviates nothing.
+pub(crate) fn shorten_home_path(path: &str, home: Option<&str>) -> String {
+    home.filter(|home| !home.is_empty() && *home != "/")
         .and_then(|home| path.strip_prefix(home))
         .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
 }
 
 pub mod bash_execution;
 pub mod session_selector;
-/// Wraps selection in nonempty results, reporting whether a redraw is needed.
-fn navigate_list(selected: &Cell<usize>, count: usize, up: bool) -> bool {
+/// Navigates a nonempty captured view, releasing its borrow before redraw.
+fn navigate_list<T>(
+    selected: &Cell<usize>,
+    filtered: &RefCell<Vec<T>>,
+    up: bool,
+    redraw: impl FnOnce(),
+) {
+    let count = filtered.borrow().len();
     if count == 0 {
-        return false;
+        return;
     }
     selected.set(if up {
         (selected.get() + count - 1) % count
     } else {
         (selected.get() + 1) % count
     });
-    true
+    redraw();
 }
 
 pub mod scoped_models_selector;

@@ -8,7 +8,7 @@ pub use render::EditRenderState;
 
 use crate::{
     file_mutation_queue::with_file_mutation_queue,
-    path_utils::resolve_to_cwd,
+    path_utils::resolve_existing_path,
     tool_definition_wrapper::wrap_tool_definition,
     types::{ToolDefinition, ToolRenderShell},
     utils::diagnostics::{diagnostic, failure},
@@ -72,7 +72,7 @@ pub fn create_edit_tool_definition<C: 'static>(
         definition: Tool {
             name: "edit".into(),
             description: "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.".into(),
-            parameters: json!({
+            parameters: maestro_models::ParameterSchema::authored(json!({
                 "type": "object", "required": ["path", "edits"],
                 "properties": {
                     "path": {"type": "string", "description": "Path to the file to edit (relative or absolute)"},
@@ -84,7 +84,7 @@ pub fn create_edit_tool_definition<C: 'static>(
                         }, "additionalProperties": false
                     }, "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."}
                 }, "additionalProperties": false
-            }),
+            }), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/edits".to_owned(), maestro_models::SchemaKind::Array), ("/properties/edits/items".to_owned(), maestro_models::SchemaKind::Object), ("/properties/edits/items/properties/oldText".to_owned(), maestro_models::SchemaKind::String), ("/properties/edits/items/properties/newText".to_owned(), maestro_models::SchemaKind::String)]),
         },
         label: "edit".into(),
         prompt_snippet: Some("Make precise file edits with exact text replacement, including multiple disjoint edits in one call".into()),
@@ -101,7 +101,7 @@ pub fn create_edit_tool_definition<C: 'static>(
             if input.edits.is_empty() {
                 return Box::pin(std::future::ready(Err(failure("edits must contain at least one replacement"))));
             }
-            let absolute = match resolve_to_cwd(&input.path, &cwd) {
+            let absolute = match resolve_existing_path(&input.path, &cwd) {
                 Ok(path) => path,
                 Err(error) => return Box::pin(std::future::ready(Err(diagnostic(&error)))),
             };
@@ -128,7 +128,7 @@ pub mod local {
     use super::{
         Arc, EditRenderState, EditToolDetails, EditToolInput, EditToolOptions,
         NativeEditOperations, Tool, ToolRenderShell, diagnostic, edit_file, failure, json, prepare,
-        render, resolve_to_cwd, with_file_mutation_queue,
+        render, resolve_existing_path, with_file_mutation_queue,
     };
     use crate::tool_definition_wrapper::local::wrap_tool_definition;
     use crate::types::local::ToolDefinition;

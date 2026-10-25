@@ -22,6 +22,7 @@ font bundle; native tests enable the dev-only egui default fonts.
 | js-sys | 0.3.106 | wasm-only, default/std | MIT |
 | web-sys | 0.3.106 | public native event/element types; wasm-only platform effects | MIT |
 | wasm-bindgen-futures | 0.4.79 | wasm-only, default/std request promises and local future dispatch | MIT |
+| custom-element | 0.1.5 | wasm-only; autonomous light-DOM element classes and their shipped 43-line subclass shim | MIT |
 
 The web-sys feature set is Window, Navigator, Storage, Location, console,
 Document, Node, Element, SvgElement, HtmlElement, HtmlAnchorElement, Blob,
@@ -29,7 +30,8 @@ BlobPropertyBag, Url, MediaQueryList, HtmlCanvasElement, DomRect, DomException,
 DomStringList, IdbDatabase, IdbFactory, IdbIndex, IdbIndexParameters, IdbObjectStore,
 IdbObjectStoreParameters, IdbOpenDbRequest, IdbRequest, IdbTransaction,
 IdbTransactionMode, IdbKeyRange, IdbCursor, IdbCursorWithValue, IdbCursorDirection,
-StorageManager, StorageEstimate, HtmlInputElement, HtmlTextAreaElement, Event, EventTarget and KeyboardEvent.
+StorageManager, StorageEstimate, HtmlInputElement, HtmlTextAreaElement, Event, EventTarget, KeyboardEvent,
+CustomElementRegistry, HtmlButtonElement and Response.
 Storage and reload errors remain fallible. Legacy locale access uses the platform property
 adapter only on the fallback branch. The real library is built for WebAssembly,
 not replaced with a test-only host.
@@ -55,6 +57,16 @@ or runtime dependency is bundled.
 Lucide 0.544.0 icon geometry uses ISC with Feather MIT portions. Browser
 translation data uses MIT. Their full texts are retained in
 [third-party notices](../../THIRD-PARTY-NOTICES.md).
+
+custom-element 0.1.5 is the browser element bridge: it defines classes whose
+lifecycle callbacks reach Rust state, through its fixed `createCustomElement.js`
+shim (43 lines), which binding generation emits beside the module. It depends only
+on the locked wasm-bindgen, js-sys and web-sys and adds no other package to the
+workspace lock. Its whole browser closure is 25 packages under MIT or Apache-2.0
+where a choice exists, plus Unicode-3.0 for unicode-ident. The crate is
+dual-licensed MIT OR Apache-2.0 and used under MIT. The two runtime-module test
+fixtures are separate crates with their own lockfiles, checked by shared CI's
+locked-manifest check. See [third-party notices](../../THIRD-PARTY-NOTICES.md#browser-element-bridge).
 
 See [browser utility use](../browser/frontend.md) and
 [browser-native record storage](../browser/storage.md) for the delivered API boundaries.
@@ -133,7 +145,7 @@ HtmlElement and Node features were already enabled. Clipboard discovery, Promise
 settlement and fallback invocation reuse existing reflection and bindings; no
 package version, license closure or clipboard runtime is added.
 
-Hidden sandbox execution directly uses Tokio `=1.53.2`, defaults off with only
+Hidden sandbox execution directly uses Tokio `=1.53.3`, defaults off with only
 `sync`, for an owned one-shot result channel. Tokio is MIT; its already-locked
 `pin-project-lite =0.2.17` closure is MIT OR Apache-2.0. No package version,
 runtime, executor or timer implementation is added. The adapter reuses the native
@@ -147,5 +159,24 @@ darling_core, darling_macro, ident_case, the phf family, rapidhash and strsim
 beside packages the workspace already locks. The matching KaTeX 0.18.5 stylesheet
 and its twenty `woff2` fonts are embedded and inserted once per document as data;
 their MIT notice is in [third-party notices](../../THIRD-PARTY-NOTICES.md#math-stylesheet-and-fonts).
+A private typed adapter supplies missing bare-radical padding, preserves display
+style when changing explicit size and script style when repeating it, and routes
+builtin macro errors to inline error spans.
+Malformed environment names retain the delimiter-spelled fallback. The registry
+package stays unchanged; there is no fork, formula preprocessing or HTML rewriting.
+Internal markup and error-tooltip wording may differ without changing the rendered
+formula or its error branch. The adapter-derived source shares the math MIT notice.
 Parsing is the shared [Markdown owner](../markdown.md), reached through the
 application edge; no browser binding feature is added.
+
+## Isolated author fixture
+
+The [browser author fixture](../browser-build.md) is a separate Cargo workspace,
+not a new `maestro-web` runtime dependency. It builds its page from elements with
+wasm-bindgen `=0.2.129` and web-sys `=0.3.106` (MIT OR Apache-2.0); web-sys
+selects Document, Element, HtmlElement, Node and Window. Native preparation invokes
+the existing `maestro-theme` export example as a separate locked root build; tooling
+reuses already-locked serde_json `=1.0.151` (MIT) for generated configuration. The
+fixture has no native path or build-dependency edge. The shared whole font assets
+have OFL-1.1 notices, and the fixture stylesheet registers them.
+

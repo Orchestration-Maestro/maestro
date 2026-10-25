@@ -28,9 +28,17 @@ fn matching_pin_selects_last_version_after_deep_duplicate() {
 
 /// Resolves installed resources and observes the completed command boundary.
 fn check_matching_pin(offline: bool, member: &str) {
+    let (case, environment) = if offline {
+        ("offline", vec![("MAESTRO_OFFLINE", Some("1".into()))])
+    } else {
+        ("online", Vec::new())
+    };
+    if crate::resolution_support::case_in_child(case, |_| environment).is_none() {
+        return;
+    }
     let scratch = scratch::Scratch::new().unwrap();
-    let cwd = scratch.0.to_str().unwrap();
-    let target = scratch.0.join(".maestro/npm/node_modules/pkg");
+    let cwd = scratch.path().to_str().unwrap();
+    let target = scratch.path().join(".maestro/npm/node_modules/pkg");
     fs::create_dir_all(&target).unwrap();
     let deep = format!("{}0{}", "[".repeat(128), "]".repeat(128));
     fs::write(
@@ -39,26 +47,19 @@ fn check_matching_pin(offline: bool, member: &str) {
     )
     .unwrap();
     fs::write(target.join("entry.ts"), "installed resource").unwrap();
-    let (_, settings, mut effects) = support::manager(&serde_json::json!({}));
-    Rc::get_mut(&mut effects).unwrap().native_exists = true;
-    *effects.offline.borrow_mut() = offline.then(|| "1".into());
+    let (_, settings, effects) = support::manager(&serde_json::json!({}));
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: cwd.into(),
-            agent_dir: scratch.0.join("user").to_str().unwrap().into(),
+            agent_dir: scratch.path().join("user").to_str().unwrap().into(),
             settings_manager: settings,
         },
         support::Controlled(Rc::clone(&effects)),
     );
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    let result = runtime
-        .block_on(
-            manager
-                .resolve_extension_sources(&["npm:pkg@2.0.0".into()], Some(SourceScope::Project)),
-        )
-        .unwrap();
+    let result = crate::runtime::run(
+        manager.resolve_extension_sources(&["npm:pkg@2.0.0".into()], Some(SourceScope::Project)),
+    )
+    .unwrap();
     assert_eq!(
         result.extensions.len(),
         1,

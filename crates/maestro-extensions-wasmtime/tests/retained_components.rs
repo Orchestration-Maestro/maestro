@@ -44,19 +44,13 @@ pub(super) async fn loaded_on(
     ExtensionRunner<Local>,
     EventBus<Local>,
 ) {
-    loaded_in(
-        events,
-        session::runner_session("/render-domain").0,
-        support::credential_operations(),
-    )
-    .await
+    loaded_in(events, session::runner_session("/render-domain").0).await
 }
 
 /// Keeps the original loader runtime bound to the caller's actual session owners.
 pub(super) async fn loaded_in(
     events: EventBus<Local>,
     session: maestro_extensions::runner::ExtensionRunnerSession,
-    operations: Rc<dyn maestro_credentials::ConfigValueOperations>,
 ) -> (
     ExtensionHandle<Local>,
     ExtensionRunner<Local>,
@@ -65,7 +59,7 @@ pub(super) async fn loaded_in(
     let runtime = create_extension_runtime::<Local>();
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
-        artifact_factory(path.clone(), operations),
+        artifact_factory(path.clone()),
         "/fixture".into(),
         events.clone(),
         runtime.clone(),
@@ -278,17 +272,19 @@ fn controlled_wait(
             ProviderActions::default(),
         )
         .unwrap();
-    runner.bind_command_context(Some(ExtensionCommandContextActions {
-        wait_for_idle: Rc::new(move || {
-            let (resume, result) = tokio::sync::oneshot::channel();
-            entered.send((label, resume)).unwrap();
-            Box::pin(async move {
-                result.await?;
-                Ok(())
-            })
-        }),
-        ..Default::default()
-    }));
+    runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+        maestro_extensions::CommandContextOperations {
+            wait_for_idle: Rc::new(move || {
+                let (resume, result) = tokio::sync::oneshot::channel();
+                entered.send((label, resume)).unwrap();
+                Box::pin(async move {
+                    result.await?;
+                    Ok(())
+                })
+            }),
+            ..crate::context_actions::silent_command_operations()
+        },
+    )));
 }
 
 #[test]
@@ -421,7 +417,7 @@ fn foreign_component_listener_prefixes_run_after_the_current_renderer_returns() 
         );
         let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
         let owner = load_extension_from_factory(
-            artifact_factory(path.clone(), support::credential_operations()),
+            artifact_factory(path.clone()),
             "/fixture".into(),
             bus.clone(),
             create_extension_runtime::<Local>(),
@@ -431,7 +427,7 @@ fn foreign_component_listener_prefixes_run_after_the_current_renderer_returns() 
         .unwrap();
         let runner = other_runner(&owner);
         let _foreign = load_extension_from_factory(
-            artifact_factory(path.clone(), support::credential_operations()),
+            artifact_factory(path.clone()),
             "/foreign".into(),
             controller.for_extension(),
             create_extension_runtime::<Local>(),

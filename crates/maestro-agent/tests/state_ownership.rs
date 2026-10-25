@@ -4,6 +4,7 @@ use maestro_agent::{
     Agent, AgentInitialState, AgentMessage, AgentOptions, AgentState, AgentTool,
     CustomAgentMessages, QueueMode, SharedAgentTool, ThinkingLevel, ToolExecutionMode,
 };
+use maestro_models::SharedHandle;
 use maestro_models::{Model, UserContent, UserMessage};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -395,7 +396,7 @@ fn maestro_state_and_model_handles_stay_live() {
             ..Default::default()
         });
         model.write().unwrap().id = take(&mut case.input, "modelId");
-        let retained = Arc::clone(agent.state());
+        let retained = SharedHandle::clone(agent.state());
         {
             let mut live = retained.write().unwrap();
             live.system_prompt = take(&mut case.input, "systemPrompt");
@@ -405,7 +406,7 @@ fn maestro_state_and_model_handles_stay_live() {
         let live = retained.read().unwrap();
         check(
             case,
-            json!({"sameState":Arc::ptr_eq(&retained,agent.state()),
+            json!({"sameState":SharedHandle::ptr_eq(&retained,agent.state()),
             "sameModel":Arc::ptr_eq(&live.model,&model),"state":state(&live)}),
         );
     }
@@ -419,19 +420,19 @@ fn tool(
     let calls = Arc::new(AtomicUsize::new(0));
     let preparation = Arc::clone(&calls);
     let execution = Arc::clone(&calls);
-    let entry: SharedAgentTool = Arc::new(RwLock::new(AgentTool {
+    let entry: SharedAgentTool = SharedHandle::new(RwLock::new(AgentTool {
         description: None,
         definition: maestro_models::Tool {
             name: name.into(),
             description: format!("{name} tool"),
-            parameters: json!({"type":"object"}),
+            parameters: json!({"type":"object"}).into(),
         },
         label: label.into(),
-        prepare_arguments: Some(Arc::new(move |_| {
+        prepare_arguments: Some(SharedHandle::new(move |_| {
             preparation.fetch_add(1, Ordering::SeqCst);
             panic!("unexpected preparation")
         })),
-        execute: Arc::new(move |_, _, _, _| {
+        execute: SharedHandle::new(move |_, _, _, _| {
             execution.fetch_add(1, Ordering::SeqCst);
             panic!("unexpected execution")
         }),
@@ -484,7 +485,7 @@ fn maestro_tool_collections_retain_executable_entries() {
             "Echo",
             Some(tool_mode(&take::<String>(&mut case.input, "mode"))),
         );
-        let mut original = vec![Arc::clone(&entry)];
+        let mut original = vec![SharedHandle::clone(&entry)];
         let agent: Agent = Agent::new(AgentOptions {
             initial_state: AgentInitialState {
                 tools: original.clone(),
@@ -493,9 +494,9 @@ fn maestro_tool_collections_retain_executable_entries() {
             ..Default::default()
         });
         original.clear();
-        let captured = Arc::clone(agent.state().read().unwrap().tools());
+        let captured = SharedHandle::clone(agent.state().read().unwrap().tools());
         with_tool(&entry, |tool| tool.label = take(&mut case.input, "label"));
-        captured.write().unwrap().push(Arc::clone(&entry));
+        captured.write().unwrap().push(SharedHandle::clone(&entry));
         let before: Vec<_> = captured
             .read()
             .unwrap()
@@ -505,17 +506,17 @@ fn maestro_tool_collections_retain_executable_entries() {
                 guard.label.clone()
             })
             .collect();
-        let mut replacement = vec![Arc::clone(&entry)];
+        let mut replacement = vec![SharedHandle::clone(&entry)];
         agent
             .state()
             .write()
             .unwrap()
             .set_tools(replacement.clone());
         replacement.clear();
-        captured.write().unwrap().push(Arc::clone(&entry));
+        captured.write().unwrap().push(SharedHandle::clone(&entry));
         let replacement_mode = tool_mode(&take::<String>(&mut case.input, "replacementMode"));
         with_tool(&entry, |tool| tool.execution_mode = Some(replacement_mode));
-        let current = Arc::clone(agent.state().read().unwrap().tools());
+        let current = SharedHandle::clone(agent.state().read().unwrap().tools());
         let current_guard = current.read().unwrap();
         let stored_guard = current_guard[0].read().unwrap();
         let stored = &*stored_guard;
@@ -525,9 +526,9 @@ fn maestro_tool_collections_retain_executable_entries() {
             case,
             json!({"called":calls.load(Ordering::SeqCst),"copiedOuter":captured.read().unwrap().len()!=original.len(),
             "copiedAssignment":current_guard.len()!=replacement.len(),
-            "sameEntry":Arc::ptr_eq(&captured.read().unwrap()[0],&entry),
-            "samePrepare":Arc::ptr_eq(stored.prepare_arguments.as_ref().unwrap(),supplied.prepare_arguments.as_ref().unwrap()),
-            "sameExecute":Arc::ptr_eq(&stored.execute,&supplied.execute),"before":before,
+            "sameEntry":SharedHandle::ptr_eq(&captured.read().unwrap()[0],&entry),
+            "samePrepare":SharedHandle::ptr_eq(stored.prepare_arguments.as_ref().unwrap(),supplied.prepare_arguments.as_ref().unwrap()),
+            "sameExecute":SharedHandle::ptr_eq(&stored.execute,&supplied.execute),"before":before,
             "oldCount":captured.read().unwrap().len(),"currentCount":current_guard.len(),
             "currentMode":match stored.execution_mode.unwrap() {ToolExecutionMode::Sequential=>"sequential",ToolExecutionMode::Parallel=>"parallel"}}),
         );
@@ -543,33 +544,33 @@ fn maestro_heterogeneous_typed_tools_are_retained_by_identity() {
     let typed = |name: &str| maestro_models::Tool {
         name: name.into(),
         description: String::new(),
-        parameters: json!({}),
+        parameters: json!({}).into(),
     };
-    let numeric: SharedAgentTool = Arc::new(RwLock::new(AgentTool::typed::<u32, String>(
+    let numeric: SharedAgentTool = SharedHandle::new(RwLock::new(AgentTool::typed::<u32, String>(
         typed("numeric"),
         "Numeric".into(),
-        Arc::new(|_, _, _, _| panic!("unexpected execution")),
+        SharedHandle::new(|_, _, _, _| panic!("unexpected execution")),
     )));
-    let textual: SharedAgentTool = Arc::new(RwLock::new(AgentTool::typed::<String, Vec<u8>>(
-        typed("textual"),
-        "Textual".into(),
-        Arc::new(|_, _, _, _| panic!("unexpected execution")),
-    )));
+    let textual: SharedAgentTool =
+        SharedHandle::new(RwLock::new(AgentTool::typed::<String, Vec<u8>>(
+            typed("textual"),
+            "Textual".into(),
+            SharedHandle::new(|_, _, _, _| panic!("unexpected execution")),
+        )));
     let agent: Agent = Agent::new(AgentOptions {
         initial_state: AgentInitialState {
-            tools: vec![Arc::clone(&numeric), Arc::clone(&textual)],
+            tools: vec![SharedHandle::clone(&numeric), SharedHandle::clone(&textual)],
             ..Default::default()
         },
         ..Default::default()
     });
-    agent
-        .state()
-        .write()
-        .unwrap()
-        .set_tools(vec![Arc::clone(&textual), Arc::clone(&numeric)]);
+    agent.state().write().unwrap().set_tools(vec![
+        SharedHandle::clone(&textual),
+        SharedHandle::clone(&numeric),
+    ]);
     let live = agent.state().read().unwrap();
     let tools = live.tools().read().unwrap();
-    assert!(Arc::ptr_eq(&tools[0], &textual) && Arc::ptr_eq(&tools[1], &numeric));
+    assert!(SharedHandle::ptr_eq(&tools[0], &textual) && SharedHandle::ptr_eq(&tools[1], &numeric));
     let names: Vec<_> = tools
         .iter()
         .map(|entry| {
@@ -844,7 +845,7 @@ fn assert_sole_owned_releases() {
 fn assert_tool_order_and_duplicates() {
     let zulu = tool("zulu", "Zulu", None).0;
     let alpha = tool("alpha", "Alpha", None).0;
-    let entries = vec![Arc::clone(&zulu), alpha, zulu];
+    let entries = vec![SharedHandle::clone(&zulu), alpha, zulu];
     let agent: Agent = Agent::new(AgentOptions {
         initial_state: AgentInitialState {
             tools: entries.clone(),
@@ -866,6 +867,6 @@ fn assert_tool_order_and_duplicates() {
             })
             .collect();
         assert_eq!(names, ["zulu", "alpha", "zulu"]);
-        assert!(Arc::ptr_eq(&collection[0], &collection[2]));
+        assert!(SharedHandle::ptr_eq(&collection[0], &collection[2]));
     }
 }

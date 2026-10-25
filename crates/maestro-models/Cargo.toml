@@ -48,9 +48,12 @@ getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-path = { path = "../maestro-path" }
+if-addrs = { version = "=0.15.0", default-features = false, features = ["link-local"] }
+boa_engine = { version = "=0.22.0", default-features = false, features = ["system-time-zone"] }
+tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
 google-cloud-auth = "=1.17.0"
 uuid = { version = "=1.27.0", default-features = false }
-tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync", "time", "net", "io-util"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "time", "net", "io-util"] }
 tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 aws-sdk-bedrockruntime = { version = "=1.148.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-config = { version = "=1.12.0", default-features = false, features = ["behavior-version-latest", "default-https-client", "rt-tokio", "credentials-process", "sso", "credentials-login"] }
@@ -69,11 +72,13 @@ tower-service = { version = "=0.3.3", default-features = false }
 http-body-util = { version = "=0.1.5", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
+maestro-test-tracing.workspace = true
 image = { version = "=0.24.9", default-features = false, features = ["png"] }
 aws-smithy-runtime-api = { version = "=1.19.0", features = ["test-util"] }
 icu_collator = "=2.3.1"
-tokio = { version = "=1.53.2", features = ["rt", "time", "test-util"] }
+tokio = { version = "=1.53.3", features = ["rt", "time", "test-util"] }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "system"] }

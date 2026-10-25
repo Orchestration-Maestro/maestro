@@ -57,6 +57,7 @@ mod editor_navigation;
 mod editor_paste;
 mod editor_wrapping;
 mod fuzzy_ranking;
+mod host_key_sequences;
 mod image_components;
 mod input_editing;
 mod input_viewport;
@@ -76,3 +77,5 @@ mod widget_rendering;
 mod widget_state;
 
 mod fallible_input;
+
+mod terminal_theme;

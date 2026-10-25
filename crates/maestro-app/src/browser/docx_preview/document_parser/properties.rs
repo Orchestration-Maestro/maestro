@@ -8,6 +8,7 @@ pub(super) fn parse_paragraph_properties<'doc, 'input: 'doc>(
     xml: &'doc XmlParser<'input>,
     element: XmlElement<'doc, 'input>,
     data: &mut Data,
+    ignore_width: bool,
 ) {
     let Data::Paragraph { properties: props } = data else {
         return;
@@ -36,8 +37,8 @@ pub(super) fn parse_paragraph_properties<'doc, 'input: 'doc>(
         &mut style,
         None,
         DefaultPropertiesOptions {
+            ignore_width,
             handler: Some(&mut handler),
-            ..Default::default()
         },
     );
     props.css_style = Some(style);
@@ -47,6 +48,7 @@ pub(super) fn parse_run_properties<'doc, 'input: 'doc>(
     xml: &'doc XmlParser<'input>,
     element: XmlElement<'doc, 'input>,
     data: &mut Data,
+    ignore_width: bool,
 ) {
     let Data::Run {
         properties: props, ..
@@ -72,8 +74,8 @@ pub(super) fn parse_run_properties<'doc, 'input: 'doc>(
         &mut style,
         None,
         DefaultPropertiesOptions {
+            ignore_width,
             handler: Some(&mut handler),
-            ..Default::default()
         },
     );
     props.css_style = Some(style);

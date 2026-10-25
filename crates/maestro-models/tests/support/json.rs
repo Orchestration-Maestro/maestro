@@ -1,5 +1,9 @@
-//! JSON value comparison helpers shared by the protocol tests.
+//! JSON value comparison and decoding helpers shared by the protocol tests.
 
+#![cfg(not(target_arch = "wasm32"))]
+use crate::chat::TestResult;
+use maestro_models::Context;
+use serde::Deserialize as _;
 use serde_json::Value;
 
 /// Serialize ordered event data without the live message handles.
@@ -34,4 +38,30 @@ pub fn canonical(value: Value) -> Value {
         ),
         other => other,
     }
+}
+
+/// Decode the optional member a case names.
+///
+/// # Errors
+/// Returns the decoding failure when the member is present but malformed.
+pub fn decode<T: serde::de::DeserializeOwned>(spec: &Value, key: &str) -> TestResult<Option<T>> {
+    Ok(spec
+        .get(key)
+        .map(|value| serde_json::from_value(value.clone()))
+        .transpose()?)
+}
+
+/// Decode a fixture context only when every field survives in the public type.
+///
+/// # Errors
+/// Returns the decoding failure, or a failure when the public type drops a fixture field.
+pub fn exact_context<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<Context, D::Error> {
+    use serde::de::Error as _;
+    let value = Value::deserialize(decoder)?;
+    let context: Context = serde_json::from_value(value.clone()).map_err(D::Error::custom)?;
+    let retained = serde_json::to_value(&context).map_err(D::Error::custom)?;
+    if canonical(retained) != canonical(value) {
+        return Err(D::Error::custom("context fixture fields were not retained"));
+    }
+    Ok(context)
 }

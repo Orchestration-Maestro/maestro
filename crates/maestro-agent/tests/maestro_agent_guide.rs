@@ -15,9 +15,9 @@ use maestro_models::{
 };
 use serde_json::json;
 use std::sync::{Arc, Mutex, RwLock};
+use support::observable::kind;
 use support::scripted::{
-    Registered, agent_for, block_text, history, label, last_assistant, record_events, say, spawner,
-    user,
+    Registered, agent_for, block_text, history, last_assistant, record_events, say, spawner, user,
 };
 
 /// The shared handle of a registered model, as an Agent's initial model.
@@ -254,14 +254,10 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
             "type": "object",
             "properties": {"text": {"type": "string"}},
             "required": ["text"]
-        }),
-    };
-    let text = |text: String| {
-        UserBlock::Text(TextContent {
-            text,
-            text_signature: None,
         })
+        .into(),
     };
+    let text = |text: String| UserBlock::Text(TextContent::new(text));
     let mut tool = AgentTool::typed(
         definition,
         "Echo".into(),
@@ -291,11 +287,10 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
 /// An assistant turn calling `echo` twice with the legacy `message` field.
 fn two_echo_calls() -> FauxResponseStep {
     let call = |id: &str, text: &str| {
-        let arguments = json!({"message": text}).as_object().unwrap().clone();
         let options = maestro_models::FauxToolCallOptions {
             id: Some(id.into()),
         };
-        let call = maestro_models::faux_tool_call("echo", arguments, options);
+        let call = maestro_models::faux_tool_call("echo", json!({"message": text}), options);
         maestro_models::AssistantContent::ToolCall(call)
     };
     let options = FauxAssistantMessageOptions {
@@ -418,7 +413,7 @@ fn flaky_tool(runs: &Arc<Mutex<u32>>) -> maestro_agent::SharedAgentTool {
     let definition = Tool {
         name: "flaky".into(),
         description: "Fail on demand".into(),
-        parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+        parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}).into(),
     };
     let tool = AgentTool::typed(
         definition,
@@ -452,7 +447,6 @@ async fn guide_tool_failures_become_error_results_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
     let call = |id: &str, arguments: serde_json::Value| {
-        let arguments = arguments.as_object().unwrap().clone();
         let options = maestro_models::FauxToolCallOptions {
             id: Some(id.into()),
         };
@@ -650,7 +644,7 @@ fn label_sink() -> (maestro_agent::AgentEventSink, Labels) {
     let labels = Labels::default();
     let sink = Arc::clone(&labels);
     let emit: maestro_agent::AgentEventSink = Arc::new(move |event| {
-        sink.lock().unwrap().push(label(&event));
+        sink.lock().unwrap().push(kind(&event));
         Box::pin(std::future::ready(Ok(())))
     });
     (emit, labels)
@@ -720,7 +714,7 @@ async fn observable_loops() {
     assert_eq!(stream.result().await.len(), 2);
     let mut names = vec![];
     while let Some(event) = stream.next().await {
-        names.push(label(&event));
+        names.push(kind(&event));
     }
     assert_eq!(names, PROMPT_RUN);
     let empty = AgentContext {

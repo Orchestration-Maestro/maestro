@@ -100,10 +100,10 @@ legacy indexed shortcuts. A Maestro user never holds either file, so no user los
 | `maestro-daemon` | `terminal`, `terminal_theme`, `agent_resume`, `settings`, `paths`, `environment`, `logging`, `instances`, `input`, `selection`, `pane`, `render_prof`, `events`, `render_signal`, `app`, `aggregate`, `git`, `persist`, `platform`, `key_combo`, `api`, `client`, `restore`, `actions`, `commands`, `popup`, `worktree`, `integrations`, `server`, `pane_graphics`, `announcements` | 5, 8–20, 25, 27–31, 34 |
 | `maestro-rpc` | `daemon` (socket adapter and graphics stream channel) | 13, 15, 31 |
 | `maestro-cli` | `workspace_commands`, `completion`, `output` | 21–23, 32, 33, 35 |
-| `maestro-tui` | `stdin_buffer` host replies and mouse tails; structured key decode | 25 |
+| `maestro-tui` | `stdin_buffer` host replies and mouse tails; structured key decode; `terminal_theme` host colour queries and reply parsing | 25 |
 | `maestro-tui-crossterm` | alternate screen, mouse capture and colour-scheme report modes | 32 |
 | `maestro-multiplexer` | `render`, `palette`, `ui`, `view`, `input`, `keybindings`, `surface`, `client`, `sound`, `launch`, `remote` | 26–29, 32, 34, 35 |
-| `maestro-app` | `daemon` re-exports, `exports::terminal`, `utils::clipboard` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |
+| `maestro-app` | `daemon` and `terminal` re-exports, `utils::clipboard` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |
 | `maestro` | server, render-surface, attach, monolithic and PTY set-up wiring | 21, 29, 34 |
 
 An inherent `impl` must live in the crate that defines its type. Reference methods on topology types that
@@ -168,7 +168,11 @@ need `unsafe` to hand its descriptor to the async runtime.
   read no variable and name no root.
 - **Dispatch.** Workspace commands reach the daemon through the shared RPC dispatch path, on stdio and on the
   socket. The socket adapter lives in `maestro-rpc::daemon`; daemon state, subscriptions and waits live in
-  `maestro-daemon::api`.
+  `maestro-daemon::api`. `maestro-rpc::daemon::run_server` owns socket bind, accept and
+  connection teardown and drives the existing daemon `App::run` loop. Each accepted socket
+  uses the application connection runner with no session; supplied sessions remain supported
+  by that same runner. Typed requests flow down to daemon-owned handlers, never through a
+  second dispatch loop. Startup announces only resources that have actually bound.
 - **Continued requests.** A connection reads lines full duplex. A line that arrives during a subscription or
   a wait is the next command. End of input drops the pending work, which ends the wait or the subscription.
 
@@ -185,13 +189,22 @@ need `unsafe` to hand its descriptor to the async runtime.
 ### Topology without runtimes
 
 - **Scope.** `maestro-workspace` holds topology only: layouts, workspaces, tabs, pane viewport state, public
-  numbers, metadata tokens and git label rules.
+  numbers, metadata tokens, git label rules and native repository discovery.
 - **Identity ownership.** One `WorkspaceTopology` owns its workspace collection and the allocator for
   pane, terminal and workspace identities. Creation and split operations use this allocator. Restore
   admission reserves saved pane/workspace identities and public counters before new allocation; terminal
   identities are allocated afresh. Counters survive workspace removal and are independent between owners.
 - **Runtimes.** The daemon passes the spawn closure and inserts the runtime into its one registry.
-- **Repository identity.** It enters topology as data; discovery runs in the daemon.
+- **Repository identity.** Native discovery belongs to the existing
+  `maestro-workspace::workspace::git` owner. The daemon and application footer use
+  the same directory walk for ordinary, linked, bare and embedded-bare layouts.
+  Native path bytes survive traversal and metadata-link resolution. Shared Unicode
+  trimming applies to link text. Workspace discovery climbs past markers without a
+  regular HEAD; footer discovery stops there and retains its branch, detached-head
+  and watch policy. Git subprocess fallbacks stay in the process-owning callers.
+  The footer calls the workspace owner through a direct native-only
+  application-to-workspace edge. Discovery tests use real
+  temporary directories rather than a second, fake-only filesystem adapter.
 - **Geometry.** Topology uses its own rectangle and border set.
 
 ### One pane runtime over the concrete emulator
@@ -230,7 +243,9 @@ The snapshot, the detection catalog and the announcements store use it.
 ### Foreground process facts
 
 - **Location.** Foreground jobs, process trees, argv, working directories and environment values are read in
-  `maestro-process::pty::foreground`.
+  the Linux-only `maestro-process::pty::foreground`. Its `ForegroundJob` and
+  `ForegroundProcess` records live in the platform-independent
+  `maestro-process::foreground` module, with re-exports at their Linux paths.
 - **Environment hint.** It is returned as the raw value, and the daemon parses it with the agent catalogue.
   That removes the cycle between process facts and agent recognition.
 
@@ -284,7 +299,8 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
 | A second runtime owner beside the registry | topology without runtimes | 3, 12 |
 | Two WSL detectors that disagree | one detector over the union of both signal sets | 29 |
 | Daemon state mixed with view state; daemon operations inside the input module | the state split above | 12, 27, 28 |
-| The footer branch reader misses bare, embedded-bare and reftable layouts | the footer reads through the daemon's repository discovery | 12 |
+| The footer discovery walk misses standalone bare repositories | the footer and daemon share workspace-owned native repository discovery | 12 |
+| Delayed terminal-only delivery rewrites an existing workspace toast | retained toast context changes only on workspace delivery | 12 |
 | An unlocked whole-file configuration rewrite can lose a concurrent write | writes through the settings file lock | 8, 12 |
 
 Each fix carries a root-cause table in its delivery report: the reference file and line where the defect
@@ -398,6 +414,7 @@ Each edge lands in the first commit of its delivery, with the crate-table row in
 | `maestro-detection` → `maestro-lock` | catalog commits | 7 |
 | `maestro-daemon` → `maestro-terminal` | first daemon use of the emulator (already allowed; the required edge is added with the code) | 10 |
 | `maestro-app` → `maestro-terminal` | terminal re-exports for the multiplexer | 26 |
+| `maestro-multiplexer` → `maestro-protocol` | frame records for the pane render and the frame encoder | 26 |
 | `maestro-daemon` → `maestro-lock` | announcements store | 27 |
 
 - **`maestro-lock`.** Delivery 6 changes its job to "guard file writes (exclusive locks and atomic

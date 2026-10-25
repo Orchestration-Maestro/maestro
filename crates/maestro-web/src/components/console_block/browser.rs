@@ -1,9 +1,11 @@
 //! Native console nodes using the existing reading transaction and control slots.
 use super::Prepared;
+#[cfg(target_arch = "wasm32")]
+use super::nodes::Nodes;
 use crate::browser::attachment_content::ReadingContent;
 #[cfg(target_arch = "wasm32")]
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
+    AttachmentHostError, ReadingRoot,
     browser::{append, element},
 };
 use std::{
@@ -14,12 +16,8 @@ use std::{
 /// Mounted native console with its local scroller and canvas-control slot.
 #[cfg(target_arch = "wasm32")]
 pub(super) struct Mounted {
-    /// Literal output body.
-    pre: web_sys::Element,
-    /// Localized header label.
-    label: web_sys::Element,
-    /// Feature-owned scrolling body, distinct from the host viewport.
-    scroll: web_sys::Element,
+    /// Shared console frame.
+    nodes: Nodes,
     /// Empty canvas-control slot outside the scrolling body.
     slot: web_sys::Element,
 }
@@ -30,7 +28,7 @@ pub(super) enum Mounted {}
 impl Mounted {
     /// Bring the console's own updated scroller to its bottom.
     pub(super) fn scroll_bottom(&self) {
-        self.scroll.set_scroll_top(self.scroll.scroll_height());
+        self.nodes.scroll_bottom();
     }
     /// Reveal the native control after keyboard focus.
     pub(super) fn reveal(&self) {
@@ -38,15 +36,8 @@ impl Mounted {
     }
     /// Reconcile literal nodes without replacing the published root.
     fn update(&self, next: &Prepared) {
-        use crate::browser::attachment_content::browser::set_text_if_changed;
-        set_text_if_changed(&self.pre, &next.content);
-        set_text_if_changed(&self.label, &next.label);
-        self.pre
-            .set_class_name(if next.variant == super::ConsoleVariant::Error {
-                "maestro-console-error"
-            } else {
-                ""
-            });
+        self.nodes
+            .update((&next.label, &next.content, next.variant));
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
@@ -86,31 +77,22 @@ fn mount(
     prepared: &Rc<Prepared>,
     target: &Rc<RefCell<Weak<Mounted>>>,
     id: egui::Id,
-) -> Result<ReadingRoot, AttachmentUiError> {
-    let root = element(document, "div", "maestro-console")?;
-    let style = element(document, "style", "")?;
-    style.set_text_content(Some(include_str!("console.css")));
-    append(&root, &style)?;
-    let header = element(document, "div", "maestro-console-header")?;
-    let label = element(document, "span", "maestro-console-label")?;
+) -> Result<ReadingRoot, AttachmentHostError> {
+    let nodes = Nodes::build(document)?;
     let slot = element(document, "span", "control-slot")?;
-    append(&header, &label)?;
-    append(&header, &slot)?;
-    let scroll = element(document, "div", "console-scroll")?;
-    let pre = element(document, "pre", "")?;
-    append(&scroll, &pre)?;
-    append(&root, &header)?;
-    append(&root, &scroll)?;
+    append(&nodes.header, &slot)?;
+    nodes.place()?;
+    let element = nodes.root.clone();
     let mounted = Rc::new(Mounted {
-        pre,
-        label,
-        scroll,
+        nodes,
         slot: slot.clone(),
     });
     mounted.update(prepared);
     *target.borrow_mut() = Rc::downgrade(&mounted);
     Ok(ReadingRoot {
-        element: root,
+        frame_style: "",
+        decoration: None,
+        element,
         slots: vec![(id, slot)],
         owner: Some(Box::new(mounted)),
         commit: Some(Box::new({
@@ -124,6 +106,7 @@ fn mount(
                     mounted.update(&prepared);
                     *target.borrow_mut() = Rc::downgrade(mounted);
                 }
+                Ok(())
             }
         })),
     })

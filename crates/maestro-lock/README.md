@@ -1,5 +1,6 @@
 # maestro-lock
 
-Bounded synchronous acquisition of caller-opened file locks.
+File-write exclusion and durable byte publication.
 
-See [file-lock acquisition](../../docs/locking.md) for the operation's contract.
+See [locking](../../docs/locking.md) for acquisition and
+[atomic replacement](../../docs/locking.md#atomic-replacement) contracts.

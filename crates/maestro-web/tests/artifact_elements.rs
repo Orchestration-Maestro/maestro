@@ -1,8 +1,7 @@
 //! Public generic artifact composition.
 #![cfg(test)]
-pub mod artifact_support;
-pub mod session_header_support;
-pub mod support;
+use crate::artifact_support;
+use crate::session_header_support;
 use maestro_web::tools::artifacts::create_artifact_element;
 use std::{
     cell::{Cell, RefCell},
@@ -109,7 +108,7 @@ fn generic_download_rejects_invalid_payload_without_saving() {
         let mut view = create_artifact_element("a.zip", &case.input.content, host.clone()).unwrap();
         assert!(matches!(
             frame.click(view.as_mut()),
-            Err(maestro_web::browser::attachment_content::AttachmentUiError::Presentation(_))
+            Err(maestro_web::tools::artifacts::ArtifactUiError::Presentation(_))
         ));
         assert!(host.downloads.borrow().is_empty());
         frame.draw(view.as_mut(), false, vec![]).unwrap();
@@ -127,7 +126,7 @@ fn generic_download_failure_keeps_the_native_body() {
     host.fail_download.set(true);
     assert!(matches!(
         frame.click(view.as_mut()),
-        Err(maestro_web::browser::attachment_content::AttachmentUiError::Host(_))
+        Err(maestro_web::tools::artifacts::ArtifactUiError::Host(_))
     ));
     assert_eq!(view.content(), "AAEC//79");
     host.fail_download.set(false);
@@ -185,10 +184,10 @@ fn generic_reading_failures_keep_published_identity() {
 fn generic_styles_follow_supplied_brand_roles() {
     for file in ["brand.json", "packs/signal.json"] {
         let mut frame = Frame {
-            pack: maestro_theme::load_brand_pack(
-                &format!("{}/../../assets/brand/{file}", env!("CARGO_MANIFEST_DIR")),
-                &maestro_theme::theme::NativeThemeOperations,
-            )
+            pack: crate::support::brand::pack(&format!(
+                "{}/../../assets/brand/{file}",
+                env!("CARGO_MANIFEST_DIR")
+            ))
             .unwrap(),
             ..Frame::default()
         };
@@ -294,5 +293,3 @@ fn edit_cases() -> [(serde_json::Value, Vec<u8>); 3] {
         ),
     ]
 }
-
-pub mod highlighter_support;

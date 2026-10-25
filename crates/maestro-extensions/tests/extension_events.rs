@@ -1,11 +1,8 @@
 //! Shared event contracts through native records and stored typed handlers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "support/model.rs"]
-mod model_support;
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod support;
+use crate::local_support as support;
+use crate::model_support;
 use maestro_extensions::{ExtensionHandler, types::*};
 use maestro_models::{Local, extension_events as shared};
 use maestro_session::Presence;
@@ -981,7 +978,7 @@ fn stream_tool_call() -> maestro_models::ToolCall {
     maestro_models::ToolCall {
         id: "call".into(),
         name: "custom".into(),
-        arguments: serde_json::Map::new(),
+        arguments: serde_json::Map::new().into(),
         thought_signature: None,
     }
 }
@@ -1017,7 +1014,7 @@ macro_rules! builtin {
         let result: $result = shared::ToolResultEvent {
             tool_call_id: "result-id".into(), tool_name: $name.into(),
             input: json!({"unvalidated":false}),
-            content: vec![maestro_models::UserBlock::Text(maestro_models::TextContent { text: "output".into(), text_signature: None })],
+            content: vec![maestro_models::UserBlock::Text(maestro_models::TextContent::new("output".into()))],
             is_error: true, details: Presence::Present($details),
         };
         assert_eq!(result.tool_call_id, "result-id");
@@ -1221,9 +1218,7 @@ fn opaque_native_payloads_keep_key_order_and_zero_bits() {
 /// Default command storage can carry a facade to a native registration worker.
 #[test]
 fn default_command_registers_a_tool_off_thread() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime_support::runtime();
     let bus = maestro_extensions::create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
     let owner = runtime
         .block_on(maestro_extensions::load_extension_from_factory::<
@@ -1249,11 +1244,7 @@ fn default_command_registers_a_tool_off_thread() {
     );
     assert!(runner.get_all_registered_tools().is_empty());
     std::thread::spawn(move || {
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(call)
-            .unwrap();
+        crate::runtime_support::runtime().block_on(call).unwrap();
     })
     .join()
     .unwrap();
@@ -1302,7 +1293,7 @@ fn threaded_definition(
         definition: maestro_models::Tool {
             name,
             description: "worker".into(),
-            parameters: json!({}),
+            parameters: json!({}).into(),
         },
         label: "worker".into(),
         prompt_snippet: None,

@@ -1,9 +1,10 @@
-//! Supplied-path instruction resources with ordered metadata.
+//! Supplied-path instruction resources, package manifests and extension entry points.
 #![doc = include_str!("../../../docs/resources/skills.md")]
 
 pub mod diagnostics;
 pub use diagnostics::{DiagnosticType, ResourceCollision, ResourceDiagnostic};
 pub mod frontmatter;
+pub mod package_manifest;
 pub mod paths;
 pub mod prompt_templates;
 pub use prompt_templates::{
@@ -17,12 +18,11 @@ pub use frontmatter::{
 };
 pub use maestro_request::slash_commands::{SlashCommandInfo, SlashCommandSource};
 pub use paths::{canonicalize_path, is_local_path};
-#[cfg(not(target_arch = "wasm32"))]
-pub use skills::NativeResourceOperations;
 pub use skills::{
     LoadSkillsFromDirOptions, LoadSkillsOptions, LoadSkillsResult, ResourceEntry, ResourceFileType,
-    ResourceOperations, Skill, SkillFrontmatter, format_skills_for_prompt, load_skills,
-    load_skills_from_dir,
+    Skill, SkillFrontmatter, current_directory, drive_directories, format_skills_for_prompt,
+    load_skills, load_skills_from_dir, metadata, read_entries, read_text, real_path,
+    symlink_metadata,
 };
 pub use source_info::{
     PathMetadata, SourceInfo, SourceOrigin, SourceScope, SyntheticSourceOptions,

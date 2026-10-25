@@ -265,7 +265,9 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
             .collect()
     } else {
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case("*"),
             cwd,
             envs,
             &[],
@@ -286,17 +288,20 @@ pub fn check_file_limit_restoration(name: &str) {
     for fail_write in [false, true] {
         if fail_write {
             fs::write(
-                scratch.0.join("settings.json"),
+                scratch.0.path().join("settings.json"),
                 format!("{{\"apiKeys\":{{\"provider\":\"{}\"}}}}", "k".repeat(4096)),
             )
             .unwrap();
         }
         let outcome = invoke(
             name,
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "auth"),
-                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+                (
+                    "MAESTRO_CODING_AGENT_DIR",
+                    scratch.0.path().to_str().unwrap(),
+                ),
                 ("STARTUP_EXIT_WRITE", &output),
             ],
             Some(1),
@@ -336,8 +341,12 @@ pub fn run(name: &str) {
         serde_json::from_str(include_str!("../fixtures/startup_conversions.json")).unwrap();
     assert_eq!(corpus.len(), 29);
     assert_eq!(corpus.values().map(Vec::len).sum::<usize>(), 125);
+    // A privileged run ignores the cases' modes, so those cases have nothing to check.
+    let denials = crate::native::denials();
     for (index, case) in corpus.remove(name).unwrap().into_iter().enumerate() {
-        replay(name, index, &case);
+        if denials || (case.input.file_modes.is_empty() && case.input.root_mode.is_none()) {
+            replay(name, index, &case);
+        }
     }
 }
 
@@ -367,7 +376,7 @@ fn replay(name: &str, index: usize, case: &Case) {
         };
         let actual = invoke(
             name,
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", &case.input.operation),
                 ("MAESTRO_CODING_AGENT_DIR", &authored),

@@ -135,8 +135,6 @@ impl Bank {
         reader.record("model", &[])
     }
 }
-/// Retained opaque UI owner.
-pub struct Ui;
 /// Authentication outcome controlled by supplied replies.
 pub fn auth(reader: &Reader, model: &str) -> Result<Value, String> {
     let model: Value = serde_json::from_str(model).map_err(|e| e.to_string())?;
@@ -182,11 +180,6 @@ pub fn resolved(value: &Value) -> maestro_request::model_registry::ResolvedReque
 use super::host::{Imports, State};
 use crate::bindings::host_side::maestro::extension::host;
 use wasmtime::component::{Accessor, Resource};
-impl host::HostExtensionUiContext for State {
-    fn drop(&mut self, this: Resource<Ui>) -> wasmtime::Result<()> {
-        self.release(this)
-    }
-}
 impl host::HostModelRegistry for State {
     fn get_all(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
         Ok(self

@@ -1,6 +1,5 @@
 //! Markdown callbacks, style boundaries and retained state.
-#[path = "support/markdown_cases.rs"]
-mod markdown;
+use crate::support::markdown_cases as markdown;
 
 #[test]
 fn markdown_inline_styles_restore_parent_and_strip_terminal_prefix() {
@@ -19,6 +18,7 @@ fn markdown_image_escape_rows_skip_wrap_padding_and_background() {
         let component = Markdown::new(
             escape.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 2,
                 padding_y: 1,
                 default_text_style: Some(DefaultTextStyle {
@@ -49,6 +49,7 @@ fn component(text: &str, theme: MarkdownTheme, style: Option<DefaultTextStyle>) 
     Markdown::new(
         text.to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: style,
@@ -236,6 +237,7 @@ fn markdown_capabilities_are_observed_on_cache_miss() {
     let component = Markdown::new(
         "[x](u)".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -346,8 +348,8 @@ fn maestro_markdown_preserve_heading_styling_after_inline_code_for_h1() {
 
 #[test]
 fn maestro_markdown_not_leak_h1_underline_into_padding_when_inline_code_is_the_last_token() {
-    let terminal = support::virtual_terminal::VirtualTerminal::new(80, 4);
-    let runtime = support::manual_runtime::ManualRuntime::new();
+    let terminal = crate::support::virtual_terminal::VirtualTerminal::new(80, 4);
+    let runtime = crate::support::manual_runtime::ManualRuntime::new();
     let tui = maestro_tui::TUI::new(
         terminal.handle(),
         runtime.handle(),
@@ -400,16 +402,6 @@ fn markdown_decorations_apply_in_fixed_order_without_duplicates() {
     }
 }
 
-#[allow(
-    dead_code,
-    reason = "Screen support is shared by several test targets."
-)]
-mod support {
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod virtual_terminal;
-}
-
 /// A Markdown component followed by a plain input row.
 struct MarkdownWithInput {
     /// Rendered message.
@@ -431,8 +423,8 @@ impl Component for MarkdownWithInput {
 
 #[test]
 fn maestro_markdown_not_leak_styles_into_following_lines_when_rendered_in_tui() {
-    let terminal = support::virtual_terminal::VirtualTerminal::new(80, 6);
-    let runtime = support::manual_runtime::ManualRuntime::new();
+    let terminal = crate::support::virtual_terminal::VirtualTerminal::new(80, 6);
+    let runtime = crate::support::manual_runtime::ManualRuntime::new();
     let tui = maestro_tui::TUI::new(
         terminal.handle(),
         runtime.handle(),
@@ -442,6 +434,7 @@ fn maestro_markdown_not_leak_styles_into_following_lines_when_rendered_in_tui() 
     let markdown = Markdown::new(
         "This is thinking with `inline code`".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 1,
             padding_y: 0,
             default_text_style: Some(DefaultTextStyle {
@@ -480,6 +473,7 @@ fn markdown_background_runs_after_code_and_content_layout() {
     let widget = Markdown::new(
         "```\nx\n```".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 2,
             default_text_style: Some(DefaultTextStyle {
@@ -612,7 +606,7 @@ fn markdown_list_literal_fallbacks_sample_default_context() {
 }
 
 #[test]
-fn markdown_list_html_callbacks_receive_untrimmed_lines() {
+fn markdown_list_html_callbacks_receive_selected_lines() {
     let calls = Rc::new(RefCell::new(Vec::new()));
     let recording = Rc::clone(&calls);
     let style = DefaultTextStyle {
@@ -623,8 +617,8 @@ fn markdown_list_html_callbacks_receive_untrimmed_lines() {
         ..DefaultTextStyle::default()
     };
     let rows = component("- <div>x</div>  \n", markdown::plain(), Some(style)).render(20);
-    assert_eq!(rows[0], "- <div>x</div>      ");
-    assert_eq!(*calls.borrow(), ["\0", "<div>x</div>  ", ""]);
+    assert_eq!(rows, ["- <div>x</div>      ", "                    "]);
+    assert_eq!(*calls.borrow(), ["\0", "<div>x</div>"]);
 }
 
 #[test]
@@ -638,4 +632,56 @@ fn markdown_quoted_html_suppresses_message_foreground() {
     let rows = component("> <div>x</div>", theme, Some(style)).render(14);
     assert_eq!(rows, ["│ \x1b[36m<div>x</div>\x1b[39m"]);
     assert!(!rows[0].contains("\x1b[35m"));
+}
+
+#[test]
+fn markdown_content_cleaning_covers_authored_emission_sites() {
+    let control = "\x1b]52;c;b3duZWQ=\x07";
+    for source in [
+        format!("body {control} end"),
+        format!("`{control}`"),
+        format!("```\n{control}\n```"),
+        format!("```{control}\nbody\n```"),
+        format!("<div>{control}</div>"),
+        format!("- <i>{control}</i>"),
+        format!("| a | b |\n|---|---|\n| {control} | end |"),
+        format!("- | a | b |\n  |---|---|\n  | {control} | end |"),
+    ] {
+        for clean_content in [false, true] {
+            let view = Markdown::new(
+                source.clone(),
+                MarkdownOptions {
+                    clean_content,
+                    padding_x: 0,
+                    padding_y: 0,
+                    default_text_style: None,
+                },
+                Rc::new(markdown::plain()),
+                TerminalImage::new(|_| None, || 1),
+            );
+            for width in [5, 80] {
+                assert_eq!(
+                    view.render(width).join("\n").contains("\x1b]52;"),
+                    !clean_content,
+                    "source {source:?}, width {width}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn markdown_content_cleaning_precedes_link_recognition() {
+    let view = Markdown::new(
+        "before \x1b]8;;https://attacker.example/\x07docs.example\x1b]8;;\x07 after".into(),
+        MarkdownOptions {
+            clean_content: true,
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        TerminalImage::new(|_| None, || 1),
+    );
+    assert_eq!(view.render(32), ["before docs.example after       "]);
 }

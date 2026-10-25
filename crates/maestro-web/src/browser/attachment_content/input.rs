@@ -1,5 +1,5 @@
 //! Native editing capabilities within the retained content owner.
-use super::{AttachmentUiError, browser::host_error};
+use super::{AttachmentHostError, browser::host_error};
 use crate::browser::event_subscription::EventSubscription;
 use crate::components::input::{InputProps, InputRef, InputSize, InputType};
 use std::rc::Rc;
@@ -12,7 +12,7 @@ fn listen(
     element: &HtmlInputElement,
     name: &'static str,
     callback: Rc<dyn Fn(Event)>,
-) -> Result<InputSubscription, AttachmentUiError> {
+) -> Result<InputSubscription, AttachmentHostError> {
     let handler = Closure::wrap(Box::new(move |e| callback(e)) as Box<dyn FnMut(Event)>);
     EventSubscription::new(element.clone().into(), name, handler).map_err(|e| host_error(&e))
 }
@@ -29,7 +29,7 @@ pub(super) struct DomInput {
 }
 impl DomInput {
     /// Reuse the native child created by the content owner.
-    pub(super) fn new(element: &Element) -> Result<Self, AttachmentUiError> {
+    pub(super) fn new(element: &Element) -> Result<Self, AttachmentHostError> {
         install_style(element)?;
         let element = element
             .clone()
@@ -47,7 +47,7 @@ impl DomInput {
         &mut self,
         content: &super::AttachmentContent<'_>,
         escape: Rc<std::cell::Cell<bool>>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let super::AttachmentContent::Input {
             props,
             accessible_label,
@@ -100,7 +100,7 @@ impl DomInput {
         self.bind_ref(props.input_ref.as_ref())
     }
     /// Replace only this field's owned native reference assignment.
-    fn bind_ref(&mut self, reference: Option<&InputRef>) -> Result<(), AttachmentUiError> {
+    fn bind_ref(&mut self, reference: Option<&InputRef>) -> Result<(), AttachmentHostError> {
         if matches!((&self.slot, reference), (Some(a), Some(b)) if Rc::ptr_eq(a, b)) {
             return Ok(());
         }
@@ -108,7 +108,7 @@ impl DomInput {
         if let Some(slot) = reference {
             *slot
                 .try_borrow_mut()
-                .map_err(|_| AttachmentUiError::BorrowConflict)? = Some(self.element.clone());
+                .map_err(|_| AttachmentHostError::BorrowConflict)? = Some(self.element.clone());
             self.slot = Some(Rc::clone(slot));
         }
         Ok(())
@@ -135,7 +135,7 @@ fn properties(
     props: &InputProps,
     value_changed: bool,
     accessible_label: &str,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), AttachmentHostError> {
     let kind = match props.input_type {
         InputType::Text => "text",
         InputType::Email => "email",
@@ -186,10 +186,10 @@ fn properties(
     element.set_attribute("style", &format!("width:100%;height:100%;box-sizing:border-box;padding:4px {padding}px;font-size:{size};")).map_err(|e| host_error(&e))
 }
 /// Share one stylesheet for native controls in this document.
-fn install_style(element: &Element) -> Result<(), AttachmentUiError> {
+fn install_style(element: &Element) -> Result<(), AttachmentHostError> {
     let document = element
         .owner_document()
-        .ok_or_else(|| AttachmentUiError::Host("Input has no document".into()))?;
+        .ok_or_else(|| AttachmentHostError::Host("Input has no document".into()))?;
     crate::browser::install_stylesheet(
         &document,
         "maestro-input-style",

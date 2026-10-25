@@ -5,10 +5,10 @@ prefix per plane and color name, a stored `ColorMode`, and optional name and sou
 Every public item lives in the `theme` module and is re-exported at the crate root.
 
 ```rust
-use maestro_theme::{ColorMode, NativeThemeOperations, ThemeColor, load_theme_from_path};
+use maestro_theme::{ColorMode, ThemeColor, load_theme_from_path};
 
 let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme/dark.json");
-let theme = load_theme_from_path(path, Some(ColorMode::Truecolor), &NativeThemeOperations)?;
+let theme = load_theme_from_path(path, Some(ColorMode::Truecolor))?;
 assert_eq!(theme.fg(&ThemeColor::Accent, "hi")?, "\x1b[38;2;217;160;102mhi\x1b[39m");
 # Ok::<(), maestro_theme::ThemeError>(())
 ```
@@ -41,11 +41,30 @@ the last one wins.
 ## Color modes
 
 `load_theme_from_path` takes an optional `ColorMode`. When it is `None` the
-operations' environment decides, read in this order and compared case-sensitively:
+process environment decides, read in this order and compared case-sensitively:
 `COLORTERM` of `truecolor` or `24bit`, then a nonempty `WT_SESSION`, select
 truecolor; an empty, `dumb` or `linux` `TERM`, `TERM_PROGRAM=Apple_Terminal`,
 and a `TERM` of `screen`, `screen-…` or `screen.…` select 256 colors; anything else
 is truecolor. An explicit mode, or any earlier failure, reads no environment.
+
+`supports_color` decides whether plain terminal messages, such as warnings, are
+styled at all. The checks run in this order:
+
+1. A `FORCE_COLOR` of `0` or `false` turns color off. `true`, an empty value or a
+   positive level asks for color.
+2. An Azure Pipelines agent (`TF_BUILD` and `AGENT_NAME` both set) gets color.
+3. Without `FORCE_COLOR`, standard output must be a terminal.
+4. A `TERM` of `dumb` gets color only when `FORCE_COLOR` asked for it.
+5. Windows gets color.
+6. With `CI` set, color comes only from GitHub Actions, Gitea Actions, CircleCI,
+   Travis CI, AppVeyor, GitLab CI, Buildkite, Drone, `CI_NAME=codeship` or
+   `FORCE_COLOR`.
+7. With `TEAMCITY_VERSION` set, version 9.1 or later gets color.
+8. Any `COLORTERM`, a `TERM_PROGRAM` of `iTerm.app` or `Apple_Terminal`, or a
+   `TERM` that is `wezterm`, ends in `-256` or `-256color`, starts with `screen`,
+   `xterm`, `vt100`, `vt220` or `rxvt`, or contains `color`, `ansi`, `cygwin` or
+   `linux` (in any case) gets color.
+9. Anything else gets color only when `FORCE_COLOR` asked for it.
 
 In 256-color mode a hex color becomes the nearest entry of the six-level cube,
 or a gray-ramp entry when its channel spread is below 10 and the gray is closer
@@ -77,16 +96,15 @@ are outside that measurement; see the [identity guide](identity.md#terminal-role
 A file that cannot be read keeps its I/O error and is never relabelled as a parse
 failure.
 
-## Replaceable operations
+## Files, environment and sorting
 
-`ThemeOperations` supplies the file read, environment lookup, existence check,
-directory listing and name sorting. `NativeThemeOperations` (not built for browsers)
-reads bytes, decodes them as UTF-8 with replacement characters, reads process
-variables and lists directory entries by name, in byte order of the names, without
-filtering by entry kind.
-It sorts with a stable locale collator (`maestro_theme::Collator`, a pure re-export of the text crate's comparator, also at `maestro_theme::theme::Collator` outside browser targets) built once per call; locale selection and fallback are
+Theme loading reads files and process variables directly. It decodes file bytes as
+UTF-8 with replacement characters and lists a directory through the shared directory
+listing (`maestro-listing`): by name, in byte order of the names, without filtering
+by entry kind. Browser builds have no file system, so every read fails there and no
+directory is listed.
+Inventories sort with a stable locale collator (`maestro_theme::Collator`, a pure re-export of the text crate's comparator, also at `maestro_theme::theme::Collator` outside browser targets) built once per call; locale selection and fallback are
 decided by the [text collator](text.md).
-Tests and browser callers supply their own.
 
 `Collator` (not built for browsers) is that comparison on its own: `Collator::new` takes an
 environment lookup and applies the same locale selection, and `compare` orders two strings.
@@ -96,7 +114,7 @@ Other native code that needs the process locale's ordering, such as the
 ## Registration and discovery
 
 `ThemeState` holds the application-supplied `ThemeDirectories` (the shipped themes
-directory and the custom themes directory), the operations and the registrations.
+directory and the custom themes directory) and the registrations.
 Constructing it reads nothing.
 
 - **Shipped data.** The first query that needs it reads and parses `dark.json`,
@@ -118,7 +136,7 @@ Constructing it reads nothing.
 - **Inventories.** `get_available_themes` lists each shipped, custom and registered
   name once, ordered by UTF-16 code units. `get_available_themes_with_paths` lists
   each name once with the path of its first owner (shipped, then custom entry, then
-  registration), ordered by the operations' locale sort. Custom names are the entries
+  registration), ordered by the process locale's [collator](#files-environment-and-sorting). Custom names are the entries
   ending in a case-sensitive `.json`, directories included; contents are not read. A missing custom
   directory adds nothing; shipped-data and directory-listing failures are errors.
 
@@ -155,7 +173,8 @@ wrapped in the style's opening escape and its own closing escape (`22`, `23`, `2
 Each matching closing escape inside the text is followed by the opening escape again, and each
 LF or CRLF is preceded by the closing and followed by the opening escape. Other escapes,
 including reset `0`, and a lone CR stay literal. `fg` and `bg` keep their literal
-prefix, unchanged text and plane reset.
+prefix, unchanged text and plane reset. `red`, `yellow`, `green` and `gray` take the same flag
+and close with the foreground reset `39`, and `dim` closes with `22`.
 
 `get_thinking_border_color` maps `off`, `minimal`, `low`, `medium`, `high` and `xhigh` to
 their `thinking*` keys and any other level to `thinkingOff`; `get_bash_mode_border_color`
@@ -189,11 +208,15 @@ prefix, and the innermost scope with a color wins:
 | `syntaxType` | `storage.type`, `entity.name.type`, `entity.name.class`, `support.class` |
 | `syntaxPunctuation` | `punctuation` |
 
-`highlight_code` splits the code at every LF, keeping CR. A missing, empty or unsupported
-label never reaches the engine and colors every row with `mdCodeBlock`. Text the engine
-leaves unclassified, such as explicit `plaintext`, is returned unchanged. An engine failure
-returns the rows unstyled. Classified runs are styled from the theme published when the call
-runs, once per nonempty row piece.
+`highlight_code` splits the code at every LF, keeping CR. It admits only labels its language
+table names, aliases included, and leaves every other label to the code color: a missing,
+empty or unnamed label never reaches the engine and colors every row with `mdCodeBlock`, so
+that call fails when no theme is published. A named label whose grammar the engine lacks
+colors the rows with `mdCodeBlock` through the published theme; with no theme published it
+returns them unstyled and does not fail. Text the engine leaves unclassified,
+such as explicit `plaintext`, is returned unchanged. An engine failure returns
+the rows unstyled. Classified runs are styled from the theme published when the call runs,
+once per nonempty row piece.
 `get_markdown_theme`'s code callback colors the rows with `mdCodeBlock` after a failure
 instead.
 
@@ -295,9 +318,11 @@ cargo run -p maestro-theme --example brand_themes -- assets/brand/brand.json cra
 The example writes `dark.json` and `light.json` into the given directory. Fewer or more
 arguments fail with `usage: brand_themes <pack.json> <output-directory>`.
 
-`load_brand_pack(path, operations)` reads `path` through `ThemeOperations`, then uses
-[shared brand admission](brand.md#admission). It searches for no default pack and
-reads no template or font. Read failures retain the I/O error; decoder failures are
+`load_brand_pack(path)` reads `path`, then decodes it with `BrandPack::parse(path, text)`,
+which applies [shared brand admission](brand.md#admission). Callers that already hold
+the text, such as browser builds with an embedded pack, call `BrandPack::parse` directly;
+`path` then only places the marks and labels errors. Loading searches for no default pack
+and reads no template or font. Read failures retain the I/O error; decoder failures are
 wrapped as `Invalid brand pack <path>: <cause>`. Mark paths become the pack's directory
 joined with the authored relative path ([lexical path joining](../crates/maestro-path/src/lib.rs)).
 

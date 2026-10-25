@@ -301,12 +301,7 @@ async fn proxy_transport_failure_retains_partial_case() {
     assert_eq!(run.message(), failure("network failed"));
     assert_eq!(requests.lock().unwrap().len(), 1);
     let mut reply = Reply::chunks(vec![join(&canonical_lines()[..5])]);
-    let cause = maestro_models::DiagnosticErrorInfo {
-        name: None,
-        message: "body failed".into(),
-        code: None,
-        stack: None,
-    };
+    let cause = maestro_models::DiagnosticErrorInfo::new(None, "body failed");
     reply.body.push(Err(FetchError::Connection(cause)));
     let (run, _) = exchange(reply).await;
     assert_eq!(run.events[..5], canonical_events()[..5]);
@@ -1236,12 +1231,6 @@ async fn proxy_borrowed_result_and_final_usage_keep_identity_case() {
 
 #[allow(
     dead_code,
-    reason = "This binary uses part of the shared child-process helper."
-)]
-#[path = "../../maestro-models/tests/support/child_process.rs"]
-pub(crate) mod child_process;
-#[allow(
-    dead_code,
     reason = "This binary uses part of the shared loopback server."
 )]
 #[path = "../../maestro-models/tests/support/loopback.rs"]
@@ -1477,8 +1466,14 @@ fn proxy_unknown_event_warns_and_continues() {
 /// Drive the scenario of `proxy_unknown_event_warns_and_continues` on the test runtime.
 async fn proxy_unknown_event_warns_and_continues_case() {
     const TEST: &str = "proxy_unknown_event_warns_and_continues";
-    if child_process::child_case().is_none() {
-        let output = child_process::capture(TEST, "*", &[]).unwrap();
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(TEST)
+            .unwrap()
+            .nocapture()
+            .env_clear()
+            .case("*")
+            .output()
+            .unwrap();
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(output.status.success(), "{stderr}");
         for warning in ["future_event", "undefined"] {
@@ -1816,4 +1811,47 @@ async fn recorded_publication_events(
         }
     }
     events
+}
+
+/// A reconstructed call keeps the proxy's truthy fallback for each root kind.
+#[test]
+fn proxy_argument_roots_keep_their_source_fallback() {
+    support::run_io(proxy_argument_roots_keep_their_source_fallback_case());
+}
+/// Drive the scenario of `proxy_argument_roots_keep_their_source_fallback` on the test runtime.
+async fn proxy_argument_roots_keep_their_source_fallback_case() {
+    let start = line(r#"{"type":"toolcall_start","contentIndex":0,"id":"c","toolName":"t"}"#);
+    for (delta, expected) in [
+        ("null", json!({})),
+        ("false", json!({})),
+        ("0", json!({})),
+        (r#"\""#, json!({})),
+        ("42", json!(42)),
+        ("true", json!(true)),
+        (r#"\"text\""#, json!("text")),
+        ("[1,1]", json!([1, 1])),
+        (r#"{\"q\":1}"#, json!({"q": 1})),
+    ] {
+        let lines = [
+            start.clone(),
+            line(&format!(
+                r#"{{"type":"toolcall_delta","contentIndex":0,"delta":"{delta}"}}"#
+            )),
+            line(r#"{"type":"toolcall_end","contentIndex":0}"#),
+            terminal(),
+        ];
+        let run = run_lines(&lines).await;
+        assert_eq!(
+            run.events[0],
+            json!({"type": "toolcall_start", "contentIndex": 0})
+        );
+        assert_eq!(
+            run.events[1],
+            json!({"type": "toolcall_delta", "contentIndex": 0, "delta": delta.replace("\\\"", "\"")}),
+            "{delta}"
+        );
+        let tool = json!({"type": "toolCall", "id": "c", "name": "t", "arguments": expected});
+        assert_eq!(run.message()["content"], json!([tool]), "{delta}");
+        assert_eq!(run.events[2]["toolCall"], tool, "{delta}");
+    }
 }

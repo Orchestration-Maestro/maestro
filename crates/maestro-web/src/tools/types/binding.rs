@@ -1,7 +1,7 @@
 //! Typed renderer handles using the existing row-state erasure owner.
 use super::{ToolRenderResult, ToolRenderer, ToolResultMessageView};
-use crate::browser::attachment_content::AttachmentUiError;
-use maestro_app::ToolRendererState;
+use crate::tools::types::ToolUiError;
+use maestro_app::{JsonObject, ToolRendererState};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::{any::TypeId, rc::Rc};
@@ -12,9 +12,9 @@ pub struct ToolRendererBinding {
     /// Existing typed handle owner; native and JSON views share it.
     owner: ToolRendererState,
 }
-/// One concrete native or decoded renderer handle.
-struct RendererSlot<P, D>(Option<Rc<dyn ToolRenderer<P, D>>>);
-impl<P, D> Default for RendererSlot<P, D> {
+/// One concrete native or decoded renderer handle for one content representation.
+struct RendererSlot<P, D, C>(Option<Rc<dyn ToolRenderer<P, D, C>>>);
+impl<P, D, C> Default for RendererSlot<P, D, C> {
     fn default() -> Self {
         Self(None)
     }
@@ -26,8 +26,47 @@ impl ToolRendererBinding {
         let binding = Self {
             owner: ToolRendererState::default(),
         };
-        binding.owner.state::<RendererSlot<P, D>>().borrow_mut().0 = Some(renderer);
-        binding
+        binding.with_raw(renderer)
+    }
+    /// Retain an additional native callback view in this binding.
+    #[must_use]
+    pub fn with_raw<P: 'static, D: 'static>(self, renderer: Rc<dyn ToolRenderer<P, D>>) -> Self {
+        self.with_slot(renderer)
+    }
+    /// Retain a page-content renderer for these native operand types.
+    #[must_use]
+    pub fn from_dom<P: 'static, D: 'static>(
+        renderer: Rc<dyn ToolRenderer<P, D, Box<dyn crate::dom::DomContent>>>,
+    ) -> Self {
+        let binding = Self {
+            owner: ToolRendererState::default(),
+        };
+        binding.with_slot(renderer)
+    }
+    /// Replace the handle stored for one operand and content combination.
+    fn with_slot<P: 'static, D: 'static, C: 'static>(
+        self,
+        renderer: Rc<dyn ToolRenderer<P, D, C>>,
+    ) -> Self {
+        let previous = self
+            .owner
+            .state::<RendererSlot<P, D, C>>()
+            .borrow_mut()
+            .0
+            .replace(renderer);
+        drop(previous);
+        self
+    }
+    /// Clone the stored handle for one operand and content combination.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn slot<P: 'static, D: 'static, C: 'static>(
+        &self,
+    ) -> Option<Rc<dyn ToolRenderer<P, D, C>>> {
+        self.owner
+            .state::<RendererSlot<P, D, C>>()
+            .borrow()
+            .0
+            .clone()
     }
     /// Additionally admit present JSON operands through their selected decoders.
     #[must_use]
@@ -35,19 +74,42 @@ impl ToolRendererBinding {
         renderer: Rc<dyn ToolRenderer<P, D>>,
     ) -> Self {
         let binding = Self::from_raw(Rc::clone(&renderer));
-        if TypeId::of::<(P, D)>() != TypeId::of::<(Value, Value)>() {
+        let binding = if TypeId::of::<(P, D)>() == TypeId::of::<(Value, Value)>() {
             binding
-                .owner
-                .state::<RendererSlot<Value, Value>>()
-                .borrow_mut()
-                .0 = Some(Rc::new(DecodedRenderer { renderer }));
+        } else {
+            binding.with_raw::<Value, Value>(Rc::new(DecodedRenderer {
+                renderer: Rc::clone(&renderer),
+            }))
+        };
+        if TypeId::of::<(P, D)>() != TypeId::of::<(JsonObject, Value)>() {
+            return binding.with_raw::<JsonObject, Value>(Rc::new(DecodedRenderer { renderer }));
         }
+        binding
+    }
+    /// Retain an output-only callback without restricting callers' native details.
+    pub(crate) fn from_details_agnostic(renderer: Rc<dyn ToolRenderer<JsonObject, ()>>) -> Self {
+        let binding = Self::from_raw(Rc::clone(&renderer));
+        binding.owner.state::<DetailsAgnostic>().borrow_mut().0 = Some(renderer);
         binding
     }
     /// Clone the renderer handle for these concrete operand types.
     #[must_use]
     pub fn renderer<P: 'static, D: 'static>(&self) -> Option<Rc<dyn ToolRenderer<P, D>>> {
-        let slot = self.owner.state::<RendererSlot<P, D>>();
+        let slot = self
+            .owner
+            .state::<RendererSlot<P, D, Box<dyn super::ToolContent>>>();
+        if slot.borrow().0.is_none()
+            && (TypeId::of::<P>() == TypeId::of::<JsonObject>()
+                || TypeId::of::<P>() == TypeId::of::<Value>())
+        {
+            let callback = self.owner.state::<DetailsAgnostic>().borrow().0.clone();
+            if let Some(renderer) = callback {
+                slot.borrow_mut().0 = Some(Rc::new(DetailsAdapter::<P, D> {
+                    renderer,
+                    marker: std::marker::PhantomData,
+                }));
+            }
+        }
         slot.borrow().0.clone()
     }
 }
@@ -64,21 +126,87 @@ impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<Value, Value>
         params: Option<&Value>,
         result: Option<ToolResultMessageView<'_, Value>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
+    ) -> Result<ToolRenderResult, ToolUiError> {
         let params = params
             .map(P::deserialize)
             .transpose()
-            .map_err(|e| AttachmentUiError::Presentation(e.to_string()))?;
+            .map_err(|e| ToolUiError::Presentation(e.to_string()))?;
+        self.finish(params.as_ref(), result.as_ref(), is_streaming)
+    }
+}
+impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<JsonObject, Value>
+    for DecodedRenderer<P, D>
+{
+    fn render(
+        &self,
+        params: Option<&JsonObject>,
+        result: Option<ToolResultMessageView<'_, Value>>,
+        is_streaming: bool,
+    ) -> Result<ToolRenderResult, ToolUiError> {
+        let params = params
+            .map(|object| {
+                let entries = object.iter().map(|(key, value)| (key.as_str(), value));
+                P::deserialize(
+                    serde::de::value::MapDeserializer::<_, serde_json::Error>::new(entries),
+                )
+            })
+            .transpose()
+            .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
+        self.finish(params.as_ref(), result.as_ref(), is_streaming)
+    }
+}
+impl<P, D: DeserializeOwned> DecodedRenderer<P, D> {
+    /// Decode details and invoke the native callback for either JSON carrier.
+    fn finish(
+        &self,
+        params: Option<&P>,
+        result: Option<&ToolResultMessageView<'_, Value>>,
+        is_streaming: bool,
+    ) -> Result<ToolRenderResult, ToolUiError> {
         let details = result
-            .as_ref()
             .and_then(ToolResultMessageView::details)
             .map(D::deserialize)
             .transpose()
-            .map_err(|e| AttachmentUiError::Presentation(e.to_string()))?;
+            .map_err(|e| ToolUiError::Presentation(e.to_string()))?;
+        let projected = result.map(|result| result.with_details(details.as_ref()));
+        self.renderer.render(params, projected, is_streaming)
+    }
+}
+
+/// The existing typed owner also retains output-only callbacks.
+#[derive(Default)]
+struct DetailsAgnostic(Option<Rc<dyn ToolRenderer<JsonObject, ()>>>);
+/// One cached native-operand adapter; original message fields remain borrowed.
+struct DetailsAdapter<P, D> {
+    /// Callback which never reads native details.
+    renderer: Rc<dyn ToolRenderer<JsonObject, ()>>,
+    /// Operand types retained only in the adapter's type identity.
+    marker: std::marker::PhantomData<fn(&P, &D)>,
+}
+impl<P: 'static, D> ToolRenderer<P, D> for DetailsAdapter<P, D> {
+    fn render(
+        &self,
+        params: Option<&P>,
+        result: Option<ToolResultMessageView<'_, D>>,
+        is_streaming: bool,
+    ) -> Result<ToolRenderResult, ToolUiError> {
+        let empty = JsonObject::new();
+        let params = params
+            .map(|params| -> Result<Option<&JsonObject>, ToolUiError> {
+                let any = params as &dyn std::any::Any;
+                if let Some(object) = any.downcast_ref::<JsonObject>() {
+                    return Ok(Some(object));
+                }
+                let value = any.downcast_ref::<Value>().ok_or_else(|| {
+                    ToolUiError::Presentation("Renderer operand types do not match".into())
+                })?;
+                Ok(super::json_params(Some(value), &empty))
+            })
+            .transpose()?
+            .flatten();
         let projected = result
             .as_ref()
-            .map(|result| result.with_details(details.as_ref()));
-        self.renderer
-            .render(params.as_ref(), projected, is_streaming)
+            .map(|result| result.with_details::<()>(None));
+        self.renderer.render(params, projected, is_streaming)
     }
 }

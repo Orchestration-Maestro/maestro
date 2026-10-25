@@ -21,7 +21,7 @@ fn nested_admission_starts_before_native_callback_returns_and_wakes_after_stagin
         .unwrap()
         .block_on(async {
             let runner = runner("/nested-admission");
-            let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (mut pump, admission) = Pump::new();
             let (start, started) = oneshot::channel();
             let (release, released) = oneshot::channel();
             let (actions, incoming, finished) =
@@ -81,41 +81,42 @@ fn operations(
     let child_started = Rc::new(Cell::new(false));
     let child_finished = Rc::new(Cell::new(false));
     let finished = child_finished.clone();
-    let actions = ExtensionCommandContextActions {
-        wait_for_idle: Rc::new(move || {
-            let index = selected.get();
-            selected.set(index + 1);
-            if index != 0 {
-                assert_eq!(index, 1);
-                let released = released.borrow_mut().take().unwrap();
+    let actions =
+        ExtensionCommandContextActions::new(maestro_extensions::CommandContextOperations {
+            wait_for_idle: Rc::new(move || {
+                let index = selected.get();
+                selected.set(index + 1);
+                if index != 0 {
+                    assert_eq!(index, 1);
+                    let released = released.borrow_mut().take().unwrap();
+                    let child_started = child_started.clone();
+                    let child_finished = child_finished.clone();
+                    return Box::pin(async move {
+                        child_started.set(true);
+                        released.await?;
+                        child_finished.set(true);
+                        Ok(())
+                    });
+                }
+                let started = started.borrow_mut().take().unwrap();
+                let release = release.borrow_mut().take().unwrap();
+                let calls = calls.clone();
+                let registry = registry.clone();
                 let child_started = child_started.clone();
-                let child_finished = child_finished.clone();
-                return Box::pin(async move {
-                    child_started.set(true);
-                    released.await?;
-                    child_finished.set(true);
+                Box::pin(async move {
+                    started.await?;
+                    registry.invoke_sync(|completion| {
+                        calls.send(completion).map_err(|error| error.to_string())
+                    })?;
+                    assert!(
+                        child_started.get(),
+                        "nested operation did not reach its first await"
+                    );
+                    release.send(()).unwrap();
                     Ok(())
-                });
-            }
-            let started = started.borrow_mut().take().unwrap();
-            let release = release.borrow_mut().take().unwrap();
-            let calls = calls.clone();
-            let registry = registry.clone();
-            let child_started = child_started.clone();
-            Box::pin(async move {
-                started.await?;
-                registry.invoke_sync(|completion| {
-                    calls.send(completion).map_err(|error| error.to_string())
-                })?;
-                assert!(
-                    child_started.get(),
-                    "nested operation did not reach its first await"
-                );
-                release.send(()).unwrap();
-                Ok(())
-            })
-        }),
-        ..ExtensionCommandContextActions::default()
-    };
+                })
+            }),
+            ..crate::context_actions::silent_command_operations()
+        });
     (actions, incoming, finished)
 }

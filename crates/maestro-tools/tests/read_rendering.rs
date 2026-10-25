@@ -10,7 +10,7 @@ use display_support::{
 };
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
-use maestro_models::{BoxFuture, DiagnosticErrorInfo, TextContent, UserBlock};
+use maestro_models::{BoxFuture, DiagnosticErrorInfo, UserBlock};
 use maestro_theme::SyntaxHighlighter;
 use maestro_tools::{
     ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, ToolRenderResultOptions,
@@ -39,15 +39,7 @@ fn tool() -> maestro_tools::ToolDefinition<(), ReadToolInput, ReadToolDetails> {
 
 /// A result of one text block.
 fn text_result(text: &str) -> AgentToolResult<ReadToolDetails> {
-    let text = UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    });
-    AgentToolResult {
-        content: vec![text],
-        details: None,
-        terminate: None,
-    }
+    AgentToolResult::text_result(text.into(), None)
 }
 
 /// The options of a settled result.
@@ -139,7 +131,7 @@ fn read_preview_limits_count_logical_lines_before_wrapping() {
             &lines.join("\n"),
         )),
         settled(false),
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .unwrap();
@@ -220,7 +212,7 @@ fn read_highlighting_uses_only_selected_filename_language() {
             &(tool().render_result.unwrap()),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result("a\tb")),
             settled(true),
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .unwrap();
@@ -239,11 +231,11 @@ fn read_highlighting_reads_the_current_published_theme() {
     check_rows("read_highlighting_reads_the_current_published_theme", true);
     let keyword = color("syntaxKeyword");
     let probe = Probe::new(true);
-    let mut env = Env::with(
+    let env = Env::with(
         Rc::new(display_support::palette(0)),
         Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
     );
-    let before_theme = Rc::clone(&env.theme);
+    let before_theme = maestro_theme::LiveTheme::from_theme(env.live.get().unwrap());
     let args = json!({"path": "main.rs"});
     let render = |env: &Env| {
         let ctx = context(&args, &setup(), env, None);
@@ -272,8 +264,8 @@ fn read_highlighting_reads_the_current_published_theme() {
             keyword + 40
         ))
     );
-    let mut native = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
-    let original = Rc::clone(&native.theme);
+    let native = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
+    let original = maestro_theme::LiveTheme::from_theme(native.live.get().unwrap());
     assert_eq!(
         native_row(
             &json!({"path": "main.rs"}),
@@ -300,7 +292,7 @@ fn native_row(
     args: &serde_json::Value,
     code: &str,
     env: &Env,
-    theme: &Rc<maestro_theme::Theme>,
+    theme: &maestro_theme::LiveTheme,
 ) -> String {
     let ctx = context(args, &setup(), env, None);
     crate::display_support::native(
@@ -330,7 +322,7 @@ fn assert_native_language_selection() {
         (json!({"path": "LICENSE"}), plain),
     ] {
         assert_eq!(
-            native_row(&args, "fn main() {}", &env, &env.theme),
+            native_row(&args, "fn main() {}", &env, &env.live),
             padded(&expected),
             "{args}"
         );
@@ -395,7 +387,7 @@ fn read_renderers_reuse_the_supplied_text_slot() {
             Some(Rc::clone(&handle)),
         );
         let returned = if case.input["slot"] == "call" {
-            (tool().render_call.unwrap())(Some(&ctx_args), &env.theme, &ctx).unwrap()
+            (tool().render_call.unwrap())(Some(&ctx_args), &env.live, &ctx).unwrap()
         } else {
             crate::display_support::native(
                 &(tool().render_result.unwrap()),
@@ -403,7 +395,7 @@ fn read_renderers_reuse_the_supplied_text_slot() {
                     "after",
                 )),
                 settled(true),
-                &env.theme,
+                &env.live,
                 &ctx,
             )
             .unwrap()
@@ -440,7 +432,7 @@ fn read_renderer_errors_leave_previous_text_unchanged() {
             &env,
             Some(Rc::clone(&prior) as ComponentHandle),
         );
-        let error = (tool().render_call.unwrap())(Some(&args), &env.theme, &ctx)
+        let error = (tool().render_call.unwrap())(Some(&args), &env.live, &ctx)
             .err()
             .unwrap();
         assert_eq!(
@@ -480,7 +472,7 @@ fn classified_results_avoid_unused_display_dependencies() {
                 "secret",
             )),
             settled(false),
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .unwrap();
@@ -496,7 +488,7 @@ fn classified_results_avoid_unused_display_dependencies() {
         &(tool().render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(&overflow)),
         settled(false),
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .err()
@@ -530,7 +522,7 @@ fn read_definition_keeps_render_alias_separate_from_execution_input() {
     let executable = wrap_tool_definition(definition, None);
     let args = json!({"file_path": "alias.txt", "offset": 2});
     let ctx = context(&args, &setup(), &env, None);
-    let row = render_call(Some(&args), &env.theme, &ctx).unwrap();
+    let row = render_call(Some(&args), &env.live, &ctx).unwrap();
     assert_eq!(
         strip_ansi(&row.render(WIDTH)[0]).unwrap().trim_end(),
         "read alias.txt:2"
@@ -563,8 +555,7 @@ fn one_read_definition_follows_each_render_context() {
         setup.cwd = cwd.to_owned();
         setup.readme = readme.to_owned();
         let ctx = context(&args, &setup, &env, None);
-        let row =
-            (definition.render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
+        let row = (definition.render_call.as_ref().unwrap())(Some(&args), &env.live, &ctx).unwrap();
         strip_ansi(&row.render(WIDTH)[0])
             .unwrap()
             .trim_end()
@@ -606,7 +597,7 @@ fn rooted_windows_documentation_paths_take_the_process_drive() {
     setup.cwd = format!("{other}\\project");
     let args = json!({"path": "\\pkg\\docs\\guide.md"});
     let ctx = context(&args, &setup, &env, None);
-    let row = (tool().render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
+    let row = (tool().render_call.as_ref().unwrap())(Some(&args), &env.live, &ctx).unwrap();
     let text = strip_ansi(&row.render(WIDTH)[0]).unwrap();
     assert!(text.starts_with("read docs docs/guide.md"), "{text}");
 }
@@ -621,7 +612,7 @@ fn documentation_paths_respect_windows_roots_and_separators() {
         setup.expanded = false;
         let args = json!({"path": case.input["absolutePath"]});
         let ctx = context(&args, &setup, &env, None);
-        let row = (tool().render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
+        let row = (tool().render_call.as_ref().unwrap())(Some(&args), &env.live, &ctx).unwrap();
         let text = strip_ansi(&row.render(WIDTH)[0]).unwrap();
         match case.expected.get("label") {
             Some(label) => assert!(
@@ -644,12 +635,8 @@ fn classification_reads_the_process_directory_only_for_operands_that_need_it() {
     ) {
         return;
     }
-    let parent = std::env::temp_dir().join(format!("maestro-render-gone-{}", std::process::id()));
-    let gone = parent.join("gone");
-    std::fs::create_dir_all(&gone).unwrap();
-    std::env::set_current_dir(&gone).unwrap();
-    std::fs::remove_dir(&gone).unwrap();
-    std::fs::remove_dir(&parent).unwrap();
+    let parent = maestro_test_directory::Scratch::new().unwrap();
+    parent.enter_removed("gone").unwrap();
     assert!(std::env::current_dir().is_err());
     read_renders_without_process_directory();
 }
@@ -665,7 +652,7 @@ fn read_renders_without_process_directory() {
         setup.expanded = false;
         setup.readme = readme.to_owned();
         let ctx = context(&args, &setup, &env, None);
-        (tool().render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).map(|row| {
+        (tool().render_call.as_ref().unwrap())(Some(&args), &env.live, &ctx).map(|row| {
             strip_ansi(&row.render(WIDTH)[0])
                 .unwrap()
                 .trim_end()
@@ -705,7 +692,7 @@ fn read_results_without_process_directory(env: &Env) {
                 "served",
             )),
             settled(false),
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .map(|row| {

@@ -1,7 +1,6 @@
 //! Cancellable dispatch of one read to its text or image route.
 
 use super::{ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, text::read_text};
-use crate::output::text_block;
 use crate::utils::{
     diagnostics::{aborted, guarded},
     image_resize::{ImageResizeOptions, format_dimension_note, resize_image},
@@ -9,7 +8,7 @@ use crate::utils::{
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use maestro_agent::AgentToolResult;
 use maestro_models::{
-    Cancellation, DiagnosticErrorInfo, ImageContent, Model, ModelInput, UserBlock,
+    Cancellation, DiagnosticErrorInfo, ImageContent, Model, ModelInput, TextContent, UserBlock,
 };
 use std::sync::Arc;
 
@@ -48,7 +47,7 @@ fn image_result(
     if model.is_some_and(|model| !model.input.contains(&ModelInput::Image)) {
         lines.push(NON_VISION.into());
     }
-    let content = std::iter::once(text_block(lines.join("\n")))
+    let content = std::iter::once(UserBlock::Text(TextContent::new(lines.join("\n"))))
         .chain(attachment.map(UserBlock::Image))
         .collect();
     AgentToolResult {
@@ -83,22 +82,16 @@ impl Reader {
         .await?;
         let model = context.and_then(|context| context.model());
         let bytes = guarded(signal, || operations.read_file(absolute_path)).await?;
-        let result =
-            match mime.filter(|mime| !mime.is_empty()) {
-                Some(mime) => Ok(image_result(
-                    &bytes,
-                    mime,
-                    self.auto_resize,
-                    model.as_deref(),
-                )),
-                None => read_text(&bytes, &input.path, input.offset, input.limit).map(
-                    |(text, details)| AgentToolResult {
-                        content: vec![text_block(text)],
-                        details,
-                        terminate: None,
-                    },
-                ),
-            };
+        let result = match mime.filter(|mime| !mime.is_empty()) {
+            Some(mime) => Ok(image_result(
+                &bytes,
+                mime,
+                self.auto_resize,
+                model.as_deref(),
+            )),
+            None => read_text(&bytes, &input.path, input.offset, input.limit)
+                .map(|(text, details)| AgentToolResult::text_result(text, details)),
+        };
         if signal.is_some_and(Cancellation::is_aborted) {
             return Err(aborted());
         }

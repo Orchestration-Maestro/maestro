@@ -1,27 +1,41 @@
 //! Request policy shared by HTTP protocols: retries, timeouts, cancellation and failures.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
-use crate::child_process;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::loopback;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::transport;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::atomic::{AtomicUsize, Ordering};
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::{Duration, SystemTime};
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::{TestResult, rows};
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::StreamExt;
+#[cfg(not(target_arch = "wasm32"))]
 use indexmap::IndexMap;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     Cancellation, DiagnosticErrorInfo, Fetch, FetchError, HttpRequest, StopReason, StreamOptions,
     default_fetch,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use tokio::time::Instant;
+#[cfg(not(target_arch = "wasm32"))]
 use transport::{Attempt, Transport, call_inputs, drain, finish, transport};
 
+#[cfg(not(target_arch = "wasm32"))]
 const FIXTURE: &str = include_str!("fixtures/chat_completions/http.json");
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A connection failure with the given message.
 fn broken(message: &str) -> FetchError {
     FetchError::Connection(DiagnosticErrorInfo {
@@ -32,6 +46,7 @@ fn broken(message: &str) -> FetchError {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run a call through `transport` with `configure` applied to its options.
 async fn run(
     transport: &Transport,
@@ -42,6 +57,7 @@ async fn run(
     finish(model, context, options).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Abort the request after `after` of virtual time, so a regression ends instead of retrying forever.
 fn abort_after(options: &mut StreamOptions, after: Duration) {
     let signal = Cancellation::new();
@@ -53,6 +69,7 @@ fn abort_after(options: &mut StreamOptions, after: Duration) {
     options.signal = Some(signal);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Each recorded status and `x-should-retry` value retries exactly when the table says so.
 async fn statuses_follow_the_retry_table() -> TestResult {
     for row in rows(FIXTURE, "maestro_http_retries_transient_failures")? {
@@ -89,6 +106,7 @@ async fn statuses_follow_the_retry_table() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Connection failures and timeouts are retried, then reported once retries run out.
 async fn connection_failures_are_retried() -> TestResult {
     for (failure, text) in [
@@ -113,9 +131,10 @@ async fn connection_failures_are_retried() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_retries_transient_failures() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         statuses_follow_the_retry_table().await?;
         connection_failures_are_retried().await?;
         for (retries, attempts) in [
@@ -133,6 +152,7 @@ fn maestro_http_retries_transient_failures() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The wait a retry hint must produce.
 enum Wait {
     /// Exactly this long.
@@ -143,6 +163,7 @@ enum Wait {
     Backoff,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An HTTP date `seconds` from now; negative values are in the past.
 fn http_date(seconds: i64) -> String {
     let offset = Duration::from_secs(seconds.unsigned_abs());
@@ -154,6 +175,7 @@ fn http_date(seconds: i64) -> String {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retry hints and the wait each must produce.
 fn hint_cases<'a>(future: &'a str, past: &'a str) -> Vec<(Vec<(&'a str, &'a str)>, Wait)> {
     let ms = Duration::from_millis;
@@ -192,9 +214,10 @@ fn hint_cases<'a>(future: &'a str, past: &'a str) -> Vec<(Vec<(&'a str, &'a str)
     ]
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_honors_retry_headers() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let (future, past) = (http_date(90), http_date(-60));
         let ms = Duration::from_millis;
         for (headers, wait) in hint_cases(&future, &past) {
@@ -216,6 +239,7 @@ fn maestro_http_honors_retry_headers() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Each gap lies in the jittered window of its exponential backoff, capped at eight seconds.
 fn assert_backoff_schedule(gaps: &[Duration]) -> TestResult {
     for (retries_made, gap) in gaps.iter().enumerate() {
@@ -229,9 +253,10 @@ fn assert_backoff_schedule(gaps: &[Duration]) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_bounds_retry_backoff() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let target = transport(vec![Attempt::status(503, &[])]);
         run(&target, |options| options.max_retries = Some(7.0)).await?;
         assert_eq!(target.gaps().len(), 7);
@@ -249,6 +274,7 @@ fn maestro_http_bounds_retry_backoff() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The timeout in milliseconds that a fixture value names.
 fn timeout_value(value: &Value) -> TestResult<f64> {
     match value.as_str() {
@@ -260,9 +286,10 @@ fn timeout_value(value: &Value) -> TestResult<f64> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_preserves_setup_timeout() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         for row in rows(FIXTURE, "maestro_http_preserves_setup_timeout")? {
             let target = transport(vec![Attempt::success()]);
             let timeout = timeout_value(&row["timeout"])?;
@@ -308,9 +335,10 @@ fn maestro_http_preserves_setup_timeout() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_stops_retries_on_abort() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let target = transport(vec![Attempt::success()]);
         let signal = Cancellation::new();
         signal.abort();
@@ -365,9 +393,10 @@ fn maestro_http_stops_retries_on_abort() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_rejects_unbounded_retry_counts() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         for (retries, message) in [
             (-1.0, "maxRetries must be a positive integer"),
             (0.5, "maxRetries must be an integer"),
@@ -391,6 +420,7 @@ fn maestro_http_rejects_unbounded_retry_counts() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Failures a scripted transport reports, with the text each produces.
 async fn scripted_failures() -> TestResult {
     for row in rows(FIXTURE, "maestro_http_reports_fetch_failures")? {
@@ -434,6 +464,7 @@ async fn scripted_failures() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A call to the loopback address, returning the update labels and the final message.
 async fn call_loopback(url: &str) -> TestResult<(Vec<String>, maestro_models::AssistantMessage)> {
     let mut model = chat::model(&json!({}))?;
@@ -452,6 +483,7 @@ async fn call_loopback(url: &str) -> TestResult<(Vec<String>, maestro_models::As
     drain(&stream).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Failures of the default client: a refused connection and a body cut short.
 async fn production_client_failures() -> TestResult {
     let closed = std::net::TcpListener::bind("127.0.0.1:0")?;
@@ -475,15 +507,26 @@ async fn production_client_failures() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_reports_fetch_failures() -> TestResult {
-    if child_process::child_case().is_some() {
-        return chat::block_on(false, production_client_failures());
+    if maestro_test_process::selection().is_child() {
+        return crate::runtime::run(production_client_failures());
     }
-    chat::block_on(true, scripted_failures())?;
-    child_process::rerun("maestro_http_reports_fetch_failures", "production", &[])
+    crate::runtime::run_paused(scripted_failures())?;
+    {
+        let output =
+            maestro_test_process::TestProcess::current("maestro_http_reports_fetch_failures")?
+                .nocapture()
+                .env_clear()
+                .case("production")
+                .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One request through the default client against a loopback server.
 async fn default_fetch_exchange() -> TestResult {
     let server = loopback::serve(
@@ -515,14 +558,26 @@ async fn default_fetch_exchange() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_default_fetch_sends_requests() -> TestResult {
-    if child_process::child_case().is_some() {
-        return chat::block_on(false, default_fetch_exchange());
+    if maestro_test_process::selection().is_child() {
+        return crate::runtime::run(default_fetch_exchange());
     }
-    child_process::rerun("maestro_http_default_fetch_sends_requests", "default", &[])
+    {
+        let output = maestro_test_process::TestProcess::current(
+            "maestro_http_default_fetch_sends_requests",
+        )?
+        .nocapture()
+        .env_clear()
+        .case("default")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A request to `url` carrying `headers`, as the default client receives it.
 fn request_with(url: String, headers: &[(&str, &str)]) -> HttpRequest {
     HttpRequest {
@@ -537,6 +592,7 @@ fn request_with(url: String, headers: &[(&str, &str)]) -> HttpRequest {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Request values reach the wire as the bytes their characters name, trimmed at the HTTP edges
 /// only, and a response value is read byte by byte as text.
 async fn header_values_are_octets() -> TestResult {
@@ -571,6 +627,7 @@ async fn header_values_are_octets() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A value with a character above U+00FF fails before any connection is made.
 async fn wide_header_values_are_not_sent() -> TestResult {
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
@@ -592,20 +649,31 @@ async fn wide_header_values_are_not_sent() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_preserves_header_octets() -> TestResult {
-    if child_process::child_case().is_some() {
-        return chat::block_on(false, async {
+    if maestro_test_process::selection().is_child() {
+        return crate::runtime::run(async {
             header_values_are_octets().await?;
             wide_header_values_are_not_sent().await
         });
     }
-    child_process::rerun("maestro_http_preserves_header_octets", "default", &[])
+    {
+        let output =
+            maestro_test_process::TestProcess::current("maestro_http_preserves_header_octets")?
+                .nocapture()
+                .env_clear()
+                .case("default")
+                .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_joins_endpoint_urls() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         for row in rows(FIXTURE, "maestro_http_joins_endpoint_urls")? {
             let target = transport(vec![Attempt::success()]);
             let (mut model, context, options) = call_inputs(&target)?;
@@ -623,6 +691,7 @@ fn maestro_http_joins_endpoint_urls() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Characters the native client cannot carry in a header value fail the attempt as a connection
 /// failure, so the sender retries it and reports it like any other, and nothing is sent.
 async fn native_header_rejections_are_connection_failures() -> TestResult {
@@ -672,21 +741,29 @@ async fn native_header_rejections_are_connection_failures() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_retries_native_header_rejections() -> TestResult {
-    if child_process::child_case().is_some() {
-        return chat::block_on(true, native_header_rejections_are_connection_failures());
+    if maestro_test_process::selection().is_child() {
+        return crate::runtime::run_paused(native_header_rejections_are_connection_failures());
     }
-    child_process::rerun(
-        "maestro_http_retries_native_header_rejections",
-        "native",
-        &[],
-    )
+    {
+        let output = maestro_test_process::TestProcess::current(
+            "maestro_http_retries_native_header_rejections",
+        )?
+        .nocapture()
+        .env_clear()
+        .case("native")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_reports_unrepresentable_failure_details() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         for error in [
             r#"{"\ud800":7,"keep":1}"#,
             r#"{"message":{"\ud800":7,"keep":1}}"#,

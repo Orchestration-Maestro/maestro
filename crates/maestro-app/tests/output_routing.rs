@@ -33,7 +33,7 @@ fn child(name: &str, mode: &str) -> TestProcess {
         .nocapture()
         .single_threaded()
         .quiet()
-        .env("MAESTRO_OUTPUT_PROBE", mode)
+        .case(mode)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -48,8 +48,11 @@ fn product(bytes: &[u8]) -> &[u8] {
 #[test]
 fn takeover_routes_diagnostics_without_polluting_raw_stdout() {
     let cases = fixtures::cases::<Text, Routed>("route-");
-    if let Ok(id) = std::env::var("MAESTRO_OUTPUT_PROBE") {
-        let case = cases.iter().find(|c| c.id == id).unwrap();
+    if maestro_test_process::selection().is_child() {
+        let case = cases
+            .iter()
+            .find(|c| maestro_test_process::selection().runs_case(&c.id))
+            .unwrap();
         let mut states = vec![is_stdout_taken_over()];
         restore_stdout();
         states.push(is_stdout_taken_over());
@@ -170,7 +173,7 @@ fn pipe_case(name: &str, case: PipeCase) {
         case.taken,
         case.failed
     );
-    if std::env::var("MAESTRO_OUTPUT_PROBE").is_ok() {
+    if maestro_test_process::selection().is_child() {
         pipe_probe(case);
     }
     let mut process = child(name, &mode).spawn().unwrap();
@@ -227,11 +230,15 @@ fn raw_stdout_reports_flush_failure() {
 /// Runs each recorded flush combination with the given failure state once, in both ownership
 /// states.
 fn flush_cases(name: &str, failed: bool) {
-    if let Ok(mode) = std::env::var("MAESTRO_OUTPUT_PROBE") {
+    if maestro_test_process::selection().is_child() {
+        let taken = [false, true]
+            .into_iter()
+            .find(|taken| maestro_test_process::selection().runs_case(&format!("{taken}:{failed}")))
+            .expect("selected flush mode");
         pipe_probe(PipeCase {
             operation: PipeOperation::Flush,
-            taken: mode.starts_with("true"),
-            failed: mode.ends_with("true"),
+            taken,
+            failed,
         });
     }
     let cases: Vec<_> = fixtures::cases::<FlushInput, FlushExpected>("flush-")
@@ -261,18 +268,20 @@ fn ordinary_stdout_reports_write_failure() {
     if run_alone("ordinary_stdout_reports_write_failure").unwrap() {
         return;
     }
-    if let Ok(mode) = std::env::var("MAESTRO_OUTPUT_PROBE") {
-        let operation = if mode.starts_with("raw") {
-            PipeOperation::Raw
-        } else {
-            PipeOperation::Ordinary
-        };
+    if maestro_test_process::selection().is_child() {
+        let (operation, taken) = [
+            ("true:true", PipeOperation::Ordinary, true),
+            ("false:true", PipeOperation::Ordinary, false),
+            ("raw:true:true", PipeOperation::Raw, true),
+            ("raw:false:true", PipeOperation::Raw, false),
+        ]
+        .into_iter()
+        .find(|(id, _, _)| maestro_test_process::selection().runs_case(id))
+        .map(|(_, operation, taken)| (operation, taken))
+        .expect("selected write mode");
         pipe_probe(PipeCase {
             operation,
-            taken: mode
-                .strip_prefix("raw:")
-                .unwrap_or(&mode)
-                .starts_with("true"),
+            taken,
             failed: true,
         });
     }
@@ -318,7 +327,7 @@ fn package_children_observe_takeover_changes_after_construction() {
     assert_eq!(cases.len(), 1);
     let case = &cases[0];
     assert_eq!(case.id, "live-package-stdio");
-    if std::env::var("MAESTRO_OUTPUT_PROBE").is_ok() {
+    if maestro_test_process::selection().is_child() {
         package_probe();
         std::process::exit(0);
     }
@@ -366,11 +375,8 @@ fn package_probe() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
     use std::rc::Rc;
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let operations = NativePackageOperations::new(Rc::new(is_stdout_taken_over), &local);
+    let runtime = crate::support::io_runtime();
     runtime.block_on(local.run_until(async {
             for label in ["A", "B", "C"] {
                 if label == "B" { take_over_stdout(); }

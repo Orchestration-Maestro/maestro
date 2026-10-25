@@ -1,7 +1,10 @@
 //! Controlled-clock request and body lifetime witnesses.
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::super::request;
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::StreamExt;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{
     future::{Future, poll_fn},
     pin::Pin,
@@ -10,9 +13,11 @@ use std::{
     time::Duration,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A body whose producer observes teardown through channel closure.
 struct ChannelBody(tokio::sync::mpsc::UnboundedReceiver<Result<Vec<u8>, crate::FetchError>>);
 
+#[cfg(not(target_arch = "wasm32"))]
 impl futures_core::Stream for ChannelBody {
     type Item = Result<Vec<u8>, crate::FetchError>;
     fn poll_next(
@@ -23,6 +28,7 @@ impl futures_core::Stream for ChannelBody {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert pending at the controlled operation boundary without a delay.
 async fn pending<T>(mut operation: Pin<&mut impl Future<Output = T>>) {
     poll_fn(|context| {
@@ -32,6 +38,7 @@ async fn pending<T>(mut operation: Pin<&mut impl Future<Output = T>>) {
     .await;
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Prepared operation with a synthetic credential and supplied transport.
 async fn prepared(fetch: crate::Fetch, signal: Option<crate::Cancellation>) -> request::Prepared {
     let model = super::request_corpus::model(&serde_json::json!({}));
@@ -50,6 +57,7 @@ async fn prepared(fetch: crate::Fetch, signal: Option<crate::Cancellation>) -> r
         .unwrap()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Headers with a controlled body.
 fn response(
     receiver: tokio::sync::mpsc::UnboundedReceiver<Result<Vec<u8>, crate::FetchError>>,
@@ -65,6 +73,7 @@ fn response(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Transport whose completion is explicitly released by the test producer.
 fn delayed_fetch() -> (
     crate::Fetch,
@@ -79,6 +88,7 @@ fn delayed_fetch() -> (
     (fetch, sender)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check the setup deadline and supplied-signal cancellation paths.
 async fn setup_lifetime() {
     for supplied in [false, true] {
@@ -107,6 +117,7 @@ async fn setup_lifetime() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The header completion and each chunk consume the same deadline.
 async fn body_lifetime() {
     body_deadline(false).await;
@@ -114,6 +125,7 @@ async fn body_lifetime() {
     immediate_headers().await;
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Caller signals disable the deadline, then end the same body on abort.
 async fn supplied_body_and_teardown() {
     let signal = crate::Cancellation::new();
@@ -134,6 +146,7 @@ async fn supplied_body_and_teardown() {
     teardown().await;
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Time awaiting a hook is outside the request lifetime, even for an aborted caller.
 async fn hook_lifetime() {
     for aborted in [false, true] {
@@ -175,22 +188,19 @@ async fn hook_lifetime() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// All lifetime witnesses share paused time and producer-closed teardown guarantees.
 pub(super) fn verify() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(async {
-            setup_lifetime().await;
-            body_lifetime().await;
-            error_body_lifetime().await;
-            supplied_body_and_teardown().await;
-            hook_lifetime().await;
-        });
+    crate::tests::runtime::run_paused(async {
+        setup_lifetime().await;
+        body_lifetime().await;
+        error_body_lifetime().await;
+        supplied_body_and_teardown().await;
+        hook_lifetime().await;
+    });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Immediate headers arm the timer before any body read.
 async fn immediate_headers() {
     // Immediate headers must arm the timer even before the first body poll.
@@ -210,6 +220,7 @@ async fn immediate_headers() {
     chunks.closed().await;
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// EOF and drop both close the producer channel.
 async fn teardown() {
     for eof in [false, true] {
@@ -230,6 +241,7 @@ async fn teardown() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Headers and a late chunk preserve the original lifetime.
 async fn body_deadline(late_chunk: bool) {
     let (fetch, producer) = delayed_fetch();
@@ -254,6 +266,7 @@ async fn body_deadline(late_chunk: bool) {
     chunks.closed().await;
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert completion at the chosen clock boundary without advancing time implicitly.
 async fn ready<T>(mut operation: Pin<&mut impl Future<Output = T>>) -> T {
     poll_fn(|context| match operation.as_mut().poll(context) {
@@ -263,6 +276,7 @@ async fn ready<T>(mut operation: Pin<&mut impl Future<Output = T>>) -> T {
     .await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The same deadline also terminates a pending matched error body.
 async fn error_body_lifetime() {
     let (fetch, producer) = delayed_fetch();

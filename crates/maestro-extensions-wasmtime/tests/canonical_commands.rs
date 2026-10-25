@@ -75,50 +75,52 @@ fn bind(
         trace.clone(),
         trace.clone(),
     );
-    runner.bind_command_context(Some(ExtensionCommandContextActions {
-        wait_for_idle: Rc::new(move || {
-            wait.borrow_mut().push("wait".into());
-            Box::pin(async { Ok(()) })
-        }),
-        new_session: Rc::new(move |options| {
-            let options = options.unwrap();
-            assert_eq!(options.parent_session.as_deref(), Some("literal parent"));
-            let (trace, history) = (new.clone(), history.clone());
-            Box::pin(async move {
-                options.setup.unwrap()(history).await?;
-                trace.borrow_mut().push("setup".into());
-                with_replacement(options.with_session.unwrap(), "new", &trace).await?;
-                Ok(maestro_extensions::types::SessionChangeResult { cancelled: false })
-            })
-        }),
-        fork: Rc::new(move |id, options| {
-            assert_eq!(id, "literal fork");
-            let options = options.unwrap();
-            assert_eq!(
-                options.position,
-                Some(maestro_extensions::ForkPosition::Before)
-            );
-            let trace = fork.clone();
-            Box::pin(async move {
-                with_replacement(options.with_session.unwrap(), "fork", &trace).await?;
-                Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
-            })
-        }),
-        navigate_tree: navigation(navigate),
-        switch_session: Rc::new(move |path, options| {
-            assert_eq!(path, " literal session ");
-            let with = options.unwrap().with_session.unwrap();
-            let trace = switch.clone();
-            Box::pin(async move {
-                with_replacement(with, "switch", &trace).await?;
-                Ok(maestro_extensions::types::SessionChangeResult { cancelled: false })
-            })
-        }),
-        reload: Rc::new(move || {
-            reload.borrow_mut().push("reload".into());
-            Box::pin(async { Err("literal reload failure".into()) })
-        }),
-    }));
+    runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+        maestro_extensions::CommandContextOperations {
+            wait_for_idle: Rc::new(move || {
+                wait.borrow_mut().push("wait".into());
+                Box::pin(async { Ok(()) })
+            }),
+            new_session: Rc::new(move |options| {
+                let options = options.unwrap();
+                assert_eq!(options.parent_session.as_deref(), Some("literal parent"));
+                let (trace, history) = (new.clone(), history.clone());
+                Box::pin(async move {
+                    options.setup.unwrap()(history).await?;
+                    trace.borrow_mut().push("setup".into());
+                    with_replacement(options.with_session.unwrap(), "new", &trace).await?;
+                    Ok(maestro_extensions::types::SessionChangeResult { cancelled: false })
+                })
+            }),
+            fork: Rc::new(move |id, options| {
+                assert_eq!(id, "literal fork");
+                let options = options.unwrap();
+                assert_eq!(
+                    options.position,
+                    Some(maestro_extensions::ForkPosition::Before)
+                );
+                let trace = fork.clone();
+                Box::pin(async move {
+                    with_replacement(options.with_session.unwrap(), "fork", &trace).await?;
+                    Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
+                })
+            }),
+            navigate_tree: navigation(navigate),
+            switch_session: Rc::new(move |path, options| {
+                assert_eq!(path, " literal session ");
+                let with = options.unwrap().with_session.unwrap();
+                let trace = switch.clone();
+                Box::pin(async move {
+                    with_replacement(with, "switch", &trace).await?;
+                    Ok(maestro_extensions::types::SessionChangeResult { cancelled: false })
+                })
+            }),
+            reload: Rc::new(move || {
+                reload.borrow_mut().push("reload".into());
+                Box::pin(async { Err("literal reload failure".into()) })
+            }),
+        },
+    )));
 }
 
 /// Checks navigation operands at their real application consumer.

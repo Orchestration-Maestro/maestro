@@ -2,8 +2,10 @@
 
 use crate::support;
 
+use std::path::Path;
+
 use maestro_test_conventions::check_workspace;
-use support::Workspace;
+use support::{Workspace, source};
 
 const DECLARATIONS: &[(&str, &str)] = &[
     ("dependencies", ""),
@@ -15,12 +17,29 @@ const DECLARATIONS: &[(&str, &str)] = &[
     ("target.'cfg(target_os = \"none\")'.dev-dependencies", ""),
 ];
 
+/// A duplicate interactive session setup outside its shared owner.
+const DUPLICATE_SETUP: &str = "fn f() { let value = AgentSessionConfig { agent: owner() }; }";
+
+/// Spellings of a duplicate setup the token walk must still catch.
+const DUPLICATE_SETUP_SPELLINGS: &[&str] = &[
+    DUPLICATE_SETUP,
+    "fn f() { check!(AgentSessionConfig { agent: owner() }); }",
+    "fn f() { let make = || AgentSessionConfig { agent: owner() }; }",
+    "impl Example { fn make() { drop(AgentSessionConfig { agent: owner() }); } }",
+    "fn f() { let _ = session(cwd, None); drop(AgentSessionConfig { agent: owner() }); }",
+    "use maestro_app::AgentSessionConfig as Config;\nfn f() { let x = Config { agent: owner() }; }",
+    "fn f() { let x = r#AgentSessionConfig { agent: owner() }; }",
+];
+
 #[test]
 fn runtime_dependencies_stay_in_the_runtime_adapter() {
     for &(owner, _) in support::policy::POLICY {
         let workspace = Workspace::new();
         workspace.foundation(&[owner]);
-        let manifest = workspace.root.join(format!("crates/{owner}/Cargo.toml"));
+        let manifest = workspace
+            .root
+            .path()
+            .join(format!("crates/{owner}/Cargo.toml"));
         let baseline = std::fs::read_to_string(&manifest).unwrap();
         for library in [
             "wasmtime",
@@ -38,12 +57,12 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
         }
         // The restored manifest declares no external library, so one clean check covers all four.
         std::fs::write(&manifest, &baseline).unwrap();
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     let workspace = Workspace::new();
     workspace.foundation(&["maestro", "maestro-extensions-wasmtime"]);
     workspace.external("wasmtime");
-    let manifest = workspace.root.join("crates/maestro/Cargo.toml");
+    let manifest = workspace.root.path().join("crates/maestro/Cargo.toml");
     let baseline = std::fs::read_to_string(&manifest).unwrap();
     std::fs::write(manifest, format!(
         "{baseline}maestro-extensions-wasmtime = {{ path = \"../maestro-extensions-wasmtime\" }}\n"
@@ -53,7 +72,7 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
         "maestro-extensions-wasmtime",
         "[dependencies]\nwasmtime = { path = \"../../external\" }",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions", "maestro-extensions-wasm"]);
     workspace.member(
@@ -61,13 +80,13 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
         "maestro-extensions",
         "[dependencies]\nmaestro-extensions-wasm = { path = \"../maestro-extensions-wasm\" }",
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
         error.contains("maestro-extensions -> maestro-extensions-wasm"),
         "{error}"
     );
     workspace.member("maestro-extensions", "maestro-extensions", "");
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -79,21 +98,15 @@ fn toolkit_excludes_framework_and_highlighting_dependencies() {
         for (kind, extra) in DECLARATIONS {
             workspace.member("maestro-tui", "maestro-tui", &format!("[{kind}]\nalias = {{ package = {library:?}, path = \"../../external\"{extra} }}"));
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(format!(
                     "maestro-tui: forbidden toolkit library dependency {library}"
                 ))
             );
             workspace.member("maestro-tui", "maestro-tui", "");
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         }
     }
-}
-
-fn source(workspace: &Workspace, owner: &str, relative: &str, contents: &str) {
-    let path = workspace.root.join("crates").join(owner).join(relative);
-    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-    std::fs::write(path, contents).unwrap();
 }
 
 #[test]
@@ -112,7 +125,7 @@ fn tool_declarations_have_one_owner() {
             "src/lib.rs",
             &format!("\npub(crate) struct\n{name}<\nContext\n> {{ context: Context }}"),
         );
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
             error.contains("maestro-tui/src/lib.rs:2:")
                 && error.contains(name)
@@ -138,13 +151,13 @@ fn tool_declarations_have_one_owner() {
             "other.rs",
             &format!("pub type {name} = ();"),
         );
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
             error.contains("duplicate declaration") && error.contains(name),
             "{error}"
         );
-        std::fs::remove_file(workspace.root.join("crates/maestro-tools/other.rs")).unwrap();
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        std::fs::remove_file(workspace.root.path().join("crates/maestro-tools/other.rs")).unwrap();
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -156,14 +169,14 @@ fn check_tool_fragment_owner(workspace: &Workspace, name: &str) {
         "src/exports/tools.rs",
         &format!("pub use maestro_tools::{name};"),
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         workspace,
         "maestro-app",
         "src/exports/tools.rs",
         &format!("pub struct {name}<Context> {{ context: Context }}"),
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
         error.contains("maestro-app/src/exports/tools.rs:1:")
             && error.contains(name)
@@ -176,7 +189,59 @@ fn check_tool_fragment_owner(workspace: &Workspace, name: &str) {
         "src/exports/tools.rs",
         &format!("pub use maestro_tools::{name};"),
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn parameter_schema_records_have_one_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-request", "maestro-models", "maestro-tui"]);
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        "\npub(crate) struct\nParameterSchema { }",
+    );
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        error.contains("maestro-tui/src/lib.rs:2:") && error.contains("maestro-request"),
+        "{error}"
+    );
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        "pub use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};\n\
+         fn use_schema(_: ParameterSchema, _: SchemaKind) {}",
+    );
+    source(
+        &workspace,
+        "maestro-request",
+        "src/lib.rs",
+        "pub struct ParameterSchema { }\npub enum SchemaKind { String }\n\
+         pub struct Tool { parameters: ParameterSchema }\n\
+         pub struct ToolInfo<P = ParameterSchema> { parameters: P }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    source(
+        &workspace,
+        "maestro-request",
+        "src/lib.rs",
+        "pub struct ParameterSchema { }\npub enum SchemaKind { String }",
+    );
+    source(
+        &workspace,
+        "maestro-models",
+        "src/lib.rs",
+        "pub struct ParameterSchema { }",
+    );
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        error.contains("maestro-models/src/lib.rs:1:")
+            && error.contains("ParameterSchema")
+            && error.contains("maestro-request"),
+        "{error}"
+    );
 }
 
 #[test]
@@ -209,7 +274,7 @@ fn application_selectors_stay_in_chat() {
         workspace.foundation(&[owner, "maestro-chat"]);
         for declaration in &declarations {
             source(&workspace, owner, "src/lib.rs", declaration);
-            let error = check_workspace(&workspace.root).unwrap_err();
+            let error = check_workspace(workspace.root.path()).unwrap_err();
             assert!(
                 error.contains(owner) && error.contains("belongs to maestro-chat"),
                 "{error}"
@@ -227,7 +292,7 @@ fn application_selectors_stay_in_chat() {
             "src/lib.rs",
             &declarations.join("\n"),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -252,7 +317,7 @@ pub struct SelectList;
 pub struct SettingsList;
 "####;
     source(&workspace, "maestro-tui", "src/lib.rs", innocent);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     for declaration in [
         "pub(in crate::inner) struct\nToolDefinition<\nContext\n> { context: Context }",
         "pub(crate) type ToolRenderContext<Context> = Context;",
@@ -265,11 +330,11 @@ pub struct SettingsList;
             "src/lib.rs",
             &format!("{innocent}\n{declaration}"),
         );
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         let line = innocent.lines().count() + 2;
         assert!(error.contains(&format!("src/lib.rs:{line}:")), "{error}");
         source(&workspace, "maestro-tui", "src/lib.rs", innocent);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -279,6 +344,7 @@ fn wit_codegen_inputs_share_one_canonical_source() {
     workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
     let guest = workspace
         .root
+        .path()
         .join("crates/maestro-extensions-wasm/interfaces");
     std::fs::create_dir(&guest).unwrap();
     std::fs::write(
@@ -286,7 +352,7 @@ fn wit_codegen_inputs_share_one_canonical_source() {
         "package maestro:fixture; world fixture {}",
     )
     .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
         "maestro-extensions-wasm",
@@ -300,7 +366,7 @@ fn wit_codegen_inputs_share_one_canonical_source() {
         r##"wasmtime::component::bindgen!({ path: [r#"../maestro-extensions-wasm/interfaces"#, "../maestro-extensions-wasm/interfaces/world.wit"] });"##,
     ] {
         source(&workspace, "maestro-extensions-wasmtime", "build.rs", host);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     reject_noncanonical_wit(&workspace, &guest);
     wit_ownership_without_both_sides();
@@ -309,17 +375,21 @@ fn wit_codegen_inputs_share_one_canonical_source() {
 }
 
 fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
-    let second = workspace.root.join("crates/maestro-extensions-wasm/second");
+    let second = workspace
+        .root
+        .path()
+        .join("crates/maestro-extensions-wasm/second");
     std::fs::create_dir(&second).unwrap();
     std::fs::copy(guest.join("world.wit"), second.join("world.wit")).unwrap();
     let copied = workspace
         .root
+        .path()
         .join("crates/maestro-extensions-wasmtime/copied");
     std::fs::create_dir(&copied).unwrap();
     std::fs::copy(guest.join("world.wit"), copied.join("world.wit")).unwrap();
     for &(host, expected) in NONCANONICAL_WIT {
         source(workspace, "maestro-extensions-wasmtime", "build.rs", host);
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
             error.contains("build.rs:1:") && error.contains(expected),
             "{error}"
@@ -330,7 +400,7 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
             "build.rs",
             r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces" });"#,
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     source(
         workspace,
@@ -339,7 +409,7 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
         r#"wit_bindgen::generate!({ path: "../maestro-extensions-wasmtime/copied" });"#,
     );
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("guest-owned")
     );
@@ -349,7 +419,7 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
         "src/bindings.rs",
         r#"wit_bindgen::generate!({ path: ["interfaces"] });"#,
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -358,6 +428,7 @@ fn wit_options_ignore_module_paths_in_nested_values() {
     workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
     let guest = workspace
         .root
+        .path()
         .join("crates/maestro-extensions-wasm/interfaces");
     std::fs::create_dir(&guest).unwrap();
     std::fs::write(
@@ -394,14 +465,14 @@ fn wit_options_ignore_module_paths_in_nested_values() {
         });"#,
     ] {
         source(&workspace, "maestro-extensions-wasmtime", "build.rs", input);
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{input}");
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{input}");
         source(
             &workspace,
             "maestro-extensions-wasmtime",
             "build.rs",
             &input.replace("../maestro-extensions-wasm/interfaces", "wrong-root"),
         );
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(error.contains("cannot resolve WIT input"), "{error}");
     }
 }
@@ -413,6 +484,7 @@ fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
     for directory in ["wit", "fixture"] {
         let root = workspace
             .root
+            .path()
             .join("crates/maestro-extensions-wasm")
             .join(directory);
         std::fs::create_dir(&root).unwrap();
@@ -434,7 +506,7 @@ fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
         "build.rs",
         r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/fixture" });"#,
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.contains("same canonical source"), "{error}");
     source(
         &workspace,
@@ -442,7 +514,7 @@ fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
         "build.rs",
         r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
         "maestro-extensions-wasmtime",
@@ -451,9 +523,10 @@ fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
     );
     let host_wit = workspace
         .root
+        .path()
         .join("crates/maestro-extensions-wasmtime/wit");
     std::fs::create_dir(&host_wit).unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.contains("guest-owned"), "{error}");
 }
 
@@ -474,7 +547,7 @@ fn raw_identifier_declarations_keep_their_owners() {
         let workspace = Workspace::new();
         workspace.foundation(&["maestro-tui", owner]);
         source(&workspace, "maestro-tui", "src/lib.rs", declaration);
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
             error.contains("maestro-tui/src/lib.rs:1:")
                 && error.contains(name)
@@ -483,7 +556,7 @@ fn raw_identifier_declarations_keep_their_owners() {
         );
         source(&workspace, "maestro-tui", "src/lib.rs", "");
         source(&workspace, owner, "src/lib.rs", declaration);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -512,7 +585,13 @@ fn maestro_conventions_decodes_static_paths_as_rust() {
     ] {
         assert_static_path(&workspace, directory, literal);
     }
-    std::fs::create_dir(workspace.root.join("crates/maestro-extensions-wasm/wit")).unwrap();
+    std::fs::create_dir(
+        workspace
+            .root
+            .path()
+            .join("crates/maestro-extensions-wasm/wit"),
+    )
+    .unwrap();
     source(
         &workspace,
         "maestro-extensions-wasm",
@@ -525,7 +604,7 @@ fn maestro_conventions_decodes_static_paths_as_rust() {
         "build.rs",
         r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 fn check_runtime_declarations(
@@ -549,9 +628,9 @@ fn check_runtime_declarations(
         };
         std::fs::write(manifest, contents).unwrap();
         if owner == "maestro-extensions-wasmtime" && library != "wasmtime-wasi-http" {
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         } else {
-            let error = check_workspace(&workspace.root).unwrap_err();
+            let error = check_workspace(workspace.root.path()).unwrap_err();
             assert!(error.contains(owner) && error.contains(library), "{error}");
         }
     }
@@ -615,14 +694,14 @@ fn declarations_in_macro_tokens_keep_their_owners() {
         ),
     ] {
         source(&workspace, "maestro-tui", relative, contents);
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
             error.contains("ToolDefinition declaration belongs to maestro-tools"),
             "{error}"
         );
         source(&workspace, "maestro-tui", relative, "");
         source(&workspace, "maestro-tools", relative, contents);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         source(&workspace, "maestro-tools", relative, "");
     }
     source(
@@ -634,7 +713,7 @@ fn declarations_in_macro_tokens_keep_their_owners() {
         macro_rules! lookalike { () => { #[example(struct ToolDefinition)] fn fine() {} }; }
         "#,
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -654,18 +733,19 @@ fn declarations_after_shebang_keep_their_owners() {
     let declaration = "#!/usr/bin/env rust-script\npub struct ToolDefinition;";
     source(&workspace, "maestro-tui", "src/lib.rs", declaration);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "{}:2: ToolDefinition declaration belongs to maestro-tools, not maestro-tui",
             workspace
                 .root
+                .path()
                 .join("crates/maestro-tui/src/lib.rs")
                 .display()
         ))
     );
     source(&workspace, "maestro-tui", "src/lib.rs", "");
     source(&workspace, "maestro-tools", "src/lib.rs", declaration);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -678,7 +758,7 @@ fn metavariable_keywords_do_not_declare_ownership() {
         "src/lib.rs",
         "macro_rules! define { ($type:ident) => { $type ToolDefinition; }; }",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -691,7 +771,7 @@ fn contextual_union_and_raw_keywords_are_not_declarations() {
         "paste! { struct [<Tool Definition>]; } concat_idents! { Tool, Definition }",
     ] {
         source(&workspace, "maestro-tui", "src/lib.rs", contents);
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{contents}");
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{contents}");
     }
     for declaration in [
         "pub union ToolDefinition<T> { value: T }",
@@ -711,7 +791,11 @@ fn functions_constants_and_statics_do_not_declare_ownership() {
         "pub static ToolRenderContext: () = ();",
     ] {
         source(&workspace, "maestro-tui", "src/lib.rs", declaration);
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{declaration}");
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Ok(()),
+            "{declaration}"
+        );
     }
 }
 
@@ -739,7 +823,7 @@ fn generated_macro_declaration_names_remain_manual_review() {
         "src/lib.rs",
         "macro_rules! define { ($name:ident, $t:ty) => { struct $name { value: $t } }; } define!(ToolDefinition, u8);",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 fn assert_tool_declaration_owner(declaration: &str) {
@@ -747,22 +831,23 @@ fn assert_tool_declaration_owner(declaration: &str) {
     workspace.foundation(&["maestro-tools", "maestro-tui"]);
     source(&workspace, "maestro-tui", "src/lib.rs", declaration);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "{}:1: ToolDefinition declaration belongs to maestro-tools, not maestro-tui",
             workspace
                 .root
+                .path()
                 .join("crates/maestro-tui/src/lib.rs")
                 .display()
         ))
     );
     source(&workspace, "maestro-tui", "src/lib.rs", "");
     source(&workspace, "maestro-tools", "src/lib.rs", declaration);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
-    let member = workspace.root.join("crates/maestro-extensions-wasm");
+    let member = workspace.root.path().join("crates/maestro-extensions-wasm");
     std::fs::create_dir_all(member.join(directory)).unwrap();
     source(
         workspace,
@@ -774,7 +859,7 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
     let host = format!("wasmtime::component::bindgen!({{ path: {host_path:?} }});");
     source(workspace, "maestro-extensions-wasmtime", "build.rs", &host);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Ok(()),
         "literal: {literal}"
     );
@@ -793,12 +878,12 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
             &format!("wasmtime::component::bindgen!({{ path: {wrong:?} }});"),
         );
         assert!(
-            check_workspace(&workspace.root)
+            check_workspace(workspace.root.path())
                 .unwrap_err()
                 .contains("same canonical source roots")
         );
         source(workspace, "maestro-extensions-wasmtime", "build.rs", &host);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -823,18 +908,19 @@ fn tool_declaration_kinds() {
             let declaration = format!("#[example]\n{}", shape.replace("NAME", name));
             source(&workspace, "maestro-tui", "src/lib.rs", &declaration);
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(format!(
                     "{}:2: {name} declaration belongs to maestro-tools, not maestro-tui",
                     workspace
                         .root
+                        .path()
                         .join("crates/maestro-tui/src/lib.rs")
                         .display()
                 ))
             );
             source(&workspace, "maestro-tui", "src/lib.rs", "");
             source(&workspace, "maestro-tools", "src/lib.rs", &declaration);
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
             source(&workspace, "maestro-tools", "src/lib.rs", "");
         }
     }
@@ -846,6 +932,7 @@ fn wit_ownership_without_both_sides() {
     std::fs::create_dir(
         workspace
             .root
+            .path()
             .join("crates/maestro-extensions-wasmtime/interfaces"),
     )
     .unwrap();
@@ -856,12 +943,12 @@ fn wit_ownership_without_both_sides() {
         r#"wasmtime::component::bindgen!({ path: "interfaces" });"#,
     );
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("no guest-owned source member")
     );
     source(&workspace, "maestro-extensions-wasmtime", "build.rs", "");
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
     for declaration in [
         r#"wit_bindgen::generate!({ inline: "package maestro:fixture; world fixture {}" });"#,
@@ -873,7 +960,7 @@ fn wit_ownership_without_both_sides() {
             "src/bindings.rs",
             declaration,
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     for input in [
         "{}",
@@ -889,18 +976,21 @@ fn wit_ownership_without_both_sides() {
             &format!("wit_bindgen::generate!({input});"),
         );
         assert!(
-            check_workspace(&workspace.root)
+            check_workspace(workspace.root.path())
                 .unwrap_err()
                 .contains("requires review")
         );
         source(&workspace, "maestro-extensions-wasm", "src/bindings.rs", "");
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
 #[cfg(unix)]
 fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
-    let host = workspace.root.join("crates/maestro-extensions-wasmtime");
+    let host = workspace
+        .root
+        .path()
+        .join("crates/maestro-extensions-wasmtime");
     std::os::unix::fs::symlink(guest, host.join("linked")).unwrap();
     source(
         workspace,
@@ -908,7 +998,7 @@ fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
         "build.rs",
         r#"wasmtime::component::bindgen!({ path: "linked" });"#,
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     std::os::unix::fs::symlink(host.join("copied"), guest.join("outside")).unwrap();
     source(
         workspace,
@@ -917,7 +1007,7 @@ fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
         r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces/outside" });"#,
     );
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("guest-owned canonical source")
     );
@@ -927,7 +1017,7 @@ fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
         "build.rs",
         r#"wasmtime::component::bindgen!({ path: "linked" });"#,
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -938,13 +1028,14 @@ fn guest_host_probe_keeps_engine_dependencies_test_only() {
         workspace.external(library);
         let manifest = workspace
             .root
+            .path()
             .join("crates/maestro-extensions-wasm/Cargo.toml");
         let baseline = std::fs::read_to_string(&manifest).unwrap();
         for (kind, extra) in DECLARATIONS {
             let declaration =
                 format!("alias = {{ package = {library:?}, path = \"../../external\"{extra} }}\n");
             std::fs::write(&manifest, format!("{baseline}\n[{kind}]\n{declaration}")).unwrap();
-            let outcome = check_workspace(&workspace.root);
+            let outcome = check_workspace(workspace.root.path());
             let test_only = kind.ends_with("dev-dependencies") && library != "wasmtime-wasi-http";
             if test_only {
                 assert_eq!(outcome, Ok(()), "{library} in {kind}");
@@ -975,7 +1066,7 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
         "src/types/tools.rs",
         "pub struct ToolDefinition;",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     guest_tool_declaration_decoys(&workspace);
     source(
         &workspace,
@@ -984,7 +1075,7 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
         "pub struct ToolDefinition; pub type ToolDefinition = ();",
     );
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("duplicate declaration ToolDefinition")
     );
@@ -1001,7 +1092,7 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
         "pub type ToolDefinition = ();",
     );
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("duplicate declaration ToolDefinition")
     );
@@ -1024,7 +1115,7 @@ fn guest_tool_declaration_decoys(workspace: &Workspace) {
     ] {
         source(workspace, owner, path, &format!("pub struct {name};"));
         assert!(
-            check_workspace(&workspace.root)
+            check_workspace(workspace.root.path())
                 .unwrap_err()
                 .contains("belongs to maestro-tools")
         );
@@ -1042,7 +1133,10 @@ fn guest_tool_declaration_decoys(workspace: &Workspace) {
 fn wit_async_selector_keeps_static_path_admission() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions-wasm"]);
-    let guest = workspace.root.join("crates/maestro-extensions-wasm/wit");
+    let guest = workspace
+        .root
+        .path()
+        .join("crates/maestro-extensions-wasm/wit");
     std::fs::create_dir(&guest).unwrap();
     std::fs::write(
         guest.join("world.wit"),
@@ -1060,14 +1154,14 @@ fn wit_async_selector_keeps_static_path_admission() {
         "src/bindings.rs",
         input,
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
         "maestro-extensions-wasm",
         "src/bindings.rs",
         &input.replace("path: \"wit\"", "path: env!(\"WIT_PATH\")"),
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.contains("expected static path"), "{error}");
 }
 
@@ -1120,6 +1214,7 @@ fn session_operation_records_have_one_shared_owner() {
 #[test]
 fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     let workspace = Workspace::new();
+    let root = workspace.root.path();
     workspace.foundation(&[
         "maestro-request",
         "maestro-models",
@@ -1131,7 +1226,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
         "src/lib.rs",
         "pub struct ToolInfo;",
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(root).unwrap_err();
     assert!(
         error.contains("ToolInfo declaration belongs to maestro-request"),
         "{error}"
@@ -1146,7 +1241,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
         &workspace,
         "maestro-request",
         "src/lib.rs",
-        "pub struct ToolInfo<P> { parameters: P }",
+        "pub struct ToolInfo<P = ParameterSchema> { parameters: P }",
     );
     source(
         &workspace,
@@ -1154,26 +1249,26 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
         "src/types/actions.rs",
         "pub type ToolInfo = maestro_request::tool_info::ToolInfo<String>;",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(root), Ok(()));
     source(
         &workspace,
         "maestro-request",
         "other.rs",
         "pub struct ToolInfo;",
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(root).unwrap_err();
     assert!(
         error.contains(".rs:1:") && error.contains("duplicate declaration ToolInfo"),
         "{error}"
     );
-    std::fs::remove_file(workspace.root.join("crates/maestro-request/other.rs")).unwrap();
+    std::fs::remove_file(root.join("crates/maestro-request/other.rs")).unwrap();
     source(
         &workspace,
         "maestro-extensions-wasm",
         "src/types/actions.rs",
         "pub struct ToolInfo;",
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(root).unwrap_err();
     assert!(
         error.contains("src/types/actions.rs:1:") && error.contains("belongs to maestro-request"),
         "{error}"
@@ -1194,7 +1289,7 @@ fn assert_single_owner(name: &str, owner: &str, consumers: &[&str]) {
                 "// struct {name};\nfn f() {{ let _ = \"struct {name}\"; }}\npub struct {name};"
             ),
         );
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
             error.contains("src/lib.rs:3:") && error.contains(&format!("belongs to {owner}")),
             "{error}"
@@ -1212,7 +1307,7 @@ fn assert_single_owner(name: &str, owner: &str, consumers: &[&str]) {
         "src/lib.rs",
         &format!("pub struct {name};"),
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
         owner,
@@ -1220,7 +1315,7 @@ fn assert_single_owner(name: &str, owner: &str, consumers: &[&str]) {
         &format!("pub type {name} = ();"),
     );
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("duplicate declaration")
     );
@@ -1241,7 +1336,7 @@ fn shared_event_records_have_one_owner() {
         "src/lib.rs",
         "pub struct ContextEvent<M> { messages: Vec<M> }",
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
         error.contains("ContextEvent declaration belongs to maestro-request"),
         "{error}"
@@ -1264,14 +1359,14 @@ fn shared_event_records_have_one_owner() {
         "src/types/events.rs",
         "pub type ContextEvent = maestro_request::extension_events::ContextEvent<String>;",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
         "maestro-request",
         "other.rs",
         "pub enum ContextEvent {}",
     );
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
         error.contains(".rs:1:") && error.contains("duplicate declaration ContextEvent"),
         "{error}"
@@ -1288,7 +1383,7 @@ fn registered_definition_alias_keeps_tools_ownership() {
         "src/types/registration.rs",
         "pub type ToolDefinition<P,D,S> = maestro_tools::ToolDefinition<ExtensionContext,P,D,S,Local>;",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
         "maestro-extensions",
@@ -1296,8 +1391,182 @@ fn registered_definition_alias_keeps_tools_ownership() {
         "pub struct ToolDefinition;",
     );
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("ToolDefinition declaration belongs to maestro-tools")
     );
+}
+
+#[test]
+fn interactive_session_setup_rejects_bypasses() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat"]);
+    source(
+        &workspace,
+        "maestro-chat",
+        "tests/footer_support/session.rs",
+        "fn session() -> Result { AgentSession::new(AgentSessionConfig { agent: owner() }) }",
+    );
+    for relative in [
+        "tests/footer_support/mod.rs",
+        "tests/footer_support/corpus.rs",
+        "src/interactive_mode/tests.rs",
+        "src/interactive_mode/startup/tests.rs",
+    ] {
+        let path = source(&workspace, "maestro-chat", relative, DUPLICATE_SETUP);
+        assert_setup_rejected(&workspace, &path, relative);
+        std::fs::remove_file(&path).unwrap();
+    }
+    for spelling in DUPLICATE_SETUP_SPELLINGS {
+        let path = source(
+            &workspace,
+            "maestro-chat",
+            "tests/footer_support/mod.rs",
+            spelling,
+        );
+        assert_setup_rejected(&workspace, &path, spelling);
+    }
+    for accepted in [
+        "fn f() -> CreateAgentSessionRuntimeResult { session(cwd, None) }",
+        "// AgentSessionConfig\nfn f() { let _ = \"AgentSessionConfig\"; }",
+    ] {
+        source(
+            &workspace,
+            "maestro-chat",
+            "tests/footer_support/mod.rs",
+            accepted,
+        );
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{accepted}");
+    }
+    source(
+        &workspace,
+        "maestro-chat",
+        "tests/session_picker_support/mod.rs",
+        DUPLICATE_SETUP,
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+/// Assert the checker names `path` and the shared owner when it rejects a second setup.
+///
+/// Both sides are canonicalized, because a host may spell the scratch root differently
+/// from the workspace metadata that the checker walks.
+fn assert_setup_rejected(workspace: &Workspace, path: &Path, detail: &str) {
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    let Some((reported, owner)) = error.split_once(":1: session setup belongs in ") else {
+        panic!("{detail}: {error}");
+    };
+    assert_eq!(
+        owner, "tests/footer_support/session.rs",
+        "{detail}: {error}"
+    );
+    assert_eq!(
+        std::fs::canonicalize(reported).unwrap(),
+        std::fs::canonicalize(path).unwrap(),
+        "{detail}"
+    );
+}
+
+#[test]
+fn cli_configuration_wrapper_does_not_own_chat_widgets() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-cli"]);
+    source(
+        &workspace,
+        "maestro-chat",
+        "src/components/mod.rs",
+        "mod config_selector;",
+    );
+    source(
+        &workspace,
+        "maestro-cli",
+        "src/input/mod.rs",
+        "mod config_selector;",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for (path, contents) in [
+        (
+            "src/input/config_selector.rs",
+            "pub struct ConfigSelectorComponent;",
+        ),
+        ("src/other/mod.rs", "mod config_selector;"),
+        ("src/input/session_picker.rs", "mod config_selector;"),
+    ] {
+        source(&workspace, "maestro-cli", path, contents);
+        assert!(
+            check_workspace(workspace.root.path())
+                .unwrap_err()
+                .contains("belongs to maestro-chat"),
+            "{path}"
+        );
+        source(&workspace, "maestro-cli", path, "");
+    }
+}
+
+#[test]
+fn terminal_effect_recorders_have_one_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-cli", "maestro-test-terminal"]);
+    source(
+        &workspace,
+        "maestro-test-terminal",
+        "src/recording_terminal.rs",
+        "pub struct RecordingTerminal;\npub struct ManualRuntime;",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for (path, contents) in [
+        ("src/support.rs", "struct RecordingTerminal;"),
+        ("tests/support.rs", "struct ManualRuntime;"),
+    ] {
+        source(&workspace, "maestro-cli", path, contents);
+        assert!(
+            check_workspace(workspace.root.path())
+                .unwrap_err()
+                .contains("belongs to maestro-test-terminal"),
+            "{path}"
+        );
+        source(&workspace, "maestro-cli", path, "");
+    }
+}
+
+#[test]
+fn input_presenter_records_reject_duplicate_owners() {
+    for name in [
+        "PresentedSelector",
+        "ConfigSelectorCallbacks",
+        "ConfigSelectorFactory",
+        "SessionSelectorCallbacks",
+        "SessionSelectorRequest",
+        "SessionSelectorFactory",
+        "SessionsFuture",
+        "SessionsLoader",
+    ] {
+        assert_single_owner(name, "maestro-app", &["maestro-chat", "maestro-cli"]);
+    }
+}
+
+#[test]
+fn listener_collection_declarations_stay_with_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-listeners", "maestro-tui"]);
+    let declaration = "pub struct Listeners<P> { entry: P }";
+    source(&workspace, "maestro-listeners", "src/lib.rs", declaration);
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for fragment in [
+        declaration,
+        "macro_rules! copy { () => { pub struct Listeners<P> { entry: P } }; }",
+        "fn copy() { let make = || pub struct Listeners<P> { entry: P }; }",
+        "impl TUI { fn copy() { pub struct Listeners<P> { entry: P } } }",
+    ] {
+        source(&workspace, "maestro-tui", "src/lib.rs", fragment);
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(
+            error.contains("Listeners declaration belongs to maestro-listeners"),
+            "{error}"
+        );
+        source(&workspace, "maestro-tui", "src/lib.rs", "");
+    }
+    source(&workspace, "maestro-listeners", "src/copy.rs", declaration);
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(error.contains("duplicate declaration Listeners"), "{error}");
 }

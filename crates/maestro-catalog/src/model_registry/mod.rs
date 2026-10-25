@@ -10,9 +10,10 @@ pub use provider_config::{ProviderConfigInput, ProviderModelInput};
 use std::borrow::Cow;
 mod request_auth;
 use indexmap::IndexMap;
-use maestro_credentials::{AuthCredential, AuthStorage};
+use maestro_credentials::{AuthCredential, AuthStorage, ConfigValueOperations};
 use maestro_models::{
-    Model, OAuthCredentials, OAuthProviderHandle, get_models, get_oauth_providers, get_providers,
+    Model, OAuthCredentials, OAuthProviderHandle, SharedHandle, get_models, get_oauth_providers,
+    get_providers,
 };
 use request_auth::ProviderRequestConfig;
 pub use request_auth::ResolvedRequestAuth;
@@ -51,16 +52,24 @@ impl ModelFileOperations for NativeModelFileOperations {
         std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
     }
 }
+/// Runs the commands that configured credential values name.
+#[cfg(not(target_arch = "wasm32"))]
+pub type ConfigValues = SharedHandle<dyn ConfigValueOperations + Send + Sync>;
+/// Runs the commands that configured credential values name.
+#[cfg(target_arch = "wasm32")]
+pub type ConfigValues = SharedHandle<dyn ConfigValueOperations>;
 /// Shared mutable descriptor list published by the registry.
 type ModelList = Arc<RwLock<Vec<Arc<RwLock<Model>>>>>;
 /// Local catalog with a retained load diagnostic.
 pub struct ModelRegistry {
-    /// Accepted credential owner.
-    auth_storage: Arc<AuthStorage>,
+    /// Accepted credential owner, shared natively and local in the browser.
+    auth_storage: SharedHandle<AuthStorage>,
     /// Explicit model-file path; empty disables file access.
     path: String,
     /// Caller-selected file effects.
     operations: Box<dyn ModelFileOperations>,
+    /// Runs the commands that configured credentials name.
+    config_values: ConfigValues,
     /// Privately synchronized published and retained catalog state.
     state: RwLock<CatalogState>,
 }
@@ -73,7 +82,7 @@ struct CatalogState {
     /// Provider sources retained by entry identity.
     provider_configs: HashMap<String, Arc<ProviderRequestConfig>>,
     /// Live registration order with monotone visit identities.
-    registered_providers: IndexMap<String, (u64, Arc<RwLock<ProviderConfigInput>>)>,
+    registered_providers: IndexMap<String, (u64, SharedHandle<RwLock<ProviderConfigInput>>)>,
     /// Next registration identity.
     next_provider: u64,
     /// Model request sources indexed by exact identity.
@@ -81,7 +90,8 @@ struct CatalogState {
 }
 
 impl ModelRegistry {
-    /// Load immediately from the explicit native file path.
+    /// Load immediately from the explicit native file path, keeping
+    /// `config_values` for configured credential commands.
     ///
     /// # Errors
     /// Returns a catalog error wrapping an account transformation failure.
@@ -89,29 +99,47 @@ impl ModelRegistry {
     pub fn create(
         auth_storage: Arc<AuthStorage>,
         models_json_path: impl Into<String>,
+        config_values: ConfigValues,
     ) -> Result<Self, CatalogError> {
-        Self::with_operations(auth_storage, models_json_path, NativeModelFileOperations)
+        Self::with_operations(
+            auth_storage,
+            models_json_path,
+            NativeModelFileOperations,
+            config_values,
+        )
     }
-    /// Construct an offline catalog without file access.
+    /// Construct an offline catalog without file access, keeping `config_values`
+    /// for configured credential commands.
+    ///
+    /// The credential owner is the platform handle, so a browser caller supplies its
+    /// local handle while a native caller supplies the shared one.
     ///
     /// # Errors
     /// Returns a catalog error wrapping an account transformation failure.
-    pub fn in_memory(auth_storage: Arc<AuthStorage>) -> Result<Self, CatalogError> {
-        Self::with_operations(auth_storage, "", MemoryOperations)
+    pub fn in_memory(
+        auth_storage: SharedHandle<AuthStorage>,
+        config_values: ConfigValues,
+    ) -> Result<Self, CatalogError> {
+        Self::with_operations(auth_storage, "", MemoryOperations, config_values)
     }
-    /// Load using caller-selected synchronous file effects.
+    /// Load using the supplied file effects and credential command handle.
+    ///
+    /// The credential owner is the platform handle, so a browser caller supplies its
+    /// local handle while a native caller supplies the shared one.
     ///
     /// # Errors
     /// Returns a catalog error wrapping an account transformation failure.
     pub fn with_operations(
-        auth_storage: Arc<AuthStorage>,
+        auth_storage: SharedHandle<AuthStorage>,
         models_json_path: impl Into<String>,
         operations: impl ModelFileOperations + 'static,
+        config_values: ConfigValues,
     ) -> Result<Self, CatalogError> {
         let registry = Self {
             auth_storage,
             path: models_json_path.into(),
             operations: Box::new(operations),
+            config_values,
             state: RwLock::new(CatalogState {
                 models: Arc::default(),
                 load_error: None,
@@ -126,12 +154,15 @@ impl ModelRegistry {
     }
     /// Validate and apply the incoming record, then merge defined fields into retained state.
     ///
+    /// The configuration is the platform handle, retained as the browser's local owner or
+    /// the native shared one.
+    ///
     /// # Errors
     /// Returns the first missing prerequisite or supplied model transformation failure.
     pub fn register_provider(
         &self,
         provider_name: &str,
-        config: Arc<RwLock<ProviderConfigInput>>,
+        config: SharedHandle<RwLock<ProviderConfigInput>>,
     ) -> Result<(), CatalogError> {
         config
             .read()
@@ -141,9 +172,9 @@ impl ModelRegistry {
         self.upsert_registered_provider(provider_name, config);
         Ok(())
     }
-    /// Borrow the credential owner supplied at construction.
+    /// Borrow the platform credential owner supplied at construction.
     #[must_use]
-    pub fn auth_storage(&self) -> &Arc<AuthStorage> {
+    pub fn auth_storage(&self) -> &SharedHandle<AuthStorage> {
         &self.auth_storage
     }
     /// Reset shared protocol/account registrations, load the file and replay retained providers.
@@ -256,7 +287,7 @@ impl ModelRegistry {
     fn next_registered(
         &self,
         cursor: u64,
-    ) -> Option<(String, u64, Arc<RwLock<ProviderConfigInput>>)> {
+    ) -> Option<(String, u64, SharedHandle<RwLock<ProviderConfigInput>>)> {
         let state = self.state.read().unwrap_or_else(PoisonError::into_inner);
         let index = state
             .registered_providers
@@ -265,7 +296,7 @@ impl ModelRegistry {
         state
             .registered_providers
             .get_index(index)
-            .map(|(name, (ordinal, config))| (name.clone(), *ordinal, Arc::clone(config)))
+            .map(|(name, (ordinal, config))| (name.clone(), *ordinal, SharedHandle::clone(config)))
     }
     /// Retain the source entry identity for a later consuming phase.
     fn request_config(&self, provider: &str) -> Option<Arc<ProviderRequestConfig>> {

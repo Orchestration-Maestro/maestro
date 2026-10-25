@@ -3,3 +3,13 @@
 pub mod command;
 
 pub mod image;
+
+pub mod storage;
+
+pub mod render;
+
+pub mod exec;
+
+pub mod unicode;
+
+pub mod placements;

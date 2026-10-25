@@ -60,7 +60,13 @@ The scan captures headers and final link referents before moving any entry.
 Links are prepared without consuming their sources. Batch-local dependencies
 include traversed links and moved-directory ancestors. Failed preparation pins
 the entries needed to keep the original source readable; independent direct
-bindings can still settle. Replacement destinations are published before moving
+bindings can still settle. Invocation-local reverse dependencies select only
+publications affected by a newly retained referent. Unchanged bindings stay in
+place. Newly retained entries propagate their dependencies once, and retirement
+readiness advances through consumed dependency edges rather than repeated batch
+searches. This bookkeeping follows admitted entries, captured edges and affected
+changes; native path resolution and filesystem I/O retain their own costs.
+Replacement destinations are published before moving
 their referents, verified against actual successful moves, then counted only
 after source retirement. Failed referent moves remove this run's provisional
 links and retain their sources for retry.

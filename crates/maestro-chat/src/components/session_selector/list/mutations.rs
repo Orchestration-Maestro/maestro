@@ -67,7 +67,7 @@ impl SessionList {
     pub(super) fn is_current_path(&self, path: &str) -> bool {
         self.current
             .as_ref()
-            .is_some_and(|current| canonicalize_path(path, self.options.paths.as_ref()) == *current)
+            .is_some_and(|current| canonicalize_path(path) == *current)
     }
     /// Updates confirmation before synchronous notification.
     fn set_confirmation(&self, path: Option<&str>) {

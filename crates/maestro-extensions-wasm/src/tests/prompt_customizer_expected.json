@@ -1,0 +1,482 @@
+{
+  "rows": [
+    {
+      "name": "options_missing",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "options_null",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": null,
+          "skills": null,
+          "appendSystemPrompt": null
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "options_empty",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [],
+          "skills": [],
+          "appendSystemPrompt": ""
+        }
+      },
+      "result": {
+        "systemPrompt": "\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "tool_read",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "read"
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n## Tool Guidance\n\n• Use the `read` tool for file contents (supports text and images).\n  - For large files, use `offset` and `limit` to read in chunks.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "tool_bash",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "bash"
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n## Tool Guidance\n\n• Execute commands with the `bash` tool. Use it for file operations like `ls`, `find`, `grep`.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "tool_edit",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "edit"
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n## Tool Guidance\n\n• Use the `edit` tool for precise text replacements in files. Match exact content including whitespace.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "tool_write",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "write"
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n## Tool Guidance\n\n• Use the `write` tool to create new files or overwrite existing ones completely.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "tools_reversed_repeated_custom",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "custom",
+            "write",
+            "edit",
+            "bash",
+            "read",
+            "read"
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n## Tool Guidance\n\n• Use the `read` tool for file contents (supports text and images).\n  - For large files, use `offset` and `limit` to read in chunks.\n• Execute commands with the `bash` tool. Use it for file operations like `ls`, `find`, `grep`.\n• Use the `edit` tool for precise text replacements in files. Match exact content including whitespace.\n• Use the `write` tool to create new files or overwrite existing ones completely.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "tools_case_and_prefix_decoys",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "READ",
+            "reader",
+            "bashful",
+            "edit_file",
+            "writer",
+            "custom"
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "skills_without_tools",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "skills": [
+            {
+              "name": "zeta",
+              "description": "description",
+              "filePath": "/skills/zeta/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": false,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            },
+            {
+              "name": "alpha",
+              "description": "description",
+              "filePath": "/skills/alpha/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": true,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            },
+            {
+              "name": "zeta",
+              "description": "description",
+              "filePath": "/skills/zeta/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": false,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            }
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n## Tool Guidance\n\n\nAvailable skills: zeta, alpha, zeta\nUse skill documentation for best practices on specific tools.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "skills_with_read",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "read"
+          ],
+          "skills": [
+            {
+              "name": "search",
+              "description": "description",
+              "filePath": "/skills/search/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": false,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            },
+            {
+              "name": "build",
+              "description": "description",
+              "filePath": "/skills/build/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": false,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            }
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n## Tool Guidance\n\n• Use the `read` tool for file contents (supports text and images).\n  - For large files, use `offset` and `limit` to read in chunks.\n\nAvailable skills: search, build\nUse skill documentation for best practices on specific tools.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "skill_literal_name",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "skills": [
+            {
+              "name": "name, with\nspacing",
+              "description": "description",
+              "filePath": "/skills/name, with\nspacing/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": false,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            }
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n## Tool Guidance\n\n\nAvailable skills: name, with\nspacing\nUse skill documentation for best practices on specific tools.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "append_nonempty",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE\n\nUNIQUE USER REQUIREMENT",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "appendSystemPrompt": "UNIQUE USER REQUIREMENT"
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\nUNIQUE USER REQUIREMENT\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "append_whitespace",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE\n\n \n\t",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "appendSystemPrompt": " \n\t"
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n \n\t\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "append_unicode",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE\n\n雪 😀\r\n尾",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "appendSystemPrompt": "雪 😀\r\n尾"
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n\n雪 😀\r\n尾\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "prior_hook_removed_append",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "PRIOR HOOK REPLACEMENT",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "appendSystemPrompt": "UNIQUE USER REQUIREMENT"
+        }
+      },
+      "result": {
+        "systemPrompt": "PRIOR HOOK REPLACEMENT\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "prior_hook_changed_append",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "PRIOR HOOK\nNEW REQUIREMENT",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "appendSystemPrompt": "OLD REQUIREMENT"
+        }
+      },
+      "result": {
+        "systemPrompt": "PRIOR HOOK\nNEW REQUIREMENT\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "base_literal_bytes",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": " ﻿BASE\r\n雪 😀\n\n",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "bash"
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": " ﻿BASE\r\n雪 😀\n\n\n\n## Tool Guidance\n\n• Execute commands with the `bash` tool. Use it for file operations like `ls`, `find`, `grep`.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "ignored_assembled_fields",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "BASE",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "customPrompt": "DO NOT REBUILD",
+          "toolSnippets": {
+            "read": "DO NOT REDISCOVER"
+          },
+          "promptGuidelines": [
+            "DO NOT REBUILD"
+          ],
+          "contextFiles": [
+            {
+              "path": "none",
+              "content": "DO NOT RELOAD"
+            }
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "BASE\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    },
+    {
+      "name": "all_features",
+      "event": {
+        "type": "before_agent_start",
+        "prompt": "USER PROMPT",
+        "systemPrompt": "ASSEMBLED\nREQUIREMENT",
+        "systemPromptOptions": {
+          "cwd": "/controlled",
+          "selectedTools": [
+            "write",
+            "read",
+            "bash",
+            "edit",
+            "read"
+          ],
+          "skills": [
+            {
+              "name": "zeta",
+              "description": "description",
+              "filePath": "/skills/zeta/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": true,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            },
+            {
+              "name": "alpha",
+              "description": "description",
+              "filePath": "/skills/alpha/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": false,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            },
+            {
+              "name": "zeta",
+              "description": "description",
+              "filePath": "/skills/zeta/SKILL.md",
+              "baseDir": "/skills",
+              "disableModelInvocation": false,
+              "sourceInfo": {
+                "path": "/skills",
+                "source": "controlled",
+                "scope": "project",
+                "origin": "top-level"
+              }
+            }
+          ],
+          "appendSystemPrompt": "REQUIREMENT",
+          "customPrompt": "IGNORED",
+          "contextFiles": [
+            {
+              "path": "none",
+              "content": "IGNORED"
+            }
+          ]
+        }
+      },
+      "result": {
+        "systemPrompt": "ASSEMBLED\nREQUIREMENT\n\n## Tool Guidance\n\n• Use the `read` tool for file contents (supports text and images).\n  - For large files, use `offset` and `limit` to read in chunks.\n• Execute commands with the `bash` tool. Use it for file operations like `ls`, `find`, `grep`.\n• Use the `edit` tool for precise text replacements in files. Match exact content including whitespace.\n• Use the `write` tool to create new files or overwrite existing ones completely.\n\nAvailable skills: zeta, alpha, zeta\nUse skill documentation for best practices on specific tools.\n\n## Extension-Added Context\n\nThis prompt includes tool guidance and skill information loaded dynamically.\nIf you have additional requirements, configure them via --append-system-prompt or project context files.\n"
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@ fn synchronous_native_callbacks_service_nested_original_context_reads() {
         .unwrap()
         .block_on(async {
             let runner = runner("/synchronous-original");
-            let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let registry = pump.registry();
             let context = registry
                 .context(Owner::Base(runner.create_context()))
@@ -74,7 +74,7 @@ fn synchronous_native_callbacks_service_nested_original_context_reads() {
 
 #[test]
 fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
-    let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    let (pump, admission) = Pump::new();
     let registry = pump.registry();
     assert_eq!(
         registry
@@ -118,7 +118,7 @@ fn synchronous_wait_returns_receiver_wakeups_to_the_suspended_async_owner() {
         sync::{Arc, atomic::Ordering},
         task::{Context, Waker},
     };
-    let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    let (mut pump, admission) = Pump::new();
     let registry = pump.registry();
     let executor = Arc::new(ExecutorWake::default());
     let observed = executor.clone();

@@ -199,7 +199,9 @@ projection/writer, preserving unread metadata without decoding execution records
 ```
 
 Serialization separates labels with blank lines and groups assistant thinking, text and
-tools in that order. Only tool-result text is clipped at 2000 Unicode scalar values,
+tools in that order. Arguments pair by name for object roots; array and string roots
+pair their positions instead (`echo(0=1, 1=2)`), and other roots name none. Only
+tool-result text is clipped at 2000 Unicode scalar values,
 with an omitted-character notice; user and assistant text stay complete. Branch
 preparation excludes tool results altogether, so their context comes from tool calls.
 

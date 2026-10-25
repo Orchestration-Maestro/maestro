@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::display_support::{Env, NoLanguages, Setup, bind, context, padded_to, palette_of};
-use crate::read_support::run;
+use crate::runtime::run;
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo, UserBlock};
@@ -251,6 +251,7 @@ pub struct ExecuteInput {
     /// Working directory the tool is built over.
     cwd: Option<String>,
     /// State of the process working directory.
+    #[cfg(unix)]
     ambient_cwd: Option<String>,
 }
 
@@ -268,6 +269,7 @@ impl ExecuteInput {
     }
 
     /// Whether the process working directory is removed first.
+    #[cfg(unix)]
     pub fn removes_cwd(&self) -> bool {
         self.ambient_cwd.as_deref() == Some("removed")
     }
@@ -599,6 +601,13 @@ struct ContextInput {
 }
 
 impl ContextInput {
+    /// The expand keys this context binds.
+    fn keys(&self) -> Vec<String> {
+        self.binding
+            .clone()
+            .unwrap_or_else(|| vec!["ctrl+o".to_owned()])
+    }
+
     /// The renderer setup this context describes.
     fn setup(&self) -> Setup {
         let images = match self.images.as_deref() {
@@ -608,10 +617,6 @@ impl ContextInput {
         };
         Setup {
             readme: String::new(),
-            bindings: self
-                .binding
-                .clone()
-                .unwrap_or_else(|| vec!["ctrl+o".to_owned()]),
             expanded: self.expanded,
             cwd: "/work".into(),
             images,
@@ -657,6 +662,24 @@ pub struct RecordedTruncation {
     /// Byte budget.
     pub max_bytes: usize,
 }
+impl RecordedTruncation {
+    /// The typed truncation with `truncated_by` as the tool reports it.
+    pub fn result(self, truncated_by: Option<TruncationBy>) -> TruncationResult {
+        TruncationResult {
+            content: String::new(),
+            truncated: self.truncated,
+            max_bytes: self.max_bytes,
+            truncated_by,
+            total_lines: 0,
+            total_bytes: 0,
+            output_lines: 0,
+            output_bytes: 0,
+            last_line_partial: false,
+            first_line_exceeds_limit: false,
+            max_lines: 0,
+        }
+    }
+}
 
 /// Recorded result details.
 #[derive(Deserialize)]
@@ -675,19 +698,9 @@ fn ls_result(result: &Value) -> AgentToolResult<LsToolDetails> {
         let recorded: RecordedDetails = serde_json::from_value(details.clone()).unwrap();
         LsToolDetails {
             entry_limit_reached: recorded.entry_limit_reached,
-            truncation: recorded.truncation.map(|cut| TruncationResult {
-                truncated: cut.truncated,
-                max_bytes: cut.max_bytes,
-                content: String::new(),
-                truncated_by: Some(TruncationBy::Bytes),
-                total_lines: 0,
-                total_bytes: 0,
-                output_lines: 0,
-                output_bytes: 0,
-                last_line_partial: false,
-                first_line_exceeds_limit: false,
-                max_lines: 0,
-            }),
+            truncation: recorded
+                .truncation
+                .map(|cut| cut.result(Some(TruncationBy::Bytes))),
         }
     });
     AgentToolResult {
@@ -736,15 +749,15 @@ pub fn render_case_as<D: serde::Serialize>(
     if case.op == "call" {
         let input: CallInput = serde_json::from_value(case.input.clone()).unwrap();
         let (setup, env) = environment(&input.context, keys);
-        let _bindings = bind(&setup.bindings);
+        let _bindings = bind(&input.context.keys());
         let args = with_home(&input.args);
         let ctx = context(&args, &setup, &env, None);
-        let row = (tool.render_call.unwrap())(Some(&args), &env.theme, &ctx).unwrap();
+        let row = (tool.render_call.unwrap())(Some(&args), &env.live, &ctx).unwrap();
         return (row.render(CALL_WIDTH), CALL_WIDTH);
     }
     let input: RenderInput = serde_json::from_value(case.input.clone()).unwrap();
     let (setup, env) = environment(&input.context, keys);
-    let _bindings = bind(&setup.bindings);
+    let _bindings = bind(&input.context.keys());
     let options = ToolRenderResultOptions {
         expanded: input.options.expanded,
         is_partial: input.options.is_partial,
@@ -755,7 +768,7 @@ pub fn render_case_as<D: serde::Serialize>(
         &(tool.render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result(&input.result)),
         options,
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .unwrap();
@@ -808,7 +821,7 @@ pub fn render_slot_as<D: serde::Serialize>(
         &Value,
     ),
     slot: &str,
-    theme: &maestro_theme::Theme,
+    theme: &maestro_theme::LiveTheme,
     env: &Env,
     previous: &ComponentHandle,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
@@ -847,7 +860,7 @@ pub fn check_reuse_as<D: serde::Serialize>(
     let row = render_slot_as(
         (tool, result, args),
         &input.slot,
-        &env.theme,
+        &env.live,
         &env,
         &previous,
     )
@@ -885,7 +898,7 @@ pub fn check_theme_error_as<D: serde::Serialize>(
     let Err(error) = render_slot_as(
         (tool, result, args),
         &input.slot,
-        &env.theme,
+        &env.live,
         &env,
         &previous,
     ) else {
@@ -902,6 +915,7 @@ pub fn check_theme_error_as<D: serde::Serialize>(
 }
 
 /// A recorded listing of a real directory.
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NativeInput {
@@ -910,6 +924,7 @@ struct NativeInput {
 }
 
 /// Run a recorded listing of the real directory `root` and assert the recorded outcome.
+#[cfg(unix)]
 pub fn check_native(case: &Case, root: &str) {
     let input: NativeInput = serde_json::from_value(case.input.clone()).unwrap();
     let tool = create_ls_tool(root.into(), LsToolOptions::default());

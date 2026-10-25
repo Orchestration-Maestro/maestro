@@ -132,11 +132,11 @@ fn complete_catalog_matches_all_descriptors() {
         .find(|case| case.test == "complete_catalog_matches_all_descriptors")
         .unwrap();
     let catalog = super::super::assemble(serde_json::from_value(case.input).unwrap());
-    let scratch = Scratch::new();
-    super::super::emit::write_catalog(&catalog, &scratch.0.join("generated")).unwrap();
+    let scratch = Scratch::new().unwrap();
+    super::super::emit::write_catalog(&catalog, &scratch.path().join("generated")).unwrap();
     let committed =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/catalog/models_generated");
-    let actual_files = std::fs::read_dir(scratch.0.join("generated"))
+    let actual_files = std::fs::read_dir(scratch.path().join("generated"))
         .unwrap()
         .map(Result::unwrap)
         .collect::<Vec<_>>();
@@ -198,8 +198,8 @@ fn assert_directory_local_filenames() {
         .find(|case| case.test == "emitted_strings_compile_without_changing_identity")
         .unwrap();
     let catalog = super::super::assemble(serde_json::from_value(case.input).unwrap());
-    let scratch = Scratch::new();
-    let destination = scratch.0.join("generated");
+    let scratch = Scratch::new().unwrap();
+    let destination = scratch.path().join("generated");
     super::super::emit::write_catalog(&catalog, &destination).unwrap();
     let registry = std::fs::read_to_string(destination.join("mod.rs")).unwrap();
     for filename in [
@@ -224,7 +224,7 @@ fn assert_directory_local_filenames() {
         std::fs::read_dir(&destination).unwrap().count(),
         catalog.len() + 1
     );
-    assert_eq!(std::fs::read_dir(&scratch.0).unwrap().count(), 1);
+    assert_eq!(std::fs::read_dir(scratch.path()).unwrap().count(), 1);
 }
 
 #[test]

@@ -179,13 +179,17 @@ use crate::child;
 /// Panics when fixture data or controlled observations violate the test contract.
 #[must_use]
 pub fn isolated(name: &str) -> bool {
-    if std::env::var("MAESTRO_SERVICE_PROBE").as_deref() == Ok(name) {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
+    {
         return false;
     }
     child::probe(
-        &crate::child_process::selector(name).unwrap(),
+        maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .case(name),
         &std::env::current_dir().unwrap(),
-        &[("MAESTRO_SERVICE_PROBE", name)],
+        &[],
         FLAGS,
     );
     true
@@ -198,13 +202,20 @@ pub fn isolated(name: &str) -> bool {
 #[must_use]
 pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<Case> {
     let cases = cases(group);
-    if let Ok(index) = std::env::var("MAESTRO_SERVICE_CASE") {
-        return Some(cases.into_iter().nth(index.parse().unwrap()).unwrap());
+    if maestro_test_process::selection().is_child() {
+        return Some(
+            cases
+                .into_iter()
+                .enumerate()
+                .find(|(index, _)| maestro_test_process::selection().runs_case(&index.to_string()))
+                .expect("selected service row")
+                .1,
+        );
     }
     for &index in indices {
         let case = &cases[index];
         let index = index.to_string();
-        let mut envs = vec![("MAESTRO_SERVICE_CASE", index.as_str())];
+        let mut envs = Vec::new();
         if let Some(flag) = case.input["flag"].as_str()
             && let Some(value) = case.input["value"].as_str()
         {
@@ -216,7 +227,9 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
             }
         }
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case(&index),
             &std::env::current_dir().unwrap(),
             &envs,
             FLAGS,
@@ -231,7 +244,9 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
 /// Panics when fixture data or controlled observations violate the test contract.
 pub fn native_probe(name: &str, envs: &[(&str, &str)], removed: &[&str]) {
     child::probe(
-        &crate::child_process::selector(name).unwrap(),
+        maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .case(name),
         &std::env::current_dir().unwrap(),
         envs,
         removed,
@@ -279,17 +294,4 @@ async fn response(
         })),
     })
 }
-use crate::support::browser_providers as runtime;
-pub(crate) use runtime::run;
-
-/// Drive controlled deadline work from a paused clock origin.
-///
-/// # Panics
-/// Panics if the runtime cannot be created or controlled work panics.
-pub fn run_paused<T>(future: impl std::future::Future<Output = T>) -> T {
-    runtime::runtime()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(future)
-}
+pub(crate) use crate::support::run_io as run;

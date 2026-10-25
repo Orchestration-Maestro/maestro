@@ -1,9 +1,8 @@
-//! Configuration path queries over supplied observations.
+//! Configuration path queries.
 
 use super::installation::{Installation, PackageLayout};
 use super::{APP_NAME, CONFIG_DIR_NAME};
-use maestro_path::{dirname, join, resolve_with};
-use maestro_resources::ResourceOperations;
+use maestro_path::{dirname, join};
 use std::io;
 
 /// Expand only exact `~` and a leading `~/`, preserving the remaining text.
@@ -23,12 +22,14 @@ pub fn expand_tilde_path(
     Ok(path.to_owned())
 }
 
-/// Select an override, standalone directory, or nearest package marker.
+/// Select an override, standalone directory, or nearest package marker, observing the
+/// installation only when no override applies.
 ///
 /// # Errors
-/// Returns the home lookup error when a tilde override needs it.
+/// Returns the home lookup error when a tilde override needs it, or the installation
+/// lookup error otherwise.
 pub fn get_package_dir(
-    installation: &Installation,
+    installation: impl FnOnce() -> io::Result<Installation>,
     override_dir: Option<&str>,
     home: impl FnOnce() -> io::Result<String>,
     exists: impl Fn(&str) -> bool,
@@ -36,6 +37,7 @@ pub fn get_package_dir(
     if let Some(path) = override_dir.filter(|s| !s.is_empty()) {
         return expand_tilde_path(path, home);
     }
+    let installation = installation()?;
     if installation.layout == PackageLayout::Standalone {
         return Ok(dirname(&installation.executable));
     }
@@ -43,7 +45,7 @@ pub fn get_package_dir(
     loop {
         let parent = dirname(&dir);
         if parent == *dir {
-            return Ok(installation.module_dir.clone());
+            return Ok(installation.module_dir);
         }
         if exists(&join(&[&dir, "package.json"])) || exists(&join(&[&dir, "Cargo.toml"])) {
             return Ok(dir.into_owned());
@@ -85,19 +87,16 @@ fn asset_dir(
     parts.extend_from_slice(packaged);
     join(&parts)
 }
-/// Get the built-in theme directory.
-pub fn get_themes_dir(
-    package_dir: &str,
-    layout: PackageLayout,
-    exists: impl Fn(&str) -> bool,
-) -> String {
-    asset_dir(
-        package_dir,
-        layout,
-        &["modes", "interactive", "theme"],
-        "theme",
-        exists,
-    )
+/// Get the built-in theme directory: the theme crate's assets in a source workspace, or
+/// the `theme` directory of a standalone package directory.
+#[must_use]
+pub fn get_themes_dir(package_dir: &str, layout: PackageLayout) -> String {
+    match layout {
+        PackageLayout::Package => {
+            join(&[package_dir, "crates", "maestro-theme", "assets", "theme"])
+        }
+        PackageLayout::Standalone => join(&[package_dir, "theme"]),
+    }
 }
 /// Get the export template directory.
 pub fn get_export_template_dir(
@@ -132,58 +131,41 @@ pub fn get_interactive_assets_dir(
 pub fn get_bundled_interactive_asset_path(assets_dir: &str, name: &str) -> String {
     join(&[assets_dir, name])
 }
-/// Resolve a packaged text path using lazily supplied directory observations.
+/// Resolve a packaged text path, reading the process directories only when it is relative.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-fn package_path(
-    package_dir: &str,
-    name: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
-    resolve_with(
-        &[&[&join(&[package_dir, name])]],
-        || operations.drive_directories(),
-        || operations.current_directory(),
-    )
-    .map(|paths| paths.into_iter().collect())
+/// Returns the working-directory error unchanged when the path needs it.
+fn package_path(package_dir: &str, name: &str) -> io::Result<String> {
+    let path = join(&[package_dir, name]);
+    maestro_resources::paths::resolve(&[&path])
 }
 /// Resolve the packaged README path.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-pub fn get_readme_path(
-    package_dir: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
-    package_path(package_dir, "README.md", operations)
+/// Returns the working-directory error unchanged when the path needs it.
+pub fn get_readme_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "README.md")
 }
 /// Resolve the packaged documentation directory.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-pub fn get_docs_path(package_dir: &str, operations: &dyn ResourceOperations) -> io::Result<String> {
-    package_path(package_dir, "docs", operations)
+/// Returns the working-directory error unchanged when the path needs it.
+pub fn get_docs_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "docs")
 }
 /// Resolve the packaged examples directory.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-pub fn get_examples_path(
-    package_dir: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
-    package_path(package_dir, "examples", operations)
+/// Returns the working-directory error unchanged when the path needs it.
+pub fn get_examples_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "examples")
 }
 /// Resolve the packaged changelog path.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-pub fn get_changelog_path(
-    package_dir: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
-    package_path(package_dir, "CHANGELOG.md", operations)
+/// Returns the working-directory error unchanged when the path needs it.
+pub fn get_changelog_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "CHANGELOG.md")
 }
 /// Join the custom themes onto the supplied agent root.
 #[must_use]

@@ -3,8 +3,14 @@
 mod body;
 mod client;
 mod failure;
+#[cfg(not(target_arch = "wasm32"))]
+mod get_uri;
 mod headers;
 mod line_decoder;
+#[cfg(not(target_arch = "wasm32"))]
+mod pac_proxy_agent;
+#[cfg(not(target_arch = "wasm32"))]
+mod pac_resolver;
 #[cfg(not(target_arch = "wasm32"))]
 mod proxy_agent;
 mod retry;
@@ -140,4 +146,16 @@ pub type Fetch = Arc<dyn Fn(HttpRequest) -> BoxFuture<Result<HttpResponse, Fetch
 #[must_use]
 pub fn default_fetch() -> Fetch {
     Arc::new(client::fetch)
+}
+
+/// Parse the decimal integer prefix used by numeric helper arguments.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn decimal_prefix(text: &str) -> Option<i32> {
+    let text = text.trim_start_matches(maestro_text::is_whitespace_scalar);
+    let digits = text.strip_prefix(['+', '-']).unwrap_or(text);
+    let count = digits.bytes().take_while(u8::is_ascii_digit).count();
+    if count == 0 {
+        return None;
+    }
+    text[..text.len() - digits.len() + count].parse().ok()
 }

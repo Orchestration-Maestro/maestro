@@ -31,6 +31,14 @@ mod registrations;
 #[path = "context_bridge/retained.rs"]
 mod retained;
 
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/ui.rs"]
+mod ui;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/schema.rs"]
+mod schema;
+
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
@@ -147,6 +155,13 @@ fn command(
         }
         if let Some(path) = args.strip_prefix("command imports:") {
             return Err(commands::observe(&context, path.into()).await?.to_string());
+        }
+        if args == "schema imports" {
+            return Err(schema::observe(&api)?.to_string());
+        }
+        if args == "ui imports" || args == "ui clear" {
+            ui::observe(&context, args == "ui clear")?;
+            return Err("UI forwarded".into());
         }
         if args == "imports" {
             return Err(reads::observe(&context)?.to_string());

@@ -32,7 +32,9 @@ pub fn sheet_to_csv(sheet: &mut WorkSheet, ssf: &Ssf) -> String {
 
 /// Quote separators and double embedded quotes without trimming.
 fn write_field(output: &mut String, text: &str) {
-    if text.contains([',', '"', '\n']) {
+    // Single-character searches use the precompiled byte search; a character-set pattern
+    // decodes every character in the caller's build profile.
+    if text.contains(',') || text.contains('"') || text.contains('\n') {
         output.push('"');
         output.push_str(&text.replace('"', "\"\""));
         output.push('"');

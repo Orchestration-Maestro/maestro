@@ -43,47 +43,48 @@ fn child(mode: &str) {
 }
 /// Actual default opener with argv capture, release handshake and silent startup failure.
 pub fn launch() {
-    if let Ok(mode) = std::env::var("MAESTRO_BROWSER_CHILD") {
-        child(&mode);
+    if maestro_test_process::selection().is_child() {
+        let mode = ["open", "explorer.exe", "xdg-open", "missing"]
+            .into_iter()
+            .find(|mode| maestro_test_process::selection().runs_case(mode))
+            .expect("selected native mode");
+        child(mode);
         return;
     }
-    let scratch = crate::live::Scratch::new("browser");
-    scratch.write("helper-source", HELPER);
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::write(scratch.path().join("helper-source"), HELPER).unwrap();
     for program in ["open", "explorer.exe", "xdg-open"] {
         assert!(
             Command::new("install")
-                .args([
-                    "-m",
-                    "0700",
-                    &scratch.path("helper-source"),
-                    &scratch.path(program)
-                ])
+                .args(["-m", "0700"])
+                .arg(scratch.path().join("helper-source"))
+                .arg(scratch.path().join(program))
                 .status()
                 .unwrap()
                 .success()
         );
     }
-    let test = crate::child_process::selector(
-        "native_browser_launch_is_detached_and_uses_one_literal_argument",
-    )
-    .unwrap();
     for program in ["open", "explorer.exe", "xdg-open", "missing"] {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let mut command = Command::new(std::env::current_exe().unwrap());
-        command
-            .args(["--exact", &test, "--nocapture"])
-            .env("MAESTRO_BROWSER_CHILD", program)
-            .env(
-                "MAESTRO_BROWSER_PORT",
-                listener.local_addr().unwrap().port().to_string(),
-            )
-            .env(
-                "PATH",
-                scratch.path(if program == "missing" { "custom" } else { "" }),
-            )
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::inherit());
+        let command = maestro_test_process::TestProcess::current(
+            "native_browser_launch_is_detached_and_uses_one_literal_argument",
+        )
+        .unwrap()
+        .nocapture()
+        .case(program)
+        .env(
+            "MAESTRO_BROWSER_PORT",
+            listener.local_addr().unwrap().port().to_string(),
+        )
+        .env(
+            "PATH",
+            scratch
+                .path()
+                .join(if program == "missing" { "custom" } else { "" }),
+        )
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit());
         let mut child = command.spawn().unwrap();
         if program != "missing" {
             handshake(&listener, &mut child, program);
@@ -93,7 +94,11 @@ pub fn launch() {
 }
 
 /// Observe return before releasing the browser process, then consume all output.
-fn handshake(listener: &TcpListener, child: &mut std::process::Child, program: &str) {
+fn handshake(
+    listener: &TcpListener,
+    child: &mut maestro_test_process::CheckedChild,
+    program: &str,
+) {
     let (stream, _) = listener.accept().unwrap();
     let mut stream = BufReader::new(stream);
     let mut record = String::new();

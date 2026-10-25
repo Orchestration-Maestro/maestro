@@ -21,6 +21,7 @@ use maestro_extensions::types::{
     RegisteredCommandOptions, ExtensionFlagOptions,
     ExtensionShortcutOptions, FlagType, FlagValue,
 };
+use maestro_models::SharedHandle;
 use maestro_session::SessionManager;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 
@@ -58,11 +59,18 @@ api.register_shortcut("ctrl+x".into(), ExtensionShortcutOptions {
         Box::pin(async move { assert_eq!(cwd?, "/work"); Ok(()) })
     }),
 })?;
-let auth = Arc::new(AuthStorage::in_memory(Default::default()));
+let auth = SharedHandle::new(AuthStorage::in_memory(Default::default()));
+# struct NoCommands;
+# impl maestro_credentials::ConfigValueOperations for NoCommands {
+#     fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#         None
+#     }
+# }
+# let no_commands = SharedHandle::new(NoCommands);
 let session = ExtensionRunnerSession {
     cwd: "/work".into(),
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
-    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth)?),
+    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth, no_commands)?),
 };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     owners, runtime, session, Arc::new(|line| eprint!("{line}")),
@@ -128,11 +136,18 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
             })
         }),
     })?;
-#   let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+#   let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+#   struct NoCommands;
+#   impl maestro_credentials::ConfigValueOperations for NoCommands {
+#       fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#           None
+#       }
+#   }
+#   let no_commands = maestro_models::SharedHandle::new(NoCommands);
 #   let session = maestro_extensions::runner::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(std::cell::RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth)?),
+#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
 #   };
     let runner = ExtensionRunner::<Local>::new(
         owners, runtime, session, Rc::new(|line| eprint!("{line}")),
@@ -155,6 +170,53 @@ fixes it: a struct literal bound before registration
 (`RegisteredCommandOptions::<maestro_models::Threaded> { .. }`) or a runner built from a collection
 (`ExtensionRunner::<maestro_models::Threaded>::new`). Literals passed directly to a facade method
 infer the facade's family.
+
+## Retained message renderer calls
+
+`ExtensionAPI::register_message_renderer` stores a typed renderer beside its
+class, keeping the original slot on replacement and retaining the registering
+bus with the callback. `ExtensionRunner::get_message_renderer` returns the raw
+callback of the first owner that registered the class; a different details type
+on that owner is absent and later owners are not consulted.
+`ExtensionRunner::get_message_renderer_call` selects the same owner and returns a
+`MessageRendererCall`, which keeps the callback and that bus together.
+
+`MessageRendererCall::new` binds a supplied renderer to an existing bus for
+callers that hold a renderer already, and `MessageRendererCall::call` invokes it
+once through the ordinary callback frame: same-extension listeners run before the
+callback returns and foreign listeners afterwards. A retained call keeps working
+after its registration is replaced or removed, and releases the callback and bus
+with its last handle. It never captures the runner. Clone shares both owners
+without requiring details that can be cloned.
+
+```rust
+use maestro_extensions::{MessageRenderOptions, MessageRenderer, MessageRendererCall};
+use maestro_extensions::create_event_bus;
+use maestro_models::{Execution, Threaded, UserContent};
+use maestro_session::Presence;
+use maestro_session::messages::CustomMessage;
+use std::sync::Arc;
+
+# fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+let bus = create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
+let renderer: MessageRenderer<u8, Threaded> =
+    Arc::new(|_message, _options, _theme, _emitter| Ok(None));
+let call = MessageRendererCall::<u8, Threaded>::new(renderer, (*bus).clone());
+let outcome = call.call(
+    Threaded::share(CustomMessage {
+        custom_type: "note".into(),
+        content: UserContent::Text("body".into()),
+        display: true,
+        details: Presence::Missing,
+        timestamp: 0.0,
+    }),
+    MessageRenderOptions { expanded: false },
+    maestro_theme::LiveTheme::default(),
+)?;
+assert!(outcome.is_none());
+# Ok(())
+# }
+```
 
 ## Commands
 
@@ -228,16 +290,24 @@ use maestro_catalog::ModelRegistry;
 use maestro_credentials::AuthStorage;
 use maestro_extensions::runner::ExtensionRunnerSession;
 use maestro_extensions::{ExtensionContextActions, ExtensionRunner};
+use maestro_models::SharedHandle;
 use maestro_session::SessionManager;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 # const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
-let auth = Arc::new(AuthStorage::in_memory(Default::default()));
+let auth = SharedHandle::new(AuthStorage::in_memory(Default::default()));
+# struct NoCommands;
+# impl maestro_credentials::ConfigValueOperations for NoCommands {
+#     fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#         None
+#     }
+# }
+# let no_commands = SharedHandle::new(NoCommands);
 let session = ExtensionRunnerSession {
     cwd: "/work".into(),
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
-    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth)?),
+    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth, no_commands)?),
 };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,
@@ -262,9 +332,12 @@ assert_eq!(history.borrow().get_cwd(), "/work");
 
 Commands receive `ExtensionCommandContext`, the base context plus six operations:
 `wait_for_idle`, `new_session`, `fork`, `navigate_tree`, `switch_session` and `reload`.
-`bind_command_context(Some(actions))` replaces these independently of `bind_core`;
-`None` restores no-op waits and reloads and uncancelled session-change results.
-Defaults never run supplied setup or continuation callbacks.
+The six are `CommandContextOperations`, which a runtime owns;
+`ExtensionCommandContextActions::new` wraps them for a runner to bind. A session binds
+the value its application runtime builds, so a caller asks the runtime instead of
+supplying a second policy. `bind_command_context(Some(actions))` replaces these
+independently of `bind_core`; `None` restores no-op waits and reloads and uncancelled
+session-change results. Defaults never run supplied setup or continuation callbacks.
 
 Each call checks activity, selects the current operation and starts it immediately,
 before its returned local future is polled. A later rebind or invalidation does not
@@ -281,28 +354,50 @@ base and command members still apply the guard. Application operations, not the
 context, run `setup` and `with_session` callbacks and create replacement sessions.
 
 ```rust
-use maestro_extensions::{ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext};
+use maestro_extensions::{
+    CommandContextOperations, ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext,
+};
 use maestro_extensions::types::{NewSessionCommandOptions, SessionChangeResult};
 use maestro_extensions::runner::ExtensionRunnerSession;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
+# fn no_op_operations() -> CommandContextOperations {
+#     let uncancelled = || Box::pin(std::future::ready(Ok(SessionChangeResult { cancelled: false })));
+#     CommandContextOperations {
+#         wait_for_idle: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+#         new_session: Rc::new(move |_| uncancelled()),
+#         fork: Rc::new(move |_, _| uncancelled()),
+#         navigate_tree: Rc::new(move |_, _| uncancelled()),
+#         switch_session: Rc::new(move |_, _| uncancelled()),
+#         reload: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+#     }
+# }
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-# let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+# let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+# struct NoCommands;
+# impl maestro_credentials::ConfigValueOperations for NoCommands {
+#     fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#         None
+#     }
+# }
+# let no_commands = maestro_models::SharedHandle::new(NoCommands);
 # let session = ExtensionRunnerSession {
 #     cwd: "/work".into(),
 #     session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#     model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth)?),
+#     model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
 # };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,
     Arc::new(|_| {}), maestro_theme::LiveTheme::default(),
 );
-runner.bind_command_context(Some(ExtensionCommandContextActions {
-    new_session: Rc::new(|options| {
-        assert_eq!(options.unwrap().parent_session.as_deref(), Some("/parent.jsonl"));
-        Box::pin(async { Ok(SessionChangeResult { cancelled: true }) })
-    }),
-    ..Default::default()
-}));
+runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+    CommandContextOperations {
+        new_session: Rc::new(|options| {
+            assert_eq!(options.unwrap().parent_session.as_deref(), Some("/parent.jsonl"));
+            Box::pin(async { Ok(SessionChangeResult { cancelled: true }) })
+        }),
+        ..no_op_operations()
+    },
+)));
 let ctx = runner.create_command_context();
 let executor = tokio::runtime::Builder::new_current_thread().build()?;
 executor.block_on(async {
@@ -328,6 +423,91 @@ executor.block_on(async {
 })?;
 # Ok(())
 # }
+```
+
+See [extension context lifecycle](lifecycle.md) for retained handles, replacement
+callbacks and the application/runtime boundaries. These functions illustrate
+local command handlers; their bodies compile here but need application-bound
+operations to perform replacement or reload.
+
+### Continue with the fresh context
+
+Capture plain data and send through the context supplied to `with_session`.
+
+```rust
+use maestro_extensions::{EventError, ExtensionCommandContext};
+use maestro_extensions::types::NewSessionCommandOptions;
+use maestro_models::UserContent;
+use std::rc::Rc;
+
+pub async fn safe_handoff(ctx: ExtensionCommandContext) -> Result<(), EventError> {
+    let kickoff = String::from("Continue from the replacement session");
+    ctx.new_session(Some(NewSessionCommandOptions {
+        with_session: Some(Rc::new(move |fresh| {
+            let kickoff = kickoff.clone();
+            Box::pin(async move {
+                fresh.send_user_message(UserContent::Text(kickoff), None).await
+            })
+        })),
+        ..Default::default()
+    })).await?;
+    Ok(())
+}
+# fn main() {}
+```
+
+### Avoid captured contexts
+
+This example is deliberately incorrect after successful replacement: the old
+context returns the stale error. A cancelled replacement leaves it active.
+
+```rust
+use maestro_extensions::{EventError, ExtensionCommandContext};
+
+pub async fn captured_context_is_not_fresh(ctx: ExtensionCommandContext) -> Result<(), EventError> {
+    let old = ctx.clone();
+    let result = ctx.new_session(None).await?;
+    if !result.cancelled {
+        old.cwd()?;
+    }
+    Ok(())
+}
+# fn main() {}
+```
+
+### Write history during setup
+
+The application operation invokes setup with writable session history.
+
+```rust
+use maestro_extensions::{EventError, ExtensionCommandContext};
+use maestro_extensions::types::NewSessionCommandOptions;
+use std::rc::Rc;
+
+pub async fn setup_history(ctx: ExtensionCommandContext) -> Result<(), EventError> {
+    ctx.new_session(Some(NewSessionCommandOptions {
+        setup: Some(Rc::new(|history| Box::pin(async move {
+            history.borrow_mut().append_session_info("handoff")?;
+            Ok(())
+        }))),
+        ..Default::default()
+    })).await?;
+    Ok(())
+}
+# fn main() {}
+```
+
+### Reload and return
+
+Do not use the old context after awaiting reload.
+
+```rust
+use maestro_extensions::{EventError, ExtensionCommandContext};
+
+pub async fn reload_and_return(ctx: ExtensionCommandContext) -> Result<(), EventError> {
+    ctx.reload().await
+}
+# fn main() {}
 ```
 
 ## Actions and provider binding
@@ -394,7 +574,9 @@ not undo registration; the loading runtime's refresh is inert.
 `get_tool_definition::<P, D, S>` instead searches stored registration keys and
 returns the original typed handle. A type mismatch on the first owner is absent;
 it does not select a later owner. Different parameter, details and renderer-state
-types coexist in one owner.
+types coexist in one owner. `RegisteredTool::metadata` and
+`RegisteredTool::renderer_binding` read a retained definition's current metadata
+and bound renderers for callers that know only the execution family.
 
 The tools-owned wrapper snapshots declaration/preparation/mode metadata when
 created. Each execution selects the current retained execute callback before
@@ -405,6 +587,12 @@ local context across an await. Standalone SDK invocation remains Threaded by
 default. Renderer state remains local and is projected by `ToolRendererBinding`.
 Typed result renderers decode details through `from_definition`; raw renderers and
 Serialize-only details use `RegisteredToolInput::from_raw` without a decoder.
+
+A parameter schema built by a schema builder carries the kind of each node its author
+declared, beside the ordinary JSON Schema value. Argument preparation converts those
+nodes before the plain conversion pass; a schema written as ordinary JSON has no
+declared kinds and is converted as JSON alone. Provider payloads and saved JSON drop
+the declared kinds.
 
 ```rust
 use maestro_extensions::{ExtensionContext, ExtensionFactory, load_extension_from_factory};
@@ -420,7 +608,7 @@ let factory: ExtensionFactory<Local> = Rc::new(|api| {
     let tool: ToolDefinitionRecord<ExtensionContext, Value, Value, (), Local, Local> =
         ToolDefinitionRecord {
             definition: Tool { name: "echo".into(), description: "Echo arguments".into(),
-                parameters: json!({"type":"object"}) },
+                parameters: json!({"type":"object"}).into() },
             label: "Echo".into(), prompt_snippet: None, prompt_guidelines: None,
             render_shell: None, prepare_arguments: None, execution_mode: None,
             execute: Rc::new(|_, params, _, _, ctx| Box::pin(async move {

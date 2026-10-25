@@ -1,6 +1,6 @@
 //! Component styles whose coloring callbacks read the published theme when invoked.
 //! Strikethrough and unselected settings labels do not read the theme.
-use super::code::{colored_rows, highlight_rows};
+use super::code::{colored_rows_or_raw, highlight_rows};
 use super::styles::paint;
 use super::{LiveTheme, SyntaxHighlighter, Theme, ThemeColor};
 use maestro_tui::{EditorTheme, MarkdownTheme, SelectListTheme, SettingsListTheme};
@@ -52,7 +52,7 @@ pub fn get_markdown_theme(
         underline: decoration(Theme::underline),
         strikethrough: Box::new(move |text| Theme::strikethrough(text, styles_enabled)),
         highlight_code: Some(Box::new(move |code, lang| {
-            highlight_rows(&theme, &*highlighter, (code, lang), colored_rows)
+            highlight_rows(&theme, &*highlighter, (code, lang), colored_rows_or_raw)
         })),
         code_block_indent: None,
     }

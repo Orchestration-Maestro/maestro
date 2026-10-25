@@ -1,6 +1,7 @@
 //! The settings manager: accepted preferences for a global and a project scope.
 
 mod accessors;
+mod change;
 mod conversion;
 mod entries;
 #[cfg(not(target_arch = "wasm32"))]
@@ -17,9 +18,10 @@ use std::future::Future;
 
 use serde_json::{Map, Value};
 
+use change::{Change, Edit};
 use conversion::{convert, merge_one_level, parse_document};
 use maestro_json::pretty_object;
-use persistence::{Edit, Queue};
+use persistence::Queue;
 
 pub use entries::{FilteredPackage, PackageSource, SettingsListEntry};
 #[cfg(not(target_arch = "wasm32"))]
@@ -66,56 +68,6 @@ impl NotANumber {
             autocomplete_max_visible: self.autocomplete_max_visible
                 && !document.contains_key("autocompleteMaxVisible"),
         }
-    }
-}
-
-/// One edit to a scope: set or remove a member, or set a key inside a member.
-struct Change {
-    /// The top-level member.
-    field: &'static str,
-    /// The key inside the member, for nested edits.
-    key: Option<&'static str>,
-    /// The new value; `None` removes the member.
-    value: Option<Value>,
-}
-
-impl Change {
-    /// Sets or removes a top-level member.
-    fn field(field: &'static str, value: Option<Value>) -> Self {
-        Self {
-            field,
-            key: None,
-            value,
-        }
-    }
-
-    /// Sets one key of a top-level object member.
-    fn key(field: &'static str, key: &'static str, value: Value) -> Self {
-        Self {
-            field,
-            key: Some(key),
-            value: Some(value),
-        }
-    }
-
-    /// Applies the change to a scope document and names the edited preference.
-    fn apply(self, document: &mut Map<String, Value>) -> Edit {
-        let field = self.field.to_owned();
-        let Some(key) = self.key else {
-            match self.value {
-                Some(value) => document.insert(field.clone(), value),
-                None => document.shift_remove(&field),
-            };
-            return Edit::Field(field);
-        };
-        let slot = document.entry(field.clone()).or_insert(Value::Null);
-        if !slot.is_object() {
-            *slot = Value::Object(Map::new());
-        }
-        if let (Value::Object(members), Some(value)) = (slot, self.value) {
-            members.insert(key.to_owned(), value);
-        }
-        Edit::Key(field, key.to_owned())
     }
 }
 
@@ -205,6 +157,13 @@ impl SettingsManager {
     /// and unsaved edits are discarded.
     pub async fn reload(&mut self) {
         self.queue.barrier().await;
+        self.reload_from_storage();
+    }
+
+    /// Reloads both scopes as [`Self::reload`] does, without waiting for queued
+    /// writes; await [`Self::flush`] first, so a shared manager can be reloaded
+    /// without holding its borrow across the wait.
+    pub fn reload_from_storage(&mut self) {
         self.load_scope(SettingsScope::Global);
         self.queue.clear_dirty();
         self.load_scope(SettingsScope::Project);

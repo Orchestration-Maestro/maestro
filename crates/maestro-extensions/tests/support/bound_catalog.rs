@@ -1,6 +1,6 @@
 //! Real catalog consumers reached through the action runtime.
 #![cfg(test)]
-use crate as tests;
+use crate::extension_actions as tests;
 use maestro_extensions::{ExtensionExecution, create_extension_runtime, types::ProviderActions};
 use maestro_models::*;
 use std::{
@@ -78,16 +78,6 @@ pub fn catalog_callbacks_can_read_and_register_during_a_bound_registration() {
     }
 }
 
-/// Read supplied request values without a shell or ambient environment.
-struct Values;
-impl maestro_credentials::ConfigValueOperations for Values {
-    fn environment(&self, _: &str) -> Option<String> {
-        None
-    }
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        panic!("no helper requested")
-    }
-}
 /// Login callbacks that the deterministic account never needs.
 struct NoInteraction;
 impl OAuthLoginCallbacks for NoInteraction {
@@ -103,7 +93,7 @@ fn consumer_config(
     registry: &Arc<maestro_catalog::ModelRegistry>,
     original: &Arc<original_options::OptionsProvider>,
     events: &Arc<Mutex<Vec<&'static str>>>,
-) -> Arc<std::sync::RwLock<maestro_extensions::ProviderConfig>> {
+) -> SharedHandle<std::sync::RwLock<maestro_extensions::ProviderConfig>> {
     let config = tests::good("m");
     {
         let mut input = config.write().unwrap();
@@ -179,7 +169,7 @@ pub fn bound_provider_configuration_reaches_stream_oauth_and_request_consumers()
     let account = get_oauth_provider("p").unwrap();
     assert_eq!(account.id(), "p");
     assert_eq!(account.name(), "Account label");
-    let executor = super::action_checks::executor();
+    let executor = crate::runtime_support::runtime();
     let stream_model = model.read().unwrap().clone();
     executor.block_on(async {
         exercise_account(&account).await;
@@ -218,7 +208,7 @@ async fn assert_request(
     registry: &maestro_catalog::ModelRegistry,
     model: &Arc<std::sync::RwLock<Model>>,
 ) {
-    match registry.get_api_key_and_headers(model, &Values).await {
+    match registry.get_api_key_and_headers(model).await {
         maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
             assert!(matches!(api_key.as_deref(), Some("literal-key")));
             let headers = headers.unwrap();
@@ -307,7 +297,7 @@ fn assert_descriptor(model: &Arc<std::sync::RwLock<Model>>) {
 
 fn request_variants(
     registry: &maestro_catalog::ModelRegistry,
-    config: &Arc<std::sync::RwLock<maestro_extensions::ProviderConfig>>,
+    config: &SharedHandle<std::sync::RwLock<maestro_extensions::ProviderConfig>>,
 ) {
     for (auth, maps) in [(false, false), (true, false), (false, true), (true, true)] {
         {
@@ -318,9 +308,7 @@ fn request_variants(
         }
         registry.register_provider("p", config.clone()).unwrap();
         let model = registry.find("p", "m").unwrap();
-        match super::action_checks::executor()
-            .block_on(registry.get_api_key_and_headers(&model, &Values))
-        {
+        match crate::runtime_support::runtime().block_on(registry.get_api_key_and_headers(&model)) {
             maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
                 assert!(matches!(api_key.as_deref(), Some("literal-key")));
                 match headers {

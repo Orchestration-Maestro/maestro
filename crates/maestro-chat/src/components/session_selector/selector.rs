@@ -5,7 +5,7 @@ use super::{
     SessionSelectorHeaderOptions, StatusMessage,
 };
 use crate::{NameFilter, SortMode, components::dynamic_border::DynamicBorder};
-use maestro_app::{ResourceOperations, SessionInfo};
+use maestro_app::SessionInfo;
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::{
     Component, Container, FocusFlag, Focusable, KeybindingsManager, Spacer,
@@ -15,8 +15,6 @@ use maestro_tui::{Input, tui::LocalFuture};
 use std::{
     cell::{Cell, RefCell},
     error::Error,
-    future::Future,
-    pin::Pin,
     rc::{Rc, Weak},
     time::Duration,
 };
@@ -26,22 +24,9 @@ mod mutations;
 mod rename;
 /// Owned asynchronous name-save callable.
 type RenameSession = Rc<dyn Fn(&str, &str) -> LocalFuture>;
-/// Owned discovery progress notification.
-pub type SessionListProgress = Rc<dyn Fn(usize, usize)>;
-/// Caller-owned asynchronous discovery result.
-pub type SessionsFuture =
-    Pin<Box<dyn Future<Output = Result<Vec<SessionInfo>, Box<dyn Error>>> + 'static>>;
-/// Session discovery factory, invoked before scheduling its future.
-pub type SessionsLoader = Rc<dyn Fn(Option<SessionListProgress>) -> SessionsFuture>;
-/// Caller notifications for selection, cancellation and explicit exit.
-pub struct SessionSelectorCallbacks {
-    /// Selected authored session path.
-    pub on_select: Rc<dyn Fn(&str)>,
-    /// Cancellation notification.
-    pub on_cancel: Rc<dyn Fn()>,
-    /// Explicit exit notification.
-    pub on_exit: Rc<dyn Fn()>,
-}
+pub use maestro_app::presentation_data::input_selectors::{
+    SessionListProgress, SessionSelectorCallbacks, SessionsFuture, SessionsLoader,
+};
 /// Supplied discovery presentation and host observations.
 pub struct SessionSelectorOptions {
     /// Retained live manager for named filtering; omitted values load application defaults.
@@ -64,8 +49,6 @@ pub struct SessionSelectorOptions {
     pub now_ms: Rc<dyn Fn() -> f64>,
     /// Live home spelling.
     pub home: Rc<dyn Fn() -> String>,
-    /// Canonical path observation port.
-    pub paths: Rc<dyn ResourceOperations>,
     /// Live decoration policy.
     pub styles_enabled: Rc<dyn Fn() -> bool>,
 }
@@ -116,8 +99,6 @@ struct State {
     styles: Rc<dyn Fn() -> bool>,
     /// Retained deletion effects.
     file_operations: Option<Rc<dyn SessionFileOperations>>,
-    /// Existing existence and canonical identity owner.
-    paths: Rc<dyn ResourceOperations>,
 }
 /// Session discovery component with an editable inherited child array.
 pub struct SessionSelectorComponent {
@@ -216,7 +197,6 @@ impl State {
             theme: options.theme,
             styles: options.styles_enabled,
             file_operations: super::delete_session_file::operations(options.file_operations),
-            paths: options.paths,
         })
     }
 
@@ -519,7 +499,6 @@ fn create_list(
             theme: options.theme.clone(),
             now_ms: options.now_ms.clone(),
             home: options.home.clone(),
-            paths: options.paths.clone(),
             styles_enabled: options.styles_enabled.clone(),
         },
     );

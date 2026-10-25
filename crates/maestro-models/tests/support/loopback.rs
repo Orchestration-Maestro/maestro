@@ -1,5 +1,7 @@
 //! A one-connection HTTP server on the loopback interface.
 
+#![cfg(not(target_arch = "wasm32"))]
+
 use std::fmt::Write as _;
 use std::io::{ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};

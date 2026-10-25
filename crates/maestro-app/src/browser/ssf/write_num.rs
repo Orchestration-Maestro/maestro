@@ -4,15 +4,7 @@ use super::FormatError::UnsupportedNumberFormat as Unsupported;
 use super::{FormatError, NumberToken};
 use num_traits::ToPrimitive;
 
-/// Round binary halves toward positive infinity without moving adjacent values.
-pub(super) fn round(value: f64) -> f64 {
-    let floor = value.floor();
-    if value - floor >= 0.5 {
-        floor + 1.0
-    } else {
-        floor
-    }
-}
+pub(super) use crate::utils::numbers::round;
 
 /// Shortest binary64 decimal spelling.
 pub(super) fn spelling(value: f64) -> String {

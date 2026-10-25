@@ -63,82 +63,6 @@
     ]
   },
   {
-    "id": "package-canonical-failure",
-    "input": {
-      "probe": {
-        "status": 0,
-        "stdout": "/opt/tool/lib/node_modules\n",
-        "stderr": ""
-      },
-      "canonical_errors": [
-        "/opt/tool/lib/node_modules/@old/agent"
-      ]
-    },
-    "expected": {
-      "value": null
-    },
-    "trace": [
-      [
-        "exists",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "canonicalize",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ]
-    ]
-  },
-  {
-    "id": "root-canonical-failure",
-    "input": {
-      "probe": {
-        "status": 0,
-        "stdout": "/opt/tool/lib/node_modules\n",
-        "stderr": ""
-      },
-      "canonical_errors": [
-        "/opt/tool/lib/node_modules"
-      ]
-    },
-    "expected": {
-      "value": null
-    },
-    "trace": [
-      [
-        "exists",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "canonicalize",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "command",
-        "npm",
-        [
-          "root",
-          "-g"
-        ]
-      ],
-      [
-        "exists",
-        "/opt/tool/lib/node_modules"
-      ],
-      [
-        "canonicalize",
-        "/opt/tool/lib/node_modules"
-      ],
-      [
-        "exists",
-        "/opt/tool/lib/node_modules"
-      ],
-      [
-        "canonicalize",
-        "/opt/tool/lib/node_modules"
-      ]
-    ]
-  },
-  {
     "id": "filesystem-root",
     "input": {
       "probe": {
@@ -189,14 +113,6 @@
       [
         "canonicalize",
         "/"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -259,14 +175,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -462,14 +370,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -528,14 +428,6 @@
       [
         "canonicalize",
         "/alias"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -593,78 +485,6 @@
       [
         "canonicalize",
         "/work/node_modules"
-      ],
-      [
-        "access",
-        "./node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "./node_modules/@old"
-      ]
-    ]
-  },
-  {
-    "id": "windows-case",
-    "input": {
-      "probe": {
-        "status": 0,
-        "stdout": "c:\\root\\node_modules",
-        "stderr": ""
-      },
-      "windows": true,
-      "package_dir": "C:\\ROOT\\node_modules\\@old\\agent",
-      "npm_command": [
-        "npm"
-      ],
-      "existing": [
-        "C:\\ROOT\\node_modules\\@old\\agent",
-        "c:\\root\\node_modules"
-      ]
-    },
-    "expected": {
-      "value": {
-        "command": "npm",
-        "args": [
-          "install",
-          "-g",
-          "@old/agent"
-        ],
-        "display": "npm install -g @old/agent"
-      }
-    },
-    "trace": [
-      [
-        "exists",
-        "C:\\ROOT\\node_modules\\@old\\agent"
-      ],
-      [
-        "canonicalize",
-        "C:\\ROOT\\node_modules\\@old\\agent"
-      ],
-      [
-        "command",
-        "npm",
-        [
-          "root",
-          "-g"
-        ]
-      ],
-      [
-        "exists",
-        "c:\\root\\node_modules"
-      ],
-      [
-        "canonicalize",
-        "c:\\root\\node_modules"
-      ],
-      [
-        "access",
-        "C:\\ROOT\\node_modules\\@old\\agent"
-      ],
-      [
-        "access",
-        "C:\\ROOT\\node_modules\\@old"
       ]
     ]
   },

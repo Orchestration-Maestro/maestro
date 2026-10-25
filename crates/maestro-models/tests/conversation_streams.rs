@@ -1,11 +1,17 @@
 //! Direct reasoning conversation stream behavior.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
 
-use chat::{TestResult, block_on};
+#[cfg(not(target_arch = "wasm32"))]
+use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::reasoning::mistral::stream_simple_mistral;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::stream_mistral;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_keep_raw_and_simple_failure_boundaries() -> TestResult {
     let model = chat::model(&json!({"provider": "oracle-no-env", "api": "mistral-conversations"}))?;
@@ -18,7 +24,7 @@ fn conversation_streams_keep_raw_and_simple_failure_boundaries() -> TestResult {
         "No API key for provider: oracle-no-env"
     );
     lifecycle::no_runtime()?;
-    block_on(false, async {
+    crate::runtime::run(async {
         lifecycle::dropped_reader().await?;
         lifecycle::simple_controls().await?;
         lifecycle::mapped_simple_controls().await?;
@@ -40,12 +46,14 @@ fn conversation_streams_keep_raw_and_simple_failure_boundaries() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "conversation_streams/corpus.rs"]
 mod corpus;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_share_message_updates_after_admission() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         corpus::rows("conversation_streams_share_message_updates_after_admission").await?;
         lifecycle::headers_gate().await?;
         lifecycle::shared_admission().await?;
@@ -53,41 +61,40 @@ fn conversation_streams_share_message_updates_after_admission() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_retain_first_id_and_usage() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_retain_first_id_and_usage"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_retain_first_id_and_usage",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_map_finish_outcomes() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_map_finish_outcomes"),
-    )
+    crate::runtime::run(corpus::rows("conversation_streams_map_finish_outcomes"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_order_text_and_thinking_blocks() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_order_text_and_thinking_blocks"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_order_text_and_thinking_blocks",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn conversation_streams_accumulate_and_finalize_tool_calls() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_accumulate_and_finalize_tool_calls"),
-    )
+fn conversation_arguments_keep_encoded_root_shapes() -> TestResult {
+    crate::runtime::run(corpus::rows(
+        "conversation_arguments_keep_encoded_root_shapes",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_preserve_partial_results_on_failure() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         corpus::rows("conversation_streams_preserve_partial_results_on_failure").await?;
         lifecycle::lifetime_failures().await?;
         lifecycle::failure_causes().await?;
@@ -95,21 +102,22 @@ fn conversation_streams_preserve_partial_results_on_failure() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_respect_framing_and_completion() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_respect_framing_and_completion"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_respect_framing_and_completion",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_validate_complete_events_before_reduction() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_validate_complete_events_before_reduction"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_validate_complete_events_before_reduction",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "conversation_streams/lifecycle.rs"]
 mod lifecycle;

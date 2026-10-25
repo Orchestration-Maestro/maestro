@@ -1,5 +1,7 @@
 //! Numbered edit diff rendering with the published theme.
 
+pub mod text_diff;
+
 mod inverse;
 pub(crate) mod sequence;
 mod whitespace;

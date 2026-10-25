@@ -13,16 +13,25 @@ custom callbacks remain supported. Layout delegates to the
 The user widget puts Markdown inside a padded `userMessageBg` panel with
 `userMessageText` foreground. Nonempty user rendering prefixes the first row with
 OSC 133 A and the last row with OSC 133 B/C, without adding a row.
+User-authored Markdown keeps pasted terminal colour sequences unchanged.
 
 The assistant constructor accepts an optional shared assistant message and
 `AssistantMessageOptions`. Defaults show thinking, use the hidden label
 `Thinking...` and enable hidden-label italic decoration. Text and thinking are
-trimmed with the [shared whitespace predicate](../text.md). Visible blocks retain
+trimmed with the [shared whitespace predicate](../text.md). Their decoded Markdown
+content is cleaned with the shared [display helpers](../tools-read.md#display-helpers)
+before terminal styling and hyperlink generation. This removes authored escape
+sequences and C0 controls other than TAB, LF and CR without removing renderer styling.
+Visible blocks retain
 their order, with a leading spacer and a gap after thinking only when another
 visible block follows. Hidden thinking uses the literal label instead of Markdown.
 
-`update_content` replaces the retained shared handle and rebuilds the inner
-content. Both thinking setters and `invalidate` rebuild from that handle, observing
+`AssistantMessageComponent::from_record` builds the same widget from a stored
+assistant record. It reads only the content blocks and the stop reason and error
+text it displays, so tool-call arguments keep whatever JSON value was stored.
+
+`update_content` replaces the retained shared handle, releasing a stored record,
+and rebuilds the inner content. Both thinking setters and `invalidate` rebuild from that handle, observing
 edits through a surviving message alias. Any tool-call block suppresses prompt
 markers and failure notices. Without tools, aborted/error messages append their
 notice, and nonempty rendering receives the same markers as a user message.
@@ -37,7 +46,9 @@ Branch and compaction summaries start collapsed in a `customMessageBg` panel.
 current display. Collapsed hints read the active `app.tools.expand` keys when
 rebuilt, using the application's [`key_text`](../../crates/maestro-tools/src/keybinding_hints.rs).
 Expanded summaries show a Markdown header and the summary body, without prompt
-markers. The compaction constructor formats its token count once with the supplied
+markers. Both summary kinds enable the same decoded-content
+[Markdown cleaning policy](../terminal/markdown.md) as assistant text and thinking.
+The compaction constructor formats its token count once with the supplied
 [`LocaleNumberFormat`](../text.md#numbers), returning an I/O error on conversion
 failure; toggling does not read the environment.
 
@@ -46,6 +57,43 @@ All four widgets expose the existing editable child-array interface through
 wrapping, empty styled text and narrow-viewport padding follow the toolkit owner.
 Background callbacks read the live theme; cached Markdown is refreshed by
 invalidation. Summary labels and hints are repainted when rebuilt.
+
+## Custom messages and skill invocations
+
+`CustomMessageComponent` renders an extension-supplied custom message and
+`SkillInvocationMessageComponent` renders a parsed skill block; both are exported
+at the crate root and in their `components` modules; the skill widget is
+native-only, while the parsed record it renders belongs to the application and is
+available to browser builds. Constructors take the live theme, prepared
+Markdown callbacks and shared terminal image capabilities.
+
+The custom widget keeps one leading spacer and then either the component returned
+by its retained renderer or a default panel with `customMessageBg` background, a
+bold literal `[<customType>]` label in `customMessageLabel`, a spacer and the body
+as Markdown in `customMessageText`. String content is used unchanged; part lists
+keep only text parts, in order, joined by newlines, so images never reach the
+default display. `display` and `timestamp` are carried for callers and never
+filtered here. `set_expanded` rebuilds only when the flag changes; `invalidate`
+always rebuilds.
+
+A renderer that returns a component owns its own styling and replaces the panel.
+A creation error or a missing component selects the default panel without
+reporting an extension error; a failure from the selected child's `try_render`
+propagates to the caller unchanged. Supplying a renderer means calling
+`MessageRendererCall::new` with the renderer and its event bus, or taking the call
+from the runner as described in [registration](../extensions/registration.md).
+
+The skill widget is a `customMessageBg` panel. Collapsed, it shows one row with the
+bold `[skill]` label, the skill name and a dim `(<expand key> to expand)` hint read
+from the active `app.tools.expand` keys. Expanded, it shows the label and the
+Markdown `**<name>**` header followed by the skill content. Its location and
+trailing user text belong to the caller and are not displayed. `set_expanded` and
+`invalidate` rebuild on every call, including an unchanged flag.
+
+Both widgets expose the existing editable child-array interface through `Deref`:
+the custom widget targets `Container` and the skill widget targets `Box`.
+Rebuilding replaces only the body the widget owns, so unrelated outer edits and
+retained array aliases keep working.
 
 ## Direct shell output
 

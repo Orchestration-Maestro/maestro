@@ -1,7 +1,8 @@
 //! Retained independent input and output listings for the default recipe.
 use super::{Listing, prepare};
+use crate::browser::attachment_content;
+use crate::tools::types::ToolUiError;
 use crate::{
-    browser::attachment_content::AttachmentUiError,
     components::code_block::{CodeBlock, CodeBlockView},
     tools::{
         renderer_registry::{
@@ -9,7 +10,7 @@ use crate::{
             header::browser::{NativeText, TextKind},
             render_header,
         },
-        types::{ToolContent, ToolRenderView},
+        types::ToolRenderView,
     },
 };
 use maestro_app::ToolRendererState;
@@ -46,22 +47,24 @@ impl Section {
         view: ToolRenderView<'_>,
         label: &str,
         listing: &Listing,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ToolUiError> {
         ui.scope_builder(egui::UiBuilder::new().id(self.label.id()), |ui| {
             ui.spacing_mut().item_spacing.y = 4.;
             self.label
                 .render(ui, (&view.i18n.text(label)?, TextKind::Label), view)?;
             self.listing.code.clone_from(&listing.code);
             listing.language.clone_into(&mut self.listing.language);
-            self.listing.render(
-                ui,
-                CodeBlockView {
-                    i18n: view.i18n,
-                    presentation: view.presentation,
-                    highlighter: view.highlighter,
-                    modal: view.modal,
-                },
-            )?;
+            self.listing
+                .render(
+                    ui,
+                    CodeBlockView {
+                        i18n: view.i18n,
+                        presentation: view.presentation,
+                        highlighter: view.highlighter,
+                        modal: view.modal,
+                    },
+                )
+                .map_err(ToolUiError::reading)?;
             Ok(())
         })
         .inner
@@ -77,21 +80,7 @@ struct Retained {
     /// Present only while a result is rendered.
     output: Option<Section>,
 }
-impl ToolContent for DefaultContent {
-    fn render(
-        &self,
-        ui: &mut egui::Ui,
-        view: ToolRenderView<'_>,
-        state: &ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
-        let slot = state.state::<Retained>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let result = self.draw(ui, view, &mut retained);
-        let old = slot.replace(retained);
-        drop(old);
-        result
-    }
-}
+crate::tools::types::retained_tool_content!(DefaultContent, Retained);
 impl DefaultContent {
     /// Draw selected branches, releasing only subsections that disappear.
     fn draw(
@@ -99,7 +88,8 @@ impl DefaultContent {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
-    ) -> Result<egui::Response, AttachmentUiError> {
+        overlays: &mut Vec<crate::AttachmentOverlay>,
+    ) -> Result<egui::Response, ToolUiError> {
         let no_output = if self.output.as_deref() == Some("") {
             view.i18n.text("(no output)")?
         } else {
@@ -117,19 +107,24 @@ impl DefaultContent {
         if prepared.output.is_none() {
             retained.output = None;
         }
-        let catalog =
-            crate::icons::icons().map_err(|error| AttachmentUiError::Host(error.to_string()))?;
-        let icon = catalog
-            .get("Code")
-            .ok_or_else(|| AttachmentUiError::Host("Missing code glyph".into()))?;
+        let icon = crate::icons::icon_node("Code").map_err(|error| {
+            ToolUiError::Control(attachment_content::ControlError::Host(error.to_string()))
+        })?;
+        let icon = icon.ok_or_else(|| {
+            ToolUiError::Control(attachment_content::ControlError::Host(
+                "Missing code glyph".into(),
+            ))
+        })?;
         let header = render_header(
             self.state,
-            icon.clone(),
+            icon,
             ToolHeaderText::Text(prepared.caption.into()),
         );
-        let body = ui.vertical(|ui| -> Result<(), AttachmentUiError> {
+        let body = ui.vertical(|ui| -> Result<(), ToolUiError> {
             ui.spacing_mut().item_spacing.y = 12.;
-            header.render(ui, view, &retained.header)?;
+            header
+                .render(ui, view, &retained.header)
+                .collect(overlays)?;
             if let Some(input) = &prepared.input {
                 retained
                     .input

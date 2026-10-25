@@ -5,8 +5,6 @@
 mod component_support;
 use crate::child as probe;
 use crate::package_fixtures as fixtures;
-#[path = "../../maestro-packages/tests/scratch/mod.rs"]
-mod scratch;
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, get_agent_dir};
 use maestro_app::output_guard::is_stdout_taken_over;
 use maestro_app::{
@@ -14,6 +12,7 @@ use maestro_app::{
     ResolvedPaths, ResolvedResource, SettingsManager,
 };
 use maestro_packages::{NativePackageOperations, PackageManagerOptions};
+use maestro_test_directory as scratch;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, fs, path::Path, rc::Rc};
@@ -122,20 +121,20 @@ fn check_settings(expected: (&Value, &Value), root: &str, cwd: &str, agent: &str
 #[test]
 fn selected_configuration_roots_feed_package_resolution_and_persistence() {
     let cases = fixtures::cases::<RootInput, Roots>("root-");
-    if let Ok(id) = std::env::var("MAESTRO_PACKAGE_CASE") {
-        let case = cases.iter().find(|c| c.id == id).unwrap();
+    if maestro_test_process::selection().is_child() {
+        let case = cases
+            .iter()
+            .find(|c| maestro_test_process::selection().runs_case(&c.id))
+            .unwrap();
         root_case(case);
         return;
     }
     for case in cases {
         assert_eq!(case.id, format!("root-{}", case.input.branch));
         let dir = scratch::Scratch::new().unwrap();
-        let root = dir.0.to_str().unwrap();
-        fs::create_dir_all(dir.0.join("work")).unwrap();
-        let mut envs = vec![
-            ("MAESTRO_PACKAGE_CASE", case.id.as_str()),
-            ("MAESTRO_CASE_ROOT", root),
-        ];
+        let root = dir.path().to_str().unwrap();
+        fs::create_dir_all(dir.path().join("work")).unwrap();
+        let mut envs = vec![("MAESTRO_CASE_ROOT", root)];
         let selected = case
             .input
             .r#override
@@ -148,11 +147,12 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
         envs.push(("HOME", &home));
         assert!(
             probe::probe(
-                &crate::child_process::selector(
+                maestro_test_process::TestProcess::current(
                     "selected_configuration_roots_feed_package_resolution_and_persistence"
                 )
-                .unwrap(),
-                &dir.0.join("work"),
+                .unwrap()
+                .case(&case.id),
+                &dir.path().join("work"),
                 &envs,
                 &["MAESTRO_CODING_AGENT_DIR", "MAESTRO_OFFLINE"]
             )
@@ -179,13 +179,10 @@ fn root_case(case: &fixtures::Case<RootInput, Roots>) {
             agent_dir: agent.clone(),
             settings_manager: Rc::clone(&settings),
         },
-        NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local),
+        NativePackageOperations::new(Rc::new(is_stdout_taken_over), &local),
     );
     let events = progress(&manager);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::support::io_runtime();
     runtime.block_on(local.run_until(async {
         let resolved: ResolvedPaths = manager.resolve(None).await.unwrap();
         let resource: &ResolvedResource = &resolved.extensions[0];
@@ -242,17 +239,20 @@ struct Updated {
 #[test]
 fn selected_package_roots_keep_update_pins_and_progress() {
     let cases = fixtures::cases::<UpdateInput, Updated>("update-");
-    if let Ok(id) = std::env::var("MAESTRO_PACKAGE_CASE") {
-        let case = cases.iter().find(|c| c.id == id).unwrap();
+    if maestro_test_process::selection().is_child() {
+        let case = cases
+            .iter()
+            .find(|c| maestro_test_process::selection().runs_case(&c.id))
+            .unwrap();
         update_case(case);
         return;
     }
     for case in cases {
         assert_eq!(case.id, format!("update-{}", case.input.selected));
         let dir = scratch::Scratch::new().unwrap();
-        let root = dir.0.to_str().unwrap();
-        fs::create_dir_all(dir.0.join("work")).unwrap();
-        let script = dir.0.join("controlled-npm");
+        let root = dir.path().to_str().unwrap();
+        fs::create_dir_all(dir.path().join("work")).unwrap();
+        let script = dir.path().join("controlled-npm");
         assert!(
             std::process::Command::new("install")
                 .args([
@@ -273,13 +273,13 @@ fn selected_package_roots_keep_update_pins_and_progress() {
         let npm = format!("{root}/global/node_modules");
         assert!(
             probe::probe(
-                &crate::child_process::selector(
+                maestro_test_process::TestProcess::current(
                     "selected_package_roots_keep_update_pins_and_progress"
                 )
-                .unwrap(),
-                &dir.0.join("work"),
+                .unwrap()
+                .case(&case.id),
+                &dir.path().join("work"),
                 &[
-                    ("MAESTRO_PACKAGE_CASE", &case.id),
                     ("MAESTRO_CASE_ROOT", root),
                     ("MAESTRO_CODING_AGENT_DIR", &agent),
                     ("MAESTRO_COMMAND_LOG", &log),
@@ -321,13 +321,10 @@ fn update_case(case: &fixtures::Case<UpdateInput, Updated>) {
             agent_dir: agent.clone(),
             settings_manager: Rc::clone(&settings),
         },
-        NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local),
+        NativePackageOperations::new(Rc::new(is_stdout_taken_over), &local),
     ));
     let events = progress(manager.as_ref());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::support::io_runtime();
     runtime.block_on(local.run_until(async {
         manager.update(None).await.unwrap();
         let flushed = settings.borrow().flush();

@@ -186,7 +186,7 @@ fn maestro_before_hook_mutates_validated_arguments() {
             ready(Ok(artifact("numeric", true)))
         }),
     );
-    echo.write().unwrap().definition.parameters = serde_json::json!({"type":"object","properties":{"value":{"type":"string"}},"required":["value"]});
+    echo.write().unwrap().definition.parameters = serde_json::json!({"type":"object","properties":{"value":{"type":"string"}},"required":["value"]}).into();
     let mut config = config();
     config.before_tool_call = Some(Arc::new(|call, _| {
         assert_eq!(call.args["value"], "hello");
@@ -220,7 +220,7 @@ fn maestro_preparation_runs_before_validation() {
     );
     {
         let mut echo = echo.write().unwrap();
-        echo.definition.parameters = serde_json::json!({"type":"object","properties":{"edits":{"type":"array","items":{"type":"object","properties":{"oldText":{"type":"string"},"newText":{"type":"string"}},"required":["oldText","newText"]}}},"required":["edits"]});
+        echo.definition.parameters = serde_json::json!({"type":"object","properties":{"edits":{"type":"array","items":{"type":"object","properties":{"oldText":{"type":"string"},"newText":{"type":"string"}},"required":["oldText","newText"]}}},"required":["edits"]}).into();
         echo.prepare_arguments = Some(Arc::new(|args| {
             Ok(serde_json::json!({"edits":[{"oldText":args["oldText"],"newText":args["newText"]}]}))
         }));
@@ -775,17 +775,4 @@ fn assert_artifacts_before_interrupt(events: &[AgentEvent]) {
         .collect::<Vec<_>>();
     assert_eq!(artifacts.len(), 4);
     assert!(artifacts.iter().all(|i| *i < interrupt));
-}
-
-/// Select role tags without losing sequence or repeated occurrences.
-fn roles(messages: &[AgentMessage]) -> Vec<&'static str> {
-    messages
-        .iter()
-        .map(|m| match m {
-            AgentMessage::User(_) => "user",
-            AgentMessage::Assistant(_) => "assistant",
-            AgentMessage::ToolResult(_) => "toolResult",
-            AgentMessage::Custom(_) => unreachable!(),
-        })
-        .collect()
 }

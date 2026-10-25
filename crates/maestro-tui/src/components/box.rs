@@ -175,10 +175,7 @@ impl Component for Box {
     /// the background, if any, is sampled, and the composed rows are reused when width,
     /// child rows and sample are unchanged.
     fn render(&self, width: usize) -> Vec<String> {
-        self.render_children(width, |children, width| {
-            Ok::<_, std::convert::Infallible>(children.render(width))
-        })
-        .unwrap_or_else(|never| match never {})
+        crate::tui::render_infallible(|render| self.render_children(width, render))
     }
 
     fn try_render(

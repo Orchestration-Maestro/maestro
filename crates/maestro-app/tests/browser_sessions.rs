@@ -1,5 +1,6 @@
 //! Browser session persistence at the injected storage boundary.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use crate::browser_storage_support as storage;
 use maestro_app::browser::storage::SessionsStore;
 use serde_json::json;
@@ -15,9 +16,10 @@ fn session_schemas_keep_both_id_indexes() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_records_roundtrip_standard_browser_and_open_custom_history() {
-    runtime::run(async {
+    run_io(async {
         for row in
             session_rows("session_records_roundtrip_standard_browser_and_open_custom_history")
         {
@@ -63,15 +65,21 @@ fn session_records_roundtrip_standard_browser_and_open_custom_history() {
         }
     });
 }
-use crate::support::browser_providers as runtime;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::support::run_io;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_agent::{Agent, AgentOptions, CustomAgentMessages};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::{
     components::messages::{CustomAgentMessages as BrowserCustom, default_convert_to_llm},
     storage::{SessionData, SessionMetadata},
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::Value;
 /// Open custom record for persisted application messages.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Serialize, Deserialize)]
 struct Open {
     /// Role used by the caller.
@@ -80,18 +88,21 @@ struct Open {
     #[serde(flatten)]
     fields: serde_json::Map<String, Value>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl CustomAgentMessages for Open {
     fn role(&self) -> &str {
         &self.role
     }
 }
 /// Load the strict recorded session envelope.
-fn session_rows(name: &str) -> Vec<storage::Row> {
+fn session_rows(name: &str) -> Vec<crate::support::browser_storage_records::Row> {
+    use serde::Deserialize;
+
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Corpus {
         clock: Vec<String>,
-        rows: Vec<storage::Row>,
+        rows: Vec<crate::support::browser_storage_records::Row>,
     }
     let corpus: Corpus =
         serde_json::from_str(include_str!("fixtures/browser_sessions.json")).unwrap();
@@ -101,8 +112,10 @@ fn session_rows(name: &str) -> Vec<storage::Row> {
     assert!(!rows.is_empty());
     rows
 }
+#[cfg(not(target_arch = "wasm32"))]
 use storage::provider_equal as records_equal;
 /// Bound adapter initialized from this case's recorded inputs.
+#[cfg(not(target_arch = "wasm32"))]
 fn setup(row: &storage::Row) -> (std::rc::Rc<SessionsStore>, std::rc::Rc<storage::Backend>) {
     let store = std::rc::Rc::new(SessionsStore::default());
     let backend = storage::Backend::new();
@@ -122,6 +135,7 @@ fn setup(row: &storage::Row) -> (std::rc::Rc<SessionsStore>, std::rc::Rc<storage
     (store, backend)
 }
 /// Observe the original cause, transcript and committed records after an operation.
+#[cfg(not(target_arch = "wasm32"))]
 fn observation<T: Serialize>(result: std::io::Result<T>, backend: &storage::Backend) -> Value {
     let (result, error) = match result {
         Ok(v) => (serde_json::to_value(v).unwrap(), Value::Null),
@@ -137,9 +151,10 @@ fn observation<T: Serialize>(result: std::io::Result<T>, backend: &storage::Back
     };
     json!({"result":result,"error":error,"trace":*backend.trace.borrow(),"records":*backend.data.borrow()})
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_save_uses_one_ordered_two_store_transaction() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("session_save_uses_one_ordered_two_store_transaction") {
             let (store, backend) = setup(&row);
             let data: SessionData = serde_json::from_value(row.input["data"].clone()).unwrap();
@@ -152,9 +167,10 @@ fn session_save_uses_one_ordered_two_store_transaction() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_delete_and_alias_use_one_ordered_transaction() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("session_delete_and_alias_use_one_ordered_transaction") {
             let (store, backend) = setup(&row);
             let id = row.input["id"].as_str().unwrap();
@@ -168,13 +184,15 @@ fn session_delete_and_alias_use_one_ordered_transaction() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_metadata_listing_requests_descending_index() {
     reads("session_metadata_listing_requests_descending_index");
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise public typed reads and listing against their complete observations.
 fn reads(name: &str) {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows(name) {
             let (store, backend) = setup(&row);
             let id = row.input.get("id").and_then(Value::as_str).unwrap_or("id");
@@ -197,22 +215,26 @@ fn reads(name: &str) {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_reads_select_full_data_or_metadata_without_rewriting() {
     reads("session_reads_select_full_data_or_metadata_without_rewriting");
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_read_failures_preserve_phase_and_cause() {
     reads("session_read_failures_preserve_phase_and_cause");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_title_update_skips_each_absent_record_independently() {
     titles("session_title_update_skips_each_absent_record_independently");
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Title edits observe raw records and all four effect boundaries.
 fn titles(name: &str) {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows(name) {
             let (store, backend) = setup(&row);
             let result = store
@@ -225,22 +247,26 @@ fn titles(name: &str) {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_title_failures_preserve_nontransactional_partial_writes() {
     titles("session_title_failures_preserve_nontransactional_partial_writes");
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_title_update_uses_lookup_key_not_embedded_ids() {
     titles("session_title_update_uses_lookup_key_not_embedded_ids");
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_title_update_preserves_unread_open_record_fields() {
     titles("session_title_update_preserves_unread_open_record_fields");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_quota_and_persistence_delegate_without_policy() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("session_quota_and_persistence_delegate_without_policy") {
             let (store, backend) = setup(&row);
             *backend.granted.borrow_mut() = row.input["granted"].as_bool().unwrap();
@@ -253,11 +279,13 @@ fn session_quota_and_persistence_delegate_without_policy() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe adapter quota without recalculating it.
 fn quota_json(q: &maestro_app::browser::storage::QuotaInfo) -> Value {
     json!({"usage":q.usage,"quota":q.quota,"percent":q.percent})
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Construct a real agent retaining the recorded model and complete history.
 fn agent_from(value: &Value) -> Agent<BrowserCustom<Open>> {
     use maestro_agent::AgentInitialState;
@@ -273,13 +301,15 @@ fn agent_from(value: &Value) -> Agent<BrowserCustom<Open>> {
         ..Default::default()
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_alias_defaults_keep_zero_usage_and_separate_timestamps() {
     aliases("session_alias_defaults_keep_zero_usage_and_separate_timestamps");
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe public writes, qualifying only generated clock fields in the call window.
 fn aliases(name: &str) {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows(name) {
             let (store, backend) = setup(&row);
             let agent = agent_from(&row.input["state"]);
@@ -304,6 +334,7 @@ fn aliases(name: &str) {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Generated timestamps are the only corpus instants replaced by observed clock values.
 fn qualify_alias_times(actual: &Value, expected: &mut Value, supplied: bool, start: f64, end: f64) {
     let mut times = Vec::new();
@@ -341,6 +372,7 @@ fn qualify_alias_times(actual: &Value, expected: &mut Value, supplied: bool, sta
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Replace one independently qualified generated instant wherever persisted.
 fn replace_instant(value: &mut Value, from: &str, to: &str) {
     match value {
@@ -358,22 +390,26 @@ fn replace_instant(value: &mut Value, from: &str, to: &str) {
         _ => {}
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_alias_preserves_supplied_metadata_and_title_precedence() {
     aliases("session_alias_preserves_supplied_metadata_and_title_precedence");
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_alias_save_propagates_transaction_failure() {
     aliases("session_alias_save_propagates_transaction_failure");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn latest_session_keeps_stable_descending_timestamp_order() {
     latest("latest_session_keeps_stable_descending_timestamp_order");
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Latest selection observes the original listing and its failure boundary.
 fn latest(name: &str) {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows(name) {
             let (store, backend) = setup(&row);
             records_equal(
@@ -383,15 +419,19 @@ fn latest(name: &str) {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn latest_session_propagates_index_failure() {
     latest("latest_session_propagates_index_failure");
 }
 
+use maestro_app::browser::storage::get_app_storage;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::storage::{
     AppStorage, CustomProvidersStore, ProviderKeysStore, SettingsStore, StorageBackend,
-    get_app_storage, set_app_storage,
+    set_app_storage,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use std::rc::Rc;
 #[test]
 fn app_storage_reports_uninitialized_access() {
@@ -400,6 +440,7 @@ fn app_storage_reports_uninitialized_access() {
     assert_eq!(error.to_string(), row.expected["error"].as_str().unwrap());
     assert_eq!(error.kind(), std::io::ErrorKind::NotConnected);
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Construct an application without rebinding its independently retained collections.
 fn application(backend: Rc<dyn StorageBackend>) -> Rc<AppStorage> {
     Rc::new(AppStorage::new(
@@ -410,6 +451,7 @@ fn application(backend: Rc<dyn StorageBackend>) -> Rc<AppStorage> {
         backend,
     ))
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn app_storage_retains_supplied_handles_without_binding() {
     let row = session_rows("app_storage_retains_supplied_handles_without_binding").remove(0);
@@ -431,9 +473,10 @@ fn app_storage_retains_supplied_handles_without_binding() {
         &row.expected["result"],
     );
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn app_storage_replacement_keeps_old_retained_handles() {
-    runtime::run(async {
+    run_io(async {
         let row = session_rows("app_storage_replacement_keeps_old_retained_handles").remove(0);
         let old = storage::Backend::new();
         let new = storage::Backend::new();
@@ -458,9 +501,10 @@ fn app_storage_replacement_keeps_old_retained_handles() {
         );
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn app_storage_delegates_quota_to_its_own_backend() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("app_storage_delegates_quota_to_its_own_backend") {
             let backend = storage::Backend::new();
             let app = application(backend.clone());
@@ -484,9 +528,10 @@ fn app_storage_delegates_quota_to_its_own_backend() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_transactions_keep_live_message_and_model_handles() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("session_transactions_keep_live_message_and_model_handles") {
             let (store, backend) = setup(&row);
             let data: SessionData = serde_json::from_value(row.input["data"].clone()).unwrap();
@@ -520,9 +565,10 @@ fn session_transactions_keep_live_message_and_model_handles() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_alias_keeps_captured_history_after_state_collection_replacement() {
-    runtime::run(async {
+    run_io(async {
         for row in
             session_rows("session_alias_keeps_captured_history_after_state_collection_replacement")
         {
@@ -572,9 +618,10 @@ fn session_alias_keeps_captured_history_after_state_collection_replacement() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_title_rebinding_selects_backend_at_each_phase() {
-    runtime::run(async {
+    run_io(async {
         let row = session_rows("session_title_rebinding_selects_backend_at_each_phase").remove(0);
         let store = Rc::new(SessionsStore::default());
         let backends: Vec<_> = (0..4).map(|_| storage::Backend::new()).collect();
@@ -601,9 +648,10 @@ fn session_title_rebinding_selects_backend_at_each_phase() {
         );
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_transactions_retain_backend_selected_before_callback() {
-    runtime::run(async {
+    run_io(async {
         let row =
             session_rows("session_transactions_retain_backend_selected_before_callback").remove(0);
         let seed = session_rows("session_save_uses_one_ordered_two_store_transaction").remove(0);
@@ -623,9 +671,10 @@ fn session_transactions_retain_backend_selected_before_callback() {
         );
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_load_retains_backend_selected_before_await() {
-    runtime::run(async {
+    run_io(async {
         let row = session_rows("session_load_retains_backend_selected_before_await").remove(0);
         let store = SessionsStore::default();
         let old = storage::Backend::new();
@@ -652,9 +701,10 @@ fn session_load_retains_backend_selected_before_await() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_operations_require_a_bound_backend() {
-    runtime::run(async {
+    run_io(async {
         let seed = session_rows("session_save_uses_one_ordered_two_store_transaction").remove(0);
         let data: SessionData = serde_json::from_value(seed.input["data"].clone()).unwrap();
         let metadata = serde_json::from_value(seed.input["metadata"].clone()).unwrap();
@@ -689,10 +739,11 @@ fn session_operations_require_a_bound_backend() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn latest_session_uses_host_locale_instead_of_lexical_order() {
     if let Ok(locale) = std::env::var("MAESTRO_SESSION_LOCALE") {
-        runtime::run(async {
+        run_io(async {
             let row = session_rows("latest_session_uses_host_locale_instead_of_lexical_order")
                 .into_iter()
                 .find(|r| r.input["locale"] == locale)
@@ -711,23 +762,22 @@ fn latest_session_uses_host_locale_instead_of_lexical_order() {
         });
         return;
     }
-    let test =
-        crate::child_process::selector("latest_session_uses_host_locale_instead_of_lexical_order")
-            .unwrap();
     for locale in ["en-US", "sv-SE"] {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .env("MAESTRO_SESSION_LOCALE", locale)
-            .env("LC_ALL", locale)
-            .env("LC_MESSAGES", locale)
-            .env("LANG", locale)
-            .output()
-            .unwrap();
+        let output = maestro_test_process::TestProcess::current(
+            "latest_session_uses_host_locale_instead_of_lexical_order",
+        )
+        .unwrap()
+        .nocapture()
+        .env("MAESTRO_SESSION_LOCALE", locale)
+        .env("LC_ALL", locale)
+        .env("LC_MESSAGES", locale)
+        .env("LANG", locale)
+        .output()
+        .unwrap();
         assert!(
             output.status.success(),
             "locale child failed: {}",
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test).unwrap();
     }
 }

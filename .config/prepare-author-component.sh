@@ -3,15 +3,26 @@
 set -eu
 case "$(uname -s)" in
     Darwin) paths=${NEXTEST_DYLD_FALLBACK_LIBRARY_PATH-}; separator=: ;;
-    MINGW*|MSYS*|CYGWIN*) paths=${NEXTEST_PATH-}; separator=';' ;;
+    MINGW*|MSYS*|CYGWIN*) paths=$PATH; separator=: ;;
     *) paths=${NEXTEST_LD_LIBRARY_PATH-}; separator=: ;;
 esac
 IFS=$separator
 for directory in $paths; do
-    if [ "$separator" = ';' ]; then
-        directory=$(cygpath -u "$directory")
-    fi
     [ -d "$directory/deps" ] || continue
+    # The test build's own example keeps its resolved features; a single-package
+    # `cargo run` resolves fewer and recompiles the engine. Use it only while it is
+    # newer than its sources, so a filtered build never runs outdated preparation.
+    for example in "$directory/examples/prepare_author_component" \
+        "$directory/examples/prepare_author_component.exe"; do
+        [ -f "$example" ] || continue
+        fresh=true
+        for source in crates/maestro-extensions-wasm/examples/prepare_author_component.rs \
+            crates/maestro-extensions-wasm/src/tests/build.rs \
+            crates/maestro-extensions-wasm/Cargo.toml Cargo.lock; do
+            [ "$example" -nt "$source" ] || fresh=false
+        done
+        [ "$fresh" = false ] || exec "$example"
+    done
     profile=$(basename "$directory")
     [ "$profile" != debug ] || profile=dev
     exec "${CARGO:-cargo}" run --quiet --locked -p maestro-extensions-wasm \

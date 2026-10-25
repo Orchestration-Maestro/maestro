@@ -1,23 +1,33 @@
 //! Direct Bedrock conversation streams through the SDK with a controlled sender.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bedrock;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
-use crate::child_process;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::transport;
 
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::atomic::{AtomicBool, Ordering};
 
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     AssistantContent, AssistantMessage, BoxFuture, Cancellation, DiagnosticErrorInfo, FetchError,
     ProviderResponse,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 use bedrock::{diagnostic as callback_error, options};
-use chat::{TestResult, block_on};
+#[cfg(not(target_arch = "wasm32"))]
+use chat::TestResult;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare token counts and costs, which are exact except for the rates' rounding.
 fn near(actual: &[f64], expected: &[f64]) {
     assert_eq!(actual.len(), expected.len());
@@ -26,11 +36,14 @@ fn near(actual: &[f64], expected: &[f64]) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One update-sequence case: name, frames, expected labels and expected block texts.
 type EventCase<'a> = (&'a str, Vec<Vec<u8>>, Vec<&'a str>, Vec<&'a str>);
 
+#[cfg(not(target_arch = "wasm32"))]
 const ENDPOINT: &str = "https://bedrock-runtime.eu-central-1.amazonaws.com";
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run a conversation to its end and return its update labels and final message.
 async fn run(chunks: Vec<Vec<u8>>) -> TestResult<(Vec<String>, AssistantMessage)> {
     let scripted = bedrock::serve(chunks);
@@ -42,6 +55,7 @@ async fn run(chunks: Vec<Vec<u8>>) -> TestResult<(Vec<String>, AssistantMessage)
     transport::drain(&stream).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The message handle an update carries, for the updates this module sends.
 fn handle(
     event: &maestro_models::AssistantMessageEvent,
@@ -58,10 +72,12 @@ fn handle(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn start() -> TestResult<Vec<u8>> {
     bedrock::event("messageStart", &json!({"role": "assistant"}))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn delta(index: i64, text: &str) -> TestResult<Vec<u8>> {
     bedrock::event(
         "contentBlockDelta",
@@ -69,10 +85,12 @@ fn delta(index: i64, text: &str) -> TestResult<Vec<u8>> {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn stop(index: i64) -> TestResult<Vec<u8>> {
     bedrock::event("contentBlockStop", &json!({"contentBlockIndex": index}))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn texts(message: &AssistantMessage) -> Vec<String> {
     message
         .content
@@ -84,6 +102,7 @@ fn texts(message: &AssistantMessage) -> Vec<String> {
         .collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Plain update sequences the text reduction is checked against.
 fn event_cases<'a>() -> TestResult<Vec<EventCase<'a>>> {
     Ok(vec![
@@ -115,6 +134,7 @@ fn event_cases<'a>() -> TestResult<Vec<EventCase<'a>>> {
     ])
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Update sequences where block numbers repeat or arrive out of order.
 fn numbered_cases<'a>() -> TestResult<Vec<EventCase<'a>>> {
     Ok(vec![
@@ -165,9 +185,10 @@ fn numbered_cases<'a>() -> TestResult<Vec<EventCase<'a>>> {
     ])
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn text_events_keep_shared_result_and_completion() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let all = event_cases()?.into_iter().chain(numbered_cases()?);
         for (name, chunks, labels, content) in all {
             let (seen, message) = run(chunks).await?;
@@ -178,6 +199,7 @@ fn text_events_keep_shared_result_and_completion() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Message, labels and the stop reason a service stop produces.
 async fn finish_with(reason: Option<&str>) -> TestResult<(Vec<String>, AssistantMessage)> {
     let mut chunks = vec![start()?, delta(0, "text")?, stop(0)?];
@@ -190,6 +212,7 @@ async fn finish_with(reason: Option<&str>) -> TestResult<(Vec<String>, Assistant
     run(chunks).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Every update of a conversation carries the handle its result resolves to.
 async fn updates_share_the_final_message() -> TestResult {
     let scripted = bedrock::serve(bedrock::answer("shared")?);
@@ -212,9 +235,10 @@ async fn updates_share_the_final_message() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn terminal_reasons_keep_success_and_error_outcomes() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let outcomes = [
             (Some("end_turn"), "stop", None),
             (Some("stop_sequence"), "stop", None),
@@ -267,6 +291,7 @@ fn terminal_reasons_keep_success_and_error_outcomes() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The usage the final message reports after a metadata event.
 async fn usage_after(metadata: &serde_json::Value) -> TestResult<maestro_models::Usage> {
     let (_, message) = run(vec![
@@ -278,15 +303,17 @@ async fn usage_after(metadata: &serde_json::Value) -> TestResult<maestro_models:
     Ok(message.usage)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn reported(total: i64) -> serde_json::Value {
     json!({"usage": {"inputTokens": 1_000_000, "outputTokens": 2_000_000,
         "cacheReadInputTokens": 3_000_000, "cacheWriteInputTokens": 4_000_000,
         "totalTokens": total}, "metrics": {"latencyMs": 1}})
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn usage_preserves_reported_totals_and_zero_fallback() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let usage = usage_after(&reported(9_999_999)).await?;
         near(
             &[
@@ -294,7 +321,7 @@ fn usage_preserves_reported_totals_and_zero_fallback() -> TestResult {
                 usage.output,
                 usage.cache_read,
                 usage.cache_write,
-                usage.total_tokens,
+                usage.total_tokens.present().copied().unwrap(),
             ],
             &[1e6, 2e6, 3e6, 4e6, 9_999_999.0],
         );
@@ -309,17 +336,30 @@ fn usage_preserves_reported_totals_and_zero_fallback() -> TestResult {
             ],
             &[1.0, 4.0, 9.0, 16.0, 30.0],
         );
-        near(&[usage_after(&reported(0)).await?.total_tokens], &[3e6]);
+        near(
+            &[usage_after(&reported(0))
+                .await?
+                .total_tokens
+                .present()
+                .copied()
+                .unwrap()],
+            &[3e6],
+        );
         let counts_only = json!({"usage": {"inputTokens": 7, "outputTokens": 3, "totalTokens": 0}});
         let usage = usage_after(&counts_only).await?;
         near(
-            &[usage.cache_read, usage.cache_write, usage.total_tokens],
+            &[
+                usage.cache_read,
+                usage.cache_write,
+                usage.total_tokens.present().copied().unwrap(),
+            ],
             &[0.0, 0.0, 10.0],
         );
         Ok(())
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run one conversation with prepared options and return its labels and final message.
 async fn run_with(options: BedrockOptions) -> TestResult<(Vec<String>, AssistantMessage)> {
     let stream = stream_bedrock(
@@ -330,6 +370,7 @@ async fn run_with(options: BedrockOptions) -> TestResult<(Vec<String>, Assistant
     transport::drain(&stream).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The service failure a sender answers with.
 fn service_failure(status: u16, class: &str, message: &str) -> TestResult<transport::Attempt> {
     Ok(transport::Attempt::body(
@@ -342,9 +383,10 @@ fn service_failure(status: u16, class: &str, message: &str) -> TestResult<transp
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn service_failures_keep_readable_prefixes() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let sent = [
             (500, "InternalServerException", "Internal server error"),
             (424, "ModelStreamErrorException", "Model stream error"),
@@ -399,6 +441,7 @@ fn service_failures_keep_readable_prefixes() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A payload hook that keeps the model it received and sends the payload unchanged.
 fn model_collector(
     models: &Arc<std::sync::Mutex<Vec<Arc<maestro_models::Model>>>>,
@@ -412,9 +455,11 @@ fn model_collector(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What a response hook saw: status and headers.
 type Seen = Arc<std::sync::Mutex<Vec<(f64, Vec<(String, String)>)>>>;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A response hook that records what it saw, announces itself and waits for its release.
 fn recording_hook(
     seen: &Seen,
@@ -449,9 +494,11 @@ fn recording_hook(
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Response headers a case sends and the headers the hook must see.
 type HeaderCase = (Vec<(&'static str, &'static str)>, Vec<(String, String)>);
 
+#[cfg(not(target_arch = "wasm32"))]
 fn header_cases() -> Vec<HeaderCase> {
     let named = |id: &str| vec![("x-amzn-requestid".to_owned(), id.to_owned())];
     vec![
@@ -479,6 +526,7 @@ fn header_cases() -> Vec<HeaderCase> {
     ]
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run one conversation whose response hook is held open and check what the hook saw.
 async fn hook_sees(
     headers: Vec<(&'static str, &'static str)>,
@@ -528,9 +576,10 @@ async fn hook_sees(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_hook_runs_after_the_first_frame_before_updates() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         for (headers, expected) in header_cases() {
             hook_sees(headers, expected).await?;
         }
@@ -538,9 +587,10 @@ fn response_hook_runs_after_the_first_frame_before_updates() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn first_frame_failure_ends_before_the_response_hook() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let mut damaged = start()?;
         if let Some(last) = damaged.last_mut() {
             *last ^= 0xFF;
@@ -570,11 +620,13 @@ fn first_frame_failure_ends_before_the_response_hook() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A frame of an event kind the SDK does not know.
 fn unknown() -> TestResult<Vec<u8>> {
     bedrock::event("futureEvent", &json!({"note": "ignored"}))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run `chunks` with a response hook that counts its calls; returns the hook count too.
 async fn run_counting(
     chunks: Vec<Vec<u8>>,
@@ -596,9 +648,10 @@ async fn run_counting(
     Ok((labels, message, calls.load(Ordering::SeqCst)))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn unknown_events_are_skipped_before_and_between_real_events() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let plain = bedrock::answer("text")?;
         let (expected, expected_message, _) = run_counting(plain.clone(), false).await?;
         let mut leading = vec![unknown()?];
@@ -620,9 +673,10 @@ fn unknown_events_are_skipped_before_and_between_real_events() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn damaged_frame_after_unknown_event_wins_over_the_response_hook() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let mut damaged = start()?;
         if let Some(last) = damaged.last_mut() {
             *last ^= 0xFF;
@@ -640,9 +694,10 @@ fn damaged_frame_after_unknown_event_wins_over_the_response_hook() -> TestResult
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn callback_failure_stops_before_events() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         for text in ["response hook says", ""] {
             let scripted = bedrock::serve(bedrock::answer("unseen")?);
             let mut hooked = options(&scripted);
@@ -657,11 +712,13 @@ fn callback_failure_stops_before_events() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 use bedrock::held;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cancellation_settles_same_operation() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let signal = Cancellation::new();
         signal.abort();
         let scripted = bedrock::serve(bedrock::answer("unused")?);
@@ -722,9 +779,10 @@ fn cancellation_settles_same_operation() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn binary_stream_failures_preserve_partial_text() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let whole: Vec<u8> = bedrock::answer("fragmented")?.concat();
         let pieces: Vec<Vec<u8>> = whole.chunks(7).map(<[u8]>::to_vec).collect();
         let (labels, message) = run(pieces).await?;
@@ -757,9 +815,10 @@ fn binary_stream_failures_preserve_partial_text() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn dropped_consumer_does_not_abort_producer() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let mut pending = held(
             vec![start()?, delta(0, "kept")?],
             bedrock::answer("-later")?.split_off(1),
@@ -782,9 +841,10 @@ fn dropped_consumer_does_not_abort_producer() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run an unauthenticated conversation whose setup cannot succeed and check how it ends.
 fn setup_failure_ends_stream(profile: Option<&str>) -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let hook_calls = Arc::clone(&calls);
         let scripted = bedrock::serve(bedrock::answer("unused")?);
@@ -813,11 +873,16 @@ fn setup_failure_ends_stream(profile: Option<&str>) -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn sdk_setup_failures_end_stream() -> TestResult {
-    match child_process::child_case().as_deref() {
-        Some("no credentials") => return setup_failure_ends_stream(None),
-        Some("unknown profile") => return setup_failure_ends_stream(Some("absent")),
+    match maestro_test_process::selection() {
+        selection if selection.is_child() && selection.runs_case("no credentials") => {
+            return setup_failure_ends_stream(None);
+        }
+        selection if selection.is_child() && selection.runs_case("unknown profile") => {
+            return setup_failure_ends_stream(Some("absent"));
+        }
         _ => {}
     }
     let isolated = [
@@ -825,9 +890,18 @@ fn sdk_setup_failures_end_stream() -> TestResult {
         ("AWS_EC2_METADATA_DISABLED", "true"),
     ];
     for case in ["no credentials", "unknown profile"] {
-        child_process::rerun("sdk_setup_failures_end_stream", case, &isolated)?;
+        {
+            let output =
+                maestro_test_process::TestProcess::current("sdk_setup_failures_end_stream")?
+                    .nocapture()
+                    .env_clear()
+                    .envs(isolated.iter().copied())
+                    .case(case)
+                    .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let scripted = transport::transport(vec![transport::Attempt::Fail(FetchError::Timeout)]);
         let (labels, message) = run_with(options(&scripted)).await?;
         assert_eq!(labels, ["error"]);

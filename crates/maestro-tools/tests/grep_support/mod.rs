@@ -1,26 +1,27 @@
 //! Strict content-search corpus and public-boundary drivers.
 #![cfg(test)]
+use crate::display_support::{Case, search_cases, search_keys};
 #[cfg(unix)]
-use crate::find_support::executable;
 use crate::{
-    display_support::{Case, search_cases, search_keys},
-    find_support::manager,
+    find_support::{executable, manager},
     ls_support::{canon, result_json, with_home},
-    read_support::{TempDir, run},
+    read_support::{Fixture, Scratch},
+    runtime::run,
 };
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
+#[cfg(unix)]
+use maestro_tools::create_grep_tool;
 use maestro_tools::{
     GrepOperations, GrepToolDetails, GrepToolInput, GrepToolOptions, ToolsManager,
-    create_grep_tool, create_grep_tool_definition,
+    create_grep_tool_definition,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
+#[cfg(unix)]
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     collections::HashMap,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
+    sync::{Arc, Mutex},
 };
 /// Parse strict cases and reject repeated queries.
 pub fn cases(test: &str) -> Vec<Case> {
@@ -49,6 +50,7 @@ pub struct Input {
     pub unterminated: bool,
 }
 /// Strict observations returned by the oracle.
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Expected {
@@ -111,7 +113,7 @@ pub fn failure(message: &str) -> DiagnosticErrorInfo {
 }
 /// Encode controlled events in a file, never a command-line argument.
 #[cfg(unix)]
-pub fn producer(root: &TempDir, input: &Input) {
+pub fn producer(root: &Scratch, input: &Input) {
     let events = input.events.clone().unwrap_or_else(|| vec![json!({"type":"match","data":{"path":{"text":"/work/z.txt"},"line_number":2,"lines":{"text":"hit\n"}}})]);
     let mut stdout = events
         .iter()
@@ -129,9 +131,9 @@ pub fn producer(root: &TempDir, input: &Input) {
     });
     let script = format!(
         "#!/usr/bin/python3\nimport os,sys,json,signal\njson.dump(sys.argv[1:],open({},'w'))\nos.write(1,open({},'rb').read())\nos.write(2,open({},'rb').read())\n{termination}\nsys.exit({})\n",
-        json!(root.0.join("args.json").to_str().unwrap()),
-        json!(root.0.join("stdout").to_str().unwrap()),
-        json!(root.0.join("stderr").to_str().unwrap()),
+        json!(root.path().join("args.json").to_str().unwrap()),
+        json!(root.path().join("stdout").to_str().unwrap()),
+        json!(root.path().join("stderr").to_str().unwrap()),
         input.code.unwrap_or(0)
     );
     if input.spawn_error {
@@ -146,7 +148,7 @@ pub fn controlled(case: &Case) {
     assert_eq!(case.op, "controlled");
     let expected: Expected = serde_json::from_value(with_home(&case.expected)).unwrap();
     let input: Input = serde_json::from_value(with_home(&case.input)).unwrap();
-    let root = TempDir::new();
+    let root = Scratch::new().unwrap();
     producer(&root, &input);
     let signal = Cancellation::new();
     if matches!(input.abort.as_deref(), Some("before" | "ensure")) {
@@ -179,7 +181,7 @@ pub fn controlled(case: &Case) {
         .filter(|_| !operations.input.spawn_error)
     {
         assert_eq!(
-            serde_json::from_slice::<Value>(&std::fs::read(root.0.join("args.json")).unwrap())
+            serde_json::from_slice::<Value>(&std::fs::read(root.path().join("args.json")).unwrap())
                 .unwrap(),
             *argv,
             "argv {}",
@@ -241,6 +243,7 @@ fn invoke(
     }
 }
 /// Compare success, exact failure or native-prefix failure.
+#[cfg(unix)]
 fn assert_result(case: &Case, result: Result<Value, DiagnosticErrorInfo>, expected: Expected) {
     match result {
         Ok(r) => {
@@ -297,19 +300,7 @@ pub fn rendered_result(value: &Value) -> maestro_agent::AgentToolResult<GrepTool
         GrepToolDetails {
             match_limit_reached: d.match_limit_reached,
             lines_truncated: d.lines_truncated,
-            truncation: d.truncation.map(|cut| maestro_tools::TruncationResult {
-                content: String::new(),
-                truncated: cut.truncated,
-                max_bytes: cut.max_bytes,
-                truncated_by: None,
-                total_lines: 0,
-                total_bytes: 0,
-                output_lines: 0,
-                output_bytes: 0,
-                last_line_partial: false,
-                first_line_exceeds_limit: false,
-                max_lines: 0,
-            }),
+            truncation: d.truncation.map(|cut| cut.result(None)),
         }
     });
     maestro_agent::AgentToolResult {
@@ -328,9 +319,9 @@ pub fn check_rows(test: &str) {
 }
 /// Construct the oracle's native tree, with encoded filenames on Unix.
 #[cfg(unix)]
-pub fn tree() -> TempDir {
+pub fn tree() -> Scratch {
     use std::os::unix::ffi::OsStrExt;
-    let root = TempDir::new();
+    let root = Scratch::new().unwrap();
     for (path, text) in [
         ("example.txt", "first line\nmatch line\nlast line"),
         (
@@ -353,15 +344,16 @@ pub fn tree() -> TempDir {
         ("back\\slash", "needle"),
         ("case.txt", "Alpha\na.b\naXb"),
     ] {
-        std::fs::create_dir_all(root.0.join(path).parent().unwrap()).unwrap();
+        std::fs::create_dir_all(root.path().join(path).parent().unwrap()).unwrap();
         root.file(path, text.as_bytes());
     }
     root.file("invalid-content", b"hit\xff\n");
     root.file("binary", b"needle\0tail\n");
-    std::os::unix::fs::symlink("kept.txt", root.0.join("linked-file")).unwrap();
-    std::os::unix::fs::symlink("a", root.0.join("linked-dir")).unwrap();
+    std::os::unix::fs::symlink("kept.txt", root.path().join("linked-file")).unwrap();
+    std::os::unix::fs::symlink("a", root.path().join("linked-dir")).unwrap();
     std::fs::write(
-        root.0.join(std::ffi::OsStr::from_bytes(b"invalid-\xff")),
+        root.path()
+            .join(std::ffi::OsStr::from_bytes(b"invalid-\xff")),
         b"needle\n",
     )
     .unwrap();
@@ -369,7 +361,7 @@ pub fn tree() -> TempDir {
 }
 /// Run real search through the wrapped factory and preserve absent details.
 #[cfg(unix)]
-pub fn native(root: &TempDir, params: Value) -> Result<Value, String> {
+pub fn native(root: &Scratch, params: Value) -> Result<Value, String> {
     let tool = create_grep_tool(
         root.text(),
         GrepToolOptions::default(),
@@ -381,7 +373,7 @@ pub fn native(root: &TempDir, params: Value) -> Result<Value, String> {
 }
 /// Strictly consume a recorded native invocation and its outcome.
 #[cfg(unix)]
-pub fn check_native(case: &Case, root: &TempDir) {
+pub fn check_native(case: &Case, root: &Scratch) {
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Native {
@@ -415,22 +407,26 @@ pub fn check_native(case: &Case, root: &TempDir) {
         Err(e) => assert_eq!(e, expected.error.unwrap(), "case {}", case.id),
     }
     if let Some(exists) = expected.marker_exists {
-        assert_eq!(root.0.join("injection-marker").exists(), exists);
+        assert_eq!(root.path().join("injection-marker").exists(), exists);
     }
 }
 /// A drop witness held for the lifetime of a pending adapter future.
+#[cfg(unix)]
 pub struct Dropped(pub Cancellation);
+#[cfg(unix)]
 impl Drop for Dropped {
     fn drop(&mut self) {
         self.0.abort();
     }
 }
 /// Replacement whose selected operation never completes.
+#[cfg(unix)]
 pub struct PendingOperations {
     pub read: bool,
     pub started: Cancellation,
     pub dropped: Cancellation,
 }
+#[cfg(unix)]
 impl PendingOperations {
     /// Pending work acknowledges entry and owns its drop witness.
     fn pending<T: Send + 'static>(&self) -> BoxFuture<Result<T, DiagnosticErrorInfo>> {
@@ -443,6 +439,7 @@ impl PendingOperations {
         })
     }
 }
+#[cfg(unix)]
 impl GrepOperations for PendingOperations {
     fn is_directory(&self, _path: String) -> BoxFuture<Result<bool, DiagnosticErrorInfo>> {
         if self.read {
@@ -457,8 +454,8 @@ impl GrepOperations for PendingOperations {
 }
 /// Install a producer connected to a parent-owned readiness channel.
 #[cfg(unix)]
-pub fn session(root: &TempDir, body: &str) -> tokio::net::UnixListener {
-    let path = root.0.join("ready.sock");
+pub fn session(root: &Scratch, body: &str) -> tokio::net::UnixListener {
+    let path = root.path().join("ready.sock");
     let listener = tokio::net::UnixListener::bind(&path).unwrap();
     executable(
         root,
@@ -473,7 +470,7 @@ pub fn session(root: &TempDir, body: &str) -> tokio::net::UnixListener {
 /// A wrapped invocation configured for a controlled producer.
 #[cfg(unix)]
 pub fn invocation(
-    root: &TempDir,
+    root: &Scratch,
     params: Value,
     signal: Option<Cancellation>,
 ) -> BoxFuture<Result<maestro_agent::AgentToolResult<Value>, DiagnosticErrorInfo>> {

@@ -1,6 +1,5 @@
 #![cfg(test)]
 //! Callback reentry, weak ownership, the shared component interface and local futures.
-#[allow(dead_code, reason = "Each test crate uses part of the shared rig.")]
 use crate::completion_rig as rig;
 use crate::editor_host as support;
 use maestro_cancellation::Cancellation;
@@ -236,7 +235,7 @@ fn editor_component_facade_shares_retained_operations() {
     exercise_callbacks(&*rig.editor);
     exercise_text(&*rig.editor);
     exercise_completion(&*rig.editor, &rig.provider, &|| {
-        runtime.drain_futures();
+        let _ = runtime.drain_futures();
     });
 }
 

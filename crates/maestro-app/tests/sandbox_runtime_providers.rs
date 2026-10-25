@@ -1,6 +1,7 @@
 //! Retained sandbox provider behavior through the application contracts.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::run;
 use maestro_app::browser::components::sandbox::{
     console_runtime_provider::ConsoleRuntimeProvider,
     sandbox_runtime_provider::SandboxRuntimeProvider,
@@ -53,14 +54,6 @@ async fn exchange(
         )
         .await?;
     Ok(Arc::try_unwrap(replies).unwrap().into_inner().unwrap())
-}
-
-/// Execute futures using the existing asynchronous runtime.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 #[test]
@@ -437,6 +430,35 @@ fn unrelated_provider_messages_have_no_effect() {
     assert!(files.get_files().read().unwrap().is_empty());
 }
 
+/// Inert presentation; only the provider's injected source is examined.
+struct SourceOnly;
+impl ArtifactPresentation for SourceOnly {
+    fn now(&self) -> chrono::DateTime<chrono::Utc> {
+        unreachable!()
+    }
+    fn get_or_create_artifact_element(&self, _: &str, _: &str, _: ArtifactsPanelState) {
+        unreachable!()
+    }
+    fn show_artifact(&self, _: &str) {
+        unreachable!()
+    }
+    fn remove_artifact_element(&self, _: &str) {
+        unreachable!()
+    }
+    fn reload_all_html_artifacts(&self, _: ArtifactsPanelState) {
+        unreachable!()
+    }
+    fn get_logs(&self, _: &str) -> Result<ArtifactLogReader, ArtifactLogError> {
+        unreachable!()
+    }
+    fn wait(&self, _: Duration) -> BoxFuture<()> {
+        unreachable!()
+    }
+    fn request_update(&self) {
+        unreachable!()
+    }
+}
+
 #[test]
 fn runtime_sources_keep_complete_functions() {
     #[derive(serde::Deserialize)]
@@ -450,10 +472,13 @@ fn runtime_sources_keep_complete_functions() {
     let console = ConsoleRuntimeProvider::<Value>::new();
     let attachments = AttachmentsRuntimeProvider::<Value>::new(Arc::default());
     let files = FileDownloadRuntimeProvider::<Value>::new();
-    let providers: [(&str, &dyn SandboxRuntimeProvider); 3] = [
+    let panel = ArtifactsPanel::new(Arc::new(SourceOnly));
+    let artifacts = ArtifactsRuntimeProvider::new(&panel, None, false);
+    let providers: [(&str, &dyn SandboxRuntimeProvider); 4] = [
         ("ConsoleRuntimeProvider", &console),
         ("AttachmentsRuntimeProvider", &attachments),
         ("FileDownloadRuntimeProvider", &files),
+        ("ArtifactsRuntimeProvider", &artifacts),
     ];
     assert_eq!(fixture.len(), providers.len());
     for (expected, (name, provider)) in fixture.iter().zip(providers) {
@@ -462,11 +487,19 @@ fn runtime_sources_keep_complete_functions() {
     }
 }
 
+use maestro_app::BoxFuture;
+use maestro_app::browser::components::sandbox::artifacts_runtime_provider::{
+    ArtifactOperation, ArtifactResponse, ArtifactsRuntimeProvider,
+};
 use maestro_app::browser::components::sandbox::console_runtime_provider::ConsoleLog;
 use maestro_app::browser::components::sandbox::file_download_runtime_provider::DownloadableFile;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::RuntimeProviderValue;
 use maestro_app::browser::components::sandboxed_iframe::{SandboxError, SandboxFile, SandboxValue};
+use maestro_app::browser::tools::artifacts::{
+    ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanel, ArtifactsPanelState,
+};
 use maestro_models::DiagnosticErrorInfo;
+use std::time::Duration;
 
 /// A second host retaining a nonserializable shared payload.
 #[derive(Clone)]
@@ -526,6 +559,23 @@ impl RuntimeProviderValue for Retained {
     fn attachment_array(attachments: &[Attachment]) -> Result<Self, DiagnosticErrorInfo> {
         Ok(Self {
             fields: Value::attachment_array(attachments)?,
+            payload: Arc::default(),
+        })
+    }
+    fn project_artifact_operation(&self) -> Result<ArtifactOperation, DiagnosticErrorInfo> {
+        self.fields.project_artifact_operation()
+    }
+    fn artifact_snapshot(
+        artifacts: indexmap::IndexMap<String, String>,
+    ) -> Result<Self, DiagnosticErrorInfo> {
+        Ok(Self {
+            fields: Value::artifact_snapshot(artifacts)?,
+            payload: Arc::default(),
+        })
+    }
+    fn artifact_response(response: ArtifactResponse) -> Result<Self, DiagnosticErrorInfo> {
+        Ok(Self {
+            fields: Value::artifact_response(response)?,
             payload: Arc::default(),
         })
     }

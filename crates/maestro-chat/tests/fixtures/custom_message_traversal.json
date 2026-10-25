@@ -1,0 +1,14 @@
+[
+  {
+    "n": 16,
+    "expected_text": "x\nx\nx\nx\nx\nx\nx\nx"
+  },
+  {
+    "n": 32,
+    "expected_text": "x\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx"
+  },
+  {
+    "n": 64,
+    "expected_text": "x\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx"
+  }
+]

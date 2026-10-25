@@ -1,5 +1,15 @@
 //! Retained artifact panels using application-owned filename policy.
+pub mod artifact_pill;
+pub mod artifacts_tool_renderer;
+#[cfg(target_arch = "wasm32")]
+pub mod console;
+mod presentation_cause;
+pub use presentation_cause::PresentationCause;
+mod ui_error;
+pub use ui_error::ArtifactUiError;
 pub mod artifact_element;
+#[cfg(target_arch = "wasm32")]
+pub mod docx_artifact;
 pub mod excel_artifact;
 pub mod generic_artifact;
 pub mod image_artifact;
@@ -7,7 +17,7 @@ pub mod markdown_artifact;
 pub mod pdf_artifact;
 pub mod svg_artifact;
 pub mod text_artifact;
-use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError};
+use crate::browser::attachment_content::AttachmentHost;
 use artifact_element::ArtifactElement;
 use artifact_element::ArtifactView;
 use maestro_app::browser::tools::artifacts::ArtifactPresentation;
@@ -35,13 +45,13 @@ impl Drop for TakenElement<'_> {
 /// Run a view operation with exclusive ownership, returning conflicts on reentry.
 fn with_element(
     slot: &Element,
-    operation: impl FnOnce(&mut dyn ArtifactElement) -> Result<(), AttachmentUiError>,
-) -> Result<(), AttachmentUiError> {
+    operation: impl FnOnce(&mut dyn ArtifactElement) -> Result<(), ArtifactUiError>,
+) -> Result<(), ArtifactUiError> {
     let value = slot
         .try_borrow_mut()
-        .map_err(|_| AttachmentUiError::BorrowConflict)?
+        .map_err(|_| ArtifactUiError::BorrowConflict)?
         .take()
-        .ok_or(AttachmentUiError::BorrowConflict)?;
+        .ok_or(ArtifactUiError::BorrowConflict)?;
     let mut taken = TakenElement {
         slot,
         value: Some(value),
@@ -50,7 +60,7 @@ fn with_element(
         taken
             .value
             .as_deref_mut()
-            .ok_or(AttachmentUiError::BorrowConflict)?,
+            .ok_or(ArtifactUiError::BorrowConflict)?,
     )
 }
 /// Retained views and layout using the application's single selected-file slot.
@@ -142,7 +152,7 @@ impl ArtifactsPanel {
         &self,
         filename: &str,
         content: &str,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         if let Some(element) = self.element(filename) {
             with_element(&element, |element| {
                 element.set_content(content.into());
@@ -164,7 +174,7 @@ impl ArtifactsPanel {
     /// Apply literal view selection and request scrolling after the next draw.
     /// # Errors
     /// Returns retained-visibility or incompatible view-borrow failures.
-    pub fn show_artifact(&self, filename: &str) -> Result<(), AttachmentUiError> {
+    pub fn show_artifact(&self, filename: &str) -> Result<(), ArtifactUiError> {
         self.visibility(Some(filename), self.connected.get() && !self.collapsed())?;
         *self.scroll.borrow_mut() = Some(filename.into());
         self.repaint();
@@ -182,7 +192,7 @@ impl ArtifactsPanel {
     pub fn connected_callback<P>(
         &self,
         caller: &maestro_app::browser::tools::artifacts::ArtifactsPanel<P>,
-    ) -> Result<(), AttachmentUiError>
+    ) -> Result<(), ArtifactUiError>
     where
         P: Clone + std::ops::Deref,
         P::Target: ArtifactPresentation,
@@ -213,7 +223,7 @@ impl ArtifactsPanel {
     /// Hide native content without disposing views or their roots.
     /// # Errors
     /// Returns retained-visibility or incompatible view-borrow failures.
-    pub fn disconnected_callback(&self) -> Result<(), AttachmentUiError> {
+    pub fn disconnected_callback(&self) -> Result<(), ArtifactUiError> {
         if self.connected.replace(false) {
             for (_, element) in self.elements() {
                 with_element(&element, |element| element.disconnected_callback())?;
@@ -224,14 +234,16 @@ impl ArtifactsPanel {
         Ok(())
     }
     /// Reconcile all retained policies before changing containing modal admission.
-    fn visibility(&self, active: Option<&str>, shown: bool) -> Result<(), AttachmentUiError> {
+    fn visibility(&self, active: Option<&str>, shown: bool) -> Result<(), ArtifactUiError> {
         let modal = (shown && self.overlay()).then_some(self.id);
         for (name, element) in self.elements() {
             with_element(&element, |element| {
                 element.set_visibility(shown && active == Some(name.as_str()), modal)
             })?;
         }
-        self.host.set_overlay(self.id, modal.is_some())
+        self.host
+            .set_overlay(self.id, modal.is_some())
+            .map_err(ArtifactUiError::Host)
     }
 }
 impl Drop for ArtifactsPanel {
@@ -247,7 +259,7 @@ pub fn create_artifact_element(
     filename: &str,
     content: &str,
     host: Rc<dyn AttachmentHost>,
-) -> Result<Box<dyn ArtifactElement>, AttachmentUiError> {
+) -> Result<Box<dyn ArtifactElement>, ArtifactUiError> {
     let mut element: Box<dyn ArtifactElement> = match get_file_type(filename) {
         FileType::Markdown => Box::new(markdown_artifact::MarkdownArtifact::new(host)),
         FileType::Svg => Box::new(svg_artifact::SvgArtifact::new(host)),
@@ -257,8 +269,8 @@ pub fn create_artifact_element(
         FileType::Pdf => Box::new(pdf_artifact::PdfArtifact::new(host)),
         FileType::Generic => Box::new(generic_artifact::GenericArtifact::new(host)),
         _ => {
-            return Err(AttachmentUiError::Presentation(
-                "Artifact view is not installed".into(),
+            return Err(ArtifactUiError::Presentation(
+                "Artifact view is not installed".to_owned().into(),
             ));
         }
     };
@@ -275,3 +287,5 @@ fn extension(filename: &str) -> String {
         .unwrap_or_default()
         .to_lowercase()
 }
+
+mod retained;

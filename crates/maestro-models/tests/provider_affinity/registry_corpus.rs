@@ -1,13 +1,20 @@
 //! Recorded ordered registry changes retain their original callback owners.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+use crate::bundled::registered;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::*;
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::{
     rc::Rc,
     sync::{Arc, RwLock},
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Closed, operation-specific registry inputs.
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -25,8 +32,10 @@ enum Input {
         registered: String,
     },
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// A visible callback label distinguishes retained from replacement ownership.
 struct Label(&'static str);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: ProviderExecution, O> Invoke<E, ProviderCall<E, O>> for Label {
     type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
     fn invoke(&self, _input: ProviderCall<E, O>) -> Self::Return {
@@ -41,6 +50,7 @@ impl<E: ProviderExecution, O> Invoke<E, ProviderCall<E, O>> for Label {
         Ok(stream)
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Register one owner into both callback slots.
 fn register(api: &str, label: &'static str, source: &str) {
     let callback = Arc::new(Label(label));
@@ -53,15 +63,21 @@ fn register(api: &str, label: &'static str, source: &str) {
         Some(source.into()),
     );
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise the five sequential source observations in each family.
 #[test]
 fn recorded_registry_corpus_keeps_all_fields() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(false, async {
+    crate::runtime::run(async {
         for local in [true, false] {
             clear_api_providers();
             let mut retained = None;
-            for row in super::corpus::load().registered.rows.into_iter().skip(10) {
+            for row in super::corpus::load()
+                .registered
+                .rows
+                .into_iter()
+                .filter(|row| !row.name.starts_with("registered_"))
+            {
                 let input: Input = serde_json::from_value(row.input)?;
                 let actual = observe(input, &mut retained, local).await?;
                 assert_eq!(actual, row.expected, "{} local={local}", row.name);
@@ -70,6 +86,7 @@ fn recorded_registry_corpus_keeps_all_fields() -> crate::TestResult {
         Ok(())
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Keep a surviving callback through replacement, source cleanup and clear.
 async fn observe(
     input: Input,
@@ -94,13 +111,13 @@ async fn observe(
             let old = retained.as_ref().unwrap();
             let current = get_api_provider(&replaced).unwrap();
             Ok(
-                json!({"order": order(), "retained": text(&old.stream, &replaced, local).await?,
+                json!({"order": registered(), "retained": text(&old.stream, &replaced, local).await?,
                 "current": text(&current.stream, &replaced, local).await?}),
             )
         }
         Input::Cleanup { remove } => {
             unregister_api_providers(&remove);
-            Ok(json!({"remaining":order()}))
+            Ok(json!({"remaining":registered()}))
         }
         Input::Clear { clear } => {
             assert!(clear);
@@ -121,13 +138,7 @@ async fn observe(
         }
     }
 }
-/// Ordered keys retain insertion and replacement position.
-fn order() -> Vec<String> {
-    get_api_providers()
-        .into_iter()
-        .map(|provider| provider.api)
-        .collect()
-}
+#[cfg(not(target_arch = "wasm32"))]
 /// Choose only the family envelope; synchronous callbacks never submit production.
 fn invocation<K: StreamOptionsFamily>(local: bool) -> ProviderInvocation<K> {
     if local {
@@ -136,6 +147,7 @@ fn invocation<K: StreamOptionsFamily>(local: bool) -> ProviderInvocation<K> {
         ProviderInvocation::Threaded(None, Some(Arc::new(|_| panic!("label must not submit"))))
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe the actual terminal body through either retained callback type.
 async fn text<K: StreamOptionsFamily>(
     callback: &StreamFunction<K>,
@@ -154,6 +166,7 @@ async fn text<K: StreamOptionsFamily>(
     };
     Ok(text.text.clone())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Checked handles reject a mismatched model after removal, before invoking caller code.
 fn guard(old: &ApiProvider, form: &str, supplied: &str, local: bool) -> DiagnosticErrorInfo {
     let model = crate::bundled::descriptor(supplied, "https://fixture.invalid").unwrap();

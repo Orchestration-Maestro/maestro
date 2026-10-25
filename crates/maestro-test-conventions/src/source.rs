@@ -37,11 +37,15 @@ pub(crate) fn load(metadata: &Metadata) -> Result<Vec<Member>, String> {
                 .map(|path| {
                     let contents = std::fs::read_to_string(&path)
                         .map_err(|error| format!("{}: {error}", path.display()))?;
-                    let contents = contents
+                    let mut contents = contents
                         .strip_prefix('\u{feff}')
                         .unwrap_or(&contents)
                         .replace("\r\n", "\n");
                     let syntax = syn::parse_file(&contents).ok();
+                    if let Some(shebang) = syntax.as_ref().and_then(|file| file.shebang.as_ref()) {
+                        // Syn retains the newline but removes the shebang before assigning spans.
+                        contents.drain(..shebang.len());
+                    }
                     Ok(Source {
                         path,
                         contents,
@@ -83,11 +87,20 @@ fn files(path: &Path) -> Result<Vec<PathBuf>, String> {
 
 /// Compute a one-based source line for a byte offset.
 pub(crate) fn line(source: &str, offset: usize) -> usize {
-    source[..offset]
-        .bytes()
-        .filter(|byte| *byte == b'\n')
-        .count()
-        + 1
+    count_newlines(&source[..offset]) + 1
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Bytes visited by newline scans on the current test thread.
+    static SCANNED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Count line breaks in the supplied source slice.
+pub(crate) fn count_newlines(source: &str) -> usize {
+    #[cfg(test)]
+    SCANNED_BYTES.set(SCANNED_BYTES.get() + source.len());
+    source.bytes().filter(|byte| *byte == b'\n').count()
 }
 
 /// Extract line and terminated block comments without inspecting literals.
@@ -127,6 +140,16 @@ pub(crate) fn test_layout(path: &Path, directory: &Path) -> bool {
                 .parent()
                 .is_some_and(|parent| parent.components().any(|part| part.as_os_str() == "tests"))
         })
+}
+
+/// Recognize a source that belongs to tests: a test-only crate, a test layout or a test gate.
+pub(crate) fn test_scope(member: &Member, source: &Source) -> bool {
+    member.name.starts_with("maestro-test-")
+        || test_layout(&source.path, &member.directory)
+        || source
+            .syntax
+            .as_ref()
+            .is_some_and(|syntax| cfg_test(&syntax.attrs))
 }
 
 /// Access attributes on supported Rust item variants.

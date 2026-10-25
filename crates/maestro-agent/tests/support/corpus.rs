@@ -141,12 +141,7 @@ impl Input {
 }
 /// Produce a diagnostic at the controlled failure boundary.
 fn error(message: &str) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::error(message)
 }
 /// Convert finite numeric storage variants and remove dynamic timestamps.
 fn normalized(value: Value) -> Value {
@@ -472,7 +467,7 @@ fn install_tools(
             definition: Tool {
                 name: "echo".into(),
                 description: "Echo".into(),
-                parameters: schema(),
+                parameters: schema().into(),
             },
             label: "Echo".into(),
             prepare_arguments: None,
@@ -507,7 +502,7 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
         definition: Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: schema(),
+            parameters: schema().into(),
         },
         label: "Echo".into(),
         prepare_arguments: preparation,
@@ -520,10 +515,9 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
             ));
             for index in 0..input.progress {
                 update.as_ref().unwrap()(AgentToolResult {
-                    content: vec![UserBlock::Text(TextContent {
-                        text: format!("partial-{index}"),
-                        text_signature: None,
-                    })],
+                    content: vec![UserBlock::Text(TextContent::new(format!(
+                        "partial-{index}"
+                    )))],
                     details: Some(json!({"index":index})),
                     terminate: None,
                 });

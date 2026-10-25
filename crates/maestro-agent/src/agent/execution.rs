@@ -131,10 +131,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Agent<C, E> {
             PromptInput::Message(message) => vec![message],
             PromptInput::Messages(messages) => messages,
             PromptInput::Text { text, images } => {
-                let mut content = vec![UserBlock::Text(TextContent {
-                    text,
-                    text_signature: None,
-                })];
+                let mut content = vec![UserBlock::Text(TextContent::new(text))];
                 content.extend(images.into_iter().map(UserBlock::Image));
                 vec![AgentMessage::User(Arc::new(RwLock::new(UserMessage {
                     content: UserContent::Blocks(content),

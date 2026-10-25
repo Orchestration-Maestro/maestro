@@ -4,6 +4,8 @@ use super::*;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::components::download_button::tests::{Host, Language};
 #[cfg(not(target_arch = "wasm32"))]
+use crate::tools::artifacts::ArtifactUiError;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::tools::artifacts::artifact_element::ArtifactElement;
 #[cfg(not(target_arch = "wasm32"))]
 use std::{cell::RefCell, rc::Rc};
@@ -21,18 +23,18 @@ impl ArtifactElement for WideHeader {
         ""
     }
     fn set_content(&mut self, _: String) {}
-    fn set_visibility(&mut self, _: bool, _: Option<egui::Id>) -> Result<(), AttachmentUiError> {
+    fn set_visibility(&mut self, _: bool, _: Option<egui::Id>) -> Result<(), ArtifactUiError> {
         Ok(())
     }
     fn get_header_buttons(
         &mut self,
         ui: &mut egui::Ui,
         _: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         ui.add_sized([200., 32.], egui::Button::new("Caller control"));
         Ok(())
     }
-    fn render(&mut self, _: &mut egui::Ui, _: ArtifactView<'_>) -> Result<(), AttachmentUiError> {
+    fn render(&mut self, _: &mut egui::Ui, _: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         Ok(())
     }
 }
@@ -46,10 +48,10 @@ fn artifact_panel_wide_header_cannot_displace_close() {
         "wide".into(),
         Rc::new(RefCell::new(Some(Box::new(WideHeader)))),
     );
-    let pack = maestro_theme::load_brand_pack(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-        &maestro_theme::theme::NativeThemeOperations,
-    )
+    let pack = maestro_theme::load_brand_pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/brand.json"
+    ))
     .unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     let i18n = crate::I18n::new(Rc::new(Language)).unwrap();

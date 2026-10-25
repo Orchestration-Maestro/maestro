@@ -1,5 +1,7 @@
 //! Selected definitions retain the producing owner's typed render callbacks.
 #![cfg(test)]
+use crate::read_support::Fixture;
+use crate::runtime;
 use crate::{display_support, read_support};
 use maestro_models::DiagnosticErrorInfo;
 use maestro_tools::output::render_utils::ToolRenderResultLike;
@@ -19,17 +21,16 @@ fn compare<P, D: serde::Serialize, S>(
         display_support::shipped_theme("dark", None),
         display_support::native_highlighter(),
     );
-    let setup = display_support::Setup::from(
-        &json!({"readme":"/opt/maestro/README.md","bindings":["ctrl+o"],"expanded":true,"argsComplete":true}),
-    );
-    let _bindings = display_support::bind(&setup.bindings);
+    let recorded = json!({"readme":"/opt/maestro/README.md","bindings":["ctrl+o"],"expanded":true,"argsComplete":true});
+    let setup = display_support::Setup::from(&recorded);
+    let _bindings = display_support::bind(&display_support::expand_keys(&recorded));
     let draw = |tool: &ToolDefinition<(), P, D, S>| {
         let context = display_support::context::<S>(&args, &setup, &env, None);
-        let call = (tool.render_call.as_ref().unwrap())(Some(&args), &env.theme, &context).unwrap();
+        let call = (tool.render_call.as_ref().unwrap())(Some(&args), &env.live, &context).unwrap();
         let rows = call.render(80);
         let mut reused = display_support::context::<S>(&args, &setup, &env, Some(call.clone()));
         reused.state = context.state.clone();
-        let next = (tool.render_call.as_ref().unwrap())(Some(&args), &env.theme, &reused).unwrap();
+        let next = (tool.render_call.as_ref().unwrap())(Some(&args), &env.live, &reused).unwrap();
         assert!(std::rc::Rc::ptr_eq(&call, &next));
         assert_eq!(next.render(80), rows);
         let result = maestro_agent::AgentToolResult::<D> {
@@ -44,7 +45,7 @@ fn compare<P, D: serde::Serialize, S>(
                 expanded: true,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &context,
         )
         .unwrap();
@@ -52,7 +53,7 @@ fn compare<P, D: serde::Serialize, S>(
     };
     assert_eq!(draw(selected), draw(original));
     let futures = env.runtime.take_futures();
-    read_support::run(async {
+    runtime::run(async {
         for future in futures {
             future.await.unwrap();
         }
@@ -63,7 +64,7 @@ fn compare<P, D: serde::Serialize, S>(
 /// Compare each typed variant through every applicable definition preset.
 pub fn check() {
     for factory in ["single", "coding", "readonly", "all"] {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         let manager = Arc::new(ToolsManager::new(root.text(), None));
         let definitions = definitions(factory, &root, &manager);
         for definition in definitions {
@@ -117,7 +118,7 @@ pub fn check() {
 /// Obtain each definition preset without conflating its typed rendering state.
 fn definitions(
     factory: &str,
-    root: &read_support::TempDir,
+    root: &read_support::Scratch,
     manager: &Arc<ToolsManager>,
 ) -> Vec<ToolDef> {
     match factory {
@@ -160,7 +161,7 @@ fn definitions(
 
 /// A context error precedes the selected read's supplied operations.
 fn context_error() {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     let probes = super::execution::Probes::new(false);
     let before = probes.logs();
     let definition = create_tool_definition::<()>(

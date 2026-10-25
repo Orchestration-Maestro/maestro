@@ -1,13 +1,15 @@
 //! Model selection through real catalog, settings and toolkit owners.
 #![cfg(test)]
+use crate::bindings;
 use crate::manual_runtime;
 use crate::model_selector_support;
 use crate::published;
 use crate::recording_terminal;
 use crate::runtime_spy;
 use crate::selector_failure_support;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::subprocess;
-use maestro_app::{Model, ScopedModel, SettingsManager};
+use maestro_app::{Model, ScopedModel, SettingsManager, SharedHandle};
 use maestro_chat::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
 use maestro_tui::{
     Component, TUI, TerminalImage,
@@ -21,8 +23,9 @@ use std::{
 };
 
 /// Execute each test group in a separate process, which owns global registry/binding state.
+#[cfg(not(target_arch = "wasm32"))]
 fn isolate(name: &str) -> bool {
-    if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let credentials = std::env::current_exe()
             .unwrap()
             .join("absent-credentials.json")
@@ -34,9 +37,19 @@ fn isolate(name: &str) -> bool {
             ("LC_ALL", Some("en_US.UTF-8")),
             ("GOOGLE_APPLICATION_CREDENTIALS", Some(&credentials)),
         ]);
-        subprocess::run_child(name, &environment);
+        subprocess::run_child(
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case("*"),
+            &environment,
+        );
         return true;
     }
+    false
+}
+/// The browser target has no child process, so every group shares this process.
+#[cfg(target_arch = "wasm32")]
+fn isolate(_name: &str) -> bool {
     false
 }
 fn replay(name: &str) {
@@ -162,7 +175,7 @@ impl Fixture {
     /// Builds the public picker through real controlled owners.
     fn new(query: &mut Query) -> Self {
         assert!(!query.current_shared || !query.scoped.is_empty());
-        bindings(std::mem::take(&mut query.bindings));
+        bindings::replace_toolkit(&query.bindings);
         let (theme, live) = published::published(&colors(0));
         let (registry, reads) = registry(query);
         let runtime = manual_runtime::ManualRuntime::new();
@@ -329,7 +342,7 @@ fn action_run(
     models: &[Arc<RwLock<Model>>],
 ) {
     match action {
-        Action::Bindings(keys) => bindings(keys),
+        Action::Bindings(keys) => bindings::replace_toolkit(&keys),
         Action::Theme(shift) => theme.set_theme_instance(colors(shift)).unwrap(),
         Action::Focus(value) => selector.focus_flag().set(value),
         Action::InputFocus(value) => selector.get_search_input().focus_flag().set(value),
@@ -398,7 +411,59 @@ fn scope_switch_keeps_query_and_clamps_current_position() {
 
 #[test]
 fn navigation_wraps_and_empty_confirm_is_inert() {
+    if isolate("navigation_wraps_and_empty_confirm_is_inert") {
+        return;
+    }
     replay("navigation_wraps_and_empty_confirm_is_inert");
+    for (count, start, previous, next) in [
+        (0, 0, 0, 0),
+        (1, 0, 0, 0),
+        (3, 0, 2, 1),
+        (3, 1, 0, 2),
+        (3, 2, 1, 0),
+    ] {
+        for (key, expected) in [("\x1b[A", previous), ("\x1b[B", next)] {
+            let models: Vec<_> = ["a", "b", "c"]
+                .into_iter()
+                .take(count)
+                .map(|id| serde_json::json!({"provider": "p", "id": id, "name": id}))
+                .collect();
+            let mut query: Query = serde_json::from_value(serde_json::json!({
+                "available": models, "scoped": models
+            }))
+            .unwrap();
+            let fixture = Fixture::new(&mut query);
+            for _ in 0..start {
+                fixture.selector.handle_input("\x1b[B");
+            }
+            let before = fixture.selector.render(120);
+            fixture.observed.events.borrow_mut().clear();
+            fixture.selector.handle_input(key);
+            fixture.selector.handle_input("\r");
+            if count == 0 {
+                assert_eq!(fixture.selector.render(120), before);
+                assert!(fixture.observed.events.borrow().is_empty());
+            } else {
+                let id = ["a", "b", "c"][expected];
+                assert_eq!(
+                    *fixture.observed.events.borrow(),
+                    vec![
+                        vec![
+                            serde_json::json!("save"),
+                            serde_json::json!("p"),
+                            serde_json::json!(id)
+                        ],
+                        vec![
+                            serde_json::json!("select"),
+                            serde_json::json!("p"),
+                            serde_json::json!(id),
+                            serde_json::json!(id)
+                        ]
+                    ]
+                );
+            }
+        }
+    }
 }
 
 #[test]
@@ -459,6 +524,63 @@ fn scope_hint_refreshes_keys_on_toggle_and_rows_use_live_theme() {
 #[test]
 fn model_render_wraps_metadata_badges_and_unicode() {
     replay("model_render_wraps_metadata_badges_and_unicode");
+}
+
+/// Linux refuses new readers once a writer queues behind an existing reader.
+#[cfg(target_os = "linux")]
+#[test]
+fn shared_current_filtering_finishes_with_a_queued_writer() {
+    if isolate("model_selection::shared_current_filtering_finishes_with_a_queued_writer") {
+        return;
+    }
+    let mut query: Query = serde_json::from_value(serde_json::json!({
+        "available": [],
+        "scoped": [{"provider": "missing", "id": "fallback", "name": "Fallback"}],
+        "currentShared": true,
+        "readFailure": {"path": "<models-file>", "message": "controlled read failure"}
+    }))
+    .unwrap();
+    let fixture = Fixture::new(&mut query);
+    let before = frame(
+        &fixture.selector,
+        &fixture.observed.events,
+        query.width,
+        false,
+    );
+    assert!(
+        before
+            .lines
+            .iter()
+            .any(|line| line.contains("\x1b[38;5;34m ✓\x1b[39m"))
+    );
+    let model = &fixture.scoped[0];
+    let reader = model.read().unwrap();
+    let writer_model = model.clone();
+    let writer = std::thread::spawn(move || {
+        writer_model.write().unwrap().name = "Edited".into();
+    });
+    loop {
+        match model.try_read() {
+            Err(std::sync::TryLockError::WouldBlock) => break,
+            Err(std::sync::TryLockError::Poisoned(_)) => panic!("descriptor poisoned"),
+            Ok(guard) => drop(guard),
+        }
+        std::thread::yield_now();
+    }
+    eprintln!("writer admission established with reader retained; rebuilding current row");
+    fixture.selector.handle_input("");
+    assert_eq!(
+        frame(
+            &fixture.selector,
+            &fixture.observed.events,
+            query.width,
+            false
+        ),
+        before
+    );
+    drop(reader);
+    writer.join().unwrap();
+    assert_eq!(model.read().unwrap().name, "Edited");
 }
 
 #[test]
@@ -565,8 +687,8 @@ fn failing_registry(
     registry
         .register_provider(
             "maestro-unconfigured",
-            Arc::new(RwLock::new(maestro_app::ProviderConfigInput {
-                oauth: Some(Arc::new(RejectingModels)),
+            SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
+                oauth: Some(SharedHandle::new(RejectingModels)),
                 models: Some(vec![
                     Descriptor {
                         provider: "maestro-unconfigured".into(),
@@ -625,7 +747,7 @@ fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
         return;
     }
     for case in selector_failure_support::cases(name) {
-        bindings(std::collections::BTreeMap::default());
+        bindings::replace_toolkit(&std::collections::BTreeMap::default());
         let mut input = case.input;
         let (registry, reached) = failing_registry(&mut input);
         let runtime = runtime_spy::Spy::default();
@@ -715,15 +837,18 @@ impl maestro_app::OAuthProviderInterface for RejectingModels {
 }
 /// Real retained provider whose transformation is first consumed by the next refresh.
 fn rejecting_registry() -> maestro_app::ModelRegistry {
-    let registry = maestro_app::ModelRegistry::in_memory(Arc::new(
-        maestro_app::AuthStorage::in_memory(std::iter::empty().collect()),
-    ))
+    let registry = maestro_app::ModelRegistry::in_memory(
+        SharedHandle::new(maestro_app::AuthStorage::in_memory(
+            std::iter::empty().collect(),
+        )),
+        no_commands(),
+    )
     .unwrap();
     registry
         .register_provider(
             "maestro-refresh-failure",
-            Arc::new(RwLock::new(maestro_app::ProviderConfigInput {
-                oauth: Some(Arc::new(RejectingModels)),
+            SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
+                oauth: Some(SharedHandle::new(RejectingModels)),
                 models: Some(vec![
                     Descriptor {
                         provider: "maestro-refresh-failure".into(),

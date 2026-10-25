@@ -2,9 +2,7 @@
 #![cfg(unix)]
 #![cfg(test)]
 use crate::support;
-use maestro_resources::{
-    DiagnosticType, LoadSkillsFromDirOptions, NativeResourceOperations, load_skills_from_dir,
-};
+use maestro_resources::{DiagnosticType, LoadSkillsFromDirOptions, load_skills_from_dir};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
@@ -80,6 +78,18 @@ struct ExpectedDiagnostic {
     /// Associated instruction path.
     path: String,
 }
+/// The authored name groups this host does not keep apart, one per parent directory.
+fn folded_names(dir: &Directory, recipe: &Recipe) -> Vec<Vec<String>> {
+    let paths: Vec<&str> = recipe
+        .files
+        .keys()
+        .chain(&recipe.directories)
+        .chain(recipe.links.keys())
+        .map(String::as_str)
+        .collect();
+    dir.0.folded_names(&paths).unwrap()
+}
+
 /// Execute one group, rejecting repeated input recipes and comparing complete ordered trees.
 fn check_group(group: &str) {
     let groups: BTreeMap<String, Vec<Recipe>> =
@@ -96,7 +106,12 @@ fn check_group(group: &str) {
             "duplicate recipe {index}"
         );
         let dir = Directory::new();
-        let root = dir.0.join("skills");
+        let folded = folded_names(&dir, recipe);
+        if !folded.is_empty() {
+            eprintln!("{group} recipe {index} needs leaf names this host keeps apart: {folded:?}");
+            continue;
+        }
+        let root = dir.0.path().join("skills");
         std::fs::create_dir(&root).unwrap();
         for directory in &recipe.directories {
             std::fs::create_dir_all(root.join(directory)).unwrap();
@@ -115,14 +130,11 @@ fn check_group(group: &str) {
             std::os::unix::fs::symlink(target, root.join(name)).unwrap();
         }
         let scan = format!("{}{}", text(&root), recipe.root_suffix);
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: text(&dir.0),
-                dir: &scan,
-                source: "path",
-            },
-            &NativeResourceOperations,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: text(dir.0.path()),
+            dir: &scan,
+            source: "path",
+        });
         let diagnostics: Vec<_> = result.diagnostics.iter().map(|diagnostic| {
             assert_eq!(diagnostic.r#type, DiagnosticType::Warning);
             assert!(diagnostic.collision.is_none());

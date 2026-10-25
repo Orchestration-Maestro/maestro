@@ -3,9 +3,8 @@ use super::{
     path_scurry::{Children, comparison_key},
     pattern::Pattern,
 };
-use crate::package_manager::resource_discovery::resolve_entry_path;
 use maestro_pattern::{Minimatch, ParseReturnFiltered};
-use maestro_resources::skills::{ResourceFileType, ResourceOperations};
+use maestro_resources::skills::ResourceFileType;
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -28,7 +27,7 @@ impl Target {
     }
     /// Resolves a literal without following its final link.
     fn resolve(&self, text: &str, context: &mut Context<'_>) -> io::Result<Self> {
-        let mut path = resolve_entry_path(&self.path, text, context.operations)?;
+        let mut path = maestro_resources::paths::resolve(&[&self.path, text])?;
         if !matches!(text, "" | "." | "..") && maestro_path::dirname(&path) != path {
             let parent = maestro_path::dirname(&path);
             let name = maestro_path::basename(&path, None);
@@ -219,7 +218,6 @@ pub(super) struct Context<'a> {
     /// Whether native child comparisons ignore case.
     pub(super) nocase: bool,
     /// Supplied filesystem effects.
-    pub(super) operations: &'a dyn ResourceOperations,
     /// Ordered child identities established by literal resolution or scanning.
     pub(super) children: HashMap<String, Children>,
     /// Processed authored-target/suffix transitions.

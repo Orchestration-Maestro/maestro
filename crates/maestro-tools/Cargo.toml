@@ -29,21 +29,24 @@ workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+maestro-listing = { path = "../maestro-listing" }
 indexmap = "=2.14.2"
 maestro-path = { path = "../maestro-path" }
+maestro-resources = { path = "../maestro-resources" }
 maestro-process = { path = "../maestro-process" }
 getrandom = "=0.4.3"
 zip = { version = "=9.0.3", default-features = false, features = ["deflate-flate2"] }
 owo-colors = "=4.2.1"
 icu_normalizer = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "fs", "sync", "process", "time", "macros"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "fs", "sync", "process", "time", "macros"] }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "fs"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
-tokio = { version = "=1.53.2", default-features = false, features = ["test-util", "net", "io-util"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["test-util", "net", "io-util"] }
 
 [[test]]
 name = "integration"

@@ -1,7 +1,8 @@
 //! Strict input and observable frame records.
+use crate::bindings::Binding;
 use serde::Deserialize;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 /// One attributed corpus query.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -37,7 +38,7 @@ pub struct Query {
     /// Host platform observation.
     pub platform: Option<String>,
     /// Initial active bindings.
-    pub bindings: Option<HashMap<String, Keys>>,
+    pub bindings: Option<BTreeMap<String, Binding>>,
     /// Completion reenters progress and cancellation.
     pub reenter: bool,
     /// Viewport cells.
@@ -89,7 +90,7 @@ pub enum Operation {
     /// Publish foreground palette.
     Theme { theme: u8 },
     /// Live binding replacement.
-    Bindings { bindings: HashMap<String, Keys> },
+    Bindings { bindings: BTreeMap<String, Binding> },
     /// Invalidate caches.
     Invalidate { invalidate: bool },
     /// Clear outer appearance.
@@ -137,14 +138,4 @@ pub struct Frame {
     pub value: Option<String>,
     /// Independent parent and child flags.
     pub focus: Option<[bool; 2]>,
-}
-
-/// Authored single or ordered multiple key bindings.
-#[derive(Deserialize)]
-#[serde(untagged)]
-pub enum Keys {
-    /// One binding.
-    Single(String),
-    /// Ordered bindings, including disabled empty lists.
-    Multiple(Vec<String>),
 }

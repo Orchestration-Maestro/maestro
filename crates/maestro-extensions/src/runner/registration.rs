@@ -4,7 +4,10 @@ use crate::types::registration::tools::RetainedDefinition;
 use crate::{ExtensionContext, types::RegisteredTool};
 use crate::{
     ExtensionExecution,
-    types::{ExtensionFlag, FlagValue, MessageRenderer, ResolvedCommand, read, write},
+    types::{
+        ExtensionFlag, FlagValue, MessageRenderer, MessageRendererCall, ResolvedCommand, read,
+        write,
+    },
 };
 use indexmap::{IndexMap, IndexSet};
 use maestro_models::Local;
@@ -50,13 +53,24 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         &self,
         custom_type: &str,
     ) -> Option<MessageRenderer<T, E>> {
+        self.get_message_renderer_call(custom_type)
+            .map(|call| call.renderer)
+    }
+    /// Retains the first owner's renderer with the bus that registered it.
+    ///
+    /// A different details type on that owner is absent; later owners are not consulted.
+    #[must_use]
+    pub fn get_message_renderer_call<T: 'static>(
+        &self,
+        custom_type: &str,
+    ) -> Option<MessageRendererCall<T, E>> {
         read(&self.extensions)
             .iter()
             .find_map(|owner| {
                 read(owner)
                     .message_renderers
                     .get(custom_type)
-                    .map(E::recover_message_renderer::<T>)
+                    .map(E::recover_message_renderer_call::<T>)
             })
             .flatten()
     }

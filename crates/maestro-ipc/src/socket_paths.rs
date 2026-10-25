@@ -36,7 +36,7 @@ fn client_socket_path_from_overrides(
     if let Some(path) = api_socket_override {
         return derive_client_socket_from_api_socket(Path::new(path));
     }
-    client_socket_override.map_or_else(|| daemon_folder.join("maestro-client.sock"), PathBuf::from)
+    client_socket_override.map_or_else(|| daemon_folder.join("daemon-client.sock"), PathBuf::from)
 }
 
 /// Derive the client socket name from the API socket's file stem.

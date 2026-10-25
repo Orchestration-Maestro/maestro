@@ -12,8 +12,17 @@ use std::{
 };
 use wasm_bindgen::{JsCast as _, prelude::*};
 /// Evaluate a document observation.
+/// # Panics
+/// Panics when the evaluation throws.
+#[must_use]
 pub fn js(code: &str) -> JsValue {
     js_sys::eval(code).unwrap()
+}
+/// Evaluate a document statement for its effect.
+/// # Panics
+/// Panics when the evaluation throws.
+pub fn run(code: &str) {
+    let _ = js(code);
 }
 /// Real host with a one-shot error at the public presentation boundary.
 pub struct Host {
@@ -28,9 +37,12 @@ pub struct Host {
 }
 impl Host {
     /// Bind the actual canvas document and retain per-test state.
+    /// # Panics
+    /// Panics when the document has no canvas or the native host cannot bind it.
+    #[must_use]
     pub fn new() -> Self {
         std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
+            web_sys::console::error_1(&info.to_string().into());
         }));
         let canvas = web_sys::window()
             .unwrap()
@@ -46,6 +58,11 @@ impl Host {
             fail_download: Cell::new(false),
             downloads: RefCell::default(),
         }
+    }
+}
+impl Default for Host {
+    fn default() -> Self {
+        Self::new()
     }
 }
 impl AttachmentHost for Host {
@@ -66,20 +83,20 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         self.native.copy_to_clipboard(text, mode)
     }
-    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
+    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
         self.native.capture_focus()
     }
     fn restore_focus(
         &self,
         target: Rc<FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         self.native.restore_focus(target)
     }
     fn dialog_bounds(
         &self,
         id: egui::Id,
         dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, AttachmentHostError> {
         self.native.dialog_bounds(id, dimensions)
     }
     fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
@@ -91,29 +108,29 @@ impl AttachmentHost for Host {
         id: egui::Id,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.native.set_retained_visibility(id, visible, modal)
     }
     fn present(
         &self,
         s: AttachmentSurface<'_>,
         p: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         if let Some(message) = self.failure.borrow_mut().take() {
-            return Err(AttachmentUiError::Presentation(message));
+            return Err(AttachmentHostError::Presentation(message));
         }
         self.native.present(s, p)
     }
-    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
+    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
         self.native.reading_layout(id)
     }
     fn remove(&self, id: egui::Id) {
         self.native.remove(id);
     }
-    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentHostError> {
         self.native.set_overlay(id, visible)
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         self.native.hover_capable()
     }
     fn take_escape(&self) -> bool {
@@ -124,20 +141,20 @@ impl AttachmentHost for Host {
         ms: i32,
         repeat: bool,
         callback: Rc<dyn Fn()>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         self.native.timer(ms, repeat, callback)
     }
     fn spawn_local(&self, f: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         self.native.spawn_local(f);
     }
-    fn download(&self, a: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, a: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentHostError> {
         self.downloads.borrow_mut().push(a.clone());
         if self.fail_download.get() {
-            return Err(AttachmentUiError::Host("save failure".into()));
+            return Err(AttachmentHostError::Host("save failure".into()));
         }
         self.native.download(a)
     }
-    fn download_bytes(&self, b: &[u8], n: &str, m: &str) -> Result<(), AttachmentUiError> {
+    fn download_bytes(&self, b: &[u8], n: &str, m: &str) -> Result<(), AttachmentHostError> {
         self.native.download_bytes(b, n, m)
     }
 }
@@ -166,6 +183,9 @@ pub struct View {
 }
 impl View {
     /// Bind an installed artifact to the actual canvas document.
+    /// # Panics
+    /// Panics when the canvas, artifact factory, brand pack or dictionary cannot be set up.
+    #[must_use]
     pub fn new(filename: &str, content: &str) -> Self {
         let host = Rc::new(Host::new());
         Self {
@@ -176,7 +196,7 @@ impl View {
             element: create_artifact_element(filename, content, host.clone()).unwrap(),
             host,
             context: egui::Context::default(),
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
+            pack: support::brand::pack("brand.json").unwrap(),
             mode: maestro_theme::BrandMode::Dark,
             size: egui::vec2(400., 300.),
             density: 1.,
@@ -185,6 +205,8 @@ impl View {
         }
     }
     /// Drive one public body or header input frame.
+    /// # Panics
+    /// Panics when the presentation or the drawn view fails.
     pub fn draw(&mut self, header: bool, events: Vec<egui::Event>) -> egui::FullOutput {
         let p = self.pack.presentation(self.mode).unwrap();
         let mut input = egui::RawInput {
@@ -215,15 +237,21 @@ impl View {
         output
     }
     /// Draw the public overlay and retain its actual control positions.
+    /// # Panics
+    /// Panics when the overlay fails.
     pub fn overlay(&self, overlay: &mut AttachmentOverlay, events: Vec<egui::Event>) {
         self.try_overlay(overlay, events).unwrap();
     }
     /// Preserve a reached failure without skipping end-of-frame cleanup.
+    /// # Errors
+    /// Returns the overlay's own failure after the frame ends.
+    /// # Panics
+    /// Panics when the presentation or the label projection fails.
     pub fn try_overlay(
         &self,
         overlay: &mut AttachmentOverlay,
         events: Vec<egui::Event>,
-    ) -> Result<bool, AttachmentUiError> {
+    ) -> Result<bool, maestro_web::dialogs::attachment_overlay::AttachmentUiError> {
         let mut input = egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
                 egui::Pos2::ZERO,
@@ -272,6 +300,8 @@ impl View {
         result
     }
     /// Click the canvas-owned mode at its painted label.
+    /// # Panics
+    /// Panics when no painted label matches or the overlay fails.
     pub fn toggle(&self, overlay: &mut AttachmentOverlay, label: &str) {
         let position = js(&format!(
             "(()=>{{const l=labels.find(l=>l[0]==={});return [l[1]+l[3]/2,l[2]+l[4]/2]}})()",
@@ -288,6 +318,7 @@ impl View {
     }
 }
 /// A complete pointer activation.
+#[must_use]
 pub fn click(pos: egui::Pos2) -> Vec<egui::Event> {
     vec![
         egui::Event::PointerMoved(pos),

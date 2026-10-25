@@ -6,18 +6,20 @@
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
-use std::process::{Output, Stdio};
+use std::process::{ExitStatus, Output, Stdio};
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command};
 use tokio::time::Sleep;
 
+mod exit_signal;
 mod native;
 mod wait;
+pub use exit_signal::exit_signal_name;
 #[cfg(windows)]
 pub use native::request_tree_kill;
 #[cfg(unix)]
-pub use native::{kill_process, kill_process_group};
+pub use native::{Signal, kill_process, kill_process_group, process_exists, signal_processes};
 use wait::wait;
 
 /// Default post-exit pipe grace for local shells, in milliseconds.
@@ -103,6 +105,46 @@ impl CapturedChild {
     /// Returns the native spawn error unchanged.
     pub fn spawn(command: &mut Command) -> io::Result<Self> {
         Self::spawn_with(command, [Stdio::null(), Stdio::piped(), Stdio::piped()])
+    }
+
+    /// Spawns `command` with all three standard streams piped, for a caller that
+    /// drives them through the `take_*` methods.
+    ///
+    /// # Errors
+    /// Returns the native spawn error unchanged.
+    pub fn spawn_piped(command: &mut Command) -> io::Result<Self> {
+        Self::spawn_with(command, [Stdio::piped(), Stdio::piped(), Stdio::piped()])
+    }
+
+    /// Moves out the input pipe; `None` once taken or when stdin is not piped.
+    pub fn take_stdin(&mut self) -> Option<ChildStdin> {
+        self.child.stdin.take()
+    }
+
+    /// Moves out the output pipe; a later wait then sees no stdout.
+    pub fn take_stdout(&mut self) -> Option<ChildStdout> {
+        self.stdout.take()
+    }
+
+    /// Moves out the error pipe; a later wait then sees no stderr.
+    pub fn take_stderr(&mut self) -> Option<ChildStderr> {
+        self.stderr.take()
+    }
+
+    /// Returns the exit status if the child has exited, reaping it, without waiting.
+    ///
+    /// # Errors
+    /// Returns the native status error unchanged.
+    pub fn try_wait(&mut self) -> io::Result<Option<ExitStatus>> {
+        self.child.try_wait()
+    }
+
+    /// Waits for the child to exit and reaps it, first closing an untaken stdin pipe.
+    ///
+    /// # Errors
+    /// Returns the native status error unchanged.
+    pub async fn wait(&mut self) -> io::Result<ExitStatus> {
+        self.child.wait().await
     }
 
     /// Returns the native PID while the child has not been reaped.
@@ -395,10 +437,15 @@ pub enum SpawnSyncOptions<'a> {
 }
 
 /// Constructs the current-thread runtime shared by blocking launch bridges.
-fn runtime() -> io::Result<tokio::runtime::Runtime> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
+pub(crate) fn runtime() -> io::Result<tokio::runtime::Runtime> {
+    runtime_builder().build()
+}
+
+/// Configures the single current-thread runtime owner before construction.
+pub(crate) fn runtime_builder() -> tokio::runtime::Builder {
+    let mut builder = tokio::runtime::Builder::new_current_thread();
+    builder.enable_all();
+    builder
 }
 
 /// Writes supplied bytes and closes the owned pipe, including on failure.

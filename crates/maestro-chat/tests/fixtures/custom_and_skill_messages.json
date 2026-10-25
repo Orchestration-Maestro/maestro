@@ -1,0 +1,1052 @@
+[
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": ""
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": " "
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "﻿"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": ""
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m\u001b[39m                                                                               \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "plain"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mplain\u001b[39m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "**strong** and *soft*"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mstrong\u001b[39m\u001b[22m\u001b[38;2;62;79;111m\u001b[38;2;62;79;111m and \u001b[39m\u001b[3m\u001b[38;2;62;79;111msoft\u001b[39m\u001b[23m                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "one\n\ntwo"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mone\u001b[39m                                                                            \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mtwo\u001b[39m                                                                            \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "  lead\ntrail  "
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m  lead\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mtrail  \u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "tab\tend"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mtab   end\u001b[39m                                                                      \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "界 é 👩‍💻"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m界 é 👩‍💻\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "\u001b[7m \u001b[27m"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m\u001b[7m \u001b[27m\u001b[39m                                                                              \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_default_strings_keep_markdown_and_panel_rows",
+    "input": {
+      "kind": "custom",
+      "content": "```\ncode\n```"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;86;91;123m```\u001b[39m                                                                            \u001b[49m",
+      "\u001b[48;2;60;78;110m   \u001b[38;2;84;90;122mcode\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;86;91;123m```\u001b[39m                                                                            \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_text_parts_keep_order_duplicates_and_empty_boundaries",
+    "input": {
+      "kind": "custom",
+      "content": []
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_text_parts_keep_order_duplicates_and_empty_boundaries",
+    "input": {
+      "kind": "custom",
+      "content": [
+        {
+          "type": "image",
+          "data": "x",
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_text_parts_keep_order_duplicates_and_empty_boundaries",
+    "input": {
+      "kind": "custom",
+      "content": [
+        {
+          "type": "text",
+          "text": "first"
+        },
+        {
+          "type": "image",
+          "data": "x",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": "first"
+        },
+        {
+          "type": "text",
+          "text": "last"
+        }
+      ]
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mfirst\u001b[39m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mfirst\u001b[39m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mlast\u001b[39m                                                                           \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_labels_are_literal_bold_and_do_not_filter_display",
+    "input": {
+      "kind": "custom",
+      "customType": "",
+      "display": false
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[]\u001b[22m\u001b[39m                                                                             \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_labels_are_literal_bold_and_do_not_filter_display",
+    "input": {
+      "kind": "custom",
+      "customType": "界 type",
+      "display": false
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[界 type]\u001b[22m\u001b[39m                                                                      \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_labels_are_literal_bold_and_do_not_filter_display",
+    "input": {
+      "kind": "custom",
+      "customType": "[literal]",
+      "display": false
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[[literal]]\u001b[22m\u001b[39m                                                                    \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_labels_are_literal_bold_and_do_not_filter_display",
+    "input": {
+      "kind": "custom",
+      "customType": "**not markdown**",
+      "display": false
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[**not markdown**]\u001b[22m\u001b[39m                                                             \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "message_layout_reuses_padding_and_wrapping",
+    "input": {
+      "kind": "custom",
+      "width": 3,
+      "content": "one two three four five six"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m   \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[ \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1;38;2;64;80;112mn \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1;38;2;64;80;112mo \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1;38;2;64;80;112mt \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1;38;2;64;80;112me \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1;38;2;64;80;112m]\u001b[22m\u001b[39m \u001b[49m",
+      "\u001b[48;2;60;78;110m   \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mo \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mn \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111me \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mt \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mw \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mo \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mt \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mh \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mr \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111me \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111me \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mf \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mo \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mu \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mr \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mf \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mi \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mv \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111me \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111ms \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mi \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mx\u001b[39m \u001b[49m",
+      "\u001b[48;2;60;78;110m   \u001b[49m"
+    ]
+  },
+  {
+    "test": "message_layout_reuses_padding_and_wrapping",
+    "input": {
+      "kind": "custom",
+      "width": 20,
+      "content": "one two three four five six"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                    \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m             \u001b[49m",
+      "\u001b[48;2;60;78;110m                    \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mone two three four \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mfive six\u001b[39m           \u001b[49m",
+      "\u001b[48;2;60;78;110m                    \u001b[49m"
+    ]
+  },
+  {
+    "test": "message_layout_reuses_padding_and_wrapping",
+    "input": {
+      "kind": "custom",
+      "width": 80,
+      "content": "one two three four five six"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mone two three four five six\u001b[39m                                                    \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "custom_renderer_outcomes_select_only_one_body",
+    "input": {
+      "kind": "custom",
+      "mode": "component"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "CUSTOM                                                                          "
+      ],
+      "trace": [
+        {
+          "customType": "note",
+          "content": "body",
+          "details": {
+            "answer": 7
+          },
+          "display": true,
+          "timestamp": 1.5,
+          "expanded": false,
+          "themeColor": "\u001b[38;2;62;79;111msample\u001b[39m"
+        }
+      ]
+    }
+  },
+  {
+    "test": "custom_renderer_outcomes_select_only_one_body",
+    "input": {
+      "kind": "custom",
+      "mode": "undefined"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+      ],
+      "trace": [
+        {
+          "customType": "note",
+          "content": "body",
+          "details": {
+            "answer": 7
+          },
+          "display": true,
+          "timestamp": 1.5,
+          "expanded": false,
+          "themeColor": "\u001b[38;2;62;79;111msample\u001b[39m"
+        }
+      ]
+    }
+  },
+  {
+    "test": "custom_renderer_outcomes_select_only_one_body",
+    "input": {
+      "kind": "custom",
+      "mode": "throw"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+      ],
+      "trace": [
+        {
+          "customType": "note",
+          "content": "body",
+          "details": {
+            "answer": 7
+          },
+          "display": true,
+          "timestamp": 1.5,
+          "expanded": false,
+          "themeColor": "\u001b[38;2;62;79;111msample\u001b[39m"
+        }
+      ]
+    }
+  },
+  {
+    "test": "custom_expansion_skips_equal_values_and_invalidation_rebuilds",
+    "input": {
+      "kind": "custom",
+      "ops": [
+        false,
+        true,
+        true,
+        false,
+        "invalidate"
+      ]
+    },
+    "expected": {
+      "frames": [
+        [
+          "",
+          "custom false                                                                    "
+        ],
+        [
+          "",
+          "custom false                                                                    "
+        ],
+        [
+          "",
+          "custom true                                                                     "
+        ],
+        [
+          "",
+          "custom true                                                                     "
+        ],
+        [
+          "",
+          "custom false                                                                    "
+        ],
+        [
+          "",
+          "custom false                                                                    "
+        ]
+      ],
+      "trace": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "invalidations": 1
+    }
+  },
+  {
+    "test": "custom_rebuild_replaces_renderers_and_preserves_outer_edits",
+    "input": {
+      "kind": "custom",
+      "modes": [
+        "component",
+        "undefined",
+        "throw",
+        "component"
+      ]
+    },
+    "expected": {
+      "frames": [
+        [
+          "",
+          "custom 1                                                                        ",
+          "tail                                                                            "
+        ],
+        [
+          "",
+          "tail                                                                            ",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "",
+          "tail                                                                            ",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "",
+          "tail                                                                            ",
+          "custom 4                                                                        "
+        ]
+      ]
+    }
+  },
+  {
+    "test": "custom_theme_refresh_samples_background_before_foreground_rebuild",
+    "input": {
+      "kind": "custom",
+      "ops": [
+        "theme",
+        "same",
+        "invalidate"
+      ]
+    },
+    "expected": {
+      "frames": [
+        [
+          "",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ],
+        [
+          "",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;62;79;111mbody\u001b[39m                                                                           \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ],
+        [
+          "",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;144;112;96m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;143;111;94mbody\u001b[39m                                                                           \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "custom_supplied_markdown_callbacks_are_retained",
+    "input": {
+      "kind": "custom",
+      "content": "# Title"
+    },
+    "expected": [
+      "",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[note]\u001b[22m\u001b[39m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m CUSTOM[\u001b[1m\u001b[4mTitle\u001b[24m\u001b[22m]                                                                  \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_collapsed_and_expanded_rows_keep_their_own_spacing",
+    "input": {
+      "kind": "skill",
+      "name": "",
+      "expanded": false
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111m\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                                    \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_collapsed_and_expanded_rows_keep_their_own_spacing",
+    "input": {
+      "kind": "skill",
+      "name": "build",
+      "expanded": false
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_collapsed_and_expanded_rows_keep_their_own_spacing",
+    "input": {
+      "kind": "skill",
+      "name": "界 é",
+      "expanded": false
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111m界 é\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_collapsed_and_expanded_rows_keep_their_own_spacing",
+    "input": {
+      "kind": "skill",
+      "name": "**authored**",
+      "expanded": false
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111m**authored**\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_collapsed_and_expanded_rows_keep_their_own_spacing",
+    "input": {
+      "kind": "skill",
+      "name": "",
+      "expanded": true
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;92;94;126m──────────────────────────────────────────────────────────────────────────────\u001b[39m \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mDo \u001b[39m\u001b[1m\u001b[38;2;62;79;111mwork\u001b[39m\u001b[22m\u001b[38;2;62;79;111m\u001b[38;2;62;79;111m.\u001b[39m                                                                       \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mSecond paragraph.\u001b[39m                                                              \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_collapsed_and_expanded_rows_keep_their_own_spacing",
+    "input": {
+      "kind": "skill",
+      "name": "build",
+      "expanded": true
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mDo \u001b[39m\u001b[1m\u001b[38;2;62;79;111mwork\u001b[39m\u001b[22m\u001b[38;2;62;79;111m\u001b[38;2;62;79;111m.\u001b[39m                                                                       \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mSecond paragraph.\u001b[39m                                                              \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_collapsed_and_expanded_rows_keep_their_own_spacing",
+    "input": {
+      "kind": "skill",
+      "name": "界 é",
+      "expanded": true
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111m界 é\u001b[39m\u001b[22m                                                                           \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mDo \u001b[39m\u001b[1m\u001b[38;2;62;79;111mwork\u001b[39m\u001b[22m\u001b[38;2;62;79;111m\u001b[38;2;62;79;111m.\u001b[39m                                                                       \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mSecond paragraph.\u001b[39m                                                              \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_collapsed_and_expanded_rows_keep_their_own_spacing",
+    "input": {
+      "kind": "skill",
+      "name": "**authored**",
+      "expanded": true
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[1m\u001b[38;2;62;79;111mauthored\u001b[39m\u001b[22m\u001b[1m\u001b[22m                                                                       \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mDo \u001b[39m\u001b[1m\u001b[38;2;62;79;111mwork\u001b[39m\u001b[22m\u001b[38;2;62;79;111m\u001b[38;2;62;79;111m.\u001b[39m                                                                       \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mSecond paragraph.\u001b[39m                                                              \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_expanded_body_keeps_markdown_and_ignores_other_fields",
+    "input": {
+      "kind": "skill",
+      "expanded": true,
+      "content": ""
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_expanded_body_keeps_markdown_and_ignores_other_fields",
+    "input": {
+      "kind": "skill",
+      "expanded": true,
+      "content": "﻿"
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m﻿\u001b[39m                                                                               \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_expanded_body_keeps_markdown_and_ignores_other_fields",
+    "input": {
+      "kind": "skill",
+      "expanded": true,
+      "content": ""
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m\u001b[39m                                                                               \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_expanded_body_keeps_markdown_and_ignores_other_fields",
+    "input": {
+      "kind": "skill",
+      "expanded": true,
+      "content": "\tcode"
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m   code\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_expanded_body_keeps_markdown_and_ignores_other_fields",
+    "input": {
+      "kind": "skill",
+      "expanded": true,
+      "content": "line one\n\nline two"
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mline one\u001b[39m                                                                       \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mline two\u001b[39m                                                                       \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_expanded_body_keeps_markdown_and_ignores_other_fields",
+    "input": {
+      "kind": "skill",
+      "expanded": true,
+      "content": "**strong**\n\n*soft*"
+    },
+    "expected": [
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mstrong\u001b[39m\u001b[22m                                                                         \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+      "\u001b[48;2;60;78;110m \u001b[3m\u001b[38;2;62;79;111msoft\u001b[39m\u001b[23m                                                                           \u001b[49m",
+      "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+    ]
+  },
+  {
+    "test": "skill_hints_read_live_configured_keys_on_each_rebuild",
+    "input": {
+      "kind": "skill",
+      "keys": []
+    },
+    "expected": {
+      "frames": [
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m ( to expand)\u001b[39m                                                     \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+y to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "skill_hints_read_live_configured_keys_on_each_rebuild",
+    "input": {
+      "kind": "skill",
+      "keys": [
+        "alt+x"
+      ]
+    },
+    "expected": {
+      "frames": [
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (alt+x to expand)\u001b[39m                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+y to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "skill_hints_read_live_configured_keys_on_each_rebuild",
+    "input": {
+      "kind": "skill",
+      "keys": [
+        "alt+x",
+        "ctrl+o"
+      ]
+    },
+    "expected": {
+      "frames": [
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (alt+x/ctrl+o to expand)\u001b[39m                                         \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+y to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "skill_repeated_expansion_and_invalidation_refresh_current_theme",
+    "input": {
+      "kind": "skill",
+      "ops": [
+        "theme",
+        false,
+        true,
+        true,
+        "invalidate",
+        false
+      ]
+    },
+    "expected": {
+      "frames": [
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;144;112;96m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;143;111;94mbuild\u001b[39m\u001b[38;2;136;104;80m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;144;112;96m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[1m\u001b[38;2;143;111;94mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;143;111;94mDo \u001b[39m\u001b[1m\u001b[38;2;143;111;94mwork\u001b[39m\u001b[22m\u001b[38;2;143;111;94m\u001b[38;2;143;111;94m.\u001b[39m                                                                       \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;143;111;94mSecond paragraph.\u001b[39m                                                              \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;144;112;96m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[1m\u001b[38;2;143;111;94mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;143;111;94mDo \u001b[39m\u001b[1m\u001b[38;2;143;111;94mwork\u001b[39m\u001b[22m\u001b[38;2;143;111;94m\u001b[38;2;143;111;94m.\u001b[39m                                                                       \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;143;111;94mSecond paragraph.\u001b[39m                                                              \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;144;112;96m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[1m\u001b[38;2;143;111;94mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;143;111;94mDo \u001b[39m\u001b[1m\u001b[38;2;143;111;94mwork\u001b[39m\u001b[22m\u001b[38;2;143;111;94m\u001b[38;2;143;111;94m.\u001b[39m                                                                       \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;143;111;94mSecond paragraph.\u001b[39m                                                              \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m",
+          "\u001b[48;2;142;110;92m \u001b[38;2;144;112;96m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;143;111;94mbuild\u001b[39m\u001b[38;2;136;104;80m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;142;110;92m                                                                                \u001b[49m"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "skill_supplied_markdown_callbacks_and_child_aliases_survive",
+    "input": {
+      "kind": "skill",
+      "content": "# Body"
+    },
+    "expected": {
+      "frames": [
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[38;2;48;72;104m (ctrl+o to expand)\u001b[39m                                               \u001b[49m",
+          "\u001b[48;2;60;78;110m extra                                                                          \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ],
+        [
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                        \u001b[49m",
+          "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mbuild\u001b[39m\u001b[22m                                                                          \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m",
+          "\u001b[48;2;60;78;110m CUSTOM[\u001b[1m\u001b[4mBody\u001b[24m\u001b[22m]                                                                   \u001b[49m",
+          "\u001b[48;2;60;78;110m                                                                                \u001b[49m"
+        ]
+      ],
+      "oldChildren": 2
+    }
+  }
+]

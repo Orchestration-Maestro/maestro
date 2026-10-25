@@ -28,7 +28,7 @@ impl Workspace {
             scratch: Scratch::new(),
         };
         fs::write(
-            workspace.root.join("Cargo.toml"),
+            workspace.root.path().join("Cargo.toml"),
             "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = { version = \"=1.0.151\", features = [\"float_roundtrip\"] }\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = { level = \"forbid\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n",
         )
         .unwrap();
@@ -37,7 +37,7 @@ impl Workspace {
     }
 
     pub fn member(&self, directory: &str, name: &str, dependencies: &str) {
-        let root = self.root.join("crates").join(directory);
+        let root = self.root.path().join("crates").join(directory);
         fs::create_dir_all(root.join("src")).unwrap();
         fs::write(root.join("src/lib.rs"), "").unwrap();
         let lints = if name == "maestro-extensions-wasm" {
@@ -55,7 +55,7 @@ impl Workspace {
     }
 
     pub fn external(&self, name: &str) {
-        let root = self.root.join("external");
+        let root = self.root.path().join("external");
         fs::create_dir_all(root.join("src")).unwrap();
         fs::write(root.join("src/lib.rs"), "").unwrap();
         fs::write(
@@ -65,12 +65,12 @@ impl Workspace {
             ),
         )
         .unwrap();
-        fs::write(self.root.join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = {{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }}\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = {{ level = \"forbid\", priority = -1 }}\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
+        fs::write(self.root.path().join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = {{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }}\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = {{ level = \"forbid\", priority = -1 }}\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
     }
 
     /// Package a fixture's top-level test files in the canonical executable.
     pub fn integration(&self, directory: &str) {
-        let root = self.root.join("crates").join(directory);
+        let root = self.root.path().join("crates").join(directory);
         let tests = root.join("tests");
         let modules: Vec<_> = std::fs::read_dir(&tests)
             .unwrap()
@@ -97,7 +97,7 @@ impl Workspace {
             .map(|(name, layer)| (name.to_string(), (*layer).into()))
             .collect();
         fs::write(
-            self.root.join("workspace-crates.json"),
+            self.root.path().join("workspace-crates.json"),
             serde_json::to_vec_pretty(&entries).unwrap(),
         )
         .unwrap();
@@ -117,6 +117,23 @@ pub fn required(name: &str) -> &'static [&'static str] {
 
 pub fn class(name: &str) -> &'static str {
     policy::rule(name).unwrap().class
+}
+
+/// Write one authored source under a member's directory, creating its parents, and return
+/// its path.
+///
+/// The authored relative path is written with slashes and returned with the native
+/// separators the file system reports, so a diagnostic comparison matches on every host.
+pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &str) -> PathBuf {
+    let path = workspace
+        .root
+        .path()
+        .join("crates")
+        .join(member)
+        .join(relative.split('/').collect::<PathBuf>());
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, contents).unwrap();
+    path
 }
 
 impl Workspace {
@@ -152,7 +169,7 @@ impl Workspace {
 #[cfg(unix)]
 impl Workspace {
     pub fn command(&self, name: &str, body: &str) -> PathBuf {
-        let path = self.root.join(name);
+        let path = self.root.path().join(name);
         fs::write(&path, format!("{body}\n")).unwrap();
         path
     }
@@ -161,7 +178,7 @@ impl Workspace {
         let output =
             std::process::Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
                 .args(["metadata", "--format-version", "1", "--offline"])
-                .current_dir(&self.root)
+                .current_dir(self.root.path())
                 .output()
                 .unwrap();
         assert!(
@@ -200,12 +217,12 @@ impl Workspace {
         resolved: &serde_json::Value,
     ) -> (PathBuf, PathBuf) {
         fs::write(
-            self.root.join("declared.json"),
+            self.root.path().join("declared.json"),
             serde_json::to_vec(declared).unwrap(),
         )
         .unwrap();
         fs::write(
-            self.root.join("resolved.json"),
+            self.root.path().join("resolved.json"),
             serde_json::to_vec(resolved).unwrap(),
         )
         .unwrap();
@@ -229,28 +246,25 @@ impl Workspace {
         &self,
         cargo: &std::path::Path,
         rustc: &std::path::Path,
-    ) -> std::process::Command {
+    ) -> maestro_test_process::TestProcess {
         let launcher =
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
-        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-        command
-            .args([
-                "--exact",
-                "architecture::metadata_graph_failures_cross_the_public_interface",
-                "--nocapture",
-            ])
-            .env("MAESTRO_CONVENTIONS_PROBE_ROOT", &self.root)
-            .env("CARGO", if cargo.is_file() { &launcher } else { cargo })
-            .env("RUSTC", if rustc.is_file() { &launcher } else { rustc })
-            .env("MAESTRO_FAKE_CARGO_SCENARIO", cargo)
-            .env("MAESTRO_FAKE_RUSTC_SCENARIO", rustc);
-        command
+        maestro_test_process::TestProcess::named(
+            "architecture::metadata_graph_failures_cross_the_public_interface",
+        )
+        .unwrap()
+        .nocapture()
+        .env("MAESTRO_CONVENTIONS_PROBE_ROOT", self.root.path())
+        .env("CARGO", if cargo.is_file() { &launcher } else { cargo })
+        .env("RUSTC", if rustc.is_file() { &launcher } else { rustc })
+        .env("MAESTRO_FAKE_CARGO_SCENARIO", cargo)
+        .env("MAESTRO_FAKE_RUSTC_SCENARIO", rustc)
     }
 }
 
 /// Run a probe child and require that it ran its one probe test successfully.
 #[cfg(unix)]
-fn run_probe(command: &mut std::process::Command) {
+fn run_probe(command: maestro_test_process::TestProcess) {
     let output = command.output().unwrap();
     assert!(
         output.status.success(),
@@ -258,9 +272,4 @@ fn run_probe(command: &mut std::process::Command) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(
-        &output,
-        "architecture::metadata_graph_failures_cross_the_public_interface",
-    )
-    .unwrap();
 }

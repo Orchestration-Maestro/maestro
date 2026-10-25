@@ -1,10 +1,8 @@
 //! Text and image views through the public artifact boundary.
 #![cfg(test)]
-pub mod artifact_support;
-pub mod session_header_support;
-pub mod support;
-#[path = "artifact_support/text_image.rs"]
-pub mod text_image_support;
+use crate::artifact_support;
+use crate::session_header_support;
+use crate::text_image_support;
 use artifact_support::Frame;
 use maestro_web::{ArtifactElement, tools::artifacts::create_artifact_element};
 use session_header_support::Host;
@@ -30,9 +28,9 @@ fn artifact_factory_installs_text_and_image_views() {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
 }
+use crate::effects_support;
 use maestro_web::{ImageArtifact, TextArtifact};
 use text_image_support::{Highlighter, corpus};
-mod effects_support;
 
 /// Language requests carry the exact label and complete original source.
 #[test]
@@ -255,7 +253,7 @@ fn image_download_rejects_invalid_base64() {
         let frame = Frame::default();
         assert!(matches!(
             frame.draw(&mut view, true, vec![]),
-            Err(maestro_web::browser::attachment_content::AttachmentUiError::Presentation(_))
+            Err(maestro_web::tools::artifacts::ArtifactUiError::Presentation(_))
         ));
         assert!(host.downloads.borrow().is_empty());
         frame.draw(&mut view, false, vec![]).unwrap();
@@ -321,5 +319,3 @@ fn text_and_image_views_release_native_surfaces() {
         );
     }
 }
-
-pub mod highlighter_support;

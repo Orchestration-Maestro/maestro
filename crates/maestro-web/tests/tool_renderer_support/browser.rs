@@ -1,9 +1,8 @@
 //! Shared real-browser tool recipe drawing and final-clip observations.
 #![cfg(test)]
-use crate::markdown_support::Surface;
+use crate::{markdown_support::Surface, support::tool_output::TextOnlyOutput as _};
+use maestro_web::tools::types::ToolUiError;
 use maestro_web::{
-    TranslationFunction,
-    browser::attachment_content::{AttachmentHost, AttachmentUiError},
     components::code_block::{CodeBlock, CodeBlockView},
     tools::{
         renderer_registry::ToolHeaderState,
@@ -12,18 +11,7 @@ use maestro_web::{
 };
 use std::rc::Rc;
 
-pub fn view<'a>(
-    host: &'a Rc<dyn AttachmentHost>,
-    frame: CodeBlockView<'a, TranslationFunction>,
-) -> ToolRenderView<'a> {
-    ToolRenderView {
-        host,
-        i18n: frame.i18n,
-        presentation: frame.presentation,
-        highlighter: frame.highlighter,
-        modal: frame.modal,
-    }
-}
+pub use crate::support::reading_view::view;
 /// Observe the real native recipe through the shared frame.
 /// # Panics
 /// Panics if native setup or the expected observation fails.
@@ -33,7 +21,12 @@ pub fn draw(
     row: &mut ToolRenderState,
 ) -> egui::Response {
     let host = surface.host();
-    surface.draw(|ui, frame| recipe.render(ui, view(&host, frame), row).unwrap())
+    surface.draw(|ui, frame| {
+        recipe
+            .render(ui, view(&host, frame), row)
+            .assert_no_overlays()
+            .unwrap()
+    })
 }
 /// Observe the real native recipe through the shared frame.
 /// # Panics
@@ -46,7 +39,10 @@ pub fn click(
 ) {
     let host = surface.host();
     surface.click(at, |ui, frame| {
-        recipe.render(ui, view(&host, frame), row).unwrap()
+        recipe
+            .render(ui, view(&host, frame), row)
+            .assert_no_overlays()
+            .unwrap()
     });
 }
 /// Observe the real native recipe through the shared frame.
@@ -109,27 +105,33 @@ impl ToolContent for ListingRecipe {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
-        let slot = state.state::<ListingState>();
-        let mut block = slot
-            .borrow_mut()
-            .block
-            .take()
-            .unwrap_or_else(|| CodeBlock::new(Rc::clone(view.host)));
-        block.code.clone_from(&self.code);
-        block.language = "text".into();
-        let result = block.render(
-            ui,
-            CodeBlockView {
-                i18n: view.i18n,
-                presentation: view.presentation,
-                highlighter: view.highlighter,
-                modal: view.modal,
-            },
-        );
-        let old = slot.borrow_mut().block.replace(block);
-        drop(old);
-        result
+    ) -> maestro_web::tools::types::ToolContentOutput {
+        let response = {
+            let slot = state.state::<ListingState>();
+            let mut block = slot
+                .borrow_mut()
+                .block
+                .take()
+                .unwrap_or_else(|| CodeBlock::new(Rc::clone(view.host)));
+            block.code.clone_from(&self.code);
+            block.language = "text".into();
+            let result = block.render(
+                ui,
+                CodeBlockView {
+                    i18n: view.i18n,
+                    presentation: view.presentation,
+                    highlighter: view.highlighter,
+                    modal: view.modal,
+                },
+            );
+            let old = slot.borrow_mut().block.replace(block);
+            drop(old);
+            result.map_err(ToolUiError::Reading)
+        };
+        maestro_web::tools::types::ToolContentOutput {
+            response,
+            overlays: Vec::new(),
+        }
     }
 }
 

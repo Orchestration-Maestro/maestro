@@ -1,5 +1,5 @@
 //! Owned document element records.
-use super::super::OwnedXmlElement;
+use indexmap::IndexMap;
 /// Recognized document element kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DomType {
@@ -37,6 +37,10 @@ pub enum DomType {
     AltChunk,
     /// Table element.
     Table,
+    /// Table row element.
+    Row,
+    /// Table cell element.
+    Cell,
     /// Hyperlink element.
     Hyperlink,
     /// `SmartTag` element.
@@ -134,6 +138,8 @@ impl DomType {
             Self::DeletedText => "deletedText",
             Self::AltChunk => "altChunk",
             Self::Table => "table",
+            Self::Row => "row",
+            Self::Cell => "cell",
             Self::Hyperlink => "hyperlink",
             Self::SmartTag => "smartTag",
             Self::BookmarkStart => "bookmarkStart",
@@ -308,13 +314,82 @@ pub enum OpenXmlElementData {
     CommentRangeStart(super::super::WmlCommentRangeStart),
     /// Comment range closing marker.
     CommentRangeEnd(super::super::WmlCommentRangeEnd),
-    /// Unparsed content.
-    Unparsed {
-        /// Known eventual document kind.
-        kind: DomType,
-        /// Shared complete XML source and selected range.
-        element: OwnedXmlElement,
-    },
+    /// Table grid, metadata and styles.
+    Table(Box<WmlTable>),
+    /// Table row metadata and styles.
+    Row(WmlTableRow),
+    /// Table cell metadata and styles.
+    Cell(WmlTableCell),
+    /// Hyperlink wrapper around its runs.
+    Hyperlink(WmlHyperlink),
+    /// Smart-tag wrapper around its runs.
+    SmartTag(WmlSmartTag),
+}
+/// Hyperlink relationship and anchor, each nullable.
+#[derive(Debug)]
+pub struct WmlHyperlink {
+    /// Nullable relationship identifier.
+    pub id: Option<String>,
+    /// Nullable bookmark anchor.
+    pub anchor: Option<String>,
+}
+/// Smart-tag metadata, kept only when nonempty.
+#[derive(Debug)]
+pub struct WmlSmartTag {
+    /// Nonempty namespace URI.
+    pub uri: Option<String>,
+    /// Nonempty element name.
+    pub element: Option<String>,
+}
+/// One grid column.
+#[derive(Debug)]
+pub struct WmlTableColumn {
+    /// Converted width; absent without the attribute.
+    pub width: Option<String>,
+}
+/// Table grid, encountered metadata and ordered styles.
+#[derive(Debug, Default)]
+pub struct WmlTable {
+    /// Columns of the last grid; absent without a grid.
+    pub columns: Option<Vec<WmlTableColumn>>,
+    /// Ordered table CSS from the last property group.
+    pub css_style: Option<IndexMap<String, Option<String>>>,
+    /// Ordered cell borders and margins from the last property group.
+    pub cell_style: Option<IndexMap<String, Option<String>>>,
+    /// Encountered nullable style reference.
+    pub style_name: Option<Option<String>>,
+    /// Encountered table-look classes in declared order.
+    pub class_name: Option<String>,
+    /// Encountered nullable column band size.
+    pub col_band_size: Option<Option<f64>>,
+    /// Encountered nullable row band size.
+    pub row_band_size: Option<Option<f64>>,
+}
+/// Row metadata and ordered styles.
+#[derive(Debug, Default)]
+pub struct WmlTableRow {
+    /// Ordered CSS from the last property group.
+    pub css_style: Option<IndexMap<String, Option<String>>>,
+    /// Encountered conditional classes.
+    pub class_name: Option<String>,
+    /// Encountered nullable header flag.
+    pub is_header: Option<Option<bool>>,
+    /// Encountered nullable leading grid offset.
+    pub grid_before: Option<Option<f64>>,
+    /// Encountered nullable trailing grid offset.
+    pub grid_after: Option<Option<f64>>,
+}
+/// Cell metadata and ordered styles.
+#[derive(Debug, Default)]
+pub struct WmlTableCell {
+    /// Ordered CSS from the last property group, then text directions.
+    pub css_style: Option<IndexMap<String, Option<String>>>,
+    /// Encountered conditional classes.
+    pub class_name: Option<String>,
+    /// Encountered nullable column span.
+    pub span: Option<Option<f64>>,
+    /// Encountered merge marker; a missing value continues the merge.
+    pub vertical_merge: Option<String>,
 }
 /// Common document links.
 #[derive(Debug, Default)]
@@ -340,7 +415,11 @@ impl OpenXmlElement {
             OpenXmlElementData::CommentReference(_) => DomType::CommentReference,
             OpenXmlElementData::CommentRangeStart(_) => DomType::CommentRangeStart,
             OpenXmlElementData::CommentRangeEnd(_) => DomType::CommentRangeEnd,
-            OpenXmlElementData::Unparsed { kind, .. } => kind,
+            OpenXmlElementData::Table(_) => DomType::Table,
+            OpenXmlElementData::Row(_) => DomType::Row,
+            OpenXmlElementData::Cell(_) => DomType::Cell,
+            OpenXmlElementData::Hyperlink(_) => DomType::Hyperlink,
+            OpenXmlElementData::SmartTag(_) => DomType::SmartTag,
             OpenXmlElementData::Image { .. } => DomType::Image,
             OpenXmlElementData::VmlPicture => DomType::VmlPicture,
             OpenXmlElementData::VmlElement(_) => DomType::VmlElement,

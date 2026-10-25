@@ -1,14 +1,12 @@
 //! Failure records and cancellable native work shared by the tools.
 
 use futures_util::future::{Either, select};
-use maestro_models::{
-    Cancellation, DiagnosticCode, DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
-};
+use maestro_models::{Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use std::{future::Future, io, pin::pin};
 
-/// A failure whose message is `message`, named `ThrownValue` with no stack or code.
+/// A failure whose message is `message`, named `Error` with no stack or code.
 pub(crate) fn failure(message: &str) -> DiagnosticErrorInfo {
-    extract_diagnostic_error(DiagnosticInput::Text(message))
+    DiagnosticErrorInfo::error(message)
 }
 
 /// Describe a native failure with its message and operating-system error number.

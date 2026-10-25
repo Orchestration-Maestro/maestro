@@ -31,7 +31,7 @@ fn returned_operations_overlap_with_exact_operands_and_independent_sinks() {
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new(super::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let id = callbacks.allocate().unwrap().id;
@@ -139,7 +139,7 @@ fn nonunicode_environment_is_rejected_before_guest_admission_without_lossy_conve
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new(super::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let id = callbacks.allocate().unwrap().id;

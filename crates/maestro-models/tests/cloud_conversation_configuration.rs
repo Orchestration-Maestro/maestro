@@ -1,17 +1,22 @@
 //! Direct Bedrock request construction and configuration through the SDK with a controlled sender.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bedrock_cases as cases;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bedrock_routes as routes;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bedrock_rows as rows;
 use crate::chat;
-use crate::child_process;
 
+#[cfg(not(target_arch = "wasm32"))]
 use cases::{Case, Expect, run_cases};
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use routes::{Refusal, Route, run_refusals, run_routes};
 
 const EU: &str = "https://bedrock-runtime.eu-central-1.amazonaws.com";
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run every row the test owns in the request fixture.
 fn check_rows(test: &str) -> TestResult {
     rows::check_rows(
@@ -20,51 +25,61 @@ fn check_rows(test: &str) -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn payload_hook_observes_sdk_input_before_serialization() -> TestResult {
     check_rows("payload_hook_observes_sdk_input_before_serialization")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn payload_edits_and_replacements_reach_the_sdk() -> TestResult {
     check_rows("payload_edits_and_replacements_reach_the_sdk")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn hook_added_request_fields_survive_without_parallel_options() -> TestResult {
     check_rows("hook_added_request_fields_survive_without_parallel_options")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn selected_request_fields_keep_presence_and_supported_values() -> TestResult {
     check_rows("selected_request_fields_keep_presence_and_supported_values")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn sdk_selection_drops_unknown_structure_members() -> TestResult {
     check_rows("sdk_selection_drops_unknown_structure_members")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn wire_numbers_keep_double_precision() -> TestResult {
     check_rows("wire_numbers_keep_double_precision")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn text_request_keeps_empty_whitespace_unicode_and_order() -> TestResult {
     check_rows("text_request_keeps_empty_whitespace_unicode_and_order")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn payload_failure_precedes_sdk_resolution() -> TestResult {
     check_rows("payload_failure_precedes_sdk_resolution")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn route_failure_wins_over_later_body_conversion() -> TestResult {
     check_rows("route_failure_wins_over_later_body_conversion")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bearer_and_skip_auth_use_the_selected_authentication() -> TestResult {
     const TEST: &str = "bearer_and_skip_auth_use_the_selected_authentication";
@@ -88,18 +103,23 @@ fn bearer_and_skip_auth_use_the_selected_authentication() -> TestResult {
             )
         },
     ];
-    let is_case =
-        child_process::child_case().is_some_and(|id| cases.iter().any(|case| case.id == id));
+    let is_case = maestro_test_process::selection().is_child()
+        && cases
+            .iter()
+            .any(|case| maestro_test_process::selection().runs_case(case.id));
     if is_case {
         return run_cases(TEST, &cases);
     }
-    check_rows(TEST)?;
-    if child_process::child_case().is_none() {
+    if maestro_test_process::selection().runs_group(TEST) {
+        check_rows(TEST)?;
+    }
+    if !maestro_test_process::selection().is_child() {
         run_cases(TEST, &cases)?;
     }
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Cases where the region comes from options, the environment or the endpoint.
 fn region_cases() -> Vec<Case> {
     const ALL: &[(&str, &str)] = &[
@@ -154,6 +174,7 @@ fn region_cases() -> Vec<Case> {
     ]
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Cases where the endpoint's shape decides the region or the route.
 fn endpoint_cases() -> Vec<Case> {
     const KEY: &str = "controlled-default";
@@ -203,6 +224,7 @@ fn endpoint_cases() -> Vec<Case> {
     ]
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn endpoint_resolution_preserves_region_and_custom_routes() -> TestResult {
     let mut all = region_cases();
@@ -213,6 +235,7 @@ fn endpoint_resolution_preserves_region_and_custom_routes() -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn profile_selection_defers_standard_endpoint_to_sdk() -> TestResult {
     const CUSTOM: &str = "https://custom.example/route";
@@ -277,6 +300,7 @@ fn profile_selection_defers_standard_endpoint_to_sdk() -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_credentials_sign_without_api_key() -> TestResult {
     run_cases(
@@ -302,6 +326,7 @@ fn native_credentials_sign_without_api_key() -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn selected_profile_skips_environment_credentials() -> TestResult {
     const KEYS: &[(&str, &str)] = &[
@@ -375,6 +400,7 @@ fn catalog_regions_use_standard_hosts() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn proxy_variables_and_bypass_reach_selected_route() -> TestResult {
     const BYPASS_OTHER: (&str, &str) = ("NO_PROXY", "example.org");
@@ -438,6 +464,7 @@ fn proxy_variables_and_bypass_reach_selected_route() -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn unusable_selected_proxy_fails_before_any_connection() -> TestResult {
     run_refusals(
@@ -457,6 +484,7 @@ fn unusable_selected_proxy_fails_before_any_connection() -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn redirects_are_returned_without_being_followed() -> TestResult {
     run_refusals(

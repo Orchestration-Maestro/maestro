@@ -36,6 +36,9 @@ enum Expected {
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Fields {
+    /// Selected wire version, when recorded.
+    #[serde(default)]
+    version: Option<u8>,
     /// Local lookup policy.
     lookup: bool,
     /// Proxy host.
@@ -62,6 +65,19 @@ fn socks_urls_keep_scheme_dns_ports_and_credentials() {
         serde_json::from_str(include_str!("../../../../tests/fixtures/socks_urls.json"))
             .expect("constructor fixture");
     assert_eq!(cases.len(), 30);
+    check(cases);
+}
+
+#[test]
+fn socks4_urls_select_version_dns_and_decoded_identity() {
+    let cases: Vec<Case> =
+        serde_json::from_str(include_str!("../../../../tests/fixtures/socks4_urls.json")).unwrap();
+    assert_eq!(cases.len(), 58);
+    check(cases);
+}
+
+/// Assert every recorded constructor field.
+fn check(cases: Vec<Case>) {
     for case in cases {
         let parsed = url::Url::parse(&case.input.url)
             .map_err(std::io::Error::other)
@@ -73,6 +89,13 @@ fn socks_urls_keep_scheme_dns_ports_and_credentials() {
             }
             Expected::Accepted(expected) => {
                 let proxy = parsed.expect("accepted constructor");
+                if let Some(version) = expected.version {
+                    let actual = match proxy.version {
+                        super::SocksVersion::V4 => 4,
+                        super::SocksVersion::V5 => 5,
+                    };
+                    assert_eq!(actual, version);
+                }
                 assert_eq!(proxy.lookup, expected.lookup, "case {}", case.id);
                 assert_eq!(proxy.host, expected.host, "case {}", case.id);
                 assert_eq!(proxy.port, expected.port, "case {}", case.id);

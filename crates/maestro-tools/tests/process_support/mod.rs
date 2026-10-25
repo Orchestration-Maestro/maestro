@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
 
 /// Polls `future` once and reports its state without consuming it.
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn poll_once<F: Future>(future: &mut Pin<&mut F>) -> Poll<F::Output> {
     std::future::poll_fn(|cx| Poll::Ready(future.as_mut().poll(cx))).await
 }
@@ -54,6 +55,7 @@ pub async fn complete<F: Future>(forward: &Arc<Forward>, mut future: Pin<Box<F>>
 
 /// Drives `future` to completion with a fresh [`forward`] owner and returns its output
 /// with that owner.
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn polled_to_completion<F: Future>(future: F) -> (F::Output, Arc<Forward>) {
     let owner = forward();
     let output = complete(&owner, Box::pin(future)).await;

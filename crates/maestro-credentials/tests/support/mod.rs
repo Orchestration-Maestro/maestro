@@ -1,24 +1,36 @@
-//! Temporary directories and isolated child test processes shared by the storage tests.
-#![allow(dead_code)] // each test binary uses a different part of these helpers
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::sync::{RwLock, RwLockReadGuard};
+//! Temporary directories, isolated child test processes and stored credential fixtures
+//! shared by the storage tests.
+use maestro_credentials::{
+    ApiKeyCredential, AuthCredential, AuthStorageBackend, InMemoryAuthStorageBackend,
+};
+use std::path::Path;
+use std::sync::{Mutex, RwLock, RwLockReadGuard};
+
+mod runtime;
+pub use runtime::block_on;
 
 /// Held shared by tests whose file locks must be released exactly when dropped, and
 /// exclusively while a child process is created: a forked child owns a copy of every
 /// open descriptor until it executes, so a lock released meanwhile would stay held.
-static PROCESS_CREATION: RwLock<()> = RwLock::new(());
+pub(crate) static PROCESS_CREATION: RwLock<()> = RwLock::new(());
+
+/// Serializes cache observations; acquire before `PROCESS_CREATION` when both are needed.
+pub(crate) static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Disposable directory removed when dropped.
-pub struct TempDir(PathBuf, Option<RwLockReadGuard<'static, ()>>);
+pub struct TempDir(
+    maestro_test_directory::Scratch,
+    Option<RwLockReadGuard<'static, ()>>,
+);
 
 impl TempDir {
-    /// Create an empty directory named after the test.
+    /// Create an empty directory with the supplied creation-error context.
     pub fn new(name: &str) -> Self {
-        let path = std::env::temp_dir().join(format!("maestro-auth-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&path);
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path, None)
+        Self(
+            maestro_test_directory::Scratch::new()
+                .unwrap_or_else(|error| panic!("create {name} fixture: {error}")),
+            None,
+        )
     }
 
     /// Like [`TempDir::new`], and keeps [`run_child`] from creating a process while it lives;
@@ -34,33 +46,24 @@ impl TempDir {
 
     /// The directory itself.
     pub fn root(&self) -> &Path {
-        &self.0
+        self.0.path()
     }
 
     /// A path below the directory, as the text the storage API accepts.
     pub fn path(&self, relative: &str) -> String {
-        self.0.join(relative).to_str().unwrap().to_owned()
-    }
-}
-
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+        self.0.path().join(relative).to_str().unwrap().to_owned()
     }
 }
 
 /// Whether this process is a child started by [`run_child`].
 pub fn is_child() -> bool {
-    std::env::var_os("MAESTRO_AUTH_CHILD").is_some()
+    maestro_test_process::selection().is_child()
 }
 
-/// Rerun one test in this binary with only `envs` set and `cwd` as working directory.
-pub fn run_child(test: &str, cwd: &Path, envs: &[(&str, &str)]) {
-    let mut command = Command::new(std::env::current_exe().unwrap());
-    command
-        .args(["--exact", test, "--nocapture"])
-        .env_clear()
-        .env("MAESTRO_AUTH_CHILD", "1")
+/// Run the configured test process with supplied edits and cwd.
+pub fn run_child(process: maestro_test_process::TestProcess, cwd: &Path, envs: &[(&str, &str)]) {
+    let command = process
+        .nocapture()
         .envs(envs.iter().copied())
         .current_dir(cwd)
         .stdout(std::process::Stdio::piped())
@@ -73,28 +76,62 @@ pub fn run_child(test: &str, cwd: &Path, envs: &[(&str, &str)]) {
     };
     let output = child.wait_with_output().unwrap();
     assert!(
-        output.status.success() && String::from_utf8_lossy(&output.stdout).contains("1 passed"),
+        output.status.success(),
         "{}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
 }
 
-/// Run `future` to completion on a fresh current-thread runtime.
-pub fn block_on<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
+/// Run the named test again in a clean child with only the supplied environment.
+pub fn run_isolated(test: &str, envs: &[(&str, &str)]) {
+    let dir = TempDir::new(test);
+    let process = maestro_test_process::TestProcess::named(test).unwrap();
+    run_child(process.env_clear().case("*"), dir.root(), envs);
 }
 
-/// Run `future` on a current-thread runtime whose clock advances only when idle.
+/// Environment name carrying the selected case into a child test.
+pub const CASE_ENV: &str = "MAESTRO_CASE";
+
+/// Stored API key credential.
+pub fn api_key(key: &str) -> AuthCredential {
+    AuthCredential::ApiKey(ApiKeyCredential {
+        key: key.to_owned(),
+    })
+}
+
+/// Text held by a memory backend.
+pub fn memory_text(backend: &InMemoryAuthStorageBackend) -> Option<String> {
+    let mut text = None;
+    backend
+        .with_lock(&mut |current| {
+            text = current.map(str::to_owned);
+            Ok(None)
+        })
+        .unwrap();
+    text
+}
+
+/// Run `future` on a current-thread runtime whose clock starts paused.
 pub fn block_on_paused<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(future)
+    runtime::runtime(true).block_on(future)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TempDir;
+
+    #[test]
+    fn same_label_directories_preserve_each_others_files() {
+        let first = TempDir::new("repeated-label");
+        std::fs::write(first.path("auth.json"), b"first credential").unwrap();
+        let second = TempDir::new("repeated-label");
+        assert_eq!(
+            std::fs::read(first.path("auth.json")).unwrap(),
+            b"first credential"
+        );
+        assert_ne!(first.root(), second.root());
+        drop(second);
+        assert!(first.root().is_dir());
+    }
 }

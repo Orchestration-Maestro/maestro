@@ -67,6 +67,8 @@ pub(crate) enum Message {
     Effect(u64, effects::Request),
     /// Forwards an owned chunk into its original execution's data stream.
     BashOutput(u64, Vec<u8>, bash_output::Reply),
+    /// Uses the originally acquired UI independently of later bindings.
+    Ui(u64, crate::ui_reads::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -132,12 +134,7 @@ impl Drop for Lease {
     }
 }
 
-/// A UI resource retains only its original UI, not the guarded context.
-#[derive(Clone)]
-pub(crate) struct UiEndpoint {
-    /// Keeps the independently retained local UI alive until final release.
-    _lease: Arc<Lease>,
-}
+pub(crate) use crate::ui_reads::Endpoint as UiEndpoint;
 
 /// A cancellation resource retains its original signal independently of the context.
 #[derive(Clone)]
@@ -184,10 +181,7 @@ enum Capability {
         _owner: maestro_extensions::LiveTheme,
     },
     /// Original raw UI capability, independent of later bindings.
-    Ui {
-        /// Opaque canonical capability; its ownership, not its methods, crosses here.
-        _owner: ExtensionUIContext,
-    },
+    Ui(ExtensionUIContext),
 }
 
 /// Local entries and their monotonic identities.
@@ -260,8 +254,7 @@ impl Registry {
 
     /// Retains the UI returned by the guarded read at consumption time.
     pub(crate) fn ui(&self, ui: ExtensionUIContext) -> Result<UiEndpoint, String> {
-        self.insert(Capability::Ui { _owner: ui })
-            .map(|lease| UiEndpoint { _lease: lease })
+        self.insert(Capability::Ui(ui)).map(UiEndpoint)
     }
 
     /// Retains the cancellation selected by the context read.

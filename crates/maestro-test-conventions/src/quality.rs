@@ -34,10 +34,7 @@ pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
 /// Enforce the hand-written production source line limit.
 fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     let path = &source.path;
-    if member.name == "maestro-models"
-        && path.starts_with(member.directory.join("src/catalog/models_generated"))
-        || test_layout(path, &member.directory)
-    {
+    if generated::catalog_source(member, source) || test_layout(path, &member.directory) {
         return Ok(());
     }
     let contents = &source.contents;

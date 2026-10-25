@@ -216,6 +216,7 @@ fn reading_frame_clip_extents_keep_finite_bounds() {
         opacity: 1.,
         occluders: vec![],
         content: AttachmentContent::Reading(super::ReadingPlacement {
+            intrinsic_width: false,
             content: std::rc::Rc::new(content),
             phase: super::ReadingPhase::Publish,
             sizes: &[],

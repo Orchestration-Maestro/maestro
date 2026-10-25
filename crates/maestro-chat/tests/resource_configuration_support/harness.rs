@@ -89,10 +89,6 @@ impl Harness {
         let options = ConfigSelectorOptions {
             cwd: dirs.0.into(),
             agent_dir: dirs.1.into(),
-            path_operations: Rc::new(crate::directories::Directories {
-                cwd: Ok("/tmp".into()),
-                reads: Cell::new(0),
-            }),
             theme,
             collator: Rc::new(Collator::new(&|_| Some("en_US.UTF-8".into())).unwrap()),
             styles_enabled: Rc::new(|| true),
@@ -107,8 +103,8 @@ impl Harness {
         bold: bool,
     ) -> Self {
         let scratch = crate::scratch::Scratch::new().unwrap();
-        let user = scratch.0.join("user");
-        let project = scratch.0.join("project");
+        let user = scratch.path().join("user");
+        let project = scratch.path().join("project");
         std::fs::create_dir_all(&user).unwrap();
         std::fs::create_dir_all(project.join(".maestro")).unwrap();
         let files = [

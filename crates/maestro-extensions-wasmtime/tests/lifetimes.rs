@@ -16,17 +16,16 @@ async fn release_instance(fault: bool) {
     let tails = Rc::new(RefCell::new(Vec::new()));
     let queued = tails.clone();
     let errors = Rc::new(RefCell::new(Vec::new()));
-    let reports = errors.clone();
+    let (reporter, mut teardown) = observed_reporter(&errors);
     let bus = create_event_bus_for::<Local>(
         Rc::new(move |tail| queued.borrow_mut().push(tail)),
-        Rc::new(move |error| reports.borrow_mut().push(error.to_owned())),
+        reporter,
     );
-    let (owner, runner, events, mut teardown) = load(bus.for_extension(), "/lifetime-first").await;
-    let other_bus = create_event_bus_for::<Local>(
-        Rc::new(|_| panic!("no tails")),
-        Rc::new(|_| panic!("no errors")),
-    );
-    let (other_owner, other, other_events, other_teardown) =
+    let (owner, runner, events) = load(bus.for_extension(), "/lifetime-first").await;
+    let other_errors = Rc::new(RefCell::new(Vec::new()));
+    let (reporter, other_teardown) = observed_reporter(&other_errors);
+    let other_bus = create_event_bus_for::<Local>(Rc::new(|_| panic!("no tails")), reporter);
+    let (other_owner, other, other_events) =
         load(other_bus.for_extension(), "/lifetime-second").await;
     let command = runner
         .get_command("bridge-observe")
@@ -44,6 +43,7 @@ async fn release_instance(fault: bool) {
     drop(command);
     drop((owner, runner, events));
     bus.clear();
+    drop(bus);
     assert_eq!(
         tails.borrow().len(),
         2,
@@ -61,16 +61,15 @@ async fn release_instance(fault: bool) {
     pending(&mut teardown);
     drop(ui_alias);
     pending(&mut teardown);
-    let pending = std::mem::take(&mut *tails.borrow_mut());
-    for tail in pending {
-        tail.await;
-    }
+    settle_tails(&tails).await;
     teardown.await.unwrap();
     diagnostics(&errors.borrow(), fault, &expected);
     assert_second(&other).await;
     other_bus.clear();
+    drop(other_bus);
     drop((other_owner, other, other_events));
     other_teardown.await.unwrap();
+    assert!(other_errors.borrow().is_empty());
 }
 
 /// Fault and final release in another Store cannot exchange this instance's context identity.
@@ -97,16 +96,10 @@ async fn load(
     maestro_extensions::types::ExtensionHandle<Local>,
     ExtensionRunner<Local>,
     maestro_extensions::EventBus<Local>,
-    tokio::sync::oneshot::Receiver<()>,
 ) {
-    let (released, teardown) = tokio::sync::oneshot::channel();
-    let (owner, runner, events) = super::retained_components::loaded_in(
-        events,
-        super::session::runner_session(cwd).0,
-        Rc::new(super::startup::Released(Some(released))),
-    )
-    .await;
-    (owner, runner, events, teardown)
+    let (owner, runner, events) =
+        super::retained_components::loaded_in(events, super::session::runner_session(cwd).0).await;
+    (owner, runner, events)
 }
 
 /// Distinguishes an admitted healthy view from a retained but faulted one.
@@ -163,5 +156,40 @@ fn diagnostics(errors: &[String], fault: bool, expected: &str) {
         );
     } else {
         assert!(errors.is_empty());
+    }
+}
+
+/// Signals release of the original bus reporter after all native consumers finish.
+struct Released(Option<tokio::sync::oneshot::Sender<()>>);
+impl Drop for Released {
+    fn drop(&mut self) {
+        let _ = self.0.take().unwrap().send(());
+    }
+}
+
+/// Retains the teardown signal in the original error reporter, independently of its controller.
+fn observed_reporter(
+    errors: &Rc<RefCell<Vec<String>>>,
+) -> (
+    maestro_extensions::ErrorReporter<Local>,
+    tokio::sync::oneshot::Receiver<()>,
+) {
+    let (released, teardown) = tokio::sync::oneshot::channel();
+    let released = Released(Some(released));
+    let reports = errors.clone();
+    (
+        Rc::new(move |error| {
+            let _retained = &released;
+            reports.borrow_mut().push(error.to_owned());
+        }),
+        teardown,
+    )
+}
+
+/// Completes only the admitted tails retained before unsubscription.
+async fn settle_tails(tails: &super::canonical_api::Tails) {
+    let pending = std::mem::take(&mut *tails.borrow_mut());
+    for tail in pending {
+        tail.await;
     }
 }

@@ -21,7 +21,7 @@ pub(super) fn run(scenario: &str) -> Native {
         untracked_exists: repo.target.join("untracked").exists(),
         project_acquired: repo
             .scratch
-            .0
+            .path()
             .join("cwd/.maestro/git/github.com/acme/tool")
             .exists(),
     }

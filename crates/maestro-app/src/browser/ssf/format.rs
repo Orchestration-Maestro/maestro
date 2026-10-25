@@ -7,6 +7,7 @@ use super::{
     general::is_general,
     split_fmt::split_fmt,
 };
+use crate::utils::lock::{read, write};
 use std::{
     collections::BTreeMap,
     sync::{Arc, RwLock},
@@ -57,10 +58,7 @@ impl Ssf {
     /// A full automatic range replaces slot 391.
     #[must_use]
     pub fn load(&self, format: &str, index: Option<u32>) -> u32 {
-        let mut table = self
-            .table
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut table = write(&self.table);
         let index = index.unwrap_or_else(|| {
             (0..392)
                 .find(|id| table.get(id).is_some_and(|s| s == format))
@@ -77,22 +75,12 @@ impl Ssf {
             return;
         }
         if Arc::as_ptr(&self.table).addr() < Arc::as_ptr(table).addr() {
-            let mut target = self
-                .table
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let source = table
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut target = write(&self.table);
+            let source = read(table);
             copy_formats(&mut target, &source);
         } else {
-            let source = table
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let mut target = self
-                .table
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let source = read(table);
+            let mut target = write(&self.table);
             copy_formats(&mut target, &source);
         }
     }
@@ -125,9 +113,7 @@ impl Ssf {
         let supplied = options.table.unwrap_or(&self.table);
         let active = &self.table;
         if Arc::ptr_eq(active, supplied) {
-            let table = active
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let table = read(active);
             return format_tables(format, value, options, (&table, &table));
         }
         let (first, second) = if Arc::as_ptr(active).addr() < Arc::as_ptr(supplied).addr() {
@@ -135,12 +121,8 @@ impl Ssf {
         } else {
             (supplied, active)
         };
-        let first_guard = first
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let second_guard = second
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let first_guard = read(first);
+        let second_guard = read(second);
         let tables = if Arc::ptr_eq(first, active) {
             (&*first_guard, &*second_guard)
         } else {

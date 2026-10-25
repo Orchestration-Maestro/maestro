@@ -1,4 +1,4 @@
-//! Resolve authored values through environment and command operations.
+//! Resolve authored values from the process environment or through command operations.
 use std::{
     collections::HashMap,
     sync::{Arc, LazyLock, Mutex, OnceLock},
@@ -18,10 +18,8 @@ pub fn clear_config_value_cache() {
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clear();
 }
-/// Effects used when resolving a configured value.
+/// Command runs used when resolving a configured value.
 pub trait ConfigValueOperations {
-    /// Read one exact environment name.
-    fn environment(&self, name: &str) -> Option<String>;
     /// Return untrimmed stdout from a successful command.
     fn execute(&self, command: &str) -> Option<Vec<u8>>;
 }
@@ -58,8 +56,8 @@ pub fn resolve_config_value_uncached(
         return (!value.is_empty()).then_some(value);
     }
     Some(
-        operations
-            .environment(config)
+        std::env::var(config)
+            .ok()
             .filter(|value| !value.is_empty())
             .unwrap_or_else(|| config.to_owned()),
     )
@@ -129,16 +127,15 @@ pub use native::ProcessConfigValueOperations;
 #[cfg(not(target_arch = "wasm32"))]
 pub(in crate::credentials) mod native {
     use super::ConfigValueOperations;
-    use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
+    use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions};
     use std::{io, process::Output, time::Duration};
-    use tokio::process::Command;
 
     /// How long one helper may run before it is stopped without a value.
     const HELPER_TIMEOUT: Duration = Duration::from_millis(10_000);
 
     /// Lazily supplied configured executable and ordered arguments.
     type ShellSelector = dyn Fn() -> io::Result<(String, Vec<String>)> + Send + Sync;
-    /// Native environment and synchronous helper execution.
+    /// Native synchronous helper execution.
     pub struct ProcessConfigValueOperations {
         /// Used only for Windows configured execution.
         shell_config: Box<ShellSelector>,
@@ -154,9 +151,6 @@ pub(in crate::credentials) mod native {
         }
     }
     impl ConfigValueOperations for ProcessConfigValueOperations {
-        fn environment(&self, name: &str) -> Option<String> {
-            std::env::var(name).ok()
-        }
         fn execute(&self, command: &str) -> Option<Vec<u8>> {
             routed(cfg!(windows), command, &*self.shell_config, &run, || {
                 let comspec = cfg!(windows)
@@ -242,22 +236,18 @@ pub(in crate::credentials) mod native {
 
     /// Run one launch through the shared synchronous capture.
     fn run(launch: Launch) -> Attempt {
-        let mut command = match launch.command() {
-            Ok(command) => Command::from(command),
-            Err(error) => return attempt(Err(SpawnSyncError::Spawn(error))),
-        };
-        #[cfg(windows)]
-        command.creation_flags(0x0800_0000);
-        attempt(spawn_sync(
-            &mut command,
-            SpawnSyncOptions::Capture {
-                max_buffer_bytes: None,
-                stdout: OutputMode::Capture,
-                input: None,
-                timeout: Some(HELPER_TIMEOUT),
-                stderr: OutputMode::Discard,
-            },
-        ))
+        attempt(
+            launch
+                .with_context(std::iter::empty::<(&str, &str)>(), None)
+                .background()
+                .spawn_sync(SpawnSyncOptions::Capture {
+                    max_buffer_bytes: None,
+                    stdout: OutputMode::Capture,
+                    input: None,
+                    timeout: Some(HELPER_TIMEOUT),
+                    stderr: OutputMode::Discard,
+                }),
+        )
     }
     /// Missing executables and unavailable capture infrastructure permit fallback;
     /// every other outcome completes the attempt, with stdout only on success.

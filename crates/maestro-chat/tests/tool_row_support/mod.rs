@@ -122,29 +122,29 @@ fn replay(corpus: &Corpus, case: &records::Case) {
     for op in &input.ops {
         match &op.action {
             Operation::Args { value } => row.update_args(value.clone()).unwrap(),
-            Operation::Started => row.mark_execution_started().unwrap(),
-            Operation::Complete => row.set_args_complete().unwrap(),
+            Operation::Started {} => row.mark_execution_started().unwrap(),
+            Operation::Complete {} => row.set_args_complete().unwrap(),
             Operation::Result { value, partial } => row
                 .update_result(value.convert(), partial.unwrap_or(false))
                 .unwrap(),
             Operation::Expand { value } => row.set_expanded(*value).unwrap(),
             Operation::Show { value } => row.set_show_images(*value).unwrap(),
             Operation::ImageWidth { value } => row.set_image_width_cells(*value).unwrap(),
-            Operation::Invalidate => row.invalidate(),
-            Operation::Theme => published.set_theme_instance(theme(corpus, true)).unwrap(),
+            Operation::Invalidate {} => row.invalidate(),
+            Operation::Theme {} => published.set_theme_instance(theme(corpus, true)).unwrap(),
             Operation::Append { text } => {
                 row.add_child(Rc::new(maestro_tui::Text::new(text.clone(), 0, 0, None)));
             }
-            Operation::Capture => alias = Some(row.children()),
+            Operation::Capture {} => alias = Some(row.children()),
             Operation::AliasAppend { text } => alias
                 .as_ref()
                 .unwrap()
                 .borrow_mut()
                 .push(Rc::new(maestro_tui::Text::new(text.clone(), 0, 0, None))),
-            Operation::Clear => row.clear(),
+            Operation::Clear {} => row.clear(),
             Operation::Callback { slot } => callbacks.invalidate(slot),
             Operation::Keys { value } => keys(value.clone()),
-            Operation::Flush => {
+            Operation::Flush {} => {
                 assert_eq!(runtime.futures(), 0);
                 assert!(runtime.run_due().into_iter().all(|r| r.is_ok()));
             }

@@ -4,7 +4,7 @@ use crate::{
     lifecycle::{self, replies::Replies},
     local_resources::Pump,
 };
-use maestro_extensions::{ConfigValueOperations, ExtensionFactory, Local};
+use maestro_extensions::{ExtensionFactory, Local};
 use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use wasmtime::{
@@ -17,15 +17,11 @@ use wasmtime::{
 /// Credential effects are supplied by the caller; construction performs no discovery or I/O.
 /// The factory requires a Tokio local task set to keep native capabilities on their owner.
 #[must_use]
-pub fn artifact_factory(
-    path: String,
-    credential_operations: Rc<dyn ConfigValueOperations>,
-) -> ExtensionFactory<Local> {
+pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let path = path.clone();
-        let credential_operations = credential_operations.clone();
         Box::pin(async move {
-            let (pump, admission) = Pump::new(credential_operations);
+            let (pump, admission) = Pump::new();
             let endpoint = pump.registry().api(api)?;
             let (calls, mut incoming) = mpsc::unbounded_channel();
             let replies = Replies::default();

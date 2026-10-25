@@ -1,11 +1,12 @@
 //! Controlled observations and real-file helpers for export tests.
+#![cfg(not(target_arch = "wasm32"))]
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_export::*;
 use maestro_session::session_manager::{ReadonlySessionManager, SessionTreeNode};
 use maestro_theme::{ThemeError, ThemeExportColors};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{cell::RefCell, collections::VecDeque, io, path::PathBuf};
+use std::{cell::RefCell, collections::VecDeque, io};
 
 /// Read the independent document corpus.
 pub fn corpus() -> Corpus {
@@ -213,6 +214,7 @@ pub struct LiteralCase {
 }
 
 /// Supplied session observations without a replacement file parser.
+#[derive(Clone)]
 pub struct View {
     /// Selected filename.
     pub file: Option<String>,
@@ -222,7 +224,7 @@ pub struct View {
 impl Default for View {
     fn default() -> Self {
         Self {
-            file: Some("tree.jsonl".into()),
+            file: None,
             data: json!({"header":null,"entries":[],"leafId":null}),
         }
     }
@@ -270,10 +272,8 @@ impl ReadonlySessionManager for View {
         Ok(None)
     }
 }
-/// Controlled bundle and output with independently queued theme observations.
+/// Controlled bundle with independently queued theme observations.
 pub struct Operations {
-    /// Whether input publication is reported.
-    pub present: bool,
     /// Configured application name.
     pub app: String,
     /// Supplied asset text, in read order.
@@ -282,21 +282,16 @@ pub struct Operations {
     pub events: RefCell<Vec<String>>,
     /// Theme callback transcript.
     pub themes: RefCell<Vec<Value>>,
-    /// Captured output path/document.
-    pub output: RefCell<Option<(String, String)>>,
     /// Queued colors.
     pub resolved: RefCell<VecDeque<Value>>,
     /// Queued explicit backgrounds.
     pub explicit: RefCell<VecDeque<Value>>,
-    /// Failure at the output operation.
-    pub write_failure: bool,
 }
 /// CSS slots used by the independent corpus.
 pub const CSS: &str = ":root {\n      {{THEME_VARS}}\n      --body-bg: {{BODY_BG}};\n      --container-bg: {{CONTAINER_BG}};\n      --info-bg: {{INFO_BG}};\n    }";
 impl Default for Operations {
     fn default() -> Self {
         Self {
-            present: true,
             app: "maestro".into(),
             assets: [
                 include_str!("../../assets/document/template.html").into(),
@@ -307,10 +302,8 @@ impl Default for Operations {
             ],
             events: RefCell::default(),
             themes: RefCell::default(),
-            output: RefCell::default(),
             resolved: RefCell::new(VecDeque::from([json!({"userMessageBg":"#343541"})])),
             explicit: RefCell::new(VecDeque::from([json!({})])),
-            write_failure: false,
         }
     }
 }
@@ -326,9 +319,6 @@ fn observe(queue: &RefCell<VecDeque<Value>>) -> Value {
 impl ExportOperations for Operations {
     fn app_name(&self) -> &str {
         &self.app
-    }
-    fn exists(&self, _: &str) -> bool {
-        self.present
     }
     fn read_asset(&self, asset: ExportAsset) -> io::Result<String> {
         self.events.borrow_mut().push(format!("{asset:?}"));
@@ -353,14 +343,6 @@ impl ExportOperations for Operations {
     fn get_theme_export_colors(&self, theme: Option<&str>) -> ThemeExportColors {
         self.themes.borrow_mut().push(json!(["export", theme]));
         explicit(&observe(&self.explicit))
-    }
-    fn write(&self, path: &str, document: &str) -> io::Result<()> {
-        self.events.borrow_mut().push("write".into());
-        if self.write_failure {
-            return Err(io::Error::other("controlled output failure"));
-        }
-        *self.output.borrow_mut() = Some((path.into(), document.into()));
-        Ok(())
     }
 }
 /// Convert an explicit-background input without truthiness fallback.
@@ -407,9 +389,34 @@ pub fn payload(document: &str) -> String {
     )
     .unwrap()
 }
-/// Last written document, asserting that output was actually published.
-pub fn html(operations: &Operations) -> String {
-    operations.output.borrow().as_ref().unwrap().1.clone()
+/// Disposable output path owned by one export witness.
+pub fn output_path(scratch: &Scratch) -> String {
+    scratch.at("out.html")
+}
+/// Export one view to its disposable output path and return the written document.
+pub fn export_document(
+    scratch: &Scratch,
+    view: &View,
+    state: Option<ExportState<'_>>,
+    renderer: Option<&dyn ToolHtmlRenderer>,
+    operations: &dyn ExportOperations,
+) -> Result<String, ExportError> {
+    let path = output_path(scratch);
+    export_session_to_html(
+        &RefCell::new(view.clone()),
+        state,
+        Some(ExportOptions {
+            output_path: Some(&path),
+            tool_renderer: renderer,
+            ..ExportOptions::default()
+        }),
+        operations,
+    )?;
+    Ok(read_document(&path))
+}
+/// Read the document the export wrote to a native output path.
+pub fn read_document(path: &str) -> String {
+    std::fs::read_to_string(path).expect("the export wrote its document")
 }
 /// Callback recorder with independent source outputs.
 pub struct Renderer {
@@ -485,14 +492,20 @@ pub fn record(name: &str) {
         .unwrap();
     let renderer = Renderer::from(row.returns);
     let operations = Operations::default();
-    let view = View {
-        data: json!({"header":null,"entries":row.entries,"leafId":null}),
-        ..View::default()
-    };
+    let scratch = Scratch::new().unwrap();
+    let output = scratch.at("out.html");
+    let view = RefCell::new(published(
+        &scratch,
+        View {
+            data: json!({"header":null,"entries":row.entries,"leafId":null}),
+            ..View::default()
+        },
+    ));
     let result = export_session_to_html(
         &view,
         None,
         Some(ExportOptions {
+            output_path: Some(&output),
             tool_renderer: Some(&renderer),
             ..ExportOptions::default()
         }),
@@ -509,11 +522,12 @@ pub fn record(name: &str) {
             assert!(std::error::Error::source(&error).is_some());
         }
         assert!(operations.events.borrow().is_empty());
+        assert!(!std::path::Path::new(&output).exists());
     } else {
         result.unwrap();
-        let payload = payload(&html(&operations));
+        let payload = payload(&read_document(&output));
         let data: Value = serde_json::from_str(&payload).unwrap();
-        assert_eq!(data["entries"], view.data["entries"]);
+        assert_eq!(data["entries"], view.borrow().data["entries"]);
         let records = data
             .get("renderedTools")
             .cloned()
@@ -533,6 +547,8 @@ pub fn document(name: &str) -> String {
         .find(|row| row.name == name)
         .unwrap();
     let operations = Operations::default();
+    let scratch = Scratch::new().unwrap();
+    let output = scratch.at("out.html");
     let mut colors = row.colors;
     if name == "ordered" {
         let value = colors.as_object_mut().unwrap().shift_remove("2").unwrap();
@@ -544,46 +560,54 @@ pub fn document(name: &str) -> String {
         .data
         .get("tools")
         .map(|value| serde_json::from_value(value.clone()).unwrap());
-    let mut view = View {
-        data: row.data,
-        ..View::default()
-    };
+    let mut view = published(
+        &scratch,
+        View {
+            data: row.data,
+            ..View::default()
+        },
+    );
     if name == "unicode" {
         view.data["entries"][1]["numbers"][1] = json!(-0.0);
     }
+    let prompt = view
+        .data
+        .get("systemPrompt")
+        .and_then(Value::as_str)
+        .map(str::to_owned);
     let state = ExportState {
-        system_prompt: view.data.get("systemPrompt").and_then(Value::as_str),
+        system_prompt: prompt.as_deref(),
         tools: tools.as_deref(),
     };
-    export_session_to_html(&view, Some(state), None, &operations).unwrap();
-    let html = html(&operations);
+    export_session_to_html(
+        &RefCell::new(view),
+        Some(state),
+        Some(output.as_str().into()),
+        &operations,
+    )
+    .unwrap();
+    let html = read_document(&output);
     assert_eq!(html, row.expected.html);
     assert_eq!(payload(&html), row.expected.payload);
     assert_eq!(*operations.themes.borrow(), row.expected.observations);
     html
 }
-/// Disposable native directory created exclusively.
-pub struct Scratch(pub PathBuf);
-impl Scratch {
-    /// Allocate a process-local uniquely named directory without truncating files.
-    pub fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-export-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&path).unwrap();
-        Self(path)
-    }
+pub use maestro_test_directory::Scratch;
+
+/// Native fixture spellings over the shared disposable directory.
+pub trait Fixture {
     /// Join an authored filename for native I/O.
-    pub fn path(&self, name: &str) -> String {
-        self.0.join(name).to_str().unwrap().into()
-    }
+    fn at(&self, name: &str) -> String;
     /// Write a complete current session file.
-    pub fn session(&self, name: &str, entries: &[Value]) -> String {
-        let path = self.path(name);
-        let header = json!({"type":"session","version":3,"id":"history","timestamp":"2026-01-01T00:00:00Z","cwd":self.0.to_str().unwrap()});
+    fn session(&self, name: &str, entries: &[Value]) -> String;
+}
+impl Fixture for Scratch {
+    fn at(&self, name: &str) -> String {
+        self.path().join(name).to_str().unwrap().into()
+    }
+    fn session(&self, name: &str, entries: &[Value]) -> String {
+        let path = self.at(name);
+        let header = json!({"type":"session","version":3,"id":"history","timestamp":"2026-01-01T00:00:00Z","cwd":self.path().to_str().unwrap()});
         let text = std::iter::once(&header)
             .chain(entries)
             .map(|entry| serde_json::to_string(entry).unwrap() + "\n")
@@ -592,9 +616,11 @@ impl Scratch {
         path
     }
 }
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).unwrap();
+/// Give a supplied-data view one real published session file.
+pub fn published(scratch: &Scratch, view: View) -> View {
+    View {
+        file: Some(scratch.session("tree.jsonl", &[])),
+        ..view
     }
 }
 /// A custom call whose fields distinguish rendering from omission.
@@ -606,7 +632,7 @@ pub fn call_view(id: &str) -> View {
 }
 /// Native theme state with controlled shipped documents.
 pub fn native_theme(scratch: &Scratch) -> maestro_theme::ThemeState {
-    let directory = scratch.path("themes");
+    let directory = scratch.at("themes");
     std::fs::create_dir(&directory).unwrap();
     for name in ["dark", "light"] {
         std::fs::write(
@@ -615,17 +641,14 @@ pub fn native_theme(scratch: &Scratch) -> maestro_theme::ThemeState {
         )
         .unwrap();
     }
-    maestro_theme::ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: directory,
-            custom_themes_dir: scratch.path("custom"),
-        },
-        std::rc::Rc::new(maestro_theme::NativeThemeOperations),
-    )
+    maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: directory,
+        custom_themes_dir: scratch.at("custom"),
+    })
 }
 /// Publish supplied assets to an actual native bundle.
 pub fn bundle(scratch: &Scratch, assets: &[String; 5]) -> String {
-    let directory = scratch.path("bundle");
+    let directory = scratch.at("bundle");
     std::fs::create_dir(&directory).unwrap();
     std::fs::create_dir(maestro_path::join(&[&directory, "vendor"])).unwrap();
     for (name, text) in ASSETS.iter().zip(assets) {
@@ -644,9 +667,6 @@ impl ExportOperations for NativeObserved<'_> {
     fn app_name(&self) -> &str {
         self.native.app_name()
     }
-    fn exists(&self, path: &str) -> bool {
-        self.native.exists(path)
-    }
     fn read_asset(&self, asset: ExportAsset) -> io::Result<String> {
         self.events
             .borrow_mut()
@@ -664,22 +684,14 @@ impl ExportOperations for NativeObserved<'_> {
         self.events.borrow_mut().push("export".into());
         self.native.get_theme_export_colors(theme)
     }
-    fn write(&self, path: &str, document: &str) -> io::Result<()> {
-        self.events.borrow_mut().push("write".into());
-        self.native.write(path, document)
-    }
 }
 /// Two native same-format packs feed the unchanged exporter.
 pub fn brand_swap() {
     let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/");
     let mut outputs = Vec::new();
     for name in ["brand.json", "packs/signal.json"] {
-        let scratch = Scratch::new();
-        let pack = maestro_theme::load_brand_pack(
-            &maestro_path::join(&[root, name]),
-            &maestro_theme::NativeThemeOperations,
-        )
-        .unwrap();
+        let scratch = Scratch::new().unwrap();
+        let pack = maestro_theme::load_brand_pack(&maestro_path::join(&[root, name])).unwrap();
         let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
         let properties = presentation.css_properties();
         let css = properties
@@ -687,13 +699,7 @@ pub fn brand_swap() {
             .map(|(key, value)| format!("{key}: {value};"))
             .collect::<Vec<_>>()
             .join("\n");
-        let mark = pack
-            .mark_svg(
-                maestro_theme::BrandMode::Dark,
-                None,
-                &maestro_theme::NativeThemeOperations,
-            )
-            .unwrap();
+        let mark = pack.mark_svg(maestro_theme::BrandMode::Dark, None).unwrap();
         let mut operations = Operations::default();
         operations.assets[1] = format!("{CSS}\n{css}");
         operations.assets[2] = format!("/* supplied mark */\n{mark}");
@@ -705,7 +711,7 @@ pub fn brand_swap() {
             theme: &theme,
         };
         let input = scratch.session("tree.jsonl", &[]);
-        let output = scratch.path("brand.html");
+        let output = scratch.at("brand.html");
         export_from_file(&input, Some(output.as_str().into()), &native).unwrap();
         let document = std::fs::read_to_string(output).unwrap();
         assert!(document.contains(&css));
@@ -716,14 +722,14 @@ pub fn brand_swap() {
     }
     assert_ne!(outputs[0], outputs[1]);
 }
-/// Swap native/memory/failing outputs and bundles through the same public operation.
+/// Swap the native and supplied bundles through the same public operation.
 pub fn adapter_swap() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let mut view = call_view("rendered");
     view.data["entries"][0]["id"] = json!("entry");
     view.data["entries"][0]["parentId"] = Value::Null;
     let input = scratch.session("tree.jsonl", view.data["entries"].as_array().unwrap());
-    let session = maestro_session::SessionManager::open(&input, None, None).unwrap();
+    let session = RefCell::new(maestro_session::SessionManager::open(&input, None, None).unwrap());
     let theme = native_theme(&scratch);
     let mut operations = Operations::default();
     operations.assets[2] = "first bundle".into();
@@ -733,7 +739,7 @@ pub fn adapter_swap() {
         template_dir: &directory,
         theme: &theme,
     };
-    let output = scratch.path("out.html");
+    let output = scratch.at("out.html");
     let run = |provider: &dyn ExportOperations, html: &str| {
         let renderer = Renderer::from(Returns {
             call: vec![json!(html)],
@@ -751,59 +757,43 @@ pub fn adapter_swap() {
         )
     };
     assert_eq!(run(&native, "first rendering").unwrap(), output);
+    let native_document = read_document(&output);
     assert_eq!(run(&operations, "first rendering").unwrap(), output);
-    assert_eq!(std::fs::read_to_string(&output).unwrap(), html(&operations));
+    assert_eq!(read_document(&output), native_document);
     operations.assets[2] = "second bundle".into();
     run(&operations, "second rendering").unwrap();
-    assert!(html(&operations).contains("second bundle"));
-    assert!(!html(&operations).contains("first bundle"));
-    let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    assert!(read_document(&output).contains("second bundle"));
+    assert!(!read_document(&output).contains("first bundle"));
+    let data: Value = serde_json::from_str(&payload(&read_document(&output))).unwrap();
     assert_eq!(
         data["renderedTools"]["rendered"]["callHtml"],
         "second rendering"
     );
-    let failing = Operations {
-        write_failure: true,
-        ..Operations::default()
-    };
-    assert!(matches!(
-        run(&failing, "failed rendering"),
-        Err(ExportError::Io(_))
-    ));
 }
-/// Native theme read failure, generated through the owning public operation.
+/// A theme failure with `message`, raised through the owner's public change callback.
 fn theme_error(message: &str) -> ThemeError {
-    /// Supplied read failure below the theme owner's wrapper.
-    struct Failure<'a>(&'a str);
-    impl maestro_theme::ThemeOperations for Failure<'_> {
-        fn read_to_string(&self, _: &str) -> io::Result<String> {
-            Err(io::Error::other(self.0.to_owned()))
-        }
-        fn environment(&self, _: &str) -> Option<String> {
-            None
-        }
-        fn exists(&self, _: &str) -> bool {
-            false
-        }
-        fn read_dir(&self, _: &str) -> io::Result<Vec<String>> {
-            Err(io::ErrorKind::Unsupported.into())
-        }
-        fn sort_by_name(&self, _: &mut [maestro_theme::ThemeInfo]) -> io::Result<()> {
-            Ok(())
-        }
-    }
-    maestro_theme::load_theme_from_path(
-        "missing",
-        Some(maestro_theme::ColorMode::Truecolor),
-        &Failure(message),
+    let state = maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
+    let message = message.to_owned();
+    state.on_theme_change(std::rc::Rc::new(move || Err(message.clone().into())));
+    let theme = maestro_theme::Theme::new(
+        [],
+        [],
+        maestro_theme::ColorMode::Truecolor,
+        maestro_theme::ThemeOptions::default(),
     )
-    .err()
-    .unwrap()
+    .unwrap();
+    state
+        .set_theme_instance(std::rc::Rc::new(theme))
+        .err()
+        .unwrap()
 }
 
 /// Native theme state projected from the selected supplied pack.
 fn pack_theme(scratch: &Scratch, pack: &maestro_theme::BrandPack) -> maestro_theme::ThemeState {
-    let theme_dir = scratch.path("themes");
+    let theme_dir = scratch.at("themes");
     std::fs::create_dir(&theme_dir).unwrap();
     for mode in [
         maestro_theme::BrandMode::Dark,
@@ -815,11 +805,8 @@ fn pack_theme(scratch: &Scratch, pack: &maestro_theme::BrandPack) -> maestro_the
         )
         .unwrap();
     }
-    maestro_theme::ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: theme_dir,
-            custom_themes_dir: scratch.path("custom"),
-        },
-        std::rc::Rc::new(maestro_theme::NativeThemeOperations),
-    )
+    maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: theme_dir,
+        custom_themes_dir: scratch.at("custom"),
+    })
 }

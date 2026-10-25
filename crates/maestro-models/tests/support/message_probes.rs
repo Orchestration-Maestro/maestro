@@ -1,5 +1,6 @@
 //! Source-owned setup for selecting one message probe per provider.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::chat::TestResult;
 use icu_collator::{Collator, CollatorPreferences, options::CollatorOptions};
 use maestro_models::{get_models, get_providers};

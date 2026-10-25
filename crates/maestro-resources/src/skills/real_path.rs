@@ -1,6 +1,6 @@
 //! Real-path resolution that follows the JavaScript runtime's link walk.
 
-use super::operations::{ProcessContext, ResourceOperations};
+use crate::paths::resolve;
 use maestro_path::{SEP, dirname};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -14,27 +14,26 @@ use std::{borrow::Cow, io};
 /// directory, appends the components not yet scanned, and restarts from the
 /// root, until no component is a link. Components that are not links keep their authored spelling and case,
 /// and a Windows link target that names a drive or share loses its verbatim
-/// prefix. On Windows a drive-relative path continues from the drive directory
-/// `operations` reports. A link may be expanded any number of times, as in
+/// prefix. On Windows a drive-relative path continues from that drive's current
+/// directory. A link may be expanded any number of times, as in
 /// `loop/loop/x` with `loop` linked to its own directory. The walk fails when a
 /// link is expanded again before the scan has read any component of what
 /// followed it at its previous expansion, because the steps in between would
 /// repeat forever. A path its operands leave unanchored needs the working
-/// directory, so the resolution fails with the kind of the error `operations`
-/// reports when it cannot read it; an anchored path does not.
+/// directory, so the resolution fails with the working-directory error; an
+/// anchored path does not.
 ///
 /// # Errors
 /// Returns the first failure: a path that is not UTF-8, a path that needs a
-/// working directory `operations` cannot read (that error's kind), a component
+/// working directory that cannot be read (the working-directory error), a component
 /// that cannot be inspected, a link whose target is missing or loops, a link
 /// that cannot be read, or a link expanded again before the scan has read any
 /// component of what followed its previous expansion.
-pub(super) fn real_path(path: &Path, operations: &dyn ResourceOperations) -> io::Result<PathBuf> {
+pub fn real_path(path: &Path) -> io::Result<PathBuf> {
     let path = path.to_str().ok_or(io::ErrorKind::InvalidInput)?;
-    let ctx = ProcessContext::new(operations);
-    let mut resolved = ctx.resolve(&[path])?;
+    let mut resolved = resolve(&[path])?;
     let mut walk = Walk::default();
-    while let Some(next) = walk.expand_first_link(&resolved, &ctx)? {
+    while let Some(next) = walk.expand_first_link(&resolved)? {
         resolved = next;
     }
     Ok(PathBuf::from(resolved))
@@ -57,11 +56,7 @@ impl Walk {
     /// The path is normalized, so the rest after an expanded link stays
     /// verbatim at the end of the path; the scan has read into it once fewer
     /// bytes than its length remain after the current component.
-    fn expand_first_link(
-        &mut self,
-        path: &str,
-        ctx: &ProcessContext<'_>,
-    ) -> io::Result<Option<String>> {
+    fn expand_first_link(&mut self, path: &str) -> io::Result<Option<String>> {
         let root = root_len(path);
         if cfg!(windows) {
             std::fs::symlink_metadata(&path[..root])?;
@@ -70,7 +65,7 @@ impl Walk {
         for end in component_ends(path, root) {
             self.pending.retain(|_, len| *len <= path.len() - end);
             if self.is_link(&path[..end])? {
-                return self.expand(path, (parent_end, end), ctx).map(Some);
+                return self.expand(path, (parent_end, end)).map(Some);
             }
             parent_end = end;
         }
@@ -94,12 +89,7 @@ impl Walk {
     ///
     /// Fails when the link was expanded before and the scan has read no
     /// component of what followed it then.
-    fn expand(
-        &mut self,
-        path: &str,
-        (parent_end, end): (usize, usize),
-        ctx: &ProcessContext<'_>,
-    ) -> io::Result<String> {
+    fn expand(&mut self, path: &str, (parent_end, end): (usize, usize)) -> io::Result<String> {
         let link = &path[..end];
         std::fs::metadata(link)?;
         let rest = &path[end..];
@@ -114,8 +104,8 @@ impl Walk {
         } else {
             Cow::Borrowed(target.as_str())
         };
-        let linked = ctx.resolve(&[&path[..parent_end], &target])?;
-        ctx.resolve(&[&linked, rest.trim_start_matches(SEP)])
+        let linked = resolve(&[&path[..parent_end], &target])?;
+        resolve(&[&linked, rest.trim_start_matches(SEP)])
     }
 }
 

@@ -4,9 +4,9 @@
 
 use crate::read_support;
 
-use maestro_models::Fetch;
+use crate::runtime::run;
 use maestro_tools::{SearchTool, ToolsManager, ToolsManagerOutput};
-use read_support::{TempDir, isolated_os, run};
+use read_support::{Fixture, Scratch, counting_fetch, isolated_os};
 use std::{
     path::Path,
     sync::{
@@ -15,15 +15,6 @@ use std::{
     },
 };
 use tokio::io::AsyncReadExt;
-
-/// Transport which counts unexpected acquisition attempts.
-fn counting_fetch(calls: &Arc<AtomicUsize>) -> Fetch {
-    let calls = Arc::clone(calls);
-    Arc::new(move |_| {
-        calls.fetch_add(1, Ordering::SeqCst);
-        Box::pin(async { Err(maestro_models::FetchError::Aborted) })
-    })
-}
 
 /// Install a shell probe through a child, with no inherited writable executable descriptor.
 fn script(root: &Path, name: &str, code: i32) {
@@ -74,14 +65,14 @@ fn child_root() -> std::path::PathBuf {
 #[test]
 fn binary_directory_entry_wins_before_any_probe() {
     run(async {
-        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+        if !maestro_test_process::selection().is_child() {
             for mode in ["entries", "dangling"] {
-                let scripts = TempDir::new();
-                probe_scripts(&scripts.0, mode);
+                let scripts = Scratch::new().unwrap();
+                probe_scripts(scripts.path(), mode);
                 assert!(!child(
                     "binary_directory_entry_wins_before_any_probe",
                     mode,
-                    &scripts.0,
+                    scripts.path(),
                     "1"
                 ));
             }
@@ -89,11 +80,11 @@ fn binary_directory_entry_wins_before_any_probe() {
         }
         let root = child_root();
         let calls = Arc::new(AtomicUsize::new(0));
-        let bin = TempDir::new();
+        let bin = Scratch::new().unwrap();
         let manager = ToolsManager::new(format!("{}/./", bin.text()), Some(counting_fetch(&calls)));
-        let candidate = bin.0.join("fd");
+        let candidate = bin.path().join("fd");
         let mut output = Vec::new();
-        if std::env::var("MAESTRO_READ_CHILD").unwrap() == "dangling" {
+        if maestro_test_process::selection().runs_case("dangling") {
             std::os::unix::fs::symlink("absent", &candidate).unwrap();
             assert_eq!(manager.get_tool_path(SearchTool::Fd).await, None);
             assert_eq!(
@@ -121,8 +112,8 @@ fn binary_directory_entry_wins_before_any_probe() {
 }
 
 /// Existing entries return the joined spelling without advice.
-async fn existing_entries(manager: &ToolsManager, bin: &TempDir) {
-    let candidate = bin.0.join("fd");
+async fn existing_entries(manager: &ToolsManager, bin: &Scratch) {
+    let candidate = bin.path().join("fd");
     let mut output = Vec::new();
     for kind in ["file", "directory", "symlink"] {
         match kind {
@@ -165,25 +156,28 @@ async fn existing_entries(manager: &ToolsManager, bin: &TempDir) {
 #[test]
 fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
     run(async {
-        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+        if !maestro_test_process::selection().is_child() {
             for mode in ["none", "alias", "failed-fd", "fd", "rg"] {
-                let scripts = TempDir::new();
-                probe_scripts(&scripts.0, mode);
+                let scripts = Scratch::new().unwrap();
+                probe_scripts(scripts.path(), mode);
                 assert!(!child(
                     "path_probes_try_aliases_in_order_whatever_the_exit_status",
                     mode,
-                    &scripts.0,
+                    scripts.path(),
                     "0"
                 ));
             }
             return;
         }
-        let mode = std::env::var("MAESTRO_READ_CHILD").unwrap();
+        let mode = ["none", "alias", "failed-fd", "fd", "rg"]
+            .into_iter()
+            .find(|mode| maestro_test_process::selection().runs_case(mode))
+            .expect("selected probe mode");
         let root = child_root();
-        let bin = TempDir::new();
+        let bin = Scratch::new().unwrap();
         let calls = Arc::new(AtomicUsize::new(0));
         let manager = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)));
-        let expected = match mode.as_str() {
+        let expected = match mode {
             "alias" => Some("fdfind"),
             "fd" | "failed-fd" => Some("fd"),
             _ => None,
@@ -209,24 +203,34 @@ fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
             expected.map(|name| format!("{name} --version\n"))
         );
         assert_eq!(calls.load(Ordering::SeqCst), 0);
+        if mode == "alias" {
+            let selected = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)))
+                .with_offline(Some(true));
+            assert_eq!(
+                selected.get_tool_path(SearchTool::Fd).await.as_deref(),
+                Some("fdfind")
+            );
+            assert_eq!(probe_log(&root), Some("fdfind --version\n".to_owned()));
+            assert_eq!(calls.load(Ordering::SeqCst), 0);
+        }
     });
 }
 
 #[test]
 fn offline_flag_stops_a_missing_install_with_advice() {
     run(async {
-        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
-            let scripts = TempDir::new();
+        if !maestro_test_process::selection().is_child() {
+            let scripts = Scratch::new().unwrap();
             assert!(!child(
                 "offline_flag_stops_a_missing_install_with_advice",
                 "plain",
-                &scripts.0,
+                scripts.path(),
                 "YeS"
             ));
             assert!(!child(
                 "offline_flag_stops_a_missing_install_with_advice",
                 "styled",
-                &scripts.0,
+                scripts.path(),
                 "1"
             ));
             return;
@@ -238,7 +242,7 @@ fn offline_flag_stops_a_missing_install_with_advice() {
             bin.to_str().unwrap().to_owned(),
             Some(counting_fetch(&calls)),
         );
-        let color = std::env::var("MAESTRO_READ_CHILD").unwrap() == "styled";
+        let color = maestro_test_process::selection().runs_case("styled");
         for (tool, name) in [(SearchTool::Fd, "fd"), (SearchTool::Rg, "ripgrep")] {
             let mut output = Vec::new();
             assert_eq!(
@@ -283,13 +287,13 @@ fn probe_scripts(root: &Path, mode: &str) {
 #[test]
 fn dropping_discovery_kills_the_running_probe() {
     run(async {
-        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
-            let scripts = TempDir::new();
+        if !maestro_test_process::selection().is_child() {
+            let scripts = Scratch::new().unwrap();
             let source = scripts.file("probe.source", b"#!/usr/bin/python3\nimport os, socket\ns = socket.socket(socket.AF_UNIX)\ns.connect(os.environ['MAESTRO_SEARCH_ROOT'] + '/probe.sock')\ns.sendall(b'ready')\ns.recv(1)\n");
             assert!(
                 std::process::Command::new("install")
                     .args(["-m", "0700", &source])
-                    .arg(scripts.0.join("fd"))
+                    .arg(scripts.path().join("fd"))
                     .status()
                     .unwrap()
                     .success()
@@ -297,14 +301,14 @@ fn dropping_discovery_kills_the_running_probe() {
             assert!(!child(
                 "dropping_discovery_kills_the_running_probe",
                 "drop",
-                &scripts.0,
+                scripts.path(),
                 "1"
             ));
             return;
         }
         let root = child_root();
         let listener = tokio::net::UnixListener::bind(root.join("probe.sock")).unwrap();
-        let bin = TempDir::new();
+        let bin = Scratch::new().unwrap();
         let manager = ToolsManager::new(bin.text(), None);
         let mut discovery = Box::pin(manager.get_tool_path(SearchTool::Fd));
         let (mut socket, _) = tokio::select! {

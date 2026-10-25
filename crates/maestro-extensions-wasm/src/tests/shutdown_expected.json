@@ -1,0 +1,126 @@
+{
+  "commandArguments": [
+    "",
+    "ignored Ω"
+  ],
+  "tools": [
+    {
+      "name": "finish_and_exit",
+      "label": "Finish and Exit",
+      "description": "Complete a task and exit Maestro",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "deploy_and_exit",
+      "label": "Deploy and Exit",
+      "description": "Deploy the application and exit Maestro",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "environment"
+        ],
+        "properties": {
+          "environment": {
+            "type": "string",
+            "description": "Target environment (e.g., production, staging)"
+          }
+        }
+      }
+    }
+  ],
+  "finish": [
+    {
+      "params": {},
+      "update": false,
+      "aborted": false
+    },
+    {
+      "params": {
+        "ignored": true
+      },
+      "update": true,
+      "aborted": true
+    }
+  ],
+  "finishResult": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Shutdown requested. Exiting after this response."
+      }
+    ],
+    "details": {}
+  },
+  "deploymentComplete": "Deployment complete, exiting...",
+  "deploymentResult": "Done! Shutdown requested.",
+  "deployments": [
+    {
+      "environment": "production",
+      "progress": "Deploying to production..."
+    },
+    {
+      "environment": "staging",
+      "progress": "Deploying to staging..."
+    },
+    {
+      "environment": "",
+      "progress": "Deploying to ..."
+    },
+    {
+      "environment": "  \ufeff\u0085  ",
+      "progress": "Deploying to   \ufeff\u0085  ..."
+    },
+    {
+      "environment": "東京🚀",
+      "progress": "Deploying to 東京🚀..."
+    },
+    {
+      "environment": "x\"\\\ny",
+      "progress": "Deploying to x\"\\\ny..."
+    }
+  ],
+  "withoutProgress": {
+    "params": {
+      "environment": "staging",
+      "ignored": 42
+    },
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Done! Shutdown requested."
+        }
+      ],
+      "details": {
+        "environment": "staging"
+      }
+    }
+  },
+  "refusals": {
+    "shutdown": "shutdown refused Ω",
+    "update": "update refused Ω",
+    "registration": "registration refused Ω"
+  },
+  "registrations": [
+    {
+      "refused": 0,
+      "admitted": []
+    },
+    {
+      "refused": 1,
+      "admitted": [
+        "command quit"
+      ]
+    },
+    {
+      "refused": 2,
+      "admitted": [
+        "command quit",
+        "tool finish_and_exit"
+      ]
+    }
+  ]
+}

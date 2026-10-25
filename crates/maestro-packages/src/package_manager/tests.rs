@@ -4,6 +4,10 @@
 use super::operations::{home, recover_environment};
 use std::{cell::Cell, collections::BTreeMap, io};
 
+#[cfg(unix)]
+#[path = "../../tests/support/runtime.rs"]
+pub(super) mod runtime;
+
 #[test]
 fn empty_linux_environment_recovery_preserves_entries() {
     let reads = Cell::new(0);
@@ -61,7 +65,12 @@ fn home_lookup_uses_truthy_environment_before_platform_fallback() {
 #[test]
 fn native_empty_environment_recovery_reads_procfs() {
     use super::{NativePackageOperations, PackageOperations};
-    if std::env::var_os("MAESTRO_ENV_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
+        assert_eq!(
+            std::env::var_os("LLVM_PROFILE_FILE"),
+            std::env::var_os("MAESTRO_EXPECT_PROFILE")
+        );
+        assert!(std::env::var_os("MAESTRO_UNRELATED").is_none());
         let result = recover_environment("linux", BTreeMap::new(), || {
             std::fs::read("/proc/self/environ")
         });
@@ -70,7 +79,6 @@ fn native_empty_environment_recovery_reads_procfs() {
             Some("a=b")
         );
         let output = NativePackageOperations::new(
-            |_| false,
             std::rc::Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         )
@@ -82,17 +90,22 @@ fn native_empty_environment_recovery_reads_procfs() {
         assert_eq!(output.stdout, "a=b");
         return;
     }
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "package_manager::tests::native_empty_environment_recovery_reads_procfs",
-            "--nocapture",
-        ])
-        .env_clear()
-        .env("MAESTRO_ENV_CHILD", "1")
-        .env("MAESTRO_ENV_SENTINEL", "a=b")
-        .output()
-        .unwrap();
+    let profile = std::env::var_os("LLVM_PROFILE_FILE");
+    let output = maestro_test_process::TestProcess::current(
+        "package_manager::tests::native_empty_environment_recovery_reads_procfs",
+    )
+    .unwrap()
+    .nocapture()
+    .env_clear()
+    .envs(
+        profile
+            .iter()
+            .map(|value| ("MAESTRO_EXPECT_PROFILE", value)),
+    )
+    .case("*")
+    .env("MAESTRO_ENV_SENTINEL", "a=b")
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",
@@ -114,7 +127,6 @@ fn native_manager(
             )),
         },
         super::NativePackageOperations::new(
-            |_| false,
             std::rc::Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         ),
@@ -138,11 +150,7 @@ fn latest_version_rejects_empty_capture_with_authored_message() {
                 .clone(),
         );
         let manager = native_manager(settings);
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let result = runtime.block_on(manager.latest_npm_version("x"));
+        let result = runtime::run(manager.latest_npm_version("x"));
         if let Some(expected) = expected {
             assert_eq!(result.unwrap(), expected);
         } else if output.is_empty() {
@@ -161,13 +169,8 @@ fn latest_version_rejects_empty_capture_with_authored_message() {
             .clone(),
     );
     let manager = native_manager(settings);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
     assert_eq!(
-        runtime
-            .block_on(manager.latest_npm_version("example"))
+        runtime::run(manager.latest_npm_version("example"))
             .unwrap_err()
             .to_string(),
         "Empty response from npm view"
@@ -208,11 +211,7 @@ fn remote_head_rejects_unmatched_head_with_authored_message() {
         );
     }
     let manager = native_manager(maestro_settings::Settings::default());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let result = runtime.block_on(manager.remote_git_head(path.to_str().unwrap()));
+    let result = runtime::run(manager.remote_git_head(path.to_str().unwrap()));
     std::fs::remove_dir_all(path).unwrap();
     assert_eq!(
         result.unwrap_err().to_string(),

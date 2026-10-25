@@ -1,7 +1,8 @@
 //! Download-only artifact with a retained literal native reading body.
 use super::artifact_element::{ArtifactElement, ArtifactView};
+use crate::tools::artifacts::ArtifactUiError;
 use crate::{
-    browser::attachment_content::{self, AttachmentHost, AttachmentUiError, ReadingContent},
+    browser::attachment_content::{self, AttachmentHost, ReadingContent},
     components::download_button,
 };
 use std::{cell::RefCell, rc::Rc};
@@ -52,8 +53,9 @@ impl GenericArtifact {
         }
     }
     /// Select complete original bytes, including folded data URL payloads.
-    fn bytes(&self) -> Result<Vec<u8>, AttachmentUiError> {
-        Ok(crate::utils::base64::original(&self.content)?)
+    fn bytes(&self) -> Result<Vec<u8>, ArtifactUiError> {
+        crate::utils::base64::original(&self.content)
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))
     }
     /// Select the explicitly supported download media types.
     fn mime(&self) -> &'static str {
@@ -75,32 +77,28 @@ impl GenericArtifact {
             _ => "application/octet-stream",
         }
     }
-    /// Update owned text operands and only the changed native nodes.
-    fn update_text(&self, view: ArtifactView<'_>) -> Result<(), AttachmentUiError> {
-        let values = [
+    /// Filename followed by the two localized guidance sentences.
+    fn text_values(&self, i18n: &crate::I18n) -> Result<[String; 3], crate::I18nError> {
+        Ok([
             self.filename.clone(),
-            view.i18n
-                .text("Preview not available for this file type.")?,
-            view.i18n
-                .text("Click the download button above to view it on your computer.")?,
-        ];
-        self.text.borrow_mut().values = values;
+            i18n.text("Preview not available for this file type.")?,
+            i18n.text("Click the download button above to view it on your computer.")?,
+        ])
+    }
+    /// Update owned text operands and only the changed native nodes.
+    fn update_text(&self, view: ArtifactView<'_>) -> Result<(), crate::I18nError> {
+        self.text.borrow_mut().values = self.text_values(view.i18n)?;
         #[cfg(target_arch = "wasm32")]
-        browser::sync(&self.text.borrow());
+        {
+            let text = self.text.borrow();
+            crate::browser::attachment_content::browser::sync_text(
+                text.nodes.as_ref(),
+                &text.values,
+            );
+        }
         Ok(())
     }
-    /// Create a factory retaining owned text only.
-    fn reading(&self) -> Rc<ReadingContent> {
-        if let Some(reading) = &self.reading {
-            return Rc::clone(reading);
-        }
-        #[cfg(target_arch = "wasm32")]
-        let text = Rc::clone(&self.text);
-        Rc::new(ReadingContent {
-            #[cfg(target_arch = "wasm32")]
-            mount: Rc::new(move |document| browser::mount(document, &text)),
-        })
-    }
+    super::retained::artifact_reading!(text);
 }
 impl Drop for GenericArtifact {
     fn drop(&mut self) {
@@ -112,8 +110,10 @@ impl ArtifactElement for GenericArtifact {
         &mut self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
-        self.host.set_retained_visibility(self.id, visible, modal)
+    ) -> Result<(), ArtifactUiError> {
+        self.host
+            .set_retained_visibility(self.id, visible, modal)
+            .map_err(ArtifactUiError::Host)
     }
     fn filename(&self) -> &str {
         &self.filename
@@ -133,7 +133,7 @@ impl ArtifactElement for GenericArtifact {
         &mut self,
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         let bytes = self.bytes()?;
         ui.scope(|ui| {
@@ -147,11 +147,7 @@ impl ArtifactElement for GenericArtifact {
         })
         .inner
     }
-    fn render(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         self.update_text(view)?;
         let reading = self.reading();
@@ -171,3 +167,5 @@ impl ArtifactElement for GenericArtifact {
 }
 #[cfg(target_arch = "wasm32")]
 mod browser;
+#[cfg(target_arch = "wasm32")]
+mod dom;

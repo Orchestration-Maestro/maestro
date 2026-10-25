@@ -11,10 +11,8 @@ struct Prepared {
     title: String,
     /// Values in date, models, messages, calls, tokens and cost order.
     rows: [String; 6],
-    /// Owned system prompt disclosure.
-    prompt: Option<details::Prompt>,
-    /// Ordered owned tool disclosures.
-    tools: Vec<details::Tool>,
+    /// Validated semantic content used by retained factory equality.
+    admitted: details::Admitted,
 }
 /// Prepare reached header operands without changing the raw document.
 fn prepare(
@@ -51,8 +49,7 @@ fn prepare(
                 )
             ),
         ],
-        prompt: details::prompt(doc.data.get("systemPrompt").unwrap_or(&Value::Null))?,
-        tools: details::tools(doc.data.get("tools").unwrap_or(&Value::Null))?,
+        admitted: details::Admitted::new(&doc.data)?,
     })
 }
 /// Substitute only a genuinely empty display value.

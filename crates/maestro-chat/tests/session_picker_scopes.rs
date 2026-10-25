@@ -127,7 +127,9 @@ use session_picker::native_child as keybinding_child;
 #[test]
 fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
     const NAME: &str = "session_selector_default_file_manager_and_supplied_manager_are_distinct";
-    if std::env::var("MAESTRO_SELECTOR_KEYS_CHILD").as_deref() == Ok("yes") {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case("yes")
+    {
         session_picker::session_picker_scopes::default_manager();
     } else {
         let dir = keybinding_child::Scratch::new();
@@ -137,12 +139,11 @@ fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
         )
         .unwrap();
         keybinding_child::probe(
-            &crate::child_process::selector(NAME).unwrap(),
-            &dir.0,
-            &[
-                ("MAESTRO_SELECTOR_KEYS_CHILD", "yes"),
-                ("MAESTRO_CODING_AGENT_DIR", dir.0.to_str().unwrap()),
-            ],
+            maestro_test_process::TestProcess::current(NAME)
+                .unwrap()
+                .case("yes"),
+            dir.0.path(),
+            &[("MAESTRO_CODING_AGENT_DIR", dir.0.path().to_str().unwrap())],
             &[],
         );
     }

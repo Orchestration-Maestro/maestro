@@ -4,17 +4,13 @@ use maestro_catalog::{ModelRegistry, ResolvedRequestAuth};
 use maestro_credentials::ConfigValueOperations;
 use std::sync::Mutex;
 
-/// Mutable environment and completed helper outcomes.
+/// Completed helper outcomes and the commands asked for.
 #[derive(Default)]
 pub struct Operations {
-    pub environment: Mutex<IndexMap<String, String>>,
     pub commands: Mutex<IndexMap<String, Option<Vec<u8>>>>,
     pub calls: Mutex<Vec<String>>,
 }
 impl ConfigValueOperations for Operations {
-    fn environment(&self, name: &str) -> Option<String> {
-        self.environment.lock().unwrap().get(name).cloned()
-    }
     fn execute(&self, command: &str) -> Option<Vec<u8>> {
         self.calls.lock().unwrap().push(command.into());
         self.commands
@@ -55,11 +51,8 @@ pub fn document(provider_fields: &str, model_fields: &str) -> String {
 /// Select request values through the shared model boundary.
 /// # Panics
 /// Panics when a controlled test operation or assertion fails.
-pub fn request(
-    registry: &ModelRegistry,
-    operations: &dyn ConfigValueOperations,
-) -> maestro_request::model_registry::ResolvedRequestAuth {
-    run(registry.get_api_key_and_headers(&registry.find("p", "m").unwrap(), operations))
+pub fn request(registry: &ModelRegistry) -> maestro_request::model_registry::ResolvedRequestAuth {
+    run(registry.get_api_key_and_headers(&registry.find("p", "m").unwrap()))
 }
 /// Assert values without including credential values in failure output.
 /// # Panics
@@ -121,7 +114,7 @@ impl OAuth {
     #[must_use]
     pub fn register(self) -> Registration {
         let id = self.id;
-        maestro_models::register_oauth_provider(std::sync::Arc::new(self));
+        maestro_models::register_oauth_provider(maestro_models::SharedHandle::new(self));
         Registration(id)
     }
 }

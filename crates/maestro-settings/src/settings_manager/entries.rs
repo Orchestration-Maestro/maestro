@@ -62,13 +62,15 @@ object_view! {
         prompts / set_prompts: Vec<SettingsListEntry> = "prompts",
         /// Theme paths to load.
         themes / set_themes: Vec<SettingsListEntry> = "themes",
+        /// Browser contribution paths to load.
+        contributions / set_contributions: Vec<SettingsListEntry> = "contributions",
     }
 }
 
 /// Whether an object has a string `source` and only arrays as resource lists.
 fn is_filtered(map: &Map<String, Value>) -> bool {
     map.get("source").is_some_and(Value::is_string)
-        && ["extensions", "skills", "prompts", "themes"]
+        && ["extensions", "skills", "prompts", "themes", "contributions"]
             .into_iter()
             .all(|key| map.get(key).is_none_or(Value::is_array))
 }

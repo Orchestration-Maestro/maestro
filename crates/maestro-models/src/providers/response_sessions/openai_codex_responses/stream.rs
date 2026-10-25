@@ -51,14 +51,7 @@ pub(crate) fn select(
     context: Context,
     invocation: ProviderInvocation<OpenAICodexResponsesOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            start::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            start::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, start::<Local>, start::<Threaded>)
 }
 
 /// Future erasure beside the concrete session worker.
@@ -152,14 +145,7 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            simple::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            simple::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, simple::<Local>, simple::<Threaded>)
 }
 
 /// Resolve credentials before reusing the same raw producer.
@@ -223,10 +209,11 @@ async fn run<E: ProviderExecution>(
 fn register_cleanup() {
     static REGISTER: std::sync::Once = std::sync::Once::new();
     REGISTER.call_once(|| {
-        let _removal = crate::register_session_resource_cleanup(Arc::new(|session| {
-            super::close_openai_codex_web_socket_sessions(session);
-            Ok(())
-        }));
+        let _removal =
+            crate::register_session_resource_cleanup(crate::SharedHandle::new(|session| {
+                super::close_openai_codex_web_socket_sessions(session);
+                Ok(())
+            }));
     });
 }
 

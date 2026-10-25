@@ -7,13 +7,7 @@ mod support {
         "/tests/support/document_extraction.rs"
     ));
 }
-mod runtime {
-    include!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/support/browser_providers.rs"
-    ));
-}
-use runtime::run;
+use crate::tests::runtime::run_io as run;
 use std::sync::Mutex;
 use support::{Effects, Input};
 

@@ -3,59 +3,68 @@
 mod tests {
     use maestro_credentials::*;
     use std::cell::RefCell;
-    use std::collections::HashMap;
     use std::sync::Mutex;
 
-    /// Serializes observations of the process-wide cache.
-    static SERIAL: Mutex<()> = Mutex::new(());
-    /// Controlled environment, outputs and executed commands.
+    use crate::support::{CASE_ENV, SERIAL, is_child, run_isolated};
+    #[cfg(unix)]
+    use crate::support::{TempDir, run_child};
+    /// Controlled outputs and executed commands.
     #[derive(Default)]
     struct Operations {
-        /// Exact environment keys.
-        env: RefCell<HashMap<String, String>>,
         /// Next command output.
         output: RefCell<Option<Vec<u8>>>,
         /// Commands executed in order.
         calls: RefCell<Vec<String>>,
     }
     impl ConfigValueOperations for Operations {
-        fn environment(&self, name: &str) -> Option<String> {
-            self.env.borrow().get(name).cloned()
-        }
         fn execute(&self, command: &str) -> Option<Vec<u8>> {
             self.calls.borrow_mut().push(command.to_owned());
             self.output.borrow().clone()
         }
     }
+    /// Values of `KEY`, one child each; `None` leaves it unset.
+    const KEY_VALUES: [Option<&str>; 5] =
+        [None, Some("first"), Some("second"), Some(""), Some(" \n ")];
     #[test]
     fn config_values_choose_exact_environment_or_literal() {
+        if !is_child() {
+            for (index, value) in KEY_VALUES.into_iter().enumerate() {
+                let index = index.to_string();
+                let mut envs = vec![(CASE_ENV, index.as_str())];
+                envs.extend(value.map(|value| ("KEY", value)));
+                run_isolated(
+                    "config_values::tests::config_values_choose_exact_environment_or_literal",
+                    &envs,
+                );
+            }
+            return;
+        }
+        let case = std::env::var(CASE_ENV).unwrap();
+        let value = KEY_VALUES[case.parse::<usize>().unwrap()].filter(|value| !value.is_empty());
         let operations = Operations::default();
         for resolve in [resolve_config_value, resolve_config_value_uncached] {
-            for literal in ["", "literal", " key", "KEY"] {
+            for literal in ["", "literal", " key"] {
                 assert_eq!(resolve(literal, &operations).as_deref(), Some(literal));
             }
-            for value in ["first", "second", "", " \n "] {
-                operations
-                    .env
-                    .borrow_mut()
-                    .insert("KEY".into(), value.into());
-                assert_eq!(
-                    resolve("KEY", &operations).as_deref(),
-                    Some(if value.is_empty() { "KEY" } else { value })
-                );
-                assert_eq!(resolve("key", &operations).as_deref(), Some("key"));
-            }
-            operations.env.borrow_mut().clear();
+            assert_eq!(
+                resolve("KEY", &operations).as_deref(),
+                Some(value.unwrap_or("KEY"))
+            );
+            // Windows matches variable names without regard to case.
+            let folded = value.filter(|_| cfg!(windows)).unwrap_or("key");
+            assert_eq!(resolve("key", &operations).as_deref(), Some(folded));
         }
         assert!(operations.calls.borrow().is_empty());
     }
     #[test]
     fn config_prefix_removes_only_one_bang() {
+        if !is_child() {
+            return run_isolated(
+                "config_values::tests::config_prefix_removes_only_one_bang",
+                &[("!!command", "wrong")],
+            );
+        }
         let operations = Operations::default();
-        operations
-            .env
-            .borrow_mut()
-            .insert("!!command".into(), "wrong".into());
         *operations.output.borrow_mut() = Some(b"key".to_vec());
         assert_eq!(
             resolve_config_value_uncached("!!command", &operations).as_deref(),
@@ -160,9 +169,6 @@ mod tests {
         output: Option<Vec<u8>>,
     }
     impl ConfigValueOperations for GatedOperations {
-        fn environment(&self, _name: &str) -> Option<String> {
-            unreachable!("command resolution must not read environment")
-        }
         fn execute(&self, _command: &str) -> Option<Vec<u8>> {
             if self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0 {
                 self.entered.send(()).unwrap();
@@ -392,6 +398,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_support_pipes_and_multiline_output() {
+        if !maestro_test_process::selection().is_child() {
+            return child_test_in_fresh_dir("native_helpers_support_pipes_and_multiline_output");
+        }
         let operations =
             ProcessConfigValueOperations::new(|| unreachable!("Unix must avoid selection"));
         for (command, expected) in [
@@ -408,6 +417,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn command_empty_or_failed_output_returns_absence() {
+        if !maestro_test_process::selection().is_child() {
+            return child_test_in_fresh_dir("command_empty_or_failed_output_returns_absence");
+        }
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         for command in [
             "!printf ''",
@@ -426,6 +438,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_decode_invalid_utf8_lossily() {
+        if !maestro_test_process::selection().is_child() {
+            return child_test_in_fresh_dir("native_helpers_decode_invalid_utf8_lossily");
+        }
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         assert_eq!(
             resolve_config_value_uncached("!printf '\\377key'", &operations).as_deref(),
@@ -443,11 +458,10 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_work_inside_running_runtime() {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        runtime.block_on(async {
+        if !maestro_test_process::selection().is_child() {
+            return child_test_in_fresh_dir("native_helpers_work_inside_running_runtime");
+        }
+        crate::support::block_on(async {
             let operations = ProcessConfigValueOperations::new(|| unreachable!());
             assert_eq!(
                 resolve_config_value_uncached("!printf nested", &operations).as_deref(),
@@ -455,47 +469,28 @@ mod tests {
             );
         });
     }
-    /// Reinvoke one test with isolated environment and working directory.
+    /// Reinvoke one test in a child process that inherits the environment, with an empty
+    /// working directory.
+    #[cfg(unix)]
+    fn child_test_in_fresh_dir(name: &str) {
+        let root = TempDir::new(name);
+        child_test(name, root.root());
+    }
+    /// Reinvoke one test in a child process that inherits the environment, with the supplied
+    /// working directory.
     #[cfg(unix)]
     fn child_test(name: &str, root: &std::path::Path) {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &format!("tests::{name}"), "--nocapture"])
-            .env("MAESTRO_CONFIG_CHILD", "yes")
-            .env("MAESTRO_CONFIG_VALUE", "inherited-value")
-            .current_dir(root)
-            .output()
-            .unwrap();
-        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
-        assert!(
-            output.status.success(),
-            "{}\n{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
+        let process = maestro_test_process::TestProcess::current(name).unwrap();
+        run_child(
+            process.case("*"),
+            root,
+            &[("MAESTRO_CONFIG_VALUE", "inherited-value")],
         );
-    }
-    /// Disposable fixture directory whose contents belong to this test.
-    #[cfg(unix)]
-    struct Directory(std::path::PathBuf);
-    #[cfg(unix)]
-    impl Directory {
-        /// Create a distinct test directory.
-        fn new(name: &str) -> Self {
-            let path =
-                std::env::temp_dir().join(format!("maestro-config-{name}-{}", std::process::id()));
-            std::fs::create_dir_all(&path).unwrap();
-            Self(path)
-        }
-    }
-    #[cfg(unix)]
-    impl Drop for Directory {
-        fn drop(&mut self) {
-            std::fs::remove_dir_all(&self.0).unwrap();
-        }
     }
     #[cfg(unix)]
     #[test]
     fn native_helpers_inherit_environment_and_cwd() {
-        if std::env::var_os("MAESTRO_CONFIG_CHILD").is_some() {
+        if maestro_test_process::selection().is_child() {
             let operations = ProcessConfigValueOperations::new(|| unreachable!());
             assert_eq!(
                 resolve_config_value_uncached(
@@ -507,14 +502,14 @@ mod tests {
             );
             return;
         }
-        let root = Directory::new("inherit");
-        std::fs::write(root.0.join("relative-key"), "-relative").unwrap();
-        child_test("native_helpers_inherit_environment_and_cwd", &root.0);
+        let root = TempDir::new("inherit");
+        std::fs::write(root.root().join("relative-key"), "-relative").unwrap();
+        child_test("native_helpers_inherit_environment_and_cwd", root.root());
     }
     #[cfg(unix)]
     #[test]
     fn config_cache_survives_adapter_and_cwd_changes() {
-        if std::env::var_os("MAESTRO_CONFIG_CHILD").is_some() {
+        if maestro_test_process::selection().is_child() {
             let first = ProcessConfigValueOperations::new(|| unreachable!());
             let second = ProcessConfigValueOperations::new(|| unreachable!());
             let root = std::env::current_dir().unwrap();
@@ -539,18 +534,21 @@ mod tests {
             );
             return;
         }
-        let root = Directory::new("cwd");
+        let root = TempDir::new("cwd");
         for (directory, value) in [("a", "from-a"), ("b", "from-b")] {
-            std::fs::create_dir(root.0.join(directory)).unwrap();
-            std::fs::write(root.0.join(directory).join("key"), value).unwrap();
+            std::fs::create_dir(root.root().join(directory)).unwrap();
+            std::fs::write(root.root().join(directory).join("key"), value).unwrap();
         }
-        child_test("config_cache_survives_adapter_and_cwd_changes", &root.0);
+        child_test("config_cache_survives_adapter_and_cwd_changes", root.root());
     }
     #[cfg(unix)]
     #[test]
     fn native_helpers_timeout_without_fallback() {
-        let root = Directory::new("timeout");
-        let ready = root.0.join("ready");
+        if !maestro_test_process::selection().is_child() {
+            return child_test_in_fresh_dir("native_helpers_timeout_without_fallback");
+        }
+        let root = TempDir::new("timeout");
+        let ready = root.root().join("ready");
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         let command = format!(
             "!printf ready > '{}'; printf secret; exec sleep 11",

@@ -1,0 +1,108 @@
+[
+  {
+    "input": "<skill name=\"review\" location=\"/skills/review/SKILL.md\">\nCheck the diff.\n</skill>\n\nPlease look at main.rs ",
+    "parsed": {
+      "name": "review",
+      "location": "/skills/review/SKILL.md",
+      "content": "Check the diff.",
+      "userMessage": "Please look at main.rs"
+    }
+  },
+  {
+    "input": "<skill name=\"review\" location=\"/skills/review/SKILL.md\">\nCheck the diff.\n</skill>",
+    "parsed": {
+      "name": "review",
+      "location": "/skills/review/SKILL.md",
+      "content": "Check the diff.",
+      "userMessage": null
+    }
+  },
+  {
+    "input": "<skill name=\"review\" location=\"/s\">\nBody\n</skill>\n\n   \t",
+    "parsed": {
+      "name": "review",
+      "location": "/s",
+      "content": "Body",
+      "userMessage": null
+    }
+  },
+  {
+    "input": "<skill name=\"nested\" location=\"/s\">\nA\n</skill>\nB\n</skill>",
+    "parsed": {
+      "name": "nested",
+      "location": "/s",
+      "content": "A\n</skill>\nB",
+      "userMessage": null
+    }
+  },
+  {
+    "input": "<skill name=\"nested\" location=\"/s\">\nA\n</skill>\nB\n</skill>\n\nafter",
+    "parsed": {
+      "name": "nested",
+      "location": "/s",
+      "content": "A\n</skill>\nB",
+      "userMessage": "after"
+    }
+  },
+  {
+    "input": "<skill name=\"empty\" location=\"/s\">\n\n</skill>",
+    "parsed": {
+      "name": "empty",
+      "location": "/s",
+      "content": "",
+      "userMessage": null
+    }
+  },
+  {
+    "input": "note <skill name=\"a\" location=\"/s\">\nBody\n</skill>",
+    "parsed": null
+  },
+  {
+    "input": "<skill name=\"two\nlines\" location=\"/s\">\nBody\n</skill>",
+    "parsed": {
+      "name": "two\nlines",
+      "location": "/s",
+      "content": "Body",
+      "userMessage": null
+    }
+  },
+  {
+    "input": "<skill name=\"a\" location=\"/s\">\nBody\n</skill>\n\n",
+    "parsed": null
+  },
+  {
+    "input": "<skill name=\"a\" location=\"/s\">\nBody\n</skill>\n\n﻿hi",
+    "parsed": {
+      "name": "a",
+      "location": "/s",
+      "content": "Body",
+      "userMessage": "hi"
+    }
+  },
+  {
+    "input": "<skill name=\"a\" location=\"/s\">\nBody\n</skill>\n\n\nindented",
+    "parsed": {
+      "name": "a",
+      "location": "/s",
+      "content": "Body",
+      "userMessage": "indented"
+    }
+  },
+  {
+    "input": "<skill name=\"a\" location=\"/s\">\r\nBody\r\n</skill>",
+    "parsed": null
+  },
+  {
+    "input": "<skill name=\"\" location=\"/s\">\nBody\n</skill>",
+    "parsed": null
+  },
+  {
+    "input": "<skill name=\"a\" location=\"/s\">\nfirst\n\n</skill>\n\nsecond\n</skill>\n\nthird",
+    "parsed": {
+      "name": "a",
+      "location": "/s",
+      "content": "first\n",
+      "userMessage": "second\n</skill>\n\nthird"
+    }
+  }
+]

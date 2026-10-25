@@ -88,7 +88,7 @@ fn failed_directory_link_publication_cleans_staging_and_retries() {
 #[cfg(windows)]
 #[test]
 fn directory_link_collision_removes_only_source_entry() {
-    if std::env::var_os("MAESTRO_LINK_COLLISION_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         migrate_tools_to_bin(&mut |_, _| panic!("collision is not a move")).unwrap();
         return;
     }
@@ -97,23 +97,19 @@ fn directory_link_collision_removes_only_source_entry() {
     fs::create_dir(root.join("bin")).unwrap();
     fs::create_dir(root.join("original")).unwrap();
     fs::write(root.join("original/payload"), b"retained").unwrap();
-    symlink_dir("../original", root.join("tools/fd")).unwrap();
+    // Windows resolves a relative link target only when it uses its own separator.
+    symlink_dir(r"..\original", root.join("tools/fd")).unwrap();
     fs::write(root.join("bin/fd"), b"destination").unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            &format!(
-                "{}::directory_link_collision_removes_only_source_entry",
-                module_path!().split_once("::").unwrap().1
-            ),
-            "--nocapture",
-        ])
-        .env("MAESTRO_LINK_COLLISION_CHILD", "1")
-        .env("MAESTRO_CODING_AGENT_DIR", &root)
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "directory_link_collision_removes_only_source_entry",
+    )
+    .unwrap()
+    .nocapture()
+    .case("*")
+    .env("MAESTRO_CODING_AGENT_DIR", &root)
+    .output()
+    .unwrap();
     assert!(output.status.success(), "{output:?}");
-    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
     assert!(fs::symlink_metadata(root.join("tools/fd")).is_err());
     assert_eq!(fs::read(root.join("bin/fd")).unwrap(), b"destination");
     assert_eq!(

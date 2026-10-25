@@ -115,3 +115,12 @@ pub trait Component: std::any::Any {
 pub fn is_focusable(component: Option<&dyn Component>) -> bool {
     component.is_some_and(|component| component.focusable().is_some())
 }
+
+/// Runs composed rendering with the ordinary, non-failing child operation.
+pub(crate) fn render_infallible<C: Component + ?Sized>(
+    render: impl FnOnce(
+        fn(&C, usize) -> Result<Vec<String>, std::convert::Infallible>,
+    ) -> Result<Vec<String>, std::convert::Infallible>,
+) -> Vec<String> {
+    render(|child, width| Ok(child.render(width))).unwrap_or_else(|never| match never {})
+}

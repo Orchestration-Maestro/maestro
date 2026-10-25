@@ -1,0 +1,160 @@
+{
+  "content": [
+    {
+      "kind": "markdown",
+      "filename": "notes.md",
+      "content": "",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "\nupdated",
+      "language_class": "hljs language-markdown"
+    },
+    {
+      "kind": "markdown",
+      "filename": "notes.md",
+      "content": "# Heading\n\n**bold** and `code` & 雪😀\n\n- item",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "# Heading\n\n**bold** and `code` & 雪😀\n\n- item\nupdated",
+      "language_class": "hljs language-markdown"
+    },
+    {
+      "kind": "markdown",
+      "filename": "notes.md",
+      "content": "<script>globalThis.injected=true</script>",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "<script>globalThis.injected=true</script>\nupdated",
+      "language_class": "hljs language-markdown"
+    },
+    {
+      "kind": "markdown",
+      "filename": "notes.md",
+      "content": "﻿# BOM\n\ntail\n",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "﻿# BOM\n\ntail\n\nupdated",
+      "language_class": "hljs language-markdown"
+    },
+    {
+      "kind": "markdown",
+      "filename": "notes.md",
+      "content": "test",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "test\nupdated",
+      "language_class": "hljs language-markdown"
+    },
+    {
+      "kind": "markdown",
+      "filename": "notes.md",
+      "content": "longwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongword\nnext",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "longwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongword\nnext\nupdated",
+      "language_class": "hljs language-markdown"
+    },
+    {
+      "kind": "svg",
+      "filename": "drawing.svg",
+      "content": "",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "\nupdated",
+      "language_class": "hljs language-xml",
+      "outcome": null
+    },
+    {
+      "kind": "svg",
+      "filename": "drawing.svg",
+      "content": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"20\"><rect width=\"40\" height=\"20\" fill=\"red\"/></svg>",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"20\"><rect width=\"40\" height=\"20\" fill=\"red\"/></svg>\nupdated",
+      "language_class": "hljs language-xml",
+      "outcome": "load"
+    },
+    {
+      "kind": "svg",
+      "filename": "drawing.svg",
+      "content": "<svg xmlns=\"http://www.w3.org/2000/svg\" onload=\"globalThis.injected=true\"><script>globalThis.injected=true</script><rect width=\"4\" height=\"4\"/></svg>",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" onload=\"globalThis.injected=true\"><script>globalThis.injected=true</script><rect width=\"4\" height=\"4\"/></svg>\nupdated",
+      "language_class": "hljs language-xml",
+      "outcome": "load"
+    },
+    {
+      "kind": "svg",
+      "filename": "drawing.svg",
+      "content": "not SVG <&>",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "not SVG <&>\nupdated",
+      "language_class": "hljs language-xml",
+      "outcome": "error"
+    },
+    {
+      "kind": "svg",
+      "filename": "drawing.svg",
+      "content": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>雪😀 &amp; é</text></svg>",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>雪😀 &amp; é</text></svg>\nupdated",
+      "language_class": "hljs language-xml",
+      "outcome": "load"
+    },
+    {
+      "kind": "svg",
+      "filename": "drawing.svg",
+      "content": "test",
+      "renamed_filename": "renamed.txt",
+      "edited_content": "test\nupdated",
+      "language_class": "hljs language-xml",
+      "outcome": "error"
+    }
+  ],
+  "lifecycle": {
+    "contents": [
+      "<svg xmlns=\"http://www.w3.org/2000/svg\"/>",
+      "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>",
+      "",
+      " "
+    ],
+    "independent": [
+      "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>",
+      "<svg xmlns=\"http://www.w3.org/2000/svg\"><circle/></svg>"
+    ],
+    "events": [
+      {
+        "op": "create",
+        "id": 1,
+        "type": "image/svg+xml",
+        "size": 41
+      },
+      {
+        "op": "revoke",
+        "id": 1
+      },
+      {
+        "op": "create",
+        "id": 2,
+        "type": "image/svg+xml",
+        "size": 53
+      },
+      {
+        "op": "revoke",
+        "id": 2
+      },
+      {
+        "op": "create",
+        "id": 3,
+        "type": "image/svg+xml",
+        "size": 1
+      },
+      {
+        "op": "revoke",
+        "id": 3
+      },
+      {
+        "op": "create",
+        "id": 4,
+        "type": "image/svg+xml",
+        "size": 1
+      },
+      {
+        "op": "revoke",
+        "id": 4
+      }
+    ]
+  }
+}

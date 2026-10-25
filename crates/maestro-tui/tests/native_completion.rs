@@ -29,7 +29,7 @@ fn query<E: Fn(&str) -> Option<String>>(
 #[test]
 fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
     use fixtures::completion_native::Tree;
-    if std::env::var_os("MAESTRO_COMPLETION_HOME_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         let provider = CombinedAutocompleteProvider::new(
             vec![],
             "/missing".into(),
@@ -60,16 +60,15 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
             .expect("provider succeeds")
             .is_none()
     );
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "native_completion::native_filesystem_errors_and_home_expansion_follow_the_same_provider_path",
-        ])
-        .env("MAESTRO_COMPLETION_HOME_CHILD", "1")
-        .env("HOME", &tree.0)
-        .env("USERPROFILE", &tree.0)
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "native_filesystem_errors_and_home_expansion_follow_the_same_provider_path",
+    )
+    .unwrap()
+    .case("*")
+    .env("HOME", tree.path())
+    .env("USERPROFILE", tree.path())
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",
@@ -94,7 +93,7 @@ fn native_directories_follow_links_without_filtering_hidden_entries() {
         ("file-link", "file.txt"),
         ("broken-link", "missing"),
     ] {
-        std::os::unix::fs::symlink(target, tree.0.join(name)).unwrap();
+        std::os::unix::fs::symlink(target, tree.path().join(name)).unwrap();
     }
     let provider = CombinedAutocompleteProvider::new(
         vec![],

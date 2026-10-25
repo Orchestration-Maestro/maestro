@@ -1,6 +1,8 @@
 //! Selected execution against existing supplied-operation probes and native files.
 #![cfg(test)]
 use super::{factories, individual, select};
+use crate::read_support::Fixture;
+use crate::runtime;
 use crate::{
     agent_shell_support, edit_support, find_support, grep_support, ls_support, read_support,
     write_support,
@@ -220,20 +222,20 @@ pub fn execute(
     args: Value,
     signal: Option<Cancellation>,
 ) -> Result<Value, DiagnosticErrorInfo> {
-    read_support::run((tool.execute)("call".into(), args, signal, None)).map(|result| {
+    runtime::run((tool.execute)("call".into(), args, signal, None)).map(|result| {
         assert!(result.terminate.is_none());
         serde_json::to_value(result).unwrap()
     })
 }
 
 /// A native search manager that cannot reach a network service.
-pub fn manager(root: &read_support::TempDir) -> Arc<ToolsManager> {
+pub fn manager(root: &read_support::Scratch) -> Arc<ToolsManager> {
     find_support::manager(root.text(), &Arc::new(AtomicUsize::new(0)))
 }
 
 /// Compare real routed operations, including exact operand order, with the producing owner.
 pub fn paired(factory: &str, name: &str, cwd: &str, state: &Value) {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     #[cfg(unix)]
     grep_support::producer(&root, &grep_support::Input::default());
     let a = Probes::new(false);
@@ -256,11 +258,11 @@ pub fn paired(factory: &str, name: &str, cwd: &str, state: &Value) {
                 args["pattern"] = json!("*.txt");
             }
             args["path"] = json!(if ["read", "edit"].contains(&name) {
-                root.0.join("f")
+                root.path().join("f")
             } else if name == "write" {
-                root.0.join("out")
+                root.path().join("out")
             } else {
-                root.0.clone()
+                root.path().to_path_buf()
             });
         }
         let actual = execute(&tool, args.clone(), None);
@@ -291,7 +293,7 @@ pub fn check_operations() {
 
 /// Errors and pre-abort remain owned by the individual factory.
 fn controlled_failure(factory: &str, name: &str) {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     #[cfg(unix)]
     grep_support::producer(&root, &grep_support::Input::default());
     let probes = Probes::new(true);
@@ -322,7 +324,7 @@ fn controlled_failure(factory: &str, name: &str) {
 
 /// Native execution is compared on a fresh real file with its producing owner.
 fn native_call(factory: &str, name: &str) {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     root.file("f", b"a c\nhit\n");
     let tool = select(
         factory,
@@ -339,7 +341,7 @@ fn native_call(factory: &str, name: &str) {
     assert_native_bytes(&root, name);
     root.file("f", b"a c\nhit\n");
     if name == "write" {
-        let _ = std::fs::remove_file(root.0.join("out"));
+        let _ = std::fs::remove_file(root.path().join("out"));
     }
     let original = individual(name, root.text(), ToolsOptions::default(), manager(&root));
     assert_eq!(result, execute(&original, arguments(name), None));
@@ -348,13 +350,13 @@ fn native_call(factory: &str, name: &str) {
 }
 
 /// Observe selected native file effects before a comparison can reset them.
-fn assert_native_bytes(root: &read_support::TempDir, name: &str) {
+fn assert_native_bytes(root: &read_support::Scratch, name: &str) {
     if name == "edit" {
-        assert_eq!(std::fs::read(root.0.join("f")).unwrap(), b"b c\nhit\n");
+        assert_eq!(std::fs::read(root.path().join("f")).unwrap(), b"b c\nhit\n");
     }
     if name == "write" {
         assert_eq!(
-            std::fs::read(root.0.join("out")).unwrap(),
+            std::fs::read(root.path().join("out")).unwrap(),
             b"write-operations"
         );
     }
@@ -362,7 +364,7 @@ fn assert_native_bytes(root: &read_support::TempDir, name: &str) {
 
 /// Native image output uses the same selected read caller and image-fitting owner.
 fn native_image(factory: &str) {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     root.file(
         "image.png",
         &read_support::blank_image(2, 2, image::ImageOutputFormat::Png),
@@ -388,7 +390,7 @@ fn native_image(factory: &str) {
 
 /// Corrected UTF-8 write counts and unlimited native find remain visible through selection.
 pub fn check_corrections() {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     for factory in factories("write") {
         let tool = select(
             factory,
@@ -407,7 +409,10 @@ pub fn check_corrections() {
                 result["content"][0]["text"],
                 format!("Successfully wrote {bytes} bytes to out")
             );
-            assert_eq!(std::fs::read(root.0.join("out")).unwrap(), text.as_bytes());
+            assert_eq!(
+                std::fs::read(root.path().join("out")).unwrap(),
+                text.as_bytes()
+            );
         }
     }
     unlimited_find(&root);
@@ -416,7 +421,7 @@ pub fn check_corrections() {
 }
 
 /// Zero removes the result-count budget both below and above the default.
-fn unlimited_find(root: &read_support::TempDir) {
+fn unlimited_find(root: &read_support::Scratch) {
     root.file("one.txt", b"hit");
     for factory in factories("find") {
         let tool = select(
@@ -466,7 +471,7 @@ fn ignored_search() {
             assert!(
                 std::process::Command::new("git")
                     .args(["init", "-q"])
-                    .current_dir(&root.0)
+                    .current_dir(root.path())
                     .status()
                     .unwrap()
                     .success()

@@ -3,11 +3,21 @@
 use super::installation::{InstallMethod, Installation, detect_install_method};
 use maestro_path::{posix, win32};
 use maestro_process::SpawnSyncError;
-use maestro_resources::ResourceOperations;
 use maestro_text::is_whitespace_scalar;
-use std::{io, path::Path, process::Output};
+use std::{
+    future::Future,
+    io,
+    path::Path,
+    pin::Pin,
+    process::{ExitStatus, Output, Stdio},
+};
 
+mod execute;
 mod native;
+pub use execute::{
+    SelfUpdatePlan, get_self_update_command_from_settings, get_self_update_plan,
+    get_self_update_unavailable_instruction_from_settings, run_self_update,
+};
 pub use native::NativeSelfUpdateOperations;
 
 /// One executable with literal, ordered arguments and a human-readable display.
@@ -38,30 +48,39 @@ pub struct SelfUpdateContext<'a> {
     pub installation: &'a Installation,
     /// Package directory selected by the caller.
     pub package_dir: &'a str,
-    /// Replaceable filesystem, environment and query observations.
+    /// Replaceable path flavor and read-only query capture.
     pub operations: &'a dyn SelfUpdateOperations,
 }
-/// Synchronous effects needed to establish global installation ownership.
+/// Replaceable path flavor and read-only query capture.
+///
+/// Home and write-access observations are the native ones.
 pub trait SelfUpdateOperations {
-    /// Filesystem and lazy working-directory observations.
-    fn resource_operations(&self) -> &dyn ResourceOperations;
     /// Whether authored paths use Windows semantics.
     fn is_windows(&self) -> bool;
-    /// Observe the home directory.
-    ///
-    /// # Errors
-    /// Returns the native lookup cause.
-    fn home_dir(&self) -> io::Result<String>;
-    /// Check write access without creating a file.
-    ///
-    /// # Errors
-    /// Returns the native access cause.
-    fn check_write_access(&self, path: &str) -> io::Result<()>;
     /// Capture a read-only package-manager query.
     ///
     /// # Errors
     /// Returns the process owner's original error.
     fn run_command_sync(&self, command: &str, args: &[String]) -> Result<Output, SpawnSyncError>;
+    /// Run one selected step with inherited standard streams until it exits.
+    ///
+    /// The default runs the native launcher without a deadline; an adapter that
+    /// already owns child processes replaces it.
+    ///
+    /// # Errors
+    /// Returns executable resolution or native spawn failures unchanged.
+    fn run_command<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+    ) -> Pin<Box<dyn Future<Output = io::Result<ExitStatus>> + 'a>> {
+        Box::pin(async move {
+            let mut child = execute::native_launch(command, args)
+                .with_context(std::iter::empty::<(&str, &str)>(), None)
+                .spawn([Stdio::inherit(), Stdio::inherit(), Stdio::inherit()])?;
+            child.wait().await
+        })
+    }
 }
 
 /// Select Windows or POSIX directory splitting without native path conversion.
@@ -110,19 +129,23 @@ fn inferred_install(context: &SelfUpdateContext<'_>, name: &str) -> Option<(Stri
     (basename(&root, windows) == "node_modules" && basename(&parent, windows) == "lib")
         .then(|| (root, dirname(&parent, windows)))
 }
-/// Construct the display without modifying executable or argument bytes.
-fn step(command: String, args: Vec<String>) -> SelfUpdateCommandStep {
-    let display = std::iter::once(&command)
-        .chain(&args)
+/// Join authored operands with whitespace-containing ones quoted.
+fn command_line(command: &str, args: &[String]) -> String {
+    std::iter::once(command)
+        .chain(args.iter().map(String::as_str))
         .map(|arg| {
             if arg.chars().any(is_whitespace_scalar) {
                 format!("\"{arg}\"")
             } else {
-                arg.clone()
+                arg.to_owned()
             }
         })
         .collect::<Vec<_>>()
-        .join(" ");
+        .join(" ")
+}
+/// Construct the display without modifying executable or argument bytes.
+fn step(command: String, args: Vec<String>) -> SelfUpdateCommandStep {
+    let display = command_line(&command, &args);
     SelfUpdateCommandStep {
         command,
         args,
@@ -297,24 +320,21 @@ fn global_roots(
 }
 /// Resolve authored paths lazily using the supplied path flavor.
 fn resolve(context: &SelfUpdateContext<'_>, path: &str) -> io::Result<String> {
-    let resources = context.operations.resource_operations();
     maestro_path::resolve_with_flavor(
         &[&[path]],
         context.operations.is_windows(),
-        || resources.drive_directories(),
-        || resources.current_directory(),
+        maestro_resources::drive_directories,
+        maestro_resources::current_directory,
     )
     .map(|paths| paths.concat())
 }
 /// Compare existing canonical paths, not authored spelling or mere prefixes.
 fn normalized(context: &SelfUpdateContext<'_>, path: &str) -> io::Result<Option<String>> {
     let resolved = resolve(context, path)?;
-    let resources = context.operations.resource_operations();
-    if !resources.exists(Path::new(&resolved)) {
+    if !Path::new(&resolved).exists() {
         return Ok(None);
     }
-    Ok(resources
-        .canonicalize(Path::new(&resolved))
+    Ok(maestro_resources::real_path(Path::new(&resolved))
         .ok()
         .map(|path| {
             let path = path.to_string_lossy().into_owned();
@@ -353,17 +373,12 @@ fn managed(
 }
 /// Check the authored package path before its immediate parent.
 fn writable(context: &SelfUpdateContext<'_>) -> bool {
-    context
-        .operations
-        .check_write_access(context.package_dir)
+    check_write_access(context.package_dir).is_ok()
+        && check_write_access(&dirname(
+            context.package_dir,
+            context.operations.is_windows(),
+        ))
         .is_ok()
-        && context
-            .operations
-            .check_write_access(&dirname(
-                context.package_dir,
-                context.operations.is_windows(),
-            ))
-            .is_ok()
 }
 /// Select an owned automatic update only for a writable global installation.
 ///
@@ -445,7 +460,7 @@ fn bun_roots(context: &SelfUpdateContext<'_>, output: Option<String>) -> io::Res
     let windows = context.operations.is_windows();
     let mut roots = vec![join(
         &[
-            &context.operations.home_dir()?,
+            &maestro_tools::expand_path("~")?,
             ".bun",
             "install",
             "global",
@@ -489,4 +504,24 @@ fn npm_program(npm: Option<&[String]>) -> (&str, Vec<String>) {
         || ("npm", Vec::new()),
         |(command, args)| (command.as_str(), args.to_vec()),
     )
+}
+
+/// Use the OS access operation rather than creating or truncating a probe file.
+#[cfg(unix)]
+fn check_write_access(path: &str) -> io::Result<()> {
+    Ok(rustix::fs::access(path, rustix::fs::Access::WRITE_OK)?)
+}
+
+/// Match native Windows directory and regular-file attribute access results.
+///
+/// Windows observes existence and read-only attributes, not directory ACLs, so an
+/// attempted update can still fail with a permissions error.
+#[cfg(not(unix))]
+fn check_write_access(path: &str) -> io::Result<()> {
+    let metadata = std::fs::metadata(path)?;
+    if metadata.is_dir() || !metadata.permissions().readonly() {
+        Ok(())
+    } else {
+        Err(io::Error::from(io::ErrorKind::PermissionDenied))
+    }
 }

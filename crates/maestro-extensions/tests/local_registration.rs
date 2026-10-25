@@ -20,8 +20,7 @@ use std::{
 };
 use tokio::{sync::oneshot, task::yield_now};
 
-#[path = "support/local.rs"]
-mod local_support;
+use crate::local_support;
 use local_support::{
     Loaded, LocalBus, Released, STALE, Trace, listener, loaded, local, mark, runner, source,
 };
@@ -974,9 +973,7 @@ fn default_registration_retains_thread_safe_sdk_contracts() {
             })))
         }),
     );
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let executor = crate::runtime_support::runtime();
     executor.block_on(async {
         bus.emit("x", Value::Null).await;
         completed.recv().await.unwrap();
@@ -1006,9 +1003,7 @@ fn invoke_default_callbacks(runner: &ExtensionRunner) {
     ));
     let pressed = send(shortcut(runner.create_context()));
     let worker = std::thread::spawn(move || {
-        let executor = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap();
+        let executor = crate::runtime_support::runtime();
         let invoked = executor.block_on(invoked).is_ok();
         (invoked, executor.block_on(pressed).unwrap_err().to_string())
     });

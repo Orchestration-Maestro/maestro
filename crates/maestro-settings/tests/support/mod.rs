@@ -1,11 +1,8 @@
 //! Shared helpers for the public-interface settings tests.
-//!
-//! Every test binary includes this module and uses a different subset of it.
 
-#![allow(dead_code)]
-
+use maestro_test_process::{CheckedChild, CheckedStdout, TestProcess};
 use std::future::Future;
-use std::process::{Command, Output};
+use std::process::Output;
 use std::sync::{Arc, Condvar, Mutex};
 
 use maestro_settings::{
@@ -260,18 +257,13 @@ pub fn child_case() -> Option<String> {
 }
 
 /// Builds a command that re-runs one test of this binary as a child for `case`.
-pub fn child_command(test: &str, case: &str) -> Command {
-    let mut command = Command::new(std::env::current_exe().unwrap());
-    command
-        .args([
-            "--exact",
-            &format!("tests::{test}"),
-            "--nocapture",
-            "--quiet",
-            "--test-threads=1",
-        ])
-        .env(CHILD_MARKER, case);
-    command
+pub fn child_command(test: &str, case: &str) -> TestProcess {
+    TestProcess::named(test)
+        .unwrap()
+        .nocapture()
+        .quiet()
+        .single_threaded()
+        .env(CHILD_MARKER, case)
 }
 
 /// The line a child printed with [`report`], parsed as JSON.
@@ -292,29 +284,7 @@ pub fn report(value: &Value) {
     println!("REPORT:{value}");
 }
 
-/// A uniquely named directory below the system temporary directory, removed on drop.
-pub struct TempDir(std::path::PathBuf);
-
-impl TempDir {
-    pub fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let number = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path =
-            std::env::temp_dir().join(format!("maestro-settings-{}-{number}", std::process::id()));
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-
-    pub fn path(&self) -> &std::path::Path {
-        &self.0
-    }
-}
-
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
+pub use maestro_test_directory::Scratch;
 
 /// Environment variable naming the file a lock child works on.
 const CHILD_PATH: &str = "MAESTRO_SETTINGS_TEST_PATH";
@@ -353,15 +323,15 @@ pub fn run_lock_child() -> bool {
 
 /// A child process holding an exclusive lock until it is released.
 pub struct Holder {
-    child: std::process::Child,
-    _output: std::io::BufReader<std::process::ChildStdout>,
+    child: CheckedChild,
+    _output: std::io::BufReader<CheckedStdout>,
 }
 
 impl Holder {
     /// Starts a child that locks `path` and waits until it reports.
     pub fn start(test: &str, path: &std::path::Path) -> Self {
-        use std::io::{BufRead, BufReader};
-        let mut command = child_command(test, "hold");
+        use std::io::BufReader;
+        let command = child_command(test, "hold");
         let mut child = command
             .env(CHILD_PATH, path)
             .stdin(std::process::Stdio::piped())
@@ -369,15 +339,7 @@ impl Holder {
             .spawn()
             .unwrap();
         let mut output = BufReader::new(child.stdout.take().unwrap());
-        let mut line = String::new();
-        while line.trim_end() != "REPORT:\"locked\"" {
-            line.clear();
-            assert!(
-                output.read_line(&mut line).unwrap() > 0,
-                "the child never locked {}",
-                path.display()
-            );
-        }
+        read_marker(&mut output, "REPORT:\"locked\"");
         Self {
             child,
             _output: output,
@@ -387,7 +349,7 @@ impl Holder {
     /// Lets the child exit and releases its lock.
     pub fn release(mut self) {
         drop(self.child.stdin.take());
-        self.child.wait().unwrap();
+        assert!(self.child.wait().unwrap().success());
     }
 }
 
@@ -397,6 +359,7 @@ pub fn probe_lock(test: &str, path: &std::path::Path) -> String {
         .env(CHILD_PATH, path)
         .output()
         .unwrap();
+    assert!(output.status.success());
     child_report(&output).as_str().unwrap().to_owned()
 }
 
@@ -417,14 +380,14 @@ pub fn file_storage(root: &std::path::Path) -> FileSettingsStorage {
 /// A storage adapter that scenarios seed and edit from outside the manager.
 pub enum Backend {
     Memory(Arc<InMemorySettingsStorage>),
-    Native(TempDir, Arc<FileSettingsStorage>),
+    Native(Scratch, Arc<FileSettingsStorage>),
     Controlled(Arc<ControlledStorage>),
 }
 
 impl Backend {
     /// One backend per adapter.
     pub fn all() -> Vec<Self> {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let native = Arc::new(file_storage(root.path()));
         vec![
             Self::Memory(Arc::new(InMemorySettingsStorage::new())),
@@ -442,19 +405,12 @@ impl Backend {
         }
     }
 
-    fn file(root: &TempDir, scope: SettingsScope) -> std::path::PathBuf {
-        match scope {
-            SettingsScope::Global => root.path().join("agent/settings.json"),
-            SettingsScope::Project => root.path().join("work/.maestro/settings.json"),
-        }
-    }
-
     /// Replaces a scope's text as another process would.
     pub fn write(&self, scope: SettingsScope, text: &str) {
         match self {
             Self::Memory(storage) => put(&**storage, scope, text),
             Self::Native(root, _) => {
-                let file = Self::file(root, scope);
+                let file = settings_file(root.path(), scope);
                 std::fs::create_dir_all(file.parent().unwrap()).unwrap();
                 std::fs::write(file, text).unwrap();
             }
@@ -466,7 +422,9 @@ impl Backend {
     pub fn text(&self, scope: SettingsScope) -> Option<String> {
         match self {
             Self::Memory(storage) => raw(&**storage, scope),
-            Self::Native(root, _) => std::fs::read_to_string(Self::file(root, scope)).ok(),
+            Self::Native(root, _) => {
+                std::fs::read_to_string(settings_file(root.path(), scope)).ok()
+            }
             Self::Controlled(storage) => storage.text(scope),
         }
     }
@@ -480,19 +438,26 @@ impl Backend {
 
 /// Like [`child_command`], but starts the child through bash after running `setup`.
 #[cfg(unix)]
-pub fn shell_child_command(test: &str, case: &str, setup: &str) -> Command {
-    let mut command = Command::new("bash");
-    command
-        .arg("-c")
-        .arg(format!("{setup}; exec \"$0\" \"$@\""))
-        .arg(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            &format!("tests::{test}"),
-            "--nocapture",
-            "--quiet",
-            "--test-threads=1",
-        ])
-        .env(CHILD_MARKER, case);
-    command
+pub fn shell_child_command(test: &str, case: &str, setup: &str) -> TestProcess {
+    child_command(test, case).shell_setup(setup)
+}
+
+/// The settings document for one scope below the supplied temporary root.
+pub fn settings_file(root: &std::path::Path, scope: SettingsScope) -> std::path::PathBuf {
+    root.join(match scope {
+        SettingsScope::Global => "agent/settings.json",
+        SettingsScope::Project => "work/.maestro/settings.json",
+    })
+}
+
+/// Reads until the child reports its completion marker, rejecting an early exit.
+pub fn read_marker(output: &mut impl std::io::BufRead, marker: &str) {
+    let mut line = String::new();
+    while line.trim_end() != marker {
+        line.clear();
+        assert!(
+            output.read_line(&mut line).unwrap() > 0,
+            "child did not report {marker}"
+        );
+    }
 }

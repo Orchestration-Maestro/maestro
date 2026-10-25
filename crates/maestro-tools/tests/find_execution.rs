@@ -1,6 +1,9 @@
 //! File finding through the public tool definition.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::read_support::Fixture;
+#[cfg(unix)]
+use crate::runtime;
 use crate::{display_support, find_support, read_support};
 use maestro_tools::{FindToolOptions, ToolsManager, create_find_tool_definition};
 use std::sync::Arc;
@@ -81,10 +84,10 @@ fn find_factory_forwards_custom_operations_without_native_work() {
 #[cfg(unix)]
 #[test]
 fn find_custom_route_never_probes_native_programs() {
-    let root = read_support::TempDir::new();
-    let marker = root.0.join("probed");
+    let root = read_support::Scratch::new().unwrap();
+    let marker = root.path().join("probed");
     let test = "find_custom_route_never_probes_native_programs";
-    if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let script = format!(
             "#!/usr/bin/python3\nfrom pathlib import Path\nPath({}).write_text('probed')\n",
             serde_json::json!(marker.to_str().unwrap())
@@ -93,7 +96,7 @@ fn find_custom_route_never_probes_native_programs() {
             find_support::executable(&root, name, &script);
         }
         assert!(
-            std::process::Command::new(root.0.join("fd"))
+            std::process::Command::new(root.path().join("fd"))
                 .arg("--version")
                 .status()
                 .unwrap()
@@ -215,14 +218,14 @@ fn find_native_path_records_preserve_names_and_directories() {
         "carriage\rname",
         "ending\\",
     ] {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         root.file(name, b"");
         let result = find_support::native(&root, "*", Some(2.0)).unwrap();
         assert_eq!(find_support::text(&result), name);
         assert!(result.get("details").is_none());
     }
-    let root = read_support::TempDir::new();
-    std::fs::create_dir(root.0.join("directory")).unwrap();
+    let root = read_support::Scratch::new().unwrap();
+    std::fs::create_dir(root.path().join("directory")).unwrap();
     assert_files(&root, "*", &["directory/"]);
 }
 
@@ -242,18 +245,17 @@ fn find_resolution_observes_cwd_only_when_required() {
     ) {
         return;
     }
-    let root = read_support::TempDir::new();
-    std::env::set_current_dir(&root.0).unwrap();
-    std::fs::remove_dir(&root.0).unwrap();
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    root.enter_removed("removed").unwrap();
     assert!(std::env::current_dir().is_err());
     find_support::check_custom("find_resolution_observes_cwd_only_when_required");
 }
 
 /// A tree with distinguishing basename and directory patterns.
-fn glob_tree() -> read_support::TempDir {
-    let root = read_support::TempDir::new();
+fn glob_tree() -> read_support::Scratch {
+    let root = read_support::Scratch::new().unwrap();
     for path in ["some/parent/child", "src/foo/bar"] {
-        std::fs::create_dir_all(root.0.join(path)).unwrap();
+        std::fs::create_dir_all(root.path().join(path)).unwrap();
     }
     for path in [
         "some/parent/child/file.ext",
@@ -266,7 +268,7 @@ fn glob_tree() -> read_support::TempDir {
     root
 }
 /// Compare a real traversal's file set without assuming producer scheduling order.
-fn assert_files(root: &read_support::TempDir, pattern: &str, expected: &[&str]) {
+fn assert_files(root: &read_support::Scratch, pattern: &str, expected: &[&str]) {
     let result = find_support::native(root, pattern, None).unwrap();
     let paths: std::collections::BTreeSet<_> = find_support::text(&result).split('\n').collect();
     assert_eq!(paths, expected.iter().copied().collect());
@@ -316,12 +318,12 @@ fn find_nested_spec_glob_reaches_leaf() {
 #[test]
 fn find_native_includes_hidden_nonmetadata_and_dependencies() {
     for worktree in [false, true] {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         for dir in [".secret", "node_modules"] {
-            std::fs::create_dir(root.0.join(dir)).unwrap();
+            std::fs::create_dir(root.path().join(dir)).unwrap();
         }
         if worktree {
-            std::fs::create_dir(root.0.join(".git")).unwrap();
+            std::fs::create_dir(root.path().join(".git")).unwrap();
             root.file(".git/meta.txt", b"");
         }
         root.file(".gitignore", b"ignored.txt\n");
@@ -346,7 +348,7 @@ fn find_native_includes_hidden_nonmetadata_and_dependencies() {
 }
 #[test]
 fn find_native_reports_glob_parse_errors() {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     assert_eq!(
         find_support::native(&root, "[", None).unwrap_err(),
         "[fd error]: error parsing glob '[': unclosed character class; missing ']'"
@@ -354,7 +356,7 @@ fn find_native_reports_glob_parse_errors() {
 }
 #[test]
 fn find_flag_like_pattern_is_literal() {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     assert_eq!(
         find_support::text(&find_support::native(&root, "--help", None).unwrap()),
         "No files found matching pattern"
@@ -364,7 +366,7 @@ fn find_flag_like_pattern_is_literal() {
 }
 #[test]
 fn find_zero_native_limit_is_unlimited_without_warning() {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     for n in 0..1005 {
         root.file(&format!("file-{n}.txt"), b"");
     }
@@ -378,7 +380,7 @@ fn find_zero_native_limit_is_unlimited_without_warning() {
 }
 #[test]
 fn find_native_invalid_numeric_limits_remain_fd_errors() {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     root.file("a.txt", b"");
     for (limit, expected) in [
         (
@@ -404,15 +406,15 @@ fn find_native_invalid_numeric_limits_remain_fd_errors() {
 #[test]
 fn find_native_symlinks_and_invalid_utf8_keep_fd_results() {
     use std::os::unix::{ffi::OsStrExt, fs::symlink};
-    let root = read_support::TempDir::new();
-    std::fs::create_dir(root.0.join("directory")).unwrap();
+    let root = read_support::Scratch::new().unwrap();
+    std::fs::create_dir(root.path().join("directory")).unwrap();
     root.file("file", b"");
     for (target, name) in [
         ("directory", "linked-dir"),
         ("file", "linked-file"),
         ("missing", "dangling-link"),
     ] {
-        symlink(target, root.0.join(name)).unwrap();
+        symlink(target, root.path().join(name)).unwrap();
     }
     assert_files(
         &root,
@@ -420,7 +422,8 @@ fn find_native_symlinks_and_invalid_utf8_keep_fd_results() {
         &["linked-dir", "linked-file", "dangling-link"],
     );
     std::fs::write(
-        root.0.join(std::ffi::OsStr::from_bytes(b"invalid-\xff")),
+        root.path()
+            .join(std::ffi::OsStr::from_bytes(b"invalid-\xff")),
         b"",
     )
     .unwrap();
@@ -429,12 +432,12 @@ fn find_native_symlinks_and_invalid_utf8_keep_fd_results() {
 /// Native nested ignore rules with both repository states.
 fn nested_ignore(deep: bool) {
     for worktree in [false, true] {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         for dir in ["a/deep", "b"] {
-            std::fs::create_dir_all(root.0.join(dir)).unwrap();
+            std::fs::create_dir_all(root.path().join(dir)).unwrap();
         }
         if worktree {
-            std::fs::create_dir(root.0.join(".git")).unwrap();
+            std::fs::create_dir(root.path().join(".git")).unwrap();
         }
         root.file("a/.gitignore", b"ignored.txt\n");
         for path in [
@@ -485,14 +488,14 @@ fn find_deeper_ignore_stays_in_its_subtree() {
 fn find_native_abort_terminates_child_without_waiting_for_exit() {
     use futures_util::FutureExt;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    let root = read_support::TempDir::new();
-    let socket_path = root.0.join("native.sock");
+    let root = read_support::Scratch::new().unwrap();
+    let socket_path = root.path().join("native.sock");
     let script = format!(
         "#!/usr/bin/python3\nimport socket,signal\ns=socket.socket(socket.AF_UNIX)\ns.connect({})\nsignal.pthread_sigmask(signal.SIG_BLOCK,{{signal.SIGTERM}})\ns.sendall(b'ready')\nsignal.sigwait({{signal.SIGTERM}})\ns.sendall(b'term')\ns.recv(1)\n",
         serde_json::json!(socket_path.to_str().unwrap())
     );
     find_support::executable(&root, "fd", &script);
-    read_support::run(async {
+    runtime::run(async {
         let listener = tokio::net::UnixListener::bind(socket_path).unwrap();
         let signal = maestro_models::Cancellation::new();
         let counter = Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -532,20 +535,20 @@ fn find_native_abort_terminates_child_without_waiting_for_exit() {
 #[test]
 fn find_acquisition_is_silent_and_abort_prevents_launch() {
     let test = "find_acquisition_is_silent_and_abort_prevents_launch";
-    let root = read_support::TempDir::new();
-    if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+    let root = read_support::Scratch::new().unwrap();
+    if !maestro_test_process::selection().is_child() {
         assert_silent_child(
             test,
             read_support::isolated_os_output(
                 test,
                 "no-path",
                 &[
-                    ("PATH", Some(root.0.as_os_str())),
+                    ("PATH", Some(root.path().as_os_str())),
                     ("MAESTRO_OFFLINE", Some(std::ffi::OsStr::new("0"))),
                 ],
             ),
         );
-        let sock = root.0.join("probe.sock");
+        let sock = root.path().join("probe.sock");
         find_support::executable(
             &root,
             "fd",
@@ -560,15 +563,15 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
                 test,
                 "probe",
                 &[
-                    ("PATH", Some(root.0.as_os_str())),
-                    ("MAESTRO_FIND_PROBE", Some(root.0.as_os_str())),
+                    ("PATH", Some(root.path().as_os_str())),
+                    ("MAESTRO_FIND_PROBE", Some(root.path().as_os_str())),
                 ],
             ),
         );
         return;
     }
-    read_support::run(async {
-        if std::env::var("MAESTRO_READ_CHILD").unwrap() == "probe" {
+    runtime::run(async {
+        if maestro_test_process::selection().runs_case("probe") {
             abort_discovery().await;
         } else {
             unavailable_and_pre_abort(&root).await;
@@ -581,7 +584,9 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
 fn assert_silent_child(test: &str, output: std::process::Output) {
     let success = format!(
         "test {} ... ok",
-        crate::child_process::selector(test).unwrap()
+        maestro_test_process::TestProcess::current(test)
+            .unwrap()
+            .name()
     );
     assert!(output.stderr.is_empty(), "{:?}", output.stderr);
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -603,7 +608,7 @@ async fn abort_discovery() {
     let listener =
         tokio::net::UnixListener::bind(std::path::Path::new(&probes).join("probe.sock")).unwrap();
     let signal = maestro_models::Cancellation::new();
-    let empty = read_support::TempDir::new();
+    let empty = read_support::Scratch::new().unwrap();
     let tool = maestro_tools::create_find_tool(
         empty.text(),
         FindToolOptions::default(),
@@ -625,7 +630,7 @@ async fn abort_discovery() {
 }
 /// Observe unavailable acquisition after pre-abort proves no native work.
 #[cfg(unix)]
-async fn unavailable_and_pre_abort(root: &read_support::TempDir) {
+async fn unavailable_and_pre_abort(root: &read_support::Scratch) {
     use std::sync::atomic::{AtomicUsize, Ordering};
     let calls = Arc::new(AtomicUsize::new(0));
     let manager = find_support::manager(root.text(), &calls);
@@ -679,7 +684,7 @@ async fn unavailable_and_pre_abort(root: &read_support::TempDir) {
 }
 /// Cancel after the supplied acquisition transport registers its started witness.
 #[cfg(unix)]
-async fn abort_download(root: &read_support::TempDir) {
+async fn abort_download(root: &read_support::Scratch) {
     use futures_util::FutureExt;
     let started = maestro_models::Cancellation::new();
     let witness = started.clone();

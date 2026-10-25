@@ -34,7 +34,7 @@ fn maestro_local_caches_keep_ignore_files_trackable() {
         .parent()
         .unwrap();
     assert!(
-        git(&workspace.root)
+        git(workspace.root.path())
             .args(["init", "-q"])
             .status()
             .unwrap()
@@ -45,7 +45,7 @@ fn maestro_local_caches_keep_ignore_files_trackable() {
         ".maestro/git/.gitignore",
         ".maestro/npm/.gitignore",
     ] {
-        let destination = workspace.root.join(path);
+        let destination = workspace.root.path().join(path);
         fs::create_dir_all(destination.parent().unwrap()).unwrap();
         fs::copy(shipped.join(path), destination).unwrap();
     }
@@ -74,7 +74,7 @@ fn maestro_local_caches_keep_ignore_files_trackable() {
         cases.push((format!(".maestro/{cache}/.gitignore"), false));
     }
     for (path, ignored) in cases {
-        check_ignore(&workspace.root, &path, ignored).unwrap();
+        check_ignore(workspace.root.path(), &path, ignored).unwrap();
     }
 }
 

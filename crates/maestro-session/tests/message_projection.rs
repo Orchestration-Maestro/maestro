@@ -1,5 +1,6 @@
 //! Recorded message transformation cases.
 #![cfg(test)]
+use chrono::{TimeZone, Timelike};
 use maestro_session::messages::*;
 use serde::Deserialize;
 use serde_json::Value;
@@ -85,19 +86,22 @@ fn cases(name: &str) -> Vec<Case> {
 }
 
 /// Run date cases in a fresh process with the selected timezone.
+#[cfg(not(target_arch = "wasm32"))]
 fn in_timezone(name: &str, timezone: &str) -> bool {
-    if std::env::var("MAESTRO_DATE_CHILD").as_deref() == Ok(name) {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
+    {
         return true;
     }
-    let test = crate::child_process::selector(name).unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
+    let output = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .nocapture()
         .env("TZ", timezone)
-        .env("MAESTRO_DATE_CHILD", name)
+        .case(name)
         .output()
         .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test).unwrap();
+
     false
 }
 
@@ -118,6 +122,7 @@ fn assert_constructor(case: &Case, actual: Value, timestamp: f64) {
     assert_eq!(decode(actual), expected, "{}", case.id);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn summary_constructors_preserve_fields_and_time() {
     let name = "summary_constructors_preserve_fields_and_time";
@@ -183,6 +188,7 @@ fn custom_factory_group(name: &str) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn constructors_use_local_datetimes_and_utc_dates() {
     let name = "constructors_use_local_datetimes_and_utc_dates";
@@ -220,6 +226,7 @@ fn constructors_use_local_datetimes_and_utc_dates() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn custom_constructor_preserves_time() {
     let name = "custom_constructor_preserves_time";
@@ -381,6 +388,7 @@ fn conversion_observes_changes_through_retained_inputs() {
 }
 
 /// Recorded calendar parsing across isolated local time zones.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn parse_timestamp_millis_preserves_native_date_forms() {
     #[derive(Deserialize)]
@@ -401,10 +409,14 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
     struct ParserExpected {
         millis: Option<i64>,
     }
-    if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             crate::subprocess::run_child(
-                "parse_timestamp_millis_preserves_native_date_forms",
+                maestro_test_process::TestProcess::current(
+                    "parse_timestamp_millis_preserves_native_date_forms",
+                )
+                .unwrap()
+                .case("*"),
                 &[("TZ", Some(tz))],
             );
         }
@@ -426,4 +438,68 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
         count += 1;
     }
     assert!(count > 0);
+}
+
+/// One recorded local-time reading and its resolved instant.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LocalCase {
+    /// Zone the case runs in.
+    zone: String,
+    /// Local wall time without an offset.
+    wall: String,
+    /// Resolved epoch milliseconds.
+    millis: i64,
+    /// Local date the resolved instant falls on.
+    local_date: String,
+    /// Local hour the resolved instant falls on.
+    local_hour: u32,
+}
+
+#[test]
+fn local_timestamps_keep_gap_overlap_and_calendar_boundaries() {
+    if !maestro_test_process::selection().is_child() {
+        for tz in [
+            "America/New_York",
+            "America/Santiago",
+            "America/Havana",
+            "Pacific/Apia",
+            "America/Montreal",
+            "Europe/Berlin",
+        ] {
+            crate::subprocess::run_child(
+                maestro_test_process::TestProcess::current(
+                    "local_timestamps_keep_gap_overlap_and_calendar_boundaries",
+                )
+                .unwrap()
+                .case("*"),
+                &[("TZ", Some(tz))],
+            );
+        }
+        return;
+    }
+    let tz = std::env::var("TZ").unwrap();
+    let cases: Vec<LocalCase> =
+        serde_json::from_str(include_str!("fixtures/local-timestamps.json")).unwrap();
+    let mut checked = 0;
+    for case in cases.iter().filter(|case| case.zone == tz) {
+        let wall = chrono::NaiveDateTime::parse_from_str(&case.wall, "%Y-%m-%dT%H:%M:%S")
+            .expect("the recorded wall time parses");
+        let millis = local_timestamp_millis(wall).expect("the local reading resolves");
+        assert_eq!(millis, case.millis, "{}", case.wall);
+        assert_eq!(
+            parse_timestamp_millis(&case.wall),
+            Some(case.millis),
+            "the timestamp parser agrees on {}",
+            case.wall
+        );
+        let local = chrono::Local
+            .timestamp_millis_opt(millis)
+            .single()
+            .expect("the resolved instant has one local reading");
+        assert_eq!(local.format("%Y-%m-%d").to_string(), case.local_date);
+        assert_eq!(local.hour(), case.local_hour);
+        checked += 1;
+    }
+    assert!(checked > 0, "the zone has recorded cases");
 }

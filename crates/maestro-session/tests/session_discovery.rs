@@ -5,13 +5,13 @@
 use crate::support;
 use maestro_request::presence::Presence;
 use maestro_session::{SessionInfo, SessionManager, parse_session_entries};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::io;
 use std::path::Path;
 #[cfg(unix)]
 use std::sync::mpsc;
 use support::discovery::replay;
-use support::scratch::Scratch;
 
 /// Compare recorded cases whose results do not depend on the timezone.
 fn replay_fixed(names: &[&str]) {
@@ -111,10 +111,10 @@ fn discovery_reached_malformed_fields_discard_only_the_file() {
         "null_block",
         "null_record_after_header",
     ]);
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     write_session(&scratch, "bad.jsonl", "bad", &[]);
     std::fs::write(
-        Path::new(scratch.text()).join("bad.jsonl"),
+        scratch.path().join("bad.jsonl"),
         format!("{}\nnull\n", session_header("bad")),
     )
     .unwrap();
@@ -159,16 +159,16 @@ fn discovery_missing_timestamp_uses_parsed_entry_time() {
 #[test]
 fn discovery_local_dates_use_native_local_zone() {
     let name = "discovery_local_dates_use_native_local_zone";
-    if std::env::var("MAESTRO_DATE_CHILD").as_deref() != Ok(name) {
-        let test = crate::child_process::selector(name).unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .nocapture()
             .env("TZ", "America/New_York")
-            .env("MAESTRO_DATE_CHILD", name)
+            .case(name)
             .output()
             .unwrap();
         assert!(output.status.success());
-        crate::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     // Midnight local time in January is five hours after midnight UTC.
@@ -210,11 +210,7 @@ fn session_text(id: &str, messages: &[(&str, &str, u64)]) -> String {
 
 /// Write a session file below the scratch directory.
 fn write_session(scratch: &Scratch, name: &str, id: &str, messages: &[(&str, &str, u64)]) {
-    std::fs::write(
-        Path::new(scratch.text()).join(name),
-        session_text(id, messages),
-    )
-    .unwrap();
+    std::fs::write(scratch.path().join(name), session_text(id, messages)).unwrap();
 }
 
 /// A current-thread runtime for driving the native listing.
@@ -229,7 +225,7 @@ fn list(scratch: &Scratch) -> Vec<SessionInfo> {
     runtime()
         .block_on(SessionManager::list(
             "/unused",
-            Some(scratch.text()),
+            Some(scratch.path().to_str().unwrap()),
             "/unused",
             None,
         ))
@@ -247,19 +243,11 @@ fn ids(listed: &[SessionInfo]) -> Vec<&str> {
         .collect()
 }
 
-/// File names in native enumeration order.
-fn native_order(dir: &str) -> Vec<String> {
-    std::fs::read_dir(dir)
-        .unwrap()
-        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
-        .collect()
-}
-
 #[test]
 fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
-    let scratch = Scratch::new();
-    let elsewhere = Scratch::new();
-    let dir = Path::new(scratch.text());
+    let scratch = Scratch::new().unwrap();
+    let elsewhere = Scratch::new().unwrap();
+    let dir = scratch.path();
     write_session(&scratch, "aa.jsonl", "aa", &[("user", "x", 3000)]);
     write_session(&scratch, "zz.jsonl", "zz", &[("user", "x", 3000)]);
     write_session(&scratch, "mid.jsonl", "mid", &[("user", "x", 2000)]);
@@ -269,7 +257,7 @@ fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
     write_session(&elsewhere, "target.jsonl", "linked", &[("user", "x", 4000)]);
     #[cfg(unix)]
     std::os::unix::fs::symlink(
-        Path::new(elsewhere.text()).join("target.jsonl"),
+        elsewhere.path().join("target.jsonl"),
         dir.join("link.jsonl"),
     )
     .unwrap();
@@ -283,7 +271,7 @@ fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
     let listed = runtime()
         .block_on(SessionManager::list(
             "/unused",
-            Some(scratch.text()),
+            Some(scratch.path().to_str().unwrap()),
             "/unused",
             Some(&mut record),
         ))
@@ -295,28 +283,22 @@ fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
             .map(|loaded| (loaded, total))
             .collect::<Vec<_>>()
     );
-    let tied: Vec<_> = native_order(scratch.text())
-        .into_iter()
-        .filter(|name| name == "aa.jsonl" || name == "zz.jsonl")
-        .map(|name| name.trim_end_matches(".jsonl").to_owned())
-        .collect();
     let mut expected = if cfg!(unix) { vec!["linked"] } else { vec![] };
-    expected.extend(tied.iter().map(String::as_str));
-    expected.extend(["mid", "old"]);
+    expected.extend(["aa", "zz", "mid", "old"]);
     assert_eq!(ids(&listed), expected);
 }
 
 #[test]
 fn project_listing_resolves_only_omitted_directory() {
-    let scratch = Scratch::new();
-    let agent = Path::new(scratch.text()).join("agent");
+    let scratch = Scratch::new().unwrap();
+    let agent = scratch.path().join("agent");
     let agent = agent.to_str().unwrap();
-    let explicit = Scratch::new();
+    let explicit = Scratch::new().unwrap();
     write_session(&explicit, "one.jsonl", "one", &[("user", "x", 1000)]);
     let listed = runtime()
         .block_on(SessionManager::list(
             "/work/tree",
-            Some(explicit.text()),
+            Some(explicit.path().to_str().unwrap()),
             agent,
             None,
         ))
@@ -328,14 +310,14 @@ fn project_listing_resolves_only_omitted_directory() {
         .unwrap();
     assert!(listed.is_empty());
     assert!(Path::new(agent).join("sessions/--work-tree--").is_dir());
-    let empty = Scratch::new();
+    let empty = Scratch::new().unwrap();
     assert!(list(&empty).is_empty());
 }
 
 #[test]
 fn project_listing_default_creation_error_escapes() {
-    let scratch = Scratch::new();
-    let blocker = Path::new(scratch.text()).join("blocker");
+    let scratch = Scratch::new().unwrap();
+    let blocker = scratch.path().join("blocker");
     std::fs::write(&blocker, "file").unwrap();
     let error = runtime()
         .block_on(SessionManager::list(
@@ -359,19 +341,19 @@ fn project_listing_default_creation_error_escapes() {
 
 #[test]
 fn project_listing_directory_failures_return_empty() {
-    let scratch = Scratch::new();
-    let missing = Path::new(scratch.text()).join("missing");
-    let file = Path::new(scratch.text()).join("plain");
+    let scratch = Scratch::new().unwrap();
+    let missing = scratch.path().join("missing");
+    let file = scratch.path().join("plain");
     std::fs::write(&file, "x").unwrap();
-    let empty = Scratch::new();
+    let empty = Scratch::new().unwrap();
     let dirs = vec![
         missing.to_str().unwrap(),
         file.to_str().unwrap(),
         "",
-        empty.text(),
+        empty.path().to_str().unwrap(),
     ];
     #[cfg(unix)]
-    let unreadable = Path::new(scratch.text()).join("locked");
+    let unreadable = scratch.path().join("locked");
     #[cfg(unix)]
     let dirs = {
         let mut dirs = dirs;
@@ -412,7 +394,7 @@ fn project_listing_directory_failures_return_empty() {
 /// Create `<agent>/sessions/<project>/<file>` histories and return the agent directory.
 fn projects(scratch: &Scratch, layout: &[(&str, &str, u64)]) -> String {
     for (project, id, time) in layout {
-        let dir = Path::new(scratch.text()).join("sessions").join(project);
+        let dir = scratch.path().join("sessions").join(project);
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(
             dir.join(format!("{id}.jsonl")),
@@ -420,12 +402,12 @@ fn projects(scratch: &Scratch, layout: &[(&str, &str, u64)]) -> String {
         )
         .unwrap();
     }
-    scratch.text().to_owned()
+    scratch.path().to_str().unwrap().to_owned()
 }
 
 #[test]
 fn all_projects_lists_real_directories_and_ignores_root_files() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let agent = projects(
         &scratch,
         &[("a", "a1", 1000), ("b", "b1", 3000), ("b", "b2", 2000)],
@@ -436,21 +418,39 @@ fn all_projects_lists_real_directories_and_ignores_root_files() {
         session_text("root", &[("user", "x", 9000)]),
     )
     .unwrap();
-    let outside = Scratch::new();
+    let outside = Scratch::new().unwrap();
     projects(&outside, &[("c", "linked", 8000)]);
     #[cfg(unix)]
-    std::os::unix::fs::symlink(
-        Path::new(outside.text()).join("sessions/c"),
-        sessions.join("link"),
-    )
-    .unwrap();
+    std::os::unix::fs::symlink(outside.path().join("sessions/c"), sessions.join("link")).unwrap();
     let listed = runtime().block_on(SessionManager::list_all(&agent, None));
     assert_eq!(ids(&listed), ["b1", "b2", "a1"]);
 }
 
+/// Equal activity times keep the name order of session files and project
+/// directories, whatever order the file system lists.
+#[test]
+fn activity_ties_follow_name_order_of_files_and_projects() {
+    // NTFS lists these case-insensitively (a, b, C, _x); name order is byte order.
+    let names = ["b", "_x", "a", "C"];
+    let files = Scratch::new().unwrap();
+    for name in names {
+        write_session(
+            &files,
+            &format!("{name}.jsonl"),
+            name,
+            &[("user", "x", 5000)],
+        );
+    }
+    assert_eq!(ids(&list(&files)), ["C", "_x", "a", "b"]);
+    let scratch = Scratch::new().unwrap();
+    let agent = projects(&scratch, &names.map(|name| (name, name, 5000)));
+    let listed = runtime().block_on(SessionManager::list_all(&agent, None));
+    assert_eq!(ids(&listed), ["C", "_x", "a", "b"]);
+}
+
 #[test]
 fn all_projects_counts_candidates_before_reading() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let agent = projects(&scratch, &[("a", "a1", 1000), ("b", "b1", 2000)]);
     let late = ["a", "b"].map(|project| {
         Path::new(&agent)
@@ -474,40 +474,45 @@ fn all_projects_counts_candidates_before_reading() {
 #[cfg(unix)]
 #[test]
 fn all_projects_skips_unreadable_children() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let agent = projects(&scratch, &[("good", "g1", 1000), ("locked", "l1", 2000)]);
     let sessions = Path::new(&agent).join("sessions");
     std::fs::write(sessions.join("good/bad.jsonl"), "{broken").unwrap();
     let locked = sessions.join("locked");
-    std::fs::set_permissions(&locked, std::os::unix::fs::PermissionsExt::from_mode(0o000)).unwrap();
-    let restricted = std::fs::read_dir(&locked).is_err();
+    // A privileged run reads the locked project anyway, so there is nothing to check.
+    let Some(restore) = maestro_test_directory::deny(&locked, 0o000).unwrap() else {
+        return;
+    };
     let mut seen = Vec::new();
     let mut record = |loaded, total| {
         seen.push((loaded, total));
         Ok(())
     };
     let listed = runtime().block_on(SessionManager::list_all(&agent, Some(&mut record)));
-    std::fs::set_permissions(&locked, std::os::unix::fs::PermissionsExt::from_mode(0o700)).unwrap();
-    if restricted {
-        assert_eq!(ids(&listed), ["g1"]);
-        assert_eq!(seen, [(1, 2), (2, 2)]);
-    }
+    drop(restore);
+    assert_eq!(ids(&listed), ["g1"]);
+    assert_eq!(seen, [(1, 2), (2, 2)]);
 }
 
 #[test]
 fn all_projects_top_level_failure_returns_empty() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let mut calls = 0;
     let mut count = |_, _| {
         calls += 1;
         Ok(())
     };
-    let missing = runtime().block_on(SessionManager::list_all(scratch.text(), Some(&mut count)));
+    let missing = runtime().block_on(SessionManager::list_all(
+        scratch.path().to_str().unwrap(),
+        Some(&mut count),
+    ));
     assert!(missing.is_empty());
-    assert!(!Path::new(scratch.text()).join("sessions").exists());
-    std::fs::write(Path::new(scratch.text()).join("sessions"), "file").unwrap();
-    let not_directory =
-        runtime().block_on(SessionManager::list_all(scratch.text(), Some(&mut count)));
+    assert!(!scratch.path().join("sessions").exists());
+    std::fs::write(scratch.path().join("sessions"), "file").unwrap();
+    let not_directory = runtime().block_on(SessionManager::list_all(
+        scratch.path().to_str().unwrap(),
+        Some(&mut count),
+    ));
     assert!(not_directory.is_empty());
     assert_eq!(calls, 0);
 }
@@ -533,41 +538,21 @@ fn produce(path: std::path::PathBuf, text: String) -> std::thread::JoinHandle<()
 }
 
 #[cfg(unix)]
-/// Create a blocking pipe and a ready session in `dir` so native enumeration lists the pipe first.
+/// Create a blocking pipe and a ready session in `dir`, the pipe first in name order.
 fn pipe_enumerated_first(dir: &Path) -> std::path::PathBuf {
-    for (pipe_name, ready_name) in [("pipe", "ready"), ("ready", "pipe")] {
-        for pipe_first in [true, false] {
-            let make_ready = || {
-                let text = session_text(ready_name, &[]);
-                std::fs::write(dir.join(format!("{ready_name}.jsonl")), text).unwrap();
-            };
-            if !pipe_first {
-                make_ready();
-            }
-            let pipe = fifo(dir, &format!("{pipe_name}.jsonl"));
-            if pipe_first {
-                make_ready();
-            }
-            let order = native_order(dir.to_str().unwrap());
-            if order[0] == format!("{pipe_name}.jsonl") {
-                return pipe;
-            }
-            std::fs::remove_file(&pipe).unwrap();
-            std::fs::remove_file(dir.join(format!("{ready_name}.jsonl"))).unwrap();
-        }
-    }
-    panic!("no creation order lists the pipe first");
+    std::fs::write(dir.join("ready.jsonl"), session_text("ready", &[])).unwrap();
+    fifo(dir, "pipe.jsonl")
 }
 
 #[cfg(unix)]
 #[test]
 fn progress_observes_completion_order_before_stable_results() {
     for all_projects in [false, true] {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let dir = if all_projects {
-            Path::new(scratch.text()).join("sessions/p")
+            scratch.path().join("sessions/p")
         } else {
-            Path::new(scratch.text()).to_path_buf()
+            scratch.path().to_path_buf()
         };
         std::fs::create_dir_all(&dir).unwrap();
         let pipe = pipe_enumerated_first(&dir);
@@ -582,12 +567,15 @@ fn progress_observes_completion_order_before_stable_results() {
             Ok(())
         };
         let listed = if all_projects {
-            runtime().block_on(SessionManager::list_all(scratch.text(), Some(&mut record)))
+            runtime().block_on(SessionManager::list_all(
+                scratch.path().to_str().unwrap(),
+                Some(&mut record),
+            ))
         } else {
             runtime()
                 .block_on(SessionManager::list(
                     "/w",
-                    Some(scratch.text()),
+                    Some(scratch.path().to_str().unwrap()),
                     "unused",
                     Some(&mut record),
                 ))
@@ -597,20 +585,16 @@ fn progress_observes_completion_order_before_stable_results() {
             producer.join().unwrap();
         }
         assert_eq!(seen, [(1, 2), (2, 2)]);
-        let order: Vec<_> = native_order(dir.to_str().unwrap())
-            .into_iter()
-            .map(|name| name.trim_end_matches(".jsonl").to_owned())
-            .collect();
-        assert_eq!(ids(&listed), order);
+        assert_eq!(ids(&listed), ["pipe", "ready"]);
     }
 }
 
 #[test]
 fn invalid_candidates_still_advance_progress() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     write_session(&scratch, "ok.jsonl", "ok", &[]);
-    std::fs::write(Path::new(scratch.text()).join("junk.jsonl"), "nope").unwrap();
-    std::fs::write(Path::new(scratch.text()).join("empty.jsonl"), "").unwrap();
+    std::fs::write(scratch.path().join("junk.jsonl"), "nope").unwrap();
+    std::fs::write(scratch.path().join("empty.jsonl"), "").unwrap();
     let mut seen = Vec::new();
     let mut record = |loaded, total| {
         seen.push((loaded, total));
@@ -619,7 +603,7 @@ fn invalid_candidates_still_advance_progress() {
     let listed = runtime()
         .block_on(SessionManager::list(
             "/w",
-            Some(scratch.text()),
+            Some(scratch.path().to_str().unwrap()),
             "unused",
             Some(&mut record),
         ))
@@ -652,11 +636,11 @@ fn hold_pipe_open(
 #[test]
 fn progress_error_returns_empty_without_draining_reads() {
     for all_projects in [false, true] {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let dir = if all_projects {
-            Path::new(scratch.text()).join("sessions/p")
+            scratch.path().join("sessions/p")
         } else {
-            Path::new(scratch.text()).to_path_buf()
+            scratch.path().to_path_buf()
         };
         std::fs::create_dir_all(&dir).unwrap();
         let pipe = pipe_enumerated_first(&dir);
@@ -670,11 +654,14 @@ fn progress_error_returns_empty_without_draining_reads() {
         };
         let runtime = runtime();
         let listed = if all_projects {
-            Ok(runtime.block_on(SessionManager::list_all(scratch.text(), Some(&mut fail))))
+            Ok(runtime.block_on(SessionManager::list_all(
+                scratch.path().to_str().unwrap(),
+                Some(&mut fail),
+            )))
         } else {
             runtime.block_on(SessionManager::list(
                 "/w",
-                Some(scratch.text()),
+                Some(scratch.path().to_str().unwrap()),
                 "unused",
                 Some(&mut fail),
             ))
@@ -690,8 +677,8 @@ fn progress_error_returns_empty_without_draining_reads() {
 
 #[test]
 fn discovery_reads_lossy_utf8() {
-    let scratch = Scratch::new();
-    let dir = Path::new(scratch.text());
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let mut bytes = session_text("lossy", &[("user", "before", 2000)]).into_bytes();
     bytes.extend_from_slice(b"\n{\"type\":\"message\",\"message\":{\"role\":\"user\",\"content\":\"bad \xff byte\",\"timestamp\":1}}\n");
     std::fs::write(dir.join("lossy.jsonl"), bytes).unwrap();
@@ -703,8 +690,8 @@ fn discovery_reads_lossy_utf8() {
 #[cfg(unix)]
 #[test]
 fn discovery_skips_candidates_whose_metadata_read_fails() {
-    let scratch = Scratch::new();
-    let dir = Path::new(scratch.text());
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     write_session(&scratch, "lossy.jsonl", "lossy", &[]);
     let pipe = fifo(dir, "vanishing.jsonl");
     let (opened, wait) = mpsc::channel();

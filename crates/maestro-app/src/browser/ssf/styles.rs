@@ -1,6 +1,7 @@
 //! Package metadata and number-format selection.
 use super::super::docx_preview::{OpenXmlPackage, XmlParser};
 use super::{Ssf, WorkbookError, unescapexml::unescapexml};
+use crate::utils::lock::write;
 /// Package access retaining the supplied workbook name at failure boundaries.
 pub(super) struct Package<'a> {
     /// Shared indexed archive owner.
@@ -29,10 +30,7 @@ impl Package<'_> {
         };
         let text = self.text(part)?;
         let xml = self.xml(&text, part)?;
-        let mut table = ssf
-            .table
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut table = write(&ssf.table);
         let mut formats = table.clone();
         for node in xml
             .element(xml.root(), "numFmts")

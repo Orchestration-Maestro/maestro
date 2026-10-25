@@ -299,6 +299,64 @@ fn proxy_choice_follows_the_variables_and_exclusions() -> Result<(), Box<dyn std
 }
 
 #[test]
+fn ftp_source_admits_the_prefixed_script_url() {
+    let destination = Url::parse("http://origin.example/").unwrap();
+    let source = "pac+ftp://proxy.example/script.pac";
+    let selected = environment(&[("HTTP_PROXY", source)])
+        .proxy_for(&destination)
+        .unwrap()
+        .unwrap();
+    assert_eq!(selected.as_str(), source);
+    assert_eq!(
+        selected.as_str().strip_prefix("pac+"),
+        Some("ftp://proxy.example/script.pac")
+    );
+    let unprefixed = environment(&[("HTTP_PROXY", "ftp://proxy.example/script.pac")])
+        .proxy_for(&destination)
+        .unwrap_err();
+    assert!(unprefixed.contains("Unsupported protocol"), "{unprefixed}");
+    let unadmitted = environment(&[("HTTP_PROXY", "pac+gopher://proxy.example/script")])
+        .proxy_for(&destination)
+        .unwrap_err();
+    assert!(unadmitted.contains("Unsupported protocol"), "{unadmitted}");
+}
+
+#[test]
+fn pac_sources_admit_exactly_the_supported_protocols() {
+    let destination = Url::parse("http://origin.example/").unwrap();
+    for source in [
+        "pac+data:,function%20FindProxyForURL()%7Breturn%20'DIRECT'%7D",
+        "pac+data://,script",
+        "pac+file:///script.pac",
+        "pac+ftp://proxy.example/script.pac",
+        "pac+http://proxy.example/script.pac",
+        "pac+https://proxy.example/script.pac",
+    ] {
+        let selected = environment(&[("HTTP_PROXY", source)])
+            .proxy_for(&destination)
+            .unwrap();
+        assert_eq!(selected, Some(Url::parse(source).unwrap()));
+    }
+    let bare = environment(&[("HTTP_PROXY", "proxy.example:8080")]);
+    assert_eq!(
+        bare.proxy_for(&destination).unwrap(),
+        Some(Url::parse("http://proxy.example:8080").unwrap())
+    );
+    for source in ["pac+gopher://proxy.example/script", "pac+http://"] {
+        assert!(
+            environment(&[("HTTP_PROXY", source)])
+                .proxy_for(&destination)
+                .is_err()
+        );
+        assert_eq!(
+            environment(&[("HTTP_PROXY", source), ("NO_PROXY", "origin.example")])
+                .proxy_for(&destination),
+            Ok(None)
+        );
+    }
+}
+
+#[test]
 fn selected_proxy_that_is_not_usable_is_an_error() -> Result<(), Box<dyn std::error::Error>> {
     let destination = Url::parse("http://origin.example/")?;
     for (id, proxy) in [("malformed", "http://"), ("unsupported", "ftp://p.example")] {
@@ -395,6 +453,19 @@ type SocksEnvironmentRow = (
 /// Selected proxy spellings for each environment composition.
 const SOCKS_ENVIRONMENT_ROWS: &[SocksEnvironmentRow] = &[
     (
+        &[("HTTP_PROXY", "socks5h://u%3A%40:ignored@proxy.example")],
+        "http://origin.example/path",
+        Some("socks5h://u%3A%40:ignored@proxy.example"),
+    ),
+    (
+        &[
+            ("HTTP_PROXY", "socks5://http.example"),
+            ("HTTPS_PROXY", "socks://https.example"),
+        ],
+        "http://origin.example/path",
+        Some("socks5://http.example"),
+    ),
+    (
         &[
             ("HTTP_PROXY", "socks5h://bad%ZZ@proxy.example"),
             ("NO_PROXY", "origin.example"),
@@ -443,40 +514,70 @@ const SOCKS_ENVIRONMENT_ROWS: &[SocksEnvironmentRow] = &[
 
 #[test]
 fn socks_environment_selection_precedes_url_decoding() {
-    for &(pairs, destination, selected) in SOCKS_ENVIRONMENT_ROWS {
-        let environment = environment(pairs);
-        let chosen = if environment.names_proxy() {
-            environment
-                .proxy_for(&Url::parse(destination).unwrap())
-                .unwrap()
-        } else {
-            None
-        };
-        assert!(
-            chosen.as_ref().map(Url::as_str) == selected,
-            "environment selection"
-        );
-        if selected.is_some_and(|url| url.contains("%ZZ")) {
-            let fetch = crate::providers::http::configured_fetch(crate::providers::http::Route {
-                proxy: Some(std::sync::Arc::new(move |_| Ok(chosen.clone()))),
-                ..crate::providers::http::Route::default()
-            });
-            let request = crate::providers::http::HttpRequest {
-                method: "GET".into(),
-                url: destination.into(),
-                headers: indexmap::IndexMap::new(),
-                body: Vec::new(),
-                signal: None,
-            };
-            let result = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-                .block_on(fetch(request));
-            assert!(matches!(
-                result,
-                Err(crate::providers::http::FetchError::Connection(_))
-            ));
+    for scheme in [None, Some("socks4"), Some("socks4a")] {
+        for &(pairs, destination, selected) in SOCKS_ENVIRONMENT_ROWS {
+            let replace = |value: &str| replace_socks_scheme(value, scheme);
+            let pairs: Vec<_> = pairs
+                .iter()
+                .map(|(name, value)| (*name, replace(value)))
+                .collect();
+            let pairs: Vec<_> = pairs
+                .iter()
+                .map(|(name, value)| (*name, value.as_str()))
+                .collect();
+            let selected = selected.map(replace);
+            check_socks_environment(&pairs, destination, selected.as_deref());
         }
     }
+}
+
+/// Compare selected spelling and decode only the selected malformed identity.
+fn check_socks_environment(pairs: &[(&str, &str)], destination: &str, selected: Option<&str>) {
+    let environment = environment(pairs);
+    let chosen = if environment.names_proxy() {
+        environment
+            .proxy_for(&Url::parse(destination).unwrap())
+            .unwrap()
+    } else {
+        None
+    };
+    assert!(
+        chosen.as_ref().map(Url::as_str) == selected,
+        "environment selection"
+    );
+    if selected.is_some_and(|url| url.contains("%ZZ")) {
+        let fetch = crate::providers::http::configured_fetch(crate::providers::http::Route {
+            proxy: Some(std::sync::Arc::new(move |_| Ok(chosen.clone()))),
+            ..crate::providers::http::Route::default()
+        });
+        let request = crate::providers::http::HttpRequest {
+            method: "GET".into(),
+            url: destination.into(),
+            headers: indexmap::IndexMap::new(),
+            body: Vec::new(),
+            signal: None,
+        };
+        let result = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(fetch(request));
+        assert!(matches!(
+            result,
+            Err(crate::providers::http::FetchError::Connection(_))
+        ));
+    }
+}
+
+/// Retain each environment composition while selecting another SOCKS version.
+fn replace_socks_scheme(value: &str, scheme: Option<&str>) -> String {
+    scheme.map_or_else(
+        || value.to_owned(),
+        |scheme| {
+            value
+                .replace("socks5h", scheme)
+                .replace("socks5", scheme)
+                .replace("socks://", &format!("{scheme}://"))
+        },
+    )
 }

@@ -143,8 +143,12 @@ fn update_partial(event: &AssistantMessageEvent) -> Option<&SharedAssistantMessa
     }
 }
 
-/// Snapshot entries before invoking live descriptions outside all tool locks.
-fn tool_definitions<E: crate::AgentExecution>(
+/// The model-facing declarations of `tools`: the entries are copied first, then each live
+/// description is resolved outside all tool locks.
+///
+/// # Errors
+/// Returns the first description callback failure.
+pub fn tool_definitions<E: crate::AgentExecution>(
     tools: &RwLock<Vec<crate::SharedAgentTool<E>>>,
 ) -> Result<Vec<maestro_models::Tool>, DiagnosticErrorInfo> {
     let entries = read(tools).clone();

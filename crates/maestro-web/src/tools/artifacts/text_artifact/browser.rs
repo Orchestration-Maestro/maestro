@@ -1,7 +1,7 @@
 //! Stable literal source nodes sharing the syntax palette.
 use super::Body;
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
+    AttachmentHostError, ReadingRoot,
     browser::{append, element, set_text_if_changed},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -28,14 +28,14 @@ pub(super) fn sync(body: &Body, html_changed: bool) {
 pub(super) fn mount(
     document: &web_sys::Document,
     body: &Rc<RefCell<Body>>,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let root = element(document, "pre", "maestro-text-artifact")?;
     if body.borrow().wrap {
         root.set_class_name("maestro-text-artifact maestro-markdown-source");
     }
     let style = element(document, "style", "")?;
     let syntax = maestro_theme::highlight_css()
-        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?;
+        .map_err(|error| AttachmentHostError::Presentation(error.to_string()))?;
     style.set_text_content(Some(&format!(
         "{}{syntax}",
         include_str!("../text_artifact.css")
@@ -46,6 +46,8 @@ pub(super) fn mount(
     body.borrow_mut().code = Some(code);
     sync(&body.borrow(), true);
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element: root,
         slots: vec![],
         owner: None,

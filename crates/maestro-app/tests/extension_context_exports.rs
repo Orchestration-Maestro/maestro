@@ -1,13 +1,25 @@
 //! Base extension context records through the application root.
+#[cfg(not(target_arch = "wasm32"))]
+use crate::support::session_harness::no_commands;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{CompactOptions, ContextUsage, ExtensionContext, ExtensionContextActions};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{ExtensionActions, ExtensionError, ExtensionRuntime, create_extension_runtime};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_catalog::ModelRegistry;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_credentials::{AuthStorage, AuthStorageData};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_extensions::ExtensionRunner;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_extensions::runner::ExtensionRunnerSession;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_extensions::{Extension, ExtensionAPI, ExtensionErrorListener, ExtensionExecution};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::Threaded;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_session::SessionManager;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -16,10 +28,12 @@ use std::{
 
 /// The default value of an operand whose type the application does not name,
 /// such as the runner's live theme.
+#[cfg(not(target_arch = "wasm32"))]
 fn default_operand<T: Default>() -> T {
     T::default()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_context_exports_share_the_extension_records() {
     let usage = ContextUsage {
@@ -57,34 +71,36 @@ fn native_context_exports_share_the_extension_records() {
     assert_eq!(*requests.borrow(), [Some("keep".to_owned())]);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_command_context_exports_share_the_extension_records() {
     let runner = runner();
-    let actions = maestro_app::ExtensionCommandContextActions {
-        new_session: Rc::new(|_| {
-            Box::pin(async {
-                Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
-            })
-        }),
-        ..Default::default()
-    };
+    let actions =
+        maestro_app::ExtensionCommandContextActions::new(maestro_app::CommandContextOperations {
+            new_session: Rc::new(|_| {
+                Box::pin(async {
+                    Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
+                })
+            }),
+            ..crate::command_operations::silent()
+        });
     runner.bind_command_context(Some(actions));
     let ctx: maestro_app::ExtensionCommandContext = runner.create_command_context();
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async {
-            assert!(ctx.new_session(None).await.unwrap().cancelled);
-        });
+    crate::support::run(async {
+        assert!(ctx.new_session(None).await.unwrap().cancelled);
+    });
 }
 
 /// Builds the real in-memory runner shared by application context export witnesses.
+#[cfg(not(target_arch = "wasm32"))]
 fn runner() -> ExtensionRunner {
     let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::default()));
     let session = ExtensionRunnerSession {
         cwd: "/work".into(),
         session_manager: Rc::new(RefCell::new(SessionManager::in_memory(None).unwrap())),
-        model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth).unwrap()),
+        model_registry: maestro_models::SharedHandle::new(
+            ModelRegistry::in_memory(auth, no_commands()).unwrap(),
+        ),
     };
     ExtensionRunner::<maestro_models::Threaded>::new(
         Arc::new(RwLock::new(Vec::new())),
@@ -95,6 +111,7 @@ fn runner() -> ExtensionRunner {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_runtime_exports_share_the_extension_records() {
     let runtime: Arc<ExtensionRuntime> = create_extension_runtime::<Threaded>();
@@ -159,17 +176,19 @@ fn native_runtime_exports_share_the_extension_records() {
 }
 
 /// Tool metadata constructed through the embedding SDK.
+#[cfg(not(target_arch = "wasm32"))]
 fn runtime_tool() -> maestro_app::ToolInfo {
     let source = serde_json::from_value(serde_json::json!({"path":"/extension","source":"cli","scope":"temporary","origin":"top-level"})).unwrap();
     maestro_app::ToolInfo {
         name: "inspect".into(),
         description: "Inspect data".into(),
-        parameters: serde_json::json!({"type":"object"}),
+        parameters: serde_json::json!({"type":"object"}).into(),
         source_info: source,
     }
 }
 
 /// A real provider model routed through the embedding SDK.
+#[cfg(not(target_arch = "wasm32"))]
 fn runtime_provider() -> maestro_app::ProviderConfig {
     maestro_app::ProviderConfig {
         base_url: Some("https://provider.invalid".into()),
@@ -193,6 +212,7 @@ fn runtime_provider() -> maestro_app::ProviderConfig {
     }
 }
 /// Serves a supplied action runtime using the real context fixture's owners.
+#[cfg(not(target_arch = "wasm32"))]
 fn runtime_runner(runtime: Arc<maestro_app::ExtensionRuntime>) -> ExtensionRunner {
     let served = runner();
     ExtensionRunner::<maestro_models::Threaded>::new(
@@ -208,69 +228,63 @@ fn runtime_runner(runtime: Arc<maestro_app::ExtensionRuntime>) -> ExtensionRunne
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_registration_exports_resolve_to_shared_records() {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let runtime = maestro_app::create_extension_runtime::<Threaded>();
-            let bus = maestro_extensions::create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
-            let factory: maestro_app::ExtensionFactory = Arc::new(|api| {
-                let tool: maestro_extensions::ToolDefinition<
-                    serde_json::Value,
-                    serde_json::Value,
-                    (),
-                > = sdk_registered_definition();
-                api.register_tool(maestro_app::define_tool(tool)).unwrap();
-                Box::pin(async { Ok(()) })
-            });
-            let owner = maestro_app::load_extension_from_factory::<Threaded>(
-                factory,
-                "/factory".into(),
-                bus.for_extension(),
-                runtime.clone(),
-                None,
-            )
+    crate::support::run(async {
+        let runtime = maestro_app::create_extension_runtime::<Threaded>();
+        let bus = maestro_extensions::create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
+        let factory: maestro_app::ExtensionFactory = Arc::new(|api| {
+            let tool: maestro_extensions::ToolDefinition<serde_json::Value, serde_json::Value, ()> =
+                sdk_registered_definition();
+            api.register_tool(maestro_app::define_tool(tool)).unwrap();
+            Box::pin(async { Ok(()) })
+        });
+        let owner = maestro_app::load_extension_from_factory::<Threaded>(
+            factory,
+            "/factory".into(),
+            bus.for_extension(),
+            runtime.clone(),
+            None,
+        )
+        .await
+        .unwrap();
+        let served = runner();
+        let runner = Rc::new(maestro_app::ExtensionRunner::<Threaded>::new(
+            Arc::new(RwLock::new(vec![owner])),
+            runtime,
+            ExtensionRunnerSession {
+                cwd: "/registered".into(),
+                session_manager: served.create_context().session_manager().unwrap(),
+                model_registry: served.create_context().model_registry().unwrap(),
+            },
+            Arc::new(|_| {}),
+            default_operand(),
+        ));
+        let registered: maestro_app::RegisteredTool = runner.get_all_registered_tools().remove(0);
+        assert_eq!(registered.source_info.read().unwrap().path, "<inline>");
+        let wrapped = maestro_app::wrap_registered_tool(&registered, runner);
+        let result = (wrapped.execute)("sdk".into(), serde_json::json!({"value":3}), None, None)
             .await
             .unwrap();
-            let served = runner();
-            let runner = Rc::new(maestro_app::ExtensionRunner::<Threaded>::new(
-                Arc::new(RwLock::new(vec![owner])),
-                runtime,
-                ExtensionRunnerSession {
-                    cwd: "/registered".into(),
-                    session_manager: served.create_context().session_manager().unwrap(),
-                    model_registry: served.create_context().model_registry().unwrap(),
-                },
-                Arc::new(|_| {}),
-                default_operand(),
-            ));
-            let registered: maestro_app::RegisteredTool =
-                runner.get_all_registered_tools().remove(0);
-            assert_eq!(registered.source_info.read().unwrap().path, "<inline>");
-            let wrapped = maestro_app::wrap_registered_tool(&registered, runner);
-            let result =
-                (wrapped.execute)("sdk".into(), serde_json::json!({"value":3}), None, None)
-                    .await
-                    .unwrap();
-            assert_eq!(result.details, Some(serde_json::json!({"value":3})));
-            let event: maestro_app::ToolCallEvent = maestro_app::ToolCallEvent {
-                tool_call_id: "sdk".into(),
-                tool_name: "sdk".into(),
-                input: result.details.unwrap(),
-            };
-            assert!(maestro_app::is_tool_call_event_type("sdk", &event));
-            let response: maestro_app::ToolCallEventResult =
-                serde_json::from_value(serde_json::json!({"block":false})).unwrap();
-            assert_eq!(
-                serde_json::to_value(response).unwrap(),
-                serde_json::json!({"block":false})
-            );
-        });
+        assert_eq!(result.details, Some(serde_json::json!({"value":3})));
+        let event: maestro_app::ToolCallEvent = maestro_app::ToolCallEvent {
+            tool_call_id: "sdk".into(),
+            tool_name: "sdk".into(),
+            input: result.details.unwrap(),
+        };
+        assert!(maestro_app::is_tool_call_event_type("sdk", &event));
+        let response: maestro_app::ToolCallEventResult =
+            serde_json::from_value(serde_json::json!({"block":false})).unwrap();
+        assert_eq!(
+            serde_json::to_value(response).unwrap(),
+            serde_json::json!({"block":false})
+        );
+    });
 }
 
 /// SDK callback captures are thread-safe while registered invocation is local.
+#[cfg(not(target_arch = "wasm32"))]
 fn sdk_registered_definition() -> maestro_app::ToolDefinition<
     ExtensionContext,
     serde_json::Value,
@@ -282,7 +296,7 @@ fn sdk_registered_definition() -> maestro_app::ToolDefinition<
         definition: maestro_models::Tool {
             name: "sdk".into(),
             description: "SDK".into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         label: "SDK".into(),
         prompt_snippet: None,
@@ -325,10 +339,25 @@ extension_export_identity!(ResourcesDiscoverReason,ResourcesDiscoverEvent,Resour
     TreePreparation,SessionTreeEvent,SessionBeforeTreeSummary,SessionBeforeTreeResult,SessionBeforeTreeEvent,
     ToolExecutionStartEvent,ToolExecutionUpdateEvent,ToolExecutionEndEvent,ToolCallEvent,ToolResultEvent,
     CustomToolCallEvent,CustomToolResultEvent,UserBashEvent,UserBashEventResult<(),()>,ToolCallEventResult,
-    ToolResultEventResult,BashToolCallEvent,BashToolResultEvent,ReadToolCallEvent,ReadToolResultEvent,
-    EditToolCallEvent,EditToolResultEvent,WriteToolCallEvent,WriteToolResultEvent,GrepToolCallEvent,
-    GrepToolResultEvent,FindToolCallEvent,FindToolResultEvent,LsToolCallEvent,LsToolResultEvent,SessionEvent,
+    ToolResultEventResult,SessionEvent,
     ExtensionEvent,ExtensionEventResult<()>,ExtensionFactory,RegisteredTool);
+#[cfg(not(target_arch = "wasm32"))]
+extension_export_identity!(
+    BashToolCallEvent,
+    BashToolResultEvent,
+    ReadToolCallEvent,
+    ReadToolResultEvent,
+    EditToolCallEvent,
+    EditToolResultEvent,
+    WriteToolCallEvent,
+    WriteToolResultEvent,
+    GrepToolCallEvent,
+    GrepToolResultEvent,
+    FindToolCallEvent,
+    FindToolResultEvent,
+    LsToolCallEvent,
+    LsToolResultEvent
+);
 
 const _: fn(
     maestro_app::BuildSystemPromptOptions,

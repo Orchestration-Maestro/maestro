@@ -1,0 +1,1714 @@
+[
+  {
+    "name": "the current leaf is a no-op",
+    "target": "a3",
+    "navigateOptions": {},
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": []
+  },
+  {
+    "name": "an unknown entry is refused",
+    "target": "missing",
+    "navigateOptions": {},
+    "result": {
+      "error": "Entry missing not found"
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": []
+  },
+  {
+    "name": "a user message moves to its parent with editor text",
+    "target": "u2",
+    "navigateOptions": {},
+    "result": {
+      "ok": {
+        "editorText": "second part",
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a1",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "u2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": false,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "a1",
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "a root user message resets the leaf",
+    "target": "u1",
+    "navigateOptions": {},
+    "result": {
+      "ok": {
+        "editorText": "first",
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": null,
+    "appended": [],
+    "messages": [],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "u1",
+        "oldLeafId": "a3",
+        "commonAncestorId": "u1",
+        "entriesToSummarize": [
+          "a1",
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": false,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": null,
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "an assistant message becomes the leaf",
+    "target": "a2",
+    "navigateOptions": {},
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a2",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": false,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "a2",
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "a custom message moves to its parent with editor text",
+    "target": "c1",
+    "navigateOptions": {},
+    "result": {
+      "ok": {
+        "editorText": "custom words",
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a2",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "c1",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": false,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "a2",
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "a label without a summary marks the target",
+    "target": "a2",
+    "navigateOptions": {
+      "label": "checkpoint"
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "e7",
+    "appended": [
+      {
+        "type": "label",
+        "targetId": "a2",
+        "label": "checkpoint",
+        "parentId": "a2"
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": false,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": "checkpoint",
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e7",
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "an extension veto leaves history unchanged",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true,
+      "customInstructions": "focus",
+      "replaceInstructions": false,
+      "label": "x"
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": true,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": "focus",
+        "replaceInstructions": false,
+        "label": "x",
+        "signal": true
+      }
+    ]
+  },
+  {
+    "name": "a false veto continues",
+    "target": "a2",
+    "navigateOptions": {},
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a2",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": false,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "a2",
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "an extension summary is used when summarizing",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true,
+      "label": "picked"
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "From extension",
+          "details": {
+            "k": 1
+          },
+          "fromHook": true
+        }
+      }
+    },
+    "leaf": "e8",
+    "appended": [
+      {
+        "type": "branch_summary",
+        "parentId": "a2",
+        "fromId": "a2",
+        "summary": "From extension",
+        "details": {
+          "k": 1
+        },
+        "fromHook": true
+      },
+      {
+        "type": "label",
+        "targetId": "e7",
+        "label": "picked",
+        "parentId": "e7"
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      },
+      {
+        "role": "branchSummary",
+        "text": "From extension"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": "picked",
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e8",
+        "oldLeafId": "a3",
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "From extension",
+          "details": {
+            "k": 1
+          },
+          "fromHook": true
+        },
+        "fromExtension": true
+      }
+    ]
+  },
+  {
+    "name": "an extension summary is ignored without summarizing",
+    "target": "a2",
+    "navigateOptions": {
+      "label": "kept"
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "e7",
+    "appended": [
+      {
+        "type": "label",
+        "targetId": "a2",
+        "label": "kept",
+        "parentId": "a2"
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": false,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": "kept",
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e7",
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "extension overrides reach the summarizer",
+    "target": "u2",
+    "navigateOptions": {
+      "summarize": true,
+      "customInstructions": "mine",
+      "label": "mine"
+    },
+    "result": {
+      "ok": {
+        "editorText": "second part",
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a1",
+          "fromId": "a1",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        }
+      }
+    },
+    "leaf": "e8",
+    "appended": [
+      {
+        "type": "branch_summary",
+        "parentId": "a1",
+        "fromId": "a1",
+        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        },
+        "fromHook": false
+      },
+      {
+        "type": "label",
+        "targetId": "e7",
+        "label": "ext label",
+        "parentId": "e7"
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "branchSummary",
+        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+      }
+    ],
+    "prompts": [
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\next focus"
+    ],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "u2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": "mine",
+        "replaceInstructions": null,
+        "label": "mine",
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e8",
+        "oldLeafId": "a3",
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a1",
+          "fromId": "a1",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        },
+        "fromExtension": false
+      }
+    ]
+  },
+  {
+    "name": "an in-place edit of the prepared entries reaches the summarizer",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        }
+      }
+    },
+    "leaf": "e7",
+    "appended": [
+      {
+        "type": "branch_summary",
+        "parentId": "a2",
+        "fromId": "a2",
+        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        },
+        "fromHook": false
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      },
+      {
+        "role": "branchSummary",
+        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+      }
+    ],
+    "prompts": [
+      "<conversation>\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+    ],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e7",
+        "oldLeafId": "a3",
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        },
+        "fromExtension": false
+      }
+    ]
+  },
+  {
+    "name": "a replaced prepared entry list does not reach the summarizer",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      }
+    ]
+  },
+  {
+    "name": "edited preparation instructions do not reach the summarizer",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        }
+      }
+    },
+    "leaf": "e7",
+    "appended": [
+      {
+        "type": "branch_summary",
+        "parentId": "a2",
+        "fromId": "a2",
+        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        },
+        "fromHook": false
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      },
+      {
+        "role": "branchSummary",
+        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+      }
+    ],
+    "prompts": [
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+    ],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e7",
+        "oldLeafId": "a3",
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        },
+        "fromExtension": false
+      }
+    ]
+  },
+  {
+    "name": "a null label override removes the label",
+    "target": "a2",
+    "navigateOptions": {
+      "label": "dropped"
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a2",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": false,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": "dropped",
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "a2",
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "the default summarizer records file details",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true,
+      "label": "summary label"
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        }
+      }
+    },
+    "leaf": "e8",
+    "appended": [
+      {
+        "type": "branch_summary",
+        "parentId": "a2",
+        "fromId": "a2",
+        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        },
+        "fromHook": false
+      },
+      {
+        "type": "label",
+        "targetId": "e7",
+        "label": "summary label",
+        "parentId": "e7"
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      },
+      {
+        "role": "branchSummary",
+        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+      }
+    ],
+    "prompts": [
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+    ],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": "summary label",
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e8",
+        "oldLeafId": "a3",
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        },
+        "fromExtension": false
+      }
+    ]
+  },
+  {
+    "name": "custom instructions are appended to the summary prompt",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true,
+      "customInstructions": "Mention tests"
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        }
+      }
+    },
+    "leaf": "e7",
+    "appended": [
+      {
+        "type": "branch_summary",
+        "parentId": "a2",
+        "fromId": "a2",
+        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        },
+        "fromHook": false
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      },
+      {
+        "role": "branchSummary",
+        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+      }
+    ],
+    "prompts": [
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: Mention tests"
+    ],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": "Mention tests",
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e7",
+        "oldLeafId": "a3",
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        },
+        "fromExtension": false
+      }
+    ]
+  },
+  {
+    "name": "nothing to summarize navigates plainly",
+    "target": "a1",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a1",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a1",
+        "oldLeafId": null,
+        "commonAncestorId": null,
+        "entriesToSummarize": [],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "a1",
+        "oldLeafId": null,
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "an aborted summary cancels navigation",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": true,
+        "aborted": true,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+    ],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      }
+    ]
+  },
+  {
+    "name": "a failed summary is reported",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "error": "boom"
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+    ],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      }
+    ]
+  },
+  {
+    "name": "an empty extension summary navigates plainly",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true,
+      "label": "kept"
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": null
+      }
+    },
+    "leaf": "e7",
+    "appended": [
+      {
+        "type": "label",
+        "targetId": "a2",
+        "label": "kept",
+        "parentId": "a2"
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": "kept",
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e7",
+        "oldLeafId": "a3",
+        "summaryEntry": null,
+        "fromExtension": "missing"
+      }
+    ]
+  },
+  {
+    "name": "a branch without messages stores a no-content summary",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "ok": {
+        "editorText": null,
+        "cancelled": false,
+        "aborted": null,
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "No content to summarize",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        }
+      }
+    },
+    "leaf": "e8",
+    "appended": [
+      {
+        "type": "branch_summary",
+        "parentId": "a2",
+        "fromId": "a2",
+        "summary": "No content to summarize",
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        },
+        "fromHook": false
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "second part"
+      },
+      {
+        "role": "assistant",
+        "text": "answer two"
+      },
+      {
+        "role": "branchSummary",
+        "text": "No content to summarize"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "e7",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "e7"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      },
+      {
+        "type": "session_tree",
+        "newLeafId": "e8",
+        "oldLeafId": "e7",
+        "summaryEntry": {
+          "type": "branch_summary",
+          "parentId": "a2",
+          "fromId": "a2",
+          "summary": "No content to summarize",
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          },
+          "fromHook": false
+        },
+        "fromExtension": false
+      }
+    ]
+  },
+  {
+    "name": "a missing key header is reported with login help",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "error": "No API key found for faux.\n\nUse /login to log into a provider via OAuth or API key. See:\n  $DOCS/providers.md\n  $DOCS/models.md"
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      }
+    ]
+  },
+  {
+    "name": "a missing key is reported with login help",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "error": "No API key found for faux.\n\nUse /login to log into a provider via OAuth or API key. See:\n  $DOCS/providers.md\n  $DOCS/models.md"
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      }
+    ]
+  },
+  {
+    "name": "an expired subscription asks to log in again",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "error": "Authentication failed for \"faux\". Credentials may have expired or network is unavailable. Run '/login faux' to re-authenticate."
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      }
+    ]
+  },
+  {
+    "name": "a failing key command is reported verbatim",
+    "target": "a2",
+    "navigateOptions": {
+      "summarize": true
+    },
+    "result": {
+      "error": "Failed to resolve API key for provider \"faux\" from shell command: exit 3"
+    },
+    "leaf": "a3",
+    "appended": [],
+    "messages": [
+      {
+        "role": "user",
+        "text": "first"
+      },
+      {
+        "role": "assistant",
+        "text": "answer one"
+      },
+      {
+        "role": "user",
+        "text": "alt"
+      },
+      {
+        "role": "assistant",
+        "text": "answer alt"
+      }
+    ],
+    "prompts": [],
+    "extensionEvents": [
+      {
+        "type": "session_before_tree",
+        "targetId": "a2",
+        "oldLeafId": "a3",
+        "commonAncestorId": "a1",
+        "entriesToSummarize": [
+          "u3",
+          "a3"
+        ],
+        "userWantsSummary": true,
+        "customInstructions": null,
+        "replaceInstructions": null,
+        "label": null,
+        "signal": true
+      }
+    ]
+  }
+]

@@ -4,23 +4,11 @@ use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{Component, KittyOptions, TUI, TerminalImage, delete_kitty_image, encode_kitty};
 use serde::Deserialize;
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod checks;
-    pub mod components;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod scene;
-    pub mod virtual_terminal;
-}
-use support::checks::{parse, succeeds};
-use support::components::Probe;
-use support::manual_runtime::ManualRuntime;
-use support::recording_terminal::RecordingTerminal;
-use support::scene::Scene;
+use crate::support::checks::{parse, succeeds};
+use crate::support::components::Probe;
+use crate::support::manual_runtime::ManualRuntime;
+use crate::support::recording_terminal::RecordingTerminal;
+use crate::support::scene::Scene;
 
 /// Terminal width of the frame scenarios.
 const COLUMNS: usize = 10;

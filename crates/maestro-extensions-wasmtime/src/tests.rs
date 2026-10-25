@@ -2,6 +2,9 @@
 use maestro_extensions::{ExtensionRunner, Local, create_extension_runtime};
 use std::{rc::Rc, sync::RwLock};
 
+#[path = "../../maestro-extensions/tests/support/command_operations.rs"]
+pub(super) mod context_actions;
+
 pub(crate) mod api;
 mod bash_output;
 mod callbacks;

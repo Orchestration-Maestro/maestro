@@ -31,10 +31,9 @@ pub fn calculate(expression: &str) -> Result<AgentToolResult<()>, String> {
     };
     let result = result.ok_or_else(|| format!("Arithmetic overflow: {expression}"))?;
     Ok(AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text: format!("{expression} = {result}"),
-            text_signature: None,
-        })],
+        content: vec![UserBlock::Text(TextContent::new(format!(
+            "{expression} = {result}"
+        )))],
         details: None,
         terminate: None,
     })
@@ -52,15 +51,10 @@ pub fn calculate_tool() -> SharedAgentTool {
                 "expression": {"type": "string", "description": "The mathematical expression to evaluate"}
             },
             "required": ["expression"]
-        }),
+        }).into(),
     };
     let execute = Arc::new(|_, params: CalculateParams, _, _| {
-        let result = calculate(&params.expression).map_err(|message| DiagnosticErrorInfo {
-            name: Some("Error".into()),
-            message,
-            code: None,
-            stack: None,
-        });
+        let result = calculate(&params.expression).map_err(DiagnosticErrorInfo::error);
         Box::pin(std::future::ready(result)) as maestro_models::BoxFuture<_>
     });
     Arc::new(RwLock::new(AgentTool::typed(

@@ -17,5 +17,5 @@ See the owning documentation for [settings](../settings.md),
 [prompt templates](../resources/prompt-templates.md) and
 [sessions](../sessions/session_format.md).
 
-The application theme/resource adapter is not delivered yet; these routes do not
-claim custom-theme export or composed theme-watch integration.
+The application selects theme directories and loads resources through
+[application resources](resources.md).

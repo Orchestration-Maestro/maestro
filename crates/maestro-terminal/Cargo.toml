@@ -2,21 +2,33 @@
 name = "maestro-terminal"
 version = "0.1.0"
 edition.workspace = true
-license = "MIT"
+license = "MIT AND Apache-2.0"
 repository.workspace = true
 autotests = false
 
 [dependencies]
+maestro-text.workspace = true
+num-traits.workspace = true
 base64 = "=0.23.1"
 flate2 = { version = "=1.1.10", default-features = false, features = ["zlib-rs"] }
 png = "=0.17.16"
 icu_properties = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
+tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "=1.1.5", features = ["shm"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+
+[dev-dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
+maestro-test-tracing.workspace = true
+tracing-subscriber = "=0.3.23"
 
 [[test]]
 name = "integration"

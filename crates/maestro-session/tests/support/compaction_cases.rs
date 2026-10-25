@@ -24,9 +24,9 @@ enum Output {
     /// Returned value.
     Value { value: Value },
     /// No result.
-    Absent,
+    Absent {},
     /// Reached field error.
-    Error,
+    Error {},
 }
 /// Execute every recorded case in the named group.
 pub fn group(name: &str) {
@@ -42,8 +42,8 @@ pub fn group(name: &str) {
                 super::value::assert_value(&actual, value, &case.id);
                 assert_order(&actual, value, &case.id);
             }
-            Output::Absent => assert!(actual.unwrap().is_none(), "{}", case.id),
-            Output::Error => assert!(actual.is_err(), "{}", case.id),
+            Output::Absent {} => assert!(actual.unwrap().is_none(), "{}", case.id),
+            Output::Error {} => assert!(actual.is_err(), "{}", case.id),
         }
     }
 }

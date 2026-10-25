@@ -122,7 +122,7 @@ impl Watching {
                 .git_paths
                 .as_ref()
                 .map_or(git::BranchRead::Ready(None), |paths| {
-                    git::read_branch(self.operations.as_ref(), paths)
+                    git::read_branch(paths)
                 });
             match selection {
                 git::BranchRead::Ready(branch) => {
@@ -195,13 +195,13 @@ impl Watching {
             return;
         };
         if !self.add(&head, true)
-            || !self.operations.exists(&reftable)
+            || !std::fs::exists(&reftable).unwrap_or(false)
             || !self.add(&reftable, false)
         {
             return;
         }
         let tables = maestro_path::join(&[&reftable, "tables.list"]);
-        if !self.operations.exists(&tables) || !self.add(&tables, false) {
+        if !std::fs::exists(&tables).unwrap_or(false) || !self.add(&tables, false) {
             return;
         }
         let weak = Rc::downgrade(self);

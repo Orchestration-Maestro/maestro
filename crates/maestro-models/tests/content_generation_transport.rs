@@ -1,22 +1,26 @@
 //! Pure content-generation transport preparation against recorded request observations.
-#![allow(
-    dead_code,
-    reason = "shared chat support serves multiple test binaries"
-)]
-
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::HashSet;
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use indexmap::IndexMap;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::content::google::create_client;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::content::google_shared::{
     ApiClient, PreparedContentRequest, project_content_request,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Behavior owners of every committed row.
 const TESTS: &[&str] = &[
     "default_endpoint_uses_the_public_api_version",
@@ -46,6 +50,7 @@ const TESTS: &[&str] = &[
     "client_snapshots_inputs_and_preparations_do_not_mutate_controls",
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One recorded input and its complete observation.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -58,6 +63,7 @@ struct Row {
     expected: Expected,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Successful request or failure category.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -68,6 +74,7 @@ enum Expected {
     Failure(Failure),
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Recorded failure phase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -76,6 +83,7 @@ struct Failure {
     error_kind: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Complete transport observation.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -94,6 +102,7 @@ struct Observation {
     followup: Option<Box<Observation>>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Supplied settings and selected payload.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -113,6 +122,7 @@ struct Input {
     snapshot: bool,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Move client-only controls before consuming the selected payload.
 fn prepare(
     client: &ApiClient,
@@ -123,12 +133,13 @@ fn prepare(
         .and_then(Value::as_object_mut)
         .and_then(|config| config.shift_remove("httpOptions"));
     let projected = project_content_request(params)?;
-    chat::block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(client.prepare_request(projected, controls.as_ref()).await)
     })
     .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))?
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare every returned transport field without printing header values.
 fn check_request(actual: PreparedContentRequest, expected: &Observation) {
     assert_eq!(actual.request.url, expected.url);
@@ -140,6 +151,7 @@ fn check_request(actual: PreparedContentRequest, expected: &Observation) {
     assert!(actual.request.signal.is_none());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Consume all assigned rows, rejecting duplicate inputs and unknown fixture members.
 fn assert_rows(test: &str) -> TestResult {
     let fixture = include_str!("fixtures/content_transport.json");
@@ -165,6 +177,7 @@ fn assert_rows(test: &str) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe the selected request and the retained-client followup when present.
 fn check_row(row: Row) -> TestResult {
     let mut input: Input = serde_json::from_str(&row.input)?;
@@ -213,126 +226,151 @@ fn check_row(row: Row) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn default_endpoint_uses_the_public_api_version() -> TestResult {
     assert_rows("default_endpoint_uses_the_public_api_version")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn model_endpoints_append_no_implicit_version() -> TestResult {
     assert_rows("model_endpoints_append_no_implicit_version")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn request_endpoint_and_version_override_independently() -> TestResult {
     assert_rows("request_endpoint_and_version_override_independently")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn resource_text_is_encoded_only_by_url_construction() -> TestResult {
     assert_rows("resource_text_is_encoded_only_by_url_construction")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn url_components_keep_constructor_and_stream_query_rules() -> TestResult {
     assert_rows("url_components_keep_constructor_and_stream_query_rules")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn invalid_request_endpoints_fail_before_headers_or_auth() -> TestResult {
     assert_rows("invalid_request_endpoints_fail_before_headers_or_auth")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn projection_errors_precede_transport_option_errors() -> TestResult {
     assert_rows("projection_errors_precede_transport_option_errors")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn same_spelling_headers_replace_across_all_layers() -> TestResult {
     assert_rows("same_spelling_headers_replace_across_all_layers")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn differently_spelled_headers_append_after_layering() -> TestResult {
     assert_rows("differently_spelled_headers_append_after_layering")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn caller_metadata_and_empty_headers_survive() -> TestResult {
     assert_rows("caller_metadata_and_empty_headers_survive")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn header_normalization_keeps_byte_values_without_native_preflight() -> TestResult {
     assert_rows("header_normalization_keeps_byte_values_without_native_preflight")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn invalid_headers_fail_before_key_validation() -> TestResult {
     assert_rows("invalid_headers_fail_before_key_validation")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn replaced_invalid_header_values_are_not_read() -> TestResult {
     assert_rows("replaced_invalid_header_values_are_not_read")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn case_variants_do_not_hide_invalid_earlier_values() -> TestResult {
     assert_rows("case_variants_do_not_hide_invalid_earlier_values")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn api_key_insertion_keeps_header_and_token_rules() -> TestResult {
     assert_rows("api_key_insertion_keeps_header_and_token_rules")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn authored_api_keys_override_insertion_but_not_token_rejection() -> TestResult {
     assert_rows("authored_api_keys_override_insertion_but_not_token_rejection")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn timeouts_retain_milliseconds_and_ceil_the_server_header() -> TestResult {
     assert_rows("timeouts_retain_milliseconds_and_ceil_the_server_header")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn server_timeout_headers_append_after_validation() -> TestResult {
     assert_rows("server_timeout_headers_append_after_validation")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn absent_options_and_unused_controls_do_not_change_the_request() -> TestResult {
     assert_rows("absent_options_and_unused_controls_do_not_change_the_request")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn extra_body_merges_objects_and_replaces_nonobjects() -> TestResult {
     assert_rows("extra_body_merges_objects_and_replaces_nonobjects")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn extra_body_retains_open_values_and_type_changes() -> TestResult {
     assert_rows("extra_body_retains_open_values_and_type_changes")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn extra_body_bypasses_projection_without_redirecting_the_resource() -> TestResult {
     assert_rows("extra_body_bypasses_projection_without_redirecting_the_resource")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn extra_body_cannot_repair_an_earlier_projection_failure() -> TestResult {
     assert_rows("extra_body_cannot_repair_an_earlier_projection_failure")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn merged_body_text_preserves_key_positions_and_binary64_numbers() -> TestResult {
     assert_rows("merged_body_text_preserves_key_positions_and_binary64_numbers")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn client_snapshots_inputs_and_preparations_do_not_mutate_controls() -> TestResult {
     assert_rows("client_snapshots_inputs_and_preparations_do_not_mutate_controls")

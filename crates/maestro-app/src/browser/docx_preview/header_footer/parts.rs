@@ -8,14 +8,14 @@ pub struct HeaderPart {
     pub root_element: WmlHeader,
 }
 impl HeaderPart {
-    /// Prepare a header using the ordinary body parser.
+    /// Prepare a header using the ordinary body parser and its width policy.
     ///
     /// # Errors
     /// Propagates XML admission or selection failures.
-    pub fn parse_xml(input: &OwnedXmlElement) -> Result<Self, DocxError> {
+    pub fn parse_xml(input: &OwnedXmlElement, ignore_width: bool) -> Result<Self, DocxError> {
         Ok(Self {
             root_element: WmlHeader {
-                children: parse_body_elements(input)?,
+                children: parse_body_elements(input, ignore_width)?,
                 ..Default::default()
             },
         })
@@ -29,14 +29,14 @@ pub struct FooterPart {
     pub root_element: WmlFooter,
 }
 impl FooterPart {
-    /// Prepare a footer using the ordinary body parser.
+    /// Prepare a footer using the ordinary body parser and its width policy.
     ///
     /// # Errors
     /// Propagates XML admission or selection failures.
-    pub fn parse_xml(input: &OwnedXmlElement) -> Result<Self, DocxError> {
+    pub fn parse_xml(input: &OwnedXmlElement, ignore_width: bool) -> Result<Self, DocxError> {
         Ok(Self {
             root_element: WmlFooter {
-                children: parse_body_elements(input)?,
+                children: parse_body_elements(input, ignore_width)?,
                 ..Default::default()
             },
         })

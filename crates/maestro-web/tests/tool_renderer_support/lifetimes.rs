@@ -1,9 +1,9 @@
 //! Native resources retained by output recipes after their borrowing call ends.
 #![cfg(test)]
 use super::browser;
-use crate::surface;
+use crate::tool_renderers_browser::surface;
 use maestro_web::{
-    browser::attachment_content::AttachmentUiError,
+    tools::types::ToolUiError,
     tools::types::{
         ToolContent, ToolRenderResult, ToolRenderState, ToolRenderView, ToolResultMessageView,
     },
@@ -29,18 +29,24 @@ impl ToolContent for Action {
         ui: &mut egui::Ui,
         _: ToolRenderView<'_>,
         state: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
-        let slot = state.state::<Row>();
-        let mut row = slot.take();
-        row.original = Some(self.original.clone());
-        let response = ui.button(format!("{} {}", self.label, row.clicks));
-        if response.clicked() {
-            row.clicks += 1;
-            self.original.set(self.original.get() + 1);
+    ) -> maestro_web::tools::types::ToolContentOutput {
+        let response = {
+            let slot = state.state::<Row>();
+            let mut row = slot.take();
+            row.original = Some(self.original.clone());
+            let response = ui.button(format!("{} {}", self.label, row.clicks));
+            if response.clicked() {
+                row.clicks += 1;
+                self.original.set(self.original.get() + 1);
+            }
+            let old = slot.replace(row);
+            drop(old);
+            Ok(response)
+        };
+        maestro_web::tools::types::ToolContentOutput {
+            response,
+            overlays: Vec::new(),
         }
-        let old = slot.replace(row);
-        drop(old);
-        Ok(response)
     }
 }
 struct Renderer;
@@ -50,7 +56,7 @@ impl maestro_web::ToolRenderer<String, Rc<Cell<i32>>> for Renderer {
         params: Option<&String>,
         result: Option<ToolResultMessageView<'_, Rc<Cell<i32>>>>,
         _: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
+    ) -> Result<ToolRenderResult, ToolUiError> {
         Ok(ToolRenderResult {
             content: Box::new(Action {
                 label: params.unwrap().clone(),
@@ -64,8 +70,8 @@ impl maestro_web::ToolRenderer<String, Rc<Cell<i32>>> for Renderer {
 pub fn tool_content_keeps_owned_inputs_and_independent_row_lifetimes() {
     let (prepared, weak) = prepare_owned();
     let alias = Rc::new(RefCell::new(None));
-    let recipe = ToolRenderResult {
-        content: Box::new(crate::Aliased {
+    let recipe: ToolRenderResult = ToolRenderResult {
+        content: Box::new(crate::tool_renderers_browser::Aliased {
             inner: prepared.content,
             alias: alias.clone(),
         }),

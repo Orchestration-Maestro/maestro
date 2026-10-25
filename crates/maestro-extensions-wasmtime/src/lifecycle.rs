@@ -67,6 +67,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::api_imports::add_to_linker(&mut host)?;
     crate::callback_imports::add_to_linker(&mut host)?;
     crate::context_imports::add_to_linker(&mut host)?;
+    crate::ui_imports::add_to_linker(&mut host)?;
     crate::command_imports::add_to_linker(&mut host)?;
     crate::catalog_imports::add_to_linker(&mut host)?;
     crate::history_imports::add_to_linker(&mut host)?;

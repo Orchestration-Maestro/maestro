@@ -2,7 +2,9 @@
 #![cfg(test)]
 use super::model_support::model;
 use super::*;
+use crate::runtime_support;
 use maestro_extensions::types::ExtensionErrorListener;
+use maestro_models::SharedHandle;
 use maestro_models::UserContent;
 use maestro_session::{
     Presence,
@@ -84,7 +86,7 @@ pub fn errors() {
     let future = api.set_model(model("selected")).unwrap();
     assert!(started.get());
     assert!(
-        executor()
+        runtime_support::runtime()
             .block_on(future)
             .unwrap_err()
             .downcast_ref::<Marker>()
@@ -92,11 +94,6 @@ pub fn errors() {
     );
 }
 
-pub(super) fn executor() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-}
 fn message(details: Value) -> CustomMessageInput {
     CustomMessageInput {
         custom_type: " raw\u{feff}\u{85} ".into(),
@@ -203,9 +200,9 @@ pub fn rebind() {
         .unwrap();
     assert!(released.get());
     send.send(()).unwrap();
-    assert!(executor().block_on(first).unwrap());
+    assert!(runtime_support::runtime().block_on(first).unwrap());
     assert!(
-        !executor()
+        !runtime_support::runtime()
             .block_on(api.set_model(model("selected")).unwrap())
             .unwrap()
     );
@@ -526,11 +523,17 @@ pub fn loading(api: &ExtensionAPI<Local>, runtime: &ExtensionRuntime<Local>) {
     let direct_model = (actions.set_model)(model("selected"));
     let facade_model = api.set_model(model("selected")).unwrap();
     assert_eq!(
-        executor().block_on(direct_model).unwrap_err().to_string(),
+        runtime_support::runtime()
+            .block_on(direct_model)
+            .unwrap_err()
+            .to_string(),
         "Extension runtime not initialized"
     );
     assert_eq!(
-        executor().block_on(facade_model).unwrap_err().to_string(),
+        runtime_support::runtime()
+            .block_on(facade_model)
+            .unwrap_err()
+            .to_string(),
         "Extension runtime not initialized"
     );
 }
@@ -555,11 +558,13 @@ fn check_provider_mode((register_override, unregister_override): (bool, bool)) {
         let expected = config.clone();
         let overrides = ProviderActions {
             register_provider: register_override.then(|| {
-                Rc::new(move |name: String, config: Arc<RwLock<ProviderConfig>>| {
-                    assert!(Arc::ptr_eq(&config, &expected));
-                    registrations.borrow_mut().push(format!("register:{name}"));
-                    Ok(())
-                }) as maestro_extensions::types::RegisterProviderHandler<Local>
+                Rc::new(
+                    move |name: String, config: SharedHandle<RwLock<ProviderConfig>>| {
+                        assert!(SharedHandle::ptr_eq(&config, &expected));
+                        registrations.borrow_mut().push(format!("register:{name}"));
+                        Ok(())
+                    },
+                ) as maestro_extensions::types::RegisterProviderHandler<Local>
             }),
             unregister_provider: unregister_override.then(|| {
                 Rc::new(move |name| {
@@ -686,7 +691,7 @@ pub fn local_future() {
         .unwrap();
     api.register_provider("local".into(), good("m")).unwrap();
     assert!(
-        executor()
+        runtime_support::runtime()
             .block_on(api.set_model(model("selected")).unwrap())
             .unwrap()
     );
@@ -766,7 +771,7 @@ pub fn queue_edits() {
         let work = runtime.clone();
         let provider = ProviderActions::<Local> {
             register_provider: Some(Rc::new(
-                move |name: String, config: Arc<RwLock<ProviderConfig>>| {
+                move |name: String, config: SharedHandle<RwLock<ProviderConfig>>| {
                     seen.borrow_mut().push((
                         name.clone(),
                         config.read().unwrap().models.as_ref().unwrap()[0]
@@ -809,7 +814,11 @@ pub fn queue_edits() {
     }
 }
 
-fn apply_queue_edit(work: &ExtensionRuntime<Local>, later: &Arc<RwLock<ProviderConfig>>, edit: u8) {
+fn apply_queue_edit(
+    work: &ExtensionRuntime<Local>,
+    later: &SharedHandle<RwLock<ProviderConfig>>,
+    edit: u8,
+) {
     match edit {
         0 => later.write().unwrap().models.as_mut().unwrap()[0].id = "mutated".into(),
         1 => {
@@ -861,7 +870,7 @@ fn provider_immediate_failures() {
     assert_eq!(errors.get(), 0);
 }
 
-fn invalid_stream() -> Arc<RwLock<ProviderConfig>> {
+fn invalid_stream() -> SharedHandle<RwLock<ProviderConfig>> {
     let stream = good("m");
     {
         let mut c = stream.write().unwrap();
@@ -872,6 +881,21 @@ fn invalid_stream() -> Arc<RwLock<ProviderConfig>> {
     }
 
     stream
+}
+
+/// Binds command operations whose wait for idle counts its calls.
+fn bind_counting_wait(runner: &ExtensionRunner<Local>, count: Rc<Cell<usize>>) {
+    runner.bind_command_context(Some(
+        maestro_extensions::ExtensionCommandContextActions::new(
+            maestro_extensions::CommandContextOperations {
+                wait_for_idle: Rc::new(move || {
+                    count.set(count.get() + 1);
+                    Box::pin(async { Ok(()) })
+                }),
+                ..super::context_actions::silent_command_operations()
+            },
+        ),
+    ));
 }
 
 pub fn binding_order() {
@@ -913,14 +937,7 @@ pub fn binding_order() {
         unregister_provider: None,
     };
     let commands = Rc::new(Cell::new(0));
-    let count = commands.clone();
-    runner.bind_command_context(Some(maestro_extensions::ExtensionCommandContextActions {
-        wait_for_idle: Rc::new(move || {
-            count.set(count.get() + 1);
-            Box::pin(async { Ok(()) })
-        }),
-        ..Default::default()
-    }));
+    bind_counting_wait(&runner, commands.clone());
     let mut actions = Local::unbound_actions();
     actions.get_session_name = Rc::new(|| Ok(Some("just bound".into())));
     runner
@@ -957,7 +974,7 @@ fn bound_checker(
                 .as_deref(),
             Some("just bound")
         );
-        executor()
+        runtime_support::runtime()
             .block_on(runner.create_command_context().wait_for_idle())
             .unwrap();
         observed.set(observed.get() + 1);
@@ -1038,7 +1055,7 @@ fn model_forwarding() {
             )
             .unwrap();
         assert_eq!(
-            executor()
+            runtime_support::runtime()
                 .block_on(api.set_model(submitted).unwrap())
                 .unwrap(),
             result
@@ -1058,10 +1075,7 @@ pub fn exec_outputs(api: &ExtensionAPI<Local>) {
         "sh".into(),
         "literal ; $value with spaces".into(),
     ];
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let executor = runtime_support::io_runtime();
     let result = executor
         .block_on(
             api.exec(program, &args, None, maestro_tools::ExecOptions::default())

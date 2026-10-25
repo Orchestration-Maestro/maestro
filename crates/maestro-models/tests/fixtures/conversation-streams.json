@@ -17864,11 +17864,11 @@
           "cacheWrite": 0,
           "totalTokens": 19,
           "cost": {
-            "input": 0.000006,
-            "output": 0.000035,
+            "input": 6e-06,
+            "output": 3.5e-05,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": 0.000040999999999999994
+            "total": 4.0999999999999994e-05
           }
         },
         "stopReason": "stop",
@@ -18729,11 +18729,11 @@
           "cacheWrite": 0,
           "totalTokens": -3,
           "cost": {
-            "input": -0.000006,
+            "input": -6e-06,
             "output": 0,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": -0.000006
+            "total": -6e-06
           }
         },
         "stopReason": "stop",
@@ -18907,11 +18907,11 @@
           "cacheWrite": 0,
           "totalTokens": 3,
           "cost": {
-            "input": 0.000006,
+            "input": 6e-06,
             "output": 0,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": 0.000006
+            "total": 6e-06
           }
         },
         "stopReason": "stop",
@@ -20772,10 +20772,10 @@
           "totalTokens": -3,
           "cost": {
             "input": 0,
-            "output": -0.000021,
+            "output": -2.1e-05,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": -0.000021
+            "total": -2.1e-05
           }
         },
         "stopReason": "stop",
@@ -20954,10 +20954,10 @@
           "totalTokens": 3,
           "cost": {
             "input": 0,
-            "output": 0.000021,
+            "output": 2.1e-05,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": 0.000021
+            "total": 2.1e-05
           }
         },
         "stopReason": "stop",
@@ -40462,7 +40462,7 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "A﻿🙂"
+          "delta": "A\ufeff\u0085\ud83d\ude42"
         },
         {
           "type": "text_delta",
@@ -40472,7 +40472,7 @@
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "beforeA﻿🙂after"
+          "content": "beforeA\ufeff\u0085\ud83d\ude42after"
         },
         {
           "type": "done",
@@ -40484,7 +40484,7 @@
         "content": [
           {
             "type": "text",
-            "text": "beforeA﻿🙂after"
+            "text": "beforeA\ufeff\u0085\ud83d\ude42after"
           }
         ],
         "api": "mistral-conversations",
@@ -44360,12 +44360,12 @@
         {
           "type": "thinking_delta",
           "contentIndex": 1,
-          "delta": "﻿"
+          "delta": "\ufeff"
         },
         {
           "type": "thinking_end",
           "contentIndex": 1,
-          "content": "﻿"
+          "content": "\ufeff"
         },
         {
           "type": "text_start",
@@ -44395,7 +44395,7 @@
           },
           {
             "type": "thinking",
-            "thinking": "﻿"
+            "thinking": "\ufeff"
           },
           {
             "type": "text",
@@ -66128,11 +66128,11 @@
           "cacheWrite": 0,
           "totalTokens": 21,
           "cost": {
-            "input": 0.000014,
-            "output": 0.000014,
+            "input": 1.4e-05,
+            "output": 1.4e-05,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": 0.000028
+            "total": 2.8e-05
           }
         },
         "stopReason": "stop",
@@ -66685,11 +66685,11 @@
           "cacheWrite": 0,
           "totalTokens": 5,
           "cost": {
-            "input": -0.000006,
-            "output": 0.000056,
+            "input": -6e-06,
+            "output": 5.6e-05,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": 0.000049999999999999996
+            "total": 4.9999999999999996e-05
           }
         },
         "stopReason": "stop",
@@ -68972,7 +68972,7 @@
   },
   {
     "name": "tools-interleaved",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -69862,7 +69862,7 @@
   },
   {
     "name": "tool-key:undefined:undefined",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -70288,7 +70288,7 @@
   },
   {
     "name": "tool-key:undefined:0",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -70734,7 +70734,7 @@
   },
   {
     "name": "tool-key:undefined:2",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -71180,7 +71180,7 @@
   },
   {
     "name": "tool-key:undefined:-1",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -71628,7 +71628,7 @@
   },
   {
     "name": "tool-key::undefined",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -72070,7 +72070,7 @@
   },
   {
     "name": "tool-key::0",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -72532,7 +72532,7 @@
   },
   {
     "name": "tool-key::2",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -72994,7 +72994,7 @@
   },
   {
     "name": "tool-key::-1",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -73458,7 +73458,7 @@
   },
   {
     "name": "tool-key:null:undefined",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -73908,7 +73908,7 @@
   },
   {
     "name": "tool-key:null:0",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -74378,7 +74378,7 @@
   },
   {
     "name": "tool-key:null:2",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -74848,7 +74848,7 @@
   },
   {
     "name": "tool-key:null:-1",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -75320,7 +75320,7 @@
   },
   {
     "name": "tool-key:literal|null:undefined",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -75786,7 +75786,7 @@
   },
   {
     "name": "tool-key:literal|null:0",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -76272,7 +76272,7 @@
   },
   {
     "name": "tool-key:literal|null:2",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -76758,7 +76758,7 @@
   },
   {
     "name": "tool-key:literal|null:-1",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -77246,7 +77246,7 @@
   },
   {
     "name": "tool-key:first:undefined",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -77698,7 +77698,7 @@
   },
   {
     "name": "tool-key:first:0",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -78170,7 +78170,7 @@
   },
   {
     "name": "tool-key:first:2",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -78642,7 +78642,7 @@
   },
   {
     "name": "tool-key:first:-1",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -79116,7 +79116,7 @@
   },
   {
     "name": "tool-escaped-identities",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -79900,7 +79900,7 @@
   },
   {
     "name": "same-id-different-index",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -80255,7 +80255,7 @@
   },
   {
     "name": "arguments:\"\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -80503,7 +80503,7 @@
   },
   {
     "name": "arguments:\"{\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -80752,7 +80752,7 @@
   },
   {
     "name": "arguments:\"{\\\"a\\\":\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -81007,7 +81007,7 @@
   },
   {
     "name": "arguments:\"{\\\"a\\\":1\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -81267,7 +81267,7 @@
   },
   {
     "name": "arguments:\"{\\\"a\\\":\\\"hel\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -81531,7 +81531,7 @@
   },
   {
     "name": "arguments:\"not json\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -81787,7 +81787,7 @@
   },
   {
     "name": "arguments:\"[1]\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -81996,7 +81996,9 @@
             "type": "toolCall",
             "id": "tool",
             "name": "search",
-            "arguments": {}
+            "arguments": [
+              1
+            ]
           }
         },
         {
@@ -82011,7 +82013,9 @@
             "type": "toolCall",
             "id": "tool",
             "name": "search",
-            "arguments": {}
+            "arguments": [
+              1
+            ]
           }
         ],
         "api": "mistral-conversations",
@@ -82038,7 +82042,7 @@
   },
   {
     "name": "arguments:\"null\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -82248,7 +82252,7 @@
             "type": "toolCall",
             "id": "tool",
             "name": "search",
-            "arguments": {}
+            "arguments": null
           }
         },
         {
@@ -82263,7 +82267,7 @@
             "type": "toolCall",
             "id": "tool",
             "name": "search",
-            "arguments": {}
+            "arguments": null
           }
         ],
         "api": "mistral-conversations",
@@ -82290,7 +82294,7 @@
   },
   {
     "name": "arguments:\"true\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -82500,7 +82504,7 @@
             "type": "toolCall",
             "id": "tool",
             "name": "search",
-            "arguments": {}
+            "arguments": true
           }
         },
         {
@@ -82515,7 +82519,7 @@
             "type": "toolCall",
             "id": "tool",
             "name": "search",
-            "arguments": {}
+            "arguments": true
           }
         ],
         "api": "mistral-conversations",
@@ -82542,7 +82546,7 @@
   },
   {
     "name": "arguments:\"42\"",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -82750,7 +82754,7 @@
             "type": "toolCall",
             "id": "tool",
             "name": "search",
-            "arguments": {}
+            "arguments": 42
           }
         },
         {
@@ -82765,7 +82769,7 @@
             "type": "toolCall",
             "id": "tool",
             "name": "search",
-            "arguments": {}
+            "arguments": 42
           }
         ],
         "api": "mistral-conversations",
@@ -82792,7 +82796,7 @@
   },
   {
     "name": "arguments:{\"2\":2,\"10\":10,\"b\":2,\"a\":[1,0,1e-7,1e+21]}",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -83045,7 +83049,7 @@
               "a": [
                 1,
                 0,
-                1e-7,
+                1e-07,
                 1e+21
               ]
             }
@@ -83070,7 +83074,7 @@
               "a": [
                 1,
                 0,
-                1e-7,
+                1e-07,
                 1e+21
               ]
             }
@@ -83100,7 +83104,7 @@
   },
   {
     "name": "tool-empty-id-then-real",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -83951,11 +83955,11 @@
           "cacheWrite": 0,
           "totalTokens": 2,
           "cost": {
-            "input": 0.000004,
+            "input": 4e-06,
             "output": 0,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": 0.000004
+            "total": 4e-06
           }
         },
         "stopReason": "error",
@@ -84435,11 +84439,11 @@
           "cacheWrite": 0,
           "totalTokens": 2,
           "cost": {
-            "input": 0.000004,
+            "input": 4e-06,
             "output": 0,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "total": 0.000004
+            "total": 4e-06
           }
         },
         "stopReason": "error",
@@ -86458,12 +86462,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -86475,7 +86479,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -86650,12 +86654,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -86667,7 +86671,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -86842,12 +86846,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -86859,7 +86863,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -87034,12 +87038,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -87051,7 +87055,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -87226,12 +87230,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -87243,7 +87247,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -87418,12 +87422,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -87435,7 +87439,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -87610,12 +87614,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -87627,7 +87631,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -87802,12 +87806,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -87819,7 +87823,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -87994,12 +87998,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -88011,7 +88015,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -88186,12 +88190,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -88203,7 +88207,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -88378,12 +88382,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -88395,7 +88399,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -88570,12 +88574,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -88587,7 +88591,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -88762,12 +88766,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -88779,7 +88783,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -88954,12 +88958,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -88971,7 +88975,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -89146,12 +89150,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -89163,7 +89167,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -89338,12 +89342,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -89355,7 +89359,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -89530,12 +89534,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -89547,7 +89551,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -89722,12 +89726,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -89739,7 +89743,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -89914,12 +89918,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -89931,7 +89935,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -90106,12 +90110,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -90123,7 +90127,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -90298,12 +90302,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -90315,7 +90319,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -90490,12 +90494,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -90507,7 +90511,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -90682,12 +90686,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -90699,7 +90703,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -90874,12 +90878,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -90891,7 +90895,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -91066,12 +91070,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -91083,7 +91087,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -91258,12 +91262,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -91275,7 +91279,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -91450,12 +91454,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -91467,7 +91471,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -91642,12 +91646,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -91659,7 +91663,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -91834,12 +91838,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -91851,7 +91855,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -92026,12 +92030,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -92043,7 +92047,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -92218,12 +92222,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -92235,7 +92239,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -92410,12 +92414,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -92427,7 +92431,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -92602,12 +92606,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -92619,7 +92623,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -92794,12 +92798,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -92811,7 +92815,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -92986,12 +92990,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -93003,7 +93007,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -93178,12 +93182,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -93195,7 +93199,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -93370,12 +93374,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -93387,7 +93391,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -93562,12 +93566,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -93579,7 +93583,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -93754,12 +93758,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -93771,7 +93775,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -93946,12 +93950,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -93963,7 +93967,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -94138,12 +94142,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -94155,7 +94159,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -94330,12 +94334,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -94347,7 +94351,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -94522,12 +94526,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -94539,7 +94543,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -94714,12 +94718,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -94731,7 +94735,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -94906,12 +94910,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -94923,7 +94927,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -95098,12 +95102,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -95115,7 +95119,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -95290,12 +95294,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -95307,7 +95311,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -95482,12 +95486,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -95499,7 +95503,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -95674,12 +95678,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -95691,7 +95695,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -95866,12 +95870,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -95883,7 +95887,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -96058,12 +96062,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -96075,7 +96079,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -96250,12 +96254,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -96267,7 +96271,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -96442,12 +96446,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -96459,7 +96463,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -96634,12 +96638,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -96651,7 +96655,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -96826,12 +96830,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -96843,7 +96847,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -97018,12 +97022,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -97035,7 +97039,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -97210,12 +97214,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -97227,7 +97231,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -97402,12 +97406,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -97419,7 +97423,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -97594,12 +97598,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -97611,7 +97615,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -97786,12 +97790,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -97803,7 +97807,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -97978,12 +97982,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -97995,7 +97999,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -98170,12 +98174,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -98187,7 +98191,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -98362,12 +98366,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -98379,7 +98383,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -98554,12 +98558,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -98571,7 +98575,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -98746,12 +98750,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -98763,7 +98767,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -98938,12 +98942,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -98955,7 +98959,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -99130,12 +99134,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -99147,7 +99151,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -99322,12 +99326,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -99339,7 +99343,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -99514,12 +99518,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -99531,7 +99535,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -99706,12 +99710,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -99723,7 +99727,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -99898,12 +99902,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -99915,7 +99919,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -100090,12 +100094,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -100107,7 +100111,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -100282,12 +100286,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -100299,7 +100303,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -100474,12 +100478,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -100491,7 +100495,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -100666,12 +100670,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -100683,7 +100687,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -100858,12 +100862,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -100875,7 +100879,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -101050,12 +101054,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -101067,7 +101071,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -101242,12 +101246,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -101259,7 +101263,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -101434,12 +101438,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -101451,7 +101455,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -101626,12 +101630,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -101643,7 +101647,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -101818,12 +101822,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -101835,7 +101839,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -102010,12 +102014,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -102027,7 +102031,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -102202,12 +102206,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -102219,7 +102223,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -102394,12 +102398,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -102411,7 +102415,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -102586,12 +102590,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -102603,7 +102607,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -102778,12 +102782,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -102795,7 +102799,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -102970,12 +102974,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -102987,7 +102991,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -103162,12 +103166,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -103179,7 +103183,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -103354,12 +103358,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -103371,7 +103375,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -103546,12 +103550,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -103563,7 +103567,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -103738,12 +103742,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -103755,7 +103759,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -103930,12 +103934,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -103947,7 +103951,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -104122,12 +104126,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -104139,7 +104143,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -104314,12 +104318,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -104331,7 +104335,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -104506,12 +104510,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -104523,7 +104527,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -104698,12 +104702,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -104715,7 +104719,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -104890,12 +104894,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -104907,7 +104911,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -105082,12 +105086,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -105099,7 +105103,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -105274,12 +105278,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -105291,7 +105295,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -105466,12 +105470,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -105483,7 +105487,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -105658,12 +105662,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -105675,7 +105679,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -105850,12 +105854,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -105867,7 +105871,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -106042,12 +106046,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -106059,7 +106063,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -106234,12 +106238,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -106251,7 +106255,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -106426,12 +106430,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -106443,7 +106447,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -106618,12 +106622,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -106635,7 +106639,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -106810,12 +106814,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -106827,7 +106831,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -107002,12 +107006,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -107019,7 +107023,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -107194,12 +107198,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -107211,7 +107215,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -107386,12 +107390,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -107403,7 +107407,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -107578,12 +107582,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -107595,7 +107599,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -107770,12 +107774,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -107787,7 +107791,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -107962,12 +107966,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -107979,7 +107983,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -108154,12 +108158,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -108171,7 +108175,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -108346,12 +108350,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -108363,7 +108367,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -108538,12 +108542,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -108555,7 +108559,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -108730,12 +108734,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -108747,7 +108751,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -108922,12 +108926,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -108939,7 +108943,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -109114,12 +109118,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -109131,7 +109135,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -109306,12 +109310,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -109323,7 +109327,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -109498,12 +109502,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -109515,7 +109519,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -109690,12 +109694,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -109707,7 +109711,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -109882,12 +109886,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -109899,7 +109903,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -110074,12 +110078,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -110091,7 +110095,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -110266,12 +110270,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -110283,7 +110287,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -110458,12 +110462,12 @@
         {
           "type": "text_delta",
           "contentIndex": 0,
-          "delta": "é🙂﻿"
+          "delta": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "é🙂﻿"
+          "content": "\u00e9\ud83d\ude42\ufeff"
         },
         {
           "type": "done",
@@ -110475,7 +110479,7 @@
         "content": [
           {
             "type": "text",
-            "text": "é🙂﻿"
+            "text": "\u00e9\ud83d\ude42\ufeff"
           }
         ],
         "api": "mistral-conversations",
@@ -112951,7 +112955,7 @@
   },
   {
     "name": "dictionary-literal-key",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [
@@ -113272,7 +113276,7 @@
   },
   {
     "name": "dictionary-overflow",
-    "test": "conversation_streams_accumulate_and_finalize_tool_calls",
+    "test": "conversation_arguments_keep_encoded_root_shapes",
     "input": {
       "chunks": [
         [

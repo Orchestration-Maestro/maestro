@@ -3,15 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod recording_terminal;
-    pub mod virtual_terminal;
-}
-use support::virtual_terminal::VirtualTerminal;
+use crate::support::virtual_terminal::VirtualTerminal;
 
 #[test]
 fn virtual_terminal_exposes_screen_history_and_callbacks() {

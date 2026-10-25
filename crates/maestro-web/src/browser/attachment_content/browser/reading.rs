@@ -3,7 +3,7 @@ use super::super::placement::Transform;
 use super::super::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement, ReadingRoot};
 use crate::browser::{
     attachment_content::{
-        AttachmentContent, AttachmentSurface, AttachmentUiError,
+        AttachmentContent, AttachmentHostError, AttachmentSurface,
         browser::{BrowserAttachmentHost, DomSurface, bounds, host_error},
     },
     event_subscription::EventSubscription,
@@ -13,7 +13,7 @@ use std::{cell::RefCell, fmt::Write as _, rc::Rc};
 use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::{Element, ResizeObserver};
 mod transaction;
-use transaction::{Scroll, size_slots, transaction};
+use transaction::{Scroll, decoration_border, size_slots, transaction};
 /// Retained root/viewport lifetime with staged frame and viewport placements.
 pub(super) struct NativeReading {
     /// Stable feature identity.
@@ -42,7 +42,7 @@ pub(super) struct NativeReading {
     scroll: Option<Scroll>,
 }
 /// Preserve the native failure category when installing placement.
-fn attr(element: &Element, value: &str) -> Result<(), AttachmentUiError> {
+fn attr(element: &Element, value: &str) -> Result<(), AttachmentHostError> {
     element
         .set_attribute("style", value)
         .map_err(|e| host_error(&e))
@@ -55,7 +55,7 @@ impl NativeReading {
         viewport: Element,
         host: &BrowserAttachmentHost,
         repaint: &egui::Context,
-    ) -> Result<Self, AttachmentUiError> {
+    ) -> Result<Self, AttachmentHostError> {
         let repaint = Rc::new(RefCell::new(repaint.clone()));
         let target = Rc::clone(&repaint);
         let callback = Closure::wrap(Box::new(move || {
@@ -94,6 +94,13 @@ impl NativeReading {
             "width:100%;height:100%;box-sizing:border-box;overflow:auto;clip-path:inset(0);".into();
         self.viewport_measurement = self.viewport_style.clone() + "height:auto;";
         self.measurement = style + "visibility:hidden;pointer-events:none;height:auto;";
+        if placement.intrinsic_width {
+            let _ = write!(
+                self.measurement,
+                "width:fit-content;max-width:{}px;",
+                s.rect.width()
+            );
+        }
         if s.rect.height().is_finite() {
             let _ = write!(self.measurement, "max-height:{}px;", s.rect.height());
             let _ = write!(
@@ -107,7 +114,7 @@ impl NativeReading {
         *self.context.borrow_mut() = placement.context.clone();
     }
     /// Apply final geometry with the same rollback boundary used by measurement.
-    fn publish(&self, frame: &Element, style: &str) -> Result<(), AttachmentUiError> {
+    fn publish(&self, frame: &Element, style: &str) -> Result<(), AttachmentHostError> {
         transaction(
             (frame, &self.viewport),
             &self.root.slots,
@@ -128,7 +135,7 @@ impl NativeReading {
         &self,
         frame: &Element,
         transform: &Transform,
-    ) -> Result<Vec<(egui::Id, egui::Rect)>, AttachmentUiError> {
+    ) -> Result<Vec<(egui::Id, egui::Rect)>, AttachmentHostError> {
         let origin = bounds(frame)?;
         self.root
             .slots
@@ -151,7 +158,7 @@ impl NativeReading {
         frame: &Element,
         transform: &Transform,
         retained: Option<&Scroll>,
-    ) -> Result<ReadingLayout, AttachmentUiError> {
+    ) -> Result<ReadingLayout, AttachmentHostError> {
         let (layout, scroll) = transaction(
             (frame, &self.viewport),
             &self.root.slots,
@@ -162,6 +169,10 @@ impl NativeReading {
                 attr(&self.viewport, &self.viewport_measurement)?;
                 retained.unwrap_or(saved).apply(&self.viewport)?;
                 let layout = ReadingLayout {
+                    border: decoration_border(&self.root)?,
+                    width: transform
+                        .relative([0., 0., bounds(frame)?.width(), 0.], [0., 0.])
+                        .width(),
                     height: transform.height(bounds(&self.root.element)?.height()),
                     controls: self.controls(frame, transform)?,
                 };
@@ -183,7 +194,7 @@ impl BrowserAttachmentHost {
         &self,
         s: &AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
-    ) -> Result<String, AttachmentUiError> {
+    ) -> Result<String, AttachmentHostError> {
         let transform = self.transform(s.pixels_per_point)?;
         let [left, top] = transform.position(s.rect.min);
         let mut style = format!(
@@ -219,7 +230,8 @@ impl BrowserAttachmentHost {
     fn create_reading(
         &self,
         placement: &ReadingPlacement<'_>,
-    ) -> Result<DomSurface, AttachmentUiError> {
+        style: &str,
+    ) -> Result<DomSurface, AttachmentHostError> {
         let mut candidate = self.create("div")?;
         let root = (placement.content.mount)(&self.document)?;
         candidate
@@ -230,6 +242,12 @@ impl BrowserAttachmentHost {
             .child
             .set_attribute("class", "maestro-reading-viewport")
             .map_err(|e| host_error(&e))?;
+        if let Some(decoration) = &root.decoration {
+            candidate
+                .wrapper
+                .insert_before(decoration, Some(&candidate.child))
+                .map_err(|e| host_error(&e))?;
+        }
         candidate
             .child
             .append_child(&root.element)
@@ -243,11 +261,11 @@ impl BrowserAttachmentHost {
         )?);
         attr(
             &candidate.wrapper,
-            "position:fixed;visibility:hidden;pointer-events:none;",
+            &(style.to_owned() + "visibility:hidden;pointer-events:none;"),
         )?;
         self.document
             .body()
-            .ok_or_else(|| AttachmentUiError::Host("Document has no body".into()))?
+            .ok_or_else(|| AttachmentHostError::Host("Document has no body".into()))?
             .append_child(&candidate.wrapper)
             .map_err(|e| host_error(&e))?;
         Ok(candidate)
@@ -257,7 +275,7 @@ impl BrowserAttachmentHost {
         &self,
         s: &AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let retained = self.surfaces.borrow_mut().remove(&s.id);
         let mut surface = retained.map_or_else(|| self.create("div"), Ok)?;
         let result = self.update_reading(s, p, &mut surface);
@@ -279,7 +297,7 @@ impl BrowserAttachmentHost {
         s: &AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
         surface: &mut DomSurface,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let AttachmentContent::Reading(placement) = &s.content else {
             return Ok(());
         };
@@ -294,7 +312,7 @@ impl BrowserAttachmentHost {
             surface.pending = if same {
                 None
             } else {
-                Some(Box::new(self.create_reading(placement)?))
+                Some(Box::new(self.create_reading(placement, &style)?))
             };
         }
         let target = match surface.pending.as_deref_mut() {
@@ -305,11 +323,12 @@ impl BrowserAttachmentHost {
             .reading
             .as_mut()
             .filter(|r| Rc::ptr_eq(&r.content, &placement.content))
-            .ok_or_else(|| AttachmentUiError::Host("Reading content was not measured".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Reading content was not measured".into()))?;
         if placement.phase == ReadingPhase::Measure {
             reading.stage(s, style, placement);
             return Ok(());
         }
+        let style = style + reading.root.frame_style;
         let top = self.overlays.borrow().last().copied();
         let previous = std::mem::replace(&mut target.style, style);
         let previous_modal = target.modal;
@@ -319,7 +338,7 @@ impl BrowserAttachmentHost {
         let result = target
             .reading
             .as_ref()
-            .ok_or_else(|| AttachmentUiError::Host("Missing reading owner".into()))?
+            .ok_or_else(|| AttachmentHostError::Host("Missing reading owner".into()))?
             .publish(&target.wrapper, &projected);
         if let Err(error) = result {
             target.style = previous;
@@ -329,12 +348,15 @@ impl BrowserAttachmentHost {
         publish_pending(surface, &projected)
     }
     /// Read natural height now, restoring placement and native scroll afterwards.
-    pub(super) fn measure_reading(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
+    pub(super) fn measure_reading(
+        &self,
+        id: egui::Id,
+    ) -> Result<ReadingLayout, AttachmentHostError> {
         let mut surface = self
             .surfaces
             .borrow_mut()
             .remove(&id)
-            .ok_or_else(|| AttachmentUiError::Host("Missing reading surface".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Missing reading surface".into()))?;
         let result = (|| {
             let retained = if surface.pending.as_ref().is_some_and(|candidate| {
                 candidate
@@ -354,10 +376,9 @@ impl BrowserAttachmentHost {
                 Some(pending) => pending,
                 None => &mut surface,
             };
-            let r = target
-                .reading
-                .as_mut()
-                .ok_or_else(|| AttachmentUiError::Host("Surface is not reading content".into()))?;
+            let r = target.reading.as_mut().ok_or_else(|| {
+                AttachmentHostError::Host("Surface is not reading content".into())
+            })?;
             let transform = self.transform(r.pixels)?;
             r.measure(&target.wrapper, &transform, retained.as_ref())
         })();
@@ -376,12 +397,12 @@ impl BrowserAttachmentHost {
         &self,
         id: egui::Id,
         dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, AttachmentHostError> {
         let mut surface = self
             .surfaces
             .borrow_mut()
             .remove(&id)
-            .ok_or_else(|| AttachmentUiError::Host("Missing dialog surface".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Missing dialog surface".into()))?;
         let result = (|| {
             let target = match surface.pending.as_deref_mut() {
                 Some(pending) => pending,
@@ -390,7 +411,7 @@ impl BrowserAttachmentHost {
             let reading = target
                 .reading
                 .as_mut()
-                .ok_or_else(|| AttachmentUiError::Host("Missing dialog reading owner".into()))?;
+                .ok_or_else(|| AttachmentHostError::Host("Missing dialog reading owner".into()))?;
             let transform = self.transform(reading.pixels)?;
             reading.dialog_bounds(&target.wrapper, &transform, dimensions)
         })();
@@ -409,7 +430,7 @@ impl NativeReading {
         frame: &Element,
         transform: &Transform,
         dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, AttachmentHostError> {
         let style = format!(
             "{}position:fixed;left:50vw;top:50vh;max-height:none;transform-origin:0 0;transform:translate(-50%,-50%);width:auto;width:{};height:auto;height:{};",
             self.measurement, dimensions[0], dimensions[1]
@@ -447,12 +468,12 @@ impl NativeReading {
     }
 }
 
-/// Publish staged geometry before an infallible feature commit into retained native nodes.
+/// Publish staged geometry with a fallible feature commit into retained native nodes.
 fn reconcile(
     surface: &mut DomSurface,
     candidate: &DomSurface,
     projected: &str,
-) -> Result<bool, AttachmentUiError> {
+) -> Result<bool, AttachmentHostError> {
     let Some((previous, next)) = surface.reading.as_mut().zip(candidate.reading.as_ref()) else {
         return Ok(false);
     };
@@ -466,10 +487,10 @@ fn reconcile(
         |_| {
             size_slots(&previous.root.slots, &next.sizes)?;
             attr(&surface.wrapper, projected)?;
-            attr(&previous.viewport, &next.viewport_style)
+            attr(&previous.viewport, &next.viewport_style)?;
+            commit(&previous.root)
         },
     )?;
-    commit(&previous.root);
     if let Some(scroll) = &next.scroll {
         scroll.commit(&previous.viewport);
     }
@@ -481,7 +502,7 @@ fn reconcile(
 }
 
 /// Release staged callbacks after committing or replacing the published root.
-fn publish_pending(surface: &mut DomSurface, projected: &str) -> Result<(), AttachmentUiError> {
+fn publish_pending(surface: &mut DomSurface, projected: &str) -> Result<(), AttachmentHostError> {
     if let Some(candidate) = surface.pending.take()
         && !reconcile(surface, &candidate, projected)?
     {

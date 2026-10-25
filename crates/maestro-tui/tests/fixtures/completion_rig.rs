@@ -1,6 +1,7 @@
 #![cfg(test)]
 //! A scripted completion provider and an editor wired to the controlled host.
 use crate::editor_host::{self as support, manual_runtime::ManualRuntime};
+use crate::fixtures::providers::item;
 use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{
     CompletionError, CompletionOptions, CompletionResult, CursorPosition,
@@ -92,15 +93,6 @@ impl IntoReply for AutocompleteSuggestions {
 impl IntoReply for Option<AutocompleteSuggestions> {
     fn into_reply(self) -> Reply {
         Ok(self)
-    }
-}
-
-/// A candidate whose value and label are the same text.
-pub fn item(value: &str) -> AutocompleteItem {
-    AutocompleteItem {
-        value: value.to_owned(),
-        label: value.to_owned(),
-        description: None,
     }
 }
 

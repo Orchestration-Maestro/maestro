@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::native_support;
+use crate::resolution_support::{case_in_child, case_in_removed_cwd};
 use crate::scratch;
 use crate::support;
 use crate::worker_support;
@@ -9,27 +10,29 @@ use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
 };
 use maestro_settings::{PackageSource, Settings, SettingsListEntry, SettingsManager};
-use serde_json::json;
+use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
-use worker_support::{Gates, driver};
+use worker_support::{Gates, driver, gated_npm_checks};
 
 #[test]
 fn updates_selected_unpinned_source_beside_pin() {
-    let (manager, settings, effects) = support::manager(&json!({}));
-    let entries = vec![
-        PackageSource::Source("npm:example@1".into()),
-        PackageSource::Source("npm:example".into()),
-    ];
-    settings.borrow_mut().set_project_packages(entries.clone());
-    effects.exists.set(true);
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, settings, effects, tree) =
+        installed(&json!([]), &json!(["npm:example@1", "npm:example"]));
+    let entries = settings.borrow().get_project_settings().0["packages"].clone();
     let scratch = scratch::Scratch::new().unwrap();
-    let cwd = scratch.0.to_string_lossy().into_owned();
+    let cwd = scratch.path().to_string_lossy().into_owned();
     let manifest = format!("{cwd}/.maestro/npm/node_modules/example/package.json");
     native_support::write(&manifest, "{\"version\":\"1\"}");
     let native_settings = Rc::new(RefCell::new(
         SettingsManager::in_memory(Settings::default()),
     ));
-    native_settings.borrow_mut().set_project_packages(entries);
+    let entries = entries.as_array().unwrap().iter().cloned();
+    native_settings
+        .borrow_mut()
+        .set_project_packages(entries.map(PackageSource::Unknown).collect());
     native_settings.borrow_mut().set_npm_command(Some([
         "/bin/sh", "-c", "if [ \"$1\" = view ]; then printf '\"2\"'; else test \"$1\" = install && test \"$2\" = example@latest && printf '{\"version\":\"2\"}' > \"$0/.maestro/npm/node_modules/example/package.json\"; fi", &cwd
     ].map(|s| SettingsListEntry::String(s.into())).to_vec()));
@@ -41,14 +44,11 @@ fn updates_selected_unpinned_source_beside_pin() {
             agent_dir: format!("{cwd}/agent"),
             settings_manager: native_settings.clone(),
         },
-        NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+        NativePackageOperations::new(Rc::new(|| false), &local),
     ));
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     runtime.block_on(local.run_until(async {
-        Rc::new(manager).update(Some("npm:example")).await.unwrap();
+        manager.update(Some("npm:example")).await.unwrap();
         native.update(Some("npm:example")).await.unwrap();
     }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
@@ -62,7 +62,7 @@ fn updates_selected_unpinned_source_beside_pin() {
             "install",
             "example@latest",
             "--prefix",
-            "/work/project/.maestro/npm"
+            support::below(tree.path(), "/work/project/.maestro/npm").as_str()
         ]
     );
     for owner in [settings, native_settings] {
@@ -73,25 +73,13 @@ fn updates_selected_unpinned_source_beside_pin() {
     }
 }
 
-/// Configures both scopes without validating filter members.
-fn configured(
-    user: serde_json::Value,
-    project: serde_json::Value,
-) -> (
-    Rc<DefaultPackageManager<support::Controlled>>,
-    Rc<RefCell<SettingsManager>>,
-    Rc<support::Effects>,
-) {
-    let mut global = serde_json::Map::new();
-    global.insert("packages".into(), user);
-    let (manager, settings, effects) = support::manager(&serde_json::Value::Object(global));
-    let serde_json::Value::Array(project) = project else {
-        panic!("array required");
-    };
-    settings
-        .borrow_mut()
-        .set_project_packages(project.into_iter().map(PackageSource::Unknown).collect());
-    (Rc::new(manager), settings, effects)
+/// Configures both scopes over an empty tree without validating filter members.
+fn configured(user: &Value, project: &Value) -> support::Configured {
+    support::uninstalled(&json!({ "packages": user }), project)
+}
+/// Configures both scopes over a tree where every listed source is installed.
+fn installed(user: &Value, project: &Value) -> support::Configured {
+    support::installed(&json!({ "packages": user }), project)
 }
 /// Joins admitted workers before returning the operation's outcome.
 fn update(
@@ -99,22 +87,17 @@ fn update(
     effects: &Rc<support::Effects>,
     source: Option<&str>,
 ) -> std::io::Result<()> {
-    let local = Rc::new(tokio::task::LocalSet::new());
-    *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let result = runtime.block_on(local.run_until(manager.update(source)));
-    runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
-    result
+    support::drive(effects, manager.update(source))
 }
 
 #[test]
 fn empty_input_updates_all_configured_scopes_in_order() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for source in [None, Some("")] {
-        let (manager, _, effects) =
-            configured(json!(["npm:b", "npm:a", "npm:b"]), json!(["npm:c"]));
+        let (manager, _, effects, tree) =
+            configured(&json!(["npm:b", "npm:a", "npm:b"]), &json!(["npm:c"]));
         update(manager, &effects, source).unwrap();
         let installs: Vec<_> = effects
             .calls
@@ -138,7 +121,7 @@ fn empty_input_updates_all_configured_scopes_in_order() {
                         "install",
                         "c@latest",
                         "--prefix",
-                        "/work/project/.maestro/npm"
+                        support::below(tree.path(), "/work/project/.maestro/npm").as_str()
                     ]
                     .map(str::to_owned)
                     .to_vec()
@@ -146,16 +129,19 @@ fn empty_input_updates_all_configured_scopes_in_order() {
             ]
         );
     }
-    let (manager, _, effects) = configured(json!([]), json!([]));
+    let (manager, _, effects, _tree) = configured(&json!([]), &json!([]));
     update(manager, &effects, None).unwrap();
     assert_eq!(effects.spawns.get(), 0);
 }
 
 #[test]
 fn named_updates_preserve_both_scopes_and_duplicate_registrations() {
-    let (manager, settings, effects) = configured(
-        json!(["npm:a@1", "npm:a", "npm:a"]),
-        json!(["npm:a@next", "npm:a"]),
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, settings, effects, tree) = configured(
+        &json!(["npm:a@1", "npm:a", "npm:a"]),
+        &json!(["npm:a@next", "npm:a"]),
     );
     update(manager, &effects, Some("npm:a@2")).unwrap();
     assert_eq!(
@@ -172,7 +158,7 @@ fn named_updates_preserve_both_scopes_and_duplicate_registrations() {
                 "install",
                 "a@latest",
                 "--prefix",
-                "/work/project/.maestro/npm"
+                support::below(tree.path(), "/work/project/.maestro/npm").as_str()
             ]
         ]
     );
@@ -188,15 +174,17 @@ fn named_updates_preserve_both_scopes_and_duplicate_registrations() {
 
 #[test]
 fn clone_transport_aliases_select_one_git_identity() {
-    let (manager, _, effects) = configured(
-        json!(["git:github.com/acme/tool@main"]),
-        json!([
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, _tree) = installed(
+        &json!(["git:github.com/acme/tool@main"]),
+        &json!([
             "https://github.com/acme/tool.git",
             "git:github.com/acme/tool",
             "git:github.com/acme/other"
         ]),
     );
-    effects.exists.set(true);
     immediate_probes(&effects);
     update(manager, &effects, Some("git:git@github.com:acme/tool.git")).unwrap();
     let fetched: Vec<_> = effects
@@ -215,7 +203,7 @@ fn cross_scope_suggestions_prefer_the_user_registration() {
         ("npm:a@1", "npm:a", "npm:a@1"),
         ("npm:a", "npm:a@1", "npm:a"),
     ] {
-        let (manager, _, effects) = configured(json!([user]), json!([project]));
+        let (manager, _, effects, _tree) = configured(&json!([user]), &json!([project]));
         assert_eq!(
             update(manager, &effects, Some("a"))
                 .unwrap_err()
@@ -244,18 +232,21 @@ fn local_identity_uses_stored_scope_and_input_cwd() {
             "./tool",
         ),
     ] {
-        let (manager, _, effects) = configured(user, project);
-        update(manager, &effects, Some(source)).unwrap();
-        assert!(effects.paths.borrow().is_empty());
+        let (manager, _, effects, tree) = configured(&user, &project);
+        let source = support::below(tree.path(), source);
+        update(manager, &effects, Some(&source)).unwrap();
         assert_eq!(effects.spawns.get(), 0);
     }
 }
 
 #[test]
 fn no_match_precedes_offline_with_first_shorthand_suggestion() {
+    let offline = |_: &str| vec![("MAESTRO_OFFLINE", Some("1".into()))];
+    if case_in_child("offline", offline).is_none() {
+        return;
+    }
     for &(input, rows, expected) in SUGGESTIONS {
-        let (manager, _, effects) = configured(json!(rows), json!([]));
-        *effects.offline.borrow_mut() = Some("1".into());
+        let (manager, _, effects, _tree) = configured(&json!(rows), &json!([]));
         assert_eq!(
             update(manager, &effects, Some(input))
                 .unwrap_err()
@@ -268,8 +259,8 @@ fn no_match_precedes_offline_with_first_shorthand_suggestion() {
 
 #[test]
 fn pins_and_local_sources_skip_missing_content_repair() {
-    let (manager, _, effects) = configured(
-        json!([
+    let (manager, _, effects, tree) = configured(
+        &json!([
             "npm:a@1.0.0",
             "npm:a@next",
             "npm:a@^1",
@@ -277,12 +268,10 @@ fn pins_and_local_sources_skip_missing_content_repair() {
             "git:github.com/acme/tool@main",
             "./absent"
         ]),
-        json!([]),
+        &json!([]),
     );
-    effects.fail_ambient.set(true);
     update(manager, &effects, None).unwrap();
-    assert!(effects.paths.borrow().is_empty());
-    assert!(effects.reads.borrow().is_empty());
+    assert_eq!(std::fs::read_dir(tree.path()).unwrap().count(), 0);
     assert!(effects.calls.borrow().is_empty());
     assert_eq!(effects.spawns.get(), 0);
 }
@@ -295,8 +284,11 @@ fn offline_update_still_selects_sources_before_skipping_work() {
         ("true", true),
         (" true ", false),
     ] {
-        let (manager, _, effects) = configured(json!(["npm:a"]), json!([]));
-        *effects.offline.borrow_mut() = Some(value.into());
+        let environment = |_: &str| vec![("MAESTRO_OFFLINE", Some(value.into()))];
+        if case_in_child(value, environment).is_none() {
+            continue;
+        }
+        let (manager, _, effects, _tree) = configured(&json!(["npm:a"]), &json!([]));
         update(manager, &effects, Some("npm:a")).unwrap();
         assert_eq!(
             effects
@@ -366,6 +358,9 @@ const SUGGESTIONS: &[(&str, &[&str], &str)] = &[
 
 #[test]
 fn unknown_versions_and_failed_lookups_trigger_updates() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (manifest, latest) in [
         (None, Ok("\"2\"")),
         (Some("{"), Ok("\"2\"")),
@@ -377,9 +372,8 @@ fn unknown_versions_and_failed_lookups_trigger_updates() {
         (Some("{\"version\":\"1\"}"), Ok("{")),
         (Some("{\"version\":\"1\"}"), Ok("null")),
     ] {
-        let (manager, _, effects) = configured(json!([]), json!(["npm:a"]));
-        effects.exists.set(true);
-        *effects.manifest.borrow_mut() = manifest.map(str::to_owned);
+        let (manager, _, effects, tree) = installed(&json!([]), &json!(["npm:a"]));
+        support::project_manifest(&tree, "a", manifest);
         effects
             .capture_outputs
             .borrow_mut()
@@ -391,7 +385,7 @@ fn unknown_versions_and_failed_lookups_trigger_updates() {
                 "install",
                 "a@latest",
                 "--prefix",
-                "/work/project/.maestro/npm"
+                support::below(tree.path(), "/work/project/.maestro/npm").as_str()
             ]
         );
     }
@@ -399,6 +393,9 @@ fn unknown_versions_and_failed_lookups_trigger_updates() {
 
 #[test]
 fn matching_version_strings_skip_only_current_candidates() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (manifest, latest, changed) in [
         ("{\"version\":\"1\"}", "\"1\"", false),
         ("{\"version\":\" \"}", "\" \"", false),
@@ -411,9 +408,8 @@ fn matching_version_strings_skip_only_current_candidates() {
             true,
         ),
     ] {
-        let (manager, _, effects) = configured(json!([]), json!(["npm:a"]));
-        effects.exists.set(true);
-        *effects.manifest.borrow_mut() = Some(manifest.into());
+        let (manager, _, effects, tree) = installed(&json!([]), &json!(["npm:a"]));
+        support::project_manifest(&tree, "a", Some(manifest));
         effects
             .capture_outputs
             .borrow_mut()
@@ -430,9 +426,12 @@ fn matching_version_strings_skip_only_current_candidates() {
 #[test]
 fn scoped_batches_preserve_spec_order_and_grouped_progress() {
     use maestro_packages::{ProgressAction, ProgressEventType};
-    let (manager, _, effects) = configured(
-        json!(["npm:z", "npm:a", "npm:z", "npm:b"]),
-        json!(["npm:z"]),
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, tree) = configured(
+        &json!(["npm:z", "npm:a", "npm:z", "npm:b"]),
+        &json!(["npm:z"]),
     );
     let events = Rc::new(RefCell::new(Vec::new()));
     let observed = events.clone();
@@ -457,7 +456,7 @@ fn scoped_batches_preserve_spec_order_and_grouped_progress() {
                 "install",
                 "z@latest",
                 "--prefix",
-                "/work/project/.maestro/npm"
+                support::below(tree.path(), "/work/project/.maestro/npm").as_str()
             ]
         ]
     );
@@ -490,8 +489,11 @@ fn scoped_batches_preserve_spec_order_and_grouped_progress() {
 
 #[test]
 fn update_preserves_filtered_settings_and_live_command_selection() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let entry = json!({"source":"npm:a", "extensions":null, "unknown":{"retained":9}});
-    let (manager, settings, effects) = configured(json!([]), json!([entry]));
+    let (manager, settings, effects, tree) = configured(&json!([]), &json!([entry]));
     let weak = Rc::downgrade(&settings);
     manager.set_progress_callback(Some(Rc::new(move |_| {
         weak.upgrade().unwrap().borrow_mut().set_npm_command(Some(
@@ -511,7 +513,7 @@ fn update_preserves_filtered_settings_and_live_command_selection() {
                 "install",
                 "a@latest",
                 "--prefix",
-                "/work/project/.maestro/npm"
+                support::below(tree.path(), "/work/project/.maestro/npm").as_str()
             ]
             .map(str::to_owned)
             .to_vec()
@@ -526,63 +528,63 @@ fn update_preserves_filtered_settings_and_live_command_selection() {
 
 #[test]
 fn update_reads_ambient_state_only_when_selection_requires_it() {
-    for source in ["npm:a", "git:github.com/acme/tool", "/absolute"] {
-        let (manager, _, effects) = configured(json!([source]), json!([]));
-        effects.fail_ambient.set(true);
-        *effects.offline.borrow_mut() = Some("1".into());
-        update(manager, &effects, Some(source)).unwrap();
-        assert!(effects.reads.borrow().is_empty());
+    let offline = |_: &str| vec![("MAESTRO_OFFLINE", Some("1".into()))];
+    if case_in_removed_cwd("offline", offline).is_none() {
+        return;
     }
-    let (manager, _, effects) = configured(json!(["~/tool"]), json!([]));
-    effects.fail_ambient.set(true);
-    *effects.offline.borrow_mut() = Some("1".into());
-    assert_eq!(
-        update(manager, &effects, Some("~/tool"))
-            .unwrap_err()
-            .to_string(),
-        "home unavailable"
-    );
-    assert_eq!(*effects.reads.borrow(), ["home"]);
-    required_cwd_failure();
+    for source in ["npm:a", "git:github.com/acme/tool", "/absolute"] {
+        let (manager, effects) = relative(&json!([source]), &json!([]));
+        update(manager, &effects, Some(source)).unwrap();
+    }
+    let (manager, effects) = relative(&json!(["./tool"]), &json!([]));
+    let error = update(manager, &effects, Some("./tool")).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
 }
 
 #[test]
 fn source_consumption_precedes_later_settings_errors() {
-    let (manager, settings, effects) = configured(json!([{"source":null}]), json!([]));
-    settings
-        .borrow_mut()
-        .set_project_packages(vec![PackageSource::Unknown(json!(0))]);
-    effects.fail_ambient.set(true);
-    assert_eq!(
-        update(manager.clone(), &effects, Some("~/input"))
-            .unwrap_err()
-            .to_string(),
-        "home unavailable"
-    );
+    if case_in_removed_cwd("removed", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, effects) = relative(&json!([{"source":null}]), &json!([0]));
+    let error = update(manager.clone(), &effects, Some("./input")).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     assert_eq!(
         update(manager, &effects, None).unwrap_err().to_string(),
         "package source is not a string"
     );
-    let (manager, settings, effects) = configured(json!(["~/tool"]), json!([]));
-    settings
-        .borrow_mut()
-        .set_project_packages(vec![PackageSource::Unknown(json!(0))]);
-    effects.fail_ambient.set(true);
-    assert_eq!(
-        update(manager, &effects, Some("/unrelated"))
-            .unwrap_err()
-            .to_string(),
-        "home unavailable"
+    let (manager, effects) = relative(&json!(["./tool"]), &json!([0]));
+    let error = update(manager, &effects, Some("/unrelated")).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+}
+/// A configured manager whose working and agent directories are relative.
+fn relative(
+    user: &Value,
+    project: &Value,
+) -> (
+    Rc<DefaultPackageManager<support::Controlled>>,
+    Rc<support::Effects>,
+) {
+    let (_, settings, effects, _tree) = configured(user, project);
+    let manager = DefaultPackageManager::new(
+        PackageManagerOptions {
+            cwd: "relative".into(),
+            agent_dir: "agent".into(),
+            settings_manager: settings,
+        },
+        support::Controlled(effects.clone()),
     );
-    assert_eq!(*effects.reads.borrow(), ["home"]);
+    (Rc::new(manager), effects)
 }
 
 #[test]
 fn four_update_workers_preserve_order_across_independent_calls() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for count in [0, 1, 4, 7] {
         let sources: Vec<_> = (0..count).map(|i| format!("npm:p{i}")).collect();
-        let (manager, _, effects) = configured(json!([]), json!(sources));
-        effects.exists.set(true);
+        let (manager, _, effects, _tree) = installed(&json!([]), &json!(sources));
         let (runtime, local) = driver(&effects);
         let (gates, mut starts) = Gates::install(&effects, count);
         let result = local.spawn_local(manager.update(None));
@@ -619,21 +621,10 @@ fn four_update_workers_preserve_order_across_independent_calls() {
 }
 /// One update and one availability call each admit four independent capture slots.
 fn independent_calls() {
-    let (manager, _, effects) =
-        configured(json!([]), json!(["npm:p0", "npm:p1", "npm:p2", "npm:p3"]));
-    effects.exists.set(true);
+    let (manager, _, effects, _tree) =
+        installed(&json!([]), &json!(["npm:p0", "npm:p1", "npm:p2", "npm:p3"]));
     let (runtime, local) = driver(&effects);
-    let (send, mut started) = tokio::sync::mpsc::unbounded_channel();
-    let (release, wait) = tokio::sync::watch::channel(false);
-    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, _, _| {
-        let send = send.clone();
-        let mut wait = wait.clone();
-        Box::pin(async move {
-            send.send(()).unwrap();
-            wait.wait_for(|ready| *ready).await.unwrap();
-            Ok("\"2\"".into())
-        })
-    }));
+    let (release, mut started) = gated_npm_checks(&effects);
     let availability = local.spawn_local(manager.check_for_available_updates());
     let update = local.spawn_local(manager.update(None));
     runtime.block_on(local.run_until(async {
@@ -651,8 +642,11 @@ fn independent_calls() {
 #[test]
 fn update_progress_uses_live_callback_and_preserves_error_precedence() {
     use maestro_packages::ProgressEventType as Phase;
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for phase in [Phase::Start, Phase::Complete, Phase::Error] {
-        let (manager, _, effects) = configured(json!([]), json!(["npm:a"]));
+        let (manager, _, effects, _tree) = configured(&json!([]), &json!(["npm:a"]));
         let events = Rc::new(RefCell::new(Vec::new()));
         let observed = events.clone();
         if phase == Phase::Error {
@@ -690,7 +684,7 @@ fn failed_command() -> support::RunHook {
 /// Replaces or clears the slot during a start callback.
 fn callback_replacement(clear: bool) {
     use maestro_packages::ProgressEventType as Phase;
-    let (manager, _, effects) = configured(json!([]), json!(["npm:a"]));
+    let (manager, _, effects, _tree) = configured(&json!([]), &json!(["npm:a"]));
     let observed = Rc::new(RefCell::new(Vec::new()));
     let weak = Rc::downgrade(&manager);
     let events = observed.clone();
@@ -727,13 +721,16 @@ fn replacement_callback(
 
 #[test]
 fn project_batch_preparation_keeps_existing_files() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for existing in [false, true] {
         let scratch = scratch::Scratch::new().unwrap();
-        let cwd = scratch.0.to_string_lossy().into_owned();
+        let cwd = scratch.path().to_string_lossy().into_owned();
         let root = format!("{cwd}/.maestro/npm");
         if existing {
-            native_support::write(&format!("{root}/package.json"), "existing manifest");
-            native_support::write(&format!("{root}/.gitignore"), "existing ignore");
+            native_support::write(format!("{root}/package.json"), "existing manifest");
+            native_support::write(format!("{root}/.gitignore"), "existing ignore");
         }
         let settings = Rc::new(RefCell::new(
             SettingsManager::in_memory(Settings::default()),
@@ -743,7 +740,9 @@ fn project_batch_preparation_keeps_existing_files() {
             .set_project_packages(vec![PackageSource::Source("npm:a".into())]);
         settings
             .borrow_mut()
-            .set_npm_command(Some(vec![SettingsListEntry::String("/bin/true".into())]));
+            .set_npm_command(Some(vec![SettingsListEntry::String(
+                "/usr/bin/true".into(),
+            )]));
         let local = Rc::new(tokio::task::LocalSet::new());
         let manager = Rc::new(DefaultPackageManager::new(
             PackageManagerOptions {
@@ -751,12 +750,9 @@ fn project_batch_preparation_keeps_existing_files() {
                 agent_dir: format!("{cwd}/agent"),
                 settings_manager: settings,
             },
-            NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+            NativePackageOperations::new(Rc::new(|| false), &local),
         ));
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = crate::runtime::runtime();
         runtime
             .block_on(local.run_until(manager.update(None)))
             .unwrap();
@@ -783,8 +779,10 @@ fn project_batch_preparation_keeps_existing_files() {
 
 #[test]
 fn runtime_admission_errors_keep_accepted_work() {
-    let (manager, _, effects) = configured(json!([]), json!(["npm:a", "npm:b"]));
-    effects.exists.set(true);
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, _tree) = installed(&json!([]), &json!(["npm:a", "npm:b"]));
     effects.fail_spawn_at.set(Some(1));
     let (runtime, local) = driver(&effects);
     let (send, mut finished) = tokio::sync::mpsc::unbounded_channel();
@@ -815,12 +813,9 @@ fn runtime_admission_errors_keep_accepted_work() {
             .iter()
             .all(|(_, args)| args[0] != "install")
     );
-    let (manager, _, effects) = configured(json!([]), json!(["npm:a"]));
+    let (manager, _, effects, _tree) = configured(&json!([]), &json!(["npm:a"]));
     assert_eq!(
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(manager.update(None))
+        crate::runtime::run(manager.update(None))
             .unwrap_err()
             .to_string(),
         "stopped runtime"
@@ -828,37 +823,14 @@ fn runtime_admission_errors_keep_accepted_work() {
     assert_eq!(effects.spawns.get(), 0);
 }
 
-/// Gates each npm check while Git probes remain immediately available.
-fn gated_npm_checks(
-    effects: &support::Effects,
-) -> (
-    tokio::sync::watch::Sender<bool>,
-    tokio::sync::mpsc::UnboundedReceiver<()>,
-) {
-    let (checks, checking) = tokio::sync::mpsc::unbounded_channel();
-    let (release_checks, wait_checks) = tokio::sync::watch::channel(false);
-    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |command, _, _| {
-        let checks = checks.clone();
-        let mut wait = wait_checks.clone();
-        let npm = command != "git";
-        Box::pin(async move {
-            if npm {
-                checks.send(()).unwrap();
-                wait.wait_for(|ready| *ready).await.unwrap();
-                Ok("\"2\"".into())
-            } else {
-                Ok("origin/main".into())
-            }
-        })
-    }));
-    (release_checks, checking)
-}
-
 #[test]
 fn npm_checks_finish_before_parallel_npm_and_git_groups() {
-    let (manager, _, effects) = configured(
-        json!(["npm:p0", "npm:p1"]),
-        json!([
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, _tree) = installed(
+        &json!(["npm:p0", "npm:p1"]),
+        &json!([
             "npm:p2",
             "npm:p3",
             "git:github.com/acme/g0",
@@ -868,7 +840,6 @@ fn npm_checks_finish_before_parallel_npm_and_git_groups() {
             "git:github.com/acme/g4"
         ]),
     );
-    effects.exists.set(true);
     let (runtime, local) = driver(&effects);
     let (release_checks, mut checking) = gated_npm_checks(&effects);
     let (running, mut started) = tokio::sync::mpsc::unbounded_channel();
@@ -928,9 +899,9 @@ fn immediate_probes(effects: &support::Effects) {
 
 /// Runs a failing execution group with sealed sibling gates, then joins the retained work.
 fn failed_execution(failure: &'static str) -> (Vec<String>, bool, bool) {
-    let (manager, _, effects) = configured(
-        json!(["npm:user"]),
-        json!([
+    let (manager, _, effects, _tree) = installed(
+        &json!(["npm:user"]),
+        &json!([
             "npm:project",
             "git:github.com/acme/g0",
             "git:github.com/acme/g1",
@@ -939,7 +910,6 @@ fn failed_execution(failure: &'static str) -> (Vec<String>, bool, bool) {
             "git:github.com/acme/g4"
         ]),
     );
-    effects.exists.set(true);
     let weak = Rc::downgrade(&manager);
     let weak_effects = Rc::downgrade(&effects);
     let (runtime, local) = driver(&effects);
@@ -976,17 +946,19 @@ fn failed_execution(failure: &'static str) -> (Vec<String>, bool, bool) {
 
 #[test]
 fn first_update_error_keeps_siblings_claiming_work() {
-    let (manager, _, effects) = configured(
-        json!([
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, _tree) = installed(
+        &json!([
             "npm:p0", "npm:p1", "npm:p2", "npm:p3", "npm:p4", "npm:p5", "npm:p6"
         ]),
-        json!([]),
+        &json!([]),
     );
-    effects.exists.set(true);
     effects
         .outputs
         .borrow_mut()
-        .push_back(Err(std::io::Error::other("first root failure")));
+        .push_front(Err(std::io::Error::other("first root failure")));
     let (runtime, local) = driver(&effects);
     let (gates, mut starts) = Gates::install(&effects, 7);
     let operation = local.spawn_local(manager.update(None));
@@ -1019,6 +991,9 @@ fn first_update_error_keeps_siblings_claiming_work() {
 
 #[test]
 fn updates_release_manager_after_surviving_work_finishes() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (_, retained, released) = failed_execution("g0");
     assert!(
         retained,
@@ -1030,51 +1005,33 @@ fn updates_release_manager_after_surviving_work_finishes() {
     );
 }
 
-/// Relative identity reads a failing ambient context before offline admission.
-fn required_cwd_failure() {
-    let (_, settings, effects) = configured(json!(["./tool"]), json!([]));
-    let manager = Rc::new(DefaultPackageManager::new(
-        PackageManagerOptions {
-            cwd: "relative".into(),
-            agent_dir: "agent".into(),
-            settings_manager: settings,
-        },
-        support::Controlled(effects.clone()),
-    ));
-    effects.fail_ambient.set(true);
-    *effects.offline.borrow_mut() = Some("1".into());
-    assert_eq!(
-        update(manager, &effects, Some("./tool"))
-            .unwrap_err()
-            .to_string(),
-        "cwd unavailable"
-    );
-    assert_eq!(*effects.reads.borrow(), ["cwd"]);
-}
 /// Preparation errors emit grouped failure without executing the npm child.
 fn project_preparation_failure() {
-    let (manager, _, effects) = configured(json!([]), json!(["npm:z", "npm:a"]));
-    effects.fail_write.set(true);
+    let (manager, _, effects, tree) = configured(&json!([]), &json!(["npm:z", "npm:a"]));
+    let root = support::below(tree.path(), "/work/project/.maestro/npm");
+    std::fs::create_dir_all(&root).unwrap();
+    let Some(restore) = maestro_test_directory::deny(&root, 0o555).unwrap() else {
+        return;
+    };
     let events = Rc::new(RefCell::new(Vec::new()));
     let observed = events.clone();
     manager.set_progress_callback(Some(Rc::new(move |event| {
         observed.borrow_mut().push(event.clone());
         Ok(())
     })));
-    assert_eq!(
-        update(manager, &effects, None).unwrap_err().to_string(),
-        "file write failed"
-    );
+    let error = update(manager, &effects, None).unwrap_err();
+    drop(restore);
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
     assert!(effects.calls.borrow().is_empty());
     let events = events.borrow();
     assert_eq!(events.len(), 2);
     assert_eq!(events[1].source, "project npm packages");
     assert_eq!(events[1].r#type, maestro_packages::ProgressEventType::Error);
-    assert_eq!(events[1].message.as_deref(), Some("file write failed"));
+    assert_eq!(events[1].message, Some(error.to_string()));
 }
 /// Caller edits replace settings entries but cannot replace already selected rows.
 fn captured_rows_keep_live_command_edits() {
-    let (manager, settings, effects) = configured(json!([]), json!(["npm:a"]));
+    let (manager, settings, effects, tree) = configured(&json!([]), &json!(["npm:a"]));
     let weak = Rc::downgrade(&settings);
     manager.set_progress_callback(Some(Rc::new(move |event| {
         if event.r#type == maestro_packages::ProgressEventType::Start {
@@ -1097,7 +1054,7 @@ fn captured_rows_keep_live_command_edits() {
                 "install",
                 "a@latest",
                 "--prefix",
-                "/work/project/.maestro/npm"
+                support::below(tree.path(), "/work/project/.maestro/npm").as_str()
             ]
             .map(str::to_owned)
             .to_vec()
@@ -1141,12 +1098,13 @@ fn failing_group_hook(
 
 #[test]
 fn mixed_pinned_current_and_outdated_candidates_install_only_outdated() {
-    let (manager, _, effects) = configured(
-        json!([]),
-        json!(["npm:pinned@1", "npm:current", "npm:outdated"]),
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, tree) = installed(
+        &json!([]),
+        &json!(["npm:pinned@1", "npm:current", "npm:outdated"]),
     );
-    effects.exists.set(true);
-    *effects.manifest.borrow_mut() = Some("{\"version\":\"1\"}".into());
     effects
         .capture_outputs
         .borrow_mut()
@@ -1179,7 +1137,7 @@ fn mixed_pinned_current_and_outdated_candidates_install_only_outdated() {
                     "install".into(),
                     "outdated@latest".into(),
                     "--prefix".into(),
-                    "/work/project/.maestro/npm".into()
+                    support::below(tree.path(), "/work/project/.maestro/npm")
                 ]
             ),
         ]

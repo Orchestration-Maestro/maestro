@@ -14,7 +14,7 @@ paths use the existing UUID 1.27.0 with defaults disabled and `std`, `v4` enable
 Application pixel tests use the existing image 0.24.9 with only `png` requested.
 Existing base64 0.23.1 uses
 `std` without defaults, futures-util 0.3.34 retains workspace features, and Tokio
-1.53.2 provides native `rt`, `time` and `process` without defaults.
+1.53.3 provides native `rt`, `time` and `process` without defaults.
 
 The original text-clipboard integration added 39 registry packages. Image
 reading reuses that resolution without adding, removing or replacing registry
@@ -25,10 +25,10 @@ Windows backend packages under BSL-1.0:
 
 | Package | Version |
 |---|---|
-| clipboard-win | 5.4.1 |
+| clipboard-win | 5.4.3 |
 | error-code | 3.4.0 |
 | windows-win | 3.0.0 |
 
-The shared-CI exceptions are package/version scoped, not a general BSL-1.0
-allowance. Attribution and the full license text are in
+Shared CI's default license allow list includes BSL-1.0, so these packages need
+no exception. Attribution and the full license text are in
 [third-party notices](../../THIRD-PARTY-NOTICES.md#native-clipboard-windows-backend).

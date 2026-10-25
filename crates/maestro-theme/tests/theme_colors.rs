@@ -1,11 +1,12 @@
 //! Terminal color construction and byte-level output.
+use crate::live::per_environment;
 use crate::support;
 
 use maestro_theme::{
     ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions, load_theme_from_path,
 };
 use serde_json::json;
-use support::{Controlled, dark, fg, load, required_colors};
+use support::{DARK_PATH, dark, fg, load, required_colors};
 
 /// Every typed foreground key with its literal theme-file name.
 fn foreground_keys() -> Vec<(ThemeColor, &'static str)> {
@@ -124,7 +125,6 @@ fn theme_color_key_identity_uses_the_key_text() {
 
 #[test]
 fn theme_detects_color_mode_with_exact_precedence() {
-    let text = dark().to_string();
     let cases: [(&[(&str, &str)], ColorMode); 19] = [
         (&[], ColorMode::Color256),
         (&[("TERM", "")], ColorMode::Color256),
@@ -177,8 +177,9 @@ fn theme_detects_color_mode_with_exact_precedence() {
             ColorMode::Truecolor,
         ),
     ];
-    for (env, expected) in cases {
-        let theme = load_theme_from_path("p", None, &Controlled::new(&text, env)).unwrap();
+    let test = "theme_detects_color_mode_with_exact_precedence";
+    for (env, expected) in per_environment(test, cases, |(env, _)| env).unwrap_or_default() {
+        let theme = load_theme_from_path(DARK_PATH, None).unwrap();
         assert_eq!(theme.get_color_mode(), expected, "{env:?}");
     }
 }

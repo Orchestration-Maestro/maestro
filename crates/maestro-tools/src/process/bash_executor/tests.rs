@@ -40,15 +40,10 @@ fn direct_spill_io_errors_are_returned() {
         "maestro-missing-{}",
         crate::output::output_accumulator::random_id().unwrap()
     ));
-    let child = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "process::bash_executor::tests::direct_spill_io_errors_are_returned",
-        ])
+    let child = maestro_test_process::TestProcess::current("direct_spill_io_errors_are_returned")
+        .unwrap()
         .env("MAESTRO_DIRECT_MISSING_TEMP", "1")
-        .env("TMPDIR", &missing)
-        .env("TMP", &missing)
-        .env("TEMP", &missing)
+        .temp_dir(&missing)
         .status()
         .unwrap();
     assert!(child.success());

@@ -1,0 +1,271 @@
+{
+  "packages": [
+    {
+      "name": "a",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/a#0.0.0",
+      "dependencies": [
+        {
+          "name": "f",
+          "req": "*",
+          "kind": "dev",
+          "rename": "loopback",
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/f"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/a/Cargo.toml"
+    },
+    {
+      "name": "f",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/f#0.0.0",
+      "dependencies": [
+        {
+          "name": "a",
+          "req": "*",
+          "kind": null,
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "target": "cfg(target_os = \"windows\")",
+          "path": "/maestro/fixture/crates/a"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/f/Cargo.toml"
+    },
+    {
+      "name": "b",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/b#0.0.0",
+      "dependencies": [
+        {
+          "name": "a",
+          "req": "*",
+          "kind": null,
+          "rename": "renamed",
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/a"
+        },
+        {
+          "name": "a",
+          "req": "*",
+          "kind": "dev",
+          "rename": "renamed",
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/a"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/b/Cargo.toml"
+    },
+    {
+      "name": "c",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/c#0.0.0",
+      "dependencies": [
+        {
+          "name": "a",
+          "req": "*",
+          "kind": "build",
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/a"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/c/Cargo.toml"
+    },
+    {
+      "name": "d",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/d#0.0.0",
+      "dependencies": [
+        {
+          "name": "b",
+          "req": "*",
+          "kind": "dev",
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/b"
+        },
+        {
+          "name": "c",
+          "req": "*",
+          "kind": "dev",
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/c"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/d/Cargo.toml"
+    },
+    {
+      "name": "e",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/e#0.0.0",
+      "dependencies": [
+        {
+          "name": "a",
+          "req": "*",
+          "kind": null,
+          "optional": true,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/a"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/e/Cargo.toml"
+    },
+    {
+      "name": "g",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/g#0.0.0",
+      "dependencies": [
+        {
+          "name": "a",
+          "req": "*",
+          "kind": null,
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/a"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/g/Cargo.toml"
+    },
+    {
+      "name": "alone",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/alone#0.0.0",
+      "dependencies": [],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/alone/Cargo.toml"
+    },
+    {
+      "name": "nested",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/a/nested#0.0.0",
+      "dependencies": [],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/a/nested/Cargo.toml"
+    },
+    {
+      "name": "maestro-test-conventions-old",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/maestro-test-conventions-old#0.0.0",
+      "dependencies": [],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/maestro-test-conventions-old/Cargo.toml"
+    },
+    {
+      "name": "external-reader",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/external-reader#0.0.0",
+      "dependencies": [
+        {
+          "name": "a",
+          "req": "*",
+          "kind": null,
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/external/a"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/external-reader/Cargo.toml"
+    },
+    {
+      "name": "shared",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/shared#0.0.0",
+      "dependencies": [],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/shared/Cargo.toml"
+    },
+    {
+      "name": "maestro-models",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/maestro-models#0.0.0",
+      "dependencies": [
+        {
+          "name": "shared",
+          "req": "*",
+          "kind": null,
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/shared"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/maestro-models/Cargo.toml"
+    },
+    {
+      "name": "maestro-web",
+      "version": "0.0.0",
+      "id": "path+file:///maestro/fixture/crates/maestro-web#0.0.0",
+      "dependencies": [
+        {
+          "name": "maestro-models",
+          "req": "*",
+          "kind": null,
+          "optional": false,
+          "uses_default_features": true,
+          "features": [],
+          "path": "/maestro/fixture/crates/maestro-models"
+        }
+      ],
+      "targets": [],
+      "features": {},
+      "manifest_path": "/maestro/fixture/crates/maestro-web/Cargo.toml"
+    }
+  ],
+  "workspace_members": [
+    "path+file:///maestro/fixture/crates/a#0.0.0",
+    "path+file:///maestro/fixture/crates/f#0.0.0",
+    "path+file:///maestro/fixture/crates/b#0.0.0",
+    "path+file:///maestro/fixture/crates/c#0.0.0",
+    "path+file:///maestro/fixture/crates/d#0.0.0",
+    "path+file:///maestro/fixture/crates/e#0.0.0",
+    "path+file:///maestro/fixture/crates/g#0.0.0",
+    "path+file:///maestro/fixture/crates/alone#0.0.0",
+    "path+file:///maestro/fixture/crates/a/nested#0.0.0",
+    "path+file:///maestro/fixture/crates/maestro-test-conventions-old#0.0.0",
+    "path+file:///maestro/fixture/crates/external-reader#0.0.0",
+    "path+file:///maestro/fixture/crates/shared#0.0.0",
+    "path+file:///maestro/fixture/crates/maestro-models#0.0.0",
+    "path+file:///maestro/fixture/crates/maestro-web#0.0.0"
+  ],
+  "target_directory": "/maestro/fixture/target",
+  "version": 1,
+  "workspace_root": "/maestro/fixture"
+}

@@ -17,7 +17,7 @@ macro_rules! inventory_test {
         #[test]
         fn every_known_event_has_a_concrete_native_registration() {
             let (owner, api) = crate::tests::api::api(maestro_extensions::create_extension_runtime::<Local>());
-            let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let (calls, _incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let callback = callbacks.allocate().unwrap();

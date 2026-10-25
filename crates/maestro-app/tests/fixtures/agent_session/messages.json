@@ -1,0 +1,2067 @@
+[
+  {
+    "name": "a streaming custom message steers by default",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "label": "queueWhileStreaming",
+        "value": {
+          "steering": [],
+          "followUp": [],
+          "pendingMessageCount": 0,
+          "isStreaming": true,
+          "systemPrompt": "$BASE"
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "first"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "first",
+        "stopReason": "stop",
+        "errorMessage": null
+      },
+      {
+        "role": "custom",
+        "customType": "note",
+        "content": {
+          "text": "steered"
+        },
+        "display": true,
+        "details": null
+      },
+      {
+        "role": "assistant",
+        "text": "second",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "custom_message",
+        "id": "e2",
+        "customType": "note",
+        "content": {
+          "text": "steered"
+        },
+        "display": true,
+        "details": null
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "steered"
+          },
+          "display": true,
+          "details": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "steered"
+          },
+          "display": true,
+          "details": null
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "input",
+        "text": "first",
+        "images": null,
+        "source": "interactive"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "first",
+        "images": null,
+        "systemPrompt": "$BASE"
+      }
+    ],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 2
+    }
+  },
+  {
+    "name": "a streaming custom message follows up when selected",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "first"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "first",
+        "stopReason": "stop",
+        "errorMessage": null
+      },
+      {
+        "role": "custom",
+        "customType": "note",
+        "content": {
+          "text": "later"
+        },
+        "display": false,
+        "details": null
+      },
+      {
+        "role": "assistant",
+        "text": "second",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "custom_message",
+        "id": "e2",
+        "customType": "note",
+        "content": {
+          "text": "later"
+        },
+        "display": false,
+        "details": null
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "later"
+          },
+          "display": false,
+          "details": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "later"
+          },
+          "display": false,
+          "details": null
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "input",
+        "text": "first",
+        "images": null,
+        "source": "interactive"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "first",
+        "images": null,
+        "systemPrompt": "$BASE"
+      }
+    ],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 2
+    }
+  },
+  {
+    "name": "a next-turn custom message waits even while streaming",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "label": "queueWhileStreaming",
+        "value": {
+          "steering": [],
+          "followUp": [],
+          "pendingMessageCount": 0,
+          "isStreaming": true,
+          "systemPrompt": "$BASE"
+        }
+      },
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "first"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "first",
+        "stopReason": "stop",
+        "errorMessage": null
+      },
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "second"
+            }
+          ]
+        }
+      },
+      {
+        "role": "custom",
+        "customType": "note",
+        "content": {
+          "text": "waits"
+        },
+        "display": true,
+        "details": null
+      },
+      {
+        "role": "assistant",
+        "text": "second",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message",
+        "id": "e2",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "second"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "custom_message",
+        "id": "e3",
+        "customType": "note",
+        "content": {
+          "text": "waits"
+        },
+        "display": true,
+        "details": null
+      },
+      {
+        "type": "message",
+        "id": "e4",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "second"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "second"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "waits"
+          },
+          "display": true,
+          "details": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "waits"
+          },
+          "display": true,
+          "details": null
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "input",
+        "text": "first",
+        "images": null,
+        "source": "interactive"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "first",
+        "images": null,
+        "systemPrompt": "$BASE"
+      },
+      {
+        "type": "input",
+        "text": "second",
+        "images": null,
+        "source": "interactive"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "second",
+        "images": null,
+        "systemPrompt": "$BASE"
+      }
+    ],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 2
+    }
+  },
+  {
+    "name": "a custom message with a triggered turn prompts the agent",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "custom",
+        "customType": "note",
+        "content": {
+          "text": "start"
+        },
+        "display": true,
+        "details": null
+      },
+      {
+        "role": "assistant",
+        "text": "reply",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "custom_message",
+        "id": "e0",
+        "customType": "note",
+        "content": {
+          "text": "start"
+        },
+        "display": true,
+        "details": null
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "start"
+          },
+          "display": true,
+          "details": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "start"
+          },
+          "display": true,
+          "details": null
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 1
+    }
+  },
+  {
+    "name": "a custom message without a trigger appends and announces itself",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "custom",
+        "customType": "note",
+        "content": {
+          "text": "appended"
+        },
+        "display": false,
+        "details": {
+          "k": 2
+        }
+      }
+    ],
+    "entries": [
+      {
+        "type": "custom_message",
+        "id": "e0",
+        "customType": "note",
+        "content": {
+          "text": "appended"
+        },
+        "display": false,
+        "details": {
+          "k": 2
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "message_start",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "appended"
+          },
+          "display": false,
+          "details": {
+            "k": 2
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "custom",
+          "customType": "note",
+          "content": {
+            "text": "appended"
+          },
+          "display": false,
+          "details": {
+            "k": 2
+          }
+        }
+      }
+    ],
+    "extensionEvents": [],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 0
+    }
+  },
+  {
+    "name": "a user message always triggers a turn",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "reply",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "input",
+        "text": "hello",
+        "images": null,
+        "source": "extension"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "hello",
+        "images": null,
+        "systemPrompt": "$BASE"
+      }
+    ],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 1
+    }
+  },
+  {
+    "name": "a user message splits text and images",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "line one\nline two"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "reply",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "line one\nline two"
+              },
+              {
+                "type": "image",
+                "mimeType": "image/png"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "line one\nline two"
+              },
+              {
+                "type": "image",
+                "mimeType": "image/png"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "line one\nline two"
+              },
+              {
+                "type": "image",
+                "mimeType": "image/png"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "input",
+        "text": "line one\nline two",
+        "images": 1,
+        "source": "extension"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "line one\nline two",
+        "images": 1,
+        "systemPrompt": "$BASE"
+      }
+    ],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 1
+    }
+  },
+  {
+    "name": "a user message from an extension skips expansion and reports its source",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "label": "commandArgs",
+        "value": null
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "/plan alpha"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "reply",
+        "stopReason": "stop",
+        "errorMessage": null
+      },
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "/skill:review look"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "reply",
+        "stopReason": "stop",
+        "errorMessage": null
+      },
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "/hello now"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "reply",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/plan alpha"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message",
+        "id": "e2",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/skill:review look"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message",
+        "id": "e4",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/hello now"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e5",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/plan alpha"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/plan alpha"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/skill:review look"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/skill:review look"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/hello now"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/hello now"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "input",
+        "text": "/plan alpha",
+        "images": null,
+        "source": "extension"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "/plan alpha",
+        "images": null,
+        "systemPrompt": "$BASE"
+      },
+      {
+        "type": "input",
+        "text": "/skill:review look",
+        "images": null,
+        "source": "extension"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "/skill:review look",
+        "images": null,
+        "systemPrompt": "$BASE"
+      },
+      {
+        "type": "input",
+        "text": "/hello now",
+        "images": null,
+        "source": "extension"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "/hello now",
+        "images": null,
+        "systemPrompt": "$BASE"
+      }
+    ],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 3
+    }
+  },
+  {
+    "name": "an extension slash text is queued while streaming without running its command",
+    "results": [
+      {
+        "ok": {
+          "undefined": true
+        }
+      },
+      {
+        "label": "commandArgs",
+        "value": null
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "first"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "first",
+        "stopReason": "stop",
+        "errorMessage": null
+      },
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "/hello now"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "second",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message",
+        "id": "e2",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/hello now"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "queue_update",
+        "steering": [
+          "/hello now"
+        ],
+        "followUp": []
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "queue_update",
+        "steering": [],
+        "followUp": []
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/hello now"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/hello now"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "input",
+        "text": "first",
+        "images": null,
+        "source": "interactive"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "first",
+        "images": null,
+        "systemPrompt": "$BASE"
+      },
+      {
+        "type": "input",
+        "text": "/hello now",
+        "images": null,
+        "source": "extension"
+      }
+    ],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 2
+    }
+  },
+  {
+    "name": "a user message while streaming without a behaviour is refused",
+    "results": [
+      {
+        "error": "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message."
+      },
+      {
+        "ok": {
+          "undefined": true
+        }
+      }
+    ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "first"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "first",
+        "stopReason": "stop",
+        "errorMessage": null
+      },
+      {
+        "role": "user",
+        "content": {
+          "blocks": [
+            {
+              "type": "text",
+              "text": "steered"
+            }
+          ]
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "first",
+        "stopReason": "stop",
+        "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message",
+        "id": "e2",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "steered"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
+    "sessionEvents": [
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "queue_update",
+        "steering": [
+          "steered"
+        ],
+        "followUp": []
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "queue_update",
+        "steering": [],
+        "followUp": []
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "steered"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "steered"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "agent_end"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "input",
+        "text": "first",
+        "images": null,
+        "source": "interactive"
+      },
+      {
+        "type": "before_agent_start",
+        "prompt": "first",
+        "images": null,
+        "systemPrompt": "$BASE"
+      },
+      {
+        "type": "input",
+        "text": "queued",
+        "images": null,
+        "source": "extension"
+      },
+      {
+        "type": "input",
+        "text": "steered",
+        "images": null,
+        "source": "extension"
+      }
+    ],
+    "errorEvents": [],
+    "contexts": {
+      "calls": 2
+    }
+  }
+]

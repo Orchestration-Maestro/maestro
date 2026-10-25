@@ -1,0 +1,19 @@
+{
+  "ok": {
+    "hook_seen": [
+      "after:200",
+      "before",
+      "after:201"
+    ],
+    "captures": [
+      {
+        "forwarded": {
+          "model": "faux-1",
+          "injected": true
+        }
+      }
+    ],
+    "message_count": 2,
+    "call_count": 1
+  }
+}

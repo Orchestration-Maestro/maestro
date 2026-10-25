@@ -19,7 +19,7 @@ impl Renderer<'_> {
             .checked_sub(3 * columns + 1)
             .filter(|available| *available >= columns)
         else {
-            return wrap_text_with_ansi(&table.authored, width);
+            return wrap_text_with_ansi(&self.clean(&table.authored), width);
         };
         let widths = self.widths(table, style, available);
         let separator = border(['├', '┼', '┤'], &widths);

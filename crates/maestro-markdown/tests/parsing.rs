@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use maestro_markdown::{Alignment, Kind, LinkType, parse};
+use maestro_markdown::{Alignment, Kind, Node, parse};
 
 #[test]
 fn parser_keeps_owned_browser_metadata() {
@@ -18,8 +18,6 @@ fn parser_keeps_owned_browser_metadata() {
     };
     assert_eq!(href, "/path");
     assert_eq!(metadata.title, "title");
-    assert_eq!(metadata.id, "ref");
-    assert_eq!(metadata.link_type, LinkType::Reference);
     assert!(matches!(label[0].kind, Kind::Strong(_)));
     let Kind::Image(_, image) = &children[2].kind else {
         panic!("image")
@@ -40,6 +38,44 @@ fn parser_keeps_owned_browser_metadata() {
 }
 
 #[test]
+fn source_framed_images_keep_code_and_document_references() {
+    let document = {
+        let input =
+            String::from("> ![a `[b]` [c][r]][img]\n\n[r]: /c \"child\"\n[img]: /img \"tip\"\n");
+        parse(input)
+    };
+    let Kind::Quote(quote, _) = &document.nodes[0].kind else {
+        panic!("quote")
+    };
+    let Kind::Paragraph(children) = &quote[0].kind else {
+        panic!("paragraph")
+    };
+    let image = &children[0];
+    assert_eq!(image.authored.to_owned_string(), "![a `[b]` [c][r]][img]");
+    assert_eq!(
+        &document.source[image.range.clone()],
+        "![a `[b]` [c][r]][img]"
+    );
+    let Kind::Image(_, metadata) = &image.kind else {
+        panic!("image")
+    };
+    assert_eq!(metadata.destination, "/img");
+    assert_eq!(metadata.title, "tip");
+    assert_image_reference_children(metadata);
+}
+
+/// Check opaque code and the separately resolved definition inside an image label.
+fn assert_image_reference_children(metadata: &maestro_markdown::ImageMetadata) {
+    assert!(matches!(&metadata.children[1].kind, Kind::Code(code) if code == "[b]"));
+    let Kind::Link(label, _, href, child) = &metadata.children[3].kind else {
+        panic!("reference child")
+    };
+    assert_eq!(href, "/c");
+    assert_eq!(child.title, "child");
+    assert!(matches!(&label[0].kind, Kind::Text(text) if text.decoded == "c"));
+}
+
+#[test]
 fn parser_retains_container_source_extents() {
     let document = parse(
         "> $$x\n> y$$\n\n- a \\*b\\* `opaque`\n  tail\n\n| a | b |\n| - | - |\n| \\| | &amp; |\n"
@@ -48,8 +84,8 @@ fn parser_retains_container_source_extents() {
     let Kind::Quote(quote, _) = &document.nodes[0].kind else {
         panic!("quote")
     };
-    assert_eq!(quote[0].authored, "$$x\ny$$\n");
-    assert_eq!(&document.source[quote[0].range.clone()], "$$x\n> y$$\n");
+    assert_eq!(quote[0].authored.to_owned_string(), "$$x\ny$$");
+    assert_eq!(&document.source[quote[0].range.clone()], "$$x\n> y$$");
     let Kind::List(_, items) = &document.nodes[2].kind else {
         panic!("list")
     };
@@ -59,7 +95,10 @@ fn parser_retains_container_source_extents() {
     let Kind::Inline(children) = &item[0].kind else {
         panic!("inline")
     };
-    assert_eq!(item[0].authored, "a \\*b\\* `opaque`\ntail");
+    assert_eq!(
+        item[0].authored.to_owned_string(),
+        "a \\*b\\* `opaque`\ntail"
+    );
     assert!(
         children
             .iter()
@@ -73,7 +112,9 @@ fn parser_retains_container_source_extents() {
             _ => None,
         })
         .unwrap();
-    assert_eq!(table.rows[0][0].authored, " | ");
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&table.rows[0][0].range, false).unwrap();
+    assert_eq!(scope.text(), " | ");
     assert_eq!(&document.source[table.rows[0][0].range.clone()], " \\| ");
     let Kind::Text(text) = &table.rows[0][1].children[0].kind else {
         panic!("text")
@@ -83,17 +124,8 @@ fn parser_retains_container_source_extents() {
 }
 
 #[test]
-fn parser_orders_native_structure_before_mapped_links() {
-    let mut document = parse("$x$ https://example.org/$q$ &amp; www.example.org. \\* https://other.org\n\n| a |\n| - |\n| www.example.org/\\| |\n".to_owned());
-    let Kind::Paragraph(children) = &document.nodes[0].kind else {
-        panic!("paragraph")
-    };
-    assert!(
-        !children
-            .iter()
-            .any(|node| matches!(node.kind, Kind::Link(..)))
-    );
-    maestro_markdown::autolinks(&mut document);
+fn parser_retains_native_structure_with_inline_links() {
+    let document = parse("$x$ https://example.org/$q$ &amp; www.example.org. \\* https://other.org\n\n| a |\n| - |\n| www.example.org/\\| |\n".to_owned());
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
     };
@@ -152,16 +184,47 @@ fn assert_tasks(document: &maestro_markdown::Document) {
 }
 
 #[test]
+fn task_markers_map_to_the_item_body_end() {
+    for (source, expected) in [
+        ("- [ ] ", &[(6, 6)][..]),
+        ("a\n\n- [ ] \n", &[(9, 9)][..]),
+        ("1. [x] \n2. [ ] y", &[(7, 7), (16, 16)][..]),
+        ("- [ ] a", &[(7, 7)][..]),
+    ] {
+        let document = parse(source.into());
+        let markers: Vec<_> = document
+            .nodes
+            .iter()
+            .filter_map(|node| match &node.kind {
+                Kind::List(_, items) => Some(items),
+                _ => None,
+            })
+            .flatten()
+            .filter_map(|item| match &item.kind {
+                Kind::Item(children) => children.first(),
+                _ => None,
+            })
+            .filter(|marker| matches!(marker.kind, Kind::TaskListMarker(_)))
+            .map(|marker| (marker.range.start, marker.range.end))
+            .collect();
+        assert_eq!(markers.as_slice(), expected, "{source:?}");
+    }
+}
+
+#[test]
 fn mapped_links_retain_source_boundaries_before_escaped_math() {
-    let mut document =
+    let document =
         parse("https://example.test/a $x$ www.example.test \\(y\\) a@example.test".into());
-    maestro_markdown::autolinks(&mut document);
+
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
     };
     for node in children {
         if let Kind::Link(..) = &node.kind {
-            assert_eq!(&document.source[node.range.clone()], node.authored);
+            assert_eq!(
+                &document.source[node.range.clone()],
+                node.authored.to_owned_string()
+            );
         }
     }
 }
@@ -200,8 +263,8 @@ fn inline_context_keeps_original_reference_operands_and_consumed_suffixes() {
 #[test]
 fn inline_scopes_map_container_prefixes_escaped_labels_and_table_pipes() {
     use maestro_markdown::InlineContext;
-    let mut document = parse("> - [\\[$x$\\]][r] and \\(x\n>   y\\)\n\n[r]: /docs\n\n| cell |\n| - |\n| https://example.test/a\\|b/$x$ $y$ |".into());
-    maestro_markdown::autolinks(&mut document);
+    let document = parse("> - [\\[$x$\\]][r] and \\(x\n>   y\\)\n\n[r]: /docs\n\n| cell |\n| - |\n| https://example.test/a\\|b/$x$ $y$ |".into());
+
     let context = InlineContext::new(&document);
     let Kind::Quote(c, _) = &document.nodes[0].kind else {
         panic!("quote")
@@ -227,32 +290,465 @@ fn inline_scopes_map_container_prefixes_escaped_labels_and_table_pipes() {
     let scope = context.scope(&table.rows[0][0].range, false).unwrap();
     assert_eq!(scope.text(), " https://example.test/a|b/$x$ $y$ ");
     assert_eq!(
+        &scope.text()[scope.content_range()],
+        "https://example.test/a|b/$x$ $y$"
+    );
+    assert_eq!(
         &scope.text()[scope.operands[0].0.clone()],
         "https://example.test/a|b/$x$"
     );
 }
 
 #[test]
-fn interpreted_runs_lower_formula_atoms_inside_tables() {
-    use maestro_markdown::InlineContext;
-    // A list item's lazy lines stay one paragraph, but interpreted on their own they form a table.
-    let document = parse("- | a |\n|---|\n$x$".into());
-    let context = InlineContext::new(&document);
-    let Kind::List(_, c) = &document.nodes[0].kind else {
+fn mapped_links_keep_entity_units_and_suffix_source_ranges() {
+    for entity in ["&amp;", "&#38;", "&#x26;"] {
+        for (frame, source_tail, decoded_tail) in [
+            ("", " tail", " tail"),
+            ("> ", "\n> tail", "\ntail"),
+            ("- ", "\n  tail", "\ntail"),
+        ] {
+            assert_mapped_entity_link(entity, frame, source_tail, decoded_tail);
+        }
+    }
+}
+
+/// Observe a complete mapped link and its decoded suffix in one source frame.
+fn assert_mapped_entity_link(entity: &str, frame: &str, source_tail: &str, decoded_tail: &str) {
+    let label = format!("https://x.y/a{entity}b");
+    let document = parse(format!("{frame}{label}{source_tail}"));
+
+    let mut nodes = document.nodes.as_slice();
+    let nodes = loop {
+        nodes = match &nodes[0].kind {
+            Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => children,
+            Kind::Paragraph(children) | Kind::Inline(children) => break children,
+            _ => panic!("container"),
+        };
+    };
+    assert_eq!(nodes.len(), 2);
+    assert_eq!(nodes[0].range, frame.len()..frame.len() + label.len());
+    let Kind::Link(children, actual, href, _) = &nodes[0].kind else {
+        panic!("link")
+    };
+    assert_eq!(actual, &label);
+    assert_eq!(href, &label);
+    assert!(matches!(&children[0].kind, Kind::Text(text) if text.decoded == label));
+    assert_eq!(&document.source[nodes[1].range.clone()], source_tail);
+    assert!(matches!(&nodes[1].kind, Kind::Text(text) if text.decoded == decoded_tail));
+}
+
+#[test]
+fn list_lazy_continuations_stop_after_nonparagraph_blocks() {
+    for first in ["# h", "    code", "```", "***"] {
+        let source = format!("- {first}\noutside");
+        let document = parse(source.clone());
+        assert_eq!(document.nodes.len(), 2, "{source:?}");
+        assert!(matches!(&document.nodes[0].kind, Kind::List(..)));
+        assert_eq!(
+            &document.source[document.nodes[0].range.clone()],
+            format!("- {first}\n")
+        );
+        assert_eq!(&document.source[document.nodes[1].range.clone()], "outside");
+    }
+}
+
+#[test]
+fn list_tabs_align_continuations_without_losing_source_ranges() {
+    let document = parse("- a\n\n\tb".into());
+    assert_eq!(document.nodes.len(), 1);
+    let Kind::List(_, items) = &document.nodes[0].kind else {
         panic!("list")
     };
-    let Kind::Item(c) = &c[0].kind else {
+    let Kind::Item(children) = &items[0].kind else {
         panic!("item")
     };
-    let scope = context.scope(&c[0].range, false).unwrap();
-    assert_eq!(scope.text(), "| a |\n|---|\n$x$");
-    let run = scope.interpret(0..15, std::slice::from_ref(&(12..15)));
-    let Kind::Table(table) = &run.nodes[0].kind else {
+    let paragraphs: Vec<_> = children
+        .iter()
+        .filter(|node| matches!(node.kind, Kind::Paragraph(_)))
+        .collect();
+    assert_eq!(paragraphs.len(), 2);
+    assert_eq!(&document.source[paragraphs[1].range.clone()], "\tb");
+}
+
+#[test]
+fn tabbed_list_table_operands_keep_original_source_coordinates() {
+    let source = "- | a |\n  | - |\n  | x\thttps://x.y/a&amp;b tail |";
+    let document = parse(source.into());
+
+    let Kind::List(_, items) = &document.nodes[0].kind else {
+        panic!("list")
+    };
+    let Kind::Item(children) = &items[0].kind else {
+        panic!("item")
+    };
+    let Kind::Table(table) = &children[0].kind else {
         panic!("table")
     };
-    let kinds: Vec<_> = table.rows[0][0].children.iter().map(|n| &n.kind).collect();
+    let cell = &table.rows[0][0];
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&cell.range, false).unwrap();
+    assert_eq!(scope.operands.len(), 1);
+    let (range, node) = &scope.operands[0];
+    assert_eq!(&scope.text()[range.clone()], "https://x.y/a&amp;b");
+    assert_eq!(&document.source[node.range.clone()], "https://x.y/a&amp;b");
+}
+
+#[test]
+fn list_continuations_separate_measurement_spelling_and_history() {
+    for (source, expected, outside) in [
+        ("- a\n`b\tc`", "b\tc", false),
+        ("- a\n\t`b\tc`", "b    c", false),
+        ("- a\n`b\tc`\ntail", "b\tc", true),
+    ] {
+        for options in [
+            maestro_markdown::MarkedOptions::Terminal,
+            maestro_markdown::MarkedOptions::Browser { escape_html: false },
+            maestro_markdown::MarkedOptions::Browser { escape_html: true },
+            maestro_markdown::MarkedOptions::Export,
+        ] {
+            let document = maestro_markdown::parse_with_options(source.into(), options);
+            let Kind::List(_, items) = &document.nodes[0].kind else {
+                panic!("list")
+            };
+            let Kind::Item(children) = &items[0].kind else {
+                panic!("item")
+            };
+            let Kind::Inline(children) = &children[0].kind else {
+                panic!("inline")
+            };
+            let code = children
+                .iter()
+                .find(|n| matches!(n.kind, Kind::Code(_)))
+                .unwrap();
+            assert_eq!(&source[code.range.clone()], "`b\tc`");
+            assert!(
+                matches!(&code.kind, Kind::Code(text) if text == expected),
+                "{source:?} {options:?}"
+            );
+            assert_eq!(
+                document.nodes.len(),
+                if outside { 2 } else { 1 },
+                "{source:?}"
+            );
+            if outside {
+                assert_eq!(&source[document.nodes[1].range.clone()], "tail");
+            }
+        }
+    }
+}
+
+#[test]
+fn automatic_links_keep_targets_and_share_their_handling_class() {
+    for options in link_grammars() {
+        for (source, label, destination) in [
+            (
+                "<user@example.com>",
+                "user@example.com",
+                "mailto:user@example.com",
+            ),
+            (
+                "<a_b+tag@example.co.uk>",
+                "a_b+tag@example.co.uk",
+                "mailto:a_b+tag@example.co.uk",
+            ),
+            (
+                "<a_b$c@example.com>",
+                "a_b$c@example.com",
+                "mailto:a_b$c@example.com",
+            ),
+            (
+                "<https://example.com/a?b&c>",
+                "https://example.com/a?b&c",
+                "https://example.com/a?b&c",
+            ),
+            (
+                "<mailto:user@example.com>",
+                "mailto:user@example.com",
+                "mailto:user@example.com",
+            ),
+            (
+                "user@example.com",
+                "user@example.com",
+                "mailto:user@example.com",
+            ),
+            (
+                "<javascript:alert(1)>",
+                "javascript:alert(1)",
+                "javascript:alert(1)",
+            ),
+        ] {
+            assert_automatic_link(source, label, destination, options);
+        }
+        assert_automatic_link_neighbors(options);
+    }
+}
+
+/// Authored links and invalid addresses retain their separate admission rules.
+fn assert_automatic_link_neighbors(options: maestro_markdown::MarkedOptions) {
+    let document = maestro_markdown::parse_with_options("<user@localhost>".into(), options);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
     assert!(
-        matches!(kinds[..], [Kind::Atom(0)]),
-        "cell keeps the formula atom"
+        !children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Link(..)))
     );
+    let document = maestro_markdown::parse_with_options(
+        "[mail](mailto:user@example.com \"tip\")".into(),
+        options,
+    );
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let node = scope.operands[0].1;
+    let Kind::Link(_, label, destination, meta) = &node.kind else {
+        panic!("authored link")
+    };
+    assert_eq!(meta.link_type, maestro_markdown::LinkType::Inline);
+    assert_eq!(
+        (label.as_str(), destination.as_str(), meta.title.as_str()),
+        ("mail", "mailto:user@example.com", "tip")
+    );
+    assert!(scope.opaque.is_empty());
+}
+
+/// The automatic-link handling class is shared across each delivered grammar.
+fn link_grammars() -> [maestro_markdown::MarkedOptions; 4] {
+    use maestro_markdown::MarkedOptions;
+    [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ]
+}
+
+/// Observe literal operands and their identity through local interpretation.
+fn assert_automatic_link(
+    source: &str,
+    label: &str,
+    destination: &str,
+    options: maestro_markdown::MarkedOptions,
+) {
+    let document = maestro_markdown::parse_with_options(source.into(), options);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert_eq!(children.len(), 1);
+    let node = &children[0];
+    let Kind::Link(children, actual_label, href, meta) = &node.kind else {
+        panic!("automatic link")
+    };
+    assert_eq!(
+        meta.link_type,
+        maestro_markdown::LinkType::Autolink,
+        "{source} {options:?}"
+    );
+    assert_eq!(actual_label, label);
+    assert_eq!(href, destination);
+    assert!(meta.title.is_empty());
+    assert_eq!(node.range, 0..source.len());
+    assert_eq!(children.len(), 1);
+    assert!(
+        matches!(&children[0].kind, Kind::Text(text) if text.authored == label && text.decoded == label)
+    );
+    assert_automatic_scope(&document, node, source);
+}
+
+/// The scope retains the original automatic operand as a single opaque atom.
+fn assert_automatic_scope(
+    document: &maestro_markdown::Document,
+    node: &maestro_markdown::Node,
+    source: &str,
+) {
+    let context = maestro_markdown::InlineContext::new(document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    assert_eq!(scope.opaque.len(), 1);
+    assert_eq!(scope.opaque[0], 0..source.len());
+    assert_eq!(scope.operands.len(), 1);
+    assert_eq!(&scope.text()[scope.operands[0].0.clone()], source);
+    let run = scope.interpret(0..scope.text().len(), &[]);
+    assert_eq!(run.atoms.len(), 1);
+    assert!(
+        matches!(run.atoms[0], maestro_markdown::InlineAtom::Resolved(original) if std::ptr::eq(original, node))
+    );
+}
+
+#[test]
+fn angle_email_links_keep_anchor_and_label_context() {
+    for options in link_grammars() {
+        for source in [
+            "[<user@example.com>](/outer)",
+            "[*<user@example.com>*](/outer)",
+        ] {
+            let document = maestro_markdown::parse_with_options(source.into(), options);
+            let Kind::Paragraph(children) = &document.nodes[0].kind else {
+                panic!("paragraph")
+            };
+            let Kind::Link(label, _, href, _) = &children[0].kind else {
+                panic!("outer link")
+            };
+            assert_eq!(href, "/outer");
+            let inner = match &label[0].kind {
+                Kind::Emphasis(children) => &children[0],
+                _ => &label[0],
+            };
+            assert!(
+                matches!(&inner.kind, Kind::Link(_, _, href, _) if href == "mailto:user@example.com")
+            );
+            let context = maestro_markdown::InlineContext::new(&document);
+            let scope = context.scope(&children[0].range, true).unwrap();
+            let run = scope.interpret(0..scope.text().len(), &[]);
+            assert_eq!(run.atoms.len(), 1);
+            assert!(
+                matches!(run.atoms[0], maestro_markdown::InlineAtom::Resolved(node) if std::ptr::eq(node, inner))
+            );
+        }
+    }
+    for options in [link_grammars()[0], link_grammars()[1]] {
+        assert_raw_anchor_email(options);
+    }
+}
+
+/// An automatic email leaves the raw anchor active until its authored close.
+fn assert_raw_anchor_email(options: maestro_markdown::MarkedOptions) {
+    let source =
+        "<a href=\"/outer\"><user@example.com> https://held.test/_x_</a> https://live.test";
+    let document = maestro_markdown::parse_with_options(source.into(), options);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let links: Vec<_> = children
+        .iter()
+        .filter_map(|node| match &node.kind {
+            Kind::Link(_, _, href, _) => Some(href.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(links, ["mailto:user@example.com", "https://live.test"]);
+    assert!(children.iter().any(
+        |node| matches!(&node.kind, Kind::Text(text) if text.decoded.contains("https://held.test/"))
+    ));
+    assert!(children.iter().any(|node| matches!(&node.kind, Kind::Emphasis(c) if matches!(&c[0].kind, Kind::Text(text) if text.decoded == "x"))));
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret(0..scope.text().len(), &[]);
+    let Kind::Paragraph(replayed) = &run.nodes[0].kind else {
+        panic!("replayed paragraph")
+    };
+    assert!(
+        !replayed
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Link(..)))
+    );
+    assert!(replayed.iter().any(
+        |node| matches!(&node.kind, Kind::Text(text) if text.decoded.contains("https://held.test/"))
+    ));
+    assert!(replayed.iter().any(|node| matches!(&node.kind, Kind::Emphasis(c) if matches!(&c[0].kind, Kind::Text(text) if text.decoded == "x"))));
+    let resolved: Vec<_> = run
+        .atoms
+        .iter()
+        .filter_map(|atom| match atom {
+            maestro_markdown::InlineAtom::Resolved(node) => Some(*node),
+            maestro_markdown::InlineAtom::Opaque(_) => None,
+        })
+        .collect();
+    assert_eq!(resolved.len(), 4);
+    assert!(std::ptr::eq(resolved[1], &raw const children[1]));
+    assert!(matches!(&resolved[3].kind, Kind::Link(_, _, href, _) if href == "https://live.test"));
+}
+
+#[test]
+fn list_publication_keeps_every_item_of_each_list() {
+    let cases: [(&str, &[Recorded]); 11] = [
+        ("- a\n- b\n", &[(None, &[], &["a", "b"])]),
+        ("- a\n\n- b\n", &[(None, &[], &["a", "b"])]),
+        (
+            "- a\n  - b\n  - c\n- d\n",
+            &[(None, &[], &["a", "d"]), (None, &[0], &["b", "c"])],
+        ),
+        (
+            "- a\n- b\n  - c\n",
+            &[(None, &[], &["a", "b"]), (None, &[1], &["c"])],
+        ),
+        ("1. a\n2. b\n", &[(Some(1), &[], &["a", "b"])]),
+        ("- [ ] a\n- [x] b\n", &[(None, &[], &["a", "b"])]),
+        ("> - a\n> - b\n", &[(None, &[], &["a", "b"])]),
+        (
+            "- a\n  - b\n    - c\n",
+            &[
+                (None, &[], &["a"]),
+                (None, &[0], &["b"]),
+                (None, &[0, 0], &["c"]),
+            ],
+        ),
+        (
+            "- x\n\n- y\n  - z\n",
+            &[(None, &[], &["x", "y"]), (None, &[1], &["z"])],
+        ),
+        ("- a\n-\n- b\n", &[(None, &[], &["a", "", "b"])]),
+        (
+            "> intro\n> - a\n>   - b\n> - c\n",
+            &[(None, &[], &["a", "c"]), (None, &[0], &["b"])],
+        ),
+    ];
+    for (input, expected) in cases {
+        let document = parse(input.to_owned());
+        let mut actual = Vec::new();
+        published_lists(&document.nodes, &mut Vec::new(), &mut actual);
+        let wanted: Vec<RecordedOwned> = expected
+            .iter()
+            .map(|(start, holder, texts)| {
+                (
+                    *start,
+                    holder.to_vec(),
+                    texts.iter().map(|text| (*text).to_owned()).collect(),
+                )
+            })
+            .collect();
+        assert_eq!(actual, wanted, "{input:?}");
+    }
+}
+
+/// One recorded list: its ordered start, the item holding it, and each item's first text.
+type Recorded = (Option<u64>, &'static [usize], &'static [&'static str]);
+
+/// One published list in the shape `Recorded` describes.
+type RecordedOwned = (Option<u64>, Vec<usize>, Vec<String>);
+
+/// Collect every list in document order with the item path holding it and each item's
+/// first text.
+fn published_lists(nodes: &[Node], path: &mut Vec<usize>, out: &mut Vec<RecordedOwned>) {
+    for node in nodes {
+        match &node.kind {
+            Kind::List(start, items) => {
+                out.push((*start, path.clone(), items.iter().map(first_text).collect()));
+                for (holder, item) in items.iter().enumerate() {
+                    path.push(holder);
+                    published_lists(std::slice::from_ref(item), path, out);
+                    path.pop();
+                }
+            }
+            Kind::Quote(children, _) | Kind::Item(children) => {
+                published_lists(children, path, out);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// First decoded text inside a node: its own text, or the first its item holds.
+fn first_text(node: &Node) -> String {
+    if let Kind::Text(text) = &node.kind {
+        return text.decoded.clone();
+    }
+    let children: &[Node] = match &node.kind {
+        Kind::Item(children) | Kind::Inline(children) | Kind::Paragraph(children) => children,
+        _ => return String::new(),
+    };
+    children
+        .iter()
+        .map(first_text)
+        .find(|text| !text.is_empty())
+        .unwrap_or_default()
 }

@@ -1,16 +1,24 @@
 //! Ordered provider registration and credential dispatch.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+use crate::clock::epoch_millis;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::oauth::*;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{BoxFuture, Fetch};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, MutexGuard};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Serial admission for this binary's process-wide registry.
 static ADMISSION: Mutex<()> = Mutex::new(());
+#[cfg(not(target_arch = "wasm32"))]
 /// Reset registry membership even when an assertion fails.
 struct Admission {
     /// Keep admission until cleanup completes.
     _guard: MutexGuard<'static, ()>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Admission {
     /// Start an isolated registry observation.
     fn enter() -> Self {
@@ -21,17 +29,21 @@ impl Admission {
         Self { _guard: guard }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Admission {
     fn drop(&mut self) {
         reset_oauth_providers();
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled provider refresh operation.
 type Refresh = dyn Fn(OAuthCredentials, Option<Fetch>) -> BoxFuture<Result<OAuthCredentials, OAuthError>>
     + Send
     + Sync;
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled credential extractor.
 type Key = dyn for<'a> Fn(&'a OAuthCredentials) -> Result<&'a str, OAuthError> + Send + Sync;
+#[cfg(not(target_arch = "wasm32"))]
 /// Provider with independently owned callbacks.
 struct Provider {
     /// Literal identifier.
@@ -45,6 +57,7 @@ struct Provider {
     /// Optional final ownership observation.
     on_drop: Option<Box<dyn Fn() + Send + Sync>>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl OAuthProviderInterface for Provider {
     fn id(&self) -> &str {
         if let Some(callback) = &self.on_id {
@@ -73,6 +86,7 @@ impl OAuthProviderInterface for Provider {
         (self.key)(credentials)
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Provider {
     fn drop(&mut self) {
         if let Some(callback) = &self.on_drop {
@@ -80,6 +94,7 @@ impl Drop for Provider {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Provider whose refresh result distinguishes registration versions.
 fn provider(id: &str, access: &str) -> Provider {
     let access = access.to_owned();
@@ -94,6 +109,7 @@ fn provider(id: &str, access: &str) -> Provider {
         on_drop: None,
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Supplied record with distinct access and refresh fields.
 fn credentials(expires: f64) -> OAuthCredentials {
     OAuthCredentials {
@@ -103,6 +119,7 @@ fn credentials(expires: f64) -> OAuthCredentials {
         extra: maestro_models::JsonObject::default(),
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe registry order rather than map equality.
 fn ids() -> Vec<String> {
     get_oauth_providers()
@@ -110,15 +127,8 @@ fn ids() -> Vec<String> {
         .map(|provider| provider.id().to_owned())
         .collect()
 }
-/// Run a fully controlled future without external services.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_registry_replaces_without_reordering() {
     let _admission = Admission::enter();
@@ -138,7 +148,7 @@ fn maestro_oauth_registry_replaces_without_reordering() {
     );
     let selected = get_oauth_provider("z-last").unwrap();
     assert_eq!(
-        run(selected.refresh_token(credentials(f64::INFINITY), None))
+        crate::runtime::run(selected.refresh_token(credentials(f64::INFINITY), None))
             .unwrap()
             .access,
         "changed-access"
@@ -158,6 +168,7 @@ fn maestro_oauth_registry_replaces_without_reordering() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Supplied diagnostic with a cause that must not be rewritten.
 fn error(message: &str) -> OAuthError {
     OAuthError {
@@ -182,6 +193,7 @@ fn error(message: &str) -> OAuthError {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_refresh_dispatches_selected_provider() {
     let _admission = Admission::enter();
@@ -203,7 +215,7 @@ fn maestro_oauth_refresh_dispatches_selected_provider() {
         Box::pin(async move { Ok(selected) })
     });
     register_oauth_provider(Arc::new(custom));
-    let output = run(refresh_oauth_token(
+    let output = crate::runtime::run(refresh_oauth_token(
         "controlled",
         input.clone(),
         Some(supplied_fetch),
@@ -214,7 +226,7 @@ fn maestro_oauth_refresh_dispatches_selected_provider() {
     let mut failing = provider("controlled", "unused");
     failing.refresh = Box::new(|_, _| Box::pin(async { Err(error("inner-refresh")) }));
     register_oauth_provider(Arc::new(failing));
-    let failure = run(refresh_oauth_token("controlled", input, None)).unwrap_err();
+    let failure = crate::runtime::run(refresh_oauth_token("controlled", input, None)).unwrap_err();
     assert_eq!(failure.to_string(), "inner-refresh");
     assert_eq!(
         failure.diagnostic.code,
@@ -224,13 +236,14 @@ fn maestro_oauth_refresh_dispatches_selected_provider() {
     );
     assert_eq!(failure.cause.unwrap().to_string(), "inner-refresh-cause");
     assert_eq!(
-        run(refresh_oauth_token("missing", credentials(0.0), None))
+        crate::runtime::run(refresh_oauth_token("missing", credentials(0.0), None))
             .unwrap_err()
             .to_string(),
         "Unknown OAuth provider: missing"
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_key_refreshes_at_expiry() {
     let _admission = Admission::enter();
@@ -263,7 +276,7 @@ fn maestro_oauth_key_refreshes_at_expiry() {
         );
         let input = indexmap::IndexMap::from([("controlled".into(), record)]);
         let before = input.clone();
-        let output = run(maestro_models::get_oauth_api_key(
+        let output = crate::runtime::run(maestro_models::get_oauth_api_key(
             "controlled",
             &input,
             None,
@@ -286,12 +299,13 @@ fn maestro_oauth_key_refreshes_at_expiry() {
     check_empty_refresh_result();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_key_preserves_error_boundaries() {
     let _admission = Admission::enter();
     let empty = indexmap::IndexMap::new();
     assert_eq!(
-        run(get_oauth_api_key("unknown", &empty, None))
+        crate::runtime::run(get_oauth_api_key("unknown", &empty, None))
             .err()
             .unwrap()
             .to_string(),
@@ -302,7 +316,7 @@ fn maestro_oauth_key_preserves_error_boundaries() {
     absent.key = Box::new(|_| panic!("absence must not extract"));
     register_oauth_provider(Arc::new(absent));
     assert!(
-        run(get_oauth_api_key("controlled", &empty, None))
+        crate::runtime::run(get_oauth_api_key("controlled", &empty, None))
             .unwrap()
             .is_none()
     );
@@ -311,7 +325,7 @@ fn maestro_oauth_key_preserves_error_boundaries() {
     failing.key = Box::new(|_| panic!("failed refresh must not extract"));
     register_oauth_provider(Arc::new(failing));
     let expired = indexmap::IndexMap::from([("controlled".into(), credentials(0.0))]);
-    let failure = run(get_oauth_api_key("controlled", &expired, None))
+    let failure = crate::runtime::run(get_oauth_api_key("controlled", &expired, None))
         .err()
         .unwrap();
     assert_eq!(
@@ -326,6 +340,7 @@ fn maestro_oauth_key_preserves_error_boundaries() {
     check_extraction_failures();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_provider_names_are_literal() {
     let _admission = Admission::enter();
@@ -353,14 +368,14 @@ fn maestro_oauth_provider_names_are_literal() {
         assert_eq!(selected.id(), id);
         let input = indexmap::IndexMap::from([(identifier, credentials(f64::INFINITY))]);
         assert_eq!(
-            run(get_oauth_api_key(id, &input, None))
+            crate::runtime::run(get_oauth_api_key(id, &input, None))
                 .unwrap()
                 .unwrap()
                 .api_key,
             "old-access"
         );
         assert!(
-            run(get_oauth_api_key(id, &indexmap::IndexMap::new(), None))
+            crate::runtime::run(get_oauth_api_key(id, &indexmap::IndexMap::new(), None))
                 .unwrap()
                 .is_none()
         );
@@ -369,6 +384,7 @@ fn maestro_oauth_provider_names_are_literal() {
     check_unknown_literal_names();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Coexisting literal names are neither normalized nor sorted.
 fn check_distinct_literal_names() {
     reset_oauth_providers();
@@ -392,7 +408,7 @@ fn check_distinct_literal_names() {
     assert_eq!(ids(), expected);
     for (index, id) in distinct.iter().enumerate() {
         assert_eq!(
-            run(refresh_oauth_token(id, credentials(0.0), None))
+            crate::runtime::run(refresh_oauth_token(id, credentials(0.0), None))
                 .unwrap()
                 .access,
             index.to_string()
@@ -400,19 +416,20 @@ fn check_distinct_literal_names() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Unknown identifiers retain their supplied text in both errors.
 fn check_unknown_literal_names() {
     for id in ["KEY", "missing", "line\nunknown", "☃"] {
         assert!(get_oauth_provider(id).is_none());
         assert_eq!(
-            run(get_oauth_api_key(id, &indexmap::IndexMap::new(), None))
+            crate::runtime::run(get_oauth_api_key(id, &indexmap::IndexMap::new(), None))
                 .err()
                 .unwrap()
                 .to_string(),
             format!("Unknown OAuth provider: {id}")
         );
         assert_eq!(
-            run(refresh_oauth_token(id, credentials(0.0), None))
+            crate::runtime::run(refresh_oauth_token(id, credentials(0.0), None))
                 .unwrap_err()
                 .to_string(),
             format!("Unknown OAuth provider: {id}")
@@ -420,27 +437,28 @@ fn check_unknown_literal_names() {
     }
     unregister_oauth_provider("");
     assert_eq!(
-        run(get_oauth_api_key("", &indexmap::IndexMap::new(), None))
+        crate::runtime::run(get_oauth_api_key("", &indexmap::IndexMap::new(), None))
             .err()
             .unwrap()
             .to_string(),
         "Unknown OAuth provider: "
     );
     assert_eq!(
-        run(refresh_oauth_token("", credentials(0.0), None))
+        crate::runtime::run(refresh_oauth_token("", credentials(0.0), None))
             .unwrap_err()
             .to_string(),
         "Unknown OAuth provider: "
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_registry_restores_builtin_providers() {
     let _admission = Admission::enter();
     for id in ["anthropic", "github-copilot", "openai-codex"] {
         register_oauth_provider(Arc::new(provider(id, "override")));
         assert_eq!(
-            run(refresh_oauth_token(id, credentials(0.0), None))
+            crate::runtime::run(refresh_oauth_token(id, credentials(0.0), None))
                 .unwrap()
                 .access,
             "override"
@@ -478,15 +496,7 @@ fn maestro_oauth_registry_restores_builtin_providers() {
     }
 }
 
-/// Current epoch milliseconds, used only to bracket a real provider clock.
-fn now() -> f64 {
-    (std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs_f64()
-        * 1000.0)
-        .floor()
-}
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise the real selected account provider with controlled transport.
 fn check_builtin_refresh(id: &str) {
     use base64::Engine as _;
@@ -515,9 +525,10 @@ fn check_builtin_refresh(id: &str) {
             })
         })
     });
-    let before = now();
-    let output = run(refresh_oauth_token(id, credentials(0.0), Some(fetch))).unwrap();
-    let after = now();
+    let before = epoch_millis();
+    let output =
+        crate::runtime::run(refresh_oauth_token(id, credentials(0.0), Some(fetch))).unwrap();
+    let after = epoch_millis();
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
     assert_eq!(output.access, key);
     assert_eq!(
@@ -545,6 +556,7 @@ fn check_builtin_refresh(id: &str) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_builtin_registry_uses_completed_providers() {
     let _admission = Admission::enter();
@@ -572,6 +584,7 @@ fn maestro_oauth_builtin_registry_uses_completed_providers() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_registry_retains_shared_provider_state() {
     let _admission = Admission::enter();
@@ -607,12 +620,12 @@ fn maestro_oauth_registry_retains_shared_provider_state() {
             ["anthropic", "github-copilot", "openai-codex", "shared"]
         );
         for alias in [&external, &lookup, saved] {
-            let output = run(alias.refresh_token(credentials(0.0), None)).unwrap();
+            let output = crate::runtime::run(alias.refresh_token(credentials(0.0), None)).unwrap();
             assert_eq!(alias.get_api_key(&output).unwrap(), "after");
         }
         if transition == "replace" {
             assert_eq!(
-                run(refresh_oauth_token("shared", credentials(0.0), None))
+                crate::runtime::run(refresh_oauth_token("shared", credentials(0.0), None))
                     .unwrap()
                     .access,
                 "replacement"
@@ -629,6 +642,7 @@ fn maestro_oauth_registry_retains_shared_provider_state() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_registry_drops_callbacks_after_unlocking() {
     let _admission = Admission::enter();
@@ -672,7 +686,7 @@ fn maestro_oauth_registry_drops_callbacks_after_unlocking() {
             drop(survivor);
             assert_eq!(completed.load(std::sync::atomic::Ordering::SeqCst), 1);
             assert_eq!(
-                run(refresh_oauth_token("from-drop", credentials(0.0), None))
+                crate::runtime::run(refresh_oauth_token("from-drop", credentials(0.0), None))
                     .unwrap()
                     .access,
                 "drop"
@@ -682,6 +696,7 @@ fn maestro_oauth_registry_drops_callbacks_after_unlocking() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Complete the originally selected provider after a membership transition.
 async fn admitted_resolution(transition: &str) {
     let (entered, admitted) = tokio::sync::oneshot::channel();
@@ -719,6 +734,7 @@ async fn admitted_resolution(transition: &str) {
         assert!(get_oauth_provider("controlled").is_none());
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Obtain the same public key operation inside a running runtime.
 async fn run_key_async(input: &indexmap::IndexMap<String, OAuthCredentials>) -> OAuthApiKey {
     get_oauth_api_key("controlled", input, None)
@@ -726,6 +742,7 @@ async fn run_key_async(input: &indexmap::IndexMap<String, OAuthCredentials>) -> 
         .unwrap()
         .unwrap()
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Reentrant callbacks mutate membership without redirecting extraction.
 async fn reentrant_resolution() {
     let mut custom = provider("controlled", "unused");
@@ -746,6 +763,7 @@ async fn reentrant_resolution() {
     assert!(get_oauth_provider("from-refresh").is_some());
     assert!(get_oauth_provider("from-key").is_some());
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Admit two refreshes before allowing either one to finish.
 async fn independent_resolutions() {
     let (entered, mut admissions) = tokio::sync::mpsc::unbounded_channel();
@@ -780,10 +798,11 @@ async fn independent_resolutions() {
     assert_eq!(admissions.recv().await, None);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_callbacks_outlive_registry_changes() {
     let _admission = Admission::enter();
-    run(async {
+    crate::runtime::run(async {
         for transition in ["replace", "remove", "reset"] {
             admitted_resolution(transition).await;
         }
@@ -792,6 +811,7 @@ fn maestro_oauth_callbacks_outlive_registry_changes() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A successful refresh may supply empty tokens and a NaN expiry.
 fn check_empty_refresh_result() {
     let mut empty = provider("controlled", "");
@@ -803,7 +823,7 @@ fn check_empty_refresh_result() {
     });
     register_oauth_provider(Arc::new(empty));
     let input = indexmap::IndexMap::from([("controlled".into(), credentials(0.0))]);
-    let output = run(get_oauth_api_key("controlled", &input, None))
+    let output = crate::runtime::run(get_oauth_api_key("controlled", &input, None))
         .unwrap()
         .unwrap();
     assert_eq!(output.api_key, "");
@@ -811,6 +831,7 @@ fn check_empty_refresh_result() {
     assert!(output.new_credentials.expires.is_nan());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Extraction failures stay outside the refresh catch boundary.
 fn check_extraction_failures() {
     for expiry in [f64::INFINITY, 0.0] {
@@ -828,7 +849,7 @@ fn check_extraction_failures() {
         });
         register_oauth_provider(Arc::new(failing_key));
         let input = indexmap::IndexMap::from([("controlled".into(), credentials(expiry))]);
-        let failure = run(get_oauth_api_key("controlled", &input, None))
+        let failure = crate::runtime::run(get_oauth_api_key("controlled", &input, None))
             .err()
             .unwrap();
         assert_eq!(failure.to_string(), "inner-key");
@@ -842,6 +863,7 @@ fn check_extraction_failures() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The actual account operation consumes the supplied refresh token.
 fn check_builtin_request(id: &str, request: &maestro_models::HttpRequest) {
     match id {

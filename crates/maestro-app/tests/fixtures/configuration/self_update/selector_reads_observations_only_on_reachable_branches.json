@@ -4,7 +4,6 @@
     "input": {
       "package_dir": "/source/agent",
       "executable": "/bin/maestro",
-      "home_error": true,
       "cwd_error": true
     },
     "expected": {
@@ -16,7 +15,6 @@
     "id": "standalone-no-effects",
     "input": {
       "standalone": true,
-      "home_error": true,
       "cwd_error": true
     },
     "expected": {
@@ -28,7 +26,6 @@
     "id": "instruction-no-effects",
     "input": {
       "op": "instruction",
-      "home_error": true,
       "cwd_error": true
     },
     "expected": {
@@ -73,43 +70,6 @@
       "error": "cwd unavailable"
     },
     "trace": []
-  },
-  {
-    "id": "bun-needs-home",
-    "input": {
-      "package_dir": "/custom/.bun/install/global/node_modules/@old/agent",
-      "probe": {
-        "status": 1,
-        "stdout": "",
-        "stderr": ""
-      },
-      "home_error": true
-    },
-    "expected": {
-      "error": "home unavailable"
-    },
-    "trace": [
-      [
-        "exists",
-        "/custom/.bun/install/global/node_modules/@old/agent"
-      ],
-      [
-        "canonicalize",
-        "/custom/.bun/install/global/node_modules/@old/agent"
-      ],
-      [
-        "command",
-        "bun",
-        [
-          "pm",
-          "bin",
-          "-g"
-        ]
-      ],
-      [
-        "home"
-      ]
-    ]
   },
   {
     "id": "unavailable-unmanaged-no-access",

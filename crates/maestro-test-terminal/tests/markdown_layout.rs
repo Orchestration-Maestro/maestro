@@ -1,6 +1,5 @@
 //! Markdown layout through the public component interface.
-#[path = "support/markdown_cases.rs"]
-mod markdown;
+use crate::support::markdown_cases as markdown;
 use maestro_tui::{Component, DefaultTextStyle, Markdown, MarkdownOptions, TerminalImage};
 use std::rc::Rc;
 
@@ -10,6 +9,7 @@ fn markdown_empty_and_whitespace_use_ecmascript_set() {
         let component = Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 2,
                 padding_y: 1,
                 default_text_style: Some(DefaultTextStyle::default()),
@@ -22,6 +22,7 @@ fn markdown_empty_and_whitespace_use_ecmascript_set() {
     let component = Markdown::new(
         "\u{85}".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 2,
             padding_y: 1,
             default_text_style: None,
@@ -43,6 +44,7 @@ fn markdown_padding_and_tabs_preserve_content() {
         let component = Markdown::new(
             row["text"].as_str().unwrap().to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: row["padding_x"].as_u64().unwrap().try_into().unwrap(),
                 padding_y: row["padding_y"].as_u64().unwrap().try_into().unwrap(),
                 default_text_style: None,
@@ -139,8 +141,8 @@ fn markdown_list_loose_empty_and_lazy_continuations() {
 fn markdown_nested_list_indentation_is_theme_independent() {
     markdown::cases("markdown_nested_list_indentation_is_theme_independent");
     for theme in [markdown::plain(), markdown::ansi()] {
-        let terminal = support::virtual_terminal::VirtualTerminal::new(40, 8);
-        let runtime = support::manual_runtime::ManualRuntime::new();
+        let terminal = crate::support::virtual_terminal::VirtualTerminal::new(40, 8);
+        let runtime = crate::support::manual_runtime::ManualRuntime::new();
         let tui = maestro_tui::TUI::new(
             terminal.handle(),
             runtime.handle(),
@@ -150,6 +152,7 @@ fn markdown_nested_list_indentation_is_theme_independent() {
         let widget = Rc::new(Markdown::new(
             "- parent\n  - child\n    - grandchild".to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -182,8 +185,8 @@ fn markdown_wide_graphemes_wrap_without_splitting() {
 fn markdown_narrow_lists_preserve_wrapped_rows() {
     markdown::cases("markdown_narrow_lists_preserve_wrapped_rows");
     for (width, last) in [(1, "z"), (2, "zz"), (3, "z"), (5, "xyzz")] {
-        let terminal = support::virtual_terminal::VirtualTerminal::new(width, 20);
-        let runtime = support::manual_runtime::ManualRuntime::new();
+        let terminal = crate::support::virtual_terminal::VirtualTerminal::new(width, 20);
+        let runtime = crate::support::manual_runtime::ManualRuntime::new();
         let tui = maestro_tui::TUI::new(
             terminal.handle(),
             runtime.handle(),
@@ -193,6 +196,7 @@ fn markdown_narrow_lists_preserve_wrapped_rows() {
         let widget = Rc::new(Markdown::new(
             "- xyzz".to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -340,6 +344,36 @@ fn maestro_markdown_render_list_content_inside_blockquotes() {
 }
 
 #[test]
+fn markdown_list_items_skip_children_that_render_empty() {
+    // Rows recorded from the reference terminal component (width 60, plain theme).
+    for (text, expected) in [
+        ("- item\n>", vec!["- item"]),
+        ("1. one\n>", vec!["1. one"]),
+        ("- >", vec!["-"]),
+        ("- item\n> x", vec!["- item", "  x"]),
+        (">", vec![""]),
+    ] {
+        let component = Markdown::new(
+            text.to_owned(),
+            MarkdownOptions {
+                clean_content: false,
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        );
+        let rows: Vec<String> = component
+            .render(60)
+            .iter()
+            .map(|row| row.trim_end().to_owned())
+            .collect();
+        assert_eq!(rows, expected, "{text:?}");
+    }
+}
+
+#[test]
 fn maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line() {
     markdown::cases(
         "maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line",
@@ -407,6 +441,7 @@ fn markdown_quotes_keep_explicit_gap_before_lists() {
     let component = Markdown::new(
         "> paragraph\n>\n> - item".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -424,16 +459,6 @@ fn markdown_quotes_keep_explicit_gap_before_lists() {
     );
 }
 
-#[allow(
-    dead_code,
-    reason = "Screen support is shared by several test targets."
-)]
-mod support {
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod virtual_terminal;
-}
-
 #[test]
 fn markdown_http_prefixed_email_locals_use_mailto_hyperlinks() {
     let images = TerminalImage::new(|_| None, || 1);
@@ -444,6 +469,7 @@ fn markdown_http_prefixed_email_locals_use_mailto_hyperlinks() {
     let widget = Markdown::new(
         "httpuser@example.com https@example.com".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -477,6 +503,7 @@ fn markdown_authored_labels_exclude_container_markers_and_keep_escapes() {
         Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -517,6 +544,7 @@ fn markdown_list_html_retains_literal_text_and_parent_style() {
         Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: Some(DefaultTextStyle {
@@ -545,7 +573,7 @@ fn markdown_list_html_retains_literal_text_and_parent_style() {
 }
 
 #[test]
-fn markdown_www_requires_a_period_after_the_prefix() {
+fn markdown_www_accepts_single_segment_hosts() {
     let terminal = TerminalImage::new(|_| None, || 1);
     let mut capabilities = terminal.get_capabilities();
     capabilities.hyperlinks = true;
@@ -553,6 +581,7 @@ fn markdown_www_requires_a_period_after_the_prefix() {
     let component = Markdown::new(
         "www.a www.com www.a.com www.com.org http://www.a".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -561,7 +590,9 @@ fn markdown_www_requires_a_period_after_the_prefix() {
         terminal,
     );
     let expected = format!(
-        "www.a www.com {} {} {}",
+        "{} {} {} {} {}",
+        maestro_tui::hyperlink("www.a", "http://www.a"),
+        maestro_tui::hyperlink("www.com", "http://www.com"),
         maestro_tui::hyperlink("www.a.com", "http://www.a.com"),
         maestro_tui::hyperlink("www.com.org", "http://www.com.org"),
         maestro_tui::hyperlink("http://www.a", "http://www.a")
@@ -578,6 +609,7 @@ fn markdown_quote_continuation_autolinks_exclude_container_prefix() {
     let component = Markdown::new(
         "> intro\n>https://example.com".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -603,6 +635,7 @@ fn markdown_list_heading_fallback_retains_authored_bracket_escapes() {
         let component = Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -623,6 +656,7 @@ fn markdown_consumed_definitions_do_not_create_blank_rows() {
         let component = Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -636,17 +670,17 @@ fn markdown_consumed_definitions_do_not_create_blank_rows() {
 }
 
 #[test]
-fn markdown_rejected_web_candidates_leave_emails_eligible() {
+fn markdown_web_candidates_take_precedence_over_embedded_emails() {
     for (input, expected) in [
         (
             "www.user@example.com",
-            maestro_tui::hyperlink("www.user@example.com", "mailto:www.user@example.com"),
+            maestro_tui::hyperlink("www.user@example.com", "http://www.user@example.com"),
         ),
         (
             "https://localhost/a@example.com",
-            format!(
-                "https://localhost/{}",
-                maestro_tui::hyperlink("a@example.com", "mailto:a@example.com")
+            maestro_tui::hyperlink(
+                "https://localhost/a@example.com",
+                "https://localhost/a@example.com",
             ),
         ),
     ] {
@@ -657,6 +691,7 @@ fn markdown_rejected_web_candidates_leave_emails_eligible() {
         let component = Markdown::new(
             input.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -681,6 +716,7 @@ fn markdown_autolink_suffix_rules_repeat_until_stable() {
         let component = Markdown::new(
             input.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -704,6 +740,7 @@ fn markdown_duplicate_definitions_are_consumed_without_gaps() {
     let component = Markdown::new(
         "[u]: /a\n[u]: /b\n[u]".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -723,6 +760,7 @@ fn markdown_mixed_escape_units_preserve_email_boundaries() {
     let component = Markdown::new(
         r"\*foo@example.com tail".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -769,6 +807,7 @@ fn assert_mixed_escape_link(input: &str, expected: &str) {
     let component = Markdown::new(
         input.to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -812,4 +851,83 @@ fn markdown_autolinks_do_not_recognize_decoded_email_separators() {
     ] {
         assert_mixed_escape_link(input, display);
     }
+}
+
+#[test]
+fn markdown_continuation_keeps_authored_indentation() {
+    for (input, expected) in [
+        ("alpha\n  beta", "  beta              "),
+        ("alpha\n    beta", "    beta            "),
+    ] {
+        let case = markdown::Case {
+            text: input.to_owned(),
+            width: 20,
+            padding_x: 0,
+            padding_y: 0,
+            profile: "plain".to_owned(),
+            hyperlinks: false,
+            indent: None,
+            lines: vec!["alpha               ".to_owned(), expected.to_owned()],
+        };
+        assert_eq!(markdown::component(&case).render(case.width), case.lines);
+    }
+}
+
+#[test]
+fn container_frames_follow_configured_grammar() {
+    markdown::cases("container_frames_follow_configured_grammar");
+}
+
+/// Worker stack well below the main thread's, so nesting cannot lean on it.
+const WORKER_STACK: usize = 2 * 1024 * 1024;
+
+/// Render Markdown at `width` on a worker thread of the witness stack size, resuming a
+/// worker failure instead of reporting empty rows.
+fn render_on_small_stack(text: String, width: usize) -> Vec<String> {
+    match std::thread::Builder::new()
+        .stack_size(WORKER_STACK)
+        .spawn(move || {
+            Markdown::new(
+                text,
+                MarkdownOptions {
+                    clean_content: false,
+                    padding_x: 0,
+                    padding_y: 0,
+                    default_text_style: None,
+                },
+                Rc::new(markdown::plain()),
+                TerminalImage::new(|_| None, || 1),
+            )
+            .render(width)
+        })
+        .map(std::thread::JoinHandle::join)
+    {
+        Ok(Ok(rows)) => rows,
+        Ok(Err(failure)) => std::panic::resume_unwind(failure),
+        Err(error) => std::panic::resume_unwind(Box::new(error)),
+    }
+}
+
+#[test]
+fn deep_quote_rows_format_on_a_small_stack() {
+    let rows = render_on_small_stack(format!("{}deepest text", ">".repeat(3_000)), 40);
+    assert!(!rows.is_empty());
+    assert!(
+        rows.iter().all(|row| row.trim_end().starts_with("│ ")),
+        "every row keeps its border"
+    );
+    let deepest: String = rows
+        .iter()
+        .map(|row| row.trim_end().trim_start_matches("│ "))
+        .collect();
+    assert_eq!(deepest, "deepesttext");
+}
+
+#[test]
+fn deep_nested_list_rows_format_on_a_small_stack() {
+    let rows = render_on_small_stack(format!("{}x", "- ".repeat(2_000)), 4_100);
+    let last = rows.last().expect("rows").trim_end();
+    assert_eq!(last, format!("{}- x", "  ".repeat(1_999)));
+    let bullets: usize = rows.iter().map(|row| row.matches("- ").count()).sum();
+    assert_eq!(bullets, 1);
 }

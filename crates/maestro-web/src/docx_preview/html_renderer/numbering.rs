@@ -1,263 +1,264 @@
-//! Ordered numbering identifiers and presentation.
+//! List numbering: counters, markers, resets, list formats, level text and picture bullets.
 use super::HtmlRenderer;
-use maestro_app::Presence;
+use super::stylesheet::{contained_values, create_style_element, identifier, style_to_string};
+use crate::docx_preview::PartRecords;
+use crate::docx_preview::html_element::{HtmlElement, contained};
+use indexmap::IndexMap;
+use maestro_app::browser::docx_preview::{IDomNumbering, Numbering, NumberingPicBullet};
 use std::fmt::Write as _;
 
-impl HtmlRenderer {
-    /// Construct an identifier preserving absent and null operands.
-    pub(crate) fn numbering_class(&self, id: Presence<&str>, level: Presence<f64>) -> String {
-        let id = scalar_text(id);
-        let level = match level {
-            Presence::Missing => "undefined".into(),
-            Presence::Null => "null".into(),
-            Presence::Present(value) => ryu_js::Buffer::new().format(value).to_owned(),
+impl HtmlRenderer<'_> {
+    /// Name a paragraph's numbering class from the reference it carries.
+    pub(super) fn numbering_class(&self, numbering: &Numbering) -> String {
+        let id = match numbering.id.as_ref() {
+            None => "undefined",
+            Some(None) => "null",
+            Some(Some(id)) => id,
         };
-        format!("{}-num-{id}-{level}", self.class_name)
-    }
-
-    /// Use the same namespace for counters and paragraph classes.
-    pub(crate) fn numbering_counter(&self, id: Presence<&str>, level: Presence<f64>) -> String {
-        self.numbering_class(id, level)
-    }
-}
-
-impl HtmlRenderer {
-    /// Borrow the named CSS mapping, retaining unknown and nullable values.
-    pub(crate) fn num_format_to_css_value(format: Presence<&str>) -> Presence<&str> {
-        let value = match format {
-            Presence::Missing => return Presence::Missing,
-            Presence::Null => return Presence::Null,
-            Presence::Present(value) => value,
+        let level = match numbering.level {
+            None => "undefined".to_owned(),
+            Some(None) => "null".to_owned(),
+            Some(Some(level)) => spell_number(level),
         };
-        Presence::Present(match value {
-            "none" => "none",
-            "bullet" => "disc",
-            "decimal" => "decimal",
-            "lowerLetter" => "lower-alpha",
-            "upperLetter" => "upper-alpha",
-            "lowerRoman" => "lower-roman",
-            "upperRoman" => "upper-roman",
-            "decimalZero" => "decimal-leading-zero",
-            "aiueo" | "aiueoFullWidth" => "katakana",
-            "chineseCounting" | "chineseCountingThousand" => "simp-chinese-informal",
-            "chineseLegalSimplified" => "simp-chinese-formal",
-            "chosung" => "hangul-consonant",
-            "ideographDigital" | "taiwaneseCounting" | "taiwaneseCountingThousand" => {
-                "cjk-ideographic"
-            }
-            "ideographTraditional" => "cjk-heavenly-stem",
-            "ideographLegalTraditional" => "trad-chinese-formal",
-            "ideographZodiac" => "cjk-earthly-branch",
-            "iroha" | "irohaFullWidth" => "katakana-iroha",
-            "japaneseCounting" => "japanese-informal",
-            "japaneseDigitalTenThousand" | "taiwaneseDigital" => "cjk-decimal",
-            "japaneseLegal" => "japanese-formal",
-            "thaiNumbers" => "thai",
-            "koreanCounting" | "koreanDigital" => "korean-hangul-formal",
-            "koreanDigital2" => "korean-hanja-informal",
-            "hebrew1" | "hebrew2" => "hebrew",
-            "hindiNumbers" => "devanagari",
-            "ganada" => "hangul",
-            other => other,
-        })
-    }
-}
-
-impl HtmlRenderer {
-    /// Interleave serialized literal segments with genuine ASCII counter placeholders.
-    pub(crate) fn level_text_to_content(
-        &self,
-        text: &str,
-        suffix: Option<&str>,
-        id: Presence<&str>,
-        format: Presence<&str>,
-    ) -> String {
-        let mut result = String::from("\"");
-        let mut remaining = text;
-        let mut literal_start = 0;
-        while let Some(position) = remaining[literal_start..]
-            .find('%')
-            .map(|p| p + literal_start)
-        {
-            let digits = remaining[position + 1..]
-                .bytes()
-                .take_while(u8::is_ascii_digit)
-                .count();
-            if digits == 0 {
-                literal_start = position + 1;
-                continue;
-            }
-            append_literal(&mut result, &remaining[..position]);
-            let level = remaining[position + 1..position + 1 + digits]
-                .parse::<f64>()
-                .unwrap_or(f64::NAN)
-                - 1.0;
-            let counter = self.numbering_counter(id, Presence::Present(level));
-            let format = scalar_text(format);
-            let _ = write!(result, "\"counter({counter}, {format})\"");
-            remaining = &remaining[position + 1 + digits..];
-            literal_start = 0;
-        }
-        append_literal(&mut result, remaining);
-        result.push_str(match suffix {
-            Some("tab") => "\\9",
-            Some("space") => "\\a0",
-            _ => "",
-        });
-        result.push('"');
-        result
-    }
-}
-
-/// Append the shared serializer's literal body inside an already open CSS string.
-fn append_literal(output: &mut String, text: &str) {
-    let quoted = maestro_app::css::string(text);
-    output.push_str(&quoted[1..quoted.len() - 1]);
-}
-
-use indexmap::IndexMap;
-use maestro_app::browser::docx_preview::IDomNumbering;
-
-impl HtmlRenderer {
-    /// Update the same retained last style occurrence subsequently used by paragraphs.
-    pub(crate) fn prodess_numberings(&mut self, numberings: &[IDomNumbering]) {
-        for num in numberings {
-            let Some(name) = num
-                .p_style_name
-                .as_ref()
-                .and_then(|v| v.as_deref())
-                .filter(|s| !s.is_empty())
-            else {
-                continue;
-            };
-            let Some(&index) = self.style_map.get(name) else {
-                continue;
-            };
-            if let Some(numbering) = self.styles[index]
-                .paragraph_props
-                .as_mut()
-                .and_then(|p| p.numbering.as_mut())
-            {
-                numbering.level = Some(num.level);
-            }
-        }
+        numbering_class(&self.options().class_name, id, &level)
     }
 
-    /// Emit static list CSS without starting resource work.
-    pub(crate) fn render_numbering(
-        &self,
-        numberings: &[IDomNumbering],
-        root_selector: &str,
-    ) -> String {
-        let mut result = String::new();
+    /// Write each level's marker, counter and list rules, then one `counter-reset` on the
+    /// wrapper, or on the root without a wrapper; a level whose counter or bullet variable is
+    /// not a plain identifier is skipped.
+    pub(super) fn render_numbering(
+        &mut self,
+        numbering: &PartRecords<IDomNumbering>,
+    ) -> HtmlElement {
+        let options = self.options();
+        let root_selector = if options.wrapper.in_wrapper {
+            format!(".{}-wrapper", options.class_name)
+        } else {
+            ":root".into()
+        };
+        let mut css = String::new();
         let mut resets = Vec::new();
-        for num in numberings {
-            self.render_numbering_level(num, &mut result, &mut resets);
+        for num in &numbering.records {
+            if let Some(level) =
+                self.render_numbering_level(num, numbering, &root_selector, &mut resets)
+            {
+                css.push_str(&level);
+            }
         }
         if !resets.is_empty() {
             let resets = resets.join(" ");
-            result.push_str(&Self::style_to_string(
-                root_selector,
+            css.push_str(&style_to_string(
+                &root_selector,
                 [("counter-reset", Some(resets.as_str()))],
                 None,
             ));
         }
-        result
+        create_style_element(&css)
     }
 
-    /// Emit the static picture placeholder without loading its resource.
-    fn render_picture_numbering(
-        &self,
-        selector: &str,
-        bullet: &maestro_app::browser::docx_preview::NumberingPicBullet,
-    ) -> String {
-        let variable = format!(
-            "--{}-{}",
-            self.class_name,
-            bullet.src.as_deref().unwrap_or("null")
-        )
-        .to_lowercase();
-        let background = format!("var({variable})");
-        Self::style_to_string(
-            &format!("{selector}:before"),
-            [
-                ("content", Some("' '")),
-                ("display", Some("inline-block")),
-                ("background", Some(background.as_str())),
-            ],
-            bullet.style.as_deref(),
-        )
-    }
-
-    /// Compose one marker followed by its paragraph declarations.
+    /// Write one level's rules, recording its counter reset; `None` skips the level.
     fn render_numbering_level(
-        &self,
+        &mut self,
         num: &IDomNumbering,
-        output: &mut String,
+        numbering: &PartRecords<IDomNumbering>,
+        root_selector: &str,
         resets: &mut Vec<String>,
-    ) {
-        let id = presence(num.id.as_ref().map(|v| v.as_deref()).as_ref());
-        let selector = format!("p.{}", self.numbering_class(id, presence(Some(&num.level))));
-        let format = Self::num_format_to_css_value(presence(
-            num.format.as_ref().map(|v| v.as_deref()).as_ref(),
-        ));
-        let mut list_type = Some("none");
-        if let Some(bullet) = num.bullet.as_ref().and_then(Option::as_ref) {
-            output.push_str(&self.render_picture_numbering(&selector, bullet));
+    ) -> Option<String> {
+        let class_name = self.options().class_name.as_str();
+        let counter = numbering_class(class_name, level_id(num), &spell_level(num.level));
+        if !identifier(&counter) {
+            return None;
+        }
+        let selector = format!("p.{counter}");
+        let format = num_format_to_css_value(level_format(num));
+        let mut css = String::new();
+        let mut list_style_type = "none";
+        if let Some(Some(bullet)) = &num.bullet {
+            css = self.render_picture_numbering(&selector, bullet, numbering, root_selector)?;
         } else if let Some(text) = num
             .level_text
             .as_ref()
-            .and_then(|v| v.as_deref())
-            .filter(|s| !s.is_empty())
+            .and_then(Option::as_deref)
+            .filter(|text| !text.is_empty())
         {
-            let counter = self.numbering_counter(id, presence(Some(&num.level)));
-            let start = num.start.unwrap_or(f64::NAN) - 1.0;
-            let reset = format!("{counter} {}", ryu_js::Buffer::new().format(start));
-            if num.level.is_some_and(|level| level > 0.0) {
-                let parent = self.numbering_class(id, presence(Some(&num.level.map(|v| v - 1.0))));
-                output.push_str(&Self::style_to_string(
-                    &format!("p.{parent}"),
-                    [("counter-set", Some(reset.as_str()))],
-                    None,
-                ));
+            let start = ryu_js::Buffer::new()
+                .format(num.start.unwrap_or(0.0) - 1.0)
+                .to_owned();
+            let reset = format!("{counter} {start}");
+            if let Some(level) = num.level.filter(|level| *level > 0.0) {
+                let parent = numbering_class(class_name, level_id(num), &spell_number(level - 1.0));
+                let values = [("counter-set", Some(reset.as_str()))];
+                css.push_str(&style_to_string(&format!("p.{parent}"), values, None));
             }
-            resets.push(reset);
-            let content = self.level_text_to_content(text, num.suff.as_deref(), id, format);
+            let content = level_text_to_content(class_name, text, num.suff.as_deref(), num, format);
             let mut values = IndexMap::from([
                 ("content", Some(content.as_str())),
                 ("counter-increment", Some(counter.as_str())),
             ]);
             values.extend(num.r_style.iter().map(|(k, v)| (k.as_str(), v.as_deref())));
-            output.push_str(&Self::style_to_string(
-                &format!("{selector}:before"),
-                values,
-                None,
-            ));
+            let selector = format!("{selector}:before");
+            css.push_str(&style_to_string(&selector, contained_values(values), None));
+            resets.push(reset);
         } else {
-            list_type = Some(scalar_text(format));
+            list_style_type = format;
         }
         let mut values = IndexMap::from([
             ("display", Some("list-item")),
             ("list-style-position", Some("inside")),
-            ("list-style-type", list_type),
+            ("list-style-type", Some(list_style_type)),
         ]);
         values.extend(num.p_style.iter().map(|(k, v)| (k.as_str(), v.as_deref())));
-        output.push_str(&Self::style_to_string(&selector, values, None));
+        css.push_str(&style_to_string(&selector, contained_values(values), None));
+        Some(css)
+    }
+
+    /// Write a picture bullet's marker, which shows the image a variable names, and add the
+    /// variable's rule once the image loads; `None` when the variable is not an identifier.
+    fn render_picture_numbering(
+        &mut self,
+        selector: &str,
+        bullet: &NumberingPicBullet,
+        numbering: &PartRecords<IDomNumbering>,
+        root_selector: &str,
+    ) -> Option<String> {
+        let src = bullet.src.as_deref().unwrap_or("null");
+        let variable = format!("--{}-{src}", self.options().class_name).to_lowercase();
+        if !identifier(&variable) {
+            return None;
+        }
+        let background = format!("var({variable})");
+        let values = [
+            ("content", Some("' '")),
+            ("display", Some("inline-block")),
+            ("background", Some(background.as_str())),
+        ];
+        let suffix = bullet
+            .style
+            .as_deref()
+            .filter(|style| style.split(';').all(contained));
+        let css = style_to_string(&format!("{selector}:before"), values, suffix);
+        if let Some(url) = self.load_numbering_image(numbering, bullet.src.as_deref()) {
+            let rule = format!("{root_selector} {{ {variable}: url({url}) }}");
+            self.resource_styles.push(create_style_element(&rule));
+        }
+        Some(css)
     }
 }
 
-/// Convert an encountered nullable field without losing omission.
-pub(super) fn presence<T: Copy>(value: Option<&Option<T>>) -> Presence<T> {
-    value.map_or(Presence::Missing, |value| {
-        value.map_or(Presence::Null, Presence::Present)
-    })
+/// Name a numbering class or counter from an identifier and a level already spelled as text
+/// interpolation writes them.
+fn numbering_class(class_name: &str, id: &str, level: &str) -> String {
+    format!("{class_name}-num-{id}-{level}")
 }
 
-/// Borrow the interpolation spelling of a nullable string scalar.
-fn scalar_text(value: Presence<&str>) -> &str {
-    match value {
-        Presence::Missing => "undefined",
-        Presence::Null => "null",
-        Presence::Present(value) => value,
+/// The identifier a level's own number carries, spelled as text interpolation writes it.
+fn level_id(num: &IDomNumbering) -> &str {
+    match num.id.as_ref() {
+        None => "undefined",
+        Some(None) => "null",
+        Some(Some(id)) => id,
+    }
+}
+
+/// Spell a level as text interpolation writes it, a level the document leaves unset counting
+/// as null.
+fn spell_level(level: Option<f64>) -> String {
+    level.map_or_else(|| "null".into(), spell_number)
+}
+
+/// Spell a number as text interpolation writes it.
+fn spell_number(level: f64) -> String {
+    ryu_js::Buffer::new().format(level).to_owned()
+}
+
+/// The list format a level's own number names, spelled as text interpolation writes it.
+fn level_format(num: &IDomNumbering) -> &str {
+    match num.format.as_ref() {
+        None => "undefined",
+        Some(None) => "null",
+        Some(Some(format)) => format,
+    }
+}
+
+/// Replace each `%` followed by digits with the counter of the level it names, keeping the
+/// other text, lone `%` included, as CSS string text, then add the suffix's separator.
+fn level_text_to_content(
+    class_name: &str,
+    text: &str,
+    suff: Option<&str>,
+    num: &IDomNumbering,
+    format: &str,
+) -> String {
+    let mut result = String::from("\"");
+    let mut literal_start = 0;
+    let mut search = 0;
+    while let Some(position) = text[search..].find('%').map(|offset| search + offset) {
+        let digits = text[position + 1..]
+            .bytes()
+            .take_while(u8::is_ascii_digit)
+            .count();
+        search = position + 1 + digits;
+        if digits == 0 {
+            continue;
+        }
+        append_literal(&mut result, &text[literal_start..position]);
+        let level = text[position + 1..search]
+            .parse::<f64>()
+            .unwrap_or(f64::NAN)
+            - 1.0;
+        let counter = numbering_class(class_name, level_id(num), &spell_number(level));
+
+        let _ = write!(result, "\"counter({counter}, {format})\"");
+        literal_start = search;
+    }
+    append_literal(&mut result, &text[literal_start..]);
+    result.push_str(match suff {
+        Some("tab") => "\\9",
+        Some("space") => "\\a0",
+        _ => "",
+    });
+    result.push('"');
+    result
+}
+
+/// Append text as the body of a CSS string already open.
+fn append_literal(output: &mut String, text: &str) {
+    let quoted = maestro_app::css::string(text);
+    output.push_str(
+        quoted
+            .strip_prefix('"')
+            .and_then(|quoted| quoted.strip_suffix('"'))
+            .unwrap_or_default(),
+    );
+}
+
+/// Map a list format to its CSS list style, keeping an unknown format as written.
+fn num_format_to_css_value(format: &str) -> &str {
+    match format {
+        "bullet" => "disc",
+        "lowerLetter" => "lower-alpha",
+        "upperLetter" => "upper-alpha",
+        "lowerRoman" => "lower-roman",
+        "upperRoman" => "upper-roman",
+        "decimalZero" => "decimal-leading-zero",
+        "aiueo" | "aiueoFullWidth" => "katakana",
+        "chineseCounting" | "chineseCountingThousand" => "simp-chinese-informal",
+        "chineseLegalSimplified" => "simp-chinese-formal",
+        "chosung" => "hangul-consonant",
+        "ideographDigital" | "taiwaneseCounting" | "taiwaneseCountingThousand" => "cjk-ideographic",
+        "ideographTraditional" => "cjk-heavenly-stem",
+        "ideographLegalTraditional" => "trad-chinese-formal",
+        "ideographZodiac" => "cjk-earthly-branch",
+        "iroha" | "irohaFullWidth" => "katakana-iroha",
+        "japaneseCounting" => "japanese-informal",
+        "japaneseDigitalTenThousand" | "taiwaneseDigital" => "cjk-decimal",
+        "japaneseLegal" => "japanese-formal",
+        "thaiNumbers" => "thai",
+        "koreanCounting" | "koreanDigital" => "korean-hangul-formal",
+        "koreanDigital2" => "korean-hanja-informal",
+        "hebrew1" | "hebrew2" => "hebrew",
+        "hindiNumbers" => "devanagari",
+        "ganada" => "hangul",
+        other => other,
     }
 }

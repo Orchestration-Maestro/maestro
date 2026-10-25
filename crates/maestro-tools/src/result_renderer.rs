@@ -3,7 +3,7 @@ use crate::{
     ToolRenderContext, ToolRenderResultOptions, output::render_utils::ToolRenderResultLike,
 };
 use maestro_models::DiagnosticErrorInfo;
-use maestro_theme::Theme;
+use maestro_theme::LiveTheme;
 use maestro_tui::tui::ComponentHandle;
 use serde_json::Value;
 
@@ -14,7 +14,7 @@ pub type ToolRenderResultCallback<D, S, E = maestro_models::Local> =
 /// An operation-local renderer accepting fresh context for each phase.
 pub(crate) type PreparedRender<'a, S> = dyn Fn(
         ToolRenderResultOptions,
-        &Theme,
+        &LiveTheme,
         &ToolRenderContext<'_, S>,
     ) -> Result<ComponentHandle, DiagnosticErrorInfo>
     + 'a;
@@ -32,7 +32,7 @@ impl<'a, S: 'a> PreparedToolRenderResult<'a, S> {
     pub fn render(
         &self,
         options: ToolRenderResultOptions,
-        theme: &Theme,
+        theme: &LiveTheme,
         context: &ToolRenderContext<'_, S>,
     ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
         (self.render)(options, theme, context)
@@ -73,7 +73,7 @@ impl<D, S, E: crate::ToolExecution> ToolRenderResult<D, S, E> {
     pub fn invoke_native<F>(
         &self,
         input: (&ToolRenderResultLike<'_, D>, ToolRenderResultOptions),
-        theme: &Theme,
+        theme: &LiveTheme,
         context: &ToolRenderContext<'_, S>,
         serialize: F,
     ) -> Result<ComponentHandle, DiagnosticErrorInfo>
@@ -101,7 +101,7 @@ impl<D, S, E: crate::ToolExecution> ToolRenderResult<D, S, E> {
     pub fn invoke_raw<F>(
         &self,
         input: (&ToolRenderResultLike<'_, Value>, ToolRenderResultOptions),
-        theme: &Theme,
+        theme: &LiveTheme,
         context: &ToolRenderContext<'_, S>,
         decode: F,
     ) -> Result<ComponentHandle, DiagnosticErrorInfo>

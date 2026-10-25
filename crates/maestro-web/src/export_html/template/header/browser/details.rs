@@ -5,86 +5,43 @@ use super::super::{
 };
 use super::{append, element};
 use crate::browser::{
-    attachment_content::{AttachmentUiError, browser::host_error},
-    event_subscription::EventSubscription,
+    attachment_content::{AttachmentHostError, browser::host_error},
+    disclosure::{Disclosure, bind},
 };
-use std::{cell::Cell, rc::Rc};
-use wasm_bindgen::{JsValue, closure::Closure};
 use web_sys::{Document, Element};
 
-/// One native container and its independent expansion decision.
-struct Disclosure {
-    /// Complete clickable container.
-    element: Element,
-    /// Base classes for collapsed state.
-    base: &'static str,
-    /// Expanded class to append.
-    class: &'static str,
-    /// Last successfully committed expansion.
-    expanded: Cell<bool>,
-}
-/// Fallible native click callable retained through listener removal.
-type Click = Closure<dyn FnMut() -> Result<(), JsValue>>;
-/// Strong mounted state and exact subscription guards, never retained by a factory.
-struct Mounted {
-    /// Strong counterpart to each callback's weak capture.
-    _state: Rc<Vec<Disclosure>>,
-    /// Detachment precedes callable release through the shared owner.
-    _listeners: Vec<EventSubscription<Click>>,
-}
 /// Compose disclosures and install callbacks before publishing their root.
 pub(super) fn mount(
     document: &Document,
     root: &Element,
     prepared: &Prepared,
-) -> Result<Option<Box<dyn std::any::Any>>, AttachmentUiError> {
+) -> Result<Option<Box<dyn std::any::Any>>, AttachmentHostError> {
     let mut state = Vec::new();
-    if let Some(prompt) = &prepared.prompt {
+    if let Some(prompt) = &prepared.admitted.prompt {
         let node = prompt_node(document, prompt, &mut state)?;
         append(root, &node)?;
     }
-    if !prepared.tools.is_empty() {
+    if !prepared.admitted.tools.is_empty() {
         let tools = element(document, "div", "tools-list", "")?;
         append(
             &tools,
             &element(document, "div", "tools-header", "Available Tools")?,
         )?;
         let content = element(document, "div", "tools-content", "")?;
-        for tool in &prepared.tools {
+        for tool in &prepared.admitted.tools {
             append(&content, &tool_node(document, tool, &mut state)?)?;
         }
         append(&tools, &content)?;
         append(root, &tools)?;
     }
-    if state.is_empty() {
-        return Ok(None);
-    }
-    let state = Rc::new(state);
-    let mut listeners = Vec::new();
-    for (ordinal, disclosure) in state.iter().enumerate() {
-        let weak = Rc::downgrade(&state);
-        let callback = Closure::new(move || {
-            if let Some(state) = weak.upgrade() {
-                toggle(&state[ordinal])?;
-            }
-            Ok(())
-        });
-        listeners.push(
-            EventSubscription::new(disclosure.element.clone().into(), "click", callback)
-                .map_err(|e| host_error(&e))?,
-        );
-    }
-    Ok(Some(Box::new(Mounted {
-        _state: state,
-        _listeners: listeners,
-    })))
+    bind(state)
 }
 /// Append the short or preview/full prompt branch using literal text nodes.
 fn prompt_node(
     document: &Document,
     prompt: &Prompt,
     state: &mut Vec<Disclosure>,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let node = element(document, "div", "system-prompt", "")?;
     append(
         &node,
@@ -95,7 +52,7 @@ fn prompt_node(
         Prompt::Preview {
             full,
             preview,
-            hint,
+            remaining,
         } => {
             node.set_attribute("class", "system-prompt expandable")
                 .map_err(|e| host_error(&e))?;
@@ -105,13 +62,16 @@ fn prompt_node(
             )?;
             append(
                 &node,
-                &element(document, "div", "system-prompt-expand-hint", hint)?,
+                &element(
+                    document,
+                    "div",
+                    "system-prompt-expand-hint",
+                    &format!("... ({remaining} more lines, click to expand)"),
+                )?,
             )?;
             state.push(Disclosure {
                 element: node.clone(),
-                base: "system-prompt expandable",
                 class: "expanded",
-                expanded: Cell::new(false),
             });
             full
         }
@@ -130,7 +90,7 @@ fn tool_node(
     document: &Document,
     tool: &Tool,
     state: &mut Vec<Disclosure>,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let node = element(document, "div", "tool-item", "")?;
     append(
         &node,
@@ -151,43 +111,16 @@ fn tool_node(
         append(&node, &content)?;
         state.push(Disclosure {
             element: node.clone(),
-            base: "tool-item",
             class: "params-expanded",
-            expanded: Cell::new(false),
         });
     }
     Ok(node)
 }
-/// Use the actual owning window's live selection before changing one container.
-fn toggle(disclosure: &Disclosure) -> Result<(), JsValue> {
-    let window = disclosure
-        .element
-        .owner_document()
-        .and_then(|d| d.default_view())
-        .ok_or_else(|| JsValue::from_str("missing disclosure window"))?;
-    let selection = super::invoke0(&window, "getSelection")?;
-    if super::invoke0(&selection, "toString")?
-        .as_string()
-        .is_some_and(|s| !s.is_empty())
-    {
-        return Ok(());
-    }
-    let expanded = !disclosure.expanded.get();
-    let class = if expanded {
-        format!("{} {}", disclosure.base, disclosure.class)
-    } else {
-        disclosure.base.into()
-    };
-    disclosure.element.set_attribute("class", &class)?;
-    disclosure.expanded.set(expanded);
-    Ok(())
-}
-
 /// Compose one parameter with literal spacing and its optional description.
 fn parameter_node(
     document: &Document,
     parameter: &Parameter,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let row = element(document, "div", "tool-param", "")?;
     append(
         &row,

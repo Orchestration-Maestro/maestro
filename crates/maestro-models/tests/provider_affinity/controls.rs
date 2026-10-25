@@ -8,7 +8,7 @@ use std::{
     sync::Arc,
 };
 
-/// Google alone accepts a replacement signal from its payload callback.
+/// Only selected-signal protocols accept a replacement signal from their payload callback.
 #[derive(Clone, Copy)]
 enum Selection {
     /// Abort the original signal while the hook is suspended.
@@ -18,10 +18,10 @@ enum Selection {
     /// Replace an aborted original with an active selection.
     Active,
 }
-/// Preserve original cancellation for every protocol, and both Google selection directions.
+/// Preserve original cancellation everywhere, and both replacement directions where selected.
 pub(super) async fn cancel(protocol: &str, simple: bool) -> crate::TestResult {
     run(protocol, simple, Selection::Original).await?;
-    if matches!(protocol, "google-generative-ai" | "google-vertex") {
+    if crate::bundled::policy(protocol).selected_signal {
         run(protocol, simple, Selection::Aborted).await?;
         run(protocol, simple, Selection::Active).await?;
     }
@@ -29,12 +29,13 @@ pub(super) async fn cancel(protocol: &str, simple: bool) -> crate::TestResult {
 }
 /// The public registered producer settles before its signal and terminal event are inspected.
 async fn run(protocol: &str, simple: bool, selection: Selection) -> crate::TestResult {
+    let policy = crate::bundled::policy(protocol);
     let transport = super::bundled_cases::transport(protocol)?;
     let original = Cancellation::new();
     let selected = Cancellation::new();
     let hook_original = original.clone();
     let hook_selected = selected.clone();
-    let google = matches!(protocol, "google-generative-ai" | "google-vertex");
+    let selected_signal = policy.selected_signal;
     let calls = Rc::new(Cell::new(0));
     let hook_calls = calls.clone();
     let common = StreamOptions::<Local> {
@@ -49,7 +50,7 @@ async fn run(protocol: &str, simple: bool, selection: Selection) -> crate::TestR
             Box::pin(async move {
                 calls.set(calls.get() + 1);
                 tokio::task::yield_now().await;
-                assert_eq!(input.signal.is_some(), google);
+                assert_eq!(input.signal.is_some(), selected_signal);
                 match selection {
                     Selection::Original => original.abort(),
                     Selection::Aborted => {
@@ -84,12 +85,12 @@ async fn run(protocol: &str, simple: bool, selection: Selection) -> crate::TestR
         selected.is_aborted(),
         matches!(selection, Selection::Aborted)
     );
-    check(protocol, selection, &transport, &events, &result);
+    check(policy, selection, &transport, &events, &result);
     Ok(())
 }
 /// Request admission and terminal classification retain their separate signal owners.
 fn check(
-    protocol: &str,
+    policy: &crate::bundled::ProtocolPolicy,
     selection: Selection,
     transport: &crate::transport::Transport,
     events: &[String],
@@ -108,9 +109,10 @@ fn check(
             } else {
                 StopReason::Aborted
             },
-            "{protocol}"
+            "{}",
+            policy.api
         );
-        if matches!(protocol, "google-generative-ai" | "google-vertex") {
+        if policy.selected_signal {
             assert_eq!(transport.attempts(), 0);
         }
     }

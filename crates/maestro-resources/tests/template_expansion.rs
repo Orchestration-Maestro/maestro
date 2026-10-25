@@ -3,162 +3,57 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_resources::{
-    LoadPromptTemplatesOptions, PromptTemplate, ResourceEntry, ResourceFileType,
-    ResourceOperations, SourceOrigin, SourceScope, SyntheticSourceOptions,
+    LoadPromptTemplatesOptions, PromptTemplate, SourceOrigin, SourceScope, SyntheticSourceOptions,
     create_synthetic_source_info, expand_prompt_template, load_prompt_templates,
     parse_command_args, substitute_args,
 };
-use std::{
-    cell::RefCell,
-    io,
-    path::{Path, PathBuf},
-};
 
-/// Controlled entry observations; text exists only for files read by the test.
+/// A fixture entry, created below the case's root.
+#[cfg(unix)]
 enum Node<'a> {
-    /// Regular file with optional readable text.
+    /// Regular file with its text, or `None` for a file nobody may read.
     File(Option<&'a str>),
-    /// Directory with its returned entry names.
-    Dir(&'a [&'a str]),
-    /// Authored symlink target.
+    /// Directory; its entries are the fixture entries below it.
+    Dir,
+    /// Directory nobody may list.
+    Locked,
+    /// Symlink to an authored fixture path.
     Link(&'a str),
-    /// Another filesystem kind.
+    /// Another file-system kind (a socket).
     Other,
 }
-impl Node<'_> {
-    /// Directory-entry kind before following a link.
-    fn kind(&self) -> ResourceFileType {
-        match self {
-            Self::File(_) => ResourceFileType::File,
-            Self::Dir(_) => ResourceFileType::Directory,
-            Self::Link(_) => ResourceFileType::Symlink,
-            Self::Other => ResourceFileType::Other,
-        }
+
+/// The real spelling of fixture path `path`: absolute paths move below `root`.
+fn at(root: &str, path: &str) -> String {
+    match path {
+        "/" => root.into(),
+        path if path.starts_with('/') => format!("{root}{path}"),
+        path => path.into(),
     }
 }
 
-/// Synchronous ordered observations with operation-specific failures.
-struct Observations<'a> {
-    /// Named entries supplied by the test.
-    entries: &'a [(&'a str, Node<'a>)],
-    /// Failures, optionally at a specific invocation number.
-    failures: &'a [(&'a str, &'a str, usize)],
-    /// Replacement metadata observations in invocation order.
-    kinds: &'a [(&'a str, &'a [ResourceFileType])],
-    /// Process directory observation.
-    cwd: Option<&'a str>,
-    /// Completed synchronous calls.
-    calls: RefCell<Vec<(String, String)>>,
-}
-impl<'a> Observations<'a> {
-    /// Construct an adapter with no failures and an anchored process directory.
-    fn new(entries: &'a [(&'a str, Node<'a>)]) -> Self {
-        Self {
-            entries,
-            failures: &[],
-            kinds: &[],
-            cwd: Some("/ambient"),
-            calls: RefCell::new(Vec::new()),
+/// Create `entries` below `root` and take away the permissions the locked ones lose.
+/// Returns the guards that give them back, or `None` when a privileged run reads them anyway.
+#[cfg(unix)]
+fn materialize(root: &str, entries: &[(&str, Node<'_>)]) -> Option<Vec<support::Restore>> {
+    let mut locked = Vec::new();
+    for (path, node) in entries {
+        let path = std::path::PathBuf::from(at(root, path));
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        match node {
+            Node::File(text) => std::fs::write(&path, text.unwrap_or_default()).unwrap(),
+            Node::Dir | Node::Locked => std::fs::create_dir_all(&path).unwrap(),
+            Node::Link(target) => std::os::unix::fs::symlink(at(root, target), &path).unwrap(),
+            Node::Other => drop(std::os::unix::net::UnixListener::bind(&path).unwrap()),
+        }
+        if matches!(node, Node::File(None) | Node::Locked) {
+            locked.push(path);
         }
     }
-    /// Find the authored node, without following links.
-    fn node(&self, path: &str) -> io::Result<&Node<'a>> {
-        if path.is_empty() {
-            return Err(io::ErrorKind::NotFound.into());
-        }
-        let resolved = maestro_path::resolve(
-            &[path],
-            &maestro_path::Cwd {
-                current: self.cwd.unwrap_or("/ambient"),
-                drive_directories: &[],
-            },
-        );
-        self.entries
-            .iter()
-            .find(|(p, _)| *p == resolved)
-            .map(|(_, n)| n)
-            .ok_or_else(|| io::ErrorKind::NotFound.into())
-    }
-    /// Record a call before deciding its injected failure.
-    fn call(&self, op: &str, path: &str) -> io::Result<usize> {
-        let mut calls = self.calls.borrow_mut();
-        calls.push((op.into(), path.into()));
-        let count = calls.iter().filter(|(o, p)| o == op && p == path).count();
-        if self
-            .failures
-            .iter()
-            .any(|(o, p, n)| *o == op && *p == path && (*n == 0 || *n == count))
-        {
-            Err(io::ErrorKind::PermissionDenied.into())
-        } else {
-            Ok(count)
-        }
-    }
-    /// Follow a controlled link to its target.
-    fn target(&self, path: &str) -> io::Result<&Node<'a>> {
-        match self.node(path)? {
-            Node::Link(target) => self.node(target),
-            node => Ok(node),
-        }
-    }
-}
-impl ResourceOperations for Observations<'_> {
-    fn exists(&self, path: &Path) -> bool {
-        let path = support::text(path);
-        self.call("exists", path).unwrap();
-        self.target(path).is_ok()
-    }
-    fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
-        let path = support::text(path);
-        self.call("dir", path)?;
-        let Node::Dir(names) = self.target(path)? else {
-            return Err(io::ErrorKind::NotADirectory.into());
-        };
-        names
-            .iter()
-            .map(|name| {
-                Ok(ResourceEntry {
-                    name: (*name).into(),
-                    file_type: self.node(&maestro_path::join(&[path, name]))?.kind(),
-                })
-            })
-            .collect()
-    }
-    fn read_file(&self, path: &Path) -> io::Result<String> {
-        let path = support::text(path);
-        self.call("read", path)?;
-        let Node::File(Some(text)) = self.target(path)? else {
-            return Err(io::ErrorKind::InvalidData.into());
-        };
-        Ok((*text).into())
-    }
-    fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        let path = support::text(path);
-        let count = self.call("stat", path)?;
-        if let Some((_, kinds)) = self.kinds.iter().find(|(p, _)| *p == path)
-            && let Some(kind) = kinds.get(count - 1)
-        {
-            return Ok(*kind);
-        }
-        Ok(self.target(path)?.kind())
-    }
-    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        let path = support::text(path);
-        self.call("lstat", path)?;
-        Ok(self.node(path)?.kind())
-    }
-    fn canonicalize(&self, _: &Path) -> io::Result<PathBuf> {
-        panic!("prompt loading must not canonicalize")
-    }
-    fn current_directory(&self) -> io::Result<String> {
-        self.call("cwd", "")?;
-        self.cwd
-            .map(str::to_owned)
-            .ok_or_else(|| io::ErrorKind::NotFound.into())
-    }
-    fn drive_directories(&self) -> Vec<(char, String)> {
-        Vec::new()
-    }
+    locked
+        .iter()
+        .map(|path| support::deny(path).map(|(guard, _)| guard))
+        .collect()
 }
 
 /// Borrowed expected fields, all consumed by record assertions.
@@ -179,60 +74,77 @@ struct ExpectedTemplate<'a> {
     base: &'a str,
 }
 
-/// Compare all output fields with borrowed expected records.
-fn assert_records(actual: &[PromptTemplate], expected: &[ExpectedTemplate<'_>]) {
+/// Compare all output fields with borrowed expected records whose paths lie below `root`.
+#[cfg(unix)]
+fn assert_records(actual: &[PromptTemplate], expected: &[ExpectedTemplate<'_>], root: &str) {
     assert_eq!(actual.len(), expected.len());
     for (actual, expected) in actual.iter().zip(expected) {
-        assert_record(actual, expected);
+        assert_record(actual, expected, root);
     }
 }
 
 /// Check one complete record without assuming a directory enumeration order.
-fn assert_record(actual: &PromptTemplate, expected: &ExpectedTemplate<'_>) {
+fn assert_record(actual: &PromptTemplate, expected: &ExpectedTemplate<'_>, root: &str) {
+    let path = at(root, expected.path);
     assert_eq!(actual.name, expected.name);
     assert_eq!(actual.description, expected.description);
     assert_eq!(actual.argument_hint.as_deref(), expected.hint);
     assert_eq!(actual.content, expected.content);
-    assert_eq!(actual.file_path, expected.path);
-    assert_eq!(actual.source_info.path, expected.path);
+    assert_eq!(actual.file_path, path);
+    assert_eq!(actual.source_info.path, path);
     assert_eq!(actual.source_info.source, "local");
     assert_eq!(actual.source_info.scope, expected.scope);
     assert_eq!(actual.source_info.origin, SourceOrigin::TopLevel);
-    assert_eq!(actual.source_info.base_dir.as_deref(), Some(expected.base));
+    assert_eq!(
+        actual.source_info.base_dir.as_deref(),
+        Some(at(root, expected.base).as_str())
+    );
 }
 
-/// One ordered controlled filesystem input and its expected loaded records.
+/// One file-system fixture and its expected loaded records.
+#[cfg(unix)]
 struct LoadCase<'a> {
-    /// Test observations.
+    /// Fixture entries below the case root.
     entries: &'a [(&'a str, Node<'a>)],
-    /// Selected native-operation failures.
-    failures: &'a [(&'a str, &'a str, usize)],
-    /// Replacement metadata kinds.
-    kinds: &'a [(&'a str, &'a [ResourceFileType])],
-    /// Adapter process directory.
+    /// Process directory.
     process: &'a str,
     /// Caller-selected roots/paths.
     options: LoadPromptTemplatesOptions<'a>,
-    /// Borrowed authored explicit paths converted at the public seam.
+    /// Authored explicit paths.
     paths: &'a [&'a str],
     /// Complete retained records.
     expected: &'a [ExpectedTemplate<'a>],
 }
 
-/// Run one controlled input and return the synchronous completed observations.
-fn run_case(case: &LoadCase<'_>) -> Vec<(String, String)> {
-    let mut operations = Observations::new(case.entries);
-    operations.failures = case.failures;
-    operations.kinds = case.kinds;
-    operations.cwd = Some(case.process);
-    let paths: Vec<String> = case.paths.iter().map(|path| (*path).into()).collect();
-    let options = LoadPromptTemplatesOptions {
-        prompt_paths: &paths,
-        ..case.options
-    };
-    let actual = load_prompt_templates(options, &operations).unwrap();
-    assert_records(&actual, case.expected);
-    operations.calls.into_inner()
+/// Run each case below a fresh root, in a process of this test's own, since every case
+/// moves the process directory.
+#[cfg(unix)]
+fn run_cases(test: &str, cases: &[LoadCase<'_>]) {
+    if maestro_test_process::run_alone(test).unwrap() {
+        return;
+    }
+    for case in cases {
+        let dir = support::Directory::new();
+        let root = support::text(dir.0.path());
+        let Some(_locks) = materialize(root, case.entries) else {
+            continue;
+        };
+        let process = at(root, case.process);
+        std::fs::create_dir_all(&process).unwrap();
+        std::env::set_current_dir(&process).unwrap();
+        let paths: Vec<String> = case.paths.iter().map(|path| at(root, path)).collect();
+        let [cwd, home, agent_dir] =
+            [case.options.cwd, case.options.home, case.options.agent_dir].map(|p| at(root, p));
+        let actual = load_prompt_templates(LoadPromptTemplatesOptions {
+            cwd: &cwd,
+            home: &home,
+            agent_dir: &agent_dir,
+            prompt_paths: &paths,
+            ..case.options
+        })
+        .unwrap();
+        assert_records(&actual, case.expected, root);
+    }
 }
 
 /// Create a template input with inert provenance.
@@ -252,23 +164,6 @@ fn template(name: &str, content: &str) -> PromptTemplate {
                 base_dir: None,
             },
         ),
-    }
-}
-
-/// Check every field of owned expected records in the ambient-directory test.
-fn assert_templates(actual: &[PromptTemplate], expected: &[PromptTemplate]) {
-    assert_eq!(actual.len(), expected.len());
-    for (actual, expected) in actual.iter().zip(expected) {
-        assert_eq!(actual.name, expected.name);
-        assert_eq!(actual.description, expected.description);
-        assert_eq!(actual.argument_hint, expected.argument_hint);
-        assert_eq!(actual.content, expected.content);
-        assert_eq!(actual.file_path, expected.file_path);
-        assert_eq!(actual.source_info.path, expected.source_info.path);
-        assert_eq!(actual.source_info.source, expected.source_info.source);
-        assert_eq!(actual.source_info.scope, expected.source_info.scope);
-        assert_eq!(actual.source_info.origin, expected.source_info.origin);
-        assert_eq!(actual.source_info.base_dir, expected.source_info.base_dir);
     }
 }
 
@@ -941,22 +836,19 @@ fn prompt_hints_retain_optional_string_values() {
         for (name, text) in *files {
             let _ = dir.file(&format!("native/{name}"), text);
         }
-        let folder = dir.0.join("native");
+        let folder = dir.0.path().join("native");
         let paths = vec![support::text(&folder).into()];
-        let actual = load_prompt_templates(
-            LoadPromptTemplatesOptions {
-                cwd: support::text(&dir.0),
-                home: support::text(&dir.0),
-                agent_dir: support::text(&dir.0),
-                config_dir_name: ".maestro",
-                prompt_paths: &paths,
-                include_defaults: false,
-            },
-            &maestro_resources::NativeResourceOperations,
-        )
+        let actual = load_prompt_templates(LoadPromptTemplatesOptions {
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
+            agent_dir: support::text(dir.0.path()),
+            config_dir_name: ".maestro",
+            prompt_paths: &paths,
+            include_defaults: false,
+        })
         .unwrap();
-        let paths: Vec<_> = expected.iter().map(|t| dir.0.join(t.path)).collect();
-        let bases: Vec<_> = expected.iter().map(|t| dir.0.join(t.base)).collect();
+        let paths: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.path)).collect();
+        let bases: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.base)).collect();
         let expected: Vec<_> = expected
             .iter()
             .zip(&paths)
@@ -973,7 +865,7 @@ fn prompt_hints_retain_optional_string_values() {
                 .iter()
                 .find(|record| record.name == expected.name)
                 .unwrap();
-            assert_record(record, expected);
+            assert_record(record, expected, "");
         }
     }
 }
@@ -1304,14 +1196,13 @@ fn prompt_expansion_keeps_inserted_command_arguments_literal() {
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES: &[LoadCase<'_>] = &[
     LoadCase {
         entries: &[(
             "/outside/a.md",
             Node::File(Some("\n \t\n  first line  \nsecond")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1334,8 +1225,6 @@ const TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES: &
     },
     LoadCase {
         entries: &[("/outside/a.md", Node::File(Some("\n \t\n")))],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1358,8 +1247,6 @@ const TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES: &
     },
     LoadCase {
         entries: &[("/outside/a.md", Node::File(Some("﻿\nnext")))],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1382,8 +1269,6 @@ const TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES: &
     },
     LoadCase {
         entries: &[("/outside/a.md", Node::File(Some("\nnext")))],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1411,8 +1296,6 @@ const TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES: &
                 "---\ndescription: \"\"\nargument-hint: \"\"\n---\n first\nsecond",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1440,8 +1323,6 @@ const TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES: &
                 "---\ndescription: \"   \"\nargument-hint: \" \"\n---\nbody",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1469,8 +1350,6 @@ const TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES: &
                 "---\ndescription: \"🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\"\n---\nbody",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1494,14 +1373,17 @@ const TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES: &
 ];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn template_descriptions_choose_authored_text_or_first_nonblank_line() {
-    for case in TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "template_descriptions_choose_authored_text_or_first_nonblank_line",
+        TEMPLATE_DESCRIPTIONS_CHOOSE_AUTHORED_TEXT_OR_FIRST_NONBLANK_LINE_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES: &[LoadCase<
     '_,
 >] = &[
@@ -1512,8 +1394,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
                 "---\ndescription: \"  authored  \"\nargument-hint: \"  <x> [y]  \"\n---\n  body\r\nnext\r",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1541,8 +1421,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
                 "---\ndescription: null\nargument-hint: null\n---\nbody",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1565,8 +1443,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
     },
     LoadCase {
         entries: &[("/outside/a.md", Node::File(Some("---\n123\n---\nbody")))],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1592,8 +1468,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
             "/outside/a.md",
             Node::File(Some("---\n[one, two]\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1619,8 +1493,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
             "/outside/a.md",
             Node::File(Some("---\nextra: {deep: [{nested: true}]}\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1648,8 +1520,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
                 "---\n\"descr\\u0069ption\": correct\n\"argument-\\u0068int\": \"<x>\"\n---\nbody",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1675,8 +1545,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
             "/outside/a.md",
             Node::File(Some("---\ndescription: a\n---suffix\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1702,8 +1570,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
             "/outside/a.md",
             Node::File(Some("---\ndescription: a\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1731,8 +1597,6 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
                 "---\nDescription: wrong\nargumentHint: wrong\n---\nbody",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1756,14 +1620,17 @@ const PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES
 ];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_metadata_selects_named_fields_without_whole_record_validation() {
-    for case in PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_metadata_selects_named_fields_without_whole_record_validation",
+        PROMPT_METADATA_SELECTS_NAMED_FIELDS_WITHOUT_WHOLE_RECORD_VALIDATION_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_METADATA_PARSE_FAILURES_OMIT_THE_FILE_CASES: &[LoadCase<'_>] = &[
     LoadCase {
         entries: &[(
@@ -1772,8 +1639,6 @@ const PROMPT_METADATA_PARSE_FAILURES_OMIT_THE_FILE_CASES: &[LoadCase<'_>] = &[
                 "---\ndescription: first\ndescription: last\n---\nbody",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1791,8 +1656,6 @@ const PROMPT_METADATA_PARSE_FAILURES_OMIT_THE_FILE_CASES: &[LoadCase<'_>] = &[
             "/outside/a.md",
             Node::File(Some("---\ndescription: [\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1808,22 +1671,23 @@ const PROMPT_METADATA_PARSE_FAILURES_OMIT_THE_FILE_CASES: &[LoadCase<'_>] = &[
 ];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_metadata_parse_failures_omit_the_file() {
-    for case in PROMPT_METADATA_PARSE_FAILURES_OMIT_THE_FILE_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_metadata_parse_failures_omit_the_file",
+        PROMPT_METADATA_PARSE_FAILURES_OMIT_THE_FILE_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &[
     LoadCase {
         entries: &[(
             "/outside/a.md",
             Node::File(Some("---\ndescription: false\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1841,8 +1705,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: true\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1860,8 +1722,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: 0\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1879,8 +1739,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: 42\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1898,8 +1756,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: []\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1917,8 +1773,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: [text]\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1936,8 +1790,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: {}\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1955,8 +1807,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: {nested: value}\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1974,8 +1824,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: .nan\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -1993,8 +1841,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\ndescription: .inf\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2012,8 +1858,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: false\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2031,8 +1875,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: true\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2050,8 +1892,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: 0\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2069,8 +1909,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: 42\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2088,8 +1926,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: []\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2107,8 +1943,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: [text]\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2126,8 +1960,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: {}\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2145,8 +1977,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: {nested: value}\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2164,8 +1994,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: .nan\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2183,8 +2011,6 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
             "/outside/a.md",
             Node::File(Some("---\nargument-hint: .inf\n---\nbody")),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2200,14 +2026,17 @@ const PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES: &[LoadCase<'_>] = &
 ];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_metadata_omits_nonstring_selected_fields() {
-    for case in PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_metadata_omits_nonstring_selected_fields",
+        PROMPT_METADATA_OMITS_NONSTRING_SELECTED_FIELDS_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
     LoadCase {
         entries: &[(
@@ -2216,8 +2045,6 @@ const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
                 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2245,8 +2072,6 @@ const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
                 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2274,8 +2099,6 @@ const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
                 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2303,8 +2126,6 @@ const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
                 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx🎉",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2332,8 +2153,6 @@ const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
                 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx🎉z",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2361,8 +2180,6 @@ const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
                 "🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2390,8 +2207,6 @@ const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
                 "a\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}",
             )),
         )],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2415,49 +2230,36 @@ const TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES: &[LoadCase<'_>] = &[
 ];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn template_description_limit_keeps_whole_scalars() {
-    for case in TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "template_description_limit_keeps_whole_scalars",
+        TEMPLATE_DESCRIPTION_LIMIT_KEEPS_WHOLE_SCALARS_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_DISCOVERY_PRESERVES_ORDER_AND_SHALLOW_MARKDOWN_SELECTION_CASES: &[LoadCase<'_>] =
     &[LoadCase {
         entries: &[
-            (
-                "/user/prompts",
-                Node::Dir(&[
-                    "z.md",
-                    ".hidden.md",
-                    "a.MD",
-                    "nested",
-                    "a.md",
-                    ".md",
-                    "twice.md.md",
-                ]),
-            ),
+            ("/user/prompts", Node::Dir),
             ("/user/prompts/z.md", Node::File(Some("user-z"))),
             ("/user/prompts/.hidden.md", Node::File(Some("hidden"))),
             ("/user/prompts/a.MD", Node::File(None)),
-            ("/user/prompts/nested", Node::Dir(&[])),
+            ("/user/prompts/nested/inner.md", Node::File(Some("nested"))),
             ("/user/prompts/a.md", Node::File(Some("user-a"))),
             ("/user/prompts/.md", Node::File(Some("dotname"))),
             ("/user/prompts/twice.md.md", Node::File(Some("twice"))),
-            ("/work/.maestro/prompts", Node::Dir(&["a.md"])),
+            ("/work/.maestro/prompts", Node::Dir),
             ("/work/.maestro/prompts/a.md", Node::File(Some("project-a"))),
-            (
-                "/extra",
-                Node::Dir(&["q.md", ".gitignore", ".ignore", ".fdignore"]),
-            ),
+            ("/extra", Node::Dir),
             ("/extra/q.md", Node::File(Some("explicit-q"))),
-            ("/extra/.gitignore", Node::File(None)),
-            ("/extra/.ignore", Node::File(None)),
-            ("/extra/.fdignore", Node::File(None)),
+            ("/extra/.gitignore", Node::File(Some("q.md"))),
+            ("/extra/.ignore", Node::File(Some("q.md"))),
+            ("/extra/.fdignore", Node::File(Some("q.md"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2470,29 +2272,11 @@ const PROMPT_DISCOVERY_PRESERVES_ORDER_AND_SHALLOW_MARKDOWN_SELECTION_CASES: &[L
         paths: &["/extra", "/user/prompts/a.md"],
         expected: &[
             ExpectedTemplate {
-                name: "z",
-                description: "user-z",
-                hint: None,
-                content: "user-z",
-                path: "/user/prompts/z.md",
-                scope: SourceScope::User,
-                base: "/user/prompts",
-            },
-            ExpectedTemplate {
                 name: ".hidden",
                 description: "hidden",
                 hint: None,
                 content: "hidden",
                 path: "/user/prompts/.hidden.md",
-                scope: SourceScope::User,
-                base: "/user/prompts",
-            },
-            ExpectedTemplate {
-                name: "a",
-                description: "user-a",
-                hint: None,
-                content: "user-a",
-                path: "/user/prompts/a.md",
                 scope: SourceScope::User,
                 base: "/user/prompts",
             },
@@ -2506,11 +2290,29 @@ const PROMPT_DISCOVERY_PRESERVES_ORDER_AND_SHALLOW_MARKDOWN_SELECTION_CASES: &[L
                 base: "/user/prompts",
             },
             ExpectedTemplate {
+                name: "a",
+                description: "user-a",
+                hint: None,
+                content: "user-a",
+                path: "/user/prompts/a.md",
+                scope: SourceScope::User,
+                base: "/user/prompts",
+            },
+            ExpectedTemplate {
                 name: "twice.md",
                 description: "twice",
                 hint: None,
                 content: "twice",
                 path: "/user/prompts/twice.md.md",
+                scope: SourceScope::User,
+                base: "/user/prompts",
+            },
+            ExpectedTemplate {
+                name: "z",
+                description: "user-z",
+                hint: None,
+                content: "user-z",
+                path: "/user/prompts/z.md",
                 scope: SourceScope::User,
                 base: "/user/prompts",
             },
@@ -2545,39 +2347,25 @@ const PROMPT_DISCOVERY_PRESERVES_ORDER_AND_SHALLOW_MARKDOWN_SELECTION_CASES: &[L
     }];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_discovery_preserves_order_and_shallow_markdown_selection() {
-    for case in PROMPT_DISCOVERY_PRESERVES_ORDER_AND_SHALLOW_MARKDOWN_SELECTION_CASES {
-        let calls = run_case(case);
-        assert!(
-            !calls
-                .iter()
-                .any(|(op, path)| op == "dir" && path == "/user/prompts/nested")
-        );
-        for name in [".gitignore", ".ignore", ".fdignore"] {
-            assert!(
-                !calls
-                    .iter()
-                    .any(|(op, path)| op == "read" && path == &format!("/extra/{name}"))
-            );
-        }
-    }
+    run_cases(
+        "prompt_discovery_preserves_order_and_shallow_markdown_selection",
+        PROMPT_DISCOVERY_PRESERVES_ORDER_AND_SHALLOW_MARKDOWN_SELECTION_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_LOADER_DISABLES_ONLY_DEFAULT_DISCOVERY_CASES: &[LoadCase<'_>] = &[LoadCase {
     entries: &[
-        (
-            "/extra",
-            Node::Dir(&["q.md", ".gitignore", ".ignore", ".fdignore"]),
-        ),
+        ("/extra", Node::Dir),
         ("/extra/q.md", Node::File(Some("explicit-q"))),
-        ("/extra/.gitignore", Node::File(None)),
-        ("/extra/.ignore", Node::File(None)),
-        ("/extra/.fdignore", Node::File(None)),
+        ("/extra/.gitignore", Node::File(Some("q.md"))),
+        ("/extra/.ignore", Node::File(Some("q.md"))),
+        ("/extra/.fdignore", Node::File(Some("q.md"))),
     ],
-    failures: &[],
-    kinds: &[],
     process: "/ambient",
     options: LoadPromptTemplatesOptions {
         cwd: "/work",
@@ -2600,34 +2388,25 @@ const PROMPT_LOADER_DISABLES_ONLY_DEFAULT_DISCOVERY_CASES: &[LoadCase<'_>] = &[L
 }];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_loader_disables_only_default_discovery() {
-    for case in PROMPT_LOADER_DISABLES_ONLY_DEFAULT_DISCOVERY_CASES {
-        let calls = run_case(case);
-        for name in [".gitignore", ".ignore", ".fdignore"] {
-            assert!(
-                !calls
-                    .iter()
-                    .any(|(op, path)| op == "read" && path == &format!("/extra/{name}"))
-            );
-        }
-    }
+    run_cases(
+        "prompt_loader_disables_only_default_discovery",
+        PROMPT_LOADER_DISABLES_ONLY_DEFAULT_DISCOVERY_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const MAESTRO_PROMPT_LOADER_RETAINS_DUPLICATE_PATHS_CASES: &[LoadCase<'_>] = &[LoadCase {
     entries: &[
-        (
-            "/extra",
-            Node::Dir(&["q.md", ".gitignore", ".ignore", ".fdignore"]),
-        ),
+        ("/extra", Node::Dir),
         ("/extra/q.md", Node::File(Some("explicit-q"))),
-        ("/extra/.gitignore", Node::File(None)),
-        ("/extra/.ignore", Node::File(None)),
-        ("/extra/.fdignore", Node::File(None)),
+        ("/extra/.gitignore", Node::File(Some("q.md"))),
+        ("/extra/.ignore", Node::File(Some("q.md"))),
+        ("/extra/.fdignore", Node::File(Some("q.md"))),
     ],
-    failures: &[],
-    kinds: &[],
     process: "/ambient",
     options: LoadPromptTemplatesOptions {
         cwd: "/work",
@@ -2670,34 +2449,20 @@ const MAESTRO_PROMPT_LOADER_RETAINS_DUPLICATE_PATHS_CASES: &[LoadCase<'_>] = &[L
 }];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn maestro_prompt_loader_retains_duplicate_paths() {
-    for case in MAESTRO_PROMPT_LOADER_RETAINS_DUPLICATE_PATHS_CASES {
-        let calls = run_case(case);
-        for name in [".gitignore", ".ignore", ".fdignore"] {
-            assert!(
-                !calls
-                    .iter()
-                    .any(|(op, path)| op == "read" && path == &format!("/extra/{name}"))
-            );
-        }
-    }
+    run_cases(
+        "maestro_prompt_loader_retains_duplicate_paths",
+        MAESTRO_PROMPT_LOADER_RETAINS_DUPLICATE_PATHS_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_LOADER_FOLLOWS_FILE_LINKS_AND_SKIPS_OTHER_KINDS_CASES: &[LoadCase<'_>] = &[LoadCase {
     entries: &[
-        (
-            "/extra",
-            Node::Dir(&[
-                "link.md",
-                "broken.md",
-                "sub.md",
-                "device.md",
-                "no.txt",
-                "q.md",
-            ]),
-        ),
+        ("/extra", Node::Dir),
         ("/extra/q.md", Node::File(Some("explicit-q"))),
         ("/extra/no.txt", Node::File(None)),
         ("/extra/device.md", Node::Other),
@@ -2705,8 +2470,6 @@ const PROMPT_LOADER_FOLLOWS_FILE_LINKS_AND_SKIPS_OTHER_KINDS_CASES: &[LoadCase<'
         ("/extra/broken.md", Node::Link("/absent")),
         ("/extra/sub.md", Node::Link("/extra")),
     ],
-    failures: &[],
-    kinds: &[],
     process: "/ambient",
     options: LoadPromptTemplatesOptions {
         cwd: "/work",
@@ -2756,14 +2519,17 @@ const PROMPT_LOADER_FOLLOWS_FILE_LINKS_AND_SKIPS_OTHER_KINDS_CASES: &[LoadCase<'
 }];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_loader_follows_file_links_and_skips_other_kinds() {
-    for case in PROMPT_LOADER_FOLLOWS_FILE_LINKS_AND_SKIPS_OTHER_KINDS_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_loader_follows_file_links_and_skips_other_kinds",
+        PROMPT_LOADER_FOLLOWS_FILE_LINKS_AND_SKIPS_OTHER_KINDS_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_PROVENANCE_USES_AUTHORED_PATHS_AND_USER_PRECEDENCE_CASES: &[LoadCase<'_>] = &[
     LoadCase {
         entries: &[
@@ -2771,8 +2537,6 @@ const PROMPT_PROVENANCE_USES_AUTHORED_PATHS_AND_USER_PRECEDENCE_CASES: &[LoadCas
             ("/work/.maestro/prompts/a.md", Node::File(Some("project-a"))),
             ("/user/prompts-more/a.md", Node::File(Some("outside"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2819,11 +2583,9 @@ const PROMPT_PROVENANCE_USES_AUTHORED_PATHS_AND_USER_PRECEDENCE_CASES: &[LoadCas
     },
     LoadCase {
         entries: &[
-            ("/work/.maestro/prompts", Node::Dir(&["a.md"])),
+            ("/work/.maestro/prompts", Node::Dir),
             ("/work/.maestro/prompts/a.md", Node::File(Some("project-a"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2866,8 +2628,6 @@ const PROMPT_PROVENANCE_USES_AUTHORED_PATHS_AND_USER_PRECEDENCE_CASES: &[LoadCas
     },
     LoadCase {
         entries: &[("/a.md", Node::File(Some("a")))],
-        failures: &[],
-        kinds: &[],
         process: "/",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2896,8 +2656,6 @@ const PROMPT_PROVENANCE_USES_AUTHORED_PATHS_AND_USER_PRECEDENCE_CASES: &[LoadCas
             ("/extra/user.md", Node::Link("/user/prompts/a.md")),
             ("/user/prompts/extra.md", Node::Link("/extra/q.md")),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -2933,77 +2691,29 @@ const PROMPT_PROVENANCE_USES_AUTHORED_PATHS_AND_USER_PRECEDENCE_CASES: &[LoadCas
             },
         ],
     },
-    LoadCase {
-        entries: &[
-            ("/scan", Node::Dir(&["first.md", "bad.md", "last.md"])),
-            ("/scan/first.md", Node::File(Some("first"))),
-            ("/scan/bad.md", Node::File(Some("bad"))),
-            ("/scan/last.md", Node::File(Some("last"))),
-        ],
-        failures: &[],
-        kinds: &[("/scan/first.md", &[ResourceFileType::Directory])],
-        process: "/ambient",
-        options: LoadPromptTemplatesOptions {
-            cwd: "/work",
-            home: "/home/user",
-            agent_dir: "/user",
-            config_dir_name: ".maestro",
-            prompt_paths: &[],
-            include_defaults: false,
-        },
-        paths: &["/scan"],
-        expected: &[
-            ExpectedTemplate {
-                name: "first",
-                description: "first",
-                hint: None,
-                content: "first",
-                path: "/scan/first.md",
-                scope: SourceScope::Temporary,
-                base: "/scan/first.md",
-            },
-            ExpectedTemplate {
-                name: "bad",
-                description: "bad",
-                hint: None,
-                content: "bad",
-                path: "/scan/bad.md",
-                scope: SourceScope::Temporary,
-                base: "/scan",
-            },
-            ExpectedTemplate {
-                name: "last",
-                description: "last",
-                hint: None,
-                content: "last",
-                path: "/scan/last.md",
-                scope: SourceScope::Temporary,
-                base: "/scan",
-            },
-        ],
-    },
 ];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_provenance_uses_authored_paths_and_user_precedence() {
-    for case in PROMPT_PROVENANCE_USES_AUTHORED_PATHS_AND_USER_PRECEDENCE_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_provenance_uses_authored_paths_and_user_precedence",
+        PROMPT_PROVENANCE_USES_AUTHORED_PATHS_AND_USER_PRECEDENCE_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase<'_>] = &[
     LoadCase {
         entries: &[
             ("/extra/q.md", Node::File(Some("explicit-q"))),
             ("/home/user/t.md", Node::File(Some("home"))),
-            ("/home/user", Node::Dir(&["t.md"])),
+            ("/home/user", Node::Dir),
             ("/home/user/extra/a.md", Node::File(Some("tildeuser"))),
             ("/work/relative.md", Node::File(Some("relative"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3072,10 +2782,8 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
     LoadCase {
         entries: &[
             ("/work/relative.md", Node::File(Some("relative"))),
-            ("/work", Node::Dir(&["relative.md"])),
+            ("/work", Node::Dir),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3101,8 +2809,6 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
             ("/user/prompts/a.md", Node::File(Some("user-a"))),
             ("/extra/q.md", Node::File(Some("explicit-q"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3136,11 +2842,9 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
     },
     LoadCase {
         entries: &[
-            ("/ambient/user/prompts", Node::Dir(&["a.md"])),
+            ("/ambient/user/prompts", Node::Dir),
             ("/ambient/user/prompts/a.md", Node::File(Some("a"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3163,13 +2867,11 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
     },
     LoadCase {
         entries: &[
-            ("/ambient", Node::Dir(&["a.md"])),
+            ("/ambient", Node::Dir),
             ("/ambient/a.md", Node::File(Some("a"))),
-            ("/work/.maestro/prompts", Node::Dir(&["later.md"])),
+            ("/work/.maestro/prompts", Node::Dir),
             ("/work/.maestro/prompts/later.md", Node::File(Some("later"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3192,8 +2894,6 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
     },
     LoadCase {
         entries: &[("/ambient/work/x.md", Node::File(Some("x")))],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "work",
@@ -3217,10 +2917,9 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
     LoadCase {
         entries: &[
             ("/home/user/t.md", Node::File(Some("home"))),
-            ("/home/user", Node::Dir(&["t.md"])),
+            ("/home/user", Node::Dir),
+            ("/home/other", Node::Dir),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3254,11 +2953,9 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
     },
     LoadCase {
         entries: &[
-            ("/work/.custom/prompts", Node::Dir(&["a.md"])),
+            ("/work/.custom/prompts", Node::Dir),
             ("/work/.custom/prompts/a.md", Node::File(Some("a"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3282,25 +2979,26 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
 ];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_paths_keep_entry_specific_resolution_and_spelling() {
-    for case in PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_paths_keep_entry_specific_resolution_and_spelling",
+        PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_FILE_FAILURES_CONTINUE_THE_SAME_SCAN_CASES: &[LoadCase<'_>] = &[
     LoadCase {
         entries: &[
-            ("/scan", Node::Dir(&["first.md", "bad.md", "last.md"])),
+            ("/scan", Node::Dir),
             ("/scan/first.md", Node::File(Some("first"))),
             ("/scan/bad.md", Node::File(None)),
             ("/scan/last.md", Node::File(Some("last"))),
             ("/after.md", Node::File(Some("after"))),
         ],
-        failures: &[("read", "/scan/bad.md", 0)],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3343,14 +3041,12 @@ const PROMPT_FILE_FAILURES_CONTINUE_THE_SAME_SCAN_CASES: &[LoadCase<'_>] = &[
     },
     LoadCase {
         entries: &[
-            ("/scan", Node::Dir(&["first.md", "bad.md", "last.md"])),
+            ("/scan", Node::Dir),
             ("/scan/first.md", Node::File(Some("first"))),
             ("/scan/bad.md", Node::File(Some("---\na: [\n---\nbad"))),
             ("/scan/last.md", Node::File(Some("last"))),
             ("/after.md", Node::File(Some("after"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3393,7 +3089,7 @@ const PROMPT_FILE_FAILURES_CONTINUE_THE_SAME_SCAN_CASES: &[LoadCase<'_>] = &[
     },
     LoadCase {
         entries: &[
-            ("/scan", Node::Dir(&["first.md", "bad.md", "last.md"])),
+            ("/scan", Node::Dir),
             ("/scan/first.md", Node::File(Some("first"))),
             (
                 "/scan/bad.md",
@@ -3402,8 +3098,6 @@ const PROMPT_FILE_FAILURES_CONTINUE_THE_SAME_SCAN_CASES: &[LoadCase<'_>] = &[
             ("/scan/last.md", Node::File(Some("last"))),
             ("/after.md", Node::File(Some("after"))),
         ],
-        failures: &[],
-        kinds: &[],
         process: "/ambient",
         options: LoadPromptTemplatesOptions {
             cwd: "/work",
@@ -3447,120 +3141,22 @@ const PROMPT_FILE_FAILURES_CONTINUE_THE_SAME_SCAN_CASES: &[LoadCase<'_>] = &[
 ];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_file_failures_continue_the_same_scan() {
-    for case in PROMPT_FILE_FAILURES_CONTINUE_THE_SAME_SCAN_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_file_failures_continue_the_same_scan",
+        PROMPT_FILE_FAILURES_CONTINUE_THE_SAME_SCAN_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
-const PROMPT_SOURCE_METADATA_FAILURE_ENDS_ONLY_CURRENT_SCAN_CASES: &[LoadCase<'_>] = &[
-    LoadCase {
-        entries: &[
-            ("/scan", Node::Dir(&["first.md", "bad.md", "last.md"])),
-            ("/scan/first.md", Node::File(Some("first"))),
-            ("/scan/bad.md", Node::File(None)),
-            ("/scan/last.md", Node::File(None)),
-            ("/after.md", Node::File(Some("after"))),
-        ],
-        failures: &[("stat", "/scan/bad.md", 0)],
-        kinds: &[],
-        process: "/ambient",
-        options: LoadPromptTemplatesOptions {
-            cwd: "/work",
-            home: "/home/user",
-            agent_dir: "/user",
-            config_dir_name: ".maestro",
-            prompt_paths: &[],
-            include_defaults: false,
-        },
-        paths: &["/scan", "/after.md"],
-        expected: &[
-            ExpectedTemplate {
-                name: "first",
-                description: "first",
-                hint: None,
-                content: "first",
-                path: "/scan/first.md",
-                scope: SourceScope::Temporary,
-                base: "/scan",
-            },
-            ExpectedTemplate {
-                name: "after",
-                description: "after",
-                hint: None,
-                content: "after",
-                path: "/after.md",
-                scope: SourceScope::Temporary,
-                base: "/",
-            },
-        ],
-    },
-    LoadCase {
-        entries: &[
-            ("/scan", Node::Dir(&["first.md", "bad.md", "last.md"])),
-            ("/scan/first.md", Node::File(Some("first"))),
-            ("/scan/bad.md", Node::Link("/scan/first.md")),
-            ("/scan/last.md", Node::File(None)),
-            ("/after.md", Node::File(Some("after"))),
-        ],
-        failures: &[("stat", "/scan/bad.md", 2)],
-        kinds: &[],
-        process: "/ambient",
-        options: LoadPromptTemplatesOptions {
-            cwd: "/work",
-            home: "/home/user",
-            agent_dir: "/user",
-            config_dir_name: ".maestro",
-            prompt_paths: &[],
-            include_defaults: false,
-        },
-        paths: &["/scan", "/after.md"],
-        expected: &[
-            ExpectedTemplate {
-                name: "first",
-                description: "first",
-                hint: None,
-                content: "first",
-                path: "/scan/first.md",
-                scope: SourceScope::Temporary,
-                base: "/scan",
-            },
-            ExpectedTemplate {
-                name: "after",
-                description: "after",
-                hint: None,
-                content: "after",
-                path: "/after.md",
-                scope: SourceScope::Temporary,
-                base: "/",
-            },
-        ],
-    },
-];
-
-/// Exercise supplied template observations through the public loader.
-#[test]
-fn prompt_source_metadata_failure_ends_only_current_scan() {
-    for case in PROMPT_SOURCE_METADATA_FAILURE_ENDS_ONLY_CURRENT_SCAN_CASES {
-        let calls = run_case(case);
-        assert!(
-            !calls
-                .iter()
-                .any(|(op, p)| op == "read" && (p == "/scan/bad.md" || p == "/scan/last.md"))
-        );
-    }
-}
-
-/// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_DIRECTORY_FAILURE_ALLOWS_LATER_EXPLICIT_PATHS_CASES: &[LoadCase<'_>] = &[LoadCase {
     entries: &[
-        ("/scan", Node::Dir(&[])),
+        ("/scan", Node::Locked),
         ("/after.md", Node::File(Some("after"))),
     ],
-    failures: &[("dir", "/scan", 0)],
-    kinds: &[],
     process: "/ambient",
     options: LoadPromptTemplatesOptions {
         cwd: "/work",
@@ -3583,24 +3179,27 @@ const PROMPT_DIRECTORY_FAILURE_ALLOWS_LATER_EXPLICIT_PATHS_CASES: &[LoadCase<'_>
 }];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_directory_failure_allows_later_explicit_paths() {
-    for case in PROMPT_DIRECTORY_FAILURE_ALLOWS_LATER_EXPLICIT_PATHS_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_directory_failure_allows_later_explicit_paths",
+        PROMPT_DIRECTORY_FAILURE_ALLOWS_LATER_EXPLICIT_PATHS_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const PROMPT_LINK_METADATA_FAILURE_SKIPS_ONLY_THAT_LINK_CASES: &[LoadCase<'_>] = &[LoadCase {
     entries: &[
-        ("/scan", Node::Dir(&["first.md", "bad.md", "last.md"])),
+        ("/scan", Node::Dir),
         ("/scan/first.md", Node::File(Some("first"))),
-        ("/scan/bad.md", Node::Link("/scan/first.md")),
+        ("/scan/bad.md", Node::Link("/locked/first.md")),
         ("/scan/last.md", Node::File(Some("last"))),
         ("/after.md", Node::File(Some("after"))),
+        ("/locked/first.md", Node::File(Some("first"))),
+        ("/locked", Node::Locked),
     ],
-    failures: &[("stat", "/scan/bad.md", 0)],
-    kinds: &[],
     process: "/ambient",
     options: LoadPromptTemplatesOptions {
         cwd: "/work",
@@ -3643,93 +3242,19 @@ const PROMPT_LINK_METADATA_FAILURE_SKIPS_ONLY_THAT_LINK_CASES: &[LoadCase<'_>] =
 }];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn prompt_link_metadata_failure_skips_only_that_link() {
-    for case in PROMPT_LINK_METADATA_FAILURE_SKIPS_ONLY_THAT_LINK_CASES {
-        run_case(case);
-    }
+    run_cases(
+        "prompt_link_metadata_failure_skips_only_that_link",
+        PROMPT_LINK_METADATA_FAILURE_SKIPS_ONLY_THAT_LINK_CASES,
+    );
 }
 
 /// Distinct supplied filesystem inputs with complete expected records.
-const SCOPED_PROMPT_CANDIDATES_AVOID_UNNEEDED_METADATA_CASES: &[LoadCase<'_>] = &[LoadCase {
-    entries: &[
-        ("/user/prompts", Node::Dir(&["a.md"])),
-        ("/user/prompts/a.md", Node::File(Some("a"))),
-    ],
-    failures: &[("stat", "/user/prompts/a.md", 0)],
-    kinds: &[],
-    process: "/ambient",
-    options: LoadPromptTemplatesOptions {
-        cwd: "/work",
-        home: "/home/user",
-        agent_dir: "/user",
-        config_dir_name: ".maestro",
-        prompt_paths: &[],
-        include_defaults: true,
-    },
-    paths: &[],
-    expected: &[ExpectedTemplate {
-        name: "a",
-        description: "a",
-        hint: None,
-        content: "a",
-        path: "/user/prompts/a.md",
-        scope: SourceScope::User,
-        base: "/user/prompts",
-    }],
-}];
-
-/// Exercise supplied template observations through the public loader.
-#[test]
-fn scoped_prompt_candidates_avoid_unneeded_metadata() {
-    for case in SCOPED_PROMPT_CANDIDATES_AVOID_UNNEEDED_METADATA_CASES {
-        let calls = run_case(case);
-        assert!(!calls.iter().any(|(op, _)| op == "stat"));
-    }
-}
-
-/// Distinct supplied filesystem inputs with complete expected records.
-const EXPLICIT_PROMPT_METADATA_FAILURE_ALLOWS_LATER_PATHS_CASES: &[LoadCase<'_>] = &[LoadCase {
-    entries: &[
-        ("/scan/first.md", Node::File(None)),
-        ("/after.md", Node::File(Some("after"))),
-    ],
-    failures: &[("stat", "/scan/first.md", 0)],
-    kinds: &[],
-    process: "/ambient",
-    options: LoadPromptTemplatesOptions {
-        cwd: "/work",
-        home: "/home/user",
-        agent_dir: "/user",
-        config_dir_name: ".maestro",
-        prompt_paths: &[],
-        include_defaults: false,
-    },
-    paths: &["/scan/first.md", "/after.md"],
-    expected: &[ExpectedTemplate {
-        name: "after",
-        description: "after",
-        hint: None,
-        content: "after",
-        path: "/after.md",
-        scope: SourceScope::Temporary,
-        base: "/",
-    }],
-}];
-
-/// Exercise supplied template observations through the public loader.
-#[test]
-fn explicit_prompt_metadata_failure_allows_later_paths() {
-    for case in EXPLICIT_PROMPT_METADATA_FAILURE_ALLOWS_LATER_PATHS_CASES {
-        run_case(case);
-    }
-}
-
-/// Distinct supplied filesystem inputs with complete expected records.
+#[cfg(unix)]
 const ABSENT_PROMPT_ROOTS_YIELD_AN_EMPTY_LIST_CASES: &[LoadCase<'_>] = &[LoadCase {
     entries: &[],
-    failures: &[],
-    kinds: &[],
     process: "/ambient",
     options: LoadPromptTemplatesOptions {
         cwd: "/work",
@@ -3744,185 +3269,112 @@ const ABSENT_PROMPT_ROOTS_YIELD_AN_EMPTY_LIST_CASES: &[LoadCase<'_>] = &[LoadCas
 }];
 
 /// Exercise supplied template observations through the public loader.
+#[cfg(unix)]
 #[test]
 fn absent_prompt_roots_yield_an_empty_list() {
-    for case in ABSENT_PROMPT_ROOTS_YIELD_AN_EMPTY_LIST_CASES {
-        run_case(case);
+    run_cases(
+        "absent_prompt_roots_yield_an_empty_list",
+        ABSENT_PROMPT_ROOTS_YIELD_AN_EMPTY_LIST_CASES,
+    );
+}
+
+/// Run the calling test alone in a process whose working directory was removed. Returns
+/// a fixture root there, and `None` in the caller once that run passed.
+#[cfg(unix)]
+fn without_working_directory(test: &str) -> Option<(support::Directory, String)> {
+    if maestro_test_process::run_alone(test).unwrap() {
+        return None;
     }
+    let dir = support::Directory::new();
+    let root = support::text(dir.0.path()).to_owned();
+    dir.0.enter_removed("gone").unwrap();
+    Some((dir, root))
 }
 
 /// Anchored operands never observe the unavailable process directory.
+#[cfg(unix)]
 #[test]
 fn anchored_prompt_paths_do_not_read_the_process_directory() {
-    let entries = &[("/outside/ambient-template.md", Node::File(Some("body")))];
-    let mut operations = Observations::new(entries);
-    operations.cwd = None;
-    let paths = vec!["/outside/ambient-template.md".into()];
-    let actual = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: "/work",
+    let Some((dir, root)) =
+        without_working_directory("anchored_prompt_paths_do_not_read_the_process_directory")
+    else {
+        return;
+    };
+    let paths = vec![support::text(&dir.file("outside/ambient-template.md", "body")).into()];
+    let [cwd, home, agent_dir] = ["/work", "/home/user", "/user"].map(|p| at(&root, p));
+    let actual = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: &cwd,
+        home: &home,
+        agent_dir: &agent_dir,
+        config_dir_name: ".maestro",
+        prompt_paths: &paths,
+        include_defaults: false,
+    })
+    .unwrap();
+    assert_records(
+        &actual,
+        &[ExpectedTemplate {
+            name: "ambient-template",
+            description: "body",
+            hint: None,
+            content: "body",
+            path: "/outside/ambient-template.md",
+            scope: SourceScope::Temporary,
+            base: "/outside",
+        }],
+        &root,
+    );
+}
+
+/// Project-root resolution precedes defaults and explicit-path dispatch.
+#[cfg(unix)]
+#[test]
+fn unanchored_prompt_project_root_propagates_directory_failure() {
+    let Some((_dir, root)) =
+        without_working_directory("unanchored_prompt_project_root_propagates_directory_failure")
+    else {
+        return;
+    };
+    for paths in [vec![at(&root, "/outside/ambient-template.md")], Vec::new()] {
+        let error = load_prompt_templates(LoadPromptTemplatesOptions {
+            cwd: "relative",
             home: "/home/user",
             agent_dir: "/user",
             config_dir_name: ".maestro",
             prompt_paths: &paths,
             include_defaults: false,
-        },
-        &operations,
-    )
-    .unwrap();
-    assert_templates(
-        &actual,
-        &[PromptTemplate {
-            name: "ambient-template".into(),
-            description: "body".into(),
-            argument_hint: None,
-            content: "body".into(),
-            file_path: "/outside/ambient-template.md".into(),
-            source_info: create_synthetic_source_info(
-                "/outside/ambient-template.md".into(),
-                SyntheticSourceOptions {
-                    source: "local".into(),
-                    scope: None,
-                    origin: None,
-                    base_dir: Some("/outside".into()),
-                },
-            ),
-        }],
-    );
-    assert!(!operations.calls.borrow().iter().any(|(op, _)| op == "cwd"));
-}
-
-/// Project-root resolution precedes defaults and explicit-path dispatch.
-#[test]
-fn unanchored_prompt_project_root_propagates_directory_failure() {
-    for paths in [vec!["/outside/ambient-template.md".into()], Vec::new()] {
-        let mut operations = Observations::new(&[]);
-        operations.cwd = None;
-        let error = load_prompt_templates(
-            LoadPromptTemplatesOptions {
-                cwd: "relative",
-                home: "/home/user",
-                agent_dir: "/user",
-                config_dir_name: ".maestro",
-                prompt_paths: &paths,
-                include_defaults: false,
-            },
-            &operations,
-        )
+        })
         .unwrap_err();
-        assert_eq!(error.kind(), io::ErrorKind::NotFound);
-        assert_eq!(*operations.calls.borrow(), [("cwd".into(), String::new())]);
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     }
 }
 
 /// A source-resolution failure inside explicit dispatch prevents the file read.
+#[cfg(unix)]
 #[test]
 fn prompt_source_resolution_failure_is_silently_caught() {
-    let entries = &[("/outside/ambient-template.md", Node::File(None))];
-    let mut operations = Observations::new(entries);
-    operations.cwd = None;
-    let paths = vec!["/outside/ambient-template.md".into()];
-    let actual = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: "/work",
-            home: "/home/user",
-            agent_dir: "relative",
-            config_dir_name: ".maestro",
-            prompt_paths: &paths,
-            include_defaults: false,
-        },
-        &operations,
-    )
+    let Some((dir, root)) =
+        without_working_directory("prompt_source_resolution_failure_is_silently_caught")
+    else {
+        return;
+    };
+    let paths = vec![support::text(&dir.file("outside/ambient-template.md", "body")).into()];
+    let actual = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: &at(&root, "/work"),
+        home: "/home/user",
+        agent_dir: "relative",
+        config_dir_name: ".maestro",
+        prompt_paths: &paths,
+        include_defaults: false,
+    })
     .unwrap();
     assert!(actual.is_empty());
-    assert_eq!(
-        *operations.calls.borrow(),
-        [
-            ("exists".into(), "/outside/ambient-template.md".into()),
-            ("stat".into(), "/outside/ambient-template.md".into()),
-            ("cwd".into(), String::new()),
-        ]
-    );
-}
-
-/// Missing explicit files skip before source resolution observes process state.
-#[test]
-fn missing_prompt_paths_do_not_resolve_their_source() {
-    let mut operations = Observations::new(&[]);
-    operations.cwd = None;
-    let paths = vec!["/absent-template.md".into()];
-    let actual = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: "/work",
-            home: "/home/user",
-            agent_dir: "relative",
-            config_dir_name: ".maestro",
-            prompt_paths: &paths,
-            include_defaults: false,
-        },
-        &operations,
-    )
-    .unwrap();
-    assert!(actual.is_empty());
-    assert_eq!(
-        *operations.calls.borrow(),
-        [("exists".into(), "/absent-template.md".into())]
-    );
 }
 
 /// Authored files paired with expected native records.
 type NativeCase<'a> = (&'a [(&'a str, &'a str)], &'a [ExpectedTemplate<'a>]);
 /// Input command, ordered templates and expected text.
 type ExpansionCase<'a> = (&'a str, &'a [(&'a str, &'a str)], &'a str);
-
-/// Native discovery follows file links but skips directory and broken links.
-#[cfg(unix)]
-#[test]
-fn native_prompt_discovery_reads_authored_file_links() {
-    let dir = support::Directory::new();
-    let target = dir.file("target.md", "linked body");
-    let plain = dir.file("prompts/.hidden.md", "plain body");
-    let folder = plain.parent().unwrap();
-    std::os::unix::fs::symlink(target, folder.join("alias.md")).unwrap();
-    std::os::unix::fs::symlink(folder, folder.join("directory.md")).unwrap();
-    std::os::unix::fs::symlink(dir.0.join("absent"), folder.join("broken.md")).unwrap();
-    let paths = vec![support::text(folder).into()];
-    let operations = support::Controlled {
-        reads: std::sync::Mutex::default(),
-        failures: Vec::new(),
-        order: vec![(
-            folder.into(),
-            vec!["alias.md", "broken.md", "directory.md", ".hidden.md"],
-        )],
-    };
-    let actual = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: "",
-            config_dir_name: ".maestro",
-            prompt_paths: &paths,
-            include_defaults: false,
-        },
-        &operations,
-    )
-    .unwrap();
-    let expected_paths = [folder.join("alias.md"), folder.join(".hidden.md")];
-    let expected: Vec<_> = [("alias", "linked body"), (".hidden", "plain body")]
-        .iter()
-        .zip(&expected_paths)
-        .map(|((name, body), path)| ExpectedTemplate {
-            name,
-            description: body,
-            hint: None,
-            content: body,
-            path: support::text(path),
-            scope: SourceScope::Temporary,
-            base: support::text(folder),
-        })
-        .collect();
-    assert_records(&actual, &expected);
-}
 
 /// Native prompt loading returns ordered source records.
 #[cfg(unix)]
@@ -3932,17 +3384,14 @@ fn native_prompt_discovery_uses_ordered_directory_entries() {
     let z = dir.file("prompts/z.md", "last body");
     let a = dir.file("prompts/a.md", "first body");
     let paths = vec![support::text(a.parent().unwrap()).into()];
-    let result = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: "",
-            config_dir_name: ".maestro",
-            prompt_paths: &paths,
-            include_defaults: false,
-        },
-        &maestro_resources::NativeResourceOperations,
-    )
+    let result = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: "",
+        config_dir_name: ".maestro",
+        prompt_paths: &paths,
+        include_defaults: false,
+    })
     .unwrap();
     assert_eq!(
         result
@@ -3957,5 +3406,31 @@ fn native_prompt_discovery_uses_ordered_directory_entries() {
             ("a", "first body", support::text(&a)),
             ("z", "last body", support::text(&z))
         ]
+    );
+}
+
+/// An empty home spelling resolves `~/` inside the working directory.
+#[cfg(unix)]
+#[test]
+fn empty_home_resolves_an_explicit_prompt_directory_in_the_working_directory() {
+    let dir = support::Directory::new();
+    let template = dir.file("note.md", "body from the working directory");
+    let paths = vec!["~/".to_owned()];
+    let result = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: support::text(dir.0.path()),
+        home: "",
+        agent_dir: "",
+        config_dir_name: ".maestro",
+        prompt_paths: &paths,
+        include_defaults: false,
+    })
+    .unwrap();
+    assert_eq!(
+        result
+            .iter()
+            .map(|p| (p.name.as_str(), p.content.as_str()))
+            .collect::<Vec<_>>(),
+        [("note", "body from the working directory")],
+        "{template:?}"
     );
 }

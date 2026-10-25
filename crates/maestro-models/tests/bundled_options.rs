@@ -1,23 +1,28 @@
 //! Raw extras and simple settings of each bundled protocol reach the wire as authored.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bundled;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::key_selection;
 
+#[cfg(not(target_arch = "wasm32"))]
 use bundled::{PROTOCOLS, Protocol, Seen};
-use chat::{TestResult, block_on};
+#[cfg(not(target_arch = "wasm32"))]
+use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     Model, ProviderStreamOptions, SimpleStreamOptions, StreamOptions, ThinkingBudgets,
     ThinkingLevel, reset_api_providers, stream, stream_simple,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::{BTreeMap, BTreeSet};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Tests that own fixture rows.
 const OWNERS: [&str; 6] = [
     "maestro_anthropic_extras_reach_requests",
@@ -28,6 +33,7 @@ const OWNERS: [&str; 6] = [
     "maestro_response_session_extras_keep_domain_and_presence",
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The outcome of one controlled invocation.
 struct Sent {
     /// Every request that reached the transport.
@@ -36,6 +42,7 @@ struct Sent {
     error: Option<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A description of the descriptor routing to `api`, with `overrides` applied.
 fn description(api: &str, overrides: &Value) -> TestResult<maestro_models::Model> {
     let protocol = PROTOCOLS
@@ -54,6 +61,7 @@ fn description(api: &str, overrides: &Value) -> TestResult<maestro_models::Model
     chat::model(&description)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Common options with a key, a zero temperature and the recording transport.
 fn common(api: &str) -> (StreamOptions, bundled::Requests) {
     let (fetch, requests) = bundled::fetch(bundled::text_body(api, "ok"));
@@ -67,12 +75,14 @@ fn common(api: &str) -> (StreamOptions, bundled::Requests) {
     (options, requests)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send `extra` through generic raw dispatch to `api`.
 fn sent(api: &str, overrides: &Value, extra: &Value) -> TestResult<Sent> {
     let _registry = bundled::registry();
     sent_while_registered(api, overrides, extra)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send `extra` while the caller holds the registry.
 fn sent_while_registered(api: &str, overrides: &Value, extra: &Value) -> TestResult<Sent> {
     reset_api_providers();
@@ -83,7 +93,7 @@ fn sent_while_registered(api: &str, overrides: &Value, extra: &Value) -> TestRes
         ..ProviderStreamOptions::default()
     };
     let model = description(api, overrides)?;
-    let result = block_on(false, async {
+    let result = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(stream(model, bundled::conversation()?, Some(options))?
             .result()
             .await)
@@ -94,6 +104,7 @@ fn sent_while_registered(api: &str, overrides: &Value, extra: &Value) -> TestRes
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One recorded case: an input and the wire facts it must produce.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -127,6 +138,7 @@ struct Row {
     error: Option<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Every case of the fixture, checked for ownership and duplicate inputs.
 fn all_rows() -> TestResult<Vec<Row>> {
     let rows: Vec<Row> = serde_json::from_str(include_str!("fixtures/bundled_options.json"))?;
@@ -148,6 +160,7 @@ fn all_rows() -> TestResult<Vec<Row>> {
     Ok(rows)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check every recorded case of `test`.
 fn assert_rows(test: &str) -> TestResult {
     let rows: Vec<Row> = all_rows()?
@@ -161,6 +174,7 @@ fn assert_rows(test: &str) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send one case and compare it with its recorded facts.
 fn assert_row(row: &Row) -> TestResult {
     let label = format!("{} / {}", row.test, row.label);
@@ -206,31 +220,37 @@ fn assert_row(row: &Row) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_anthropic_extras_reach_requests() -> TestResult {
     assert_rows("maestro_anthropic_extras_reach_requests")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_extras_reach_requests() -> TestResult {
     assert_rows("maestro_chat_extras_reach_requests")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_mistral_extras_reach_requests() -> TestResult {
     assert_rows("maestro_mistral_extras_reach_requests")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_extras_keep_presence() -> TestResult {
     assert_rows("maestro_response_extras_keep_presence")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_azure_extras_select_target() -> TestResult {
     assert_rows("maestro_azure_extras_select_target")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Settings every simple route receives.
 fn simple_settings(
     api: &str,
@@ -251,6 +271,7 @@ fn simple_settings(
     (options, requests)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Wire facts each protocol's simple policy yields for the shared settings.
 fn simple_facts(api: &str, high: bool) -> Vec<(&'static str, Option<Value>)> {
     fn pick<T>(high: bool, off: T, on: T) -> T {
@@ -291,6 +312,7 @@ fn simple_facts(api: &str, high: bool) -> Vec<(&'static str, Option<Value>)> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Start the typed root simple entry of `api`.
 fn root_simple(
     api: &str,
@@ -318,6 +340,7 @@ fn root_simple(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send the shared simple settings through the generic and the typed root route.
 fn simple_requests(
     protocol: &Protocol,
@@ -326,7 +349,7 @@ fn simple_requests(
 ) -> TestResult<(Seen, Seen)> {
     let (generic_options, generic_requests) = simple_settings(protocol.api, reasoning);
     let (root_options, root_requests) = simple_settings(protocol.api, reasoning);
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         let context = bundled::conversation()?;
         stream_simple(model.clone(), context, Some(generic_options))?
             .result()
@@ -343,6 +366,7 @@ fn simple_requests(
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_simple_dispatch_keeps_adapter_policy() -> TestResult {
     let _registry = bundled::registry();
@@ -384,11 +408,13 @@ fn maestro_simple_dispatch_keeps_adapter_policy() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_session_extras_keep_domain_and_presence() -> TestResult {
     assert_rows("maestro_response_session_extras_keep_domain_and_presence")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare root/generic clamping and omission with the independent raw effort route.
 fn assert_session_simple_variants(overrides: &Value) -> TestResult {
     let session = &PROTOCOLS[5];
@@ -415,6 +441,7 @@ fn assert_session_simple_variants(overrides: &Value) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Header that carries the key of `api`'s requests, with the text before the key.
 fn authentication(api: &str) -> (&'static str, &'static str) {
     match api {
@@ -424,6 +451,7 @@ fn authentication(api: &str) -> (&'static str, &'static str) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send the row's options through its protocol's simple entry and read the final authentication.
 fn assert_selected_key(row: &key_selection::Row) -> TestResult {
     let api = row.input.api.as_str();
@@ -433,7 +461,7 @@ fn assert_selected_key(row: &key_selection::Row) -> TestResult {
         .common
         .api_key
         .clone_from(&row.input.options.api_key);
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         root_simple(api, model, options)?.result().await;
         Ok(())
     })?;
@@ -455,6 +483,7 @@ fn assert_selected_key(row: &key_selection::Row) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn simple_key_selection_stays_shared_across_existing_providers() -> TestResult {
     let _registry = bundled::registry();
@@ -469,6 +498,7 @@ fn simple_key_selection_stays_shared_across_existing_providers() -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Later caller spelling wins, including when the model supplied two aliases.
 #[test]
 fn later_header_spelling_wins_over_older_alias() -> TestResult {
@@ -487,7 +517,7 @@ fn later_header_spelling_wins_over_older_alias() -> TestResult {
             let (mut common, requests) = common(api);
             common.headers = Some(serde_json::from_value(layers[1].clone())?);
             let model = description(api, &json!({"headers": layers[0]}))?;
-            let result = block_on(false, async {
+            let result = crate::runtime::run::<crate::TestResult<_>>(async {
                 Ok(stream(
                     model,
                     bundled::conversation()?,

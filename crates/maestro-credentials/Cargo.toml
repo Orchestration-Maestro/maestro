@@ -1,4 +1,5 @@
 [package]
+autotests = false
 name = "maestro-credentials"
 version = "0.1.0"
 edition.workspace = true
@@ -17,12 +18,16 @@ serde_json.workspace = true
 maestro-dependencies.workspace = true
 maestro-lock = { path = "../maestro-lock" }
 maestro-process = { path = "../maestro-process" }
-tokio = { version = "=1.53.2", default-features = false, features = ["time", "process"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["time", "process"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "macros", "test-util"] }
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "time", "macros", "test-util"] }
 
 [lints]
 workspace = true
 
-
+[[test]]
+name = "integration"
+path = "tests/integration.rs"

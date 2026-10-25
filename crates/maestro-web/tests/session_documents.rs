@@ -1,6 +1,6 @@
 //! Owned document preparation through the public offline reader.
 #![cfg(test)]
-mod session_document_support;
+use crate::session_document_support;
 use session_document_support::{cases, replay};
 
 #[test]

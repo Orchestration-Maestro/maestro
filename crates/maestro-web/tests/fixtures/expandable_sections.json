@@ -1,0 +1,96 @@
+[
+  {
+    "initial": false,
+    "expected": {
+      "first": {
+        "text": "Summary <&> 雪",
+        "children": 0,
+        "identity": false,
+        "childValue": "retained",
+        "chevron": "<path d=\"m9 18 6-6-6-6\"></path>"
+      },
+      "toggled": {
+        "text": "Summary <&> 雪",
+        "children": 1,
+        "identity": true,
+        "childValue": "retained",
+        "chevron": "<path d=\"m6 9 6 6 6-6\"></path>"
+      },
+      "updated": {
+        "text": "Changed",
+        "children": 1,
+        "identity": true,
+        "childValue": "edited",
+        "chevron": "<path d=\"m6 9 6 6 6-6\"></path>"
+      },
+      "restored": {
+        "text": "Changed",
+        "children": 0,
+        "identity": false,
+        "childValue": "edited",
+        "chevron": "<path d=\"m9 18 6-6-6-6\"></path>"
+      },
+      "reconnected": {
+        "text": "Changed",
+        "children": 1,
+        "identity": true,
+        "childValue": "edited",
+        "chevron": "<path d=\"m6 9 6 6 6-6\"></path>"
+      },
+      "reconnectedAgain": {
+        "text": "Changed",
+        "children": 1,
+        "identity": true,
+        "childValue": "edited",
+        "chevron": "<path d=\"m6 9 6 6 6-6\"></path>"
+      }
+    }
+  },
+  {
+    "initial": true,
+    "expected": {
+      "first": {
+        "text": "Summary <&> 雪",
+        "children": 1,
+        "identity": true,
+        "childValue": "retained",
+        "chevron": "<path d=\"m6 9 6 6 6-6\"></path>"
+      },
+      "toggled": {
+        "text": "Summary <&> 雪",
+        "children": 0,
+        "identity": false,
+        "childValue": "retained",
+        "chevron": "<path d=\"m9 18 6-6-6-6\"></path>"
+      },
+      "updated": {
+        "text": "Changed",
+        "children": 0,
+        "identity": false,
+        "childValue": "edited",
+        "chevron": "<path d=\"m9 18 6-6-6-6\"></path>"
+      },
+      "restored": {
+        "text": "Changed",
+        "children": 1,
+        "identity": true,
+        "childValue": "edited",
+        "chevron": "<path d=\"m6 9 6 6 6-6\"></path>"
+      },
+      "reconnected": {
+        "text": "Changed",
+        "children": 0,
+        "identity": false,
+        "childValue": "edited",
+        "chevron": "<path d=\"m9 18 6-6-6-6\"></path>"
+      },
+      "reconnectedAgain": {
+        "text": "Changed",
+        "children": 0,
+        "identity": false,
+        "childValue": "edited",
+        "chevron": "<path d=\"m9 18 6-6-6-6\"></path>"
+      }
+    }
+  }
+]

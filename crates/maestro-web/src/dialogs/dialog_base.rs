@@ -1,8 +1,9 @@
 //! Owned dialog lifetimes in one canvas context.
 use super::dialog::{DialogBody, DialogProps};
+use crate::dialogs::dialog::DialogUiError;
 use crate::{
     I18n,
-    browser::attachment_content::{AttachmentHost, AttachmentUiError, FocusTarget, identity},
+    browser::attachment_content::{AttachmentHost, FocusTarget, identity},
 };
 use maestro_theme::BrandPresentation;
 use std::{
@@ -39,7 +40,8 @@ pub(super) struct State {
     /// Last admitted pointer gesture, independent of stale toolkit clicks.
     pub(super) pressed: RefCell<Option<bool>>,
     /// Retained Close texture, updated only when its painted operands change.
-    pub(super) ring: RefCell<super::dialog::ring::Painter>,
+    pub(super) ring:
+        RefCell<crate::browser::control_paint::Painter<super::dialog::close::CloseKey>>,
     /// Mount identity invalidated before removal effects or caller callbacks.
     pub(super) mount: Cell<u64>,
     /// Mounted Close properties, discarded before any removal effects.
@@ -73,7 +75,7 @@ impl DialogContext {
         &self,
         i18n: &I18n<F>,
         presentation: &BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), DialogUiError> {
         let completed: Vec<_> = self
             .inner
             .restorations
@@ -137,7 +139,7 @@ impl DialogBase {
     /// Replace the live caller operands.
     /// # Errors
     /// Returns reached native failures.
-    pub fn set_props(&self, props: DialogProps) -> Result<(), AttachmentUiError> {
+    pub fn set_props(&self, props: DialogProps) -> Result<(), DialogUiError> {
         let open = props.is_open;
         let was_open = self.state.props.borrow().is_open;
         let mut props = props;
@@ -150,7 +152,7 @@ impl DialogBase {
     /// Eagerly admit this modal before any render or result polling.
     /// # Errors
     /// Returns native admission failures.
-    pub fn open(&self) -> Result<(), AttachmentUiError> {
+    pub fn open(&self) -> Result<(), DialogUiError> {
         if self.state.props.borrow().is_open {
             return Ok(());
         }
@@ -169,7 +171,7 @@ impl DialogBase {
                 .inner
                 .host
                 .set_overlay(self.state.id, false);
-            return Err(error);
+            return Err(DialogUiError::Host(error));
         }
         *self.state.focus.borrow_mut() = target;
         self.state.props.borrow_mut().is_open = true;
@@ -185,13 +187,13 @@ impl DialogBase {
     /// Remove this shell before invoking its optional notification.
     /// # Errors
     /// Returns reached platform failures.
-    pub fn close(&self) -> Result<(), AttachmentUiError> {
+    pub fn close(&self) -> Result<(), DialogUiError> {
         self.state.close(true)
     }
 }
 impl State {
     /// Revoke before removal; caller notification is never run under a borrow.
-    pub(super) fn close(&self, notify: bool) -> Result<(), AttachmentUiError> {
+    pub(super) fn close(&self, notify: bool) -> Result<(), DialogUiError> {
         let callback = {
             let mut props = self.props.borrow_mut();
             if !props.is_open {
@@ -233,7 +235,7 @@ impl State {
         if notify && let Some(callback) = callback {
             callback();
         }
-        removed.and(restored)
+        removed.and(restored).map_err(DialogUiError::Host)
     }
 }
 impl Drop for DialogBase {
@@ -261,4 +263,13 @@ fn focus_target(
         }
         Ok(())
     }))
+}
+
+#[cfg(target_arch = "wasm32")]
+impl DialogBase {
+    /// Set literal panel classes for the next browser render without replacing its body.
+    pub fn set_class_name(&self, class_name: String) {
+        self.state.native.borrow_mut().class_name = class_name.into();
+        self.state.context.drawing().request_repaint();
+    }
 }

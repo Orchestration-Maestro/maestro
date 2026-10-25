@@ -40,6 +40,8 @@ just test
 ```
 
 Both must pass. `just test` runs cargo-nextest followed by Cargo doctests.
+Required CI runs tests on Linux and checks compilation for Windows and macOS.
+Native Windows and macOS test runs must be restored before the first release.
 A test that binds the fixed OAuth callback port goes in a module named
 `oauth_callback`, which nextest runs one at a time.
 Shared Linux CI reserves ports 53692 and 1455 from automatic allocation so OAuth callback tests can bind their required ports.

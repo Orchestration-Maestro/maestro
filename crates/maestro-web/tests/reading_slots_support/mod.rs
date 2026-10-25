@@ -57,8 +57,7 @@ impl Slots {
             holes: vec![],
             density: 1.,
             mode: BrandMode::Dark,
-            pack: maestro_theme::load_brand_pack("brand.json", &crate::support::brand::Pack)
-                .unwrap(),
+            pack: crate::support::brand::pack("brand.json").unwrap(),
         }
     }
     /// Build the fixed native reading witness and retain only its node mirror.
@@ -82,12 +81,16 @@ impl Slots {
                     })
                     .collect::<Vec<_>>();
                 *target.borrow_mut() = Some(ReadingRoot {
+                    frame_style: "",
+                    decoration: None,
                     commit: None,
                     owner: None,
                     element: root.clone(),
                     slots: slots.clone(),
                 });
                 Ok(ReadingRoot {
+                    frame_style: "",
+                    decoration: None,
                     commit: None,
                     owner: None,
                     element: root,
@@ -127,7 +130,7 @@ impl Slots {
         phase: ReadingPhase,
         size: egui::Vec2,
         sizes: &[(egui::Id, egui::Vec2)],
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.host.present(
             AttachmentSurface {
                 id: self.id,
@@ -137,6 +140,7 @@ impl Slots {
                 opacity: 1.,
                 occluders: self.holes.clone(),
                 content: AttachmentContent::Reading(ReadingPlacement {
+                    intrinsic_width: false,
                     content: Rc::clone(&self.content),
                     phase,
                     sizes,
@@ -150,7 +154,7 @@ impl Slots {
     /// Read the current native slot layout.
     /// # Errors
     /// Returns missing-registration or native readback failures.
-    pub fn layout(&self) -> Result<ReadingLayout, AttachmentUiError> {
+    pub fn layout(&self) -> Result<ReadingLayout, AttachmentHostError> {
         self.host.reading_layout(self.id)
     }
     /// Measure and publish one bounded native viewport.

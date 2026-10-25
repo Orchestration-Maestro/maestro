@@ -341,7 +341,7 @@
       "indent": null,
       "lines": [
         "\u001b[2m```\u001b[22m                     ",
-        "  \u001b[32ma\u001b[39m                     ",
+        "  \u001b[32m a\u001b[39m                    ",
         "\u001b[2m```\u001b[22m                     "
       ]
     },
@@ -714,7 +714,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[9ma\u001b[29m                             "
+        "~a~                           "
       ]
     },
     {
@@ -839,7 +839,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[9m﻿a\u001b[29m                             "
+        "~~﻿a~~                         "
       ]
     },
     {
@@ -851,7 +851,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "~~a~~                         "
+        "\u001b[9ma\u001b[29m                             "
       ]
     },
     {
@@ -1169,7 +1169,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "ftp://x.y                                                   "
+        "\u001b[34m\u001b[4mftp://x.y\u001b[24m\u001b[39m                                                   "
       ]
     },
     {
@@ -1348,7 +1348,7 @@
       "indent": null,
       "lines": [
         "\u001b[36m- \u001b[39ma                                     ",
-        "2. b                                    "
+        "  \u001b[36m2. \u001b[39mb                                  "
       ]
     },
     {
@@ -1615,6 +1615,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
+        "\u001b[2m│ \u001b[22m      ",
         "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3ma\u001b[23m\u001b[3m\u001b[23m     "
       ]
     },
@@ -1627,6 +1628,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
+        "\u001b[2m│ \u001b[22m                            ",
         "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3ma\u001b[23m\u001b[3m\u001b[23m                           "
       ]
     },
@@ -2127,18 +2129,12 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3m\u001b[3ma",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3mb",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3mc",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3md",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3me",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3mf\u001b[23m\u001b[3m\u001b[23m"
+        "\u001b[3m\u001b[3ma",
+        "\u001b[3mb",
+        "\u001b[3mc",
+        "\u001b[3md",
+        "\u001b[3me",
+        "\u001b[3mf\u001b[23m\u001b[3m\u001b[23m"
       ]
     },
     {
@@ -2150,18 +2146,9 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3m\u001b[3ma ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3mb ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3mc ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3md ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3me ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3mf\u001b[23m\u001b[3m\u001b[23m "
+        "\u001b[3m\u001b[3mab",
+        "\u001b[3mcd",
+        "\u001b[3mef\u001b[23m\u001b[3m\u001b[23m"
       ]
     },
     {
@@ -2388,6 +2375,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
+        "\u001b[2m│ \u001b[22m                                                                              ",
         "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3ma\u001b[23m\u001b[3m\u001b[23m                                                                             "
       ]
     },
@@ -2579,7 +2567,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "ftp://a.b                                                                       "
+        "\u001b[34m\u001b[4mftp://a.b\u001b[24m\u001b[39m                                                                       "
       ]
     },
     {
@@ -2591,7 +2579,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "HTTP://a.b                                                                      "
+        "\u001b[34m\u001b[4mHTTP://a.b\u001b[24m\u001b[39m                                                                      "
       ]
     },
     {
@@ -2603,7 +2591,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "xhttp://a.b                                                                     "
+        "x\u001b[34m\u001b[4mhttp://a.b\u001b[24m\u001b[39m                                                                     "
       ]
     },
     {
@@ -2627,7 +2615,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "WWW.a.b                                                                         "
+        "\u001b[34m\u001b[4mWWW.a.b\u001b[24m\u001b[39m                                                                         "
       ]
     },
     {
@@ -2639,7 +2627,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "www.a                                                                           "
+        "\u001b[34m\u001b[4mwww.a\u001b[24m\u001b[39m\u001b[2m (http://www.a)\u001b[22m                                                            "
       ]
     },
     {
@@ -2651,7 +2639,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "https://localhost                                                               "
+        "\u001b[34m\u001b[4mhttps://localhost\u001b[24m\u001b[39m                                                               "
       ]
     },
     {
@@ -2663,7 +2651,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "www.a_b.c                                                                       "
+        "\u001b[34m\u001b[4mwww.a_b.c\u001b[24m\u001b[39m\u001b[2m (http://www.a_b.c)\u001b[22m                                                    "
       ]
     },
     {
@@ -2675,7 +2663,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "www.a.b_c                                                                       "
+        "\u001b[34m\u001b[4mwww.a.b_c\u001b[24m\u001b[39m\u001b[2m (http://www.a.b_c)\u001b[22m                                                    "
       ]
     },
     {
@@ -2807,7 +2795,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[34m\u001b[4mwww.é.fr\u001b[24m\u001b[39m\u001b[2m (http://www.é.fr)\u001b[22m                                                      "
+        "www.é.fr                                                                        "
       ]
     }
   ],
@@ -2905,7 +2893,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[34m\u001b[4mwww.a.b/x;y;\u001b[24m\u001b[39m\u001b[2m (http://www.a.b/x;y;)\u001b[22m                                              "
+        "\u001b[34m\u001b[4mwww.a.b/x;y\u001b[24m\u001b[39m\u001b[2m (http://www.a.b/x;y)\u001b[22m;                                               "
       ]
     },
     {
@@ -2929,7 +2917,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[34m\u001b[4mwww.a.b/x'\u001b[24m\u001b[39m\u001b[2m (http://www.a.b/x')\u001b[22m                                                  "
+        "\u001b[34m\u001b[4mwww.a.b/x\u001b[24m\u001b[39m\u001b[2m (http://www.a.b/x)\u001b[22m'                                                   "
       ]
     },
     {
@@ -2941,7 +2929,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[34m\u001b[4mwww.a.b/x\"\u001b[24m\u001b[39m\u001b[2m (http://www.a.b/x\")\u001b[22m                                                  "
+        "\u001b[34m\u001b[4mwww.a.b/x\u001b[24m\u001b[39m\u001b[2m (http://www.a.b/x)\u001b[22m\"                                                   "
       ]
     }
   ],
@@ -2991,7 +2979,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[9m\u001b[34m\u001b[4ma@b.c\u001b[24m\u001b[39m\u001b[29m                                                                           "
+        "~\u001b[34m\u001b[4ma@b.c\u001b[24m\u001b[39m~                                                                         "
       ]
     },
     {

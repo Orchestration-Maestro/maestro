@@ -39,14 +39,7 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            simple::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            simple::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, simple::<Local>, simple::<Threaded>)
 }
 
 /// Resolve shared simple options before starting the same producer.

@@ -2,8 +2,9 @@
 use super::artifact_element::{ArtifactElement, ArtifactView};
 use super::image_artifact::ImageArtifact;
 use super::text_artifact::{SourceProfile, TextArtifact};
+use crate::tools::artifacts::ArtifactUiError;
 use crate::{
-    browser::attachment_content::{AttachmentHost, AttachmentUiError},
+    browser::attachment_content::AttachmentHost,
     components::preview_code_toggle::{PreviewCodeToggle, ViewMode},
 };
 use std::rc::Rc;
@@ -20,7 +21,7 @@ pub struct SvgArtifact {
     /// Containing modal identity.
     modal: Option<egui::Id>,
     /// Deferred platform failure for the infallible field setter.
-    failure: Option<AttachmentUiError>,
+    failure: Option<ArtifactUiError>,
     /// Retained native resource, independent of visible mode.
     #[cfg(target_arch = "wasm32")]
     preview_url: Option<crate::utils::download::ObjectUrl>,
@@ -41,22 +42,22 @@ impl SvgArtifact {
         }
     }
     /// Route the selected branch through its existing retained owner.
-    fn reconcile(&mut self) -> Result<(), AttachmentUiError> {
+    fn reconcile(&mut self) -> Result<(), ArtifactUiError> {
         if let Some(error) = self.failure.take() {
             return Err(error);
         }
         self.source.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Code,
+            self.visible && self.toggle.mode() == ViewMode::Code,
             self.modal,
         )?;
         self.preview.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Preview,
+            self.visible && self.toggle.mode() == ViewMode::Preview,
             self.modal,
         )
     }
     /// Rebuild the native resource after an original-content edit or reconnection.
     #[cfg(target_arch = "wasm32")]
-    fn update_preview_url(&mut self) -> Result<(), AttachmentUiError> {
+    fn update_preview_url(&mut self) -> Result<(), ArtifactUiError> {
         self.preview_url = None;
         self.preview_url = (!self.source.content().is_empty())
             .then(|| {
@@ -99,39 +100,22 @@ impl ArtifactElement for SvgArtifact {
         &mut self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         self.visible = visible;
         self.modal = modal;
         self.reconcile()
     }
-    fn get_header_buttons(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
-        ui.scope(|ui| {
-            ui.spacing_mut().item_spacing.x =
-                crate::browser::attachment_content::points(view.presentation.spacing["sm"]);
-            self.toggle.render(ui, view.i18n, view.presentation)?;
-            self.reconcile()?;
-            self.source.get_header_buttons(ui, view)
-        })
-        .inner
-    }
-    fn render(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    super::retained::artifact_header_buttons!();
+    fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.reconcile()?;
-        if self.toggle.mode == ViewMode::Code {
+        if self.toggle.mode() == ViewMode::Code {
             self.source.render(ui, view)?;
         } else {
             self.preview.render(ui, view)?;
         }
         Ok(())
     }
-    fn connected_callback(&mut self) -> Result<(), AttachmentUiError> {
+    fn connected_callback(&mut self) -> Result<(), ArtifactUiError> {
         if let Some(error) = self.failure.take() {
             return Err(error);
         }
@@ -141,7 +125,7 @@ impl ArtifactElement for SvgArtifact {
         }
         Ok(())
     }
-    fn disconnected_callback(&mut self) -> Result<(), AttachmentUiError> {
+    fn disconnected_callback(&mut self) -> Result<(), ArtifactUiError> {
         #[cfg(target_arch = "wasm32")]
         {
             self.preview_url = None;

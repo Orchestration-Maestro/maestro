@@ -71,9 +71,13 @@ fn cases(test: &str) -> Vec<Case> {
     assert!(!selected.is_empty());
     selected
 }
+/// The recorded render context shared by these cases.
+fn render_context() -> serde_json::Value {
+    serde_json::json!({"readme":"", "bindings":["ctrl+o"]})
+}
 /// Existing context setup with no filesystem or highlighting effects.
 fn setup() -> Setup {
-    Setup::from(&serde_json::json!({"readme":"", "bindings":["ctrl+o"]}))
+    Setup::from(&render_context())
 }
 /// Publish the corpus's six role colors with an optional shift.
 fn env(shift: u8) -> Env {
@@ -107,7 +111,7 @@ fn bash_call_formats_partial_arguments() {
         assert_eq!(input.len(), 2);
         let args = &case.input["args"];
         let ctx = display::context(args, &setup(), &env, None);
-        let component = tool.render_call.as_ref().unwrap()(Some(args), &env.theme, &ctx).unwrap();
+        let component = tool.render_call.as_ref().unwrap()(Some(args), &env.live, &ctx).unwrap();
         assert_eq!(
             serde_json::to_value(
                 component.render(usize::try_from(case.input["width"].as_u64().unwrap()).unwrap())
@@ -136,7 +140,7 @@ fn bash_elapsed_uses_one_decimal_seconds() {
             result.unwrap();
         }
         let ctx = display::context(&args, &setup, &env, None);
-        tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
+        tool.render_call.as_ref().unwrap()(Some(&args), &env.live, &ctx).unwrap();
         let delta = case.input["ms"].as_u64().unwrap();
         // A fractional origin at 50 ms rejects truncating after subtraction.
         let fraction = if delta == 50 { 1 } else { 999 };
@@ -157,7 +161,7 @@ fn bash_elapsed_uses_one_decimal_seconds() {
                 expanded: false,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .unwrap();
@@ -292,8 +296,10 @@ fn result_case(case: &Case) -> Vec<String> {
         maestro_tui::ImageProtocol::Kitty
     });
     setup.show_images = input.show_images.unwrap_or(true);
-    setup.bindings = input.bindings.unwrap_or(setup.bindings);
-    let _bindings = display::bind(&setup.bindings);
+    let keys = input
+        .bindings
+        .unwrap_or_else(|| display::expand_keys(&render_context()));
+    let _bindings = display::bind(&keys);
     let env = env(0);
     let args = serde_json::json!({});
     let tool = definition();
@@ -301,7 +307,7 @@ fn result_case(case: &Case) -> Vec<String> {
     if let Some(start) = input.state.started_at {
         advance(&env, start);
         ctx.phase.execution_started = true;
-        tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
+        tool.render_call.as_ref().unwrap()(Some(&args), &env.live, &ctx).unwrap();
     }
     if let Some(end) = input.state.ended_at {
         advance(&env, end);
@@ -312,7 +318,7 @@ fn result_case(case: &Case) -> Vec<String> {
                 expanded: false,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .unwrap();
@@ -325,7 +331,7 @@ fn result_case(case: &Case) -> Vec<String> {
             expanded: input.expanded,
             is_partial: input.partial,
         },
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .unwrap();
@@ -455,7 +461,7 @@ fn timeline_case(case: Case) {
                 observed_end = None;
             }
             ctx.last_component = call.clone();
-            let next = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
+            let next = tool.render_call.as_ref().unwrap()(Some(&args), &env.live, &ctx).unwrap();
             frame(&expected[index], "call", call.as_ref(), &next, 40);
             call = Some(next);
             index += 1;
@@ -474,7 +480,7 @@ fn timeline_case(case: Case) {
                     expanded: false,
                     is_partial: partial,
                 },
-                &env.theme,
+                &env.live,
                 &ctx,
             )
             .unwrap();
@@ -558,16 +564,7 @@ struct CacheInput {
 }
 /// One literal text result using the shared record type.
 fn text_result(text: &str) -> maestro_agent::AgentToolResult<maestro_tools::BashToolDetails> {
-    maestro_agent::AgentToolResult {
-        content: vec![maestro_models::UserBlock::Text(
-            maestro_models::TextContent {
-                text: text.into(),
-                text_signature: None,
-            },
-        )],
-        details: None,
-        terminate: None,
-    }
+    maestro_agent::AgentToolResult::text_result(text.into(), None)
 }
 #[test]
 fn bash_result_cache_tracks_content_width_and_expansion() {
@@ -577,7 +574,7 @@ fn bash_result_cache_tracks_content_width_and_expansion() {
         let stages: Vec<CacheStage> = serde_json::from_value(case.expected).unwrap();
         let env = env(0);
         let setup = setup();
-        let _bindings = display::bind(&setup.bindings);
+        let _bindings = display::bind(&display::expand_keys(&render_context()));
         let args = serde_json::json!({});
         let mut ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
@@ -596,7 +593,7 @@ fn bash_result_cache_tracks_content_width_and_expansion() {
                         expanded: input.expanded,
                         is_partial: false,
                     },
-                    &env.theme,
+                    &env.live,
                     &ctx,
                 )
                 .unwrap();
@@ -631,14 +628,14 @@ fn bash_renderers_read_the_published_theme() {
         let args = serde_json::json!({"command":"go"});
         let mut ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
-        let decoy = display::bare_theme();
+        let decoy = maestro_theme::LiveTheme::from_theme(std::rc::Rc::new(display::bare_theme()));
         let original = tool.render_call.as_ref().unwrap()(Some(&args), &decoy, &ctx).unwrap();
         assert_eq!(
             serde_json::to_value(original.render(30)).unwrap(),
             case.expected["original"]
         );
         env.state
-            .set_theme_instance(std::rc::Rc::clone(&self::env(20).theme))
+            .set_theme_instance(self::env(20).live.get().unwrap())
             .unwrap();
         ctx.last_component = Some(original);
         let replacement = tool.render_call.as_ref().unwrap()(Some(&args), &decoy, &ctx).unwrap();
@@ -685,12 +682,12 @@ fn bash_renderers_reuse_matching_components() {
             Some(Rc::new(maestro_tui::Container::new())),
         );
         let tool = definition();
-        let first = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
+        let first = tool.render_call.as_ref().unwrap()(Some(&args), &env.live, &ctx).unwrap();
         assert!(!Rc::ptr_eq(ctx.last_component.as_ref().unwrap(), &first));
         ctx.last_component = Some(Rc::clone(&first));
         let second = tool.render_call.as_ref().unwrap()(
             Some(&serde_json::json!({"command":"second"})),
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .unwrap();
@@ -710,14 +707,13 @@ fn bash_renderers_reuse_matching_components() {
         let render = tool.render_result.as_ref().unwrap();
         let old = text_result("old");
         let old = ToolRenderResultLike::from(&old);
-        let first =
-            crate::display_support::native(render, &old, options, &env.theme, &ctx).unwrap();
+        let first = crate::display_support::native(render, &old, options, &env.live, &ctx).unwrap();
         assert!(!Rc::ptr_eq(ctx.last_component.as_ref().unwrap(), &first));
         ctx.last_component = Some(Rc::clone(&first));
         let new = text_result("new");
         let new = ToolRenderResultLike::from(&new);
         let second =
-            crate::display_support::native(render, &new, options, &env.theme, &ctx).unwrap();
+            crate::display_support::native(render, &new, options, &env.live, &ctx).unwrap();
         assert_eq!(
             Value::Bool(Rc::ptr_eq(&first, &second)),
             case.expected["resultSame"]
@@ -737,7 +733,7 @@ fn bash_expand_hint_changes_on_retained_render() {
         assert_eq!(case.expected.as_object().unwrap().len(), 3);
         let env = env(0);
         let setup = setup();
-        let _bindings = display::bind(&setup.bindings);
+        let _bindings = display::bind(&display::expand_keys(&render_context()));
         let args = serde_json::json!({});
         let ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
@@ -748,7 +744,7 @@ fn bash_expand_hint_changes_on_retained_render() {
                 expanded: false,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .unwrap();
@@ -771,7 +767,7 @@ fn bash_expand_hint_changes_on_retained_render() {
             case.expected["after"]
         );
         env.state
-            .set_theme_instance(std::rc::Rc::clone(&self::env(20).theme))
+            .set_theme_instance(self::env(20).live.get().unwrap())
             .unwrap();
         assert_eq!(
             serde_json::to_value(row.render(80)).unwrap(),
@@ -815,7 +811,7 @@ fn bash_dropped_row_releases_refresh() {
             notifications.set(notifications.get() + 1);
         });
         let tool = definition();
-        let call = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
+        let call = tool.render_call.as_ref().unwrap()(Some(&args), &env.live, &ctx).unwrap();
         let row = crate::display_support::native(
             tool.render_result.as_ref().unwrap(),
             &ToolRenderResultLike::from(&text_result("running")),
@@ -823,7 +819,7 @@ fn bash_dropped_row_releases_refresh() {
                 expanded: false,
                 is_partial: true,
             },
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .unwrap();
@@ -878,11 +874,11 @@ fn bash_default_themes_keep_role_colors() {
         let args = serde_json::json!({"command":"echo hello","timeout":2});
         let mut setup = setup();
         setup.phase.execution_started = true;
-        let _bindings = display::bind(&setup.bindings);
+        let _bindings = display::bind(&display::expand_keys(&render_context()));
         let ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
         advance(&env, 9000);
-        let call = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
+        let call = tool.render_call.as_ref().unwrap()(Some(&args), &env.live, &ctx).unwrap();
         assert_eq!(
             serde_json::to_value(call.render(input.width)).unwrap(),
             case.expected["header"]
@@ -909,7 +905,7 @@ fn bash_default_themes_keep_role_colors() {
                 expanded: false,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &ctx,
         )
         .unwrap();

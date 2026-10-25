@@ -1,8 +1,9 @@
 //! Recorded message requests observed through public dispatch.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::{
-    bundled, chat, child_process,
-    json::{canonical, event_record},
+    bundled, chat,
+    json::{canonical, event_record, exact_context},
     message_probes as probes, messages,
 };
 use chat::TestResult;
@@ -165,19 +166,28 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
 /// Run only this test's closed set in an environment-isolated process.
 pub fn assert_rows(test: &str) -> TestResult {
     let owned = rows(test)?;
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            test,
-            "qualification",
-            &[
-                ("CLOUDFLARE_ACCOUNT_ID", "account-id"),
-                ("CLOUDFLARE_GATEWAY_ID", "gateway-id"),
-            ],
-        );
+    if !maestro_test_process::selection().is_child() {
+        return {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(
+                    [
+                        ("CLOUDFLARE_ACCOUNT_ID", "account-id"),
+                        ("CLOUDFLARE_GATEWAY_ID", "gateway-id"),
+                    ]
+                    .iter()
+                    .copied(),
+                )
+                .case("qualification")
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     let _registry = bundled::registry();
     maestro_models::reset_api_providers();
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for row in owned {
             let actual = match &row.input {
                 Input::Wire(wire) => invoke(wire, &row.id, &row.expected).await?,
@@ -228,18 +238,6 @@ fn exact_patch<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<Option<Pa
         return Err(D::Error::custom("patch fields were not retained"));
     }
     Ok(Some(patch))
-}
-
-/// Reject fixture context fields the public record cannot preserve.
-fn exact_context<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<Context, D::Error> {
-    use serde::de::Error as _;
-    let value = Value::deserialize(decoder)?;
-    let context: Context = serde_json::from_value(value.clone()).map_err(D::Error::custom)?;
-    let retained = serde_json::to_value(&context).map_err(D::Error::custom)?;
-    if canonical(retained) != canonical(value) {
-        return Err(D::Error::custom("context fixture fields were not retained"));
-    }
-    Ok(context)
 }
 
 /// Resolve the actual catalog API before applying explicit compatibility changes.

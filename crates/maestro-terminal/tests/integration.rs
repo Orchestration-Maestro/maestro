@@ -87,3 +87,123 @@ fn character_widths_match_screen_cells() {
 
 mod graphics_commands;
 mod graphics_media;
+
+mod history;
+mod page_storage;
+
+mod character_sets;
+mod vt_sequences;
+
+mod terminal_colors;
+
+mod sgr_attributes;
+
+mod osc_commands;
+
+mod support;
+
+mod screens_keyboard;
+
+mod screens;
+mod screens_resize;
+
+mod screen_set;
+
+mod terminal_modes;
+
+mod terminal_state;
+
+mod terminal_lines;
+
+mod terminal_print;
+
+mod terminal_cursor;
+
+mod terminal_clusters;
+
+mod terminal_margins;
+
+mod terminal_metadata;
+
+mod terminal_delete_chars;
+
+mod terminal_erase_chars;
+
+mod terminal_erase_line;
+
+mod terminal_erase_display;
+
+mod terminal_alignment;
+
+mod terminal_screens;
+
+mod terminal_reset;
+mod terminal_resize;
+
+mod terminal_prompts;
+
+mod terminal_rows;
+
+mod stream_dispatch;
+mod stream_utf8;
+
+mod terminal_bytes;
+
+mod terminal_input;
+
+mod stream_links;
+mod stream_tracked_rows;
+
+mod device_attributes;
+
+mod terminal_color_effects;
+
+mod terminal_size_reports;
+
+mod apc;
+mod focus_encoding;
+
+mod input_modifiers;
+
+mod input_events;
+
+mod legacy_encoding;
+
+mod legacy_controls;
+
+mod legacy_tables;
+
+mod protocol_encoding;
+
+mod protocol_fields;
+
+mod protocol_tables;
+
+mod mouse_geometry;
+
+mod mouse_encoding;
+
+mod mouse_positions;
+
+mod input_terminal;
+
+mod mouse_events;
+
+mod selection;
+
+mod formatter_plain;
+
+mod formatter_vt;
+
+mod render;
+
+mod terminal_read;
+
+mod kitty_graphics_storage;
+
+mod graphics_exec;
+
+mod graphics_render;
+mod graphics_unicode;
+
+mod graphics_placements;

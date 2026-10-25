@@ -148,9 +148,10 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
         renderer: MessageRenderer<T, E>,
     ) -> Result<(), EventError> {
         let extension = self.owner()?;
-        let replaced = write(&extension)
-            .message_renderers
-            .insert(custom_type, E::erase_message_renderer(renderer));
+        let replaced = write(&extension).message_renderers.insert(
+            custom_type,
+            E::erase_message_renderer(renderer, self.events.clone()),
+        );
         drop(replaced);
         Ok(())
     }

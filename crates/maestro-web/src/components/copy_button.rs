@@ -1,12 +1,16 @@
 //! Retained original-text copy control with success feedback.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
+mod ui_error;
 use crate::{
     I18n, I18nError,
     browser::{
-        attachment_content::{self, AttachmentHost, AttachmentUiError},
+        attachment_content::{self, AttachmentHost},
         copy_feedback::CopyFeedback,
     },
 };
 use std::rc::Rc;
+pub use ui_error::LocalizedControlError;
 
 /// Copy arbitrary original text through the supplied browser effects.
 pub struct CopyButton {
@@ -65,7 +69,7 @@ impl CopyButton {
         ui: &mut egui::Ui,
         i18n: &I18n<F>,
         presentation: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, LocalizedControlError> {
         let rect = ui.allocate_space(self.size(ui, i18n)?).1;
         self.render_at(ui, rect, i18n, presentation)
     }
@@ -108,9 +112,10 @@ impl CopyButton {
         rect: egui::Rect,
         i18n: &I18n<F>,
         presentation: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, LocalizedControlError> {
         let mut child = ui.new_child(egui::UiBuilder::new().id_salt(self.id).max_rect(rect));
-        attachment_content::style(&mut child, presentation)?;
+        attachment_content::style(&mut child, presentation)
+            .map_err(LocalizedControlError::Presentation)?;
         let copied = self.feedback.copied();
         let label = (copied && self.show_text)
             .then(|| i18n.text("Copied!"))
@@ -128,7 +133,8 @@ impl CopyButton {
                         attachment_content::GhostHover::Text => "text",
                         attachment_content::GhostHover::Accent => "muted",
                     },
-                )?,
+                )
+                .map_err(LocalizedControlError::Presentation)?,
                 self.hover,
             ),
         )?

@@ -239,6 +239,11 @@ Governed keys and what the manifest may do with them:
 | `images.blockImages`, `enableInstallTelemetry` | lock (normally to `true` and `false`); default |
 | `packages`, `extensions`, `skills`, `prompts` | lock (no local additions); require entries |
 | `manifest`, `manifestAreas`, `manifestAutoUpdate` | lock; default (`manifestAreas`, `manifestAutoUpdate`) |
+| `multiplexer.tabBarRight` | lock; default |
+| `multiplexer.allowNested` | lock; default |
+| `daemon.resumeAgentsOnRestore` | lock; default |
+| `daemon.detectionCatalogCheck` | lock; default |
+| `multiplexer.remote.manageSshConfig` | lock; default |
 | `theme`, `themes`, `shellCommandPrefix` | default only |
 | every other key (presentation, keybindings, machine paths, session directory, changelog state, credentials) | nothing: user-only |
 

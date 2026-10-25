@@ -76,17 +76,17 @@ fn observe_body(input: Input) -> Result<Value, DocxError> {
     drop(input.xml);
     match operation.as_str() {
         "header" => {
-            let part = HeaderPart::parse_xml(&owned)?;
+            let part = HeaderPart::parse_xml(&owned, false)?;
             drop(owned);
             Ok(parts::header(part.root_element))
         }
         "footer" => {
-            let part = FooterPart::parse_xml(&owned)?;
+            let part = FooterPart::parse_xml(&owned, false)?;
             drop(owned);
             Ok(parts::footer(part.root_element))
         }
         "footnotes" => {
-            let part = FootnotesPart::parse_xml(&owned)?;
+            let part = FootnotesPart::parse_xml(&owned, false)?;
             drop(owned);
             Ok(serde_json::json!(
                 part.notes
@@ -96,7 +96,7 @@ fn observe_body(input: Input) -> Result<Value, DocxError> {
             ))
         }
         "endnotes" => {
-            let part = EndnotesPart::parse_xml(&owned)?;
+            let part = EndnotesPart::parse_xml(&owned, false)?;
             drop(owned);
             Ok(serde_json::json!(
                 part.notes
@@ -106,7 +106,7 @@ fn observe_body(input: Input) -> Result<Value, DocxError> {
             ))
         }
         "body" => {
-            let tree = parse_body_elements(&owned)?;
+            let tree = parse_body_elements(&owned, false)?;
             drop(owned);
             Ok(body_tree::full_graph(&tree))
         }

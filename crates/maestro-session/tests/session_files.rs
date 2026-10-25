@@ -12,13 +12,14 @@ use maestro_session::{NewSessionOptions, SessionManager};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
+use support::native::{below, below_keeping_dots, uncanonicalized_scratch};
 use support::session_files::cases;
 
 #[test]
 fn file_loading_keeps_raw_lines_after_header_admission() {
     let directory = Directory::new();
     for case in cases("file_loading_keeps_raw_lines_after_header_admission") {
-        let path = directory.path.join(&case.id);
+        let path = directory.path().join(&case.id);
         if let Some(bytes) = case.input.get("bytes") {
             let bytes: Vec<u8> = serde_json::from_value(bytes.clone()).unwrap();
             fs::write(&path, bytes).unwrap();
@@ -36,7 +37,8 @@ fn file_loading_keeps_raw_lines_after_header_admission() {
 
 #[test]
 fn new_histories_publish_only_at_first_assistant() {
-    let dir = std::env::temp_dir().join(format!("maestro-history-{}", uuid::Uuid::new_v4()));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path().to_path_buf();
     let mut manager =
         maestro_session::SessionManager::create("authored", Some(dir.to_str().unwrap()), "unused")
             .unwrap();
@@ -74,8 +76,8 @@ fn published_histories_never_republish_the_header() {
             1,
         ),
     ] {
-        let file =
-            std::env::temp_dir().join(format!("maestro-published-{}.jsonl", uuid::Uuid::new_v4()));
+        let file = maestro_test_directory::temporary_root()
+            .join(format!("maestro-published-{}.jsonl", uuid::Uuid::new_v4()));
         std::fs::write(&file, content).unwrap();
         let mut manager =
             maestro_session::SessionManager::open(file.to_str().unwrap(), None, Some("override"))
@@ -102,7 +104,8 @@ fn published_histories_never_republish_the_header() {
 
 #[test]
 fn continue_recent_loads_winner_or_creates_an_unpublished_history() {
-    let dir = std::env::temp_dir().join(format!("maestro-continue-{}", uuid::Uuid::new_v4()));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path().to_path_buf();
     let first = maestro_session::SessionManager::continue_recent(
         "caller",
         Some(dir.to_str().unwrap()),
@@ -143,24 +146,24 @@ fn continuation_probe_is_raw_first_line_with_a_512_byte_bound() {
 
 #[test]
 fn default_directory_encodes_authored_cwd_before_joining() {
-    if std::env::var_os("MAESTRO_DIRECTORY_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let directory = Directory::new();
-        let test =
-            crate::child_process::selector("default_directory_encodes_authored_cwd_before_joining")
-                .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .current_dir(&directory.path)
-            .env("MAESTRO_DIRECTORY_CHILD", "1")
-            .output()
-            .unwrap();
+        let output = maestro_test_process::TestProcess::current(
+            "default_directory_encodes_authored_cwd_before_joining",
+        )
+        .unwrap()
+        .nocapture()
+        .current_dir(directory.path())
+        .case("*")
+        .output()
+        .unwrap();
         assert!(
             output.status.success(),
             "stdout: {}\nstderr: {}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     for case in cases("default_directory_encodes_authored_cwd_before_joining") {
@@ -411,6 +414,14 @@ fn failed_switch_keeps_previous_history_consistent() {
     let mut restricted = permissions.clone();
     restricted.set_readonly(true);
     fs::set_permissions(&readonly, restricted).unwrap();
+    // A privileged Unix run writes the read-only file anyway, so there is nothing to check.
+    #[cfg(unix)]
+    if maestro_test_directory::deny(&readonly, 0o444)
+        .unwrap()
+        .is_none()
+    {
+        return;
+    }
     let error = manager.set_session_file(&readonly).unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
     fs::set_permissions(&readonly, permissions).unwrap();
@@ -492,34 +503,21 @@ fn published_append_failure_keeps_accepted_memory() {
 }
 
 #[test]
-fn continuation_uses_mtime_stable_ties_and_existing_catches() {
+fn continuation_uses_millisecond_ties_and_existing_catches() {
     let directory = Directory::new();
     assert!(find_most_recent_session(directory.text()).is_none());
-    assert!(find_most_recent_session(directory.path.join("missing").to_str().unwrap()).is_none());
+    assert!(find_most_recent_session(directory.path().join("missing").to_str().unwrap()).is_none());
     directory.file("ignored.JSONL", jsonl(&[header(&json!("cwd"))]));
     directory.file("invalid.jsonl", "bad");
     assert!(find_most_recent_session(directory.text()).is_none());
     let first = directory.file("first.jsonl", jsonl(&[header(&json!("a"))]));
-    directory.file("second.jsonl", jsonl(&[header(&json!("b"))]));
+    let second = directory.file("second.jsonl", jsonl(&[header(&json!("b"))]));
     let instant = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
-    let order: Vec<_> = fs::read_dir(directory.text())
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .filter(|path| {
-            path.file_name().unwrap() == "first.jsonl"
-                || path.file_name().unwrap() == "second.jsonl"
-        })
-        .collect();
-    for (position, path) in order.iter().enumerate() {
-        let nanos = if position == 0 { 100 } else { 900_000 };
-        set_modified(path, instant + std::time::Duration::from_nanos(nanos));
-    }
-    let winner = order[1].to_str().unwrap();
-    assert_eq!(
-        find_most_recent_session(directory.text()).unwrap(),
-        order[0].to_str().unwrap()
-    );
-    set_modified(winner, instant + std::time::Duration::from_millis(2));
+    set_modified(&first, instant + std::time::Duration::from_nanos(100));
+    set_modified(&second, instant + std::time::Duration::from_micros(900));
+    assert_eq!(find_most_recent_session(directory.text()).unwrap(), first);
+    set_modified(&second, instant + std::time::Duration::from_millis(2));
+    let winner = second.as_str();
     assert_eq!(
         find_most_recent_session(directory.text()).as_deref(),
         Some(winner)
@@ -527,8 +525,8 @@ fn continuation_uses_mtime_stable_ties_and_existing_catches() {
     #[cfg(unix)]
     {
         std::os::unix::fs::symlink(
-            directory.path.join("missing"),
-            directory.path.join("dangling.jsonl"),
+            directory.path().join("missing"),
+            directory.path().join("dangling.jsonl"),
         )
         .unwrap();
         assert_eq!(
@@ -537,7 +535,7 @@ fn continuation_uses_mtime_stable_ties_and_existing_catches() {
         );
     }
     assert!(find_most_recent_session(&first).is_none());
-    fs::create_dir(directory.path.join("unreadable.jsonl")).unwrap();
+    fs::create_dir(directory.path().join("unreadable.jsonl")).unwrap();
     assert_eq!(
         find_most_recent_session(directory.text()).as_deref(),
         Some(winner)
@@ -548,6 +546,30 @@ fn continuation_uses_mtime_stable_ties_and_existing_catches() {
     }
 }
 
+/// Equal modification times resume the first name in name order, whatever order
+/// the file system lists.
+#[test]
+fn continuation_ties_resume_the_first_name_in_name_order() {
+    let directory = Directory::new();
+    let instant = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+    // NTFS lists these case-insensitively (a, b, C, _x); name order is byte order.
+    for name in ["b", "_x", "a", "C"] {
+        let record = json!({"type": "session", "version": 3, "id": name, "cwd": "stored"});
+        set_modified(
+            directory.file(&format!("{name}.jsonl"), jsonl(&[record])),
+            instant,
+        );
+    }
+    let resumed = SessionManager::continue_recent("caller", Some(directory.text()), "unused");
+    assert_eq!(resumed.unwrap().get_session_id(), "C");
+    let mut order = Vec::new();
+    while let Some(path) = find_most_recent_session(directory.text()) {
+        fs::remove_file(&path).unwrap();
+        order.push(PathBuf::from(path).file_stem().unwrap().to_owned());
+    }
+    assert_eq!(order, ["C", "_x", "a", "b"]);
+}
+
 #[test]
 #[cfg(unix)]
 fn continuation_probes_all_candidates_before_reading_metadata() {
@@ -555,16 +577,13 @@ fn continuation_probes_all_candidates_before_reading_metadata() {
     for name in ["first.jsonl", "second.jsonl"] {
         assert!(
             std::process::Command::new("mkfifo")
-                .arg(directory.path.join(name))
+                .arg(directory.path().join(name))
                 .status()
                 .unwrap()
                 .success()
         );
     }
-    let paths: Vec<_> = fs::read_dir(directory.text())
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .collect();
+    let paths = ["first.jsonl", "second.jsonl"].map(|name| directory.path().join(name));
     let producer = std::thread::spawn(move || {
         use std::io::Write;
         {
@@ -626,7 +645,7 @@ fn opening_resolves_once_before_loading_the_selected_file() {
     let directory = Directory::new();
     let path = directory.file("existing.jsonl", jsonl(&[header(&json!("stored"))]));
     let bytes = fs::read(&path).unwrap();
-    let authored = directory.path.join("missing/../existing.jsonl");
+    let authored = directory.path().join("missing/../existing.jsonl");
     let manager = SessionManager::open(authored.to_str().unwrap(), None, None).unwrap();
     assert_eq!(manager.get_session_id(), "stored");
     assert_eq!(manager.get_cwd(), "stored");
@@ -636,8 +655,8 @@ fn opening_resolves_once_before_loading_the_selected_file() {
 
 #[test]
 fn session_paths_keep_authored_spelling_until_explicit_resolution() {
-    let directory = Directory::new();
-    let authored = format!("{}/./nested/../", directory.text());
+    let directory = Directory(uncanonicalized_scratch());
+    let authored = below_keeping_dots(directory.path(), "./nested/..");
     let manager =
         SessionManager::create("relative/../authored", Some(&authored), "unused").unwrap();
     assert_eq!(manager.get_session_dir(), authored);
@@ -648,8 +667,8 @@ fn session_paths_keep_authored_spelling_until_explicit_resolution() {
     );
     #[cfg(unix)]
     {
-        let alias = directory.path.join("alias");
-        std::os::unix::fs::symlink(&directory.path, &alias).unwrap();
+        let alias = directory.path().join("alias");
+        std::os::unix::fs::symlink(directory.path(), &alias).unwrap();
         let path = directory.file("linked.jsonl", jsonl(&[header(&json!("cwd"))]));
         let selected = alias.join("linked.jsonl");
         let manager = SessionManager::open(selected.to_str().unwrap(), None, None).unwrap();
@@ -678,7 +697,7 @@ fn default_directory_creates_only_the_encoded_location() {
 fn directory_creation_errors_propagate_without_publishing() {
     let directory = Directory::new();
     let file = directory.file("parent", "unchanged");
-    let child = format!("{file}/child");
+    let child = below(directory.path(), "parent/child");
     let original = fs::create_dir_all(&child).unwrap_err();
     let actual = SessionManager::create("cwd", Some(&child), "unused")
         .err()
@@ -690,7 +709,7 @@ fn directory_creation_errors_propagate_without_publishing() {
 #[test]
 fn opening_missing_file_preserves_explicit_path_until_publication() {
     let directory = Directory::new();
-    let path = directory.path.join("missing.jsonl");
+    let path = directory.path().join("missing.jsonl");
     let mut manager = SessionManager::open(path.to_str().unwrap(), None, Some("cwd")).unwrap();
     assert_eq!(manager.get_session_file(), Some(path.to_str().unwrap()));
     manager.append_message(json!({"role":"user"})).unwrap();
@@ -760,14 +779,14 @@ fn jsonl_uses_compact_finite_number_spelling() {
 #[cfg(unix)]
 /// Run one named test in a disposable removed working directory child.
 fn removed_cwd_child(name: &str) -> bool {
-    if std::env::var_os("MAESTRO_REMOVED_CWD_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         return true;
     }
     let directory = Directory::new();
-    let test = crate::child_process::selector(name).unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_REMOVED_CWD_CHILD", "1")
+    let output = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .nocapture()
+        .case("*")
         .env("MAESTRO_REMOVED_CWD_PARENT", directory.text())
         .output()
         .unwrap();
@@ -777,19 +796,17 @@ fn removed_cwd_child(name: &str) -> bool {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
+
     false
 }
 
 #[cfg(unix)]
 /// Enter then unlink a working directory without altering the parent test process.
-fn remove_cwd() -> Directory {
-    let directory = Directory::new();
-    let removed = directory.path.join("removed");
-    fs::create_dir(&removed).unwrap();
-    std::env::set_current_dir(&removed).unwrap();
-    fs::remove_dir(&removed).unwrap();
-    directory
+/// Returns a fixture directory and the owner of the removed one.
+fn remove_cwd() -> (Directory, maestro_test_directory::Scratch) {
+    let removed = maestro_test_directory::Scratch::new().unwrap();
+    removed.enter_removed("removed").unwrap();
+    (Directory::new(), removed)
 }
 
 #[cfg(unix)]
@@ -798,7 +815,7 @@ fn absolute_open_avoids_unneeded_cwd_reads() {
     if !removed_cwd_child("absolute_open_avoids_unneeded_cwd_reads") {
         return;
     }
-    let directory = remove_cwd();
+    let (directory, _removed) = remove_cwd();
     let path = directory.file("absolute.jsonl", jsonl(&[header(&json!("stored"))]));
     assert!(std::env::current_dir().is_err());
     assert_eq!(
@@ -819,7 +836,7 @@ fn opening_failure_precedence_preserves_native_read_errors() {
     if !removed_cwd_child("opening_failure_precedence_preserves_native_read_errors") {
         return;
     }
-    let directory = remove_cwd();
+    let (directory, _removed) = remove_cwd();
     let path = directory.file("fallback.jsonl", jsonl(&[header(&Value::Null)]));
     let original = std::env::current_dir().unwrap_err();
     assert_eq!(
@@ -847,31 +864,25 @@ fn opening_failure_precedence_preserves_native_read_errors() {
 }
 
 /// A uniquely named native directory removed after observations.
-struct Directory {
-    /// Authored absolute native location.
-    path: PathBuf,
-}
+struct Directory(maestro_test_directory::Scratch);
 impl Directory {
     /// Create a fresh directory without environment mutation.
     fn new() -> Self {
-        let path = std::env::temp_dir().join(format!("maestro-session-{}", uuid::Uuid::new_v4()));
-        std::fs::create_dir(&path).unwrap();
-        Self { path }
+        Self(maestro_test_directory::Scratch::new().unwrap())
+    }
+    /// The directory this test owns.
+    fn path(&self) -> &std::path::Path {
+        self.0.path()
     }
     /// Borrow its native spelling.
     fn text(&self) -> &str {
-        self.path.to_str().unwrap()
+        self.0.path().to_str().unwrap()
     }
     /// Write fixture bytes to one selected file.
     fn file(&self, name: &str, bytes: impl AsRef<[u8]>) -> String {
-        let path = self.path.join(name);
+        let path = self.0.path().join(name);
         std::fs::write(&path, bytes).unwrap();
         path.to_str().unwrap().to_owned()
-    }
-}
-impl Drop for Directory {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.path).unwrap();
     }
 }
 /// A current header whose cwd can be varied without incidental payload fields.
@@ -889,7 +900,7 @@ fn jsonl(entries: &[Value]) -> String {
 /// Unlink the probed FIFO before the producer permits the reader to finish.
 #[cfg(unix)]
 fn removed_fifo_metadata_discards_selection(directory: &Directory) {
-    let fifo = directory.path.join("stat-error.jsonl");
+    let fifo = directory.path().join("stat-error.jsonl");
     assert!(
         std::process::Command::new("mkfifo")
             .arg(&fifo)

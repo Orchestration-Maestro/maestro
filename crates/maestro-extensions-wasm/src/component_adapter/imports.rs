@@ -3,7 +3,9 @@
 use crate::bindings::maestro::extension::host::CompactionData;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{ExtensionFuture, ExtensionResult};
-use crate::{FlagOptions, FlagValue};
+use crate::{
+    ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
+};
 
 /// The host's imports and resources at the wire level: the generated bindings inside a
 /// component, an in-process host where the same logic runs natively.
@@ -404,6 +406,50 @@ pub trait Imports: Clone + 'static {
     ) -> ExtensionFuture<'a, crate::ResolvedRequestAuth>;
     /// Forwards the corresponding host capability call.
     fn ui(&self, context: &Self::Context) -> ExtensionResult<Self::Ui>;
+    /// Forwards one notification with its optional severity.
+    fn ui_notify(
+        &self,
+        resource: &Self::Ui,
+        message: &str,
+        kind: Option<NotificationType>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the text of one status key, or its clearing.
+    fn ui_set_status(
+        &self,
+        resource: &Self::Ui,
+        key: &str,
+        text: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the working message, or its reset.
+    fn ui_set_working_message(
+        &self,
+        resource: &Self::Ui,
+        message: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the working loader row visibility.
+    fn ui_set_working_visible(&self, resource: &Self::Ui, visible: bool) -> ExtensionResult<()>;
+    /// Forwards the working indicator options, or their reset.
+    fn ui_set_working_indicator(
+        &self,
+        resource: &Self::Ui,
+        options: Option<WorkingIndicatorOptions>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the hidden-thinking label, or its reset.
+    fn ui_set_hidden_thinking_label(
+        &self,
+        resource: &Self::Ui,
+        label: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the fixed lines and options of one widget, or its removal.
+    fn ui_set_widget(
+        &self,
+        resource: &Self::Ui,
+        key: &str,
+        content: Option<&[String]>,
+        options: Option<ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the terminal title.
+    fn ui_set_title(&self, resource: &Self::Ui, title: &str) -> ExtensionResult<()>;
     /// Forwards the corresponding host capability call.
     fn has_ui(&self, context: &Self::Context) -> ExtensionResult<bool>;
     /// Forwards the corresponding host capability call.

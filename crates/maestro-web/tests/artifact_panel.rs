@@ -1,10 +1,9 @@
 //! Retained artifact panel through its public application and native host seams.
-#![cfg(test)]
-pub mod artifact_support;
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod session_header_support;
-pub mod support;
+#![cfg(all(test, not(target_arch = "wasm32")))]
+use crate::artifact_support;
+use crate::canvas_paint;
+use crate::session_header_support;
+use crate::support;
 use artifact_support::panel::{Harness, Input, control, corpus, tab, text};
 use canvas_paint::Paint;
 use std::rc::Rc;
@@ -685,10 +684,10 @@ fn artifact_panel_colors_follow_caller_packs() {
                 active: Some("a.zip".into()),
                 ..Default::default()
             });
-            harness.frame.pack = maestro_theme::load_brand_pack(
-                &format!("{}/../../assets/brand/{file}", env!("CARGO_MANIFEST_DIR")),
-                &maestro_theme::theme::NativeThemeOperations,
-            )
+            harness.frame.pack = maestro_theme::load_brand_pack(&format!(
+                "{}/../../assets/brand/{file}",
+                env!("CARGO_MANIFEST_DIR")
+            ))
             .unwrap();
             harness.frame.mode = if case.input.dark {
                 maestro_theme::BrandMode::Dark
@@ -949,7 +948,7 @@ fn artifact_panel_reentrant_view_access_returns_conflict() {
     *harness.host.on_visibility.borrow_mut() = Some(Rc::new(move || {
         assert!(matches!(
             panel.upgrade().unwrap().show_artifact("a.zip"),
-            Err(maestro_web::browser::attachment_content::AttachmentUiError::BorrowConflict)
+            Err(maestro_web::tools::artifacts::ArtifactUiError::BorrowConflict)
         ));
         observed.set(true);
     }));
@@ -1239,5 +1238,3 @@ fn assert_first_frame_controls(harness: &Harness, output: &egui::FullOutput) {
         "long-artifact-name-12.zip"
     );
 }
-
-pub mod highlighter_support;

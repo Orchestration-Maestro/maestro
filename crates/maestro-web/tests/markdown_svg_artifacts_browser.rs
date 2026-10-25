@@ -1,31 +1,21 @@
 //! Actual document witnesses for retained Markdown and SVG artifact branches.
 #![cfg(all(test, target_arch = "wasm32"))]
 #[cfg(test)]
-pub mod highlighter_support;
-#[cfg(test)]
-pub mod markdown_svg_support;
-#[cfg(test)]
-mod panel_browser_support;
-#[path = "artifact_support/presentation.rs"]
-#[cfg(test)]
-pub mod presentation;
-#[cfg(test)]
-pub mod reading_browser_support;
-#[cfg(test)]
-pub mod session_header_support;
-#[cfg(test)]
-pub mod support;
-#[cfg(test)]
 mod tests {
     use crate::markdown_svg_support::{corpus, key};
-    use crate::reading_browser_support::{View, check, event, js, quoted};
+    use crate::reading_browser_support::{View, check, event, js, quoted, run};
     use wasm_bindgen::prelude::*;
-    /// Activate an actual measured artifact header endpoint.
-    fn select(view: &mut View, index: usize) {
+    /// The four measured artifact header controls, left to right.
+    fn controls(view: &mut View) -> Vec<egui::Rect> {
         view.draw(true, vec![]);
         let mut controls = view.context.interactive_rects_last_pass();
         controls.sort_by(|a, b| a.left().total_cmp(&b.left()));
         assert_eq!(controls.len(), 4);
+        controls
+    }
+    /// Activate an actual measured artifact header endpoint.
+    fn select(view: &mut View, index: usize) {
+        let controls = controls(view);
         view.draw(
             true,
             crate::reading_browser_support::click(controls[index].center()),
@@ -66,12 +56,9 @@ mod tests {
             "(()=>{const r=document.querySelector('.maestro-text-artifact'),p=r.parentElement;return p.scrollWidth>p.clientWidth && getComputedStyle(r).whiteSpace==='pre'})()"
         });
     }
-    /// Locales share source/image inputs; localized controls are covered natively.
+    /// Source and image inputs are locale-independent; localized controls are covered natively.
     fn cases(kind: &str) -> impl Iterator<Item = crate::markdown_svg_support::Case> {
-        corpus()
-            .content
-            .into_iter()
-            .filter(move |c| c.kind == kind && c.language == "en")
+        corpus().content.into_iter().filter(move |c| c.kind == kind)
     }
     /// Await the actual native image outcome rather than guessing readiness.
     async fn image_outcome(expected: &str) {
@@ -127,7 +114,7 @@ mod tests {
         panel.create("tall.md", &"word ".repeat(2000));
         let root = js("(()=>{const v=document.querySelector('.maestro-reading-viewport').getBoundingClientRect();return v.left===1 && v.top===41 && v.width===399 && v.height===259})()").as_bool().unwrap();
         check("document.querySelector('.maestro-markdown p').getBoundingClientRect().top===57");
-        js("document.querySelector('.maestro-reading-viewport').scrollTop=64");
+        run("document.querySelector('.maestro-reading-viewport').scrollTop=64");
         panel.draw(vec![]);
         let symptom = js("(()=>{const v=document.querySelector('.maestro-reading-viewport'),r=v.getBoundingClientRect(),p=document.querySelector('.maestro-markdown p');return v.scrollTop===64 && p.getBoundingClientRect().top===-7 && document.elementFromPoint(r.left+17,42)===p && document.elementFromPoint(r.left+17,40)!==p})()").as_bool().unwrap();
         assert!(
@@ -143,7 +130,7 @@ mod tests {
     /// SVG documents load as inert, contained, pointer-interactive native images.
     #[wasm_bindgen]
     pub async fn svg_preview_is_an_inert_contained_image() {
-        js(include_str!("markdown_svg_support/url_audit.js"));
+        run(include_str!("markdown_svg_support/url_audit.js"));
         for case in cases("svg").filter(|c| c.outcome.as_deref() == Some("load")) {
             let mut view = View::new(&case.filename, &case.content);
             view.draw(false, vec![]);
@@ -162,7 +149,7 @@ mod tests {
     /// Empty and malformed SVG preserve no-image and native error states separately.
     #[wasm_bindgen]
     pub async fn svg_empty_and_invalid_content_keep_native_states() {
-        js(include_str!("markdown_svg_support/url_audit.js"));
+        run(include_str!("markdown_svg_support/url_audit.js"));
         for case in cases("svg").filter(|c| c.outcome.as_deref() != Some("load")) {
             let mut view = View::new(&case.filename, &case.content);
             view.draw(false, vec![]);
@@ -192,12 +179,12 @@ mod tests {
     /// Resource identity follows edits and real attachment, never selection or hiding.
     #[wasm_bindgen]
     pub async fn svg_urls_follow_content_and_real_attachment() {
-        js(include_str!("markdown_svg_support/url_audit.js"));
+        run(include_str!("markdown_svg_support/url_audit.js"));
         let case = corpus().lifecycle;
         let mut view = View::new("a.svg", &case.contents[0]);
         view.element.connected_callback().unwrap();
         view.draw(false, vec![]);
-        js("globalThis.initial=document.querySelector('.maestro-svg-artifact img').src");
+        run("globalThis.initial=document.querySelector('.maestro-svg-artifact img').src");
         view.element.set_content(case.contents[0].clone());
         view.draw(false, vec![]);
         view.element.set_visibility(false, None).unwrap();
@@ -241,14 +228,14 @@ mod tests {
     }
     /// The next fallible lifecycle operation reports an infallible setter's error.
     fn deferred_creation_failure() {
-        js(
+        run(
             "globalThis.savedCreate=URL.createObjectURL;URL.createObjectURL=()=>{throw new Error('allocation rejected')}",
         );
         let mut failed = View::new("failure.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
-        js("URL.createObjectURL=savedCreate");
+        run("URL.createObjectURL=savedCreate");
         let root = matches!(
             failed.element.connected_callback(),
-            Err(maestro_web::browser::attachment_content::AttachmentUiError::Host(_))
+            Err(maestro_web::tools::artifacts::ArtifactUiError::Host(_))
         );
         let symptom = js("urlBlobs.size===0").as_bool().unwrap();
         assert!(
@@ -266,7 +253,7 @@ mod tests {
         for name in ["a.md", "a.svg"] {
             let mut view = View::new(name, "<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
             view.draw(false, vec![]);
-            js(
+            run(
                 "globalThis.preview=document.querySelector('.maestro-markdown,.maestro-svg-artifact').parentElement",
             );
             select(&mut view, 1);
@@ -274,14 +261,14 @@ mod tests {
             check(
                 "getComputedStyle(preview).visibility==='hidden' && document.querySelector('.maestro-text-artifact').getBoundingClientRect().height>0",
             );
-            js("globalThis.source=document.querySelector('.maestro-text-artifact').parentElement");
+            run("globalThis.source=document.querySelector('.maestro-text-artifact').parentElement");
             view.element
                 .set_visibility(false, Some(egui::Id::new("modal")))
                 .unwrap();
             view.element.set_content("updated".into());
             select(&mut view, 0);
             view.draw(false, vec![]);
-            js(
+            run(
                 "globalThis.preview=document.querySelector('.maestro-markdown,.maestro-svg-artifact').parentElement",
             );
             check(
@@ -297,7 +284,7 @@ mod tests {
     }
     /// Exercise real panel lifecycle forwarding, including an already-connected insert.
     fn panel_attachment() {
-        js(include_str!("markdown_svg_support/url_audit.js"));
+        run(include_str!("markdown_svg_support/url_audit.js"));
         let panel = crate::panel_browser_support::Panel::new();
         panel.create("a.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
         check("urlBlobs.size===1");
@@ -326,7 +313,7 @@ mod tests {
     /// Keyboard and clipped pointer input reach the same retained header actions.
     #[wasm_bindgen]
     pub async fn artifact_controls_keep_keyboard_and_clipped_pointer_admission() {
-        js(
+        run(
             "globalThis.copied=[];navigator.clipboard.writeText=text=>{copied.push(text);return Promise.resolve()};globalThis.saved=[];HTMLAnchorElement.prototype.click=function(){saved.push(this.download)}",
         );
         let panel = crate::panel_browser_support::Panel::new();
@@ -345,10 +332,7 @@ mod tests {
         check("saved.length===1 && saved[0]==='a.md'");
         drop(panel);
         let mut view = View::new("clipped.md", "control");
-        view.draw(true, vec![]);
-        let mut controls = view.context.interactive_rects_last_pass();
-        controls.sort_by(|a, b| a.left().total_cmp(&b.left()));
-        assert_eq!(controls.len(), 4);
+        let controls = controls(&mut view);
         view.size.x = controls[1].left() + 4.;
         view.draw(true, vec![]);
         view.draw(

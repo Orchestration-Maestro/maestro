@@ -6,11 +6,8 @@ use tokio::{sync::mpsc::unbounded_channel, task::LocalSet};
 
 #[test]
 fn native_notifications_report_writes_and_atomic_replacement() {
-    let root = std::env::temp_dir().join(format!(
-        "maestro-watch-notifications-{}",
-        std::process::id()
-    ));
-    fs::create_dir(&root).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
     let directory = root.join("watched");
     fs::create_dir(&directory).unwrap();
     let selected = directory.join("selected.json");
@@ -51,7 +48,6 @@ fn native_notifications_report_writes_and_atomic_replacement() {
         watcher.close().unwrap();
         while received.recv().await.is_some() {}
     });
-    fs::remove_dir_all(root).unwrap();
 }
 
 /// Await a notification that observed the selected contents.

@@ -3,7 +3,8 @@
 use super::{browser, message};
 use crate::{
     markdown_support::{check, first_slot_center, js, settle},
-    support, surface,
+    support,
+    tool_renderers_browser::surface,
 };
 use maestro_web::{
     ConsoleBlock, render_tool,

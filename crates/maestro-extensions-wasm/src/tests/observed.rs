@@ -103,10 +103,14 @@ pub struct Observed {
     pub tools: Vec<String>,
     /// Delivered partial results in observation order.
     pub updates: Vec<String>,
+    /// Partial result number to refuse, counted from zero, with the host's message.
+    pub refuse_update: Option<(usize, String)>,
     /// Session query control state.
     pub readers: super::reader_host::Bank,
     /// Live context and catalog controls.
     pub catalog: super::catalog_host::Bank,
+    /// Retained UI acquisition identities and supplied rejections.
+    pub ui: super::ui_host::Bank,
     /// Last identity handed out.
     next: u32,
     /// Registered callback keys by name, such as `event input`.
@@ -190,8 +194,15 @@ impl Observed {
         prepare: Option<u32>,
         execute: u32,
     ) -> Result<(), String> {
-        let value: serde_json::Value = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
-        let name = value["name"].as_str().ok_or("missing tool name")?;
+        #[derive(serde::Deserialize)]
+        struct Named {
+            /// The registration identity observed by the host.
+            name: String,
+        }
+        let Named { name } = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
+        if let Some(error) = self.registrations.refusal() {
+            return Err(error);
+        }
         if name == "rejected" {
             return Err("tool rejected: Ω".into());
         }
@@ -210,6 +221,22 @@ impl Observed {
         if last == "auth started" {
             self.log(format!("auth pending resources {}", self.live));
         }
+    }
+
+    /// Records one delivered partial result, or the message the host refuses it with.
+    pub fn update(&mut self, partial: &str, details: &serde_json::Value) -> Result<(), String> {
+        let refusal = match &self.refuse_update {
+            Some((position, message)) if *position == self.updates.len() => Some(message.clone()),
+            _ => None,
+        };
+        self.updates.push(partial.into());
+        if let Some(message) = refusal {
+            return Err(message);
+        }
+        if *details == "fail update" {
+            return Err("failed update: Ω".into());
+        }
+        Ok(())
     }
 
     /// Records a custom session entry.
@@ -240,6 +267,9 @@ impl Observed {
         }
         if custom_type == "catalog-control" {
             self.catalog.control(data.expect("control document"));
+        }
+        if custom_type == "ui-control" {
+            self.ui.control(data.expect("control document"));
         }
         self.log(format!("entry {custom_type} {}", data.unwrap_or("none")));
     }

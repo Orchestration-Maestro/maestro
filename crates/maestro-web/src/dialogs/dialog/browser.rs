@@ -1,9 +1,8 @@
 //! Native literal content and root-owned dialog semantics.
-use super::{DialogContentProps, DialogHeaderProps};
-use crate::browser::attachment_content::{AttachmentUiError, ReadingRoot, browser::host_error};
+use crate::browser::attachment_content::{AttachmentHostError, ReadingRoot, browser::host_error};
 use web_sys::{Document, Element};
 /// Set literal classes without parsing caller text as markup.
-fn root(document: &Document, kind: &str, classes: &str) -> Result<Element, AttachmentUiError> {
+fn root(document: &Document, kind: &str, classes: &str) -> Result<Element, AttachmentHostError> {
     let element = document.create_element("div").map_err(|e| host_error(&e))?;
     element
         .set_attribute("class", &format!("{kind} {classes}"))
@@ -19,7 +18,7 @@ fn root(document: &Document, kind: &str, classes: &str) -> Result<Element, Attac
 pub(super) fn header(
     document: &Document,
     props: &DialogHeaderProps,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let element = root(document, "maestro-dialog-header", &props.class_name)?;
     let title = document.create_element("h2").map_err(|e| host_error(&e))?;
     title.set_text_content(Some(&props.title));
@@ -33,6 +32,8 @@ pub(super) fn header(
         element.append_child(&text).map_err(|e| host_error(&e))?;
     }
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element,
         slots: vec![],
         commit: None,
@@ -43,7 +44,7 @@ pub(super) fn header(
 pub(super) fn content(
     document: &Document,
     props: &DialogContentProps,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let element = root(document, "maestro-dialog-content", &props.class_name)?;
     let mut slots = Vec::new();
     let mut owners = Vec::new();
@@ -56,6 +57,8 @@ pub(super) fn content(
         owners.push(child.owner);
     }
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element,
         slots,
         commit: None,
@@ -83,6 +86,8 @@ pub(crate) struct Native {
     committed: Weak<Semantic>,
     /// Selected localization for newly mounted candidates.
     close_name: String,
+    /// Literal caller classes for initial and retained native roots.
+    pub(in crate::dialogs) class_name: Rc<str>,
 }
 /// Non-painting native state retained by the mounted root only.
 struct Semantic {
@@ -132,7 +137,7 @@ fn mount(
     document: &Document,
     source: &ReadingContent,
     state: &Weak<State>,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let child = (source.mount)(document)?;
     let element = root(document, "maestro-dialog-native", "")?;
     element
@@ -154,7 +159,7 @@ fn mount(
         focused: Cell::new(false),
     });
     if let Some(owner) = state.upgrade() {
-        let classes = owner.props.borrow().class_name.clone();
+        let classes = Rc::clone(&owner.native.borrow().class_name);
         let name = owner.native.borrow().close_name.clone();
         update(&semantic, &name, &classes)?;
     }
@@ -175,6 +180,8 @@ fn mount(
         state.native.borrow_mut().candidate = Rc::downgrade(&semantic);
     }
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element,
         slots: child.slots,
         commit: None,
@@ -191,7 +198,7 @@ fn mount(
 fn escape_listener(
     document: &Document,
     owner: &Weak<State>,
-) -> Result<SemanticSubscription, AttachmentUiError> {
+) -> Result<SemanticSubscription, AttachmentHostError> {
     let owner = owner.clone();
     let handler = Closure::wrap(Box::new(move |event: web_sys::Event| {
         if let Some(owner) = owner.upgrade()
@@ -206,7 +213,7 @@ fn escape_listener(
     }) as Box<dyn FnMut(web_sys::Event)>);
     let window = document
         .default_view()
-        .ok_or_else(|| AttachmentUiError::Host("dialog document has no window".into()))?;
+        .ok_or_else(|| AttachmentHostError::Host("dialog document has no window".into()))?;
     EventSubscription::new(window.into(), "keydown", handler).map_err(|e| host_error(&e))
 }
 /// Forward native activation and focus through weak existing owners.
@@ -247,10 +254,14 @@ fn target(state: &State) -> Option<Rc<Semantic>> {
         .or_else(|| native.committed.upgrade())
 }
 /// Update only literal caller classes and the live localized accessible name.
-pub(super) fn configure(state: &State, name: &str, classes: &str) -> Result<(), AttachmentUiError> {
-    state.native.borrow_mut().close_name = name.into();
+pub(super) fn configure(state: &State, name: &str) -> Result<(), AttachmentHostError> {
+    let classes = {
+        let mut native = state.native.borrow_mut();
+        native.close_name = name.into();
+        Rc::clone(&native.class_name)
+    };
     if let Some(target) = target(state) {
-        update(&target, name, classes)?;
+        update(&target, name, &classes)?;
     }
     Ok(())
 }
@@ -267,7 +278,7 @@ pub(super) fn focused(state: &State) -> bool {
 }
 
 /// Keep initial and live native attributes on one forwarding path.
-fn update(target: &Semantic, name: &str, classes: &str) -> Result<(), AttachmentUiError> {
+fn update(target: &Semantic, name: &str, classes: &str) -> Result<(), AttachmentHostError> {
     target
         .root
         .set_attribute("class", &format!("maestro-dialog-native {classes}"))
@@ -276,4 +287,35 @@ fn update(target: &Semantic, name: &str, classes: &str) -> Result<(), Attachment
         .button
         .set_attribute("aria-label", name)
         .map_err(|e| host_error(&e))
+}
+
+/// Literal heading and optional description operands.
+pub struct DialogHeaderProps {
+    /// Heading text, including an empty heading.
+    pub title: String,
+    /// Only absent or empty descriptions omit the paragraph.
+    pub description: Option<String>,
+    /// Literal wrapper classes.
+    pub class_name: String,
+}
+/// Ordered native content operands.
+pub struct DialogContentProps {
+    /// Owned arbitrary native children.
+    pub children: Vec<Rc<ReadingContent>>,
+    /// Literal wrapper classes.
+    pub class_name: String,
+}
+/// Retain a literal native heading factory.
+#[must_use]
+pub fn dialog_header(props: DialogHeaderProps) -> Rc<ReadingContent> {
+    Rc::new(ReadingContent {
+        mount: Rc::new(move |document| header(document, &props)),
+    })
+}
+/// Retain ordered mixed native children with their mounted guards.
+#[must_use]
+pub fn dialog_content(props: DialogContentProps) -> Rc<ReadingContent> {
+    Rc::new(ReadingContent {
+        mount: Rc::new(move |document| content(document, &props)),
+    })
 }

@@ -1,6 +1,7 @@
 //! Native selection and reading of mark templates.
 use super::{BrandMode, BrandPack};
-use crate::theme::{ThemeError, ThemeOperations};
+use crate::theme::ThemeError;
+use crate::theme::loading::read_text;
 
 impl BrandPack {
     /// Read the default template (`None`) or the named variant and fill in `mode`'s colors.
@@ -10,12 +11,7 @@ impl BrandPack {
     /// # Errors
     /// Returns `Unknown brand mark variant` before any read, the failures of [`BrandPack::presentation`], the
     /// template read failure, `Missing brand color role` or `Unterminated brand template color`.
-    pub fn mark_svg(
-        &self,
-        mode: BrandMode,
-        variant: Option<&str>,
-        operations: &dyn ThemeOperations,
-    ) -> Result<String, ThemeError> {
+    pub fn mark_svg(&self, mode: BrandMode, variant: Option<&str>) -> Result<String, ThemeError> {
         let mark = &self.data.mark;
         let path = match variant {
             None => &mark.template,
@@ -24,7 +20,7 @@ impl BrandPack {
             })?,
         };
         let presentation = self.presentation(mode)?;
-        let template = operations.read_to_string(path).map_err(ThemeError::io)?;
+        let template = read_text(path).map_err(ThemeError::io)?;
         presentation.fill_mark(&template).map_err(ThemeError::from)
     }
 }

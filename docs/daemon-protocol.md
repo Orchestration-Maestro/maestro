@@ -19,18 +19,19 @@ and typed parameter fields at the top level, for example:
 }
 ```
 
-`RpcCommand` currently contains the 92 workspace commands. The established 29
-session commands, their responses, session events and extension UI records join
-this same family with the [shared RPC frontend delivery](https://github.com/Orchestration-Maestro/maestro/issues/256),
-when their application payload owners are available. There is no placeholder
-session record set or second command registry here. Frontends consume contracts
-through application re-exports when their consumers are delivered.
+`RpcCommand` contains the 92 workspace commands, and `Request` defaults to it. The
+application composes them with the 29 session commands under the same `type` tag in
+`maestro_app::rpc_types::RpcCommand`, which also owns the session responses, session
+events and extension dialog records; see the [JSONL protocol](rpc.md). Both
+response families write their envelope through `rpc_types::serialize_rpc_response`.
+There is no second command registry here. Frontends consume contracts through
+application re-exports.
 
 `RpcResponse` carries the original `command` and optional correlation `id`,
 `type: "response"`, and a boolean `success`. A successful workspace operation
 has typed `data`. A workspace failure has a string `error` and an open string
 `code`, preserving machine-readable failure kinds without parsing prose. Session
-failures will retain their established shape without a workspace `code` field.
+failures keep their established shape without a workspace `code` field.
 Old `method`/`params` requests and result/error-object envelopes are not supported.
 Unknown command types and malformed known parameters fail deserialization;
 unknown members on domain records are ignored.
@@ -83,6 +84,12 @@ four-byte little-endian payload length followed by standard bincode encoding.
 Readers enforce the caller-supplied maximum before allocation, reject trailing
 bytes and distinguish truncated streams from other I/O errors. The normal maximum
 is 2 MiB; explicitly selected graphics traffic has a separate 32 MiB constant.
+Decoder accounting is limited to eight times the received payload length rounded
+up to a power of two (at least one byte), saturating at the platform's addressable
+size. This allows compact integer encodings while rejecting excessive declared
+string lengths before allocation. The limit measures decoder accounting, not total
+heap usage. Serde caps each collection's speculative preallocation at 1 MiB;
+total storage for valid records can exceed the accounting.
 Version negotiation accepts 21 and rejects older/newer clients, including zero.
 
 `ClientKeybindings::Server` keeps server configuration. `Local` carries a typed

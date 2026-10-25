@@ -1,28 +1,17 @@
 //! Accepted credential storage through the public interface.
 #[cfg(test)]
-mod fallback_support;
-#[cfg(test)]
-mod support;
-#[cfg(test)]
 mod tests {
 
-    use super::support::{TempDir, is_child, run_child};
+    use crate::support::{CASE_ENV, TempDir, api_key, is_child, memory_text, run_isolated};
     use indexmap::IndexMap;
     use maestro_credentials::{
-        ApiKeyCredential, AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage,
-        AuthStorageBackend, AuthStorageData, AuthStorageError, AuthStorageFuture,
-        InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
+        AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
+        AuthStorageData, AuthStorageError, AuthStorageFuture, InMemoryAuthStorageBackend,
+        LockUpdate, OAuthCredential,
     };
     use serde_json::{Value, json};
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
-
-    /// Stored API key credential.
-    fn api_key(key: &str) -> AuthCredential {
-        AuthCredential::ApiKey(ApiKeyCredential {
-            key: key.to_owned(),
-        })
-    }
 
     /// OAuth credential with an enterprise URL.
     fn oauth(refresh: &str) -> AuthCredential {
@@ -83,18 +72,6 @@ mod tests {
             Some(_) => Err("write refused".into()),
             None => Ok(None),
         }
-    }
-
-    /// Current text of a memory backend.
-    fn memory_text(backend: &InMemoryAuthStorageBackend) -> Option<String> {
-        let mut text = None;
-        backend
-            .with_lock(&mut |current| {
-                text = current.map(str::to_owned);
-                Ok(None)
-            })
-            .unwrap();
-        text
     }
 
     #[test]
@@ -471,11 +448,10 @@ mod tests {
 
     #[test]
     fn environment_status_names_first_populated_key() {
-        let scenario = std::env::var("MAESTRO_AUTH_SCENARIO").unwrap_or_default();
+        let scenario = std::env::var(CASE_ENV).unwrap_or_default();
         if is_child() {
             return environment_scenario(&scenario);
         }
-        let dir = TempDir::new("environment");
         let cases: [(&str, &[(&str, &str)]); 3] = [
             ("single", &[("ANTHROPIC_API_KEY", "k")]),
             (
@@ -486,10 +462,9 @@ mod tests {
         ];
         for (name, variables) in cases {
             let mut envs = variables.to_vec();
-            envs.push(("MAESTRO_AUTH_SCENARIO", name));
-            run_child(
-                "tests::environment_status_names_first_populated_key",
-                dir.root(),
+            envs.push((CASE_ENV, name));
+            run_isolated(
+                "accepted_credentials::tests::environment_status_names_first_populated_key",
                 &envs,
             );
         }
@@ -576,44 +551,42 @@ mod tests {
     #[test]
     fn fallback_status_keeps_result_domain() {
         if !is_child() {
-            let dir = TempDir::new("fallback_status_keeps_result_domain");
             for (scenario, key) in [
                 ("environment", "environment"),
                 ("environment-empty", ""),
                 ("environment-whitespace", " \t"),
             ] {
-                run_child(
-                    "tests::fallback_status_keeps_result_domain",
-                    dir.root(),
-                    &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
+                run_isolated(
+                    "accepted_credentials::tests::fallback_status_keeps_result_domain",
+                    &[(CASE_ENV, scenario), ("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
-        super::support::block_on(super::fallback_support::replay(
+        crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_keeps_result_domain",
+            &std::env::var(CASE_ENV).unwrap_or_default(),
         ));
     }
 
     #[test]
     fn fallback_status_short_circuits_earlier_sources() {
         if !is_child() {
-            let dir = TempDir::new("fallback_status_short_circuits_earlier_sources");
             for (scenario, key) in [
                 ("environment", "environment"),
                 ("environment-empty", ""),
                 ("environment-whitespace", " \t"),
             ] {
-                run_child(
-                    "tests::fallback_status_short_circuits_earlier_sources",
-                    dir.root(),
-                    &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
+                run_isolated(
+                    "accepted_credentials::tests::fallback_status_short_circuits_earlier_sources",
+                    &[(CASE_ENV, scenario), ("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
-        super::support::block_on(super::fallback_support::replay(
+        crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_short_circuits_earlier_sources",
+            &std::env::var(CASE_ENV).unwrap_or_default(),
         ));
     }
 }

@@ -23,7 +23,7 @@ fn native_listener_returns_its_guest_tail_to_the_original_bus() {
         let source = serde_json::from_value(serde_json::json!({"path":"/events", "source":"cli", "scope":"temporary", "origin":"top-level"})).unwrap();
         let owner = Rc::new(RwLock::new(maestro_extensions::Extension::new("/events".into(), "/events".into(), Arc::new(RwLock::new(source)))));
         let api = ExtensionAPI::new(&owner, create_extension_runtime::<Local>(), bus.for_extension(), "/events".into());
-        let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+        let (mut pump, admission) = Pump::new();
         let registry = pump.registry();
         let endpoint = registry.api(api).unwrap();
         let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
@@ -76,7 +76,7 @@ fn ordinary_emission_decodes_before_calling_the_original_native_bus() {
                     Ok(None)
                 }),
             );
-            let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (pump, admission) = Pump::new();
             let endpoint = pump.registry().api(api).unwrap();
             let worker = std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()

@@ -135,7 +135,6 @@ fn theme(palette: &Palette, brand: Option<&str>) -> Rc<Theme> {
                     env!("CARGO_MANIFEST_DIR")
                 ),
                 Some(ColorMode::Truecolor),
-                &maestro_theme::NativeThemeOperations,
             )
             .unwrap(),
         );

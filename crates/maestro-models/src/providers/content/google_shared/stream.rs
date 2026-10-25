@@ -9,7 +9,7 @@ use serde_json::value::RawValue;
 
 use super::wire::{self, nullable};
 use super::{is_thinking_part, map_stop_reason, retain_thought_signature};
-use crate::providers::json_text::{compact_object, is_truthy, member};
+use crate::providers::json_text::{compact_json, is_truthy, member};
 use crate::providers::selected_fields::native;
 use crate::records::diagnostics::timestamp_now;
 use crate::{
@@ -215,10 +215,7 @@ impl<'a> Reducer<'a> {
                     partial,
                 }
             } else {
-                content.push(Block::Text(TextContent {
-                    text: String::new(),
-                    text_signature: None,
-                }));
+                content.push(Block::Text(TextContent::new(String::new())));
                 Update::TextStart {
                     content_index: index,
                     partial,
@@ -270,7 +267,7 @@ impl<'a> Reducer<'a> {
             ),
         };
         let arguments = wire::arguments(call.arguments)?;
-        let delta = compact_object(&arguments).map_err(|error| native(&error))?;
+        let delta = compact_json(&arguments).map_err(|error| native(&error))?;
         self.call_ids.insert(id.clone());
         let call = ToolCall {
             id,

@@ -21,7 +21,7 @@ fn label_reply_preserves_domain_string_without_json_quotes() {
         .append_label_change(&id, Presence::Present(" \u{feff}\u{85} label "))
         .unwrap();
     let (reply, response) = std::sync::mpsc::channel();
-    let (pump, _admission) = Pump::new(crate::tests::support::credential_operations());
+    let (pump, _admission) = Pump::new();
     history_reads::Request::Label(id, reply).answer(&*history.borrow(), &pump.registry());
     assert_eq!(
         response.recv().unwrap().unwrap().as_deref(),
@@ -51,7 +51,7 @@ async fn retained_history(command: bool) {
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     );
-    let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    let (mut pump, admission) = Pump::new();
     let owner = if command {
         Owner::Command(runner.create_command_context())
     } else {

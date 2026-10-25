@@ -62,7 +62,8 @@ model conversion remain separate operations. Reached null entry or message
 receivers return native errors identifying the field, not an eager schema error.
 
 `get_latest_compaction_entry` scans supplied order backwards without ancestry
-selection and borrows the matching original element. It stops at its first match;
+selection and borrows the matching original element. It accepts owned entries or
+borrowed ones, such as a branch. It stops at its first match;
 a null entry encountered before that match is an error.
 
 ## In-memory history
@@ -159,6 +160,9 @@ Native `create` and `continue_recent` use the supplied directory or encode the
 stored cwd beneath the caller's resolved agent root. `open` resolves its explicit
 filename lexically and reads it once; cwd override wins over stored cwd, with a
 runtime fallback for missing/null cwd. Explicit directory spellings are retained.
+A session directory is a `SessionDir`, which only the session crate builds, so a
+caller receives the name instead of spelling one, and each report that reads one
+takes that record and asks for its text only where it lists the directory.
 
 A fresh history publishes at its first assistant message. Loaded and recovered
 histories stay published: subsequent appends write one record. Append errors leave
@@ -168,9 +172,9 @@ selected path. A missing explicit file waits for first publication at that path.
 
 Continuation enumerates names, probes the `.jsonl` candidates, then reads the
 valid candidates' metadata in a separate pass. It selects by descending
-millisecond mtime, preserving native enumeration ties. A metadata error discards
-the selection; an individual probe failure skips that candidate. The header
-probe reads at most 512 bytes.
+millisecond mtime; equal times go to the first name in name order. A metadata
+error discards the selection; an individual probe failure skips that candidate.
+The header probe reads at most 512 bytes.
 Historical conversion applies only the ID/parent and custom-message passes;
 current and future versions remain unchanged. Removing a numeric legacy compaction
 cut index preserves the remaining object member order. Loading retains raw records, while

@@ -1,0 +1,41 @@
+{
+  "missing_file": {
+    "loaded": {
+      "ok": {}
+    },
+    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}"
+  },
+  "malformed_file": {
+    "loaded": {
+      "ok": {}
+    },
+    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}"
+  },
+  "object_root": {
+    "loaded": {
+      "ok": {
+        "beta": {
+          "type": "oauth"
+        },
+        "gamma": {
+          "type": "api_key",
+          "key": "k"
+        }
+      }
+    },
+    "file_text": "{\n  \"beta\": {\n    \"type\": \"oauth\"\n  },\n  \"gamma\": {\n    \"type\": \"api_key\",\n    \"key\": \"k\"\n  },\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}",
+    "file_bytes": 133
+  },
+  "array_root": {
+    "file_text": "[\n  {\n    \"type\": \"oauth\"\n  }\n]"
+  },
+  "scalar_number_root": {
+    "file_text": "5"
+  },
+  "scalar_string_root": {
+    "file_text": "\"text\""
+  },
+  "null_root": {
+    "file_text": "null"
+  }
+}

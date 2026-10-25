@@ -3,10 +3,11 @@
 use super::google::{GoogleOptions, GoogleThinking};
 use super::google_shared::{
     FunctionCallingConfigMode,
-    invocation::{Setup, start},
+    invocation::Setup,
     thinking::{effort, enabled_for_effort},
 };
 use crate::providers::assistant_output::initial_message_for_api;
+use crate::providers::content::google_shared::invocation::dispatch as dispatch_content;
 use crate::{
     AssistantMessageEventStream, Context, Local, Model, ProviderExecution, ProviderInvocation,
     ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily, Threaded,
@@ -87,14 +88,13 @@ pub(crate) fn dispatch(
     context: Context,
     invocation: ProviderInvocation<GoogleVertexOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            start::<Local>(setup(model, context, options), submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            start::<Threaded>(setup(model, context, options), submit)
-        }
-    }
+    dispatch_content(
+        model,
+        context,
+        invocation,
+        setup::<Local>,
+        setup::<Threaded>,
+    )
 }
 
 /// Independent cloud-provider generated identifier sequence.
@@ -154,13 +154,22 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> AssistantMessageEventStream {
-    let invocation = match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            Local::submission(Some(simple(&model, options.as_ref())), submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            Threaded::submission(Some(simple(&model, options.as_ref())), submit)
-        }
-    };
-    dispatch(model, context, invocation)
+    invocation.dispatch(
+        model,
+        context,
+        simple_call::<Local>,
+        simple_call::<Threaded>,
+    )
+}
+
+/// Project simple controls before the existing cloud dispatch.
+fn simple_call<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
+    let selected = simple(&model, options.as_ref());
+    drop(options);
+    dispatch(model, context, E::submission(Some(selected), submit))
 }

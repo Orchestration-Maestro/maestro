@@ -44,23 +44,24 @@ fn cases(names: &[&str]) {
         assert!(ids.insert(value["id"].to_string()));
         assert!(inputs.insert(value["input"].to_string()));
     }
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     for name in names {
+        // Automatic discovery reads the home; give each case an empty one of its own.
+        let home = |base: &str| vec![("HOME", Some(format!("{base}/home")))];
+        if crate::resolution_support::case_in_child(name, home).is_none() {
+            continue;
+        }
         let case = all.iter().find(|c| c.id == *name).unwrap();
         let dir = scratch::Scratch::new().unwrap();
-        let root = dir.0.to_str().unwrap();
-        let user = dir.0.join("user");
+        let root = dir.path().to_str().unwrap();
+        let user = dir.path().join("user");
         setup(case, &dir, &user);
         let settings = Rc::new(RefCell::new(maestro_settings::SettingsManager::create(
             root,
             user.to_str().unwrap(),
             ".maestro",
         )));
-        let (unused, _, mut effects) = support::manager(&serde_json::json!({}));
-        drop(unused);
-        Rc::get_mut(&mut effects).unwrap().native_exists = true;
+        let effects = Rc::new(support::Effects::default());
         let manager = DefaultPackageManager::new(
             PackageManagerOptions {
                 cwd: root.into(),
@@ -123,12 +124,12 @@ fn component_entries_use_shared_configured_and_manifest_routes() {
 
 /// Create only the recorded filesystem and settings operands.
 fn setup(case: &Case, dir: &scratch::Scratch, user: &std::path::Path) {
-    let root = dir.0.to_str().unwrap();
+    let root = dir.path().to_str().unwrap();
     fs::create_dir_all(user).unwrap();
-    fs::create_dir_all(dir.0.join("extensions")).unwrap();
-    fs::write(dir.0.join(".git"), "gitdir: unused").unwrap();
+    fs::create_dir_all(dir.path().join("extensions")).unwrap();
+    fs::write(dir.path().join(".git"), "gitdir: unused").unwrap();
     for file in &case.input.files {
-        let path = dir.0.join(&file.path);
+        let path = dir.path().join(&file.path);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         if file.text == "@author_component" {
             fs::copy("tests/fixtures/author_component.wasm", path).unwrap();
@@ -137,7 +138,10 @@ fn setup(case: &Case, dir: &scratch::Scratch, user: &std::path::Path) {
         }
     }
     for (path, value) in [
-        (dir.0.join(".maestro/settings.json"), &case.input.configured),
+        (
+            dir.path().join(".maestro/settings.json"),
+            &case.input.configured,
+        ),
         (user.join("settings.json"), &case.input.filtered),
     ] {
         if let Some(value) = value {

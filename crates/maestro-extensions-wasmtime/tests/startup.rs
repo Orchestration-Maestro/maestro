@@ -1,29 +1,11 @@
 //! Failed authored initialization releases the Store and its original native request owner.
 #![cfg(test)]
 use maestro_extensions::{
-    ConfigValueOperations, ExtensionRunner, Local, create_event_bus_for, create_extension_runtime,
+    ExtensionRunner, Local, create_event_bus_for, create_extension_runtime,
     load_extension_from_factory, types::FlagValue,
 };
 use maestro_extensions_wasmtime::artifact_factory;
 use std::{rc::Rc, sync::RwLock};
-
-/// The pump alone retains these supplied effects after factory initialization returns.
-pub(super) struct Released(pub(super) Option<tokio::sync::oneshot::Sender<()>>);
-impl ConfigValueOperations for Released {
-    fn environment(&self, _: &str) -> Option<String> {
-        panic!("no credential read");
-    }
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        panic!("no credential execution");
-    }
-}
-impl Drop for Released {
-    fn drop(&mut self) {
-        if let Some(released) = self.0.take() {
-            let _ = released.send(());
-        }
-    }
-}
 
 /// Checks failed startup teardown before starting an independently healthy component.
 pub(super) async fn failed() {
@@ -40,10 +22,9 @@ pub(super) async fn failed() {
         Rc::new(|_| panic!("no tails")),
         Rc::new(|_| panic!("no reports")),
     );
-    let (released, teardown) = tokio::sync::oneshot::channel();
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let error = load_extension_from_factory(
-        artifact_factory(path.clone(), Rc::new(Released(Some(released)))),
+        artifact_factory(path.clone()),
         "/failed-startup".into(),
         bus.for_extension(),
         runtime,
@@ -57,7 +38,6 @@ pub(super) async fn failed() {
         error.contains(&path) && error.ends_with("guest startup failure"),
         "{error}"
     );
-    teardown.await.unwrap();
     assert!(runner.get_command("bridge-observe").is_none());
     let (owner, healthy, events) = super::retained_components::loaded_on(bus.for_extension()).await;
     let command = healthy

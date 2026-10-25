@@ -17,6 +17,7 @@ fn check(name: &str) {
             "custom" => match CustomPropsPart::parse_xml(&xml, xml.root()) {
                 Ok(part) => metadata::custom(&part.props),
                 Err(DocxError::Xml { .. }) => json!({"kind":"invalid-xml-part"}),
+                Err(DocxError::Output(_)) => panic!("unexpected extracted-output failure"),
                 Err(DocxError::FontKey) => {
                     panic!("Unexpected font-key error while parsing metadata")
                 }

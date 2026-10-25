@@ -120,6 +120,7 @@ impl PartData {
             }
             PartKind::Comments => Self::Comments(Box::new(CommentsPart::parse_xml(
                 &OwnedXmlElement::new(root),
+                false,
             )?)),
             PartKind::CommentsExtended => {
                 Self::CommentsExtended(Box::new(CommentsExtendedPart::parse_xml(xml, root)))

@@ -3,19 +3,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::native_support;
 use crate::sandbox;
-use crate::scratch;
 use maestro_packages::PackageManager;
 use maestro_resources::{SourceOrigin, SourceScope};
-use maestro_settings::{Settings, SettingsManager};
-use sandbox::{Fixture, Op, block_on};
+use sandbox::{Fixture, block_on};
 use serde::Deserialize;
-use std::{
-    io,
-    sync::{
-        Arc, Barrier,
-        mpsc::{Receiver, Sender, channel},
-    },
-};
+use std::io;
 
 /// Bytes deliberately longer and different from either generated bootstrap file.
 const SENTINEL: &str = "first creator owns these distinctive bytes, which must remain intact even after the competing resolution completes\n";
@@ -37,20 +29,22 @@ fn texts() -> BootstrapFiles {
 /// Installs one deterministic extension fixture into a package directory.
 fn extension(base: &str) -> String {
     native_support::write(
-        &format!("{base}/package.json"),
+        native_support::under(base, "package.json"),
         "{\"maestro\":{\"extensions\":[\"entry.ts\"]}}",
     );
-    let entry = format!("{base}/entry.ts");
+    let entry = native_support::under(base, "entry.ts");
     native_support::write(&entry, "export default () => {};\n");
-    entry
+    entry.to_string_lossy().into_owned()
 }
 /// Installs one deterministic extension fixture from an npm child invocation.
 fn install_resource(call: &sandbox::Call) -> String {
-    extension(&format!(
-        "{}/node_modules/{}",
-        call.args.last().unwrap(),
-        call.args[1]
-    ))
+    extension(
+        &native_support::under(
+            call.args.last().unwrap(),
+            &format!("node_modules/{}", call.args[1]),
+        )
+        .to_string_lossy(),
+    )
 }
 /// Checks the resource and provenance returned by one public resolution.
 fn resolve_source(fixture: &Fixture, source: &str, scope: SourceScope) -> io::Result<String> {
@@ -72,111 +66,47 @@ fn resolve_source(fixture: &Fixture, source: &str, scope: SourceScope) -> io::Re
     Ok(entry.path.clone())
 }
 
-/// One participant's owned paths and synchronization, with no manager crossing threads.
-struct Participant {
-    /// Shared input and temporary base.
-    base: String,
-    /// Scope being resolved.
+/// Resolves an npm source into `scope`, whose root exists beforehand when asked, and
+/// checks the bootstrap files; a temporary root lies inside the case's `tree`.
+fn npm_bootstrap_files(
+    tree: &std::path::Path,
     scope: SourceScope,
-    /// Bootstrap file selected for the race.
-    filename: &'static str,
-    /// Both writers have observed absence before opening.
-    barrier: Arc<Barrier>,
-    /// A receiver identifies the loser and holds it until the winner's effects finish.
-    completion: Option<Receiver<()>>,
-    /// Sent after the winning sentinel and resource have been written.
-    done: Sender<()>,
-}
-/// Constructs and drives a manager inside its participant thread.
-fn participant(input: Participant) -> String {
-    let Participant {
-        base,
-        scope,
-        filename,
-        barrier,
-        completion,
-        done,
-    } = input;
-    let winner = completion.is_none();
-    let fixture = Fixture::over(
-        SettingsManager::in_memory(Settings::default()),
-        Some(&base),
-        false,
-    );
-    *fixture.script.temp_root.borrow_mut() = Some(base);
-    *fixture.script.before_effect.borrow_mut() = Some((
-        Op::Write,
-        filename.into(),
-        Box::new(move |_| {
-            barrier.wait();
-            if let Some(completion) = completion {
-                completion.recv().unwrap();
-            }
-            Ok(())
-        }),
-    ));
+    existing_root: bool,
+    expected: &BootstrapFiles,
+) {
+    let fixture = Fixture::new(&serde_json::json!({}));
+    let root = match scope {
+        SourceScope::Project => fixture.project(".maestro/npm"),
+        _ => native_support::under(std::env::temp_dir(), "maestro-extensions/npm/f35b2129")
+            .to_string_lossy()
+            .into_owned(),
+    };
+    if existing_root {
+        std::fs::create_dir_all(&root).unwrap();
+    }
     fixture
         .script
         .hooks
         .borrow_mut()
-        .push_back(Box::new(move |call| {
-            let selected = format!("{}/{filename}", call.args.last().unwrap());
-            if winner {
-                native_support::write(&selected, SENTINEL);
-            } else {
-                assert_eq!(
-                    sandbox::read(&selected),
-                    SENTINEL,
-                    "loser install must observe winner bytes"
-                );
-            }
+        .push_back(Box::new(|call| {
             install_resource(call);
-            if winner {
-                done.send(()).unwrap();
-            }
         }));
-    let name = if winner { "winner" } else { "loser" };
-    let entry = resolve_source(&fixture, &format!("npm:{name}"), scope)
-        .expect("both public resolutions must succeed");
-    assert!(entry.ends_with(&format!("/node_modules/{name}/entry.ts")));
-    fixture.calls()[0].args.last().unwrap().clone()
-}
-
-#[test]
-fn concurrent_resolution_preserves_first_creator_bytes() {
-    for scope in [SourceScope::Project, SourceScope::Temporary] {
-        for filename in [".gitignore", "package.json"] {
-            let scratch = scratch::Scratch::new().unwrap();
-            let base = scratch.0.to_string_lossy().into_owned();
-            let barrier = Arc::new(Barrier::new(2));
-            let (done, completed) = channel();
-            let threads: Vec<_> = [None, Some(completed)]
-                .into_iter()
-                .map(|completion| {
-                    let input = Participant {
-                        base: base.clone(),
-                        scope,
-                        filename,
-                        barrier: barrier.clone(),
-                        completion,
-                        done: done.clone(),
-                    };
-                    std::thread::spawn(move || participant(input))
-                })
-                .collect();
-            let joined: Vec<_> = threads
-                .into_iter()
-                .map(std::thread::JoinHandle::join)
-                .collect();
-            let roots: Vec<_> = joined.into_iter().map(Result::unwrap).collect();
-            assert_eq!(roots[0], roots[1]);
-            assert_eq!(
-                sandbox::read(&format!("{}/{filename}", roots[0])),
-                SENTINEL,
-                "final same-file bytes must remain the winner's"
-            );
-        }
+    let entry = resolve_source(&fixture, "npm:fresh", scope).unwrap();
+    assert_eq!(
+        std::path::Path::new(&entry),
+        native_support::under(&root, "node_modules/fresh/entry.ts")
+    );
+    if scope == SourceScope::Temporary {
+        assert!(native_support::under(&root, "").starts_with(tree), "{root}");
     }
+    assert_eq!(
+        sandbox::read(native_support::under(&root, ".gitignore")),
+        expected.gitignore
+    );
+    assert_eq!(
+        sandbox::read(native_support::under(&root, "package.json")),
+        expected.package_json
+    );
 }
 
 #[test]
@@ -184,33 +114,15 @@ fn resolution_creates_exact_bootstrap_files() {
     let expected = texts();
     for scope in [SourceScope::Project, SourceScope::Temporary] {
         for existing_root in [false, true] {
-            let fixture = Fixture::new(&serde_json::json!({}));
-            *fixture.script.temp_root.borrow_mut() = Some(fixture.path("temp"));
-            let root = match scope {
-                SourceScope::Project => fixture.project(".maestro/npm"),
-                _ => format!("{}/maestro-extensions/npm/f35b2129", fixture.path("temp")),
-            };
-            if existing_root {
-                std::fs::create_dir_all(&root).unwrap();
+            // Each case owns its tree and the temporary directory inside it.
+            let case = format!("{scope:?}-{existing_root}");
+            if let Some(tree) = crate::resolution_support::case_in_child(&case, |_| vec![]) {
+                npm_bootstrap_files(&tree, scope, existing_root, &expected);
             }
-            fixture
-                .script
-                .hooks
-                .borrow_mut()
-                .push_back(Box::new(|call| {
-                    install_resource(call);
-                }));
-            let entry = resolve_source(&fixture, "npm:fresh", scope).unwrap();
-            assert_eq!(entry, format!("{root}/node_modules/fresh/entry.ts"));
-            assert_eq!(
-                sandbox::read(&format!("{root}/.gitignore")),
-                expected.gitignore
-            );
-            assert_eq!(
-                sandbox::read(&format!("{root}/package.json")),
-                expected.package_json
-            );
         }
+    }
+    if crate::resolution_support::case_in_child("git", |_| vec![]).is_none() {
+        return;
     }
     for scope in [SourceScope::User, SourceScope::Project] {
         let fixture = Fixture::new(&serde_json::json!({}));
@@ -227,12 +139,15 @@ fn resolution_creates_exact_bootstrap_files() {
                 extension(call.args.last().unwrap());
             }));
         let entry = resolve_source(&fixture, "https://github.com/team/repo", scope).unwrap();
-        assert_eq!(entry, format!("{root}/github.com/team/repo/entry.ts"));
         assert_eq!(
-            sandbox::read(&format!("{root}/.gitignore")),
+            std::path::Path::new(&entry),
+            native_support::under(&root, "github.com/team/repo/entry.ts")
+        );
+        assert_eq!(
+            sandbox::read(native_support::under(&root, ".gitignore")),
             expected.gitignore
         );
-        assert!(!std::path::Path::new(&format!("{root}/package.json")).exists());
+        assert!(!native_support::under(&root, "package.json").exists());
     }
 }
 
@@ -316,12 +231,17 @@ fn preserved(path: &str, kind: Entry, original: &std::fs::Metadata) {
 
 #[test]
 fn resolution_preserves_existing_bootstrap_entries() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let expected = texts();
     for filename in [".gitignore", "package.json"] {
         for kind in entries() {
             let fixture = Fixture::new(&serde_json::json!({}));
             let root = fixture.project(".maestro/npm");
-            let selected = format!("{root}/{filename}");
+            let selected = native_support::under(&root, filename)
+                .to_string_lossy()
+                .into_owned();
             let original = occupied(&selected, kind);
             fixture
                 .script
@@ -331,14 +251,17 @@ fn resolution_preserves_existing_bootstrap_entries() {
                     install_resource(call);
                 }));
             let entry = resolve_source(&fixture, "npm:preserved", SourceScope::Project).unwrap();
-            assert_eq!(entry, format!("{root}/node_modules/preserved/entry.ts"));
+            assert_eq!(
+                std::path::Path::new(&entry),
+                native_support::under(&root, "node_modules/preserved/entry.ts")
+            );
             preserved(&selected, kind, &original);
             let (sibling, text) = if filename == ".gitignore" {
                 ("package.json", &expected.package_json)
             } else {
                 (".gitignore", &expected.gitignore)
             };
-            assert_eq!(sandbox::read(&format!("{root}/{sibling}")), *text);
+            assert_eq!(sandbox::read(native_support::under(&root, sibling)), *text);
         }
     }
     let fixture = Fixture::new(&serde_json::json!({}));
@@ -358,177 +281,59 @@ fn resolution_preserves_existing_bootstrap_entries() {
     assert_eq!(sandbox::read(&manifest), "distinct manifest");
 }
 
-/// Distinguishes the original error payload from a display-only reconstruction.
-#[derive(Debug)]
-struct Failure(Arc<()>);
-impl std::fmt::Display for Failure {
-    fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        output.write_str("controlled filesystem failure")
-    }
-}
-impl std::error::Error for Failure {}
 /// One error boundary before child admission.
+#[cfg(unix)]
 #[derive(Clone, Copy)]
 enum Boundary {
     /// Recursive directory creation.
     Directory,
     /// The first bootstrap writer.
     Ignore,
-    /// Manifest opening or writing.
-    Manifest,
-    /// Manifest writing after a prefix was published.
-    Partial,
 }
-/// Checks original error ownership and the completed effect prefix.
+/// Checks that the operating system's error and the completed effect prefix reach the caller.
+#[cfg(unix)]
 fn failing_resolution(boundary: Boundary) {
     let fixture = Fixture::new(&serde_json::json!({"npmCommand":[""]}));
     let root = fixture.project(".maestro/npm");
-    let identity = Arc::new(());
-    let payload = Failure(identity.clone());
-    let expected = texts();
-    let (operation, suffix) = match boundary {
-        Boundary::Directory => (Op::Create, "/npm"),
-        Boundary::Ignore => (Op::Write, ".gitignore"),
-        Boundary::Manifest | Boundary::Partial => (Op::Write, "package.json"),
+    let locked = match boundary {
+        Boundary::Directory => fixture.project(".maestro"),
+        Boundary::Ignore => root.clone(),
     };
-    let prefix = expected.package_json[..7].to_owned();
-    let partial = prefix.clone();
-    *fixture.script.before_effect.borrow_mut() = Some((
-        operation,
-        suffix.into(),
-        Box::new(move |path| {
-            if matches!(boundary, Boundary::Partial) {
-                native_support::write(path, &partial);
-            }
-            Err(io::Error::new(io::ErrorKind::PermissionDenied, payload))
-        }),
-    ));
+    std::fs::create_dir_all(&locked).unwrap();
+    let Some(restore) = maestro_test_directory::deny(&locked, 0o555).unwrap() else {
+        return;
+    };
+    let expected = std::fs::create_dir(native_support::under(&locked, "probe")).unwrap_err();
     let error = resolve_source(&fixture, "npm:failure", SourceScope::Project).unwrap_err();
-    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
-    let original = error
-        .get_ref()
-        .unwrap()
-        .downcast_ref::<Failure>()
-        .expect("original payload survives public resolution");
-    assert!(Arc::ptr_eq(&original.0, &identity));
+    drop(restore);
+    assert_eq!(error.raw_os_error(), expected.raw_os_error());
     assert!(
         fixture.calls().is_empty(),
         "filesystem failure must precede invalid command selection and child admission"
     );
-    prior_effects(&root, boundary, &expected, &prefix);
-}
-
-/// Checks the complete filesystem prefix left by a failed bootstrap effect.
-fn prior_effects(root: &str, boundary: Boundary, expected: &BootstrapFiles, prefix: &str) {
-    let names = if std::path::Path::new(root).exists() {
-        let mut names: Vec<_> = std::fs::read_dir(root)
-            .unwrap()
-            .map(|entry| entry.unwrap().file_name())
-            .collect();
-        names.sort();
-        names
-    } else {
-        Vec::new()
-    };
-    let expected_names: Vec<std::ffi::OsString> = match boundary {
-        Boundary::Directory | Boundary::Ignore => vec![],
-        Boundary::Manifest => vec![".gitignore".into()],
-        Boundary::Partial => vec![".gitignore".into(), "package.json".into()],
-    };
-    assert_eq!(names, expected_names);
-    assert_eq!(
-        std::path::Path::new(root).exists(),
-        !matches!(boundary, Boundary::Directory)
-    );
-    if matches!(boundary, Boundary::Manifest | Boundary::Partial) {
-        assert_eq!(
-            sandbox::read(&format!("{root}/.gitignore")),
-            expected.gitignore
-        );
-    }
-    if matches!(boundary, Boundary::Partial) {
-        assert_eq!(sandbox::read(&format!("{root}/package.json")), prefix);
+    let exists = std::path::Path::new(&root).exists();
+    assert_eq!(exists, matches!(boundary, Boundary::Ignore));
+    if exists {
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
     }
 }
 
 #[test]
 fn resolution_propagates_original_bootstrap_failures() {
-    for boundary in [
-        Boundary::Directory,
-        Boundary::Ignore,
-        Boundary::Manifest,
-        Boundary::Partial,
-    ] {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    #[cfg(unix)]
+    for boundary in [Boundary::Directory, Boundary::Ignore] {
         failing_resolution(boundary);
     }
     let fixture = Fixture::new(&serde_json::json!({"npmCommand":[""]}));
     let root = fixture.project(".maestro/npm");
     native_support::write(&root, "root is a file");
-    let expected = std::fs::write(format!("{root}/.gitignore"), "probe").unwrap_err();
+    let expected = std::fs::write(native_support::under(&root, ".gitignore"), "probe").unwrap_err();
     assert!(expected.raw_os_error().is_some());
     let error = resolve_source(&fixture, "npm:failure", SourceScope::Project).unwrap_err();
     assert_eq!(error.raw_os_error(), expected.raw_os_error());
     assert_eq!(sandbox::read(&root), "root is a file");
     assert!(fixture.calls().is_empty());
-}
-
-/// Checks replacing mode against each occupied destination class.
-fn replaced(path: &str, kind: Entry, original: &std::fs::Metadata) {
-    assert_eq!(sandbox::read(path), "new text");
-    #[cfg(unix)]
-    if matches!(kind, Entry::Symlink | Entry::Dangling) {
-        use std::os::unix::fs::MetadataExt;
-        let current = std::fs::symlink_metadata(path).unwrap();
-        assert_eq!(
-            (current.dev(), current.ino()),
-            (original.dev(), original.ino())
-        );
-        assert_eq!(
-            std::fs::read_link(path).unwrap(),
-            std::path::Path::new(&format!("{path}.target"))
-        );
-        assert_eq!(sandbox::read(&format!("{path}.target")), "new text");
-    }
-}
-
-#[test]
-fn native_write_mode_keeps_exclusive_and_replacing_semantics() {
-    use maestro_packages::{NativePackageOperations, PackageOperations};
-    let operations = NativePackageOperations::new(
-        |_| false,
-        std::rc::Rc::new(|| false),
-        &std::rc::Rc::new(tokio::task::LocalSet::new()),
-    );
-    for exclusive in [true, false] {
-        let scratch = scratch::Scratch::new().unwrap();
-        let path = format!("{}/missing", scratch.0.to_string_lossy());
-        operations.write_file(&path, "new text", exclusive).unwrap();
-        assert_eq!(sandbox::read(&path), "new text");
-        let missing_parent = format!("{}/no-parent/entry", scratch.0.to_string_lossy());
-        let error = operations
-            .write_file(&missing_parent, "new text", exclusive)
-            .unwrap_err();
-        assert_eq!(error.kind(), io::ErrorKind::NotFound);
-        assert!(
-            !std::path::Path::new(&missing_parent)
-                .parent()
-                .unwrap()
-                .exists()
-        );
-        for (index, kind) in entries().into_iter().enumerate() {
-            let path = format!("{}/occupied-{index}", scratch.0.to_string_lossy());
-            let original = occupied(&path, kind);
-            let result = operations.write_file(&path, "new text", exclusive);
-            if exclusive {
-                assert_eq!(result.unwrap_err().kind(), io::ErrorKind::AlreadyExists);
-                preserved(&path, kind, &original);
-            } else if matches!(kind, Entry::Directory) {
-                assert!(result.is_err());
-                preserved(&path, kind, &original);
-            } else {
-                result.unwrap();
-                replaced(&path, kind, &original);
-            }
-        }
-    }
 }

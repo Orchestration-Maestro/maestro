@@ -44,23 +44,12 @@
         ]
       ],
       [
-        "home"
-      ],
-      [
         "exists",
         "/home/sample/.bun/install/global/node_modules"
       ],
       [
         "canonicalize",
         "/home/sample/.bun/install/global/node_modules"
-      ],
-      [
-        "access",
-        "/home/sample/.bun/install/global/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/home/sample/.bun/install/global/node_modules/@old"
       ]
     ]
   },
@@ -109,9 +98,6 @@
         ]
       ],
       [
-        "home"
-      ],
-      [
         "exists",
         "/unrelated/.bun/install/global/node_modules"
       ],
@@ -122,14 +108,6 @@
       [
         "canonicalize",
         "/custom/.bun/install/global/node_modules"
-      ],
-      [
-        "access",
-        "/custom/.bun/install/global/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/custom/.bun/install/global/node_modules/@old"
       ]
     ]
   },
@@ -146,8 +124,7 @@
         "status": 9,
         "stdout": "",
         "stderr": "not available"
-      },
-      "home_error": true
+      }
     },
     "expected": {
       "error": "Failed to run bun --profile x pm bin -g: not available"
@@ -221,14 +198,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   }

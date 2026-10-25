@@ -1,9 +1,13 @@
+#[cfg(not(target_arch = "wasm32"))]
 use crate::environment_children as children;
 
+#[cfg(not(target_arch = "wasm32"))]
 use children::{Directory, TestResult, child, run, vars};
 
+#[cfg(not(target_arch = "wasm32"))]
 const PRECEDENCE: &str = "maestro_environment_keys_follow_provider_precedence";
 
+#[cfg(not(target_arch = "wasm32"))]
 const PROVIDERS: &[(&str, &[&str])] = &[
     (
         "github-copilot",
@@ -39,6 +43,7 @@ const PROVIDERS: &[(&str, &[&str])] = &[
     ("xiaomi-token-plan-sgp", &["XIAOMI_TOKEN_PLAN_SGP_API_KEY"]),
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
     if child()? {
@@ -60,7 +65,9 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
         "OPENAI_API_KEY",
     ] {
         run(
-            PRECEDENCE,
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
+                .env_clear()
+                .case("*"),
             &directory,
             &vars(
                 &[("OPENAI_API_KEY", "unrelated"), (provider, "unrelated")]
@@ -82,7 +89,9 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
         "second-independent-value",
     ] {
         run(
-            PRECEDENCE,
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
+                .env_clear()
+                .case("*"),
             &directory,
             &vars(&[("OPENAI_API_KEY", value)]),
             "openai",
@@ -92,6 +101,7 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn assert_presence_combinations(
     directory: &Directory,
     provider: &str,
@@ -120,26 +130,38 @@ fn assert_presence_combinations(
             .collect();
         let first = present.first().map(|key| format!("controlled-{key}"));
         run(
-            PRECEDENCE,
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
+                .env_clear()
+                .case("*"),
             directory,
             &variables,
             provider,
             ((!present.is_empty()).then_some(present), first.as_deref()),
         )?;
     }
-    run(PRECEDENCE, directory, &[], provider, (None, None))?;
+    run(
+        maestro_test_process::TestProcess::current(PRECEDENCE)?
+            .env_clear()
+            .case("*"),
+        directory,
+        &[],
+        provider,
+        (None, None),
+    )?;
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 const VERTEX: &str = "maestro_vertex_keys_distinguish_explicit_and_ambient_credentials";
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_vertex_keys_distinguish_explicit_and_ambient_credentials() -> TestResult {
     if child()? {
         return Ok(());
     }
     let directory = Directory::new()?;
-    let credential = directory.0.join("credentials");
+    let credential = directory.path().join("credentials");
     std::fs::write(&credential, b"deliberately not JSON")?;
     assert_vertex_requirements(&directory, &credential)?;
     assert_vertex_paths(&directory, &credential)?;
@@ -149,6 +171,7 @@ fn maestro_vertex_keys_distinguish_explicit_and_ambient_credentials() -> TestRes
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn vertex_variables(path: &std::path::Path) -> Vec<(std::ffi::OsString, std::ffi::OsString)> {
     let mut variables = vars(&[
         ("GOOGLE_CLOUD_PROJECT", "project"),
@@ -161,13 +184,16 @@ fn vertex_variables(path: &std::path::Path) -> Vec<(std::ffi::OsString, std::ffi
     variables
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn vertex_run(
     directory: &Directory,
     variables: &[(std::ffi::OsString, std::ffi::OsString)],
     expected: Option<&str>,
 ) -> TestResult {
     run(
-        VERTEX,
+        maestro_test_process::TestProcess::current(VERTEX)?
+            .env_clear()
+            .case("*"),
         directory,
         variables,
         "google-vertex",
@@ -176,6 +202,7 @@ fn vertex_run(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn assert_vertex_requirements(directory: &Directory, path: &std::path::Path) -> TestResult {
     for project in ["GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"] {
         let mut variables = vars(&[(project, "project"), ("GOOGLE_CLOUD_LOCATION", "location")]);
@@ -202,7 +229,9 @@ fn assert_vertex_requirements(directory: &Directory, path: &std::path::Path) -> 
     ]));
     vertex_run(directory, &variables, Some("<authenticated>"))?;
     run(
-        VERTEX,
+        maestro_test_process::TestProcess::current(VERTEX)?
+            .env_clear()
+            .case("*"),
         directory,
         &vars(&[
             ("GOOGLE_CLOUD_API_KEY", "explicit"),
@@ -214,6 +243,8 @@ fn assert_vertex_requirements(directory: &Directory, path: &std::path::Path) -> 
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg_attr(not(unix), allow(unused_variables))]
 fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> TestResult {
     vertex_run(
         directory,
@@ -222,11 +253,11 @@ fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> T
     )?;
     vertex_run(
         directory,
-        &vertex_variables(&directory.0),
+        &vertex_variables(directory.path()),
         Some("<authenticated>"),
     )?;
     let default = directory
-        .0
+        .path()
         .join(".config/gcloud/application_default_credentials.json");
     std::fs::create_dir_all(default.parent().ok_or("missing parent")?)?;
     for exists in [false, true] {
@@ -247,12 +278,12 @@ fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> T
     }
     vertex_run(
         directory,
-        &vertex_variables(&directory.0.join("missing")),
+        &vertex_variables(&directory.path().join("missing")),
         None,
     )?;
     #[cfg(unix)]
     {
-        let link = directory.0.join("link");
+        let link = directory.path().join("link");
         std::os::unix::fs::symlink(credential, &link)?;
         vertex_run(directory, &vertex_variables(&link), Some("<authenticated>"))?;
         std::fs::remove_file(credential)?;
@@ -261,8 +292,9 @@ fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> T
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn assert_vertex_cache(directory: &Directory) -> TestResult {
-    let path = directory.0.join("cached");
+    let path = directory.path().join("cached");
     let mut variables = vertex_variables(&path);
     variables.push(("MAESTRO_ENV_CREATE".into(), path.as_os_str().to_owned()));
     vertex_run(directory, &variables, None)?;
@@ -272,12 +304,18 @@ fn assert_vertex_cache(directory: &Directory) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
 fn assert_vertex_native_paths(directory: &Directory) -> TestResult {
-    use std::os::unix::ffi::OsStringExt;
-    let home = directory
-        .0
-        .join(std::ffi::OsString::from_vec(b"native-\xff".to_vec()));
+    use std::os::unix::ffi::{OsStrExt, OsStringExt};
+    let name = std::ffi::OsString::from_vec(b"native-\xff".to_vec());
+    // A host may refuse names that are not valid UTF-8; every UTF-8 subcase stays
+    // unconditional.
+    if !directory.keeps_distinct(&[name.as_os_str()])? {
+        eprintln!("host refuses the name bytes {:?}", name.as_bytes());
+        return Ok(());
+    }
+    let home = directory.path().join(&name);
     let path = home.join(".config/gcloud/application_default_credentials.json");
     std::fs::create_dir_all(path.parent().ok_or("missing parent")?)?;
     std::fs::write(&path, b"not JSON")?;
@@ -291,6 +329,7 @@ fn assert_vertex_native_paths(directory: &Directory) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_bedrock_configuration_signals_remain_distinct() -> TestResult {
     if child()? {
@@ -351,6 +390,7 @@ fn maestro_bedrock_configuration_signals_remain_distinct() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
     use maestro_models::{ModelCost, ModelInput, get_model};
@@ -384,7 +424,11 @@ fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
     assert_eq!(router.input, [ModelInput::Text, ModelInput::Image]);
     let directory = Directory::new()?;
     run(
-        "maestro_fireworks_catalog_and_keys_remain_complete",
+        maestro_test_process::TestProcess::current(
+            "maestro_fireworks_catalog_and_keys_remain_complete",
+        )?
+        .env_clear()
+        .case("*"),
         &directory,
         &vars(&[("FIREWORKS_API_KEY", "test-fireworks-key")]),
         "fireworks",
@@ -393,16 +437,112 @@ fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn bedrock_run(
     directory: &Directory,
     variables: &[(std::ffi::OsString, std::ffi::OsString)],
     expected: Option<&str>,
 ) -> TestResult {
     run(
-        "maestro_bedrock_configuration_signals_remain_distinct",
+        maestro_test_process::TestProcess::current(
+            "maestro_bedrock_configuration_signals_remain_distinct",
+        )?
+        .env_clear()
+        .case("*"),
         directory,
         variables,
         "amazon-bedrock",
         (None, expected),
     )
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Cleared children preserve native operands and caller profile precedence.
+#[test]
+fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResult {
+    const NAME: &str = "cleared_environment_child_keeps_native_values_and_profile_order";
+    const PROFILE: &str = "inherited-%p-%m.profraw";
+    const OVERRIDE: &str = "explicit-%p-%m.profraw";
+    if maestro_test_process::selection().is_child() {
+        let stage = ["outer", "inherited", "override"]
+            .into_iter()
+            .find(|stage| maestro_test_process::selection().runs_case(stage))
+            .expect("selected native stage");
+        if stage != "outer" {
+            return native_environment_observations(if stage == "inherited" {
+                PROFILE
+            } else {
+                OVERRIDE
+            });
+        }
+        assert_eq!(std::env::var("LLVM_PROFILE_FILE")?, PROFILE);
+        let directory = Directory::new()?;
+        let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+        for (stage, profile) in [("inherited", None), ("override", Some(OVERRIDE))] {
+            let mut variables = vars(&[("MAESTRO_NATIVE_EMPTY", "")]);
+            variables.extend(profile.map(|value| ("LLVM_PROFILE_FILE".into(), value.into())));
+            #[cfg(unix)]
+            {
+                use std::os::unix::ffi::OsStringExt as _;
+                variables.push((
+                    "MAESTRO_NATIVE_BYTES".into(),
+                    std::ffi::OsString::from_vec(vec![b'a', 0xff]),
+                ));
+            }
+            run(
+                maestro_test_process::TestProcess::current(NAME)?
+                    .env_clear()
+                    .case(stage),
+                &directory,
+                &variables,
+                "unknown-native-provider",
+                (None, None),
+            )?;
+        }
+        let unchanged = std::env::vars_os().collect::<std::collections::BTreeMap<_, _>>() == before;
+        assert!(unchanged, "child launches changed the outer environment");
+        return Ok(());
+    }
+    let output = maestro_test_process::TestProcess::current(NAME)?
+        .nocapture()
+        .case("outer")
+        .env("LLVM_PROFILE_FILE", PROFILE)
+        .env("MAESTRO_NATIVE_SENTINEL", "ambient")
+        .output()?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Observe native operands in the actual cleared child before consuming its expectation.
+fn native_environment_observations(profile: &str) -> TestResult {
+    let cwd = std::env::current_dir()?;
+    assert_eq!(std::env::var_os("HOME").as_deref(), Some(cwd.as_os_str()));
+    assert_eq!(
+        std::env::var_os("USERPROFILE").as_deref(),
+        Some(cwd.as_os_str())
+    );
+    assert_eq!(std::env::var("LLVM_PROFILE_FILE")?, profile);
+    assert!(std::env::var_os("MAESTRO_NATIVE_SENTINEL").is_none());
+    assert_eq!(std::env::var_os("MAESTRO_NATIVE_EMPTY"), Some("".into()));
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStrExt as _;
+        assert_eq!(
+            std::env::var_os("MAESTRO_NATIVE_BYTES")
+                .ok_or("missing native bytes")?
+                .as_bytes(),
+            &[b'a', 0xff]
+        );
+    }
+    assert_eq!(
+        std::env::var("MAESTRO_ENV_EXPECTATION")?,
+        "[\"unknown-native-provider\",null,null]"
+    );
+    assert!(child()?);
+    Ok(())
 }

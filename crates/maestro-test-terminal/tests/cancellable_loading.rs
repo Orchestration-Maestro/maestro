@@ -1,62 +1,17 @@
 //! Cancellation through the shared signal and the actual terminal component.
 
 use maestro_tui::keybindings::{KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS};
-use maestro_tui::keys::{is_kitty_protocol_active, set_kitty_protocol_active};
+use maestro_tui::keys::set_kitty_protocol_active;
+use maestro_tui::set_keybindings;
 use maestro_tui::tui::InputHandler;
-use maestro_tui::{
-    CancellableLoader, Component, Loader, LoaderIndicatorOptions, TUI, TerminalImage,
-};
-use maestro_tui::{get_keybindings, set_keybindings};
+use maestro_tui::{CancellableLoader, Component, Loader, LoaderIndicatorOptions};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use std::sync::{Mutex, MutexGuard};
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod checks;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-}
-use support::checks::{parse, succeeds};
-use support::manual_runtime::{ManualRuntime, ms};
-use support::recording_terminal::RecordingTerminal;
+use crate::support::checks::{parse, succeeds};
+use crate::support::manual_runtime::{ManualRuntime, ms};
+use crate::support::writer::writer;
 
-/// Serializes mutations of the toolkit's global input configuration.
-static INPUT_STATE: Mutex<()> = Mutex::new(());
-/// Restores the active manager and protocol even on a failed assertion.
-struct InputState {
-    /// Exclusive test configuration access.
-    _guard: MutexGuard<'static, ()>,
-    /// Original live manager.
-    manager: KeybindingsManager,
-    /// Original keyboard protocol.
-    active: bool,
-}
-impl InputState {
-    /// Installs isolated default bindings.
-    fn new() -> Self {
-        let guard = INPUT_STATE
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let state = Self {
-            _guard: guard,
-            manager: get_keybindings(),
-            active: is_kitty_protocol_active(),
-        };
-        set_keybindings(manager(None));
-        set_kitty_protocol_active(false);
-        state
-    }
-}
-impl Drop for InputState {
-    fn drop(&mut self) {
-        set_keybindings(self.manager.clone());
-        set_kitty_protocol_active(self.active);
-    }
-}
 /// Creates defaults or an explicit cancel override.
 fn manager(keys: Option<Vec<String>>) -> KeybindingsManager {
     let bindings = keys.map_or_else(Vec::new, |keys| {
@@ -66,18 +21,6 @@ fn manager(keys: Option<Vec<String>>) -> KeybindingsManager {
         )]
     });
     KeybindingsManager::new(TUI_KEYBINDINGS.clone(), bindings)
-}
-/// Creates the real writer with controlled time.
-fn writer() -> (TUI, RecordingTerminal, ManualRuntime) {
-    let runtime = ManualRuntime::new();
-    let terminal = RecordingTerminal::new(16, 24);
-    let tui = TUI::new(
-        terminal.handle(),
-        runtime.handle(),
-        TerminalImage::default(),
-        None,
-    );
-    (tui, terminal, runtime)
 }
 /// Creates an identity-styled two-frame loader.
 fn widget() -> (Rc<CancellableLoader>, ManualRuntime) {
@@ -113,7 +56,7 @@ fn counted(widget: &Rc<CancellableLoader>) -> Rc<Cell<usize>> {
 
 #[test]
 fn cancellable_loader_notifies_each_match_after_abort() {
-    let _state = InputState::new();
+    let _state = crate::input_support::globals();
     let (widget, _) = widget();
     assert!(!widget.aborted());
     assert!(widget.on_abort().is_none());
@@ -166,7 +109,7 @@ struct KeyCase {
 }
 #[test]
 fn cancellable_loader_binding_inputs_follow_active_manager() {
-    let _state = InputState::new();
+    let _state = crate::input_support::globals();
     let cases: Vec<KeyCase> = parse(include_str!("fixtures/cancellation_keys.json"));
     assert_eq!(cases.len(), 70);
     let mut queries = std::collections::HashSet::new();
@@ -206,7 +149,7 @@ fn cancellable_loader_binding_inputs_follow_active_manager() {
 
 #[test]
 fn cancellable_loader_callbacks_can_replace_and_reenter() {
-    let _state = InputState::new();
+    let _state = crate::input_support::globals();
     let (widget, runtime) = widget();
     let log = Rc::new(RefCell::new(Vec::new()));
     let weak = Rc::downgrade(&widget);
@@ -252,7 +195,7 @@ fn cancellable_loader_signal_wakes_retained_observers() {
             self.0.fetch_add(1, Ordering::SeqCst);
         }
     }
-    let _state = InputState::new();
+    let _state = crate::input_support::globals();
     let (widget, _) = widget();
     let retained = widget.signal().clone();
     let complete = Rc::new(Cell::new(0));
@@ -292,7 +235,7 @@ fn advance(runtime: &ManualRuntime, time: u64) {
 }
 #[test]
 fn cancellable_loader_dispose_stops_animation_without_aborting() {
-    let _state = InputState::new();
+    let _state = crate::input_support::globals();
     let (widget, runtime) = widget();
     let underlying = widget.loader().clone();
     let count = counted(&widget);
@@ -348,7 +291,7 @@ fn dispose_static_and_hidden() {
 
 #[test]
 fn cancellable_loader_embedded_loader_preserves_rendering() {
-    let _state = InputState::new();
+    let _state = crate::input_support::globals();
     let cases = [
         (
             None,
@@ -405,7 +348,7 @@ fn cancellable_loader_embedded_loader_preserves_rendering() {
 
 #[test]
 fn cancellable_loader_routes_focused_input() {
-    let _state = InputState::new();
+    let _state = crate::input_support::globals();
     let (tui, terminal, _) = writer();
     let widget = Rc::new(CancellableLoader::new(Loader::new(
         tui.clone(),

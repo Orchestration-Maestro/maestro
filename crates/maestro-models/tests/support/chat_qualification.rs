@@ -1,8 +1,9 @@
 //! Recorded controlled requests exercised through public model dispatch.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::{
-    bundled, chat, child_process,
-    json::{canonical, event_record},
+    bundled, chat,
+    json::{canonical, event_record, exact_context},
 };
 use chat::TestResult;
 use maestro_models::{
@@ -260,7 +261,7 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
 /// Exercise one owner's closed fixture set in a fresh environment.
 pub fn assert_rows(test: &str) -> TestResult {
     let owned = rows(test)?;
-    if child_process::child_case().is_none() {
+    if !maestro_test_process::selection().is_child() {
         let variables = if test.starts_with("maestro_gateway_") {
             vec![
                 ("CLOUDFLARE_ACCOUNT_ID", "account-id"),
@@ -276,11 +277,20 @@ pub fn assert_rows(test: &str) -> TestResult {
         } else {
             test.to_owned()
         };
-        return child_process::rerun(&full_name, "qualification", &variables);
+        return {
+            let output = maestro_test_process::TestProcess::current(&full_name)?
+                .nocapture()
+                .env_clear()
+                .envs(variables.iter().copied())
+                .case("qualification")
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     let _registry = bundled::registry();
     maestro_models::reset_api_providers();
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for row in owned {
             let actual = match &row.input {
                 Input::Wire(wire) => invoke(wire, &row.id).await?,
@@ -361,18 +371,6 @@ fn metadata(catalog: &Catalog) -> TestResult<Value> {
         entries.push(entry);
     }
     Ok(json!({"metadata": entries}))
-}
-
-/// Decode conversation records only when every fixture field survives in the public type.
-fn exact_context<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<Context, D::Error> {
-    use serde::de::Error as _;
-    let value = Value::deserialize(decoder)?;
-    let context: Context = serde_json::from_value(value.clone()).map_err(D::Error::custom)?;
-    let retained = serde_json::to_value(&context).map_err(D::Error::custom)?;
-    if canonical(retained) != canonical(value) {
-        return Err(D::Error::custom("context fixture fields were not retained"));
-    }
-    Ok(context)
 }
 
 /// Common settings and the transport's request recorder for one invocation.

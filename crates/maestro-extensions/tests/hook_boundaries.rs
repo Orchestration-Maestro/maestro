@@ -1,11 +1,8 @@
 //! Hook verdicts at executable tool and shell boundaries.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod support;
-#[path = "support/tool.rs"]
-mod tool_support;
+use crate::local_support as support;
+use crate::tool_support;
 use maestro_extensions::*;
 use maestro_session::Presence;
 use serde_json::json;
@@ -24,7 +21,7 @@ fn tool_call_edits_reach_next_handler_and_execution_without_revalidation() {
         let bus = support::LocalBus::new();
         let loaded = support::loaded("tool", bus.controller.for_extension());
         let mut definition = tool_support::definition("echo", "Echo");
-        definition.definition.parameters = json!({"type":"string"});
+        definition.definition.parameters = json!({"type":"string"}).into();
         loaded.api.register_tool(definition).unwrap();
         let runner = Rc::new(support::runner(&loaded.owners));
         loaded
@@ -69,8 +66,7 @@ fn tool_call_edits_reach_next_handler_and_execution_without_revalidation() {
 fn tool_call_keeps_last_nonblocking_result_and_first_block() {
     support::local(tool_call_keeps_last_nonblocking_result_and_first_block_case());
 }
-#[path = "support/error.rs"]
-mod error_support;
+use crate::error_support;
 #[test]
 fn tool_call_failure_propagates_without_diagnostic_or_execution() {
     support::local(async {

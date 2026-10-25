@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::native_support;
+use crate::resolution_support::{case_in_child, case_in_removed_cwd};
 use crate::scratch;
 use crate::support;
 use crate::worker_support;
@@ -13,22 +14,20 @@ use maestro_packages::{
 use maestro_settings::{Settings, SettingsManager};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
-use worker_support::{Gates, driver};
+use worker_support::{Gates, driver, gated_npm_checks};
 
 #[test]
 fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
-    let (manager, settings, effects) = support::manager(&json!({}));
-    settings.borrow_mut().set_project_packages(vec![
-        maestro_settings::PackageSource::Source("npm:example".into()),
-        maestro_settings::PackageSource::Source("npm:pinned@1".into()),
-    ]);
-    effects.exists.set(true);
-    let controlled = Rc::new(manager);
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (controlled, settings, effects, _tree) =
+        support::installed(&json!({}), &json!(["npm:example", "npm:pinned@1"]));
     let (runtime, local) = driver(&effects);
     let scratch = scratch::Scratch::new().unwrap();
-    let cwd = scratch.0.to_string_lossy().into_owned();
+    let cwd = scratch.path().to_string_lossy().into_owned();
     native_support::write(
-        &format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
+        format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
         "{\"version\":\"1\"}",
     );
     let native_settings = Rc::new(RefCell::new(
@@ -76,42 +75,12 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
     );
 }
 
-/// A configured manager with controlled installed contents.
-fn configured(
-    user: &serde_json::Value,
-    project: &serde_json::Value,
-) -> (
-    Rc<DefaultPackageManager<support::Controlled>>,
-    Rc<RefCell<SettingsManager>>,
-    Rc<support::Effects>,
-) {
-    let (manager, settings, effects) = support::manager(user);
-    settings.borrow_mut().set_project_packages(
-        project
-            .as_array()
-            .unwrap()
-            .iter()
-            .cloned()
-            .map(maestro_settings::PackageSource::Unknown)
-            .collect(),
-    );
-    effects.exists.set(true);
-    (Rc::new(manager), settings, effects)
-}
 /// Drives the owned workers to completion, then closes their runtime.
 fn check(
     manager: &Rc<DefaultPackageManager<support::Controlled>>,
     effects: &Rc<support::Effects>,
 ) -> std::io::Result<Vec<maestro_packages::PackageUpdate>> {
-    let local = Rc::new(tokio::task::LocalSet::new());
-    *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let result = runtime.block_on(local.run_until(manager.check_for_available_updates()));
-    runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
-    result
+    support::drive(effects, manager.check_for_available_updates())
 }
 /// Queues completed captured responses.
 fn responses(effects: &support::Effects, values: &[&str]) {
@@ -130,7 +99,7 @@ fn sources(results: &[maestro_packages::PackageUpdate]) -> Vec<(&str, InstalledS
 
 #[test]
 fn offline_values_short_circuit_before_settings() {
-    for (value, offline) in [
+    for (index, (value, offline)) in [
         (None, false),
         (Some(""), false),
         (Some("0"), false),
@@ -143,12 +112,17 @@ fn offline_values_short_circuit_before_settings() {
         (Some(" yes"), false),
         (Some("true "), false),
         (Some("\u{feff}true"), false),
-    ] {
-        let (manager, _, effects) = configured(&json!({"packages":{}}), &json!([]));
-        *effects.offline.borrow_mut() = value.map(str::to_owned);
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let environment = |_: &str| vec![("MAESTRO_OFFLINE", value.map(str::to_owned))];
+        if case_in_child(&index.to_string(), environment).is_none() {
+            continue;
+        }
+        let (manager, _, effects, _tree) = support::installed(&json!({"packages":{}}), &json!([]));
         let result = check(&manager, &effects);
         assert_eq!(result.is_ok(), offline, "case {value:?}");
-        assert!(effects.paths.borrow().is_empty());
         assert!(effects.calls.borrow().is_empty());
         assert_eq!(effects.spawns.get(), 0);
     }
@@ -156,7 +130,10 @@ fn offline_values_short_circuit_before_settings() {
 
 #[test]
 fn availability_reads_snapshots_then_project_first_identities() {
-    let (manager, settings, effects) = configured(
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, settings, effects, _tree) = support::installed(
         &json!({"packages":["npm:a","npm:u","git:git@github.com:org/repo.git","./local"]}),
         &json!(["npm:z", "npm:a", "https://github.com/org/repo", "./local"]),
     );
@@ -190,26 +167,18 @@ fn availability_reads_snapshots_then_project_first_identities() {
         settings.borrow().get_project_settings().0["packages"],
         json!([])
     );
-    assert!(
-        !effects
-            .paths
-            .borrow()
-            .iter()
-            .any(|p| p == "/home/reader/agent/git/github.com/org/repo")
-    );
 }
 
 #[test]
 fn availability_preserves_first_same_scope_source_and_pin_precedence() {
-    let (manager, settings, effects) = configured(
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, settings, effects, tree) = support::installed(
         &json!({"packages":["npm:shadow","npm:missing"]}),
         &json!([{"source":"npm:first","skills":["x"]}, "npm:first@1", "npm:shadow@latest", "npm:missing"]),
     );
-    effects.exists.set(true);
-    effects
-        .absent_under
-        .borrow_mut()
-        .push("/work/project/.maestro/npm/node_modules/missing".into());
+    std::fs::remove_dir_all(format!("{}/missing", support::npm_root(tree.path(), false))).unwrap();
     *effects.capture_hook.borrow_mut() = Some(Rc::new(|_, args, _| {
         assert_eq!(args[1], "first");
         Box::pin(async { Ok("\"2\"".into()) })
@@ -227,6 +196,9 @@ fn availability_preserves_first_same_scope_source_and_pin_precedence() {
 
 #[test]
 fn availability_skips_local_pins_before_existence() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let pins = json!([
         "npm:fixed@1.0.0",
         "npm:tag@latest",
@@ -236,40 +208,36 @@ fn availability_skips_local_pins_before_existence() {
         "./local",
         "npm:control"
     ]);
-    let (manager, _, effects) = configured(&json!({}), &pins);
+    let (manager, _, effects, _tree) = support::installed(&json!({}), &pins);
     let result = check(&manager, &effects).unwrap();
     assert_eq!(
         sources(&result),
         [("npm:control", InstalledSourceScope::Project)]
     );
-    assert_eq!(
-        *effects.paths.borrow(),
-        [
-            "/work/project/.maestro/npm/node_modules/control",
-            "/work/project/.maestro/npm/node_modules/control/package.json"
-        ]
-    );
+    assert_eq!(effects.calls.borrow().len(), 1);
 }
 
 #[test]
 fn availability_ignores_missing_contents_without_installing() {
-    let (manager, settings, effects) = configured(
+    let (manager, settings, effects, tree) = support::uninstalled(
         &json!({}),
         &json!(["npm:missing", "git:github.com/org/repo"]),
     );
-    effects.exists.set(false);
     let initial = settings.borrow().get_project_settings();
     assert!(check(&manager, &effects).unwrap().is_empty());
     assert_eq!(effects.calls.borrow().len(), 0);
-    assert_eq!(effects.paths.borrow().len(), 2);
+    assert_eq!(std::fs::read_dir(tree.path()).unwrap().count(), 0);
     assert_eq!(settings.borrow().get_project_settings(), initial);
-    let (empty, _, empty_effects) = configured(&json!({}), &json!([]));
+    let (empty, _, empty_effects, _tree) = support::uninstalled(&json!({}), &json!([]));
     assert!(check(&empty, &empty_effects).unwrap().is_empty());
     assert_eq!(empty_effects.spawns.get(), 0);
 }
 
 #[test]
 fn npm_availability_compares_exact_version_strings() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (installed, latest, expected) in [
         ("1.0", "\"1.0\"", false),
         ("1.0", "\"2.0\"", true),
@@ -278,8 +246,9 @@ fn npm_availability_compares_exact_version_strings() {
         ("1", "\"\\u0031\"", false),
         (" 1 ", "\"1\"", true),
     ] {
-        let (manager, _, effects) = configured(&json!({}), &json!(["npm:example"]));
-        *effects.manifest.borrow_mut() = Some(json!({"version": installed}).to_string());
+        let (manager, _, effects, tree) = support::installed(&json!({}), &json!(["npm:example"]));
+        let text = json!({"version": installed}).to_string();
+        support::project_manifest(&tree, "example", Some(&text));
         responses(&effects, &[latest]);
         assert_eq!(
             check(&manager, &effects).unwrap().len(),
@@ -291,6 +260,9 @@ fn npm_availability_compares_exact_version_strings() {
 
 #[test]
 fn npm_version_files_preserve_selected_field_semantics() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (manifest, expected, calls) in [
         (None, false, 0),
         (Some("{broken"), false, 0),
@@ -317,8 +289,8 @@ fn npm_version_files_preserve_selected_field_semantics() {
         (Some("{\"version\":\"1\",\"version\":null}"), false, 0),
         (Some("{\"\\u0076ersion\":\"1\"}"), true, 1),
     ] {
-        let (manager, _, effects) = configured(&json!({}), &json!(["npm:example"]));
-        *effects.manifest.borrow_mut() = manifest.map(str::to_owned);
+        let (manager, _, effects, tree) = support::installed(&json!({}), &json!(["npm:example"]));
+        support::project_manifest(&tree, "example", manifest);
         assert_eq!(
             check(&manager, &effects).unwrap().len(),
             usize::from(expected),
@@ -330,6 +302,9 @@ fn npm_version_files_preserve_selected_field_semantics() {
 
 #[test]
 fn npm_lookup_failures_are_suppressed_without_effects() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (latest, expected) in [
         (" \u{feff}\n", false),
         ("not-json", false),
@@ -341,7 +316,7 @@ fn npm_lookup_failures_are_suppressed_without_effects() {
         ("[]", false),
         (" \u{feff}\"2\"\r\n", true),
     ] {
-        let (manager, _, effects) = configured(&json!({}), &json!(["npm:example"]));
+        let (manager, _, effects, _tree) = support::installed(&json!({}), &json!(["npm:example"]));
         responses(&effects, &[latest]);
         assert_eq!(
             check(&manager, &effects).unwrap().len(),
@@ -349,7 +324,7 @@ fn npm_lookup_failures_are_suppressed_without_effects() {
         );
         assert_eq!(effects.calls.borrow().len(), 1);
     }
-    let (manager, _, effects) = configured(&json!({}), &json!(["npm:example"]));
+    let (manager, _, effects, _tree) = support::installed(&json!({}), &json!(["npm:example"]));
     effects
         .capture_outputs
         .borrow_mut()
@@ -360,8 +335,11 @@ fn npm_lookup_failures_are_suppressed_without_effects() {
 
 #[test]
 fn npm_capture_uses_live_prefix_cwd_and_timeout() {
-    let (manager, settings, effects) =
-        configured(&json!({"packages":["npm:@scope/pkg"]}), &json!([]));
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, settings, effects, tree) =
+        support::installed(&json!({"packages":["npm:@scope/pkg"]}), &json!([]));
     let changed = settings;
     *effects.on_command.borrow_mut() = Some(Box::new(move || {
         changed.borrow_mut().set_npm_command(Some(
@@ -387,7 +365,7 @@ fn npm_capture_uses_live_prefix_cwd_and_timeout() {
     assert_eq!(
         *effects.operands.borrow(),
         [(
-            Some("/work/project".into()),
+            Some(support::below(tree.path(), "/work/project")),
             Some(std::time::Duration::from_millis(10000)),
             vec![]
         )]
@@ -396,8 +374,16 @@ fn npm_capture_uses_live_prefix_cwd_and_timeout() {
 
 #[test]
 fn git_availability_uses_origin_upstream_then_head() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for upstream in ["origin/main", "", "other/main", "origin/"] {
-        let (manager, _, effects) = configured(&json!({}), &json!(["git:github.com/org/repo"]));
+        let (manager, _, effects, tree) =
+            support::installed(&json!({}), &json!(["git:github.com/org/repo"]));
+        let install = support::below(
+            tree.path(),
+            "/work/project/.maestro/git/github.com/org/repo",
+        );
         responses(
             &effects,
             &[
@@ -435,15 +421,22 @@ fn git_availability_uses_origin_upstream_then_head() {
         let operands = effects.operands.borrow();
         assert!(operands[..2].iter().all(|o| o.2.is_empty()));
         assert_eq!(operands[2].2, [("GIT_TERMINAL_PROMPT".into(), "0".into())]);
-        assert!(operands.iter().all(|o| o.0.as_deref()
-            == Some("/work/project/.maestro/git/github.com/org/repo")
-            && o.1 == Some(std::time::Duration::from_millis(10000))));
+        assert!(
+            operands
+                .iter()
+                .all(|o| o.0.as_deref() == Some(install.as_str())
+                    && o.1 == Some(std::time::Duration::from_millis(10000)))
+        );
     }
 }
 
 #[test]
 fn git_remote_failures_obey_fallback_boundaries() {
-    let (manager, _, effects) = configured(&json!({}), &json!(["git:github.com/org/repo"]));
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, _tree) =
+        support::installed(&json!({}), &json!(["git:github.com/org/repo"]));
     responses(
         &effects,
         &[
@@ -456,7 +449,8 @@ fn git_remote_failures_obey_fallback_boundaries() {
     assert_eq!(check(&manager, &effects).unwrap().len(), 1);
     assert_eq!(effects.calls.borrow().len(), 4);
     for phase in 0..4 {
-        let (manager, _, effects) = configured(&json!({}), &json!(["git:github.com/org/repo"]));
+        let (manager, _, effects, _tree) =
+            support::installed(&json!({}), &json!(["git:github.com/org/repo"]));
         let upstream = if phase == 1 { "origin/main" } else { "" };
         *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, args, _| {
             let outcome = if (phase == 0 && args == ["rev-parse", "HEAD"])
@@ -618,8 +612,12 @@ const REMOTE_HEAD_CASES: &[(&[&str], bool)] = &[
 
 #[test]
 fn git_head_matching_keeps_hash_line_and_whitespace_rules() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (outputs, changed) in REMOTE_HEAD_CASES {
-        let (manager, _, effects) = configured(&json!({}), &json!(["git:github.com/org/repo"]));
+        let (manager, _, effects, _tree) =
+            support::installed(&json!({}), &json!(["git:github.com/org/repo"]));
         responses(&effects, outputs);
         assert_eq!(
             check(&manager, &effects).unwrap().len(),
@@ -630,61 +628,51 @@ fn git_head_matching_keeps_hash_line_and_whitespace_rules() {
 }
 
 #[test]
-fn offline_changes_are_observed_at_per_source_checks() {
-    let (manager, _, effects) = configured(
-        &json!({}),
-        &json!(["npm:example", "git:github.com/org/repo"]),
-    );
-    effects
-        .offline_sequence
-        .borrow_mut()
-        .extend([None, Some("yes".into()), Some("1".into())]);
-    assert!(check(&manager, &effects).unwrap().is_empty());
-    assert!(effects.calls.borrow().is_empty());
-    assert_eq!(effects.paths.borrow().len(), 2);
-    let (manager, _, effects) = configured(&json!({}), &json!(["npm:example"]));
-    let changed = effects.clone();
-    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, _, _| {
-        *changed.offline.borrow_mut() = Some("true".into());
-        Box::pin(async { Ok("\"2\"".into()) })
-    }));
-    assert_eq!(check(&manager, &effects).unwrap().len(), 1);
-    effects.capture_hook.borrow_mut().take();
-}
-
-#[test]
 fn invalid_settings_and_ambient_reads_follow_consumption_order() {
-    for packages in [json!(null), json!([])] {
-        let (manager, _, effects) = configured(&json!({"packages":packages}), &json!([]));
-        assert!(check(&manager, &effects).unwrap().is_empty());
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_some() {
+        for packages in [json!(null), json!([])] {
+            let (manager, _, effects, _tree) =
+                support::installed(&json!({"packages":packages}), &json!([]));
+            assert!(check(&manager, &effects).unwrap().is_empty());
+        }
+        for packages in [
+            json!({}),
+            json!([null]),
+            json!([{"skills":[]}]),
+            json!([{"source":3}]),
+            json!(["npm:good", null]),
+        ] {
+            let (manager, _, effects, _tree) =
+                support::installed(&json!({"packages":packages}), &json!([]));
+            assert!(check(&manager, &effects).is_err());
+            assert_eq!(effects.spawns.get(), 0);
+            assert!(effects.calls.borrow().is_empty());
+        }
     }
-    for packages in [
-        json!({}),
-        json!([null]),
-        json!([{"skills":[]}]),
-        json!([{"source":3}]),
-        json!(["npm:good", null]),
-    ] {
-        let (manager, _, effects) = configured(&json!({"packages":packages}), &json!([]));
-        assert!(check(&manager, &effects).is_err());
-        assert_eq!(effects.spawns.get(), 0);
-        assert!(effects.calls.borrow().is_empty());
-    }
-    for (user, project, expected) in [
+    for (index, (user, project, expected)) in [
         (
             json!({"packages":{}}),
             json!(["./local"]),
-            "packages is not an array",
+            Ok("packages is not an array"),
         ),
-        (json!({}), json!(["./local", null]), "cwd unavailable"),
+        (
+            json!({}),
+            json!(["./local", null]),
+            Err(std::io::ErrorKind::NotFound),
+        ),
         (
             json!({}),
             json!(["/absolute", null]),
-            "package source is not a string",
+            Ok("package source is not a string"),
         ),
-    ] {
-        let (_, settings, effects) = configured(&user, &project);
-        effects.fail_ambient.set(true);
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        if case_in_removed_cwd(&index.to_string(), |_| vec![]).is_none() {
+            continue;
+        }
+        let (_, settings, effects, _tree) = support::uninstalled(&user, &project);
         let manager = Rc::new(DefaultPackageManager::new(
             PackageManagerOptions {
                 cwd: "relative".into(),
@@ -693,19 +681,26 @@ fn invalid_settings_and_ambient_reads_follow_consumption_order() {
             },
             support::Controlled(effects.clone()),
         ));
-        assert_eq!(check(&manager, &effects).unwrap_err().to_string(), expected);
+        let error = check(&manager, &effects).unwrap_err();
+        match expected {
+            Ok(message) => assert_eq!(error.to_string(), message),
+            Err(kind) => assert_eq!(error.kind(), kind),
+        }
         assert!(effects.calls.borrow().is_empty());
-        assert_eq!(
-            effects.reads.borrow().len(),
-            usize::from(expected == "cwd unavailable")
-        );
     }
 }
 
 #[test]
 fn check_calls_do_not_hold_settings_borrows_across_effects() {
-    let (manager, settings, effects) =
-        configured(&json!({"packages":["npm:first","npm:second"]}), &json!([]));
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, settings, effects, tree) =
+        support::installed(&json!({"packages":["npm:first","npm:second"]}), &json!([]));
+    let global = support::npm_root(tree.path(), true);
+    // The changed command looks the global root up again.
+    let lookup = Ok(support::output(&global, "", Some(0)));
+    effects.outputs.borrow_mut().push_back(lookup);
     let state = settings.clone();
     *effects.capture_hook.borrow_mut() = Some(Rc::new(move |command, args, _| {
         if args[1] == "first" {
@@ -735,7 +730,10 @@ fn check_calls_do_not_hold_settings_borrows_across_effects() {
 
 #[test]
 fn availability_returns_typed_records_in_source_order() {
-    let (manager, _, effects) = configured(
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, _tree) = support::installed(
         &json!({"packages":["npm:p2","git:github.com/org/p3"]}),
         &json!(["git:github.com/org/p0", "npm:p1"]),
     );
@@ -777,23 +775,16 @@ fn availability_returns_typed_records_in_source_order() {
 
 #[test]
 fn four_workers_claim_slots_without_global_serialization() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for count in [0, 1, 4, 7] {
         check_pool_size(count);
     }
-    let (manager, _, effects) =
-        configured(&json!({}), &json!(["npm:p0", "npm:p1", "npm:p2", "npm:p3"]));
+    let (manager, _, effects, _tree) =
+        support::installed(&json!({}), &json!(["npm:p0", "npm:p1", "npm:p2", "npm:p3"]));
     let (runtime, local) = driver(&effects);
-    let (send, mut started) = tokio::sync::mpsc::unbounded_channel();
-    let (release, wait) = tokio::sync::watch::channel(false);
-    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, _, _| {
-        let send = send.clone();
-        let mut wait = wait.clone();
-        Box::pin(async move {
-            send.send(()).unwrap();
-            wait.wait_for(|ready| *ready).await.unwrap();
-            Ok("\"2\"".into())
-        })
-    }));
+    let (release, mut started) = gated_npm_checks(&effects);
     let first = local.spawn_local(manager.check_for_available_updates());
     let second = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
@@ -810,7 +801,10 @@ fn four_workers_claim_slots_without_global_serialization() {
 
 #[test]
 fn first_failure_keeps_other_workers_claiming_sources() {
-    let (manager, _, effects) = configured(
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, _tree) = support::installed(
         &json!({"packages":["npm:fail","git:github.com/org/p3","git:github.com/org/p4","git:github.com/org/p5"]}),
         &json!([
             "git:github.com/org/p0",
@@ -821,7 +815,7 @@ fn first_failure_keeps_other_workers_claiming_sources() {
     effects
         .outputs
         .borrow_mut()
-        .push_back(Err(std::io::Error::other("first failure")));
+        .push_front(Err(std::io::Error::other("first failure")));
     let (runtime, local) = driver(&effects);
     let (gates, mut starts) = Gates::install(&effects, 6);
     let result = local.spawn_local(manager.check_for_available_updates());
@@ -853,7 +847,10 @@ fn first_failure_keeps_other_workers_claiming_sources() {
 
 #[test]
 fn availability_releases_last_owner_after_remaining_work() {
-    let (manager, _, effects) = configured(
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
+    let (manager, _, effects, _tree) = support::installed(
         &json!({"packages":["npm:fail","git:github.com/org/p3"]}),
         &json!([
             "git:github.com/org/p0",
@@ -864,7 +861,7 @@ fn availability_releases_last_owner_after_remaining_work() {
     effects
         .outputs
         .borrow_mut()
-        .push_back(Err(std::io::Error::other("first failure")));
+        .push_front(Err(std::io::Error::other("first failure")));
     let weak = Rc::downgrade(&manager);
     let (runtime, local) = driver(&effects);
     let (gates, mut starts) = Gates::install(&effects, 4);
@@ -906,18 +903,6 @@ struct RecordingNative {
     captured: Rc<RefCell<Vec<Vec<String>>>>,
 }
 impl PackageOperations for RecordingNative {
-    fn temp_dir(&self) -> String {
-        std::env::temp_dir().to_string_lossy().into_owned()
-    }
-    fn resource_operations(&self) -> &dyn maestro_resources::skills::ResourceOperations {
-        &maestro_resources::NativeResourceOperations
-    }
-    fn read_file(&self, path: &str) -> std::io::Result<String> {
-        self.inner.read_file(path)
-    }
-    fn offline_value(&self) -> Option<String> {
-        self.inner.offline_value()
-    }
     fn run_command_capture<'a>(
         &'a self,
         command: &'a str,
@@ -935,38 +920,8 @@ impl PackageOperations for RecordingNative {
     ) -> std::io::Result<()> {
         self.inner.spawn(operation)
     }
-    fn exists(&self, path: &str) -> bool {
-        self.inner.exists(path)
-    }
-    fn home_dir(&self) -> std::io::Result<String> {
-        self.inner.home_dir()
-    }
-    fn current_dir(&self) -> std::io::Result<String> {
-        self.inner.current_dir()
-    }
-    fn drive_directory(&self, drive: char) -> Option<String> {
-        self.inner.drive_directory(drive)
-    }
     fn run_command_sync(&self, command: &str, args: &[String]) -> std::io::Result<CommandOutput> {
         self.inner.run_command_sync(command, args)
-    }
-    fn create_temp_dir(&self, parent: &str) -> std::io::Result<String> {
-        self.inner.create_temp_dir(parent)
-    }
-    fn rename_path(&self, from: &str, to: &str) -> std::io::Result<()> {
-        self.inner.rename_path(from, to)
-    }
-    fn create_dir_all(&self, path: &str) -> std::io::Result<()> {
-        self.inner.create_dir_all(path)
-    }
-    fn write_file(&self, path: &str, text: &str, exclusive: bool) -> std::io::Result<()> {
-        self.inner.write_file(path, text, exclusive)
-    }
-    fn directory_is_empty(&self, path: &str) -> std::io::Result<bool> {
-        self.inner.directory_is_empty(path)
-    }
-    fn remove_path(&self, path: &str) -> std::io::Result<()> {
-        self.inner.remove_path(path)
     }
     fn run_command<'a>(
         &'a self,
@@ -992,7 +947,7 @@ fn recording_manager(
             settings_manager: settings.clone(),
         },
         RecordingNative {
-            inner: NativePackageOperations::new(|_| false, Rc::new(|| false), local),
+            inner: NativePackageOperations::new(Rc::new(|| false), local),
             captured: captured.clone(),
         },
     ))
@@ -1011,8 +966,11 @@ fn assert_only_read_commands(calls: &[Vec<String>]) {
 
 #[test]
 fn native_git_availability_leaves_head_and_contents_unchanged() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let scratch = scratch::Scratch::new().unwrap();
-    let root = &scratch.0;
+    let root = scratch.path();
     let (author, install) = seed_git(root);
     let original = git_at(&install, &["rev-parse", "HEAD"]);
     let settings = Rc::new(RefCell::new(
@@ -1025,10 +983,7 @@ fn native_git_availability_leaves_head_and_contents_unchanged() {
         )]);
     let before = settings.borrow().get_project_settings();
     let local = Rc::new(tokio::task::LocalSet::new());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     let captured = Rc::new(RefCell::new(Vec::new()));
     let manager = recording_manager(root.to_str().unwrap(), &settings, &local, &captured);
     std::fs::write(install.join("untracked"), "mine").unwrap();
@@ -1083,7 +1038,7 @@ fn check_pool_size(count: usize) {
             }
         })
         .collect();
-    let (manager, _, effects) = configured(&json!({}), &json!(list));
+    let (manager, _, effects, _tree) = support::installed(&json!({}), &json!(list));
     let (runtime, local) = driver(&effects);
     let (gates, mut starts) = Gates::install(&effects, count);
     let result = local.spawn_local(manager.check_for_available_updates());
@@ -1156,10 +1111,7 @@ fn replacement_manifest(
     manager: &Rc<DefaultPackageManager<NativePackageOperations>>,
     expected: &[maestro_packages::PackageUpdate],
 ) {
-    use maestro_packages::PackageOperations;
     std::fs::write(path, b"{\"version\":\"\xff\"}").unwrap();
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), local);
-    assert_eq!(operations.read_file(path).unwrap(), "{\"version\":\"�\"}");
     assert_eq!(
         runtime
             .block_on(local.run_until(manager.check_for_available_updates()))
@@ -1180,6 +1132,6 @@ fn native_manager(
             agent_dir: format!("{cwd}/agent"),
             settings_manager: settings,
         },
-        NativePackageOperations::new(|_| false, Rc::new(|| false), local),
+        NativePackageOperations::new(Rc::new(|| false), local),
     ))
 }

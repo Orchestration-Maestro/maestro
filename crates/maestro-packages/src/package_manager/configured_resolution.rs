@@ -45,7 +45,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             )?;
         }
         self.add_automatic(&user, &project, &mut result)?;
-        Ok(result.finish(self.operations.resource_operations()))
+        Ok(result.finish())
     }
     /// Collects literal top-level entries before selecting their enabled membership.
     fn resolve_local_entries(
@@ -60,7 +60,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             entries.into_iter().partition(|entry| is_pattern(entry));
         let paths = plain
             .iter()
-            .map(|entry| self.resolve_local(entry, &base))
+            .map(|entry| super::paths::resolve_local(entry, &base, super::operations::home_dir))
             .collect::<io::Result<Vec<_>>>()?;
         let metadata = PathMetadata {
             source: "local".into(),
@@ -68,13 +68,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             origin: SourceOrigin::TopLevel,
             base_dir: None,
         };
-        let files = collect_files_from_paths(paths, kind, self.operations.resource_operations());
-        let enabled = super::resource_patterns::select_patterns(
-            &files,
-            &patterns,
-            &base,
-            self.operations.resource_operations(),
-        )?;
+        let files = collect_files_from_paths(paths, kind);
+        let enabled = super::resource_patterns::select_patterns(&files, &patterns, &base)?;
         for path in &files {
             result.insert_enabled(kind, path.clone(), &metadata, enabled.contains(path));
         }

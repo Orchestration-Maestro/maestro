@@ -1,8 +1,6 @@
 //! Native stdout capture through child exit, pipe EOFs and an optional deadline.
 use super::{CommandCaptureOptions, NativePackageOperations};
-use maestro_process::child_process::{
-    CapturedChild, Termination, WaitOptions, wait_for_child_process,
-};
+use maestro_process::child_process::{Termination, WaitOptions, wait_for_child_process};
 use std::{cell::Cell, io, process::ExitStatus};
 
 impl NativePackageOperations {
@@ -13,12 +11,7 @@ impl NativePackageOperations {
         args: &[String],
         options: CommandCaptureOptions<'_>,
     ) -> io::Result<String> {
-        let mut builder = tokio::process::Command::from(self.command(command, args));
-        if let Some(cwd) = options.cwd {
-            builder.current_dir(cwd);
-        }
-        builder.envs(options.env.iter().copied());
-        let mut child = CapturedChild::spawn(&mut builder)?;
+        let mut child = Self::command(command, args, options.env, options.cwd).spawn_captured()?;
         let timed_out = Cell::new(false);
         let deadline = async {
             if let Some(timeout) = options.timeout {
@@ -56,55 +49,6 @@ fn exit_status(status: ExitStatus) -> String {
     if let Some(code) = status.code() {
         return format!("code {code}");
     }
-    #[cfg(unix)]
-    {
-        use rustix::process::Signal;
-        use std::os::unix::process::ExitStatusExt;
-        let names = [
-            (Signal::HUP, "SIGHUP"),
-            (Signal::INT, "SIGINT"),
-            (Signal::QUIT, "SIGQUIT"),
-            (Signal::ILL, "SIGILL"),
-            (Signal::TRAP, "SIGTRAP"),
-            (Signal::ABORT, "SIGABRT"),
-            (Signal::BUS, "SIGBUS"),
-            (Signal::FPE, "SIGFPE"),
-            (Signal::KILL, "SIGKILL"),
-            (Signal::USR1, "SIGUSR1"),
-            (Signal::SEGV, "SIGSEGV"),
-            (Signal::USR2, "SIGUSR2"),
-            (Signal::PIPE, "SIGPIPE"),
-            (Signal::ALARM, "SIGALRM"),
-            (Signal::TERM, "SIGTERM"),
-            (Signal::CHILD, "SIGCHLD"),
-            (Signal::CONT, "SIGCONT"),
-            (Signal::STOP, "SIGSTOP"),
-            (Signal::TSTP, "SIGTSTP"),
-            (Signal::TTIN, "SIGTTIN"),
-            (Signal::TTOU, "SIGTTOU"),
-            (Signal::URG, "SIGURG"),
-            (Signal::XCPU, "SIGXCPU"),
-            (Signal::XFSZ, "SIGXFSZ"),
-            (Signal::VTALARM, "SIGVTALRM"),
-            (Signal::PROF, "SIGPROF"),
-            (Signal::WINCH, "SIGWINCH"),
-            (Signal::SYS, "SIGSYS"),
-            (Signal::IO, "SIGIO"),
-            #[cfg(target_os = "linux")]
-            (Signal::STKFLT, "SIGSTKFLT"),
-            #[cfg(target_os = "linux")]
-            (Signal::POWER, "SIGPWR"),
-            #[cfg(target_os = "macos")]
-            (Signal::EMT, "SIGEMT"),
-            #[cfg(target_os = "macos")]
-            (Signal::INFO, "SIGINFO"),
-        ];
-        if let Some((_, name)) = names
-            .into_iter()
-            .find(|(signal, _)| Some(signal.as_raw()) == status.signal())
-        {
-            return format!("signal {name}");
-        }
-    }
-    "signal unknown".into()
+    maestro_process::exit_signal_name(status)
+        .map_or_else(|| "signal unknown".into(), |name| format!("signal {name}"))
 }

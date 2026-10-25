@@ -68,7 +68,7 @@ pub(crate) fn paths(result: Option<AutocompleteSuggestions>, prefix: &str) -> Ve
 /// Create nested named fixture entries.
 pub(crate) fn entries(tree: &Tree, names: &[&str]) {
     for name in names {
-        let path = tree.0.join(name);
+        let path = tree.path().join(name);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, b"").unwrap();
     }
@@ -105,10 +105,10 @@ pub(crate) async fn native_cases(group: &str) {
             &case.names.iter().map(String::as_str).collect::<Vec<_>>(),
         );
         if case.id == "hidden_git" {
-            std::fs::write(tree.0.join(".gitignore"), "").unwrap();
+            std::fs::write(tree.path().join(".gitignore"), "").unwrap();
         }
         if case.id == "ignored" {
-            std::fs::write(tree.0.join(".gitignore"), "ignored.txt\n").unwrap();
+            std::fs::write(tree.path().join(".gitignore"), "ignored.txt\n").unwrap();
         }
         let provider = CombinedAutocompleteProvider::new(
             vec![],
@@ -161,8 +161,8 @@ pub(crate) async fn native_cases(group: &str) {
 /// make `exec` fail with "Text file busy").
 #[cfg(unix)]
 pub(crate) fn child_script(tree: &Tree, source: &str) -> String {
-    let text = tree.0.join("child.py");
-    let path = tree.0.join("child");
+    let text = tree.path().join("child.py");
+    let path = tree.path().join("child");
     std::fs::write(&text, format!("#!/usr/bin/env python3\n{source}\n")).unwrap();
     let status = std::process::Command::new("install")
         .args(["-m", "0700"])

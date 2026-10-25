@@ -1,6 +1,6 @@
 ## Approved footer-effects libraries
 
-On Unix, `maestro-app` uses Tokio `=1.53.2` (defaults off; `rt`, `time`,
+On Unix, `maestro-app` uses Tokio `=1.53.3` (defaults off; `rt`, `time`,
 `process`) for driving shared Git captures and reference-table polling on a
 caller-driven `LocalSet`, plus `num-traits =0.2.19` (defaults) for timestamp
 conversion without integer-millisecond truncation. Tests add Tokio `rt-multi-thread`

@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use crate::support;
-use support::browser_providers::run;
+use support::run_io as run;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

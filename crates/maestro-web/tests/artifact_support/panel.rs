@@ -4,7 +4,7 @@ use super::{
     presentation::{Presentation, ready},
 };
 use maestro_app::browser::tools::artifacts::{Artifact, LocalArtifactsPanel};
-use maestro_web::{ArtifactsPanel, browser::attachment_content::AttachmentUiError};
+use maestro_web::{ArtifactsPanel, tools::artifacts::ArtifactUiError};
 use serde::Deserialize;
 use std::{
     cell::Cell,
@@ -275,7 +275,7 @@ impl Harness {
     /// Draw only this retained composition.
     /// # Errors
     /// Returns the reached panel failure.
-    pub fn draw(&self) -> Result<egui::FullOutput, AttachmentUiError> {
+    pub fn draw(&self) -> Result<egui::FullOutput, ArtifactUiError> {
         self.frame.draw_panel(&self.panel, &self.caller, vec![])
     }
     /// Dispatch real pointer press and release at the supplied control.

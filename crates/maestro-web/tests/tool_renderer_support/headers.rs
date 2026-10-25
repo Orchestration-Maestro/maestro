@@ -4,9 +4,10 @@ use super::{
     browser::{self, ListingRecipe},
     cases,
 };
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{
     markdown_support::{check, first_slot_center, settle},
-    surface,
+    tool_renderers_browser::surface,
 };
 use maestro_web::{
     render_collapsible_header, render_header,
@@ -257,9 +258,11 @@ fn independent_sections(surface: &mut crate::markdown_support::Surface) {
         surface.draw(|ui, frame| {
             let top = headers[0]
                 .render(ui, browser::view(&host, frame), &mut rows[0])
+                .assert_no_overlays()
                 .unwrap();
             let bottom = headers[1]
                 .render(ui, browser::view(&host, frame), &mut rows[1])
+                .assert_no_overlays()
                 .unwrap();
             [top, bottom]
         })
@@ -273,9 +276,11 @@ fn independent_sections(surface: &mut crate::markdown_support::Surface) {
         surface.click(responses[index].rect.center(), |ui, frame| {
             headers[0]
                 .render(ui, browser::view(&host, frame), &mut rows[0])
+                .assert_no_overlays()
                 .unwrap();
             headers[1]
                 .render(ui, browser::view(&host, frame), &mut rows[1])
+                .assert_no_overlays()
                 .unwrap()
         });
         assert_eq!((first.get(), second.get()), wanted);
@@ -330,12 +335,62 @@ pub async fn collapsible_headers_paint_interaction_states() {
         assert_ne!(browser::pixels(&surface, border), unfocused);
         browser::has_role(&surface, border, "accent", &presentation);
         drop(row);
-        rich_hover_keeps_child_color(&mut surface, state);
+        rich_hover_keeps_child_color(&mut surface, state).await;
+    }
+}
+
+/// Nested SDK headers keep their explicit foreground within a hovered disclosure.
+#[wasm_bindgen]
+pub async fn rich_header_labels_inherit_hover_without_frame_leak() {
+    use crate::markdown_support::publish;
+    let surface = &mut surface();
+    let pack = surface.pack.clone();
+    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    for status in [
+        ToolHeaderState::Inprogress,
+        ToolHeaderState::Complete,
+        ToolHeaderState::Error,
+    ] {
+        let child = recipe(status, false, None, "nested label");
+        let icon = maestro_web::icons::icons()
+            .unwrap()
+            .shift_remove("Code")
+            .unwrap();
+        let header = ToolRenderResult {
+            content: render_collapsible_header(
+                ToolHeaderState::Complete,
+                icon,
+                ToolHeaderText::Content(child.content),
+                Rc::new(Cell::new(false)),
+            ),
+            is_custom: false,
+        };
+        let mut row = ToolRenderState::default();
+        surface.events = vec![egui::Event::PointerGone];
+        let response = browser::draw(surface, &header, &mut row);
+        surface.events = vec![egui::Event::PointerMoved(response.rect.center())];
+        browser::draw(surface, &header, &mut row);
+        browser::draw(surface, &header, &mut row);
+        publish("hoverText", &presentation.colors["muted"].into());
+        crate::support::reading_paint::observe("tool-header-hover").await;
+        surface.events = vec![egui::Event::PointerGone];
+        browser::draw(surface, &header, &mut row);
+        browser::draw(surface, &header, &mut row);
+        publish("hoverText", &presentation.colors["muted"].into());
+        crate::support::reading_paint::observe("tool-header-hover").await;
+        drop(row);
+    }
+    for status in [
+        ToolHeaderState::Inprogress,
+        ToolHeaderState::Complete,
+        ToolHeaderState::Error,
+    ] {
+        rich_hover_keeps_child_color(surface, status).await;
     }
 }
 
 /// Independently styled rich children do not inherit the header's hover color.
-fn rich_hover_keeps_child_color(
+async fn rich_hover_keeps_child_color(
     surface: &mut crate::markdown_support::Surface,
     state: ToolHeaderState,
 ) {
@@ -347,10 +402,12 @@ fn rich_hover_keeps_child_color(
     let _ = js(
         "globalThis.richIdleColor=getComputedStyle(document.querySelector('.maestro-code code')).color",
     );
+    crate::support::reading_paint::observe("rich-code-idle").await;
     surface.events = vec![egui::Event::PointerMoved(response.rect.center())];
     browser::draw(surface, &header, &mut row);
     browser::draw(surface, &header, &mut row);
     check("getComputedStyle(document.querySelector('.maestro-code code')).color === richIdleColor");
+    crate::support::reading_paint::observe("rich-code-hover").await;
 }
 
 /// A retained literal caption loses hover color when its header becomes plain.

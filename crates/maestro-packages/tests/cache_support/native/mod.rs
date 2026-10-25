@@ -1,12 +1,12 @@
 //! Native local Git refresh observed through the explicit resolver.
 #![cfg(test)]
-use super::super::{native_git_command, native_support, scratch, support};
+use super::super::{native_git_command, native_support, support};
 use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
     PackageOperations, SourceScope,
 };
 use maestro_settings::SettingsListEntry;
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::{path::Path, rc::Rc};
 /// Constructs an executable through a child process instead of executing a writable file.
 fn executable(root: &Path) -> String {
     let source = root.join("source");
@@ -38,7 +38,7 @@ fn repository(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
         r#"{"maestro":{"extensions":["entry.ts"]}}"#,
     )
     .unwrap();
-    native_support::write(seed.join("entry.ts").to_str().unwrap(), "first");
+    native_support::write(seed.join("entry.ts"), "first");
     native_git_command::git(&seed, &["add", "package.json", "entry.ts"]);
     native_git_command::git(&seed, &["commit", "-m", "first"]);
     native_git_command::git(
@@ -58,24 +58,21 @@ fn repository(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
 }
 /// Refreshes a real checkout and retains it after the origin becomes unavailable.
 pub fn refresh() {
-    let dir = scratch::Scratch::new().unwrap();
-    let base = dir.0.to_string_lossy().into_owned();
-    let (seed, remote) = repository(&dir.0);
+    // The temporary cache lives below the child's own temporary directory.
+    let Some(dir) =
+        crate::resolution_support::case_in_child("refresh", |base| vec![super::home(base)])
+    else {
+        return;
+    };
+    let base = dir.to_string_lossy().into_owned();
+    let (seed, remote) = repository(&dir);
     let (_, settings, _) = support::manager(&serde_json::json!({}));
     settings
         .borrow_mut()
-        .set_npm_command(Some(vec![SettingsListEntry::String(executable(&dir.0))]));
+        .set_npm_command(Some(vec![SettingsListEntry::String(executable(&dir))]));
     let local = Rc::new(tokio::task::LocalSet::new());
-    let native = Rc::new(NativePackageOperations::new(
-        |_| false,
-        Rc::new(|| false),
-        &local,
-    ));
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        temp_root: RefCell::new(Some(format!("{base}/temp"))),
-        ..Default::default()
-    });
+    let native = Rc::new(NativePackageOperations::new(Rc::new(|| false), &local));
+    let effects = Rc::new(support::Effects::default());
     let captured = Rc::clone(&native);
     *effects.capture_hook.borrow_mut() = Some(Rc::new(move |command, args, cwd| {
         let (command, args, cwd) = (command.to_owned(), args.to_vec(), cwd.map(str::to_owned));
@@ -107,16 +104,14 @@ pub fn refresh() {
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: base.clone(),
-            agent_dir: format!("{base}/user"),
+            agent_dir: native_support::under(&base, "user")
+                .to_string_lossy()
+                .into_owned(),
             settings_manager: settings,
         },
         support::Controlled(effects),
     );
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(observe(&manager, &seed, &remote));
+    crate::runtime::run(observe(&manager, &seed, &remote));
 }
 /// Assertions observe the same checkout before and after changed and failed refreshes.
 async fn observe(manager: &DefaultPackageManager<support::Controlled>, seed: &Path, remote: &Path) {

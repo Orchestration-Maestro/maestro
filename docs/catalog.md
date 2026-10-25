@@ -3,9 +3,14 @@
 `maestro-catalog::ModelRegistry` composes the offline descriptors with an explicit
 model file. `create` uses native file operations; `with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
-`in_memory` skips file access. `auth_storage` borrows the supplied credential owner.
-Native file effects require `Send + Sync`; browser file effects may capture local
-`Rc` state.
+`in_memory` skips file access. `auth_storage` borrows the supplied credential
+owner. Constructors take that credential as
+`maestro_models::SharedHandle<AuthStorage>`: a shared handle on native targets
+and a local one in the browser, so each caller builds the owner its target
+allows. Every constructor also takes the catalog's own `ConfigValues` handle,
+which runs the commands that configured credential values name; it is a platform
+handle in the same way. Native file and command effects require `Send + Sync`;
+browser effects may capture local `Rc` state.
 
 [Model selection](selection.md) describes references, patterns and command-line choices.
 
@@ -89,8 +94,10 @@ provides compile-only evidence for local browser effects.
 
 ## Dynamic providers
 
-`register_provider(name, Arc<RwLock<ProviderConfigInput>>)` validates the incoming
-record, applies it, then retains it. A callback requires a nonempty provider API;
+`register_provider(name, SharedHandle<RwLock<ProviderConfigInput>>)` validates
+the incoming record, applies it, then retains it. The configuration is the same
+platform handle, so registration keeps one owner from admission through replay,
+display-name reads and refresh. A callback requires a nonempty provider API;
 a nonempty model list requires a provider endpoint, key or OAuth, and an API on
 each model or its provider. Validation failure changes nothing. Dynamic
 `ProviderModelInput` values do not use the file loader's defaults or limit checks.
@@ -130,13 +137,15 @@ handles remain independent of later publication or registration changes.
 
 ## Request authentication
 
-`get_api_key_for_provider(provider, operations)` selects a credential key with
+`get_api_key_for_provider(provider)` selects a credential key with
 its fallback resolver disabled, then tries the configured nonempty provider key.
 A present empty credential key suppresses the configured fallback. Provider-only
 lookup samples that fallback after credential extraction.
-`get_api_key_and_headers(model, operations)` accepts a shared descriptor, including
+`get_api_key_and_headers(model)` accepts a shared descriptor, including
 one outside the catalog, and returns `ResolvedRequestAuth::Ok` or
-`ResolvedRequestAuth::Error` with the winning resolution message.
+`ResolvedRequestAuth::Error` with the winning resolution message. Both entry
+points take only the model or provider and run commands through the handle the
+catalog was built with.
 
 Configured values have three forms:
 
@@ -145,9 +154,10 @@ Configured values have three forms:
 - A shell command prefixed with `!`, such as `"!credential-helper"`.
 
 Configured values selected for a request resolve at request time. The catalog
-adds no cache: it asks the supplied operations for commands afresh on success or
-failure, and reads environment values on each call. Applications
-that want additional caching can supply their own `ConfigValueOperations`.
+adds no cache: it runs the command again on every call, whether that call
+succeeded or failed, and reads environment values from the process each time.
+A caller that wants a different command effect, or extra caching, supplies its
+own `ConfigValueOperations` handle at construction.
 See [credentials](credentials.md#configured-values) for delegated value,
 shell and stored-credential behavior. `clear_api_key_cache` is the callable alias
 of the shared credentials command-cache clear, not a catalog cache.

@@ -1,17 +1,14 @@
 //! Retained registration through real facades and runner consumers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod support;
+use crate::local_support as support;
 use maestro_extensions::{ExtensionExecution, types::*};
 use maestro_models::{Local, Tool};
 use maestro_tools::ToolDefinitionRecord;
 use serde_json::{Value, json};
 use std::{rc::Rc, sync::RwLock};
 
-#[path = "support/tool.rs"]
-mod tool_support;
+use crate::tool_support;
 use tool_support::definition;
 
 #[test]
@@ -113,6 +110,35 @@ fn tool_enumeration_and_lookup_preserve_their_distinct_winner_rules() {
 }
 
 #[test]
+fn registered_tools_expose_metadata_and_renderers_to_generic_callers() {
+    let bus = support::LocalBus::new();
+    let loaded = support::loaded("owner", bus.controller.for_extension());
+    let mut framed = definition("framed", "Framed");
+    framed.prompt_snippet = Some("Frame text".into());
+    framed.render_shell = Some(maestro_tools::ToolRenderShell::SelfRendered);
+    loaded.api.register_tool(framed).unwrap();
+    let tools = support::runner(&loaded.owners).get_all_registered_tools();
+    let metadata = metadata_of(&tools[0]);
+    assert_eq!(
+        (metadata.label.as_str(), metadata.prompt_snippet.as_deref()),
+        ("Framed", Some("Frame text"))
+    );
+    let binding = tools[0].renderer_binding().unwrap();
+    assert_eq!(
+        binding.render_shell,
+        Some(maestro_tools::ToolRenderShell::SelfRendered)
+    );
+    assert!(binding.render_call.is_none() && binding.render_result.is_none());
+}
+
+/// Reads metadata where only the execution bound is known.
+fn metadata_of<E: ExtensionExecution>(
+    tool: &RegisteredTool<E>,
+) -> maestro_extensions::ToolDefinitionMetadata {
+    tool.metadata()
+}
+
+#[test]
 fn registered_tools_forward_preparation_context_progress_and_errors() {
     support::local(async {
         check_suspended_context_rebinding().await;
@@ -171,12 +197,7 @@ fn registered_tools_forward_preparation_context_progress_and_errors() {
     });
 }
 
-#[allow(
-    dead_code,
-    reason = "This program uses part of the tools display support."
-)]
-#[path = "../../maestro-tools/tests/display_support/mod.rs"]
-mod display_support;
+use crate::display_context;
 use maestro_tools::{
     ToolRenderResult, ToolRenderResultOptions, ToolRendererState,
     output::render_utils::ToolRenderResultLike,
@@ -208,14 +229,14 @@ fn render_callbacks_keep_result_first_arguments_and_shared_state() {
     let runner = support::runner(&loaded.owners);
     let tool = runner.get_all_registered_tools().remove(0);
     let binding = tool.definition.renderer_binding().unwrap();
-    let env = display_support::Env::new(0);
     let args = json!({"arg":4});
-    let setup = display_support::Setup::from(
+    let setup = display_context::Setup::from(
         &json!({"readme":"/opt/maestro/README.md","bindings":[],"showImages":false}),
     );
-    let mut row = display_support::context::<ToolRendererState>(&args, &setup, &env, None);
+    let env = display_context::Env::from_setup(&setup);
+    let mut row = display_context::context::<ToolRendererState>(&args, &setup, &env, None);
     row.tool_call_id = "call".into();
-    let call = binding.render_call.as_ref().unwrap()(Some(&args), &env.theme, &row).unwrap();
+    let call = binding.render_call.as_ref().unwrap()(Some(&args), &env.live, &row).unwrap();
     assert_eq!(call.render(30), [format!("{:<30}", "call")]);
     row.last_component = Some(call.clone());
     let details = json!({"result":5});
@@ -235,7 +256,7 @@ fn render_callbacks_keep_result_first_arguments_and_shared_state() {
                 expanded: true,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &row,
         )
         .unwrap();
@@ -266,11 +287,11 @@ fn raw_registration_keeps_serialize_only_details() {
             .get_tool_definition::<Value, SerializeOnly, RawState>("raw")
             .unwrap();
         let binding = registered.definition.renderer_binding().unwrap();
-        let env = display_support::Env::new(0);
         let args = json!({});
         let setup =
-            display_support::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
-        let row = display_support::context::<ToolRendererState>(&args, &setup, &env, None);
+            display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
+        let env = display_context::Env::from_setup(&setup);
+        let row = display_context::context::<ToolRendererState>(&args, &setup, &env, None);
         for (value, count) in [(7, 1), (9, 2)] {
             let result = (wrapped.execute)("raw".into(), json!({}), None, None)
                 .await
@@ -515,7 +536,7 @@ fn raw_definition() -> LocalDefinition<Value, SerializeOnly, RawState> {
 fn render_raw_result(
     binding: &maestro_tools::ToolRendererBinding,
     result: &maestro_agent::AgentToolResult,
-    env: &display_support::Env,
+    env: &display_context::Env,
     row: &maestro_tools::ToolRenderContext<'_, ToolRendererState>,
 ) -> maestro_tui::tui::ComponentHandle {
     binding
@@ -534,7 +555,7 @@ fn render_raw_result(
                 expanded: false,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             row,
         )
         .unwrap()
@@ -697,11 +718,11 @@ fn check_heterogeneous_rendering(
     registrations: &[RegisteredTool<Local>],
     first_result: &maestro_agent::AgentToolResult,
 ) {
-    let env = display_support::Env::new(0);
     let args = json!({});
     let setup =
-        display_support::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
-    let row = display_support::context::<ToolRendererState>(&args, &setup, &env, None);
+        display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
+    let env = display_context::Env::from_setup(&setup);
+    let row = display_context::context::<ToolRendererState>(&args, &setup, &env, None);
     let raw = registrations[0].definition.renderer_binding().unwrap();
     for count in 1..=2 {
         assert_eq!(
@@ -712,7 +733,7 @@ fn check_heterogeneous_rendering(
     let binding = registrations[1].definition.renderer_binding().unwrap();
     for count in 1..=2 {
         assert_eq!(
-            binding.render_call.as_ref().unwrap()(Some(&args), &env.theme, &row)
+            binding.render_call.as_ref().unwrap()(Some(&args), &env.live, &row)
                 .unwrap()
                 .render(7),
             [format!("typed:{count}")]
@@ -824,8 +845,7 @@ fn check_raw_names_and_plural_order() {
     }
 }
 
-#[path = "support/model.rs"]
-mod model_support;
+use crate::model_support;
 
 /// A pending invocation retains the old model reader, while the next gets the rebinding.
 async fn check_suspended_context_rebinding() {
@@ -985,13 +1005,13 @@ fn registered_callbacks_reenter_and_retire_without_registry_guards() {
                 .details,
             Some(json!("old"))
         );
-        let env = display_support::Env::new(0);
         let args = json!({});
         let setup =
-            display_support::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
-        let row = display_support::context::<ToolRendererState>(&args, &setup, &env, None);
+            display_context::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
+        let env = display_context::Env::from_setup(&setup);
+        let row = display_context::context::<ToolRendererState>(&args, &setup, &env, None);
         assert_eq!(
-            binding.render_call.as_ref().unwrap()(Some(&args), &env.theme, &row)
+            binding.render_call.as_ref().unwrap()(Some(&args), &env.live, &row)
                 .unwrap()
                 .render(12),
             ["old renderer"]
@@ -1065,7 +1085,7 @@ fn mutable_lower_definition()
         definition: Tool {
             name: "lower".into(),
             description: String::new(),
-            parameters: json!({}),
+            parameters: json!({}).into(),
         },
         label: "lower".into(),
         prompt_snippet: None,

@@ -31,10 +31,11 @@ local.block_on(&runtime, async { provider.dispose(); });
 
 ## Branch
 
-`FooterOperations` supplies the file and process effects, so native and
-controlled adapters are interchangeable; `NativeFooterOperations` (Unix) is the
-native adapter and other targets pass their own. Paths stay authored strings;
-their lexical rules are those of [`maestro-path`](../../crates/maestro-path/src/lib.rs).
+`FooterOperations` supplies the watch registration, timer scheduling, polling
+and Git lookups, so native and controlled adapters are interchangeable;
+`NativeFooterOperations` (Unix) is the native adapter and other targets pass
+their own. Paths stay authored strings; their lexical rules are those of
+[`maestro-path`](../../crates/maestro-path/src/lib.rs).
 
 Construction walks from the working directory towards the root for the nearest
 `.git` entry. A directory needs a `HEAD`; a file is a worktree link when it
@@ -62,9 +63,11 @@ Until disposed, the provider watches the directory containing `HEAD`. Registrati
 proceeds in order and stops at the first failure or absent path: when the common
 metadata directory's `reftable` directory is present and registered, it is watched
 too, and when its `tables.list` file is then present and registered, that file is
-watched and polled every 250 ms. Native polling paths and asynchronous Git query
-directories are anchored when their operations are called, before the task set
-runs; if absolute resolution fails, the original path is retained.
+watched and polled every 250 ms. Both presence checks read the file system
+directly, and a path that cannot be examined counts as absent. Native polling
+paths and asynchronous Git query directories are anchored when their operations
+are called, before the task set runs; if absolute resolution fails, the original
+path is retained.
 HEAD-directory events with an unknown,
 empty or exact `HEAD` filename request refresh; reference-table events need no
 filename filter. Polling requests refresh when modification time, metadata change

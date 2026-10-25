@@ -28,18 +28,20 @@ async fn admitted_wait() {
     let starts = Rc::new(Cell::new(0));
     let (resume, resumed) = oneshot::channel();
     let resumed = Rc::new(std::cell::RefCell::new(Some(resumed)));
-    runner.bind_command_context(Some(ExtensionCommandContextActions {
-        wait_for_idle: Rc::new({
-            let starts = starts.clone();
-            move || {
-                starts.set(starts.get() + 1);
-                let resumed = resumed.borrow_mut().take().unwrap();
-                Box::pin(async move { resumed.await.map_err(Into::into) })
-            }
-        }),
-        ..ExtensionCommandContextActions::default()
-    }));
-    let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+        maestro_extensions::CommandContextOperations {
+            wait_for_idle: Rc::new({
+                let starts = starts.clone();
+                move || {
+                    starts.set(starts.get() + 1);
+                    let resumed = resumed.borrow_mut().take().unwrap();
+                    Box::pin(async move { resumed.await.map_err(Into::into) })
+                }
+            }),
+            ..crate::context_actions::silent_command_operations()
+        },
+    )));
+    let (mut pump, admission) = Pump::new();
     let endpoint = pump
         .registry()
         .context(Owner::Command(runner.create_command_context()))
@@ -80,15 +82,17 @@ fn reload_uses_the_operation_selected_when_consumed() {
         .unwrap()
         .block_on(async {
             let runner = runner("/reload");
-            let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (mut pump, admission) = Pump::new();
             let endpoint = pump
                 .registry()
                 .context(Owner::Command(runner.create_command_context()))
                 .unwrap();
-            runner.bind_command_context(Some(ExtensionCommandContextActions {
-                reload: Rc::new(|| Box::pin(async { Err("selected reload".into()) })),
-                ..ExtensionCommandContextActions::default()
-            }));
+            runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+                maestro_extensions::CommandContextOperations {
+                    reload: Rc::new(|| Box::pin(async { Err("selected reload".into()) })),
+                    ..crate::context_actions::silent_command_operations()
+                },
+            )));
             let worker = std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()
                     .build()
@@ -119,19 +123,21 @@ fn navigation_preserves_exact_target_and_optional_fields() {
 /// Decodes empty and populated records through the same shared native option type.
 async fn navigation() {
     let runner = runner("/navigate");
-    runner.bind_command_context(Some(ExtensionCommandContextActions {
-        navigate_tree: Rc::new(|id, options| {
-            assert_eq!(id, "  e\u{feff}\u{85} ");
-            if let Some(options) = options {
-                check_navigation_options(&options);
-            }
-            Box::pin(async {
-                Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
-            })
-        }),
-        ..ExtensionCommandContextActions::default()
-    }));
-    let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+        maestro_extensions::CommandContextOperations {
+            navigate_tree: Rc::new(|id, options| {
+                assert_eq!(id, "  e\u{feff}\u{85} ");
+                if let Some(options) = options {
+                    check_navigation_options(&options);
+                }
+                Box::pin(async {
+                    Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
+                })
+            }),
+            ..crate::context_actions::silent_command_operations()
+        },
+    )));
+    let (pump, admission) = Pump::new();
     let endpoint = pump
         .registry()
         .context(Owner::Command(runner.create_command_context()))

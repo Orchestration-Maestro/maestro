@@ -1,94 +1,15 @@
 #![cfg(test)]
 
-#[path = "fixtures/toolchain_support.rs"]
-mod toolchain_support;
+use crate::toolchain_support;
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
-use std::sync::atomic::{AtomicU64, Ordering};
 
-struct Workspace(PathBuf);
-
-/// Copies an executable through a child `install`, so this process never holds a
-/// writable descriptor to a file it later runs (a concurrent fork would otherwise
-/// make `exec` fail with "Text file busy").
-fn install_executable(source: &Path, target: &Path) {
-    let status = Command::new("install")
-        .args(["-m", "0700"])
-        .arg(source)
-        .arg(target)
-        .status()
-        .unwrap();
-    assert!(status.success());
-}
-
-impl Workspace {
-    fn new() -> Self {
-        static NEXT: AtomicU64 = AtomicU64::new(0);
-        let root = std::env::temp_dir().join(format!(
-            "maestro-recipes-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        fs::create_dir_all(root.join("bin")).unwrap();
-        toolchain_support::declare_toolchain(&root, include_str!("../../../rust-toolchain.toml"))
-            .unwrap();
-        fs::copy(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../justfile"),
-            root.join("justfile"),
-        )
-        .unwrap();
-        let source = root.join("tool.rs");
-        fs::write(&source, include_str!("fixtures/recipe_command.rs")).unwrap();
-        let tool = root.join("bin/cargo");
-        assert!(
-            toolchain_support::command("rustc")
-                .current_dir(&root)
-                .arg(source)
-                .arg("-o")
-                .arg(&tool)
-                .status()
-                .unwrap()
-                .success()
-        );
-        for name in ["mise", "prek", "watchexec"] {
-            install_executable(&tool, &root.join("bin").join(name));
-        }
-        Self(root)
-    }
-
-    fn command(&self, recipe: &str) -> Command {
-        let mut command = toolchain_support::command("just");
-        command
-            .current_dir(&self.0)
-            .arg(recipe)
-            .env("MAESTRO_LOG", self.0.join("log"))
-            .env("MAESTRO_CWD", self.0.join("cwd"))
-            .env(
-                "PATH",
-                format!(
-                    "{}:{}",
-                    self.0.join("bin").display(),
-                    std::env::var("PATH").unwrap()
-                ),
-            );
-        command
-    }
-
-    fn run(&self, recipe: &str) -> Output {
-        self.command(recipe).output().unwrap()
-    }
-    fn log(&self) -> String {
-        fs::read_to_string(self.0.join("log")).unwrap()
-    }
-}
-
-impl Drop for Workspace {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
-    }
-}
+use crate::recipe_support;
+#[cfg(unix)]
+use recipe_support::ProcessGroup;
+use recipe_support::{Workspace, install_executable, write_input};
 
 #[test]
 fn maestro_workspace_recipes_keep_phase_order() {
@@ -103,7 +24,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
         workspace.log(),
         "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
-    fs::remove_file(workspace.0.join("log")).unwrap();
+    fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
         .command("prepublish")
         .env("MAESTRO_FAIL", "build")
@@ -115,7 +36,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
         "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\n"
     );
     for phase in ["fmt", "hakari", "clippy", "doc", "test"] {
-        fs::remove_file(workspace.0.join("log")).unwrap();
+        fs::remove_file(workspace.path().join("log")).unwrap();
         let output = workspace
             .command("ci")
             .env("MAESTRO_FAIL", phase)
@@ -135,11 +56,42 @@ fn maestro_workspace_recipes_keep_phase_order() {
         }
     }
     assert_test_phase_failures(&workspace);
-    fs::remove_file(workspace.0.join("log")).unwrap();
+    fs::remove_file(workspace.path().join("log")).unwrap();
     assert!(workspace.run("ci").status.success());
     assert!(workspace.log().ends_with(
         "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
     ));
+}
+
+#[test]
+fn maestro_scoped_check_consumes_package_selection() {
+    let workspace = Workspace::new();
+    let result = workspace
+        .command("_check")
+        .args(["-p", "maestro-models", "-p", "maestro-agent"])
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo hakari|verify\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--|-D|warnings\ncargo doc|-p|maestro-models|-p|maestro-agent|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
+    );
+    fs::remove_file(workspace.path().join("log")).unwrap();
+    let result = workspace
+        .command("_check")
+        .args(["-p", "maestro-models"])
+        .env("MAESTRO_FAIL", "clippy")
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert_eq!(
+        workspace.log(),
+        "cargo hakari|verify\ncargo clippy|-p|maestro-models|--all-targets|--locked|--|-D|warnings\n"
+    );
 }
 
 /// Checks that test phases stop on failure.
@@ -151,7 +103,7 @@ fn assert_test_phase_failures(workspace: &Workspace) {
             "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n",
         ),
     ] {
-        fs::remove_file(workspace.0.join("log")).unwrap();
+        fs::remove_file(workspace.path().join("log")).unwrap();
         let output = workspace
             .command("test")
             .env("MAESTRO_FAIL", phase)
@@ -203,19 +155,10 @@ fn maestro_test_recipes_forward_literal_arguments() {
         ),
     ] {
         let workspace = Workspace::new();
-        let args = [
-            "",
-            "a space",
-            "'quoted'",
-            "\"double quoted\"",
-            "selected_behavior",
-            "--",
-            "--ignored",
-            "--exact",
-            "wrapped_ignored",
-            "--nocapture",
-        ];
-        let output = workspace.command(recipe).args(args).output().unwrap();
+        let args: Vec<_> = include_str!("fixtures/literal-test-arguments.txt")
+            .lines()
+            .collect();
+        let output = workspace.command(recipe).args(&args).output().unwrap();
         assert!(output.status.success(), "{recipe}");
         let suffix = args.join("|");
         let expected = if doctests {
@@ -231,7 +174,7 @@ fn maestro_test_recipes_forward_literal_arguments() {
 
 fn assert_package_build(workspace: &Workspace, prefix: &str, owner: &str) {
     for recipe in ["build", "prepublish", "clean"] {
-        fs::remove_file(workspace.0.join("log")).unwrap();
+        fs::remove_file(workspace.path().join("log")).unwrap();
         assert!(
             workspace
                 .run(&format!("{prefix}-{recipe}"))
@@ -280,7 +223,7 @@ fn assert_binary_build_order() {
 
 fn native_workspace(workspace: &Workspace) {
     fs::write(
-        workspace.0.join("Cargo.toml"),
+        workspace.path().join("Cargo.toml"),
         "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
     )
     .unwrap();
@@ -290,7 +233,7 @@ fn native_workspace(workspace: &Workspace) {
         "maestro-tui",
         "maestro-app",
     ] {
-        let root = workspace.0.join("crates").join(owner);
+        let root = workspace.path().join("crates").join(owner);
         fs::create_dir_all(root.join("src")).unwrap();
         fs::write(
             root.join("Cargo.toml"),
@@ -299,23 +242,26 @@ fn native_workspace(workspace: &Workspace) {
         .unwrap();
         fs::write(root.join("src/lib.rs"), "/// Adds one.\n/// ```\n/// assert_eq!(maestro_models::increment(1), 2);\n/// ```\npub fn increment(n: i32) -> i32 { n + 1 }\n#[test] fn selected_behavior() {}\n#[test] #[ignore] fn ignored_behavior() {}\n#[test] fn failing_behavior() { if std::env::var_os(\"MAESTRO_TEST_FAIL\").is_some() { panic!(\"controlled failure\"); } }\n".replace("maestro_models", &owner.replace('-', "_"))).unwrap();
     }
-    fs::create_dir_all(workspace.0.join("crates/maestro-models/examples")).unwrap();
+    fs::create_dir_all(workspace.path().join("crates/maestro-models/examples")).unwrap();
     fs::write(
         workspace
-            .0
+            .path()
             .join("crates/maestro-models/examples/generate_catalog_data.rs"),
         "fn main() {}\n",
     )
     .unwrap();
     fs::rename(
-        workspace.0.join("bin/cargo"),
-        workspace.0.join("bin/cargo-proxy"),
+        workspace.path().join("bin/cargo"),
+        workspace.path().join("bin/cargo-proxy"),
     )
     .unwrap();
-    install_executable(Path::new(env!("CARGO")), &workspace.0.join("bin/cargo"));
+    install_executable(
+        Path::new(env!("CARGO")),
+        &workspace.path().join("bin/cargo"),
+    );
     assert!(
         toolchain_support::command(env!("CARGO"))
-            .current_dir(&workspace.0)
+            .current_dir(workspace.path())
             .arg("generate-lockfile")
             .status()
             .unwrap()
@@ -327,9 +273,9 @@ fn native_workspace(workspace: &Workspace) {
 fn maestro_clean_keeps_sources_and_sibling_outputs() {
     let workspace = Workspace::new();
     native_workspace(&workspace);
-    fs::create_dir_all(workspace.0.join(".cargo")).unwrap();
+    fs::create_dir_all(workspace.path().join(".cargo")).unwrap();
     fs::write(
-        workspace.0.join(".cargo/config.toml"),
+        workspace.path().join(".cargo/config.toml"),
         "[build]\ntarget-dir = 'compiler-output'\n",
     )
     .unwrap();
@@ -337,7 +283,7 @@ fn maestro_clean_keeps_sources_and_sibling_outputs() {
     let development = prepare_configured_assets(&workspace);
     assert!(
         workspace
-            .0
+            .path()
             .join("compiler-output/debug/libmaestro_models.rlib")
             .exists()
     );
@@ -352,19 +298,19 @@ fn maestro_clean_keeps_sources_and_sibling_outputs() {
     );
     assert!(
         !workspace
-            .0
+            .path()
             .join("compiler-output/debug/libmaestro_models.rlib")
             .exists()
     );
     assert!(
         workspace
-            .0
+            .path()
             .join("compiler-output/debug/libmaestro_agent.rlib")
             .exists()
     );
     assert!(
         workspace
-            .0
+            .path()
             .join("crates/maestro-models/src/lib.rs")
             .exists()
     );
@@ -373,7 +319,7 @@ fn maestro_clean_keeps_sources_and_sibling_outputs() {
 
 fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
     for tree in ["maestro-app-assets", "maestro-binary-assets"] {
-        assert!(workspace.0.join("compiler-output").join(tree).is_dir());
+        assert!(workspace.path().join("compiler-output").join(tree).is_dir());
     }
     let output = workspace
         .command("app-clean")
@@ -388,14 +334,19 @@ fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
     );
     assert!(
         workspace
-            .0
+            .path()
             .join("compiler-output/debug/libmaestro_agent.rlib")
             .exists()
     );
-    assert!(workspace.0.join("crates/maestro-app/src/lib.rs").exists());
+    assert!(
+        workspace
+            .path()
+            .join("crates/maestro-app/src/lib.rs")
+            .exists()
+    );
     for tree in ["maestro-app-assets", "maestro-binary-assets"] {
-        assert!(!workspace.0.join("compiler-output").join(tree).exists());
-        fs::create_dir_all(workspace.0.join("compiler-output").join(tree)).unwrap();
+        assert!(!workspace.path().join("compiler-output").join(tree).exists());
+        fs::create_dir_all(workspace.path().join("compiler-output").join(tree)).unwrap();
     }
     assert!(
         workspace
@@ -407,11 +358,11 @@ fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
             .success()
     );
     for tree in ["maestro-app-assets", "maestro-binary-assets"] {
-        assert!(!workspace.0.join("compiler-output").join(tree).exists());
+        assert!(!workspace.path().join("compiler-output").join(tree).exists());
     }
     assert!(
         !workspace
-            .0
+            .path()
             .join("compiler-output/debug/libmaestro_agent.rlib")
             .exists()
     );
@@ -419,12 +370,12 @@ fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
 
 fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
     fs::rename(
-        workspace.0.join("bin/cargo-proxy"),
-        workspace.0.join("bin/cargo"),
+        workspace.path().join("bin/cargo-proxy"),
+        workspace.path().join("bin/cargo"),
     )
     .unwrap();
     create_prepared_assets(workspace);
-    let binary_root = workspace.0.join("crates/maestro");
+    let binary_root = workspace.path().join("crates/maestro");
     fs::create_dir_all(binary_root.join("src")).unwrap();
     fs::write(
         binary_root.join("Cargo.toml"),
@@ -433,7 +384,7 @@ fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
     .unwrap();
     fs::write(binary_root.join("src/main.rs"), "fn main() {}\n").unwrap();
     prepare_tooling_owner(workspace);
-    let development = workspace.0.join("compiler-output/debug/development");
+    let development = workspace.path().join("compiler-output/debug/development");
     for recipe in ["copy-assets", "copy-binary-assets"] {
         let output = workspace
             .command(recipe)
@@ -449,15 +400,30 @@ fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
     }
     for tree in ["maestro-app-assets", "maestro-binary-assets"] {
         assert!(
-            workspace.0.join("compiler-output").join(tree).is_dir(),
+            workspace.path().join("compiler-output").join(tree).is_dir(),
             "missing configured asset tree: {tree}"
+        );
+    }
+    let standalone = workspace
+        .path()
+        .join("compiler-output/maestro-binary-assets");
+    for (name, bytes) in [
+        ("README.md", "readme"),
+        ("CHANGELOG.md", "history"),
+        ("docs/guide.md", "guide"),
+        ("examples/example.txt", "example"),
+    ] {
+        assert_eq!(
+            fs::read(standalone.join(name)).unwrap(),
+            bytes.as_bytes(),
+            "standalone layout lacks package input {name}"
         );
     }
     development
 }
 
 fn create_prepared_assets(workspace: &Workspace) {
-    let root = workspace.0.join("crates/maestro-app");
+    let root = workspace.path().join("crates/maestro-app");
     for (name, value) in [
         ("src/modes/interactive/theme/theme.json", "{}"),
         ("src/modes/interactive/assets/logo.png", "image"),
@@ -465,18 +431,21 @@ fn create_prepared_assets(workspace: &Workspace) {
         ("src/core/export-html/template.css", "css"),
         ("src/core/export-html/template.js", "js"),
         ("src/core/export-html/vendor/vendor.js", "vendor"),
+    ] {
+        write_input(&root, name, value);
+    }
+    for (name, value) in [
         ("README.md", "readme"),
         ("CHANGELOG.md", "history"),
         ("docs/guide.md", "guide"),
         ("examples/example.txt", "example"),
     ] {
-        let path = root.join(name);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, value).unwrap();
+        write_input(&root, name, &format!("crate-{value}"));
+        write_input(&workspace.path(), name, value);
     }
-    fs::create_dir_all(workspace.0.join("target/maestro-viewer")).unwrap();
+    fs::create_dir_all(workspace.path().join("target/maestro-viewer")).unwrap();
     fs::write(
-        workspace.0.join("target/maestro-viewer/index.html"),
+        workspace.path().join("target/maestro-viewer/index.html"),
         "viewer",
     )
     .unwrap();
@@ -506,35 +475,18 @@ fn maestro_watch_survives_rebuilding_its_development_binary() {
     assert_watch_rebuild("dev", "crates/maestro-tooling/src/bin/development.rs");
 }
 
-/// Owns the recipe's process group, including watcher commands and their children.
-#[cfg(unix)]
-struct ProcessGroup(std::process::Child);
-
-#[cfg(unix)]
-impl Drop for ProcessGroup {
-    fn drop(&mut self) {
-        // The fixture disables nested watcher groups so every child inherits this group.
-        let _ = Command::new("kill")
-            .args(["-KILL", "--", &format!("-{}", self.0.id())])
-            .status();
-        let _ = self.0.wait();
-    }
-}
-
 #[cfg(unix)]
 fn assert_watch_rebuild(recipe: &str, changed: &str) {
     let workspace = Workspace::new();
     prepare_watch_workspace(&workspace);
     prepare_tooling_owner(&workspace);
-    let binary = workspace.0.join("target/debug/development");
+    let binary = workspace.path().join("target/debug/development");
     let (child, receive, threads) = start_watch(&workspace, workspace.command(recipe), &binary);
-    let diagnostics = watcher_diagnostics(&workspace.0);
+    let diagnostics = watcher_diagnostics(&workspace.path());
     assert_watch_events(&workspace, changed, &receive, &diagnostics);
     drop(child);
     drop(receive);
-    for thread in threads {
-        thread.join().unwrap();
-    }
+    threads.into_iter().for_each(recipe_support::join_reader);
 }
 
 /// Isolates profiles before launch because cleanup can forcibly stop the owned group.
@@ -548,30 +500,15 @@ fn start_watch(
     std::sync::mpsc::Receiver<String>,
     [std::thread::JoinHandle<()>; 1],
 ) {
-    use std::os::unix::process::CommandExt;
-    use std::process::Stdio;
-    use std::sync::mpsc;
-    let profiles = workspace.0.join("target/watch-profiles");
+    let profiles = workspace.path().join("target/watch-profiles");
     fs::create_dir_all(&profiles).unwrap();
     command.env("LLVM_PROFILE_FILE", profiles.join("watch-%p-%m.profraw"));
     command
         .env("MAESTRO_REAL_CARGO", env!("CARGO"))
         .env("MAESTRO_DEVELOPMENT", binary)
         .env("MAESTRO_REAL_WATCHEXEC", watcher_path());
-    // Both output streams share one pipe so completion cannot overtake step output.
-    let (output, writer) = std::os::unix::net::UnixStream::pair().unwrap();
-    let stdout: std::os::fd::OwnedFd = writer.try_clone().unwrap().into();
-    let stderr: std::os::fd::OwnedFd = writer.into();
-    command
-        .stdout(Stdio::from(stdout))
-        .stderr(Stdio::from(stderr))
-        .process_group(0);
-    let child = ProcessGroup(command.spawn().unwrap());
-    drop(command);
-    let (send, receive) = mpsc::channel();
-    let threads = [capture_lines(move || output, send.clone())];
-    drop(send);
-    (child, receive, threads)
+    let (child, receive, thread) = recipe_support::start_output(command);
+    (child, receive, [thread])
 }
 
 /// Completion follows retained stdout and stderr from the same command.
@@ -581,7 +518,7 @@ fn maestro_watch_completion_retains_both_output_streams() {
     use std::io::Write;
     let workspace = Workspace::new();
     writeln!(
-        fs::OpenOptions::new().append(true).open(workspace.0.join("justfile")).unwrap(),
+        fs::OpenOptions::new().append(true).open(workspace.path().join("justfile")).unwrap(),
         "\nwatch-output:\n    @printf 'source output\\n'\n    @printf 'compiler output\\nFinished `dev`\\n[Command was successful]\\n' >&2"
     ).unwrap();
     let (child, receive, threads) = start_watch(
@@ -602,9 +539,7 @@ fn maestro_watch_completion_retains_both_output_streams() {
     );
     drop(child);
     drop(receive);
-    for thread in threads {
-        thread.join().unwrap();
-    }
+    threads.into_iter().for_each(recipe_support::join_reader);
 }
 
 /// Panic cleanup closes every descendant's output pipe, not just the recipe leader's.
@@ -622,7 +557,7 @@ fn maestro_watch_stops_its_children_on_panic() {
         &receive,
         &mut String::new(),
         "panic cleanup readiness",
-        &watcher_diagnostics(&workspace.0),
+        &watcher_diagnostics(&workspace.path()),
     );
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let _child = child;
@@ -637,18 +572,17 @@ fn maestro_watch_stops_its_children_on_panic() {
 #[test]
 fn maestro_watch_profiles_are_isolated_before_group_start() {
     let mut workspace = Workspace::new();
-    let literal = workspace.0.with_extension("space ' checkout");
-    fs::rename(&workspace.0, &literal).unwrap();
-    workspace.0 = literal;
+    let literal = workspace.path().with_extension("space ' checkout");
+    workspace.rename(literal.file_name().unwrap()).unwrap();
     let binary = prepare_profile_writer(&workspace);
-    let merge = workspace.0.join("merge-profiles");
+    let merge = workspace.path().join("merge-profiles");
     let control = profile_control(&binary, &merge);
     for incoming in [
         Some(merge.join("incoming-%p-%m.profraw")),
         None,
         Some(PathBuf::new()),
     ] {
-        let scratch = workspace.0.join("target/watch-profiles");
+        let scratch = workspace.path().join("target/watch-profiles");
         if scratch.exists() {
             fs::remove_dir_all(&scratch).unwrap();
         }
@@ -677,7 +611,7 @@ fn maestro_watch_profiles_are_isolated_before_group_start() {
             "missing instrumented descendant profile"
         );
     }
-    let scratch = workspace.0.join("target/watch-profiles");
+    let scratch = workspace.path().join("target/watch-profiles");
     fs::remove_dir_all(&scratch).unwrap();
     fs::write(&scratch, "not a directory").unwrap();
     let failure = std::panic::catch_unwind(|| {
@@ -697,7 +631,7 @@ fn maestro_watch_profiles_are_isolated_before_group_start() {
 fn maestro_watch_profile_isolation_survives_panic_cleanup() {
     let workspace = Workspace::new();
     let binary = prepare_profile_writer(&workspace);
-    let merge = workspace.0.join("merge-profiles");
+    let merge = workspace.path().join("merge-profiles");
     let control = profile_control(&binary, &merge);
     let mut command = Command::new(&binary);
     command.env("LLVM_PROFILE_FILE", merge.join("incoming-%p-%m.profraw"));
@@ -708,7 +642,7 @@ fn maestro_watch_profile_isolation_survives_panic_cleanup() {
         "maestro-profile-child-exited",
         "profile producer",
     );
-    let scratch = workspace.0.join("target/watch-profiles");
+    let scratch = workspace.path().join("target/watch-profiles");
     let produced = scratch.is_dir().then(|| profile_snapshot(&scratch));
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let _child = child;
@@ -730,9 +664,9 @@ fn maestro_watch_profile_isolation_survives_panic_cleanup() {
 /// Compiles the finite profile producer even when the integration test is uninstrumented.
 #[cfg(unix)]
 fn prepare_profile_writer(workspace: &Workspace) -> PathBuf {
-    let source = workspace.0.join("profile_writer.rs");
+    let source = workspace.path().join("profile_writer.rs");
     fs::write(&source, include_str!("fixtures/profile_writer.rs")).unwrap();
-    let binary = workspace.0.join("profile_writer");
+    let binary = workspace.path().join("profile_writer");
     assert!(
         toolchain_support::command("rustc")
             .arg("-C")
@@ -789,18 +723,17 @@ fn close_watch_output(
     receive: std::sync::mpsc::Receiver<String>,
     threads: [std::thread::JoinHandle<()>; 1],
 ) {
+    recipe_support::record("phase: draining watch output");
     while receive.recv().is_ok() {}
     drop(receive);
-    for thread in threads {
-        thread.join().unwrap();
-    }
+    threads.into_iter().for_each(recipe_support::join_reader);
 }
 
 #[cfg(unix)]
 fn prepare_watch_workspace(workspace: &Workspace) {
     native_workspace(workspace);
     for (owner, marker) in [("maestro-models", "source"), ("maestro-agent", "sibling")] {
-        let path = workspace.0.join(format!("crates/{owner}/src/lib.rs"));
+        let path = workspace.path().join(format!("crates/{owner}/src/lib.rs"));
         let contents = fs::read_to_string(&path).unwrap();
         fs::write(
             path,
@@ -809,37 +742,37 @@ fn prepare_watch_workspace(workspace: &Workspace) {
         .unwrap();
     }
     fs::write(
-        workspace.0.join("crates/maestro-models/src/main.rs"),
+        workspace.path().join("crates/maestro-models/src/main.rs"),
         "fn main() { println!(\"{}\\n{}\\n{}\", maestro_models::MARKER, maestro_agent::MARKER, env!(\"MAESTRO_REBUILD_MARKER\")); }\n",
     ).unwrap();
-    fs::write(workspace.0.join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
+    fs::write(workspace.path().join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
     assert!(
         toolchain_support::command(env!("CARGO"))
-            .current_dir(&workspace.0)
+            .current_dir(workspace.path())
             .arg("generate-lockfile")
             .status()
             .unwrap()
             .success()
     );
-    fs::create_dir(workspace.0.join(".cargo")).unwrap();
+    fs::create_dir(workspace.path().join(".cargo")).unwrap();
     fs::write(
-        workspace.0.join(".cargo/config.toml"),
+        workspace.path().join(".cargo/config.toml"),
         "[build]\ntarget-dir = 'target'\n[env]\nMAESTRO_REBUILD_MARKER = 'maestro-initial-config'\n",
     )
     .unwrap();
-    fs::create_dir_all(workspace.0.join("target")).unwrap();
+    fs::create_dir_all(workspace.path().join("target")).unwrap();
     fs::rename(
-        workspace.0.join("bin/cargo-proxy"),
-        workspace.0.join("bin/cargo"),
+        workspace.path().join("bin/cargo-proxy"),
+        workspace.path().join("bin/cargo"),
     )
     .unwrap();
 }
 
 fn prepare_tooling_owner(workspace: &Workspace) {
     let source = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let root = workspace.0.join("crates/maestro-tooling");
+    let root = workspace.path().join("crates/maestro-tooling");
     copy_tree(&source.join("src"), &root.join("src"));
-    copy_patched_sources(&source.join("../.."), &workspace.0);
+    copy_patched_sources(&source.join("../.."), &workspace.path());
     let main = root.join("src/bin/development.rs");
     let contents = fs::read_to_string(&main).unwrap().replace(
         "fn main() -> std::process::ExitCode {",
@@ -850,7 +783,7 @@ fn prepare_tooling_owner(workspace: &Workspace) {
         "std::path::Path::new(\"bin/cargo\")",
     );
     fs::write(main, contents).unwrap();
-    let unifier = workspace.0.join("crates/maestro-dependencies");
+    let unifier = workspace.path().join("crates/maestro-dependencies");
     fs::create_dir_all(unifier.join("src")).unwrap();
     fs::write(unifier.join("src/lib.rs"), "").unwrap();
     fs::write(
@@ -859,14 +792,30 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     )
     .unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
+    for owner in [
+        "maestro-test-process",
+        "maestro-test-directory",
+        "maestro-path",
+    ] {
+        let dependency = workspace.path().join("crates").join(owner);
+        copy_tree(
+            &source.join("..").join(owner).join("src"),
+            &dependency.join("src"),
+        );
+        fs::copy(
+            source.join("..").join(owner).join("Cargo.toml"),
+            dependency.join("Cargo.toml"),
+        )
+        .unwrap();
+    }
     fs::copy(
         source.join("../../Cargo.toml"),
-        workspace.0.join("Cargo.toml"),
+        workspace.path().join("Cargo.toml"),
     )
     .unwrap();
     assert!(
         toolchain_support::command(env!("CARGO"))
-            .current_dir(&workspace.0)
+            .current_dir(workspace.path())
             .args(["build", "-p", "maestro-tooling", "--bin", "development"])
             .status()
             .unwrap()
@@ -880,7 +829,10 @@ fn copy_patched_sources(source: &Path, destination: &Path) {
         .unwrap()
         .parse()
         .unwrap();
-    for registry in manifest["patch"].as_table().unwrap().values() {
+    let Some(patches) = manifest.get("patch") else {
+        return;
+    };
+    for registry in patches.as_table().unwrap().values() {
         for patch in registry.as_table().unwrap().values() {
             if let Some(path) = patch.get("path").and_then(toml::Value::as_str) {
                 copy_tree(&source.join(path), &destination.join(path));
@@ -890,11 +842,21 @@ fn copy_patched_sources(source: &Path, destination: &Path) {
 }
 
 #[test]
+fn patched_sources_accept_manifests_without_patches() {
+    let source = Workspace::new();
+    let destination = Workspace::new();
+    fs::write(source.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+    let entries = fs::read_dir(destination.path()).unwrap().count();
+    copy_patched_sources(&source.path(), &destination.path());
+    assert_eq!(fs::read_dir(destination.path()).unwrap().count(), entries);
+}
+
+#[test]
 fn patched_sources_follow_manifest_paths() {
     let source = Workspace::new();
     let destination = Workspace::new();
     fs::write(
-        source.0.join("Cargo.toml"),
+        source.path().join("Cargo.toml"),
         r#"
 [patch.crates-io]
 first = { path = "vendor/alpha" }
@@ -909,21 +871,21 @@ second = { path = "local/beta" }
         ("local/beta/nested/input", b"second".as_slice()),
         ("unrelated/nested/input", b"excluded".as_slice()),
     ] {
-        let file = source.0.join(path);
+        let file = source.path().join(path);
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(file, bytes).unwrap();
     }
-    copy_patched_sources(&source.0, &destination.0);
+    copy_patched_sources(&source.path(), &destination.path());
     assert_eq!(
-        fs::read(destination.0.join("vendor/alpha/nested/input")).unwrap(),
+        fs::read(destination.path().join("vendor/alpha/nested/input")).unwrap(),
         b"first"
     );
     assert_eq!(
-        fs::read(destination.0.join("local/beta/nested/input")).unwrap(),
+        fs::read(destination.path().join("local/beta/nested/input")).unwrap(),
         b"second"
     );
-    assert!(!destination.0.join("unrelated").exists());
-    assert!(!destination.0.join("remote").exists());
+    assert!(!destination.path().join("unrelated").exists());
+    assert!(!destination.path().join("remote").exists());
 }
 
 fn copy_tree(source: &Path, destination: &Path) {
@@ -958,6 +920,7 @@ fn assert_watch_events(
 }
 
 /// Gives each input mutation a marker only its compiled result can print.
+#[cfg(unix)]
 fn mutate_watch_input(workspace: &Workspace, changed: &str) -> String {
     let input = if changed == ".cargo/config.toml" {
         "config"
@@ -970,9 +933,9 @@ fn mutate_watch_input(workspace: &Workspace, changed: &str) -> String {
     };
     let marker = format!(
         "maestro-rebuild-{}-{input}",
-        workspace.0.file_name().unwrap().to_str().unwrap()
+        workspace.path().file_name().unwrap().to_str().unwrap()
     );
-    let path = workspace.0.join(changed);
+    let path = workspace.path().join(changed);
     let contents = fs::read_to_string(&path).unwrap();
     let contents = contents.replace(&format!("maestro-initial-{input}"), &marker);
     fs::write(path, contents).unwrap();
@@ -980,12 +943,14 @@ fn mutate_watch_input(workspace: &Workspace, changed: &str) -> String {
 }
 
 /// Waits for the output associated with this mutation, not a queued older build.
+#[cfg(unix)]
 fn wait_for_marker(
     receive: &std::sync::mpsc::Receiver<String>,
     transcript: &mut String,
     marker: &str,
     diagnostics: &str,
 ) {
+    recipe_support::record(format!("phase: waiting for marker {marker:?}"));
     while !has_rebuild_marker(transcript, marker) {
         let line = receive.recv().unwrap_or_else(|error| {
             panic!("marker {marker}: {error}; {diagnostics}; watcher output:\n{transcript}")
@@ -993,6 +958,7 @@ fn wait_for_marker(
         transcript.push_str(&line);
         transcript.push('\n');
     }
+    recipe_support::record(format!("phase: observed marker {marker:?}"));
 }
 
 /// Unrelated successful builds cannot witness a changed input.
@@ -1009,22 +975,8 @@ fn has_rebuild_marker(transcript: &str, marker: &str) -> bool {
     transcript.lines().any(|line| line == marker)
 }
 
-/// Captures complete lines from the reader supplied to the thread.
-fn capture_lines<R: std::io::Read>(
-    reader: impl FnOnce() -> R + Send + 'static,
-    send: std::sync::mpsc::Sender<String>,
-) -> std::thread::JoinHandle<()> {
-    use std::io::{BufRead, BufReader};
-    std::thread::spawn(move || {
-        for line in BufReader::new(reader()).lines() {
-            if send.send(line.unwrap()).is_err() {
-                break;
-            }
-        }
-    })
-}
-
 /// Finds the pinned external watcher before fixture commands extend PATH.
+#[cfg(unix)]
 fn watcher_path() -> PathBuf {
     std::env::split_paths(&std::env::var_os("PATH").unwrap())
         .map(|directory| directory.join("watchexec"))
@@ -1032,6 +984,7 @@ fn watcher_path() -> PathBuf {
         .unwrap()
 }
 
+#[cfg(unix)]
 fn watcher_diagnostics(root: &Path) -> String {
     let path = watcher_path();
     let version = Command::new(&path).arg("--version").output().unwrap();
@@ -1051,12 +1004,14 @@ fn watcher_diagnostics(root: &Path) -> String {
     )
 }
 
+#[cfg(unix)]
 fn wait_for_build(
     receive: &std::sync::mpsc::Receiver<String>,
     transcript: &mut String,
     phase: &str,
     diagnostics: &str,
 ) {
+    recipe_support::record(format!("phase: waiting for build {phase:?}"));
     let started = std::time::Instant::now();
     let mut compiled = false;
     loop {
@@ -1070,6 +1025,7 @@ fn wait_for_build(
         transcript.push('\n');
         compiled |= line.contains("Finished `dev`");
         if compiled && line.contains("[Command was successful]") {
+            recipe_support::record(format!("phase: observed build {phase:?}"));
             eprintln!("{phase}: {} ms", started.elapsed().as_millis());
             return;
         }
@@ -1113,7 +1069,7 @@ fn maestro_dev_compile_excludes_generation_and_other_owners() {
     assert!(!log.contains("clear"));
     assert!(log.contains("--bin|development|--|watch|build"));
     native_workspace(&workspace);
-    fs::remove_dir_all(workspace.0.join("crates/maestro-models")).unwrap();
+    fs::remove_dir_all(workspace.path().join("crates/maestro-models")).unwrap();
     assert!(!workspace.run("models-dev").status.success());
 }
 
@@ -1211,13 +1167,13 @@ fn assert_native_doctests(workspace: &Workspace) {
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
     let output = toolchain_support::command(env!("CARGO"))
-        .current_dir(&workspace.0)
+        .current_dir(workspace.path())
         .args(["test", "-p", "maestro-models", "--locked", "--doc"])
         .output()
         .unwrap();
     assert!(output.status.success());
     assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
-    let source = workspace.0.join("crates/maestro-models/src/lib.rs");
+    let source = workspace.path().join("crates/maestro-models/src/lib.rs");
     let original = fs::read_to_string(&source).unwrap();
     fs::write(
         &source,
@@ -1234,10 +1190,10 @@ fn assert_native_doctests(workspace: &Workspace) {
 /// Creates distinguishable terminal tests in one integration target.
 fn terminal_test_fixture(workspace: &Workspace) {
     let real_tests = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-tui/tests");
-    let tests = workspace.0.join("crates/maestro-tui/tests");
+    let tests = workspace.path().join("crates/maestro-tui/tests");
     fs::create_dir_all(&tests).unwrap();
     fs::write(
-        workspace.0.join("crates/maestro-tui/src/lib.rs"),
+        workspace.path().join("crates/maestro-tui/src/lib.rs"),
         "#[test] fn terminal_behavior() {}\n#[test] fn selected_behavior() {}\n",
     )
     .unwrap();
@@ -1254,7 +1210,7 @@ fn terminal_test_fixture(workspace: &Workspace) {
         );
         fs::write(tests.join(format!("{target}.rs")), source).unwrap();
     }
-    let manifest = workspace.0.join("crates/maestro-tui/Cargo.toml");
+    let manifest = workspace.path().join("crates/maestro-tui/Cargo.toml");
     let text = fs::read_to_string(&manifest).unwrap();
     fs::write(
         &manifest,
@@ -1306,12 +1262,7 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
     assert!(stderr.contains("1 passed, 2 skipped"), "{stderr}");
     let output = workspace
         .command("tui-test")
-        .args([
-            "--",
-            "--ignored",
-            "--exact",
-            "ansi_wrapping::wrapped_ignored",
-        ])
+        .args(include_str!("fixtures/ignored-test-arguments.txt").lines())
         .output()
         .unwrap();
     assert!(output.status.success());
@@ -1327,12 +1278,12 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
 #[test]
 fn maestro_source_recipes_preserve_invocation_directory() {
     let workspace = Workspace::new();
-    let outside = workspace.0.join("outside");
+    let outside = workspace.path().join("outside");
     fs::create_dir(&outside).unwrap();
     for recipe in ["run-source", "run-source-windows"] {
         let output = workspace
             .command("--justfile")
-            .arg(workspace.0.join("justfile"))
+            .arg(workspace.path().join("justfile"))
             .arg(recipe)
             .current_dir(&outside)
             .args(["", "a space", "'quoted'", "\u{feff}\u{85}\u{2003}"])
@@ -1345,10 +1296,10 @@ fn maestro_source_recipes_preserve_invocation_directory() {
         );
     }
     assert_eq!(
-        fs::read(workspace.0.join("cwd")).unwrap(),
+        fs::read(workspace.path().join("cwd")).unwrap(),
         outside.as_os_str().as_encoded_bytes()
     );
-    let manifest = workspace.0.join("Cargo.toml");
+    let manifest = workspace.path().join("Cargo.toml");
     let log = workspace.log();
     for recipe in ["run-source", "run-source-windows"] {
         assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|\u{feff}\u{85}\u{2003}", manifest.display())), "{log}");
@@ -1358,7 +1309,7 @@ fn maestro_source_recipes_preserve_invocation_directory() {
 #[test]
 fn maestro_offline_recipe_is_explicit_only() {
     let workspace = Workspace::new();
-    let home = workspace.0.join("home");
+    let home = workspace.path().join("home");
     fs::create_dir_all(home.join(".maestro/agent")).unwrap();
     let auth = home.join(".maestro/agent/auth.json");
     fs::write(&auth, "synthetic authentication").unwrap();
@@ -1372,7 +1323,7 @@ fn maestro_offline_recipe_is_explicit_only() {
             .env("HOME", &home)
             .env("OPENAI_API_KEY", "controlled")
             .env("MAESTRO_NO_LOCAL_LLM", "kept")
-            .env("MAESTRO_ENV_RESULT", workspace.0.join("env-result"))
+            .env("MAESTRO_ENV_RESULT", workspace.path().join("env-result"))
             .env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"))
             .output()
             .unwrap();
@@ -1382,7 +1333,7 @@ fn maestro_offline_recipe_is_explicit_only() {
             String::from_utf8_lossy(&output.stderr)
         );
         assert_eq!(
-            fs::read_to_string(workspace.0.join("env-result")).unwrap(),
+            fs::read_to_string(workspace.path().join("env-result")).unwrap(),
             expected
         );
         assert_eq!(fs::read(&auth).unwrap(), b"synthetic authentication");
@@ -1392,13 +1343,13 @@ fn maestro_offline_recipe_is_explicit_only() {
         .env("HOME", &home)
         .env("OPENAI_API_KEY", "controlled")
         .env("MAESTRO_NO_LOCAL_LLM", "kept")
-        .env("MAESTRO_ENV_RESULT", workspace.0.join("env-result"))
+        .env("MAESTRO_ENV_RESULT", workspace.path().join("env-result"))
         .env("MAESTRO_FAIL", "nextest")
         .output()
         .unwrap();
     assert!(!output.status.success());
     assert_eq!(
-        fs::read_to_string(workspace.0.join("env-result")).unwrap(),
+        fs::read_to_string(workspace.path().join("env-result")).unwrap(),
         "key=true auth=true flag=kept\n"
     );
     assert_eq!(fs::read(&auth).unwrap(), b"synthetic authentication");
@@ -1412,12 +1363,12 @@ fn maestro_offline_recipe_is_explicit_only() {
 fn hooks(workspace: &Workspace) {
     fs::copy(
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.pre-commit-config.yaml"),
-        workspace.0.join(".pre-commit-config.yaml"),
+        workspace.path().join(".pre-commit-config.yaml"),
     )
     .unwrap();
     assert!(
         Command::new("git")
-            .current_dir(&workspace.0)
+            .current_dir(workspace.path())
             .args(["init", "--quiet"])
             .status()
             .unwrap()
@@ -1426,9 +1377,9 @@ fn hooks(workspace: &Workspace) {
 }
 
 fn commit_message(workspace: &Workspace, message: &str) -> Output {
-    fs::write(workspace.0.join("message"), message).unwrap();
+    fs::write(workspace.path().join("message"), message).unwrap();
     Command::new("prek")
-        .current_dir(&workspace.0)
+        .current_dir(workspace.path())
         .args([
             "run",
             "--hook-stage",
@@ -1481,16 +1432,16 @@ fn maestro_setup_keeps_pins_and_existing_hooks() {
     hooks(&workspace);
     assert!(
         Command::new("prek")
-            .current_dir(&workspace.0)
+            .current_dir(workspace.path())
             .arg("install")
             .status()
             .unwrap()
             .success()
     );
     for stage in ["pre-commit", "pre-merge-commit", "commit-msg"] {
-        assert!(workspace.0.join(".git/hooks").join(stage).is_file());
+        assert!(workspace.path().join(".git/hooks").join(stage).is_file());
     }
-    fs::remove_file(workspace.0.join("bin/prek")).unwrap();
+    fs::remove_file(workspace.path().join("bin/prek")).unwrap();
     let output = workspace
         .command("--command")
         .args(["prek", "run", "workspace-check"])
@@ -1511,17 +1462,17 @@ fn maestro_setup_keeps_pins_and_existing_hooks() {
             "check-merge-conflict",
         ),
     ] {
-        fs::write(workspace.0.join(name), content).unwrap();
+        fs::write(workspace.path().join(name), content).unwrap();
         let output = Command::new("prek")
-            .current_dir(&workspace.0)
+            .current_dir(workspace.path())
             .args(["run", hook, "--files", name])
             .output()
             .unwrap();
         assert!(!output.status.success(), "{hook}");
-        fs::write(workspace.0.join(name), "").unwrap();
+        fs::write(workspace.path().join(name), "").unwrap();
         assert!(
             Command::new("prek")
-                .current_dir(&workspace.0)
+                .current_dir(workspace.path())
                 .args(["run", hook, "--files", name])
                 .status()
                 .unwrap()
@@ -1552,18 +1503,17 @@ fn assert_pinned_tools() {
 #[test]
 fn maestro_recipes_quote_apostrophes_in_checkout_paths() {
     let mut workspace = Workspace::new();
-    let renamed = workspace.0.with_file_name(format!(
+    let renamed = workspace.path().with_file_name(format!(
         "Maestro's-{}",
-        workspace.0.file_name().unwrap().to_str().unwrap()
+        workspace.path().file_name().unwrap().to_str().unwrap()
     ));
-    fs::rename(&workspace.0, &renamed).unwrap();
-    workspace.0 = renamed;
-    let outside = workspace.0.join("outside");
+    workspace.rename(renamed.file_name().unwrap()).unwrap();
+    let outside = workspace.path().join("outside");
     fs::create_dir(&outside).unwrap();
     for recipe in ["run-source", "run-source-windows", "test-offline"] {
         let output = workspace
             .command("--justfile")
-            .arg(workspace.0.join("justfile"))
+            .arg(workspace.path().join("justfile"))
             .arg(recipe)
             .current_dir(&outside)
             .output()
@@ -1576,7 +1526,7 @@ fn maestro_recipes_quote_apostrophes_in_checkout_paths() {
     }
     assert!(workspace.log().contains(&format!(
         "--manifest-path|{}",
-        workspace.0.join("Cargo.toml").display()
+        workspace.path().join("Cargo.toml").display()
     )));
 }
 
@@ -1609,7 +1559,7 @@ fn catalog_build_recipes_generate_once_before_compilation() {
                 .unwrap();
             assert!(generation < compilation, "{recipe}: {log}");
         }
-        fs::remove_file(workspace.0.join("log")).unwrap();
+        fs::remove_file(workspace.path().join("log")).unwrap();
         let result = workspace
             .command(recipe)
             .env("MAESTRO_FAIL", "run")
@@ -1651,4 +1601,86 @@ fn catalog_cargo_tests_and_watch_routes_stay_offline() {
     let log = workspace.log();
     assert!(!log.contains("generate_catalog_data"));
     assert!(!log.contains("models-generate"));
+}
+
+/// A killed test leaves child output on disk without losing channel delivery.
+#[cfg(unix)]
+#[test]
+fn watch_child_transcript_survives_forced_kill() {
+    use std::io::{Read, Write};
+    if std::env::var_os("MAESTRO_CAPTURE_CONTROL").is_some() {
+        let (reader, mut writer) = std::os::unix::net::UnixStream::pair().unwrap();
+        let (send, receive) = std::sync::mpsc::channel();
+        let _reader = recipe_support::capture_lines(move || reader, send);
+        writer
+            .write_all(b"watch phase: compiling\nwatch phase: ready\n")
+            .unwrap();
+        assert_eq!(receive.recv().unwrap(), "watch phase: compiling");
+        assert_eq!(receive.recv().unwrap(), "watch phase: ready");
+        recipe_support::record("phase: blocked waiting for controller");
+        println!("READY {}", std::process::id());
+        std::io::stdout().flush().unwrap();
+        let _ = std::io::stdin().read(&mut [0]).unwrap();
+        panic!("controller must kill the blocked test");
+    }
+    assert_killed_transcript(None);
+    let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+        "../../target/browser-author-diagnostics/override-{}",
+        std::process::id()
+    ));
+    assert_killed_transcript(Some(&directory));
+}
+
+/// Exercise the configured transcript location in a fresh blocked test process.
+#[cfg(unix)]
+fn assert_killed_transcript(directory: Option<&Path>) {
+    use std::io::{BufRead, Read};
+    let process =
+        maestro_test_process::TestProcess::current("watch_child_transcript_survives_forced_kill")
+            .unwrap();
+    let name = process.name().replace("::", "_");
+    let process = process.env_remove("MAESTRO_TEST_DIAGNOSTICS_DIR");
+    let process = if let Some(directory) = directory {
+        process.env("MAESTRO_TEST_DIAGNOSTICS_DIR", directory)
+    } else {
+        process
+    };
+    let mut child = process
+        .nocapture()
+        .env("MAESTRO_CAPTURE_CONTROL", "1")
+        .stdin(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut output = std::io::BufReader::new(child.stdout.take().unwrap());
+    let pid = output
+        .by_ref()
+        .lines()
+        .map(Result::unwrap)
+        .find_map(|line| line.strip_prefix("READY ").map(str::to_owned))
+        .unwrap();
+    assert!(
+        Command::new("kill")
+            .args(["-KILL", "--", &pid])
+            .status()
+            .unwrap()
+            .success()
+    );
+    let output = child.wait_with_output().unwrap();
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr.contains("watch phase: compiling\nwatch phase: ready\n"),
+        "{stderr}"
+    );
+    let fallback =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/browser-author-diagnostics");
+    let path = directory
+        .unwrap_or(&fallback)
+        .join(format!("{pid}-{name}.log"));
+    let transcript =
+        fs::read_to_string(&path).expect("killed test must leave a durable transcript");
+    assert!(transcript.contains("watch phase: compiling\n"));
+    assert!(transcript.contains("watch phase: ready\n"));
+    assert!(transcript.contains("phase: blocked waiting for controller\n"));
 }

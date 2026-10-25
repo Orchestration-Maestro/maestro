@@ -1,0 +1,242 @@
+[
+  {
+    "old": "",
+    "new": "",
+    "parts": []
+  },
+  {
+    "old": "",
+    "new": "a",
+    "parts": [
+      {
+        "value": "a",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "a",
+    "new": "",
+    "parts": [
+      {
+        "value": "a",
+        "added": false,
+        "removed": true
+      }
+    ]
+  },
+  {
+    "old": "a",
+    "new": "a",
+    "parts": [
+      {
+        "value": "a",
+        "added": false,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "a\n",
+    "new": "a",
+    "parts": [
+      {
+        "value": "a\n",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "a",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "a",
+    "new": "a\n",
+    "parts": [
+      {
+        "value": "a",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "a\n",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "\n",
+    "new": "",
+    "parts": [
+      {
+        "value": "\n",
+        "added": false,
+        "removed": true
+      }
+    ]
+  },
+  {
+    "old": "",
+    "new": "\n",
+    "parts": [
+      {
+        "value": "\n",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "a\r\n",
+    "new": "a\n",
+    "parts": [
+      {
+        "value": "a\r\n",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "a\n",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "a\rb",
+    "new": "a\rc",
+    "parts": [
+      {
+        "value": "a\rb",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "a\rc",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "a\nb\na\n",
+    "new": "a\nc\na\n",
+    "parts": [
+      {
+        "value": "a\n",
+        "added": false,
+        "removed": false
+      },
+      {
+        "value": "b\n",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "c\n",
+        "added": true,
+        "removed": false
+      },
+      {
+        "value": "a\n",
+        "added": false,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "a\nb\n",
+    "new": "b\na\n",
+    "parts": [
+      {
+        "value": "a\n",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "b\n",
+        "added": false,
+        "removed": false
+      },
+      {
+        "value": "a\n",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "same\nsame\n",
+    "new": "same\n",
+    "parts": [
+      {
+        "value": "same\n",
+        "added": false,
+        "removed": false
+      },
+      {
+        "value": "same\n",
+        "added": false,
+        "removed": true
+      }
+    ]
+  },
+  {
+    "old": "<a>&雪\n",
+    "new": "<b>\t雪\n",
+    "parts": [
+      {
+        "value": "<a>&雪\n",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "<b>\t雪\n",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "one\n\nthree\n",
+    "new": "one\n\nnext\n",
+    "parts": [
+      {
+        "value": "one\n\n",
+        "added": false,
+        "removed": false
+      },
+      {
+        "value": "three\n",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "next\n",
+        "added": true,
+        "removed": false
+      }
+    ]
+  },
+  {
+    "old": "a b",
+    "new": "a c",
+    "parts": [
+      {
+        "value": "a b",
+        "added": false,
+        "removed": true
+      },
+      {
+        "value": "a c",
+        "added": true,
+        "removed": false
+      }
+    ]
+  }
+]

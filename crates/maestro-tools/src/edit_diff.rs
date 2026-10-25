@@ -5,7 +5,6 @@
 
 mod numbered;
 mod preview;
-mod text_diff;
 
 pub use numbered::{EditDiffResult, generate_diff_string};
 pub(crate) use preview::access_failure;

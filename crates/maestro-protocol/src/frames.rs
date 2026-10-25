@@ -30,6 +30,26 @@ pub const MAX_CLIPBOARD_IMAGE_PAYLOAD: usize = 16 * 1024 * 1024;
 /// Length of the u32 little-endian length prefix in bytes.
 const LENGTH_PREFIX_BYTES: usize = 4;
 
+/// Named modifier bits carried by structured input events.
+pub struct KeyModifiers;
+
+impl KeyModifiers {
+    /// No modifier keys.
+    pub const NONE: u8 = 0;
+    /// Shift key.
+    pub const SHIFT: u8 = 1;
+    /// Control key.
+    pub const CONTROL: u8 = 2;
+    /// Alt key.
+    pub const ALT: u8 = 4;
+    /// Super key.
+    pub const SUPER: u8 = 8;
+    /// Hyper key.
+    pub const HYPER: u8 = 16;
+    /// Meta key.
+    pub const META: u8 = 32;
+}
+
 // ---------------------------------------------------------------------------
 // Client → Server messages
 // ---------------------------------------------------------------------------
@@ -381,6 +401,25 @@ pub struct CellData {
     pub hyperlink: Option<u32>,
 }
 
+/// Position of the underline style within [`CellData::modifier`].
+const UNDERLINE_STYLE_SHIFT: u16 = 12;
+
+/// Modifier bits holding the underline style: 0 for none, then the SGR 4
+/// subparameters 1 (single) to 5 (dashed).
+pub const UNDERLINE_STYLE_MASK: u16 = 0xF000;
+
+/// Read the underline style stored in a cell modifier.
+#[must_use]
+pub fn underline_style_from_modifier(modifier: u16) -> u8 {
+    u8::try_from((modifier & UNDERLINE_STYLE_MASK) >> UNDERLINE_STYLE_SHIFT).unwrap_or_default()
+}
+
+/// Add an underline style to a cell modifier, keeping its other bits.
+#[must_use]
+pub fn with_underline_style(modifier: u16, underline_style: u8) -> u16 {
+    modifier | ((u16::from(underline_style) & 0x0F) << UNDERLINE_STYLE_SHIFT)
+}
+
 /// Cursor shape encoded as a DECSCUSR parameter.
 ///
 /// 0 = terminal default, 1 = blinking block, 2 = steady block,
@@ -640,7 +679,10 @@ pub fn write_message<W: Write, M: Serialize>(writer: &mut W, msg: &M) -> Result<
 ///
 /// Reassembles partial reads correctly. Rejects frames whose declared
 /// length exceeds `max_frame_size` without panicking or allocating
-/// oversized buffers.
+/// oversized buffers. For the protocol records, decoder accounting is bounded
+/// by eight times the payload length rounded up to a power of two (at least
+/// one byte), saturating at `usize::MAX`. This permits compact integer fields
+/// while rejecting excessive declared string lengths before allocation.
 ///
 /// # Errors
 /// Returns an oversized, I/O, truncated-stream or binary decoding error.
@@ -664,8 +706,8 @@ pub fn read_message<R: Read, M: for<'de> Deserialize<'de>>(
     let mut payload = vec![0u8; claimed_len];
     read_exact_or_eof(reader, &mut payload)?;
 
-    let (msg, consumed) = bincode::serde::decode_from_slice(&payload, bincode::config::standard())
-        .map_err(|e| FramingError::Bincode(e.to_string()))?;
+    let (msg, consumed) =
+        decode_payload(&payload).map_err(|e| FramingError::Bincode(e.to_string()))?;
 
     // Enforce that the decoder consumed the full payload.
     // Trailing bytes after the decoded message indicate a protocol violation
@@ -677,6 +719,34 @@ pub fn read_message<R: Read, M: for<'de> Deserialize<'de>>(
     }
 
     Ok(msg)
+}
+
+/// Allows eight accounting bytes per wire byte, with power-of-two buckets.
+/// Protocol integers and collection lengths charge at most eight bytes per
+/// encoded byte; bincode requires its accounting limit as a constant.
+fn decode_payload<M: for<'de> Deserialize<'de>>(
+    payload: &[u8],
+) -> Result<(M, usize), bincode::error::DecodeError> {
+    /// Selects a constant limit covering the received payload's bucket.
+    macro_rules! decode_bucket {
+        ($($power:literal),*) => {
+            match payload.len().saturating_sub(1).checked_ilog2().map(|power| power + 1) {
+                $(Some($power) => bincode::serde::decode_from_slice(
+                    payload,
+                    bincode::config::standard().with_limit::<{
+                        8usize.saturating_mul(2usize.saturating_pow($power))
+                    }>(),
+                ),)*
+                _ => bincode::serde::decode_from_slice(
+                    payload, bincode::config::standard().with_limit::<8>(),
+                ),
+            }
+        };
+    }
+    decode_bucket!(
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32
+    )
 }
 
 /// Like `Read::read_exact`, but returns `FramingError::UnexpectedEof`

@@ -1,5 +1,5 @@
 //! Ordered channels shared by independently identified extensions.
-use crate::ExtensionExecution;
+use crate::{ExtensionExecution, types::lock};
 use maestro_models::{Execution, Threaded};
 use serde_json::Value;
 use std::{
@@ -118,19 +118,12 @@ impl<E: ExtensionExecution> EventBus<E> {
             shared: self.shared.clone(),
             registration: E::downgrade(&registration),
         };
-        self.shared
-            .registrations
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(registration);
+        lock(&self.shared.registrations).push(registration);
         subscription
     }
     /// Retains this emission's ordered listener collection.
     pub(crate) fn snapshot(&self, channel: &str) -> Vec<E::Shared<Registration<E>>> {
-        self.shared
-            .registrations
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        lock(&self.shared.registrations)
             .iter()
             .filter(|registration| registration.channel == channel)
             .cloned()
@@ -177,14 +170,7 @@ impl<E: ExtensionExecution> EventBusController<E> {
     }
     /// Removes all registrations without cancelling their started tails.
     pub fn clear(&self) {
-        let removed = std::mem::take(
-            &mut *self
-                .0
-                .shared
-                .registrations
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        );
+        let removed = std::mem::take(&mut *lock(&self.0.shared.registrations));
         drop(removed);
     }
 }
@@ -201,11 +187,7 @@ impl<E: ExtensionExecution> Subscription<E> {
             return;
         };
         let removed = {
-            let mut registrations = self
-                .shared
-                .registrations
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut registrations = lock(&self.shared.registrations);
             registrations
                 .iter()
                 .position(|registration| E::ptr_eq(registration, &target))

@@ -89,21 +89,21 @@ impl ResolverFixture {
         let scratch = Scratch::new();
         let inactive = if cfg!(windows) { "unix" } else { "windows" };
         fs::write(
-            scratch.root.join("Cargo.toml"),
+            scratch.root.path().join("Cargo.toml"),
             "[workspace]\nmembers = [\"app\"]\nexclude = [\"deps/*\"]\nresolver = \"3\"\n",
         )
         .unwrap();
         for kind in ["ordinary", "build", "development", "optional", "foreign"] {
-            let path = scratch.root.join("deps").join(kind);
+            let path = scratch.root.path().join("deps").join(kind);
             fs::create_dir_all(path.join("src")).unwrap();
             fs::write(path.join("src/lib.rs"), "").unwrap();
             fs::write(path.join("Cargo.toml"), format!(
                 "[package]\nname = \"maestro-lock-{kind}\"\nversion = \"0.1.0\"\nedition = \"2024\"\n[features]\nmarker = []\n")).unwrap();
         }
-        fs::create_dir_all(scratch.root.join("app/src")).unwrap();
-        fs::write(scratch.root.join("app/src/lib.rs"), "").unwrap();
+        fs::create_dir_all(scratch.root.path().join("app/src")).unwrap();
+        fs::write(scratch.root.path().join("app/src/lib.rs"), "").unwrap();
         fs::write(
-            scratch.root.join("app/Cargo.toml"),
+            scratch.root.path().join("app/Cargo.toml"),
             format!(
                 r#"[package]
 name = "maestro-lock-fixture"
@@ -135,8 +135,8 @@ maestro-lock-foreign = {{ path = "../deps/foreign" }}
     fn cargo(&self) -> Command {
         let mut command = Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()));
         command
-            .current_dir(&self.scratch.root)
-            .env("CARGO_HOME", self.scratch.root.join("cargo-home"))
+            .current_dir(self.scratch.root.path())
+            .env("CARGO_HOME", self.scratch.root.path().join("cargo-home"))
             .env("RUSTC", &self.rustc);
         command
     }
@@ -166,8 +166,8 @@ maestro-lock-foreign = {{ path = "../deps/foreign" }}
             options.extend(["--features".into(), features.join(",")]);
         }
         command
-            .current_dir(&self.scratch.root)
-            .env("CARGO_HOME", self.scratch.root.join("cargo-home"))
+            .current_dir(self.scratch.root.path())
+            .env("CARGO_HOME", self.scratch.root.path().join("cargo-home"))
             .env("RUSTC", &self.rustc)
             .other_options(options);
         command
@@ -218,7 +218,7 @@ fn maestro_locked_graph_keeps_inactive_dependencies() {
     let cached = fixture.metadata(false, &[]).exec().unwrap();
     assert_eq!(cold.packages, cached.packages);
     assert_eq!(cold.resolve, cached.resolve);
-    let lock: toml::Table = fs::read_to_string(fixture.scratch.root.join("Cargo.lock"))
+    let lock: toml::Table = fs::read_to_string(fixture.scratch.root.path().join("Cargo.lock"))
         .unwrap()
         .parse()
         .unwrap();
@@ -251,13 +251,14 @@ fn maestro_locked_graph_keeps_inactive_dependencies() {
 fn maestro_locked_resolution_rejects_stale_inputs() {
     let fixture = ResolverFixture::new();
     fixture.lock();
-    let lock_path = fixture.scratch.root.join("Cargo.lock");
+    let lock_path = fixture.scratch.root.path().join("Cargo.lock");
     let original = fs::read(&lock_path).unwrap();
     let baseline = fixture.metadata(true, &[]).exec().unwrap();
     for kind in ["ordinary", "build", "development", "optional", "foreign"] {
         let manifest = fixture
             .scratch
             .root
+            .path()
             .join("deps")
             .join(kind)
             .join("Cargo.toml");
@@ -300,7 +301,7 @@ fn assert_restored(fixture: &ResolverFixture, baseline: &Metadata, original: &[u
     assert_eq!(restored.packages, baseline.packages);
     assert_eq!(restored.resolve, baseline.resolve);
     assert_eq!(
-        fs::read(fixture.scratch.root.join("Cargo.lock")).unwrap(),
+        fs::read(fixture.scratch.root.path().join("Cargo.lock")).unwrap(),
         original
     );
 }

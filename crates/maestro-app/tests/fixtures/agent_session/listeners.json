@@ -1,0 +1,7 @@
+{
+  "seen": [
+    "first:session_info_changed:one",
+    "second:session_info_changed:one",
+    "second:session_info_changed:two"
+  ]
+}

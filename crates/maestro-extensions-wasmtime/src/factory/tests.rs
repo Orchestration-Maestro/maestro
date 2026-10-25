@@ -1,6 +1,6 @@
 //! A real Store fault retains native table ownership until the last admission ends.
 use super::*;
-use crate::tests::{api, session, support};
+use crate::tests::{api, session};
 use maestro_extensions::{
     ExtensionCommandContextActions, ExtensionRunner, create_extension_runtime,
 };
@@ -38,7 +38,7 @@ async fn observe_faulted_store(release_trap: bool) {
     let (owner, mut api) = api::api(native.clone());
     let bus = maestro_extensions::create_event_bus_for::<Local>(Rc::new(drop), Rc::new(|_| {}));
     api.events = bus.for_extension();
-    let (pump, admission) = Pump::new(support::credential_operations());
+    let (pump, admission) = Pump::new();
     let endpoint = pump.registry().api(api).unwrap();
     let (calls, mut incoming) = mpsc::unbounded_channel();
     let replies = Replies::default();
@@ -92,10 +92,12 @@ async fn observe_faulted_store(release_trap: bool) {
 /// Traps through the actual retained command rather than a synthetic failed reply.
 async fn trap_and_release(runner: &ExtensionRunner<Local>) {
     super::super::tests::support::bind_prompt(runner, "fault observer");
-    runner.bind_command_context(Some(ExtensionCommandContextActions {
-        wait_for_idle: Rc::new(|| Box::pin(async { Ok(()) })),
-        ..Default::default()
-    }));
+    runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+        maestro_extensions::CommandContextOperations {
+            wait_for_idle: Rc::new(|| Box::pin(async { Ok(()) })),
+            ..crate::context_actions::silent_command_operations()
+        },
+    )));
     let command = runner
         .get_command("bridge-observe")
         .unwrap()

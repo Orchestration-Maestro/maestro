@@ -1,0 +1,737 @@
+[
+  {
+    "version": "15.0.4",
+    "id": "splitCells:0",
+    "symbol": "splitCells",
+    "args": [
+      "",
+      null
+    ],
+    "result": []
+  },
+  {
+    "version": "15.0.4",
+    "id": "splitCells:1",
+    "symbol": "splitCells",
+    "args": [
+      "a|b",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "15.0.4",
+    "id": "splitCells:2",
+    "symbol": "splitCells",
+    "args": [
+      "| a | b |",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "15.0.4",
+    "id": "splitCells:3",
+    "symbol": "splitCells",
+    "args": [
+      "| a | b |",
+      1
+    ],
+    "result": [
+      "a"
+    ]
+  },
+  {
+    "version": "15.0.4",
+    "id": "splitCells:4",
+    "symbol": "splitCells",
+    "args": [
+      "| a |",
+      3
+    ],
+    "result": [
+      "a",
+      "",
+      ""
+    ]
+  },
+  {
+    "version": "15.0.4",
+    "id": "splitCells:5",
+    "symbol": "splitCells",
+    "args": [
+      "a\\|b|c",
+      null
+    ],
+    "result": [
+      "a|b",
+      "c"
+    ]
+  },
+  {
+    "version": "15.0.4",
+    "id": "splitCells:6",
+    "symbol": "splitCells",
+    "args": [
+      "a\\\\|b",
+      null
+    ],
+    "result": [
+      "a\\\\",
+      "b"
+    ]
+  },
+  {
+    "version": "15.0.4",
+    "id": "splitCells:7",
+    "symbol": "splitCells",
+    "args": [
+      "﻿a﻿|b",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "15.0.4",
+    "id": "rtrim:8",
+    "symbol": "rtrim",
+    "args": [
+      "",
+      "\n"
+    ],
+    "result": ""
+  },
+  {
+    "version": "15.0.4",
+    "id": "rtrim:9",
+    "symbol": "rtrim",
+    "args": [
+      "abc",
+      "\n"
+    ],
+    "result": "abc"
+  },
+  {
+    "version": "15.0.4",
+    "id": "rtrim:10",
+    "symbol": "rtrim",
+    "args": [
+      "abc\n\n",
+      "\n"
+    ],
+    "result": "abc"
+  },
+  {
+    "version": "15.0.4",
+    "id": "rtrim:11",
+    "symbol": "rtrim",
+    "args": [
+      "###",
+      "#"
+    ],
+    "result": ""
+  },
+  {
+    "version": "15.0.4",
+    "id": "rtrim:12",
+    "symbol": "rtrim",
+    "args": [
+      "text\\\\",
+      "\\"
+    ],
+    "result": "text"
+  },
+  {
+    "version": "15.0.4",
+    "id": "rtrim:13",
+    "symbol": "rtrim",
+    "args": [
+      "a#b##",
+      "#"
+    ],
+    "result": "a#b"
+  },
+  {
+    "version": "15.0.4",
+    "id": "findClosingBracket:14",
+    "symbol": "findClosingBracket",
+    "args": [
+      "abc",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "15.0.4",
+    "id": "findClosingBracket:15",
+    "symbol": "findClosingBracket",
+    "args": [
+      "a)",
+      "()"
+    ],
+    "result": 1,
+    "byte_boundary": 1
+  },
+  {
+    "version": "15.0.4",
+    "id": "findClosingBracket:16",
+    "symbol": "findClosingBracket",
+    "args": [
+      "(a))",
+      "()"
+    ],
+    "result": 3,
+    "byte_boundary": 3
+  },
+  {
+    "version": "15.0.4",
+    "id": "findClosingBracket:17",
+    "symbol": "findClosingBracket",
+    "args": [
+      "(a)",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "15.0.4",
+    "id": "findClosingBracket:18",
+    "symbol": "findClosingBracket",
+    "args": [
+      "((a)",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "15.0.4",
+    "id": "findClosingBracket:19",
+    "symbol": "findClosingBracket",
+    "args": [
+      "a\\)b)",
+      "()"
+    ],
+    "result": 4,
+    "byte_boundary": 4
+  },
+  {
+    "version": "15.0.4",
+    "id": "findClosingBracket:20",
+    "symbol": "findClosingBracket",
+    "args": [
+      "😀(a))",
+      "()"
+    ],
+    "result": 5,
+    "byte_boundary": 7
+  },
+  {
+    "version": "15.0.4",
+    "id": "findClosingBracket:21",
+    "symbol": "findClosingBracket",
+    "args": [
+      "😀\\)a",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "15.0.12",
+    "id": "splitCells:0",
+    "symbol": "splitCells",
+    "args": [
+      "",
+      null
+    ],
+    "result": []
+  },
+  {
+    "version": "15.0.12",
+    "id": "splitCells:1",
+    "symbol": "splitCells",
+    "args": [
+      "a|b",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "15.0.12",
+    "id": "splitCells:2",
+    "symbol": "splitCells",
+    "args": [
+      "| a | b |",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "15.0.12",
+    "id": "splitCells:3",
+    "symbol": "splitCells",
+    "args": [
+      "| a | b |",
+      1
+    ],
+    "result": [
+      "a"
+    ]
+  },
+  {
+    "version": "15.0.12",
+    "id": "splitCells:4",
+    "symbol": "splitCells",
+    "args": [
+      "| a |",
+      3
+    ],
+    "result": [
+      "a",
+      "",
+      ""
+    ]
+  },
+  {
+    "version": "15.0.12",
+    "id": "splitCells:5",
+    "symbol": "splitCells",
+    "args": [
+      "a\\|b|c",
+      null
+    ],
+    "result": [
+      "a|b",
+      "c"
+    ]
+  },
+  {
+    "version": "15.0.12",
+    "id": "splitCells:6",
+    "symbol": "splitCells",
+    "args": [
+      "a\\\\|b",
+      null
+    ],
+    "result": [
+      "a\\\\",
+      "b"
+    ]
+  },
+  {
+    "version": "15.0.12",
+    "id": "splitCells:7",
+    "symbol": "splitCells",
+    "args": [
+      "﻿a﻿|b",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "15.0.12",
+    "id": "rtrim:8",
+    "symbol": "rtrim",
+    "args": [
+      "",
+      "\n"
+    ],
+    "result": ""
+  },
+  {
+    "version": "15.0.12",
+    "id": "rtrim:9",
+    "symbol": "rtrim",
+    "args": [
+      "abc",
+      "\n"
+    ],
+    "result": "abc"
+  },
+  {
+    "version": "15.0.12",
+    "id": "rtrim:10",
+    "symbol": "rtrim",
+    "args": [
+      "abc\n\n",
+      "\n"
+    ],
+    "result": "abc"
+  },
+  {
+    "version": "15.0.12",
+    "id": "rtrim:11",
+    "symbol": "rtrim",
+    "args": [
+      "###",
+      "#"
+    ],
+    "result": ""
+  },
+  {
+    "version": "15.0.12",
+    "id": "rtrim:12",
+    "symbol": "rtrim",
+    "args": [
+      "text\\\\",
+      "\\"
+    ],
+    "result": "text"
+  },
+  {
+    "version": "15.0.12",
+    "id": "rtrim:13",
+    "symbol": "rtrim",
+    "args": [
+      "a#b##",
+      "#"
+    ],
+    "result": "a#b"
+  },
+  {
+    "version": "15.0.12",
+    "id": "findClosingBracket:14",
+    "symbol": "findClosingBracket",
+    "args": [
+      "abc",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "15.0.12",
+    "id": "findClosingBracket:15",
+    "symbol": "findClosingBracket",
+    "args": [
+      "a)",
+      "()"
+    ],
+    "result": 1,
+    "byte_boundary": 1
+  },
+  {
+    "version": "15.0.12",
+    "id": "findClosingBracket:16",
+    "symbol": "findClosingBracket",
+    "args": [
+      "(a))",
+      "()"
+    ],
+    "result": 3,
+    "byte_boundary": 3
+  },
+  {
+    "version": "15.0.12",
+    "id": "findClosingBracket:17",
+    "symbol": "findClosingBracket",
+    "args": [
+      "(a)",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "15.0.12",
+    "id": "findClosingBracket:18",
+    "symbol": "findClosingBracket",
+    "args": [
+      "((a)",
+      "()"
+    ],
+    "result": -2
+  },
+  {
+    "version": "15.0.12",
+    "id": "findClosingBracket:19",
+    "symbol": "findClosingBracket",
+    "args": [
+      "a\\)b)",
+      "()"
+    ],
+    "result": 4,
+    "byte_boundary": 4
+  },
+  {
+    "version": "15.0.12",
+    "id": "findClosingBracket:20",
+    "symbol": "findClosingBracket",
+    "args": [
+      "😀(a))",
+      "()"
+    ],
+    "result": 5,
+    "byte_boundary": 7
+  },
+  {
+    "version": "15.0.12",
+    "id": "findClosingBracket:21",
+    "symbol": "findClosingBracket",
+    "args": [
+      "😀\\)a",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "16.4.2",
+    "id": "splitCells:0",
+    "symbol": "splitCells",
+    "args": [
+      "",
+      null
+    ],
+    "result": []
+  },
+  {
+    "version": "16.4.2",
+    "id": "splitCells:1",
+    "symbol": "splitCells",
+    "args": [
+      "a|b",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "16.4.2",
+    "id": "splitCells:2",
+    "symbol": "splitCells",
+    "args": [
+      "| a | b |",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "16.4.2",
+    "id": "splitCells:3",
+    "symbol": "splitCells",
+    "args": [
+      "| a | b |",
+      1
+    ],
+    "result": [
+      "a"
+    ]
+  },
+  {
+    "version": "16.4.2",
+    "id": "splitCells:4",
+    "symbol": "splitCells",
+    "args": [
+      "| a |",
+      3
+    ],
+    "result": [
+      "a",
+      "",
+      ""
+    ]
+  },
+  {
+    "version": "16.4.2",
+    "id": "splitCells:5",
+    "symbol": "splitCells",
+    "args": [
+      "a\\|b|c",
+      null
+    ],
+    "result": [
+      "a|b",
+      "c"
+    ]
+  },
+  {
+    "version": "16.4.2",
+    "id": "splitCells:6",
+    "symbol": "splitCells",
+    "args": [
+      "a\\\\|b",
+      null
+    ],
+    "result": [
+      "a\\\\",
+      "b"
+    ]
+  },
+  {
+    "version": "16.4.2",
+    "id": "splitCells:7",
+    "symbol": "splitCells",
+    "args": [
+      "﻿a﻿|b",
+      null
+    ],
+    "result": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "version": "16.4.2",
+    "id": "rtrim:8",
+    "symbol": "rtrim",
+    "args": [
+      "",
+      "\n"
+    ],
+    "result": ""
+  },
+  {
+    "version": "16.4.2",
+    "id": "rtrim:9",
+    "symbol": "rtrim",
+    "args": [
+      "abc",
+      "\n"
+    ],
+    "result": "abc"
+  },
+  {
+    "version": "16.4.2",
+    "id": "rtrim:10",
+    "symbol": "rtrim",
+    "args": [
+      "abc\n\n",
+      "\n"
+    ],
+    "result": "abc"
+  },
+  {
+    "version": "16.4.2",
+    "id": "rtrim:11",
+    "symbol": "rtrim",
+    "args": [
+      "###",
+      "#"
+    ],
+    "result": ""
+  },
+  {
+    "version": "16.4.2",
+    "id": "rtrim:12",
+    "symbol": "rtrim",
+    "args": [
+      "text\\\\",
+      "\\"
+    ],
+    "result": "text"
+  },
+  {
+    "version": "16.4.2",
+    "id": "rtrim:13",
+    "symbol": "rtrim",
+    "args": [
+      "a#b##",
+      "#"
+    ],
+    "result": "a#b"
+  },
+  {
+    "version": "16.4.2",
+    "id": "findClosingBracket:14",
+    "symbol": "findClosingBracket",
+    "args": [
+      "abc",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "16.4.2",
+    "id": "findClosingBracket:15",
+    "symbol": "findClosingBracket",
+    "args": [
+      "a)",
+      "()"
+    ],
+    "result": 1,
+    "byte_boundary": 1
+  },
+  {
+    "version": "16.4.2",
+    "id": "findClosingBracket:16",
+    "symbol": "findClosingBracket",
+    "args": [
+      "(a))",
+      "()"
+    ],
+    "result": 3,
+    "byte_boundary": 3
+  },
+  {
+    "version": "16.4.2",
+    "id": "findClosingBracket:17",
+    "symbol": "findClosingBracket",
+    "args": [
+      "(a)",
+      "()"
+    ],
+    "result": -1
+  },
+  {
+    "version": "16.4.2",
+    "id": "findClosingBracket:18",
+    "symbol": "findClosingBracket",
+    "args": [
+      "((a)",
+      "()"
+    ],
+    "result": -2
+  },
+  {
+    "version": "16.4.2",
+    "id": "findClosingBracket:19",
+    "symbol": "findClosingBracket",
+    "args": [
+      "a\\)b)",
+      "()"
+    ],
+    "result": 4,
+    "byte_boundary": 4
+  },
+  {
+    "version": "16.4.2",
+    "id": "findClosingBracket:20",
+    "symbol": "findClosingBracket",
+    "args": [
+      "😀(a))",
+      "()"
+    ],
+    "result": 5,
+    "byte_boundary": 7
+  },
+  {
+    "version": "16.4.2",
+    "id": "findClosingBracket:21",
+    "symbol": "findClosingBracket",
+    "args": [
+      "😀\\)a",
+      "()"
+    ],
+    "result": -1
+  }
+]

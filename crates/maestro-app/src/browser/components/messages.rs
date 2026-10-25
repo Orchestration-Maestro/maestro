@@ -1,5 +1,6 @@
 //! Browser conversation records and model projection.
 use crate::browser::utils::attachment_utils::{Attachment, AttachmentType};
+use crate::utils::lock::read;
 use crate::{ImageContent, Message, TextContent, UserBlock, UserContent};
 use maestro_agent::{AgentMessage, CustomAgentMessages as CustomMessage};
 
@@ -18,10 +19,10 @@ pub fn convert_attachments(attachments: &[Attachment]) -> Vec<UserBlock> {
                 .as_ref()
                 .filter(|text| !text.is_empty())
                 .map(|text| {
-                    UserBlock::Text(TextContent {
-                        text: format!("\n\n[Document: {}]\n{text}", attachment.file_name),
-                        text_signature: None,
-                    })
+                    UserBlock::Text(TextContent::new(format!(
+                        "\n\n[Document: {}]\n{text}",
+                        attachment.file_name
+                    )))
                 }),
         })
         .collect()
@@ -123,13 +124,7 @@ pub fn is_artifact_message<C: CustomMessage>(message: &AgentMessage<C>) -> bool 
 /// Inspect custom role accessors without caching the value.
 fn has_role<C: CustomMessage>(message: &AgentMessage<C>, role: &str) -> bool {
     match message {
-        AgentMessage::Custom(value) => {
-            value
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .role()
-                == role
-        }
+        AgentMessage::Custom(value) => read(value).role() == role,
         _ => false,
     }
 }
@@ -144,15 +139,12 @@ pub fn default_convert_to_llm<C: CustomMessage>(
             let AgentMessage::Custom(value) = message else {
                 return message.to_message();
             };
-            let value = value
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let value = read(value);
             if let CustomAgentMessages::UserWithAttachments(user) = &*value {
                 let mut content = match &user.content {
-                    UserContent::Text(text) => vec![UserBlock::Text(TextContent {
-                        text: text.clone(),
-                        text_signature: None,
-                    })],
+                    UserContent::Text(text) => {
+                        vec![UserBlock::Text(TextContent::new(text.clone()))]
+                    }
                     UserContent::Blocks(blocks) => blocks.clone(),
                 };
                 if let Some(attachments) = &user.attachments {

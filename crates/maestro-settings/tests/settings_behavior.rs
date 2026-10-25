@@ -1,12 +1,9 @@
 //! Accessor, default, conversion and merge behavior of the settings manager.
 
 #[cfg(test)]
-mod support;
-
-#[cfg(test)]
 mod tests {
-    use super::support;
-    use super::support::{
+    use crate::support;
+    use crate::support::{
         block_on, manager, manager_with, manager_with_both, raw_json, settings, text_entries,
     };
     use maestro_settings::{
@@ -1527,13 +1524,15 @@ mod tests {
             return report_environment_matrix();
         }
         for env in [None, Some(""), Some("0"), Some("1"), Some("true")] {
-            let mut child =
-                support::child_command("environment_fallback_distinguishes_null", "env");
-            child
+            let mut child = support::child_command(
+                "settings_behavior::tests::environment_fallback_distinguishes_null",
+                "env",
+            );
+            child = child
                 .env_remove(CLEAR_ON_SHRINK_ENV)
                 .env_remove(HARDWARE_CURSOR_ENV);
             if let Some(env) = env {
-                child
+                child = child
                     .env(CLEAR_ON_SHRINK_ENV, env)
                     .env(HARDWARE_CURSOR_ENV, env);
             }
@@ -1542,8 +1541,10 @@ mod tests {
                 "clear": {"missing": enabled, "null": false, "false": false, "true": true, "wrong": enabled},
                 "cursor": {"missing": enabled, "null": enabled, "false": false, "true": true, "wrong": enabled},
             });
+            let output = child.output().unwrap();
+            assert!(output.status.success());
             assert_eq!(
-                support::child_report(&child.output().unwrap()),
+                support::child_report(&output),
                 expected,
                 "environment {env:?}"
             );
@@ -1624,17 +1625,19 @@ mod tests {
         if support::child_case().is_some() {
             return report_session_dirs();
         }
-        let mut child = support::child_command("session_dir_expands_only_home_prefix", "paths");
-        child.env(home::VARIABLE, home::PATH);
+        let mut child = support::child_command(
+            "settings_behavior::tests::session_dir_expands_only_home_prefix",
+            "paths",
+        );
+        child = child.env(home::VARIABLE, home::PATH);
         let mut expected: Vec<Option<String>> = session_dir_cases()
             .into_iter()
             .map(|(_, expected)| expected)
             .collect();
         expected.extend([Some("./sessions".to_owned()), None]);
-        assert_eq!(
-            support::child_report(&child.output().unwrap()),
-            json!(expected)
-        );
+        let output = child.output().unwrap();
+        assert!(output.status.success());
+        assert_eq!(support::child_report(&output), json!(expected));
     }
 
     /// Runs one setter batch against storage seeded with `seed` text and returns the saved text.

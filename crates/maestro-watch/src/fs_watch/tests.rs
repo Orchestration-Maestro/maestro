@@ -1,6 +1,7 @@
 //! Native adapter: notification projection and error delivery.
 use super::native::{NativeWatchOperations, entry_names};
 use super::{FsWatcher, WatchOperations};
+use maestro_test_directory::Scratch;
 use notify::event::{
     AccessKind, CreateKind, DataChange, MetadataKind, ModifyKind, RemoveKind, RenameMode,
 };
@@ -105,8 +106,8 @@ impl Harness {
 
 #[test]
 fn native_relative_root_projects_absolute_event_paths_to_names() {
-    let dir = format!("maestro-watch-relative-{}", std::process::id());
-    std::fs::create_dir_all(&dir).unwrap();
+    let scratch = Scratch::new_in(Path::new(".")).unwrap();
+    let dir = scratch.path().to_str().unwrap();
     let harness = Harness::new();
     let names = Rc::new(RefCell::new(Vec::new()));
     let seen = Rc::clone(&names);
@@ -115,7 +116,7 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
     let (mut watcher, results) = harness
         .operations
         .open(
-            &dir,
+            dir,
             Rc::new(move |name| {
                 seen.borrow_mut().push(name);
                 if seen.borrow().len() == 2 {
@@ -125,7 +126,7 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
             Rc::new(|| {}),
         )
         .unwrap();
-    let root = std::path::absolute(&dir).unwrap();
+    let root = std::path::absolute(dir).unwrap();
     for file in ["theme.json", "decoy.json"] {
         let path = root.join(file);
         results
@@ -142,13 +143,12 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
     assert_eq!(*names.borrow(), names_of(&["theme.json", "decoy.json"]));
     super::FsWatcher::close(&mut watcher).unwrap();
     harness.local.block_on(&harness.runtime, closed(&results));
-    std::fs::remove_dir_all(&dir).unwrap();
 }
 
 #[test]
 fn native_close_inside_callback_stops_queued_notifications() {
-    let dir = std::env::temp_dir().join(format!("maestro-watch-close-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let harness = Harness::new();
     let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
     let delivered = Rc::new(Cell::new(0));
@@ -188,13 +188,12 @@ fn native_close_inside_callback_stops_queued_notifications() {
     }
     harness.local.block_on(&harness.runtime, closed(&results));
     assert_eq!(delivered.get(), 1);
-    std::fs::remove_dir_all(&dir).unwrap();
 }
 
 #[test]
 fn native_drop_inside_callback_stops_queued_notifications() {
-    let dir = std::env::temp_dir().join(format!("maestro-watch-drop-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let harness = Harness::new();
     let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
     let delivered = Rc::new(Cell::new(0));
@@ -232,13 +231,12 @@ fn native_drop_inside_callback_stops_queued_notifications() {
     }
     harness.local.block_on(&harness.runtime, closed(&results));
     assert_eq!(delivered.get(), 1);
-    std::fs::remove_dir_all(&dir).unwrap();
 }
 
 #[test]
 fn native_error_callback_can_close_and_releases_listener() {
-    let dir = std::env::temp_dir().join(format!("maestro-watch-error-{}", std::process::id()));
-    std::fs::create_dir(&dir).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let harness = Harness::new();
     let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
     let errors = Rc::new(Cell::new(0));
@@ -291,14 +289,12 @@ fn native_error_callback_can_close_and_releases_listener() {
     assert_eq!(delivered.get(), 0);
     assert!(slot.borrow().is_none());
     assert!(weak_listener.upgrade().is_none());
-    std::fs::remove_dir(dir).unwrap();
 }
 
 #[test]
 fn native_registration_teardown_leaves_other_watch_active() {
-    let dir =
-        std::env::temp_dir().join(format!("maestro-watch-independent-{}", std::process::id()));
-    std::fs::create_dir(&dir).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let harness = Harness::new();
     let (observed, mut observations) = tokio::sync::mpsc::unbounded_channel();
     let (b, b_results) = harness
@@ -342,7 +338,6 @@ fn native_registration_teardown_leaves_other_watch_active() {
     }
     drop(b);
     harness.local.block_on(&harness.runtime, closed(&b_results));
-    std::fs::remove_dir(dir).unwrap();
 }
 
 #[test]
@@ -397,6 +392,37 @@ fn native_timers_obey_deadlines_and_per_handle_teardown() {
         assert_eq!(calls.get(), 1);
         drop(keeper);
         drop(zero_timer);
+    });
+}
+
+#[test]
+fn native_debounce_timer_keeps_its_deadline_through_a_delayed_first_poll() {
+    let local = Rc::new(LocalSet::new());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    let operations = NativeWatchOperations::new(Rc::clone(&local));
+    let calls = Rc::new(Cell::new(0));
+    local.block_on(&runtime, async {
+        let counted = Rc::clone(&calls);
+        let timer = operations.schedule(
+            Duration::from_millis(500),
+            Box::new(move || counted.set(counted.get() + 1)),
+        );
+        // The caller's own work occupies the executor, so the timer's task first runs
+        // only after 499 of its 500 milliseconds have passed.
+        tokio::time::advance(Duration::from_millis(499)).await;
+        assert_eq!(calls.get(), 0);
+        tokio::time::advance(Duration::from_millis(1)).await;
+        tokio::task::yield_now().await;
+        assert_eq!(
+            calls.get(),
+            1,
+            "the deadline is fixed when the timer is scheduled, not when its task runs"
+        );
+        drop(timer);
     });
 }
 

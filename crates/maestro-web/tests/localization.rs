@@ -1,6 +1,6 @@
 //! Shared localization values through the public context.
 #![cfg(test)]
-mod support;
+use crate::support;
 use indexmap::IndexMap;
 use maestro_web::{I18n, TranslationValue};
 use serde::Deserialize;

@@ -35,6 +35,7 @@ pub(super) fn exclusive() -> std::sync::MutexGuard<'static, ()> {
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Build the controlled request descriptor without consulting a catalog or environment.
 fn invocation() -> (
     std::sync::Arc<crate::Model>,
@@ -79,6 +80,7 @@ fn controlled_model() -> crate::Model {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One typed user message supplies the unchanged conversation input.
 fn controlled_context() -> crate::Context {
     serde_json::from_value(

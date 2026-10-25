@@ -1,8 +1,7 @@
 //! Embedding surfaces, ownership and supplied presentation roles.
 #![cfg(test)]
 /// Controlled platform and genuine drawing fixtures.
-pub mod attachment_support;
-mod support;
+use crate::attachment_support;
 use attachment_support::*;
 use maestro_web::{AttachmentOverlay, AttachmentTile};
 use std::rc::Rc;
@@ -83,11 +82,8 @@ fn attachment_styles_follow_caller_brand_pack() {
         record.borrow_mut().preview = Some("unchanged-pixels".into());
         let mut tile = AttachmentTile::new(record.clone(), host.clone());
         let mut frame = Frame {
-            pack: maestro_theme::load_brand_pack(
-                &format!("{}{path}", env!("CARGO_MANIFEST_DIR")),
-                &maestro_theme::theme::NativeThemeOperations,
-            )
-            .unwrap(),
+            pack: crate::support::brand::pack(&format!("{}{path}", env!("CARGO_MANIFEST_DIR")))
+                .unwrap(),
             mode,
             ..Frame::default()
         };
@@ -130,7 +126,7 @@ fn attachment_widgets_keep_the_public_embedding_paths() {
     let guard = record.borrow_mut();
     assert!(matches!(
         frame.tile(&mut tile, vec![]),
-        Err(maestro_web::browser::attachment_content::AttachmentUiError::BorrowConflict)
+        Err(maestro_web::dialogs::attachment_overlay::AttachmentUiError::BorrowConflict)
     ));
     assert!(host.surfaces.borrow().is_empty());
     drop(guard);
@@ -148,7 +144,7 @@ fn attachment_widgets_keep_the_public_embedding_paths() {
 
 #[test]
 fn attachment_color_errors_use_shared_presentation_route() {
-    use maestro_web::browser::attachment_content::AttachmentUiError;
+    use maestro_web::dialogs::attachment_overlay::AttachmentUiError;
     let host = Rc::new(Host::default());
     let record = attachment();
     record.borrow_mut().preview = Some("preview".into());

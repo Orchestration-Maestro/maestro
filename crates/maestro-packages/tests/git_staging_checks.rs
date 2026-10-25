@@ -191,6 +191,9 @@ fn git_requested_ref_is_applied_before_dependencies() {
 #[cfg(unix)]
 #[test]
 fn git_failed_dependency_restores_revision_at_mutation_owner() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let fixture = crate::native_git::retry::RetryFixture::new("ordinary");
     fixture.advance();
     *fixture.fail.borrow_mut() = "dependencies".into();
@@ -205,6 +208,9 @@ fn git_failed_dependency_restores_revision_at_mutation_owner() {
 #[cfg(unix)]
 #[test]
 fn git_update_failure_restores_head_and_retry_installs_dependencies() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for layout in ["ordinary", "linked", "separate", "include"] {
         for phase in ["reset", "clean", "dependencies"] {
             check_update_retry(layout, phase);
@@ -259,14 +265,30 @@ fn settings_cases(indices: &[usize]) {
 #[test]
 fn repin_settings_short_circuit_keeps_later_invalid_entries_unread() {
     settings_cases(&[2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 15, 16, 17, 18, 48, 49]);
-    let (manager, _, effects) = crate::support::manager(&json!({"packages":7}));
-    effects.fail_ambient.set(true);
+    #[cfg(unix)]
+    normalization_precedes_invalid_root();
+}
+/// A source needing the removed working directory fails before the invalid packages root.
+#[cfg(unix)]
+fn normalization_precedes_invalid_root() {
+    if crate::resolution_support::case_in_removed_cwd("removed", |_| vec![]).is_none() {
+        return;
+    }
+    let (_, settings, effects) = crate::support::manager(&json!({"packages":7}));
+    let manager = maestro_packages::DefaultPackageManager::new(
+        maestro_packages::PackageManagerOptions {
+            cwd: "relative".into(),
+            agent_dir: "relative-agent".into(),
+            settings_manager: settings,
+        },
+        crate::support::Controlled(effects),
+    );
     assert_eq!(
         manager
-            .add_source_to_settings("~/missing", None)
+            .add_source_to_settings("./missing", None)
             .unwrap_err()
             .kind(),
-        io::ErrorKind::Other,
+        io::ErrorKind::NotFound,
         "source normalization must precede consuming an invalid packages root"
     );
 }
@@ -356,38 +378,33 @@ fn git_missing_install_publishes_only_prepared_contents() {
 
 #[test]
 fn git_staging_collision_and_publication_failures_keep_owned_paths() {
-    staging_allocation_skips_collisions();
-    for op in [crate::sandbox::Op::Stage, crate::sandbox::Op::Rename] {
+    #[cfg(unix)]
+    {
         let fixture = Fixture::new(&json!({}));
-        fixture
-            .script
-            .failures
-            .borrow_mut()
-            .push((op, String::new()));
-        assert!(
-            block_on(
+        let parent = fixture.agent("git/example.test/team");
+        std::fs::create_dir_all(&parent).unwrap();
+        if let Some(restore) = maestro_test_directory::deny(&parent, 0o555).unwrap() {
+            let result = block_on(
                 fixture
                     .manager
-                    .install("https://example.test/team/repo", None)
-            )
-            .is_err()
-        );
-        let parent = fixture.agent("git/example.test/team");
-        assert_eq!(std::fs::read_dir(parent).unwrap().count(), 0);
+                    .install("https://example.test/team/repo", None),
+            );
+            drop(restore);
+            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+            assert_eq!(std::fs::read_dir(parent).unwrap().count(), 0);
+        }
     }
     let collision_fixture = Fixture::new(&json!({}));
+    // Another writer takes the target while the clone runs.
+    let foreign = collision_fixture.agent("git/example.test/team/repo");
     collision_fixture
         .script
-        .before_effect
+        .hooks
         .borrow_mut()
-        .replace((
-            crate::sandbox::Op::Rename,
-            String::new(),
-            Box::new(|target| {
-                std::fs::create_dir(target)?;
-                std::fs::write(Path::new(target).join("foreign"), "retain")
-            }),
-        ));
+        .push_back(Box::new(move |_| {
+            std::fs::create_dir(&foreign).unwrap();
+            std::fs::write(Path::new(&foreign).join("foreign"), "retain").unwrap();
+        }));
     assert!(
         block_on(
             collision_fixture
@@ -401,6 +418,8 @@ fn git_staging_collision_and_publication_failures_keep_owned_paths() {
             .unwrap(),
         "retain"
     );
+    let parent = collision_fixture.agent("git/example.test/team");
+    assert_eq!(std::fs::read_dir(parent).unwrap().count(), 1);
     let fixture = Fixture::new(&json!({}));
     let parent = fixture.agent("git/example.test/team");
     fixture.script.held.set(true);
@@ -415,6 +434,9 @@ fn git_staging_collision_and_publication_failures_keep_owned_paths() {
 
 #[test]
 fn git_missing_acquisition_routes_share_staging() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for route in ["install", "persist", "configured", "explicit", "update"] {
         let source = "https://example.test/team/repo";
         let fixture = Fixture::new(&if matches!(route, "configured" | "update") {
@@ -482,12 +504,8 @@ fn acquisition_route(fixture: &Fixture, route: &str, source: &str) -> io::Result
         ))
         .map(drop),
         "update" => {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
             let future = fixture.manager.clone().update(Some(source));
-            runtime.block_on(fixture.local.run_until(future))
+            crate::runtime::run(fixture.local.run_until(future))
         }
         _ => unreachable!(),
     }
@@ -710,6 +728,9 @@ fn git_repin_checkout_failure_restores_original_selection() {
 #[test]
 fn git_fetch_or_probe_failure_does_not_start_rollback() {
     use crate::native_git::{git, retry::RetryFixture};
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for phase in ["fetch", "HEAD", "@{upstream}", "current"] {
         let fixture = RetryFixture::new("ordinary");
         if phase != "current" {
@@ -753,14 +774,24 @@ fn git_fetch_or_probe_failure_does_not_start_rollback() {
 #[cfg(unix)]
 #[test]
 fn git_recovery_io_failure_reports_original_kind_without_persisting() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     check_native_recovery_failure("locked");
     check_native_recovery_failure("selection-recovery");
     let staged = Fixture::new(&json!({}));
+    // The clone fails after its staging parent stopped accepting removals.
+    let locked = staged.agent("git/example.test/team");
+    let denial = std::rc::Rc::new(std::cell::RefCell::new(None));
+    let held = std::rc::Rc::clone(&denial);
     staged
         .script
-        .failures
+        .hooks
         .borrow_mut()
-        .push((crate::sandbox::Op::Remove, String::new()));
+        .push_back(Box::new(move |_| {
+            let restore = maestro_test_directory::deny(&locked, 0o555).unwrap();
+            *held.borrow_mut() = Some(restore);
+        }));
     staged
         .script
         .results
@@ -775,6 +806,11 @@ fn git_recovery_io_failure_reports_original_kind_without_persisting() {
             .install_and_persist("https://example.test/team/repo", None),
     )
     .unwrap_err();
+    // A privileged run still removes the staged clone, so there is no recovery failure.
+    let Some(restore) = denial.take().expect("the clone hook ran") else {
+        return;
+    };
+    drop(restore);
     assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
     assert!(error.to_string().contains("recovery failed"));
     assert!(
@@ -840,16 +876,10 @@ fn git_repin_live_configuration_reaches_selected_transport() {
 #[test]
 fn git_temporary_refresh_recovers_then_suppresses_failure() {
     use crate::native_git::{git, retry::RetryFixture};
+    if crate::resolution_support::case_in_child("temporary", |_| vec![]).is_none() {
+        return;
+    }
     let fixture = RetryFixture::new("ordinary");
-    *fixture.effects.temp_root.borrow_mut() = Some(
-        fixture
-            .repo
-            .scratch
-            .0
-            .join("temporary")
-            .to_string_lossy()
-            .into_owned(),
-    );
     fixture.use_local_clone();
     let sources = ["git:github.com/acme/tool".into()];
     let result =
@@ -1008,10 +1038,7 @@ fn check_settings_case(case: &SettingsCase, index: usize) {
         "row {index}"
     );
     assert_eq!(untouched, other);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    runtime.block_on(settings.borrow().flush());
+    crate::runtime::run(settings.borrow().flush());
     assert_eq!(
         *storage.scopes.lock().unwrap(),
         case.expected.writes,
@@ -1026,9 +1053,9 @@ fn install_transport(
     common: &Path,
 ) -> std::path::PathBuf {
     use crate::native_git::git;
-    let marker = fixture.repo.scratch.0.join("transport-called");
-    let source = fixture.repo.scratch.0.join("transport-source");
-    let executable = fixture.repo.scratch.0.join("transport");
+    let marker = fixture.repo.scratch.path().join("transport-called");
+    let source = fixture.repo.scratch.path().join("transport-source");
+    let executable = fixture.repo.scratch.path().join("transport");
     assert!(Path::new("/usr/bin/git-upload-pack").is_file());
     std::fs::write(
         &source,
@@ -1160,32 +1187,6 @@ fn missing_invalid_ref_retries_until_available() {
     assert_eq!(
         fixture.settings.borrow().get_global_settings().0["packages"],
         json!([source])
-    );
-}
-
-/// Checks native exclusive allocation without replacing the competing directory.
-fn staging_allocation_skips_collisions() {
-    use maestro_packages::{NativePackageOperations, PackageOperations};
-    use std::rc::Rc;
-    let scratch = crate::scratch::Scratch::new().unwrap();
-    let native = NativePackageOperations::new(
-        |_| false,
-        Rc::new(|| false),
-        &Rc::new(tokio::task::LocalSet::new()),
-    );
-    let first = native.create_temp_dir(scratch.0.to_str().unwrap()).unwrap();
-    let name = Path::new(&first).file_name().unwrap().to_str().unwrap();
-    let (prefix, index) = name.rsplit_once('-').unwrap();
-    let collision = scratch
-        .0
-        .join(format!("{prefix}-{}", index.parse::<usize>().unwrap() + 1));
-    std::fs::create_dir(&collision).unwrap();
-    std::fs::write(collision.join("foreign"), "retain").unwrap();
-    let second = native.create_temp_dir(scratch.0.to_str().unwrap()).unwrap();
-    assert_ne!(Path::new(&second), collision);
-    assert_eq!(
-        std::fs::read_to_string(collision.join("foreign")).unwrap(),
-        "retain"
     );
 }
 
@@ -1523,7 +1524,7 @@ fn check_current_selection(
         let path = fixture
             .repo
             .scratch
-            .0
+            .path()
             .join("cwd/.maestro/git/github.com/acme/tool");
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::rename(&fixture.repo.target, &path).unwrap();

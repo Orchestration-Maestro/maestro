@@ -3,6 +3,8 @@
 use crate::support;
 use maestro_app::browser::ssf::{self, Ssf};
 use support::spreadsheet::{corpus, equal_cell, worksheet};
+#[cfg(not(target_arch = "wasm32"))]
+use support::spreadsheet_native::{attachments, bytes, workbooks};
 
 fn csv_suite(name: &str) {
     let cases: Vec<_> = corpus()
@@ -56,16 +58,12 @@ fn csv_formula_fallback_and_array_suppression() {
 }
 
 /// Compare owned cells after the native reader and XML borrows have gone away.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_formula_metadata_keeps_cached_and_missing_values() {
-    for recording in corpus().workbooks {
+    for recording in workbooks() {
         let mut ssf = Ssf::default();
-        let book = ssf::read(
-            &support::spreadsheet::bytes(&recording.file),
-            "formula.xlsx",
-            &mut ssf,
-        )
-        .unwrap();
+        let book = ssf::read(&bytes(&recording.file), "formula.xlsx", &mut ssf).unwrap();
         assert_eq!(
             book.sheets.keys().collect::<Vec<_>>(),
             recording
@@ -93,6 +91,7 @@ fn workbook_formula_metadata_keeps_cached_and_missing_values() {
 }
 
 /// Compare scalar state and metadata not owned by the specialized views.
+#[cfg(not(target_arch = "wasm32"))]
 fn check_metadata(actual: &ssf::CellObject, expected: &ssf::CellObject, name: &str, address: &str) {
     assert_eq!(actual.t, expected.t);
     assert_eq!(actual.v, expected.v);
@@ -106,10 +105,11 @@ fn check_metadata(actual: &ssf::CellObject, expected: &ssf::CellObject, name: &s
 }
 
 /// Compare only the formula metadata owned by this reader view.
+#[cfg(not(target_arch = "wasm32"))]
 fn formula_view(sheet_name: &str, select: impl Fn(&str) -> bool) {
-    let recording = corpus().workbooks.pop().unwrap();
+    let recording = workbooks().pop().unwrap();
     let book = ssf::read(
-        &support::spreadsheet::bytes(&recording.file),
+        &bytes(&recording.file),
         "formulas.xlsx",
         &mut Ssf::default(),
     )
@@ -131,32 +131,35 @@ fn formula_view(sheet_name: &str, select: impl Fn(&str) -> bool) {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_shared_formulas_are_sheet_local() {
     formula_view("Shared", |_| true);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_array_regions_suppress_missing_formula_replay() {
     formula_view("Array", |_| true);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_formula_text_decodes_entities_and_function_prefixes() {
     formula_view("Scalars", |address| address.ends_with('2'));
 }
 
 /// Replay complete source results through the injected transport.
+#[cfg(not(target_arch = "wasm32"))]
 fn attachment_suite(name: &str) {
     use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
     use maestro_models::{Fetch, HttpResponse};
     use std::sync::{Arc, Mutex};
-    let rows: Vec<_> = corpus()
-        .attachments
+    let rows: Vec<_> = attachments()
         .into_iter()
         .filter(|c| c.test == name)
         .collect();
     assert!(!rows.is_empty());
     for row in rows {
-        let bytes = support::spreadsheet::bytes(&row.input.file);
+        let bytes = bytes(&row.input.file);
         let calls = Arc::new(Mutex::new(Vec::new()));
         let captured = calls.clone();
         let body = bytes.clone();
@@ -190,14 +193,11 @@ fn attachment_suite(name: &str) {
             "url" => AttachmentSource::Url(row.input.url.as_deref().unwrap()),
             _ => panic!("unexpected source"),
         };
-        let result = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(load_attachment(
-                source,
-                row.input.r#override.as_deref(),
-                &fetch,
-            ));
+        let result = crate::support::run(load_attachment(
+            source,
+            row.input.r#override.as_deref(),
+            &fetch,
+        ));
         check_failure(&result, &row.id);
         let actual = support::attachment_observation::observed(result);
         let expected = expected_attachment(row.expected);
@@ -206,6 +206,7 @@ fn attachment_suite(name: &str) {
     }
 }
 /// Project native errors to the recorded failure category, not engine wording.
+#[cfg(not(target_arch = "wasm32"))]
 fn expected_attachment(mut expected: serde_json::Value) -> serde_json::Value {
     if let Some(diagnostics) = expected
         .as_object_mut()
@@ -231,6 +232,7 @@ fn expected_attachment(mut expected: serde_json::Value) -> serde_json::Value {
     expected
 }
 /// Failures must remain native workbook categories, not unsupported MIME.
+#[cfg(not(target_arch = "wasm32"))]
 fn check_failure(
     result: &Result<
         maestro_app::browser::utils::attachment_utils::Attachment,
@@ -252,36 +254,43 @@ fn check_failure(
         _ => {}
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_recognition_and_mime_selection() {
     attachment_suite("spreadsheet_recognition_and_mime_selection");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_attachments_keep_source_fields() {
     attachment_suite("spreadsheet_attachments_keep_source_fields");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_sheet_wrappers_keep_order_and_empty_layout() {
     attachment_suite("spreadsheet_sheet_wrappers_keep_order_and_empty_layout");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_url_sources_use_shared_transport() {
     attachment_suite("spreadsheet_url_sources_use_shared_transport");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_extraction_reuses_formatted_workbook_values() {
     attachment_suite("spreadsheet_extraction_reuses_formatted_workbook_values");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_failures_keep_typed_workbook_sources() {
     attachment_suite("spreadsheet_failures_keep_typed_workbook_sources");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_written_formula_escapes_decode_once() {
     use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
@@ -295,19 +304,16 @@ fn workbook_written_formula_escapes_decode_once() {
     let csv = "7,\"=\"\"a\rb\"\"\",\"=\"\"a\nb\"\"\"";
     assert_eq!(ssf::sheet_to_csv(sheet, &format), csv);
     let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
-    let attachment = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(load_attachment(
-            AttachmentSource::File {
-                bytes,
-                name: "escapes.xlsx",
-                mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            },
-            None,
-            &fetch,
-        ))
-        .unwrap();
+    let attachment = crate::support::run(load_attachment(
+        AttachmentSource::File {
+            bytes,
+            name: "escapes.xlsx",
+            mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        },
+        None,
+        &fetch,
+    ))
+    .unwrap();
     assert_eq!(attachment.extracted_text.as_deref(), Some(format!("<excel filename=\"escapes.xlsx\">\n<sheet name=\"Escapes\" index=\"1\">\n{csv}\n</sheet>\n</excel>").as_str()));
 }
 
@@ -380,6 +386,7 @@ fn workbook_shared_unicode_defined_name_suffix_keeps_identity() {
     unicode_shared_formula("Suffix", "A1é+A1", "A1é+A2");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
     use base64::Engine as _;
@@ -395,22 +402,18 @@ fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
     ))
     .unwrap();
     let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
     for case in cases {
         let bytes = crate::workbook_fixture::bytes(&format!("metadata-{}", case.file));
-        let attachment = runtime
-            .block_on(load_attachment(
-                AttachmentSource::File {
-                    bytes: &bytes,
-                    name: &case.file,
-                    mime_type: "application/vnd.ms-excel",
-                },
-                None,
-                &fetch,
-            ))
-            .unwrap();
+        let attachment = crate::support::run(load_attachment(
+            AttachmentSource::File {
+                bytes: &bytes,
+                name: &case.file,
+                mime_type: "application/vnd.ms-excel",
+            },
+            None,
+            &fetch,
+        ))
+        .unwrap();
         assert_eq!(attachment.file_name, case.file);
         assert_eq!(attachment.size, bytes.len());
         assert_eq!(
@@ -504,5 +507,59 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
     assert_eq!(
         error.to_string(),
         "Failed to process Excel: all-corrupt-two.xlsx: xl/worksheets/sheet1.xml: shared string 3"
+    );
+}
+
+/// Shared strings amplify four individually bounded sheets beyond the output bound.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn spreadsheet_extracted_output_past_the_bound_fails() {
+    use maestro_app::browser::ssf::WorkbookError;
+    use maestro_app::browser::utils::attachment_utils::AttachmentError;
+    use std::io::{Cursor, Write};
+
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    for (path, text) in [
+        (
+            "[Content_Types].xml",
+            "<Types><Override ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml\" PartName=\"/xl/sharedStrings.xml\"/></Types>",
+        ),
+        (
+            "xl/workbook.xml",
+            "<workbook><sheets><sheet name=\"One\"/><sheet name=\"Two\"/><sheet name=\"Three\"/><sheet name=\"Four\"/></sheets></workbook>",
+        ),
+    ] {
+        writer.start_file(path, options).unwrap();
+        writer.write_all(text.as_bytes()).unwrap();
+    }
+    writer.start_file("xl/sharedStrings.xml", options).unwrap();
+    writer.write_all(b"<sst><si><t>").unwrap();
+    writer.write_all(&vec![b'x'; 1 << 20]).unwrap();
+    writer.write_all(b"</t></si></sst>").unwrap();
+    for index in 1..=4 {
+        writer
+            .start_file(format!("xl/worksheets/sheet{index}.xml"), options)
+            .unwrap();
+        writer.write_all(b"<worksheet><sheetData>").unwrap();
+        for row in 1..=129 {
+            write!(
+                writer,
+                "<row r=\"{row}\"><c r=\"A{row}\" t=\"s\"><v>0</v></c></row>"
+            )
+            .unwrap();
+        }
+        writer.write_all(b"</sheetData></worksheet>").unwrap();
+    }
+    let bytes = writer.finish().unwrap().into_inner();
+    let error = extract_workbook(&bytes, "large.xlsx").unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "Failed to process Excel: extracted text exceeds 512 MiB"
+    );
+    assert!(
+        !matches!(error, AttachmentError::Excel(WorkbookError::Reader(_))),
+        "output overflow was classified as a value-reader failure"
     );
 }

@@ -1,0 +1,346 @@
+[
+  {
+    "stopReason": "error",
+    "errorMessage": "overloaded_error",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "Provider returned error",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "provider returned  error",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "Providerreturnederror",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "rate limit exceeded",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "Rate-Limit",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "too many requests",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "HTTP 429 from provider",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "HTTP 500",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "500",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "502",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "503",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "504",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "Service unavailable",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "server error",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "internal error",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "network error",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "connection error",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "connection refused",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "connection lost",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "websocket closed",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "websocket error",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "other side closed",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "fetch failed",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "upstream connect error",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "reset before headers",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "socket hang up",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "request ended without sending chunks",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "http2 request did not get a response",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "timed out",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "time out",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "timd out",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "timeout",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "terminated",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "retry delay exceeded",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "OVERLOADED_ERROR",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "We are overloaded; 503 service unavailable",
+    "contextWindow": 200000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "invalid api key",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "401 unauthorized",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "billing hard limit reached",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "quota exceeded",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "Bad Request",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "model not found",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": {
+      "missing": true
+    },
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": null,
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "stop",
+    "errorMessage": "overloaded_error",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "aborted",
+    "errorMessage": "overloaded_error",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "length",
+    "errorMessage": "overloaded_error",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "prompt is too long: 300000 tokens > 200000 maximum",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "prompt is too long: connection error",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "prompt is too long: connection error",
+    "contextWindow": 1000000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "connection lost",
+    "contextWindow": 0,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "connection lost",
+    "contextWindow": 1000000,
+    "retryable": true
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "too many tokens, please wait before trying again",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "Throttling error: too many tokens",
+    "contextWindow": 200000,
+    "retryable": false
+  },
+  {
+    "stopReason": "error",
+    "errorMessage": "timed out\nsecond line",
+    "contextWindow": 200000,
+    "retryable": true
+  }
+]

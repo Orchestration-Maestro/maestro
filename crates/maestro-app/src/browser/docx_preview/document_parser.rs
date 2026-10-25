@@ -1,29 +1,42 @@
 //! Word body framing and selected CSS property parsing.
 use super::{
     DocxError, DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData as Data,
-    OpenXmlElementTree, OwnedXmlElement, XmlElement, XmlParser, parse_xml_string,
+    OpenXmlElementTree, OwnedXmlElement, WmlHyperlink, WmlSmartTag, XmlElement, XmlParser,
+    parse_xml_string,
 };
 
 /// Parse the immediate body elements of an owned XML selection.
+/// `ignore_width` suppresses cell widths in every property group.
 ///
 /// # Errors
 /// Returns an XML error for invalid input or missing required picture structure.
-pub fn parse_body_elements(input: &OwnedXmlElement) -> Result<OpenXmlElementTree, DocxError> {
-    parse(input, Framing::Body)
+pub fn parse_body_elements(
+    input: &OwnedXmlElement,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
+    parse(input, Framing::Body, ignore_width)
 }
 /// Parse a paragraph with distinct run and parent identities.
+/// `ignore_width` suppresses cell widths in every property group.
 ///
 /// # Errors
 /// Returns an XML error for invalid input or missing required picture structure.
-pub fn parse_paragraph(input: &OwnedXmlElement) -> Result<OpenXmlElementTree, DocxError> {
-    parse(input, Framing::Paragraph)
+pub fn parse_paragraph(
+    input: &OwnedXmlElement,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
+    parse(input, Framing::Paragraph, ignore_width)
 }
 /// Parse one run, retaining ordered inline content.
+/// `ignore_width` suppresses cell widths in every property group.
 ///
 /// # Errors
 /// Returns an XML error for invalid input or missing required picture structure.
-pub fn parse_run(input: &OwnedXmlElement) -> Result<OpenXmlElementTree, DocxError> {
-    parse(input, Framing::Run)
+pub fn parse_run(
+    input: &OwnedXmlElement,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
+    parse(input, Framing::Run, ignore_width)
 }
 /// Selected immediate-child framing.
 #[derive(Clone, Copy)]
@@ -36,21 +49,25 @@ pub(super) enum Framing {
     Run,
 }
 /// Reparse and select the input once for one public operation.
-fn parse(input: &OwnedXmlElement, framing: Framing) -> Result<OpenXmlElementTree, DocxError> {
+fn parse(
+    input: &OwnedXmlElement,
+    framing: Framing,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
     let xml = parse_xml_string(input.source(), false)?;
     let selected = xml.selected(input)?;
-    parse_selected(&xml, selected, input, framing)
+    parse_selected(&xml, selected, framing, ignore_width)
 }
 /// Construct one arena from an already admitted selection.
 pub(super) fn parse_selected<'doc, 'input: 'doc>(
     xml: &'doc XmlParser<'input>,
     element: XmlElement<'doc, 'input>,
-    input: &'doc OwnedXmlElement,
     framing: Framing,
+    ignore_width: bool,
 ) -> Result<OpenXmlElementTree, DocxError> {
     let mut parser = DocumentParser {
         xml,
-        input,
+        ignore_width,
         tree: OpenXmlElementTree::default(),
     };
     parser.tree.roots = match framing {
@@ -64,8 +81,8 @@ pub(super) fn parse_selected<'doc, 'input: 'doc>(
 pub(super) struct DocumentParser<'doc, 'input> {
     /// Reparsed complete XML input.
     pub(super) xml: &'doc XmlParser<'input>,
-    /// Shared source for retained child selections.
-    input: &'doc OwnedXmlElement,
+    /// Cell-width suppression for every property group.
+    ignore_width: bool,
     /// Output arena under construction.
     pub(super) tree: OpenXmlElementTree,
 }
@@ -79,13 +96,6 @@ impl<'input> DocumentParser<'_, 'input> {
         });
         id
     }
-    /// Keep a foreign branch with its shared source selection.
-    fn retain(&mut self, element: XmlElement<'_, 'input>, kind: DomType) -> usize {
-        self.push(Data::Unparsed {
-            kind,
-            element: self.input.slice(element),
-        })
-    }
     /// Parse immediate body children.
     pub(super) fn body(
         &mut self,
@@ -95,7 +105,7 @@ impl<'input> DocumentParser<'_, 'input> {
         for child in self.xml.elements(element, None) {
             match child.local_name() {
                 "p" => children.push(self.paragraph(child)?),
-                "tbl" => children.push(self.retain(child, DomType::Table)),
+                "tbl" => children.push(self.parse_table(child)?),
                 "sdt" => children.extend(
                     self.xml
                         .element(child, "sdtContent")
@@ -139,6 +149,7 @@ impl<'input> DocumentParser<'_, 'input> {
                         self.xml,
                         child,
                         &mut self.tree.nodes[parent].data,
+                        self.ignore_width,
                     );
                 }
                 "sdt" => children.extend(
@@ -166,17 +177,53 @@ impl<'input> DocumentParser<'_, 'input> {
                 }
                 "oMath" | "oMathPara" => children.push(self.math(child)?),
                 "ins" | "del" => children.push(self.change(child)?),
-                name => {
-                    let kind = match name {
-                        "hyperlink" => DomType::Hyperlink,
-                        "smartTag" => DomType::SmartTag,
-                        _ => continue,
-                    };
-                    children.push(self.retain(child, kind));
-                }
+                "hyperlink" => children.push(self.parse_hyperlink(child, parent)?),
+                "smartTag" => children.push(self.parse_smart_tag(child, parent)?),
+                _ => {}
             }
         }
         Ok(children)
+    }
+    /// Build a hyperlink with its nullable relationship and anchor.
+    fn parse_hyperlink(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: usize,
+    ) -> Result<usize, DocxError> {
+        let data = Data::Hyperlink(WmlHyperlink {
+            id: self.attr(element, "id"),
+            anchor: self.attr(element, "anchor"),
+        });
+        self.inline_wrapper(element, parent, data)
+    }
+    /// Build a smart tag, keeping only nonempty metadata.
+    fn parse_smart_tag(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: usize,
+    ) -> Result<usize, DocxError> {
+        let nonempty = |name| self.attr(element, name).filter(|s| !s.is_empty());
+        let data = Data::SmartTag(WmlSmartTag {
+            uri: nonempty("uri"),
+            element: nonempty("element"),
+        });
+        self.inline_wrapper(element, parent, data)
+    }
+    /// Link a hyperlink or smart tag to its paragraph or simple field and its immediate runs
+    /// to it.
+    fn inline_wrapper(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: usize,
+        data: Data,
+    ) -> Result<usize, DocxError> {
+        let id = self.push(data);
+        self.tree.nodes[id].base.parent = Some(parent);
+        for child in self.xml.elements(element, Some("r")) {
+            let run = self.run(child, Some(id))?;
+            self.tree.nodes[id].base.children.push(run);
+        }
+        Ok(id)
     }
     /// Build a change wrapper while retaining its hidden paragraph parents.
     fn change(&mut self, element: XmlElement<'_, 'input>) -> Result<usize, DocxError> {
@@ -265,7 +312,12 @@ impl<'input> DocumentParser<'_, 'input> {
     fn run_element(&mut self, child: XmlElement<'_, 'input>, id: usize) -> Result<(), DocxError> {
         let node = match child.local_name() {
             "rPr" => {
-                properties::parse_run_properties(self.xml, child, &mut self.tree.nodes[id].data);
+                properties::parse_run_properties(
+                    self.xml,
+                    child,
+                    &mut self.tree.nodes[id].data,
+                    self.ignore_width,
+                );
                 None
             }
             "pict" => Some(self.vml_picture(child)?),
@@ -370,10 +422,15 @@ mod formatting;
 mod table_style;
 pub use table_style::{TableStyle, parse_table_style};
 
+mod document_file;
+pub use document_file::{WordBody, parse_document_file};
+
 mod properties;
 pub(super) mod styles;
 
 mod drawing;
+
+mod table;
 
 mod math;
 pub use math::MathProperties;

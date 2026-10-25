@@ -5,7 +5,8 @@
         "~"
       ]
     },
-    "expected": "/home/sample"
+    "expected": "/home/sample",
+    "home": "/home/sample"
   },
   {
     "input": {
@@ -13,7 +14,8 @@
         "~/docs"
       ]
     },
-    "expected": "/home/sample/docs"
+    "expected": "/home/sample/docs",
+    "home": "/home/sample"
   },
   {
     "input": {
@@ -21,7 +23,8 @@
         "~//docs"
       ]
     },
-    "expected": "/home/sample//docs"
+    "expected": "/home/sample//docs",
+    "home": "/home/sample"
   },
   {
     "input": {
@@ -29,7 +32,8 @@
         "~/../docs"
       ]
     },
-    "expected": "/home/sample/../docs"
+    "expected": "/home/sample/../docs",
+    "home": "/home/sample"
   },
   {
     "input": {
@@ -37,7 +41,8 @@
         "./~"
       ]
     },
-    "expected": "./~"
+    "expected": "./~",
+    "home": "/home/sample"
   },
   {
     "input": {
@@ -45,7 +50,8 @@
         "~user"
       ]
     },
-    "expected": "~user"
+    "expected": "~user",
+    "home": "/home/sample"
   },
   {
     "input": {
@@ -53,7 +59,8 @@
         "~\\docs"
       ]
     },
-    "expected": "~\\docs"
+    "expected": "~\\docs",
+    "home": "/home/sample"
   },
   {
     "input": {
@@ -61,6 +68,34 @@
         ""
       ]
     },
+    "expected": "",
+    "home": "/home/sample"
+  },
+  {
+    "input": {
+      "args": [
+        "~/"
+      ]
+    },
+    "home": "/home/sample",
+    "expected": "/home/sample/"
+  },
+  {
+    "input": {
+      "args": [
+        "~"
+      ]
+    },
+    "home": "/home/sample/.",
+    "expected": "/home/sample/."
+  },
+  {
+    "input": {
+      "args": [
+        "~"
+      ]
+    },
+    "home": "",
     "expected": ""
   }
 ]

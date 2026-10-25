@@ -76,11 +76,12 @@ fn global_registry_is_lazy_shared_replaceable_and_restorable() {
 
 /// Run the initial-global observation in a fresh process.
 fn run_child() -> bool {
-    if std::env::var_os("MAESTRO_BINDING_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let name = "binding_registry::global_registry_is_lazy_shared_replaceable_and_restorable";
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", name, "--nocapture"])
-            .env("MAESTRO_BINDING_CHILD", "1")
+        let output = maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .nocapture()
+            .case("*")
             .output()
             .unwrap();
         assert!(output.status.success());

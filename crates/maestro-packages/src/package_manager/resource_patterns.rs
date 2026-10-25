@@ -20,21 +20,17 @@ struct PathViews {
 }
 impl PathViews {
     /// Builds matcher views without changing candidate identity.
-    fn new(
-        path: &str,
-        root: &str,
-        current: &mut Option<String>,
-        operations: &dyn maestro_resources::skills::ResourceOperations,
-    ) -> io::Result<Self> {
-        let directories = operations.drive_directories();
+    fn new(path: &str, root: &str) -> io::Result<Self> {
+        let directories = maestro_resources::drive_directories();
         let drives: Vec<_> = directories.iter().map(|(d, p)| (*d, p.as_str())).collect();
-        if current.is_none()
-            && [root, path]
-                .iter()
-                .any(|p| maestro_path::try_resolve(&[p], &drives).is_err())
+        let current = if [root, path]
+            .iter()
+            .any(|p| maestro_path::try_resolve(&[p], &drives).is_err())
         {
-            *current = Some(operations.current_directory()?);
-        }
+            Some(maestro_resources::current_directory()?)
+        } else {
+            None
+        };
         Ok(Self {
             relative: posix(&relative(
                 root,
@@ -82,25 +78,22 @@ pub(super) fn apply_patterns<'a>(
     files: &'a [String],
     entries: &[impl AsRef<str>],
     root: &str,
-    operations: &dyn maestro_resources::skills::ResourceOperations,
 ) -> io::Result<Selection<'a>> {
-    selection(files, entries, root, operations, false)
+    selection(files, entries, root, false)
 }
 /// Selects positive matches, exclusions, exact restorations and final removals.
 pub(super) fn select_patterns<'a>(
     files: &'a [String],
     entries: &[impl AsRef<str>],
     root: &str,
-    operations: &dyn maestro_resources::skills::ResourceOperations,
 ) -> io::Result<Selection<'a>> {
-    selection(files, entries, root, operations, true)
+    selection(files, entries, root, true)
 }
 /// Shares ordered selection while retaining the caller's positive-pattern framing.
 fn selection<'a>(
     files: &'a [String],
     entries: &[impl AsRef<str>],
     root: &str,
-    operations: &dyn maestro_resources::skills::ResourceOperations,
     positive: bool,
 ) -> io::Result<Selection<'a>> {
     let positives: Vec<_> = entries
@@ -119,15 +112,14 @@ fn selection<'a>(
     let removals = exact_patterns(entries, '-');
     let mut selected = Vec::new();
     let mut restored = Vec::new();
-    let mut current = None;
     for file in files {
         if positives.is_empty() && exclusions.is_empty() && removals.is_empty() {
             selected.push(file.as_str());
             continue;
         }
-        let views = PathViews::new(file, root, &mut current, operations)?;
+        let views = PathViews::new(file, root)?;
         let parent = (views.name == "SKILL.md")
-            .then(|| PathViews::new(&dirname(file), root, &mut current, operations))
+            .then(|| PathViews::new(&dirname(file), root))
             .transpose()?;
         let exact = |patterns| {
             views.exact(patterns) || parent.as_ref().is_some_and(|parent| parent.exact(patterns))

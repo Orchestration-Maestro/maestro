@@ -1,0 +1,19 @@
+{
+  "name": "contribution-fixtures",
+  "private": true,
+  "maestro": {
+    "contributions": [
+      "contributions/greeting.json",
+      "contributions/page.json",
+      "contributions/card.json",
+      "contributions/needs-missing.json",
+      "contributions/tool.json",
+      "contributions/message.json",
+      "contributions/tab.json",
+      "contributions/bad-tab.json",
+      "contributions/late.json",
+      "contributions/frame.json",
+      "contributions/broken.json"
+    ]
+  }
+}

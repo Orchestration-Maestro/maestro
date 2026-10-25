@@ -5,7 +5,7 @@ use super::{
     strip_bom,
 };
 use crate::{
-    path_utils::resolve_to_cwd,
+    path_utils::resolve_existing_path,
     read::{NativeReadOperations, ReadOperations},
 };
 use maestro_models::{BoxFuture, DiagnosticCode, DiagnosticErrorInfo};
@@ -30,7 +30,7 @@ pub fn compute_edits_diff(
     edits: Vec<Edit>,
     cwd: &str,
 ) -> io::Result<BoxFuture<Result<EditDiffResult, EditDiffError>>> {
-    let absolute = resolve_to_cwd(path, cwd)?;
+    let absolute = resolve_existing_path(path, cwd)?;
     let path = path.to_owned();
     Ok(Box::pin(async move {
         resolved_preview(&path, absolute, &edits, &NativeReadOperations).await

@@ -266,25 +266,30 @@ fn assert_safe(error: &google_cloud_auth::errors::CredentialsError) {
 
 /// Copy a valid configuration under `name` at the platform default layout; returns the root and gcloud directory.
 fn default_layout(files: &super::Files, location: &str, name: &str) -> (String, String) {
-    let dir = files.0.join(name).join(".config").join("gcloud");
+    let dir = files.0.path().join(name).join(".config").join("gcloud");
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::copy(location, dir.join("certificate_config.json")).unwrap();
     let text = |path: &std::path::Path| path.to_str().unwrap().to_owned();
-    (text(&files.0.join(name)), text(&dir))
+    (text(&files.0.path().join(name)), text(&dir))
 }
 
 #[test]
 fn certificate_configuration_uses_explicit_environment_then_default() {
-    use crate::tests::child_process;
     const TEST: &str = "certificate_configuration_uses_explicit_environment_then_default";
-    if let Some(case) = child_process::child_case() {
+    let case = maestro_test_process::selection();
+    if case.is_child() {
         let source: serde_json::Value =
             serde_json::from_str(&std::env::var("SOURCE").unwrap()).unwrap();
         let outcome = CertificateSubjectTokenSupplier::new(&source)
             .and_then(|supplier| supplier.material().map(|_| ()));
-        assert_eq!(outcome.is_ok(), case == "ok");
+        assert_eq!(outcome.is_ok(), case.runs_case("ok"));
         return;
     }
+    check_configuration_precedence(TEST);
+}
+
+/// Run every explicit and default certificate-source precedence case.
+fn check_configuration_precedence(test: &str) {
     let files = super::Files::new();
     let location = configuration(&files)["certificate_config_location"]
         .as_str()
@@ -333,7 +338,17 @@ fn certificate_configuration_uses_explicit_environment_then_default() {
         ("err", &default, vec![("HOME", "/nonexistent")]),
     ] {
         variables.push(("SOURCE", source.as_str()));
-        child_process::rerun(TEST, case, &variables).unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(test)
+                .unwrap()
+                .nocapture()
+                .env_clear()
+                .envs(variables.iter().copied())
+                .case(case)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
     }
 }
 
@@ -366,7 +381,7 @@ fn certificate_configuration_rejects_missing_or_conflicting_sources() {
         assert_safe(&supplier.material().err().unwrap());
     }
     let missing = CertificateSubjectTokenSupplier::new(
-        &serde_json::json!({"certificate_config_location":files.0.join("absent.json").to_str().unwrap()}),
+        &serde_json::json!({"certificate_config_location":files.0.path().join("absent.json").to_str().unwrap()}),
     )
     .unwrap();
     assert!(missing.material().is_err());

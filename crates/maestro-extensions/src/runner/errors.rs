@@ -4,38 +4,17 @@ use crate::{
     ExtensionExecution,
     types::{ExtensionError, ExtensionErrorListener},
 };
-use std::rc::Rc;
+use maestro_listeners::Listeners;
 impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Adds a failure listener; the returned operation removes it.
     pub fn on_error(&self, listener: ExtensionErrorListener) -> impl Fn() + use<E> {
-        let identity = Rc::downgrade(&listener);
-        let listeners = Rc::downgrade(&self.error_listeners);
-        self.error_listeners.borrow_mut().add(listener);
-        move || {
-            if let Some(listeners) = listeners.upgrade() {
-                let removed = listeners.borrow_mut().remove(identity.as_ptr());
-                drop(removed);
-            }
-        }
+        Listeners::subscribe(&self.error_listeners, listener)
     }
     /// Reports `error` to each listener in registration order, including ones added meanwhile.
     /// # Errors
     /// Returns the first listener failure.
     pub fn emit_error(&self, error: &ExtensionError) -> Result<(), crate::EventError> {
-        let mut cursor = 0;
-        loop {
-            let next = self
-                .error_listeners
-                .borrow()
-                .next_from(cursor)
-                .map(|(next, listener)| (next, Rc::clone(listener)));
-            let Some((next, listener)) = next else {
-                break;
-            };
-            cursor = next;
-            listener(error)?;
-        }
-        Ok(())
+        Listeners::try_for_each_live(&self.error_listeners, |listener| listener(error))
     }
 }
 
@@ -44,14 +23,14 @@ pub(super) fn queued_error(extension_path: String, error: &crate::EventError) ->
     event_error(extension_path, "register_provider", error)
 }
 
-/// Projects callback diagnostics while preserving authored stack fields.
-pub(super) fn event_error(
-    extension_path: String,
-    event: &str,
-    error: &crate::EventError,
-) -> ExtensionError {
-    // This projection is the single list of error types with retained diagnostic stacks.
-    let diagnostic = error
+/// The supplied diagnostic a callback or operation failure retains, absent for a failure
+/// known only by its text. This is the single list of error types with retained
+/// diagnostic fields.
+#[must_use]
+pub fn retained_diagnostic<'a>(
+    error: &'a (dyn std::error::Error + 'static),
+) -> Option<&'a maestro_models::DiagnosticErrorInfo> {
+    error
         .downcast_ref::<maestro_catalog::CatalogError>()
         .map(maestro_catalog::CatalogError::diagnostic)
         .or_else(|| error.downcast_ref::<maestro_models::DiagnosticErrorInfo>())
@@ -59,7 +38,16 @@ pub(super) fn event_error(
             error
                 .downcast_ref::<maestro_models::OAuthError>()
                 .map(|error| error.diagnostic.as_ref())
-        });
+        })
+}
+
+/// Projects callback diagnostics while preserving authored stack fields.
+pub(super) fn event_error(
+    extension_path: String,
+    event: &str,
+    error: &crate::EventError,
+) -> ExtensionError {
+    let diagnostic = retained_diagnostic(error.as_ref());
     ExtensionError {
         extension_path,
         event: event.to_owned(),

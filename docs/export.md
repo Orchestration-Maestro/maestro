@@ -7,13 +7,16 @@ The document template is in
 
 ## Entry points
 
-`export_session_to_html` accepts a borrowed
-[`ReadonlySessionManager`](../crates/maestro-session/src/session_manager/types.rs),
-optional `ExportState`, optional `ExportOptions` and an `ExportOperations` adapter.
-It uses retained entries, including inactive branches, and the selected leaf.
+`export_session_to_html` accepts a
+[`ReadonlySessionManager`](../crates/maestro-session/src/session_manager/types.rs)
+in a `RefCell`, optional `ExportState`, optional `ExportOptions` and an
+`ExportOperations` adapter. It uses retained entries, including inactive branches,
+and the selected leaf. It borrows the session only to read it, so a renderer may
+change the session; the document keeps the entries read before rendering.
 `ExportState` borrows a prompt and tool descriptors; omitted fields stay omitted,
 and empty strings/arrays stay present. Tool metadata contains name, description
-and parameters.
+and parameters. Its input presence check and document write need a native file
+system, so a browser build cannot write a document.
 
 Native `export_from_file` opens through
 [`SessionManager`](sessions/session_manager.md), omitting state and custom
@@ -30,11 +33,13 @@ only after writing succeeds.
 
 ## Bundle and theme effects
 
-`ExportOperations` supplies publication checks, asset reads, theme observations
-and output writes. Native `NativeExportOperations` reads, in order:
+`ExportOperations` supplies asset reads and theme observations.
+Native `NativeExportOperations` reads, in order:
 `template.html`, `template.css`, `template.js`, `vendor/marked.min.js` and
 `vendor/highlight.min.js`, from its supplied directory. Native decoding replaces
-invalid UTF-8. Native writes overwrite the output, without creating parents.
+invalid UTF-8. The export checks the input's presence and writes the completed
+document directly through the native file system, overwriting an existing output
+without creating parents.
 
 The serializer resolves colors and explicit backgrounds for CSS properties,
 then observes both again for background slots. Explicit page, card and info
@@ -78,7 +83,9 @@ not brand roles.
 
 `create_tool_html_renderer` implements the existing `ToolHtmlRenderer` contract
 through [tools-owned renderer bindings](tools.md#renderer-projections). Supply live lookup,
-theme, cwd and host environment. Each call ID owns a `ToolRendererState`;
+the live theme handle, cwd and host environment. A renderer resolves that handle when it
+reads a color, so one that never reads it still renders without a published theme, while
+one that reads it keeps the standard rendering. Each call ID owns a `ToolRendererState`;
 custom state uses `Default`, and JSON state starts as an empty object. Width defaults
 to 100 only when omitted. The adapter retains arguments, shared mutable state and
 independent call/result component slots per call ID. Missing arguments stay missing.

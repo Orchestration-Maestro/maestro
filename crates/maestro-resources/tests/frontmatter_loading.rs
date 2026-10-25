@@ -2,8 +2,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_resources::{
-    DiagnosticType, LoadPromptTemplatesOptions, LoadSkillsFromDirOptions, NativeResourceOperations,
-    PromptTemplate, SourceOrigin, SourceScope, load_prompt_templates, load_skills_from_dir,
+    DiagnosticType, LoadPromptTemplatesOptions, LoadSkillsFromDirOptions, PromptTemplate,
+    SourceOrigin, SourceScope, load_prompt_templates, load_skills_from_dir,
 };
 use support::Directory;
 
@@ -16,14 +16,11 @@ fn skill_loader_decodes_paired_description() {
         "---\ndescription: \"\\uD83C\\uDF89\"\n---\nBody",
     );
     let base = support::text(file.parent().unwrap());
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&dir.0),
-            dir: base,
-            source: "user",
-        },
-        &NativeResourceOperations,
-    );
+    let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(dir.0.path()),
+        dir: base,
+        source: "user",
+    });
     assert_eq!(result.skills.len(), 1);
     assert!(result.diagnostics.is_empty());
     let skill = &result.skills[0];
@@ -42,17 +39,14 @@ fn skill_loader_decodes_paired_description() {
 /// Load just the explicitly supplied native prompt file.
 #[cfg(test)]
 fn prompts(dir: &Directory, file: &std::path::Path) -> Vec<PromptTemplate> {
-    load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0),
-            config_dir_name: ".maestro",
-            prompt_paths: &[support::text(file).into()],
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(dir.0.path()),
+        config_dir_name: ".maestro",
+        prompt_paths: &[support::text(file).into()],
+        include_defaults: false,
+    })
     .unwrap()
 }
 
@@ -102,14 +96,11 @@ fn skill_loader_reports_invalid_surrogate_fields() {
         ),
     ] {
         let file = dir.file("invalid-skill/SKILL.md", input);
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: support::text(&dir.0),
-                dir: support::text(file.parent().unwrap()),
-                source: "user",
-            },
-            &NativeResourceOperations,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: support::text(dir.0.path()),
+            dir: support::text(file.parent().unwrap()),
+            source: "user",
+        });
         assert!(result.skills.is_empty(), "{input}");
         assert_eq!(result.diagnostics.len(), 1, "{input}");
         let warning = &result.diagnostics[0];
@@ -142,14 +133,11 @@ fn loaders_match_escaped_keys_without_sanitizing() {
     let dir = Directory::new();
     let input = "---\n\"descr\\u0069ption\": \"\\uD83C\\uDF89\"\n\"description\u{1f389}\": decoy\n\"\\uD83C\\uDF89\": ignored\n---\nBody";
     let skill_file = dir.file("escaped-key/SKILL.md", input);
-    let skills = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(&dir.0),
-            dir: support::text(skill_file.parent().unwrap()),
-            source: "user",
-        },
-        &NativeResourceOperations,
-    );
+    let skills = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(dir.0.path()),
+        dir: support::text(skill_file.parent().unwrap()),
+        source: "user",
+    });
     assert!(skills.diagnostics.is_empty());
     assert_eq!(skills.skills.len(), 1);
     assert_eq!(skills.skills[0].description, "🎉");

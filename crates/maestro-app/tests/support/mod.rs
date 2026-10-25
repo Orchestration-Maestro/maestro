@@ -1,13 +1,12 @@
 //! Controlled footer effects, fixture loading and child-process probes.
+#![cfg(not(target_arch = "wasm32"))]
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::io;
 use std::rc::Rc;
 
-use maestro_app::presentation_data::footer_data_provider::{
-    FooterDataProvider, FooterFileKind, FooterOperations,
-};
+use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
@@ -27,17 +26,14 @@ pub enum Git {
     SpawnError,
 }
 
-/// Footer effects over an in-memory file system that records what is asked.
-pub struct FakeOps {
-    pub files: RefCell<BTreeMap<String, Entry>>,
-    pub fail_stat: RefCell<Vec<String>>,
-    pub fail_read: RefCell<Vec<String>>,
+mod repository;
+pub use repository::Repository;
+
+/// Controlled process effects beside real isolated repository metadata.
+pub struct MetadataEffects {
+    pub repository: Repository,
     pub git: RefCell<Git>,
-    pub current: RefCell<Option<String>>,
-    pub reads: RefCell<Vec<String>>,
     pub git_dirs: RefCell<Vec<String>>,
-    pub current_dir_calls: Cell<usize>,
-    pub drive_reads: RefCell<Vec<char>>,
 }
 
 /// A fixture path spelled for the target: on Windows, slash-rooted paths gain
@@ -55,51 +51,24 @@ pub fn target(path: &str) -> String {
     }
 }
 
-/// The fixture spelling of a path the provider produced for the target.
-fn portable(path: &str) -> String {
-    if cfg!(windows) {
-        path.strip_prefix("C:").unwrap_or(path).replace('\\', "/")
-    } else {
-        path.to_owned()
-    }
-}
-
-impl FakeOps {
+impl MetadataEffects {
     pub fn new(files: BTreeMap<String, Entry>) -> Rc<Self> {
         Rc::new(Self {
-            files: RefCell::new(
-                files
-                    .into_iter()
-                    .map(|(path, entry)| (target(&path), entry))
-                    .collect(),
-            ),
-            fail_stat: RefCell::default(),
-            fail_read: RefCell::default(),
+            repository: Repository::new(files),
             git: RefCell::new(Git::Output(Some("main\n".to_owned()))),
-            current: RefCell::default(),
-            reads: RefCell::default(),
             git_dirs: RefCell::default(),
-            current_dir_calls: Cell::new(0),
-            drive_reads: RefCell::default(),
         })
     }
-
+    pub fn path(&self, path: &str) -> String {
+        self.repository.path(path)
+    }
     pub fn fail(&self, stat: &[String], read: &[String]) {
-        *self.fail_stat.borrow_mut() = stat.iter().map(|path| target(path)).collect();
-        *self.fail_read.borrow_mut() = read.iter().map(|path| target(path)).collect();
+        for path in stat.iter().chain(read) {
+            self.repository.unreadable(path);
+        }
     }
-
     pub fn set(&self, path: &str, entry: Entry) {
-        self.files.borrow_mut().insert(target(path), entry);
-    }
-
-    pub fn reads_of(&self, path: &str) -> usize {
-        let path = target(path);
-        self.reads
-            .borrow()
-            .iter()
-            .filter(|read| **read == path)
-            .count()
+        self.repository.set(path, entry);
     }
 }
 
@@ -107,7 +76,7 @@ fn failure() -> io::Error {
     io::Error::other("controlled failure")
 }
 
-impl FooterOperations for FakeOps {
+impl FooterOperations for MetadataEffects {
     fn symbolic_ref_async(
         &self,
         repo: &str,
@@ -128,59 +97,8 @@ impl FooterOperations for FakeOps {
     ) -> Box<dyn maestro_watch::fs_watch::FsWatcher> {
         unreachable!("controlled metadata adapter rejects watch registration")
     }
-    fn exists(&self, path: &str) -> bool {
-        self.files.borrow().contains_key(path)
-    }
-
-    fn stat_kind(&self, path: &str) -> io::Result<FooterFileKind> {
-        if self
-            .fail_stat
-            .borrow()
-            .iter()
-            .any(|failing| failing == path)
-        {
-            return Err(failure());
-        }
-        match self.files.borrow().get(path) {
-            Some(Entry::Text(_)) => Ok(FooterFileKind::File),
-            Some(Entry::Flag(true)) => Ok(FooterFileKind::Directory),
-            Some(Entry::Flag(false)) => Ok(FooterFileKind::Other),
-            None => Err(failure()),
-        }
-    }
-
-    fn read_text(&self, path: &str) -> io::Result<String> {
-        self.reads.borrow_mut().push(path.to_owned());
-        match self.files.borrow().get(path) {
-            Some(Entry::Text(text))
-                if !self
-                    .fail_read
-                    .borrow()
-                    .iter()
-                    .any(|failing| failing == path) =>
-            {
-                Ok(text.clone())
-            }
-            _ => Err(failure()),
-        }
-    }
-
-    fn current_dir(&self) -> io::Result<String> {
-        self.current_dir_calls.set(self.current_dir_calls.get() + 1);
-        self.current
-            .borrow()
-            .as_deref()
-            .map(target)
-            .ok_or_else(failure)
-    }
-
-    fn drive_directory(&self, drive: char) -> Option<String> {
-        self.drive_reads.borrow_mut().push(drive);
-        None
-    }
-
     fn symbolic_ref_sync(&self, repo_dir: &str) -> io::Result<Option<String>> {
-        self.git_dirs.borrow_mut().push(portable(repo_dir));
+        self.git_dirs.borrow_mut().push(repo_dir.to_owned());
         match &*self.git.borrow() {
             Git::Output(output) => Ok(output.clone()),
             Git::SpawnError => Err(failure()),
@@ -189,8 +107,8 @@ impl FooterOperations for FakeOps {
 }
 
 /// A provider over `ops` for `cwd`.
-pub fn provider(ops: &Rc<FakeOps>, cwd: &str) -> FooterDataProvider {
-    FooterDataProvider::new(target(cwd), Rc::clone(ops) as Rc<dyn FooterOperations>)
+pub fn provider(ops: &Rc<MetadataEffects>, cwd: &str) -> FooterDataProvider {
+    FooterDataProvider::new(ops.path(cwd), Rc::clone(ops) as Rc<dyn FooterOperations>)
 }
 
 /// The committed fixture cases of one test, in file order.
@@ -225,7 +143,7 @@ use crate::native;
 #[cfg(unix)]
 pub use native::{Scratch, git, install_executable, probe};
 
-impl maestro_watch::fs_watch::WatchOperations for FakeOps {
+impl maestro_watch::fs_watch::WatchOperations for MetadataEffects {
     fn watch(
         &self,
         _: &str,

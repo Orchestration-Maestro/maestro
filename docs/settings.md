@@ -98,6 +98,10 @@ to the file in the meantime survive and enter the manager only on `reload`. A
 successful save acknowledges only the revisions it wrote, so an edit made after the
 save was captured stays pending.
 
+`set_global_key(field, key, value)` edits one member of a global object through
+this same queue. It preserves other members read from storage when the save runs;
+it does not replace the object with the manager's earlier snapshot.
+
 Unsetting `shellPath`, `shellCommandPrefix`, `npmCommand` or `enabledModels`
 removes the key. A setter on a nested key such as `compaction.enabled` replaces a
 parent value of another type with an object that holds the edit. A number setter
@@ -121,13 +125,15 @@ overwritten.
 
 `reload` waits for queued saves, loads global then project, accepts each healthy
 scope independently, keeps the accepted data of a failed scope, and discards
-runtime overrides and pending edits. Nothing is printed by any of these operations.
+runtime overrides and pending edits. `reload_from_storage` does the same without
+waiting; a caller that shares the manager awaits `flush` first, so it holds no
+borrow across the wait. Nothing is printed by any of these operations.
 
 ## Storage
 
-`SettingsStorage::with_lock` exchanges raw text for one scope. It calls the update
-callback exactly once, synchronously, with the current text (`None` if the scope
-was never written), unless the adapter fails to acquire its exclusion or read
+`SettingsStorage::with_lock` and `with_write_lock` exchange raw text for one scope.
+Each operation calls the update callback exactly once, synchronously, with the
+current text (`None` if the scope was never written), unless the adapter fails to acquire its exclusion or read
 first; it then returns that failure without calling the callback. The
 callback returns `Ok(None)` to leave the stored text untouched, `Ok(Some(text))` to
 replace it, or an error, which is returned without writing.
@@ -138,7 +144,7 @@ again, in either scope; when callbacks overlap, the last write wins.
 `FileSettingsStorage` (not available for the browser build) joins the supplied
 agent directory, and the working directory with the configuration directory, with
 `settings.json` through the shared `maestro-path` functions, giving the runtime's
-join results, then works in place:
+join results, then works in place. Its legacy `with_lock` operation behaves as follows:
 
 1. For an existing file it locks the stable `settings.json.lock` sidecar before
    reading, keeps the lock through the callback and the write, and releases it on
@@ -146,6 +152,36 @@ join results, then works in place:
 2. For a missing file it runs the callback first without creating anything. Only a
    replacement creates the directory, takes the lock and writes, without reading again.
 3. Synchronous acquisition delegates to [the shared file-lock operation](locking.md).
+
+Manager saves use `with_write_lock`. The native adapter creates the parent as
+needed and takes the same stable sidecar lock before reading, including when the
+settings file is absent. It holds exclusion through the single callback and
+optional write. Independent manager edits therefore survive concurrent first
+writes as well as existing-file saves. Acquire/read failures skip the callback;
+callback and write failures release exclusion. `Ok(None)` and callback errors
+leave settings bytes untouched, but may leave a new parent and sidecar. Locking
+alone never creates a settings file.
+
+Raw callers that merge concurrent first writes must choose write intent too:
+
+```rust,no_run
+use maestro_settings::{FileSettingsStorage, SettingsScope, SettingsStorage};
+
+let storage = FileSettingsStorage::new("work", "agent", ".maestro");
+storage.with_write_lock(SettingsScope::Global, &mut |current| {
+    let mut document: serde_json::Value = serde_json::from_str(current.unwrap_or("{}"))?;
+    document["theme"] = "light".into();
+    Ok(Some(serde_json::to_string_pretty(&document)?))
+})?;
+# Ok::<(), maestro_settings::SettingsStorageError>(())
+```
+
+The legacy operation retains its noncreating reads and lazy first replacement;
+it does not serialize preparation of concurrent first replacements. Custom
+adapters inherit `with_write_lock` by delegation to their own `with_lock`, with
+no stronger exclusion promised. Native decorators forward write intent to retain
+the native guarantee. In-memory callbacks still run without a lock and retain
+last-writer behavior.
 
 Writes are not atomic: there is no rename, rollback or sync step.
 
@@ -279,3 +315,209 @@ An extension path never implies a package.
   "packages": ["npm:example", { "source": "git:example", "skills": ["search"], "extensions": [] }]
 }
 ```
+
+## Workspace preference records
+
+`maestro_daemon::settings::model` provides owned records for pane shells,
+restoration, updates, headless dimensions, scrollback, worktree directories,
+notifications and optional client behavior. These records decode camelCase JSON
+members without modifying the input. Paths keep their authored spelling.
+
+Pane shells default to an empty executable, `auto` startup mode and `follow`
+directory policy. Restoration resumes agents by default. Headless dimensions
+are 120 by 40; either zero dimension diagnoses the pair and selects both default
+dimensions. Scrollback defaults to 10,000,000 bytes. Worktrees default to
+`~/.maestro/worktrees`. Optional client behavior and history persistence are off.
+Update checks and detection catalog checks default on. The update channel is
+`preview` only for Windows preview builds; other builds default to `stable`.
+
+Toast delivery defaults to `off` with a one-second delay. Delays from 0 through
+3,600 seconds are accepted. Workspace placement defaults to bottom-right;
+clipboard notifications default on at bottom-center.
+
+The sibling `theme`, `sound` and `tab_bar` modules retain theme aliases and
+custom color strings, per-agent sound overrides and ordered tab entries. Sound
+paths resolve against a supplied agent directory. `NotificationShowSound::None`
+never selects a file. Tab commands default to a five-second refresh interval
+and a two-second execution deadline; these records do not execute commands.
+
+Interface records default to an expanded sidebar 26 columns wide, bounded by
+18 and 36 columns. Mouse capture, copy-on-select, focus redraw and pane borders,
+scrollbars and gaps are enabled. New tabs prompt for a name; new workspaces do
+not. The mouse wheel scrolls three lines unless given a nonzero override.
+Host cursor rendering is `auto`; agent ordering is `spaces` (`workspaces` is
+an accepted alias), with `priority` available. Status indicators default to
+`dots`, with `symbols` available.
+
+`settings::sidebar` retains ordered agent and workspace token rows. Each layout
+allows at most 16 rows with 16 tokens per row, including per-agent overrides.
+Override keys must be canonical detection agent names. Custom tokens start with
+`$` and use 1–32 ASCII letters, digits, underscores or hyphens. A styled token
+object contains `token` and optional `fg`, `bold` and `dim`; explicit false values
+are retained. Foreground colors accept `#RGB` or `#RRGGBB` and serialize as
+lowercase six-digit hex. Styles belong to each occurrence, not the token name.
+
+### Global workspace projection and reload
+
+`maestro_daemon::settings::io` reads the supplied manager's accepted global
+settings. Workspace preferences never use project values or runtime chat
+overrides. `load_config` consumes startup global errors and returns unrelated
+project errors separately. Read or parse failures emit a structured warning and
+use defaults. `reload_config` waits for queued writes before separating earlier
+errors, awaits the existing manager reload, then applies valid semantic areas.
+Only a new global document failure retains every area and reports `Failed`.
+Warnings or rejected areas report `Partial`; a clean reload reports `Applied`.
+Earlier errors and new project errors are returned for their own reporting path.
+
+The independent areas are onboarding, theme, UI (including sidebar, toast and
+sound), terminal, restore, server, update, advanced, worktrees, experimental and
+remote. A malformed area retains its previous values without blocking valid
+siblings; removed members return to defaults. Required fields reject wrong JSON
+kinds, including positional arrays in place of records. Optional null values
+remain absent. Unknown nested keys produce sorted, deduplicated paths after their
+area decodes successfully; unknown global settings stay silent. Typed projection
+does not rewrite raw values.
+
+The annotated defaults below are available as `settings::DEFAULTS_TEXT`. They
+are a guide, not a separate settings file or a startup write. Optional selections
+are commented out so the host/build default still applies. The guide uses JSONC;
+`settings.json` itself remains JSON.
+
+<!-- workspace-defaults:start -->
+```jsonc
+{
+  // Workspace preferences belong in the global settings.json, not project settings.
+  // Unset optional members stay absent. This guide is not written on startup.
+  "multiplexer": {
+    // Missing onboarding also shows setup; false suppresses it.
+    // "onboarding": true,
+    "theme": {
+      // "name": "catppuccin",
+      "autoSwitch": false
+      // "darkName": "catppuccin",
+      // "lightName": "catppuccin-latte",
+      // "custom": {"panelBg": "reset", "accent": "#f5c2e7"}
+    },
+    // Sidebar width is adjusted to content within these column bounds.
+    "sidebarWidth": 26,
+    "sidebarMinWidth": 18,
+    "sidebarMaxWidth": 36,
+    // Initial collapse applies on launch; compact keeps a narrow status rail.
+    "sidebarStartCollapsed": false,
+    "sidebarCollapsedMode": "compact",
+    "mobileWidthThreshold": 64,
+    // Disable capture to let the terminal handle clicks; pane apps keep their mouse input.
+    "mouseCapture": true,
+    "copyOnSelect": true,
+    // Cursor policy: auto, native or drawn.
+    "hostCursor": "auto",
+    // Empty disables pass-through. Combine ctrl, alt, cmd, meta or hyper with +; no shift.
+    "rightClickPassthroughModifier": "",
+    "redrawOnFocusGained": true,
+    // Missing/null means three lines per notch; explicit counts must be nonzero.
+    // "mouseScrollLines": 3,
+    "confirmClose": true,
+    "promptNewTabName": true,
+    "promptNewWorkspaceName": false,
+    "paneBorders": true,
+    "paneOuterBorders": true,
+    "paneScrollbars": true,
+    "paneGaps": true,
+    "showAgentLabelsOnPaneBorders": false,
+    "hideTabBarWhenSingleTab": false,
+    // Position: top or bottom. Entry types: zoom, hostname, datetime, text, command.
+    "tabBarPosition": "top",
+    "tabBarRight": [],
+    "tabBarRightSeparator": " ",
+    // Empty leaves the outer terminal title alone. Escape braces with {{ and }}.
+    // Tokens: hostname, workspace, tab, pane, terminal_title.
+    "windowTitle": "{hostname}: {workspace}",
+    // Ordering: spaces (also accepts workspaces) or priority; indicators: dots or symbols.
+    "agentPanelSort": "spaces",
+    "statusIndicators": "dots",
+    "sidebar": {
+      "agents": {
+        "rowGap": 0,
+        "rows": [["state_icon", "workspace", "tab"], ["agent"]],
+        // Canonical agent IDs can replace rows for that agent only.
+        "rowsByAgent": {}
+      },
+      "spaces": {
+        "rowGap": 0,
+        "rows": [["state_icon", "workspace"], ["branch", "git_status"]]
+      }
+      // Rows and tokens per row are limited to 16. Custom metadata tokens use $name.
+      // A styled token is an object: {"token":"workspace","fg":"#abc","bold":true}.
+      // Foregrounds accept only #RGB or #RRGGBB; omitted style bits inherit context.
+    },
+    "accent": "cyan",
+    "toast": {
+      // Delivery: off, workspace, terminal or system. Delay range: 0 through 3600 seconds.
+      "delivery": "off",
+      "delaySeconds": 1,
+      "workspace": {"position": "bottom-right"},
+      "clipboard": {"enabled": true, "position": "bottom-center"}
+    },
+    "sound": {
+      "enabled": true,
+      // Optional mp3 paths are relative to the supplied agent directory.
+      // Kind-specific paths override the shared path.
+      // "path": "sounds/notification.mp3",
+      // "donePath": "sounds/done.mp3",
+      // "requestPath": "sounds/request.mp3",
+      // Canonical agent settings: default, on or off. Global false always wins.
+      "agents": {}
+    },
+    "remote": {
+      // Use private connection reuse and keepalive fallbacks after the user's SSH config.
+      // False leaves the user's SSH configuration unchanged.
+      "manageSshConfig": true
+    },
+    "allowNested": false,
+    // Requires a compatible outer terminal.
+    "kittyGraphics": false,
+    // Input-method anchoring is opt-in; an empty agent list applies to any focused pane.
+    "revealHiddenCursorForCjkIme": false,
+    "cjkImeAgents": [],
+    // Shapes: block, steady_block, underline, steady_underline, bar, steady_bar.
+    "cjkImeCursorShape": "steady_block",
+    // Best-effort input-source switching while prefix mode is active on supported hosts.
+    "switchAsciiInputSourceInPrefix": false
+  },
+  "daemon": {
+    // Empty selects the supplied shell, then the platform fallback.
+    "paneShell": "",
+    // Modes: auto, login or non_login. Auto uses login shells on macOS.
+    "paneShellMode": "auto",
+    // Directory policy: follow, home, current or an authored path such as ~/Projects.
+    "newPaneCwd": "follow",
+    "resumeAgentsOnRestore": true,
+    // Unattached terminal size; either zero falls back to the complete default pair.
+    "headlessCols": 120,
+    "headlessRows": 40,
+    "worktreesDirectory": "~/.maestro/worktrees",
+    "scrollbackLimitBytes": 10000000,
+    "paneHistory": false,
+    "detectionCatalogCheck": true
+  },
+  "update": {
+    // Channel defaults to stable, except Windows preview builds use preview.
+    // "channel": "stable",
+    "versionCheck": true
+  }
+}
+```
+<!-- workspace-defaults:end -->
+
+## Nested preference edits
+
+`SettingsManager::set_global_key_path` addresses a literal top-level field and
+nested keys. Pass `Some(value)` to set the leaf, including JSON null, or `None`
+to remove it. An empty key slice addresses the field itself. New values publish
+immediately; `flush` waits for queued writes and `drain_errors` reports failures.
+Each write merges the edited leaf into fresh storage under the existing lock,
+so independent writers can change sibling preferences without losing updates.
+Whole-field and object-key setters still replace the value they address.
+
+Use `set_global_key_paths` when several leaves form one change. The batch publishes
+once and reaches storage in one write, so readers cannot observe half a change.

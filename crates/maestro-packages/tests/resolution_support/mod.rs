@@ -1,131 +1,19 @@
 //! Strict recorded recipes and complete public-result comparisons.
 #![cfg(test)]
+pub use super::resource_output::output;
 use super::support;
 use maestro_packages::{DefaultPackageManager, PackageManagerOptions};
-use maestro_resources::{
-    NativeResourceOperations,
-    skills::{ResourceEntry, ResourceFileType, ResourceOperations},
-};
 use serde_json::json;
-use std::{
-    collections::BTreeMap,
-    io,
-    path::{Path, PathBuf},
-    rc::Rc,
-};
-/// Native filesystem with selected read/stat failures.
-#[derive(Default)]
-pub struct Filesystem {
-    /// Path-taking resource operations reject lexically outside-root operands when supplied.
-    pub owned_root: Option<PathBuf>,
-    /// Reject ambient resource-directory reads.
-    pub fail_current: bool,
-    /// Native error code returned by an ambient directory read.
-    pub current_error_code: Option<i32>,
-    /// Number of resource-directory reads.
-    pub current_reads: Rc<std::cell::Cell<usize>>,
-    /// Replacement extension entry sequence.
-    pub order: Vec<String>,
-    /// Completed synchronous effect before a directory observation.
-    pub on_read: Option<ReadEffect>,
-    /// Supplied canonicalization witness.
-    pub canonical: Option<Canonical>,
-    /// Failure suffixes keyed by operation.
-    pub fail: BTreeMap<String, Vec<String>>,
-}
-/// Supplied synchronous directory-observation effect.
-pub type ReadEffect = Rc<dyn Fn(&Path) -> io::Result<()>>;
-/// Supplied canonicalization operation.
-pub type Canonical = Rc<dyn Fn(&Path) -> io::Result<PathBuf>>;
-impl Filesystem {
-    /// Whether the recorded operation fails here.
-    fn check(&self, operation: &str, path: &Path) -> io::Result<()> {
-        if let Some(root) = &self.owned_root {
-            let absolute =
-                maestro_path::normalize(&std::env::current_dir()?.join(path).to_string_lossy());
-            if !Path::new(&absolute).starts_with(root) {
-                return Err(io::ErrorKind::NotFound.into());
-            }
-        }
-        if self
-            .fail
-            .get(operation)
-            .is_some_and(|ends| ends.iter().any(|s| path.to_string_lossy().ends_with(s)))
-        {
-            return Err(io::ErrorKind::PermissionDenied.into());
-        }
-        Ok(())
-    }
-}
-impl ResourceOperations for Filesystem {
-    fn exists(&self, path: &Path) -> bool {
-        self.check("existsSync", path).is_ok() && NativeResourceOperations.exists(path)
-    }
-    fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
-        self.check("readdirSync", path)?;
-        if let Some(effect) = &self.on_read {
-            effect(path)?;
-        }
-        if path.ends_with("extensions") && !self.order.is_empty() {
-            return Ok(self
-                .order
-                .iter()
-                .map(|name| ResourceEntry {
-                    name: name.into(),
-                    file_type: ResourceFileType::File,
-                })
-                .collect());
-        }
-        NativeResourceOperations.read_dir(path)
-    }
-    fn read_file(&self, path: &Path) -> io::Result<String> {
-        self.check("readFileSync", path)?;
-        NativeResourceOperations.read_file(path)
-    }
-    fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        self.check("statSync", path)?;
-        NativeResourceOperations.metadata(path)
-    }
-    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        self.check("lstatSync", path)?;
-        NativeResourceOperations.symlink_metadata(path)
-    }
-    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        self.check("realpathSync", path)?;
-        if let Some(canonical) = &self.canonical {
-            return canonical(path);
-        }
-        NativeResourceOperations.canonicalize(path)
-    }
-    fn current_directory(&self) -> io::Result<String> {
-        self.current_reads.set(self.current_reads.get() + 1);
-        if let Some(code) = self.current_error_code {
-            return Err(io::Error::from_raw_os_error(code));
-        }
-        if self.fail_current {
-            return Err(io::ErrorKind::PermissionDenied.into());
-        }
-        NativeResourceOperations.current_directory()
-    }
-    fn drive_directories(&self) -> Vec<(char, String)> {
-        NativeResourceOperations.drive_directories()
-    }
-}
-pub use super::resource_output::output;
+use std::{io, rc::Rc};
 /// Constructs a native-file manager with controlled package effects.
 pub fn manager(
     base: &str,
-    resources: Filesystem,
 ) -> (
     DefaultPackageManager<support::Controlled>,
     Rc<support::Effects>,
 ) {
     let (_, settings, _) = support::manager(&json!({}));
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        resources: Some(Rc::new(resources)),
-        ..Default::default()
-    });
+    let effects = Rc::new(support::Effects::default());
     (
         DefaultPackageManager::new(
             PackageManagerOptions {
@@ -139,10 +27,83 @@ pub fn manager(
     )
 }
 
-/// Drives boundary-test futures through the native Rust runtime.
+/// Run the calling test alone with a working directory nobody can read, below a fresh tree.
+/// Returns the tree, the guard that restores it and the working directory in that process;
+/// `None` in the caller once that run passed, and in a privileged run, which reads it anyway.
+#[cfg(unix)]
+pub fn unreadable_cwd(
+    test: &str,
+) -> Option<(
+    maestro_test_directory::Scratch,
+    maestro_test_directory::Restore,
+    std::path::PathBuf,
+)> {
+    if maestro_test_process::run_alone(test).unwrap() {
+        return None;
+    }
+    let tree = maestro_test_directory::Scratch::new().unwrap();
+    let (process, restore) = tree.enter_unreadable("process").unwrap()?;
+    Some((tree, restore, process))
+}
+
+/// The variable naming the tree a child builds its case in.
+const TREE: &str = "MAESTRO_TEST_TREE";
+
+/// Runs `case` of the calling test in a child process over a fresh tree this process owns.
+/// The child starts online, without an inherited `MAESTRO_OFFLINE`, and its temporary
+/// directory is `temp` in the tree. `environment` gives the child's other variables for that
+/// tree: a value sets one, `None` removes it. Returns the tree in the child selected for
+/// `case`; `None` in the caller once the child passed, and in a child selected for another
+/// case.
+pub fn case_in_child(
+    case: &str,
+    environment: impl FnOnce(&str) -> Vec<(&'static str, Option<String>)>,
+) -> Option<std::path::PathBuf> {
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        return selection
+            .runs_case(case)
+            .then(|| std::env::var_os(TREE).unwrap().into());
+    }
+    let tree = super::scratch::Scratch::new().unwrap();
+    let base = tree.path().to_str().unwrap();
+    let temp = tree.path().join("temp");
+    std::fs::create_dir(&temp).unwrap();
+    let mut child =
+        maestro_test_process::TestProcess::current(std::thread::current().name().unwrap())
+            .unwrap()
+            .case(case)
+            .env(TREE, base)
+            .env_remove("MAESTRO_OFFLINE")
+            .temp_dir(temp);
+    for (name, value) in environment(base) {
+        child = match value {
+            Some(value) => child.env(name, value),
+            None => child.env_remove(name),
+        };
+    }
+    let output = child.output().unwrap();
+    assert!(output.status.success(), "{case}: {output:?}");
+    None
+}
+
+/// Runs `case` of the calling test in a child process, as [`case_in_child`] does, with a
+/// working directory that was removed. Returns the tree and the owner of the removed
+/// directory in the child selected for `case`; `None` in the caller once the child passed.
+#[cfg(unix)]
+pub fn case_in_removed_cwd(
+    case: &str,
+    environment: impl FnOnce(&str) -> Vec<(&'static str, Option<String>)>,
+) -> Option<(std::path::PathBuf, super::scratch::Scratch)> {
+    let tree = case_in_child(case, environment)?;
+    let owner = super::scratch::Scratch::new_in(&tree).unwrap();
+    owner.enter_removed("removed").unwrap();
+    Some((tree, owner))
+}
+
+/// Drives boundary-test futures through the shared test runtime.
+///
+/// The fixed output type lets each caller's `async` block end in `Ok(())` and use `?`.
 pub fn run(operation: impl std::future::Future<Output = io::Result<()>>) -> io::Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(operation)
+    crate::runtime::run(operation)
 }

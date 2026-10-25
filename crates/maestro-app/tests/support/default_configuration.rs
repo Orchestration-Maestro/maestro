@@ -194,7 +194,7 @@ pub fn instantiate<T: serde::de::DeserializeOwned>(value: &Value, root: &str, pa
 /// Shared subprocess owner.
 pub(crate) use crate::child;
 /// Shared current-thread executor.
-use crate::support::browser_providers as runtime;
+use crate::support::run_io;
 use maestro_app::SettingsManager;
 use maestro_settings::{
     InMemorySettingsStorage, PackageSource, SettingsListEntry, SettingsScope, SettingsStorage,
@@ -474,10 +474,10 @@ fn settings_case(
         text(input.external_project.as_ref(), None),
     );
     if input.reload {
-        runtime::run(manager.reload());
+        run_io(manager.reload());
     }
     actions(&mut manager, input.actions);
-    runtime::run(manager.flush());
+    run_io(manager.flush());
     reads(&manager, &input.reads, &expected.observed);
     if case.test == Group::DefaultsAndOwnedReadsSurviveApplicationRootSelection {
         let mut snapshot = manager.get_global_settings();
@@ -520,8 +520,11 @@ fn settings_case(
 /// # Panics
 /// Panics when fixture admission, setup or a recorded observation fails.
 pub fn settings(name: &str, group: Group) {
-    if let Ok(index) = std::env::var("MAESTRO_DEFAULT_CASE") {
-        settings_child(group, index.parse().unwrap());
+    if maestro_test_process::selection().is_child() {
+        let index = (0..cases::<Value, Value>(group).len())
+            .find(|index| maestro_test_process::selection().runs_case(&index.to_string()))
+            .expect("selected settings row");
+        settings_child(group, index);
         println!("\nPROBE settings-ok");
         return;
     }
@@ -534,12 +537,13 @@ pub fn settings(name: &str, group: Group) {
         let home = scratch.join("home");
         std::fs::create_dir(&home).unwrap();
         let output = child::probe(
-            &crate::child_process::selector(name).unwrap(),
-            &scratch.0,
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case(index.to_string()),
+            scratch.0.path(),
             &[
                 ("HOME", &home),
-                ("MAESTRO_DEFAULT_ROOT", scratch.0.to_str().unwrap()),
-                ("MAESTRO_DEFAULT_CASE", &index.to_string()),
+                ("MAESTRO_DEFAULT_ROOT", scratch.0.path().to_str().unwrap()),
             ],
             REMOVED,
         );

@@ -1,6 +1,8 @@
 //! Owned image reading through replaceable clipboard effects.
 use super::{base_mime_type, is_wayland_session};
-use crate::utils::clipboard::{ClipboardOperations, ClipboardPlatform, NativeClipboardOperations};
+use crate::utils::clipboard::{
+    ClipboardOperations, ClipboardPlatform, NativeClipboardOperations, environment,
+};
 use std::{
     collections::BTreeMap,
     io,
@@ -68,7 +70,7 @@ pub async fn read_clipboard_image_with(
 ) -> io::Result<Option<ClipboardImage>> {
     let env = |name: &str| match options.and_then(|options| options.env.as_ref()) {
         Some(env) => env.get(name).cloned(),
-        None => operations.env(name),
+        None => environment(name),
     };
     if env("TERMUX_VERSION").is_some_and(|value| !value.is_empty()) {
         return Ok(None);
@@ -251,9 +253,9 @@ fn powershell_file(
     if win_path.is_empty() {
         return None;
     }
-    let quoted = win_path.replace('\'', "''");
+    let quoted = maestro_process::shell::quote_powershell_literal(win_path);
     let script = format!(
-        "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $path = '{quoted}'; $img = [System.Windows.Forms.Clipboard]::GetImage(); if ($img) {{ $img.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); Write-Output 'ok' }} else {{ Write-Output 'empty' }}"
+        "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $path = {quoted}; $img = [System.Windows.Forms.Clipboard]::GetImage(); if ($img) {{ $img.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); Write-Output 'ok' }} else {{ Write-Output 'empty' }}"
     );
     let output = run_command(
         operations,

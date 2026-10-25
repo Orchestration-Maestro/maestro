@@ -1,0 +1,192 @@
+[
+  {
+    "name": "retry_exhausts_attempts",
+    "afterFirst": {
+      "events": [
+        {
+          "type": "auto_retry_start",
+          "errorMessage": "overloaded_error",
+          "attempt": 1,
+          "maxAttempts": 2,
+          "delayMs": 2000
+        }
+      ],
+      "messages": [],
+      "entries": [],
+      "returned": true
+    },
+    "second": true,
+    "third": false,
+    "retryAttemptAfter": 0,
+    "isRetryingAfter": false,
+    "events": [
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "overloaded_error",
+        "attempt": 1,
+        "maxAttempts": 2,
+        "delayMs": 2000
+      },
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "overloaded_error",
+        "attempt": 2,
+        "maxAttempts": 2,
+        "delayMs": 4000
+      },
+      {
+        "type": "auto_retry_end",
+        "attempt": 2,
+        "success": false,
+        "finalError": "overloaded_error"
+      }
+    ],
+    "messages": [],
+    "entries": []
+  },
+  {
+    "name": "retry_disabled_returns_false",
+    "returned": false,
+    "events": [],
+    "messages": [],
+    "entries": []
+  },
+  {
+    "name": "abort_during_backoff_cancels_the_attempt",
+    "returned": false,
+    "retryAttemptAfter": 0,
+    "isRetryingAfter": false,
+    "events": [
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "overloaded_error",
+        "attempt": 1,
+        "maxAttempts": 3,
+        "delayMs": 2000
+      },
+      {
+        "type": "auto_retry_end",
+        "attempt": 1,
+        "success": false,
+        "finalError": "Retry cancelled"
+      }
+    ],
+    "messages": [],
+    "entries": []
+  },
+  {
+    "name": "retry_schedules_continuation",
+    "returned": true,
+    "events": [
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "connection lost",
+        "attempt": 1,
+        "maxAttempts": 3,
+        "delayMs": 2000
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "hello"
+      },
+      {
+        "role": "assistant",
+        "text": "retried answer",
+        "stopReason": "stop"
+      }
+    ]
+  },
+  {
+    "name": "fractional_limit_compares_as_a_number",
+    "outcomes": [
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "events": [
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "503",
+        "attempt": 1,
+        "maxAttempts": 2.5,
+        "delayMs": 1
+      },
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "503",
+        "attempt": 2,
+        "maxAttempts": 2.5,
+        "delayMs": 2
+      },
+      {
+        "type": "auto_retry_end",
+        "attempt": 2,
+        "success": false,
+        "finalError": "503"
+      },
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "503",
+        "attempt": 1,
+        "maxAttempts": 2.5,
+        "delayMs": 1
+      },
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "503",
+        "attempt": 2,
+        "maxAttempts": 2.5,
+        "delayMs": 2
+      }
+    ],
+    "messages": [],
+    "entries": []
+  },
+  {
+    "name": "zero_base_delay_retries_immediately",
+    "returned": true,
+    "events": [
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "502",
+        "attempt": 1,
+        "maxAttempts": 1,
+        "delayMs": 0
+      }
+    ],
+    "messages": [],
+    "entries": []
+  },
+  {
+    "name": "wait_for_retry_releases_on_abort",
+    "beforeRelease": false,
+    "after": true
+  },
+  {
+    "name": "negative_base_delay_fires_immediately",
+    "returned": true,
+    "events": [
+      {
+        "type": "auto_retry_start",
+        "errorMessage": "503",
+        "attempt": 1,
+        "maxAttempts": 2,
+        "delayMs": -5
+      }
+    ],
+    "messages": [],
+    "entries": []
+  },
+  {
+    "name": "toggles_write_settings",
+    "autoRetryEnabled": false,
+    "autoCompactionEnabled": false,
+    "retryEnabled": false,
+    "compactionEnabled": false,
+    "isCompacting": false
+  }
+]

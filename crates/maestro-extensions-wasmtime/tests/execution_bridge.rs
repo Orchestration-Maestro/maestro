@@ -28,7 +28,7 @@ async fn composed_contexts() {
         Rc::new(|_| panic!("this fixture registers no bus listeners")),
     );
     let owner = load_extension_from_factory(
-        artifact_factory(path.clone(), support::credential_operations()),
+        artifact_factory(path.clone()),
         "/factory-only".into(),
         bus.for_extension(),
         runtime.clone(),
@@ -153,17 +153,18 @@ async fn canonical_reads() {
             Ok(None)
         }),
     );
-    let (session, history) = session::runner_session("/canonical-reads");
+    let credential_calls = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let (session, history) = session::runner_session_with_config(
+        "/canonical-reads",
+        maestro_models::SharedHandle::new(super::canonical_api::Credentials(
+            credential_calls.clone(),
+        )),
+    );
     let root = seed_history(&mut history.borrow_mut());
     let model = super::model_support::model("literal model");
     *session.model_registry.get_all().write().unwrap() = vec![model.clone()];
-    let credential_calls = Rc::new(RefCell::new(Vec::new()));
-    let (owner, runner, events) = super::retained_components::loaded_in(
-        bus.for_extension(),
-        session,
-        Rc::new(super::canonical_api::Credentials(credential_calls.clone())),
-    )
-    .await;
+    let (owner, runner, events) =
+        super::retained_components::loaded_in(bus.for_extension(), session).await;
     let runner = Rc::new(runner);
     let effects = Rc::new(RefCell::new(Vec::new()));
     let compact = bind_reads(&runner, model.clone(), &effects);
@@ -179,7 +180,7 @@ async fn canonical_reads() {
     complete_compactions(&compact, &compactions);
     super::canonical_commands::observe(&runner).await;
     super::canonical_api::observe(&owner, &runner, &events, &history, &tails).await;
-    assert_eq!(*credential_calls.borrow(), ["CANONICAL_API_KEY"]);
+    assert_eq!(*credential_calls.lock().unwrap(), ["CANONICAL_API_KEY"]);
     assert_eq!(
         *effects.borrow(),
         ["abort", "shutdown", "abort", "shutdown"]

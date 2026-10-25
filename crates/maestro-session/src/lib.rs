@@ -11,6 +11,8 @@ pub use session_manager::{
     ThinkingLevelChangeEntry, build_session_context, get_latest_compaction_entry,
     migrate_session_entries, parse_session_entries,
 };
+#[cfg(not(target_arch = "wasm32"))]
+pub use session_manager::{SessionDir, sessions_dir};
 
 /// Missing stored working-directory diagnostics.
 pub mod session_cwd;

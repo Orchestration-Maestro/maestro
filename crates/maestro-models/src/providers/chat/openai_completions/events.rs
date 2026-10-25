@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, PoisonError};
 
+use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::chunk::{Chunk, Delta, RawUsage, StreamIndex, ToolCallDelta};
@@ -172,10 +173,7 @@ impl Reducer {
 
     /// Open the one text block.
     fn open_text(&mut self) -> usize {
-        let content = AssistantContent::Text(TextContent {
-            text: String::new(),
-            text_signature: None,
-        });
+        let content = AssistantContent::Text(TextContent::new(String::new()));
         let position = self.push_block(content, Block::Text);
         self.text = Some(position);
         self.announce(|partial| AssistantMessageEvent::TextStart {
@@ -211,7 +209,7 @@ impl Reducer {
         let content = AssistantContent::ToolCall(ToolCall {
             id: id.unwrap_or_default().to_owned(),
             name: name.unwrap_or_default().to_owned(),
-            arguments: JsonObject::new(),
+            arguments: JsonObject::new().into(),
             thought_signature: None,
         });
         let scratch = ToolScratch {
@@ -390,7 +388,7 @@ fn complete_tool(
     tool: &mut ToolCall,
     id: Option<&str>,
     name: Option<&str>,
-    arguments: Option<JsonObject>,
+    arguments: Option<Value>,
 ) {
     if let Some(id) = id.filter(|_| tool.id.is_empty()) {
         tool.id = id.to_owned();

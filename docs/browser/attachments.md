@@ -40,8 +40,10 @@ errors. One sheet omits the tab strip. Each multi-sheet body retains its own scr
 offsets; ordinary repaints retain the table and error nodes.
 The registry owns position and scaling, while the spreadsheet root keeps its
 bounded height during measurement. Selecting text, replacing content or closing
-releases that workbook view. Word rendering remains in
-[#797](https://github.com/Orchestration-Maestro/maestro/issues/797); no extracted-text
+releases that workbook view. Word attachment-overlay rendering remains pending in
+[#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761); the independent
+[native Word artifact body](artifacts.md#native-word-body) does not change overlay
+placement. No extracted-text
 fallback is substituted for it. Legacy spreadsheet reading remains in
 [#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046). A file-presentation failure replaces the body
 with centered, selectable native error text while leaving download and close
@@ -89,7 +91,8 @@ fonts and do not qualify installed brand faces. See
 [browser libraries](../libraries/browser-frontend.md) for features and licences.
 
 Invalid caller-supplied colors propagate as `AttachmentUiError::Presentation`
-through both tile and overlay drawing. Platform failures remain `Host` errors;
+from `dialogs::attachment_overlay` through both tile and overlay drawing.
+Platform failures use `AttachmentUiError::Host(AttachmentHostError)`;
 color admission uses the existing shared style owner, before content placement.
 
 ## Owned reading content
@@ -104,6 +107,14 @@ shared subscription owner; a failed native removal may retain the callable, but
 its expired weak capture cannot change released feature state. It is not a
 raw-markup or template interface. The host retains the complete returned owner.
 
+A feature whose nodes do not need the canvas can build them once and mount them
+both ways. The generic file artifact constructs its glyph, filename and guidance
+nodes in one builder: the retained factory wraps them in a `ReadingRoot` for the
+overlay, and `DomContent` places them directly on a page. The overlay keeps
+placement, measurement and clipping; the direct mount keeps only its own nodes and
+reaches no host surface. Features that stay retained until their own delivery keep
+using the factory alone.
+
 An optional `ReadingRoot::commit` callback reconciles a staged update into the
 previous root only after placement succeeds. This infallible callback preserves
 the previous element, slots and native state; roots without it replace content
@@ -112,7 +123,9 @@ candidate before reading the retained root.
 
 `ReadingPhase::Measure` stages a hidden candidate without replacing the published
 root. Placements supply actual canvas control sizes by identity.
-`reading_layout(id)` reads unclipped natural height and full slot rectangles in
+`intrinsic_width` requests a content-sized measurement bounded by the frame width.
+`reading_layout(id)` reads measured width, native-resolved decoration borders,
+unclipped natural height and full slot rectangles in
 frame-local canvas points after bounded layout and native viewport scroll clamping;
 `ReadingPhase::Publish` installs complete placement. Zero-sized final viewports
 are valid. Failed measurement/publication discards the candidate and retains the
@@ -154,3 +167,19 @@ ancestor scope detaches its currently placed descendants; retained widget aliase
 keep resources alive but do not keep an inactive row visible. Explicit retained
 artifact visibility remains independent. A failed re-entry leaves a detached root
 detached; measurement connects it only while hidden and restores its detachment.
+
+
+## Error ownership
+
+`browser::attachment_content::AttachmentHostError` describes native effects,
+presentation and reference-borrow admission. Shared glyph drawing uses
+`ControlError`. Attachment operations compose these errors with localization and
+local record-borrow failures. Localization and icon causes remain inspectable
+through `std::error::Error::source`. The overlay catches native Presentation only
+at its body boundary; downloads and outer drawing failures do not select a file
+error view. Rust callers must use the operation's error path and nested Host
+payload; these source-interface changes preserve existing messages and recovery.
+
+The independent native Word artifact also uses the error panel's node builder.
+The shared builder creates literal heading/detail nodes; each caller keeps its
+own failure, retry and placement policy.

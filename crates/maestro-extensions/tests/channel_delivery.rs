@@ -1,6 +1,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod support;
+use crate::support;
 use std::sync::Arc;
 use support::{mark, run};
 #[test]

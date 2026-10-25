@@ -124,7 +124,9 @@ current shared `Model`, ordered `ScopedModel` records, initial search and
 
 The picker starts scoped when scoped records exist, otherwise all. Scoped order,
 duplicates and missing models are retained; registry matches use refreshed
-handles. All models put current provider/ID matches first, followed by stable
+handles. Current-model comparisons recognize shared handles without reading their
+descriptor; independent descriptors use their live provider and ID.
+All models put current provider/ID matches first, followed by stable
 locale provider order. Search uses IDs, providers and their combinations, not
 model names, with [shared fuzzy ranking](../terminal/completion.md#shared-fuzzy-ranking).
 Filtering clamps the existing selection. Switching scope retains the query.
@@ -280,9 +282,9 @@ Native callers use
 [`components::config_selector::ConfigSelectorComponent`](../../crates/maestro-chat/src/components/config_selector/mod.rs).
 Pass `maestro_app::ResolvedPaths`, a shared mutable `SettingsManager`,
 `ConfigSelectorOptions` and `ConfigSelectorCallbacks`. Options supply project and
-agent directories, existing `ResourceOperations`, a prepared `Collator`, live
-theme and a live bold-style policy. `NativeResourceOperations` supplies real
-process-directory observations; these are separate from the selected project.
+agent directories, a prepared `Collator`, live theme and a live bold-style policy.
+Relative patterns resolve against the real process directories, which are separate
+from the selected project.
 The component does not acquire packages or reload resources.
 
 Render the component, but focus and dispatch input to `get_resource_list()`.
@@ -331,3 +333,24 @@ notifications. The required legacy input bridge discards that error without
 inventing a fallback path. List and composed `try_render` propagate theme or
 child failures; legacy render returns no rows on failure, never a partial frame.
 Displayed tabs use the toolkit's [tab expansion](../terminal/text.md#measuring).
+
+# Presented lifecycles
+
+The configuration and session selectors are also run from the command line.
+`maestro-cli` owns `select_config` and `select_session`, which take the prepared
+options, the frame writer and the factory that builds the chat component, so the
+frontend never imports these widgets. The presentation focuses the handle the
+component retains, starts the frame writer, and settles exactly once: a close, a
+cancellation or a failed presentation stops what it already started, which is
+the writer and, for the configuration presentation, the theme watch. The
+explicit-exit notification ends the process after those effects. A repeated
+notification after the first settles nothing.
+
+The records both fronts hand a component live in
+`maestro_app::presentation_data::input_selectors`: the presented handles, the
+configuration options and callbacks with their factory, and the session
+loaders, request, callbacks and factory. `maestro-chat` re-exports the records
+its widgets consume, and `maestro-cli` re-exports `ConfigSelectorOptions` while
+importing the rest from that application path, so one declaration states what
+each caller supplies. The chat widget keeps its own differently shaped
+`ConfigSelectorOptions`, and session discovery keeps its own progress callback.

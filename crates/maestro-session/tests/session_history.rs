@@ -5,27 +5,28 @@ use crate::support;
 #[cfg(unix)]
 use maestro_session::session_manager::ReadonlySessionManager;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn memory_session_starts_with_current_header() {
-    if std::env::var_os("MAESTRO_HISTORY_UTC_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         assert_ne!(chrono::Local::now().offset().local_minus_utc(), 0);
         support::session_history::group("memory_session_starts_with_current_header");
         return;
     }
-    let test = crate::child_process::selector("memory_session_starts_with_current_header").unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_HISTORY_UTC_CHILD", "1")
-        .env("TZ", "America/New_York")
-        .output()
-        .unwrap();
+    let output =
+        maestro_test_process::TestProcess::current("memory_session_starts_with_current_header")
+            .unwrap()
+            .nocapture()
+            .case("*")
+            .env("TZ", "America/New_York")
+            .output()
+            .unwrap();
     assert!(
         output.status.success(),
         "UTC emission child failed: {}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
 }
 
 #[test]
@@ -116,7 +117,7 @@ struct NativeCase {
 #[test]
 #[cfg(unix)]
 fn explicit_cwd_survives_a_missing_process_directory() {
-    if std::env::var_os("MAESTRO_HISTORY_CWD_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         let rows: Vec<serde_json::Value> =
             serde_json::from_str(include_str!("fixtures/session_history.json")).unwrap();
         let selected: Vec<NativeCase> = rows
@@ -133,10 +134,8 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         );
         assert_eq!(case.operation, "native_cwd");
         let original = std::env::current_dir().unwrap();
-        let dir = std::env::temp_dir().join(format!("maestro-history-{}", uuid::Uuid::new_v4()));
-        std::fs::create_dir(&dir).unwrap();
-        std::env::set_current_dir(&dir).unwrap();
-        std::fs::remove_dir(&dir).unwrap();
+        let removed = maestro_test_directory::Scratch::new().unwrap();
+        removed.enter_removed("removed").unwrap();
         let explicit = maestro_session::SessionManager::in_memory(Some("")).unwrap();
         let native = std::env::current_dir().unwrap_err();
         let error = maestro_session::SessionManager::in_memory(None)
@@ -151,18 +150,18 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         );
         return;
     }
-    let test = crate::child_process::selector("explicit_cwd_survives_a_missing_process_directory")
-        .unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_HISTORY_CWD_CHILD", "1")
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "explicit_cwd_survives_a_missing_process_directory",
+    )
+    .unwrap()
+    .nocapture()
+    .case("*")
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "cwd child failed: {}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
 }

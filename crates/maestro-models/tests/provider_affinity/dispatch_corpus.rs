@@ -1,13 +1,18 @@
 //! Full recorded eager-operation observations through the real dispatch owner.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::*;
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::{
     rc::Rc,
     sync::{Arc, Mutex},
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Closed input dimensions for an eager public operation.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -19,6 +24,7 @@ struct Input {
     /// Setup or lookup failure.
     failure: Option<String>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Independent callback observations and retained event stream.
 #[derive(Default)]
 struct Observed {
@@ -31,6 +37,7 @@ struct Observed {
     /// Event observation independent of completion's result.
     stream: Option<AssistantMessageEventStream>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled synchronous callback supplies one distinguishable message.
 struct Provider {
     /// Original input shape to discriminate absent from supplied-empty.
@@ -38,6 +45,7 @@ struct Provider {
     /// Observations are closed before completion is awaited.
     observed: Arc<Mutex<Observed>>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCall<E, O>>
     for Provider
 {
@@ -83,15 +91,18 @@ impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCal
         Ok(stream)
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare callback data addresses without trait-object vtable metadata.
 fn address<T: ?Sized>(value: &T) -> usize {
     std::ptr::from_ref(value).cast::<()>() as usize
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Concrete closure coercion is a family representation concern.
 trait OptionsFamily: ProviderExecution {
     /// Retain a source-shaped original callback and common settings.
     fn full() -> StreamOptions<Self>;
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// The same callback body has only its owning-pointer representation changed.
 macro_rules! original_options {
     ($mode:ty, $pointer:ident) => {
@@ -107,8 +118,11 @@ macro_rules! original_options {
         }
     };
 }
+#[cfg(not(target_arch = "wasm32"))]
 original_options!(Local, Rc);
+#[cfg(not(target_arch = "wasm32"))]
 original_options!(Threaded, Arc);
+#[cfg(not(target_arch = "wasm32"))]
 /// Retain the original callback into either carrier without reconstructing it.
 fn options<E: OptionsFamily>(
     presence: Option<&str>,
@@ -138,6 +152,7 @@ fn options<E: OptionsFamily>(
         }),
     )
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Keep immediate errors separate from result-future errors, without polling either early.
 macro_rules! invoke {
     ($input:ident, $model:ident, $context:ident, $observed:ident, $mode:ty,
@@ -160,11 +175,12 @@ macro_rules! invoke {
         }
     }};
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Every recorded field is observed independently after its corresponding operation.
 #[test]
 fn recorded_dispatch_corpus_keeps_all_fields() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(false, async {
+    crate::runtime::run(async {
         for row in super::corpus::load().dispatch.rows {
             if row.input.get("outcome").is_some() {
                 continue;
@@ -180,6 +196,7 @@ fn recorded_dispatch_corpus_keeps_all_fields() -> crate::TestResult {
         Ok(())
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Call the selected family without running the callback in a replacement registry.
 async fn run(
     input: &Input,
@@ -196,6 +213,7 @@ async fn run(
         _ => unreachable!("known family"),
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Generate only each public entry's concrete type/arity selection.
 macro_rules! runner {
     ($name:ident, $mode:ty, $raw:path, $simple:path, $complete:path, $complete_simple:path $(, $pointer:ident)?) => {
@@ -215,6 +233,7 @@ macro_rules! runner {
         invoke!($input, $model, $context, $observed, $mode, $raw, $simple, $complete, $complete_simple)
     };
 }
+#[cfg(not(target_arch = "wasm32"))]
 runner!(
     run_local,
     Local,
@@ -224,6 +243,7 @@ runner!(
     complete_simple_for::<Local>,
     Rc
 );
+#[cfg(not(target_arch = "wasm32"))]
 runner!(
     run_threaded,
     Threaded,
@@ -233,6 +253,7 @@ runner!(
     complete_simple_for::<Threaded>,
     Arc
 );
+#[cfg(not(target_arch = "wasm32"))]
 runner!(
     run_default,
     Threaded,
@@ -241,6 +262,7 @@ runner!(
     complete,
     complete_simple
 );
+#[cfg(not(target_arch = "wasm32"))]
 /// Inspect stream setup before its first observation future exists.
 async fn inspect_stream(
     result: Result<AssistantMessageEventStream, DiagnosticErrorInfo>,
@@ -258,6 +280,7 @@ async fn inspect_stream(
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Result observation does not consume the stream retained by the supplied callback.
 async fn inspect_completion(
     result: Result<SharedAssistantMessage, DiagnosticErrorInfo>,
@@ -277,6 +300,7 @@ async fn inspect_completion(
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Publish actual text, not a label inferred from callback presence.
 fn success(
     before: usize,
@@ -292,6 +316,7 @@ fn success(
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Missing-provider inputs clear the real registry; other inputs install one inert owner.
 fn register(input: &Input, observed: &Arc<Mutex<Observed>>) {
     clear_api_providers();

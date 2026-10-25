@@ -1,8 +1,7 @@
 //! Attachment tiles exercised through actual drawing and pointer input.
 #![cfg(test)]
 /// Controlled drawing and platform effects.
-pub mod attachment_support;
-mod support;
+use crate::attachment_support;
 use attachment_support::*;
 use maestro_web::{AttachmentTile, browser::attachment_content::ImageFit};
 use serde::Deserialize;
@@ -289,10 +288,10 @@ fn tile_badge_tessellation_shares_tile_contour_in_both_packs() {
         let host = Rc::new(Host::default());
         let mut tile = AttachmentTile::new(record, host.clone());
         let mut frame = Frame {
-            pack: maestro_theme::load_brand_pack(
-                &format!("{}/../../assets/brand/{pack}", env!("CARGO_MANIFEST_DIR")),
-                &maestro_theme::theme::NativeThemeOperations,
-            )
+            pack: crate::support::brand::pack(&format!(
+                "{}/../../assets/brand/{pack}",
+                env!("CARGO_MANIFEST_DIR")
+            ))
             .unwrap(),
             ..Frame::default()
         };
@@ -338,4 +337,52 @@ fn tile_badge_tessellation_shares_tile_contour_in_both_packs() {
         assert_eq!(actual.vertices, expected.vertices, "{pack}");
         assert_eq!(clip, badge, "badge region: {pack}");
     }
+}
+
+#[test]
+fn user_attachment_tiles_wrap_as_single_fixed_items() {
+    use maestro_web::{UserMessage, UserMessageInput};
+    let host = Rc::new(Host::default());
+    let records: Vec<_> = (0..14)
+        .map(|index| {
+            let record = attachment();
+            record.borrow_mut().file_name = format!("wrapped-{index}.png");
+            record.borrow_mut().preview = Some("AA==".into());
+            record
+        })
+        .collect();
+    let content = maestro_app::UserContent::Text(String::new());
+    let mut row = UserMessage::new(host.clone());
+    let mut frame = Frame::default();
+    let input = UserMessageInput::WithAttachments {
+        content: &content,
+        attachments: Some(&records),
+    };
+    let output =
+        crate::document_card_support::frame_owner(&mut frame, &host, vec![], |ui, view| {
+            row.render(ui, input, view)
+        });
+    output.response.unwrap();
+    assert!(output.overlays.is_empty());
+    let tiles: Vec<_> = host
+        .surfaces
+        .borrow()
+        .iter()
+        .filter(|s| matches!(s.content, Content::Image(..)))
+        .map(|s| s.rect)
+        .collect();
+    assert_eq!(tiles.len(), 14);
+    for rect in &tiles {
+        assert_eq!(rect.size(), egui::vec2(64., 64.));
+        assert!(frame.screen.contains_rect(*rect));
+    }
+    assert!(tiles[13].top() > tiles[0].bottom());
+    let output = crate::document_card_support::frame_owner(
+        &mut frame,
+        &host,
+        click(tiles[13].center()),
+        |ui, view| row.render(ui, input, view),
+    );
+    output.response.unwrap();
+    assert_eq!(output.overlays.len(), 1);
 }

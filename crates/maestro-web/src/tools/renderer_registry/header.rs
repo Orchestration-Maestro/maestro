@@ -1,13 +1,59 @@
 //! Shared status icons, rich captions and collapsible header controls.
 use super::ToolHeaderState;
+use crate::tools::types::ToolUiError;
 use crate::{
-    browser::attachment_content::{self, AttachmentUiError},
+    browser::attachment_content::{self},
     icons::{IconNode, IconSize},
-    tools::types::{ToolContent, ToolRenderState, ToolRenderView},
+    tools::types::{ToolContent, ToolContentOutput, ToolRenderState, ToolRenderView},
 };
 use maestro_app::ToolRendererState;
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
+
+/// Per-header nested action admission, shared only with its rich caption.
+#[derive(Default)]
+pub(crate) struct InlineActions {
+    /// Bounds consumed by the current nested action.
+    pub(crate) excluded: Cell<Option<egui::Rect>>,
+    /// The containing disclosure's single native activation route.
+    pub(crate) activation: RefCell<Option<Rc<dyn Fn()>>>,
+}
+impl InlineActions {
+    /// Weak native activation route, with no callback invoked under a borrow.
+    pub(crate) fn action(owner: &Rc<Self>) -> Rc<dyn Fn()> {
+        let weak = Rc::downgrade(owner);
+        Rc::new(move || {
+            let action = weak
+                .upgrade()
+                .and_then(|owner| owner.activation.borrow().clone());
+            if let Some(action) = action {
+                action();
+            }
+        })
+    }
+}
+/// Compose a rich card caption with the existing header action owner.
+pub(crate) fn render_inline_header(
+    state: ToolHeaderState,
+    tool_icon: IconNode,
+    text: ToolHeaderText,
+    expanded: Option<Rc<Cell<bool>>>,
+    actions: Rc<InlineActions>,
+) -> Box<dyn ToolContent> {
+    Box::new(Header {
+        state,
+        tool_icon,
+        text,
+        expanded,
+        actions: Some(actions),
+    })
+}
+
 pub(crate) mod browser;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
 use browser::{NativeText, TextKind};
 
 /// Literal text or independently executable rich caption content.
@@ -29,6 +75,7 @@ pub fn render_header(
         tool_icon,
         text,
         expanded: None,
+        actions: None,
     })
 }
 /// Build a toggle header sharing the caller's expansion handle.
@@ -44,6 +91,7 @@ pub fn render_collapsible_header(
         tool_icon,
         text,
         expanded: Some(expanded),
+        actions: None,
     })
 }
 /// Immutable recipe; animation and mounted content belong to each rendered row.
@@ -56,10 +104,16 @@ struct Header {
     text: ToolHeaderText,
     /// Optional caller-owned toggle state.
     expanded: Option<Rc<Cell<bool>>>,
+    /// Optional nested rich-caption action admission.
+    actions: Option<Rc<InlineActions>>,
 }
 /// State of one continuously mounted header.
 #[derive(Default)]
 struct Retained {
+    /// Plain template identity; collapsible headers share one template across statuses.
+    plain_state: Option<ToolHeaderState>,
+    /// Stable button identity for this retained header state.
+    button_id: Option<egui::Id>,
     /// Start of the current pending interval.
     pending_since: Option<f64>,
     /// Literal-caption native lifetime.
@@ -75,58 +129,93 @@ impl ToolContent for Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
-        let slot = state.state::<Retained>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let time = ui.input(|input| input.time);
-        let angle = if self.state == ToolHeaderState::Inprogress {
-            let start = *retained.pending_since.get_or_insert(time);
-            ui.ctx().request_repaint();
-            attachment_content::points((time - start).rem_euclid(1.) * std::f64::consts::TAU)
-        } else {
-            retained.pending_since = None;
-            0.
-        };
-        let result = self.draw(ui, view, &mut retained, angle);
-        let old = slot.replace(retained);
-        drop(old);
-        result
+    ) -> ToolContentOutput {
+        crate::tools::types::render_retained::<Retained>(state, |retained, overlays| {
+            let plain_state = self.expanded.is_none().then_some(self.state);
+            if plain_state.is_some()
+                && retained.plain_state.is_some()
+                && retained.plain_state != plain_state
+            {
+                *retained = Retained::default();
+            }
+            retained.plain_state = plain_state;
+            let time = ui.input(|input| input.time);
+            let angle = if self.state == ToolHeaderState::Inprogress {
+                let start = *retained.pending_since.get_or_insert(time);
+                ui.ctx().request_repaint();
+                attachment_content::points((time - start).rem_euclid(1.) * std::f64::consts::TAU)
+            } else {
+                retained.pending_since = None;
+                0.
+            };
+            self.draw(ui, view, retained, (angle, overlays))
+        })
     }
 }
 impl Header {
-    /// Compose icon order, caption and optional trailing control.
+    /// Resolve inherited caption foreground after the complete header has been measured.
     fn draw(
         &self,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
-        angle: f32,
-    ) -> Result<egui::Response, AttachmentUiError> {
+        paint: (f32, &mut Vec<crate::AttachmentOverlay>),
+    ) -> Result<egui::Response, ToolUiError> {
+        #[cfg(target_arch = "wasm32")]
+        let captions = RefCell::new(Vec::new());
+        #[cfg(target_arch = "wasm32")]
+        let view = ToolRenderView {
+            captions: Some(&captions),
+            ..view
+        };
+        let response = self.draw_row(ui, view, retained, paint)?;
+        #[cfg(target_arch = "wasm32")]
+        for node in captions.into_inner() {
+            NativeText::set_target_hovered(&node, self.expanded.is_some() && response.hovered())?;
+        }
+        Ok(response)
+    }
+    /// Compose icon order, caption and optional trailing control.
+    fn draw_row(
+        &self,
+        ui: &mut egui::Ui,
+        view: ToolRenderView<'_>,
+        retained: &mut Retained,
+        (angle, overlays): (f32, &mut Vec<crate::AttachmentOverlay>),
+    ) -> Result<egui::Response, ToolUiError> {
         let collapsible = self.expanded.is_some();
-        let row = self.row(ui, view, retained, angle)?;
+        if let Some(actions) = &self.actions {
+            actions.excluded.set(None);
+        }
+        let row = self.row(ui, view, retained, (angle, overlays))?;
         let response = if collapsible {
-            ui.interact(row.rect, row.id.with("toggle"), egui::Sense::click())
+            let id = *retained
+                .button_id
+                .get_or_insert_with(attachment_content::identity);
+            ui.interact(row.rect, id, egui::Sense::click())
         } else {
             row
         };
         if let Some(expanded) = &self.expanded {
             let visible = response.rect.intersect(ui.clip_rect());
-            let slots = if response.enabled() && visible.is_positive() {
-                vec![((), visible, response.layer_id)]
-            } else {
-                vec![]
-            };
-            let events = ui.input(|input| input.events.clone());
-            let pointer = !attachment_content::reading::controls::pointer_actions(
-                &events,
-                &mut retained.pressed,
-                &slots,
-                ui.ctx(),
-            )
-            .is_empty();
+            let pointer = self.pointer(ui, retained, &response);
+            if let Some(actions) = &self.actions {
+                let next = crate::components::expandable_section::toggle_action(
+                    &response, visible, expanded,
+                );
+                let old = actions.activation.replace(Some(next));
+                drop(old);
+            }
             if pointer || (response.clicked() && !response.clicked_by(egui::PointerButton::Primary))
             {
-                expanded.set(!expanded.get());
+                crate::components::expandable_section::activate_toggle(
+                    &response, visible, expanded,
+                );
+            }
+            if let Some(caption) = &mut retained.caption {
+                caption.set_action(Some(crate::components::expandable_section::toggle_action(
+                    &response, visible, expanded,
+                )));
             }
             response.widget_info(|| {
                 egui::WidgetInfo::labeled(
@@ -145,6 +234,32 @@ impl Header {
         }
         Ok(response)
     }
+    /// Reuse shared two-endpoint admission outside nested rich action bounds.
+    fn pointer(&self, ui: &egui::Ui, retained: &mut Retained, response: &egui::Response) -> bool {
+        let visible = response.rect.intersect(ui.clip_rect());
+        let slots = if response.enabled() && visible.is_positive() {
+            vec![((), visible, response.layer_id)]
+        } else {
+            vec![]
+        };
+        let mut pointer = false;
+        for event in ui.input(|input| input.events.clone()) {
+            let excluded = matches!(&event, egui::Event::PointerButton { pos, .. }
+                if self.actions.as_ref().and_then(|a| a.excluded.get()).is_some_and(|rect| rect.contains(*pos)));
+            if excluded {
+                retained.pressed = None;
+                continue;
+            }
+            pointer |= !attachment_content::reading::controls::pointer_actions(
+                &[event],
+                &mut retained.pressed,
+                &slots,
+                ui.ctx(),
+            )
+            .is_empty();
+        }
+        pointer
+    }
     /// Keep literal hover color and keyboard focus paint inside the caller's clip.
     fn decorate(
         &self,
@@ -152,20 +267,15 @@ impl Header {
         view: ToolRenderView<'_>,
         retained: &Retained,
         response: &egui::Response,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ToolUiError> {
         #[cfg(not(target_arch = "wasm32"))]
         let _ = retained;
         #[cfg(target_arch = "wasm32")]
         if let Some(caption) = &retained.caption {
             caption.set_hovered(self.expanded.is_some() && response.hovered())?;
         }
-        if self.expanded.is_some() && response.has_focus() {
-            ui.painter().rect_stroke(
-                response.rect,
-                0.,
-                egui::Stroke::new(1., attachment_content::color(view.presentation, "accent")?),
-                egui::StrokeKind::Inside,
-            );
+        if self.expanded.is_some() {
+            attachment_content::reading::controls::focus_border(ui, response, view.presentation)?;
         }
         Ok(())
     }
@@ -175,9 +285,10 @@ impl Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
-        angle: f32,
-    ) -> Result<egui::Response, AttachmentUiError> {
-        attachment_content::style(ui, view.presentation)?;
+        (angle, overlays): (f32, &mut Vec<crate::AttachmentOverlay>),
+    ) -> Result<egui::Response, ToolUiError> {
+        attachment_content::style(ui, view.presentation)
+            .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
         let collapsible = self.expanded.is_some();
         let pending = self.state == ToolHeaderState::Inprogress;
         let role = match self.state {
@@ -189,7 +300,7 @@ impl Header {
         let row = ui.allocate_ui_with_layout(
             egui::vec2(ui.available_width(), 16.),
             egui::Layout::left_to_right(egui::Align::Center),
-            |ui| -> Result<(), AttachmentUiError> {
+            |ui| -> Result<(), ToolUiError> {
                 let first = ui.ctx().graphics_mut(|g| g.entry(ui.layer_id()).next_idx());
                 ui.spacing_mut().item_spacing.x = 8.;
                 if pending && collapsible {
@@ -202,7 +313,8 @@ impl Header {
                     &self.tool_icon,
                     (
                         IconSize::Sm,
-                        attachment_content::color(view.presentation, role)?,
+                        attachment_content::color(view.presentation, role)
+                            .map_err(|error| ToolUiError::Presentation(error.to_string()))?,
                         0.,
                     ),
                 )?;
@@ -215,7 +327,7 @@ impl Header {
                     egui::Layout::left_to_right(egui::Align::Center),
                     |ui| {
                         ui.set_min_height(16.);
-                        self.caption(ui, view, retained)
+                        self.caption(ui, view, retained, overlays)
                     },
                 )
                 .inner?;
@@ -252,14 +364,21 @@ impl Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
-    ) -> Result<egui::Response, AttachmentUiError> {
+        overlays: &mut Vec<crate::AttachmentOverlay>,
+    ) -> Result<egui::Response, ToolUiError> {
         match &self.text {
             ToolHeaderText::Text(text) => {
                 retained.rich = None;
-                retained
+                let caption = retained
                     .caption
-                    .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)))
-                    .render(ui, (text, TextKind::Caption), view)
+                    .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)));
+                let kind = if self.expanded.is_some() {
+                    TextKind::Summary
+                } else {
+                    caption.set_action(None);
+                    TextKind::Caption
+                };
+                caption.render(ui, (text, kind), view)
             }
             ToolHeaderText::Content(content) => {
                 retained.caption = None;
@@ -267,6 +386,7 @@ impl Header {
                     .rich
                     .get_or_insert_default()
                     .draw(content.as_ref(), ui, view)
+                    .collect(overlays)
             }
         }
     }
@@ -277,30 +397,28 @@ fn catalog_icon(
     view: ToolRenderView<'_>,
     name: &str,
     angle: f32,
-) -> Result<(), AttachmentUiError> {
-    let catalog =
-        crate::icons::icons().map_err(|error| AttachmentUiError::Host(error.to_string()))?;
-    let node = catalog
-        .get(name)
-        .ok_or_else(|| AttachmentUiError::Host(format!("Missing glyph: {name}")))?;
+) -> Result<(), ToolUiError> {
+    let node = attachment_content::glyph_node(name).map_err(ToolUiError::Control)?;
     let rect = ui.allocate_space(egui::vec2(16., 16.)).1;
     attachment_content::paint_icon(
         ui,
         rect,
-        node,
+        &node,
         (
             IconSize::Sm,
             attachment_content::color(
                 view.presentation,
                 if name == "Loader" { "text" } else { "muted" },
-            )?,
+            )
+            .map_err(|error| ToolUiError::Presentation(error.to_string()))?,
             angle,
         ),
     )
+    .map_err(ToolUiError::Control)
 }
 
 /// Centre the already painted leading glyphs without moving native content or its clip.
-fn center_leading(
+pub(crate) fn center_leading(
     ui: &egui::Ui,
     leading: Option<(egui::layers::ShapeIdx, egui::layers::ShapeIdx, f32)>,
     center: f32,

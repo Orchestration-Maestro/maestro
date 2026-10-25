@@ -1,128 +1,7 @@
-//! Source preparation and contextual math admission over the shared owned document.
-use maestro_app::{
-    is_whitespace_scalar,
-    markdown::{self, Document, Kind, LinkType, Node},
-};
-use std::{ops::Range, sync::LazyLock};
-
-/// Tag shapes that are shown as text, in the order they are applied. The last one
-/// catches a tag start that no complete tag shape covers, since `<` followed by a
-/// letter is what opens an element.
-static TAGS: LazyLock<[(regress::Regex, &str); 4]> = LazyLock::new(|| {
-    let pattern = |source, replacement| {
-        (
-            regress::Regex::new(source).unwrap_or_else(|_| unreachable!("constant pattern")),
-            replacement,
-        )
-    };
-    [
-        pattern(r"<(\w+)([^>]*)>", "&lt;$1$2&gt;"),
-        pattern(r"</(\w+)>", "&lt;/$1&gt;"),
-        pattern(r"<(?![^\s])", "&lt;"),
-        pattern(r"<(?=[A-Za-z])", "&lt;"),
-    ]
-});
-
-/// Visit every native node in source order, including table cells.
-pub(super) fn visit<'a>(nodes: &'a [Node], f: &mut impl FnMut(&'a Node)) {
-    for node in nodes {
-        f(node);
-        match &node.kind {
-            Kind::Paragraph(c)
-            | Kind::Inline(c)
-            | Kind::Heading(_, c, _)
-            | Kind::List(_, c)
-            | Kind::Item(c)
-            | Kind::Quote(c, _)
-            | Kind::Link(c, ..)
-            | Kind::Strong(c)
-            | Kind::Strike(c)
-            | Kind::Emphasis(c) => visit(c, f),
-            Kind::Table(table) => {
-                for cell in std::iter::once(&table.header).chain(&table.rows).flatten() {
-                    visit(&cell.children, f);
-                }
-            }
-            _ => {}
-        }
-    }
-}
-
-/// Source text of a link node, which starts with `[` only for authored labels.
-fn authored_label(document: &Document, node: &Node) -> bool {
-    document.source[node.range.clone()].starts_with('[')
-}
-
-/// Native code and angle autolink extents, in source order and without overlap.
-fn literal(document: &Document) -> Vec<Range<usize>> {
-    let mut spans: Vec<Range<usize>> = Vec::new();
-    visit(&document.nodes, &mut |node| {
-        let native = match &node.kind {
-            Kind::Code(_) | Kind::CodeBlock(..) => true,
-            Kind::Link(_, _, _, meta) => {
-                matches!(meta.link_type, LinkType::Autolink | LinkType::Email)
-                    && !authored_label(document, node)
-            }
-            _ => false,
-        };
-        if native && spans.last().is_none_or(|last| last.end <= node.range.start) {
-            spans.push(node.range.clone());
-        }
-    });
-    spans
-}
-
-/// Escape tag-like text outside native code and angle autolinks, and parse the result.
-///
-/// Escaping can change the structure around a span, so a span stays literal only while
-/// it is still native code or an autolink at the same place in the escaped document.
-/// Only spans that lose that status are escaped; later native spans keep their text.
-pub(super) fn escape_tags(source: String) -> Document {
-    let first = markdown::parse(source);
-    let mut kept = literal(&first);
-    let source = first.source;
-    loop {
-        let (text, moved) = shown_outside(&source, &kept);
-        let document = markdown::parse(text);
-        let native = literal(&document);
-        let count = kept.len();
-        let mut moved = moved.into_iter();
-        kept.retain(|_| {
-            moved.next().is_some_and(|at| {
-                native
-                    .binary_search_by_key(&at.start, |span| span.start)
-                    .is_ok_and(|index| native[index] == at)
-            })
-        });
-        if kept.len() == count {
-            return document;
-        }
-    }
-}
-
-/// `source` with tag-like text outside `spans` shown as text, and where each span lands.
-fn shown_outside(source: &str, spans: &[Range<usize>]) -> (String, Vec<Range<usize>>) {
-    let mut out = String::with_capacity(source.len());
-    let mut moved = Vec::with_capacity(spans.len());
-    let mut cursor = 0;
-    for span in spans {
-        out.push_str(&shown_as_text(&source[cursor..span.start]));
-        let start = out.len();
-        out.push_str(&source[span.clone()]);
-        moved.push(start..out.len());
-        cursor = span.end;
-    }
-    out.push_str(&shown_as_text(&source[cursor..]));
-    (out, moved)
-}
-
-/// Turn tag-like text into entity text.
-fn shown_as_text(text: &str) -> String {
-    TAGS.iter()
-        .fold(text.to_owned(), |text, (tag, replacement)| {
-            tag.replace_all(&text, replacement)
-        })
-}
+//! Contextual math admission over the shared owned document.
+use maestro_app::is_whitespace_scalar;
+use maestro_app::markdown;
+use std::ops::Range;
 
 /// Delimiter family of one formula.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -154,17 +33,17 @@ impl Delimiter {
 
 /// An admitted formula with its trimmed body.
 #[derive(Clone, Debug)]
-pub(super) struct Formula {
+pub(super) struct Formula<'a> {
     /// Extent in the scanned source.
     pub(super) range: Range<usize>,
     /// Trimmed body, trimmed after the nonempty check.
-    pub(super) tex: String,
+    pub(super) tex: &'a str,
     /// Delimiter family.
     pub(super) delimiter: Delimiter,
 }
 
 /// Match one formula starting exactly at `index`.
-fn matching(source: &str, index: usize, display: bool) -> Option<Formula> {
+pub(super) fn matching(source: &str, index: usize, display: bool) -> Option<Formula<'_>> {
     let families = if display {
         [Delimiter::DoubleDollar, Delimiter::Bracket]
     } else {
@@ -179,18 +58,17 @@ fn matching(source: &str, index: usize, display: bool) -> Option<Formula> {
         let excluded = dollar && (body.contains('$') || (!display && body.contains('\n')));
         (!body.is_empty() && !excluded).then(|| Formula {
             range: index..index + open.len() + end + close.len(),
-            tex: body.trim_matches(is_whitespace_scalar).to_owned(),
+            tex: body.trim_matches(is_whitespace_scalar),
             delimiter,
         })
     })
 }
 
 /// Formulas of one display class, using original mapped operands without reparsing.
-pub(super) fn scan(
-    scope: &markdown::InlineScope<'_>,
+pub(super) fn scan<'a>(
+    scope: &'a markdown::InlineScope<'_>,
     range: Range<usize>,
-    display: bool,
-) -> Vec<Formula> {
+) -> Vec<Formula<'a>> {
     let source = &scope.text()[..range.end];
     if !source[range.start..].contains(['$', '\\']) {
         return Vec::new();
@@ -201,7 +79,7 @@ pub(super) fn scan(
         opaque.partition_point(|(span, _)| span.end <= range.start),
         0_usize,
     );
-    let mut index = range.start;
+    let (mut index, mut open, mut enclosing) = (range.start, 0, Vec::<usize>::new());
     while index < source.len() {
         while opaque
             .get(next)
@@ -209,13 +87,26 @@ pub(super) fn scan(
         {
             next += 1;
         }
+        while enclosing.last().is_some_and(|&end| end <= index) {
+            enclosing.pop();
+        }
+        while let Some((span, content)) = scope.spans.get(open).filter(|(_, c)| c.start <= index) {
+            open += 1;
+            let admitted = found.partition_point(|f: &Formula<'_>| f.range.end <= span.start);
+            let consumed = found
+                .get(admitted)
+                .is_some_and(|f| f.range.start <= span.start);
+            if content.end > index && !consumed {
+                enclosing.push(content.end);
+            }
+        }
         if let Some((range, _)) = opaque.get(next).filter(|(r, _)| r.contains(&index)) {
             index = range.end;
             slashes = 0;
             continue;
         }
         let formula = (slashes % 2 == 0)
-            .then(|| matching(source, index, display))
+            .then(|| matching(source, index, true))
             .flatten();
         let barrier = scope.opaque.partition_point(|range| range.end <= index);
         if let Some(formula) = formula.filter(|formula| {
@@ -223,6 +114,7 @@ pub(super) fn scan(
                 .opaque
                 .get(barrier)
                 .is_none_or(|range| range.start >= formula.range.end)
+                && enclosing.last().is_none_or(|&end| formula.range.end <= end)
         }) {
             index = formula.range.end;
             slashes = 0;
@@ -239,4 +131,61 @@ pub(super) fn scan(
 /// Whether a tight item starts with a display formula and therefore opens block math.
 pub(super) fn starts_display(source: &str) -> bool {
     matching(source, 0, true).is_some()
+}
+
+/// The browser's block-level display-formula registration.
+pub(super) struct MathBlocks;
+impl markdown::BlockTokenizer for MathBlocks {
+    fn start(&self, source: &str) -> Option<usize> {
+        [source.find("$$"), source.find("\\[")]
+            .into_iter()
+            .flatten()
+            .min()
+    }
+    fn tokenize(&mut self, source: &str) -> Option<markdown::BlockToken> {
+        let formula = matching(source, 0, true)?;
+        Some(markdown::BlockToken {
+            raw: source[..formula.range.end].to_owned(),
+            kind: if formula.delimiter == Delimiter::DoubleDollar {
+                "blockMathDollar"
+            } else {
+                "blockMathLatex"
+            }
+            .to_owned(),
+            text: formula.tex.to_owned(),
+        })
+    }
+}
+
+/// Recover the already parsed custom block without matching its source again.
+pub(super) fn block_formula<'a>(kind: &str, text: &'a str, length: usize) -> Option<Formula<'a>> {
+    let delimiter = match kind {
+        "blockMathDollar" => Delimiter::DoubleDollar,
+        "blockMathLatex" => Delimiter::Bracket,
+        _ => return None,
+    };
+    Some(Formula {
+        range: 0..length,
+        tex: text,
+        delimiter,
+    })
+}
+
+/// Browser formula grammar selected by the shared inline loop.
+#[derive(Default)]
+pub(super) struct MathInline;
+impl markdown::InlineTokenizer for MathInline {
+    fn start(&self, source: &str) -> Option<usize> {
+        [source.find('$'), source.find("\\(")]
+            .into_iter()
+            .flatten()
+            .min()
+    }
+    fn tokenize(&mut self, source: &str) -> Option<markdown::InlineToken> {
+        let formula = matching(source, 0, false)?;
+        Some(markdown::InlineToken {
+            length: formula.range.end,
+            index: 0,
+        })
+    }
 }

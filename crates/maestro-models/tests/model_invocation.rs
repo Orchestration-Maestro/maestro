@@ -1,16 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use maestro_models::records::diagnostics::{
-        DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
-    };
+    use crate::response_support::failure as error;
     use maestro_models::records::session_resources::{
         cleanup_session_resources, register_session_resource_cleanup,
     };
+    use maestro_models::{DiagnosticErrorInfo, SharedHandle};
     use std::sync::{Arc, Mutex};
-
-    fn error(text: &str) -> DiagnosticErrorInfo {
-        extract_diagnostic_error(DiagnosticInput::Text(text))
-    }
 
     #[test]
     fn maestro_cleanup_collects_failures_in_order() {
@@ -20,7 +15,7 @@ mod tests {
             .into_iter()
             .map(|name| {
                 let visits = Arc::clone(&visits);
-                register_session_resource_cleanup(Arc::new(move |session| {
+                register_session_resource_cleanup(SharedHandle::new(move |session| {
                     assert_eq!(session, Some("session"));
                     visits.lock().unwrap().push(name);
                     match name {
@@ -82,8 +77,8 @@ mod tests {
     fn provider(api: &str, timestamp: f64) -> maestro_models::records::api_registry::ApiProvider {
         maestro_models::records::api_registry::ApiProvider {
             api: api.into(),
-            stream: Arc::new(TimestampProvider(timestamp)),
-            stream_simple: Arc::new(TimestampProvider(timestamp + 1.0)),
+            stream: SharedHandle::new(TimestampProvider(timestamp)),
+            stream_simple: SharedHandle::new(TimestampProvider(timestamp + 1.0)),
         }
     }
 
@@ -94,11 +89,12 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Invoke a retained default-family callback without changing its result observer.
     fn assert_retained_timestamp<K: maestro_models::StreamOptionsFamily>(
         callback: &maestro_models::StreamFunction<K>,
         expected: f64,
-    ) -> crate::child_process::TestResult {
+    ) -> crate::chat::TestResult {
         let stream = callback.call(
             model("separate"),
             context(),
@@ -108,7 +104,8 @@ mod tests {
         Ok(())
     }
 
-    fn assert_cloud_selection() -> crate::child_process::TestResult {
+    #[cfg(not(target_arch = "wasm32"))]
+    fn assert_cloud_selection() -> crate::chat::TestResult {
         for (call, expected) in [
             (
                 maestro_models::stream(model("bedrock-converse-stream"), context(), None)?,
@@ -124,18 +121,27 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn maestro_platform_stores_keep_distinct_owners() -> crate::child_process::TestResult {
+    fn maestro_platform_stores_keep_distinct_owners() -> crate::chat::TestResult {
         use maestro_models::records::api_registry::*;
         use maestro_models::{BedrockProviderModule, get_oauth_provider, reset_oauth_providers};
         let _serial = crate::bundled::registry();
-        if crate::child_process::child_case().is_none() {
+        if !maestro_test_process::selection().is_child() {
             let name = "maestro_platform_stores_keep_distinct_owners";
-            return crate::child_process::rerun(name, "owners", &[]);
+            return {
+                let output = maestro_test_process::TestProcess::current(name)?
+                    .nocapture()
+                    .env_clear()
+                    .case("owners")
+                    .output()?;
+                assert!(output.status.success(), "{output:?}");
+                Ok(())
+            };
         }
         let visits = Arc::new(Mutex::new(Vec::new()));
         let recorded = Arc::clone(&visits);
-        let removal = register_session_resource_cleanup(Arc::new(move |session| {
+        let removal = register_session_resource_cleanup(SharedHandle::new(move |session| {
             recorded.lock().unwrap().push(session.map(str::to_owned));
             Ok(())
         }));
@@ -205,13 +211,7 @@ mod tests {
         }
         let retained = get_api_provider("2").unwrap();
         register_api_provider(provider("2", 40.0), Some("new".into()));
-        assert_eq!(
-            get_api_providers()
-                .iter()
-                .map(|entry| entry.api.as_str())
-                .collect::<Vec<_>>(),
-            ["10", "2", "01"]
-        );
+        assert_eq!(crate::bundled::registered(), ["10", "2", "01"]);
         assert_eq!(
             ready(stream(model("2"), context(), None).unwrap().result())
                 .read()
@@ -229,13 +229,7 @@ mod tests {
             41.0_f64.to_bits()
         );
         unregister_api_providers("old");
-        assert_eq!(
-            get_api_providers()
-                .iter()
-                .map(|entry| entry.api.as_str())
-                .collect::<Vec<_>>(),
-            ["2"]
-        );
+        assert_eq!(crate::bundled::registered(), ["2"]);
         unregister_api_providers("absent");
         clear_api_providers();
         assert!(get_api_providers().is_empty());
@@ -256,8 +250,8 @@ mod tests {
         register_api_provider(
             ApiProvider {
                 api: "expected".into(),
-                stream: Arc::new(CountProvider(Arc::clone(&calls), 1.0)),
-                stream_simple: Arc::new(CountProvider(Arc::clone(&calls), 2.0)),
+                stream: SharedHandle::new(CountProvider(Arc::clone(&calls), 1.0)),
+                stream_simple: SharedHandle::new(CountProvider(Arc::clone(&calls), 2.0)),
             },
             None,
         );
@@ -306,7 +300,7 @@ mod tests {
     /// Supplied threaded admission is inert when the model API is wrong.
     fn assert_threaded_wrong_models(provider: &maestro_models::ApiProvider) {
         let spawn: maestro_models::ProviderSpawner<maestro_models::Threaded> =
-            Arc::new(|_| panic!("mismatch must not submit threaded work"));
+            SharedHandle::new(|_| panic!("mismatch must not submit threaded work"));
         for failure in [
             provider.stream.call(
                 model("wrong"),
@@ -336,7 +330,7 @@ mod tests {
         assert_missing_api_for::<maestro_models::Local>(std::rc::Rc::new(|_| {
             panic!("missing API must not submit")
         }));
-        assert_missing_api_for::<maestro_models::Threaded>(Arc::new(|_| {
+        assert_missing_api_for::<maestro_models::Threaded>(SharedHandle::new(|_| {
             panic!("missing API must not submit")
         }));
         for failure in [
@@ -403,8 +397,8 @@ mod tests {
         register_api_provider(
             ApiProvider {
                 api: "failure".into(),
-                stream: Arc::new(FailedProvider(raw, raw_calls)),
-                stream_simple: Arc::new(FailedProvider(simple, simple_calls)),
+                stream: SharedHandle::new(FailedProvider(raw, raw_calls)),
+                stream_simple: SharedHandle::new(FailedProvider(simple, simple_calls)),
             },
             None,
         );
@@ -430,7 +424,7 @@ mod tests {
             &calls,
         );
         assert_setup_failure_for::<maestro_models::Threaded>(
-            Arc::new(|_| panic!("setup failure must not submit")),
+            SharedHandle::new(|_| panic!("setup failure must not submit")),
             &failure,
             &calls,
         );
@@ -475,8 +469,10 @@ mod tests {
             transport: Some(Transport::WebsocketCached),
             cache_retention: Some(CacheRetention::Long),
             session_id: Some("session".into()),
-            on_payload: Some(Arc::new(|payload, _| Box::pin(async { Ok(payload) }))),
-            on_response: Some(Arc::new(|_, _| Box::pin(async { Ok(()) }))),
+            on_payload: Some(SharedHandle::new(|payload, _| {
+                Box::pin(async { Ok(payload) })
+            })),
+            on_response: Some(SharedHandle::new(|_, _| Box::pin(async { Ok(()) }))),
             headers: Some([("x".into(), "y".into())].into()),
             timeout_ms: Some(123.0),
             max_retries: Some(2.0),
@@ -535,12 +531,12 @@ mod tests {
         use maestro_models::records::api_registry::ApiProvider;
         ApiProvider {
             api: "custom".into(),
-            stream: Arc::new(CompleteRaw {
+            stream: SharedHandle::new(CompleteRaw {
                 output: output.clone(),
                 expected: expected.clone(),
                 count: Arc::clone(count),
             }),
-            stream_simple: Arc::new(CompleteSimple {
+            stream_simple: SharedHandle::new(CompleteSimple {
                 output: output.clone(),
                 expected: expected.clone(),
                 count: Arc::clone(count),
@@ -615,7 +611,7 @@ mod tests {
         use maestro_models::records::types::*;
         let payload_calls = Arc::clone(calls);
         let response_calls = Arc::clone(calls);
-        let on_payload: OnPayload = Arc::new(
+        let on_payload: OnPayload = SharedHandle::new(
             move |maestro_models::PayloadHookInput {
                       payload,
                       signal: hook_signal,
@@ -638,7 +634,7 @@ mod tests {
                 })
             },
         );
-        let on_response: OnResponse = Arc::new(move |response, descriptor| {
+        let on_response: OnResponse = SharedHandle::new(move |response, descriptor| {
             response_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             assert_eq!(*descriptor, model("hooks"));
             assert_eq!(
@@ -659,8 +655,8 @@ mod tests {
         use maestro_models::records::api_registry::ApiProvider;
         ApiProvider {
             api: "hooks".into(),
-            stream: Arc::new(HookProvider),
-            stream_simple: Arc::new(TimestampProvider(0.0)),
+            stream: SharedHandle::new(HookProvider),
+            stream_simple: SharedHandle::new(TimestampProvider(0.0)),
         }
     }
 
@@ -684,8 +680,8 @@ mod tests {
         ] {
             let options = ProviderStreamOptions {
                 common: StreamOptions {
-                    on_payload: Some(Arc::clone(&on_payload)),
-                    on_response: Some(Arc::clone(&on_response)),
+                    on_payload: Some(SharedHandle::clone(&on_payload)),
+                    on_response: Some(SharedHandle::clone(&on_response)),
                     ..StreamOptions::default()
                 },
                 extra: JsonObject::new(),
@@ -712,7 +708,7 @@ mod tests {
             use maestro_models::records::api_registry::{get_api_provider, get_api_providers};
             let _entries = get_api_providers();
             let _entry = get_api_provider("absent");
-            let removal = register_session_resource_cleanup(Arc::new(|_| Ok(())));
+            let removal = register_session_resource_cleanup(SharedHandle::new(|_| Ok(())));
             removal.remove();
             cleanup_session_resources(None).unwrap();
             self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -726,8 +722,8 @@ mod tests {
         let probe = ReenterDrop(Arc::clone(drops));
         ApiProvider {
             api: api.into(),
-            stream: Arc::new(ReentrantProvider { _probe: probe }),
-            stream_simple: Arc::new(TimestampProvider(2.0)),
+            stream: SharedHandle::new(ReentrantProvider { _probe: probe }),
+            stream_simple: SharedHandle::new(TimestampProvider(2.0)),
         }
     }
     #[test]
@@ -759,9 +755,9 @@ mod tests {
         clear_api_providers();
         assert_eq!(drops.load(std::sync::atomic::Ordering::SeqCst), 3);
         let probe = ReenterDrop(Arc::clone(&drops));
-        let removal = register_session_resource_cleanup(Arc::new(move |_| {
+        let removal = register_session_resource_cleanup(SharedHandle::new(move |_| {
             let _probe = &probe;
-            let removal = register_session_resource_cleanup(Arc::new(|_| Ok(())));
+            let removal = register_session_resource_cleanup(SharedHandle::new(|_| Ok(())));
             removal.remove();
             Ok(())
         }));

@@ -71,10 +71,10 @@ impl Flag {
 
 /// A checked launch of one named test in a fresh process of the current test executable.
 ///
-/// Every consuming operation resolves the exact identity, confirms the test is eligible
-/// and requires the child's standard output to begin with the one-test start prologue.
-/// It does not require the test to pass. Environment edits apply in call order and never
-/// touch this process.
+/// Launch operations resolve the exact identity and confirm eligibility. Checked-output
+/// operations also require the child's one-test start prologue; [`TestProcess::invoke_with`]
+/// leaves startup proof with its caller. The test need not pass. Environment edits apply
+/// in call order without changing this process.
 #[derive(Debug)]
 pub struct TestProcess {
     /// Full libtest identity.
@@ -98,6 +98,12 @@ pub struct TestProcess {
 }
 
 impl TestProcess {
+    /// Select one case identifier in the child, or `"*"` for all cases.
+    #[must_use]
+    pub fn case(self, case: impl AsRef<OsStr>) -> Self {
+        self.env(crate::environment::CASE, case)
+    }
+
     /// Select the running test: `test` is its full identity or its leaf at a `::` boundary.
     ///
     /// # Errors
@@ -170,6 +176,18 @@ impl TestProcess {
     pub fn env_clear(mut self) -> Self {
         self.envs.push(EnvEdit::Clear);
         self
+    }
+
+    /// Point the child's temporary directory at `path` through the variables
+    /// `std::env::temp_dir` reads: `TMPDIR` on Unix, `TMP` and `TEMP` on Windows.
+    #[must_use]
+    pub fn temp_dir(self, path: impl AsRef<Path>) -> Self {
+        let path = path.as_ref();
+        if cfg!(windows) {
+            self.env("TMP", path).env("TEMP", path)
+        } else {
+            self.env("TMPDIR", path)
+        }
     }
 
     /// Set the child's working directory.
@@ -353,6 +371,25 @@ impl TestProcess {
         F: FnOnce(&[String]) -> Result<Output, E>,
         E: std::error::Error + Send + Sync + 'static,
     {
+        let name = self.name.clone();
+        let output = self.invoke_with(invoke)?;
+        check_output(&name, &output)?;
+        Ok(output)
+    }
+
+    /// Supplies eligible exact harness arguments to a caller-owned invocation.
+    ///
+    /// This checks selection, not startup. The caller must observe the selected
+    /// test's one-test prologue through its own transport before claiming startup.
+    /// Environment, directory, descriptor and shell settings are rejected.
+    ///
+    /// # Errors
+    /// Returns selection, unsupported configuration or caller invocation failures.
+    pub fn invoke_with<T, F, E>(self, invoke: F) -> Result<T, TestProcessError>
+    where
+        F: FnOnce(&[String]) -> Result<T, E>,
+        E: std::error::Error + Send + Sync + 'static,
+    {
         let plain = self.envs.is_empty()
             && self.dir.is_none()
             && self.shell.is_none()
@@ -365,12 +402,10 @@ impl TestProcess {
             ));
         }
         self.eligible()?;
-        let output = invoke(&self.arguments()).map_err(|error| {
+        invoke(&self.arguments()).map_err(|error| {
             self.failure("the adapter invocation failed")
                 .caused_by(error)
-        })?;
-        check_output(&self.name, &output)?;
-        Ok(output)
+        })
     }
 
     /// Add a harness flag.

@@ -25,15 +25,12 @@ type SharedState = Rc<RefCell<State>>;
 pub(super) type Tails = Rc<RefCell<Vec<std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>>>;
 
 /// Credential effects are observed without ambient environment or shell access.
-pub(super) struct Credentials(pub(super) Rc<RefCell<Vec<String>>>);
+pub(super) struct Credentials(pub(super) std::sync::Arc<std::sync::Mutex<Vec<String>>>);
 impl maestro_credentials::ConfigValueOperations for Credentials {
-    fn environment(&self, name: &str) -> Option<String> {
+    fn execute(&self, name: &str) -> Option<Vec<u8>> {
         assert_eq!(name, "CANONICAL_API_KEY");
-        self.0.borrow_mut().push(name.into());
-        Some(" literal controlled key ".into())
-    }
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        panic!("canonical credentials must not execute a shell");
+        self.0.lock().unwrap().push(name.into());
+        Some(b" literal controlled key ".to_vec())
     }
 }
 
@@ -113,7 +110,7 @@ fn bind(runner: &ExtensionRunner<Local>, history: &History, state: &SharedState)
         .set(
             "fixture",
             maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
-                key: "CANONICAL_API_KEY".into(),
+                key: "!CANONICAL_API_KEY".into(),
             }),
         );
     runner

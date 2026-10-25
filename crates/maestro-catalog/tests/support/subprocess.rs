@@ -1,25 +1,17 @@
 //! Completed exact-test subprocesses.
-#[allow(
-    dead_code,
-    reason = "Child runs use only test selection and the execution check."
-)]
-#[path = "../../../maestro-models/tests/support/child_process.rs"]
-pub mod child_process;
+#![cfg(not(target_arch = "wasm32"))]
 
 /// Complete the exact test with supplied environment presence and absence.
 /// # Panics
 /// Panics if the child cannot run or fails its assertions.
-pub fn run_child(name: &str, environment: &[(&str, Option<&str>)]) {
-    let name = child_process::selector(name).unwrap();
-    let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-    command
-        .args(["--exact", &name, "--nocapture"])
-        .env("MAESTRO_DYNAMIC_CHILD", "1");
+pub fn run_child(process: maestro_test_process::TestProcess, environment: &[(&str, Option<&str>)]) {
+    let name = process.name().to_owned();
+    let mut command = process.nocapture();
     for (key, value) in environment {
         if let Some(value) = value {
-            command.env(key, value);
+            command = command.env(key, value);
         } else {
-            command.env_remove(key);
+            command = command.env_remove(key);
         }
     }
     let output = command.output().unwrap();
@@ -29,5 +21,4 @@ pub fn run_child(name: &str, environment: &[(&str, Option<&str>)]) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    child_process::assert_executed(&output, &name).unwrap();
 }

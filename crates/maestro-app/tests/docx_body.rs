@@ -22,28 +22,7 @@ fn check(name: &str) {
             continue;
         }
         let tree = docx_support::framed(&case.input).unwrap();
-        let observed = if case.expected.get("foreign_slots").is_some() {
-            let mut observed =
-                json!({"foreign_slots":body_tree::foreign(&tree, &case.input.operation)});
-            if case.expected.get("typed_markers").is_some() {
-                use maestro_app::browser::docx_preview::OpenXmlElementData as Data;
-                observed["typed_markers"] = json!(
-                    tree.nodes
-                        .iter()
-                        .filter_map(|n| match &n.data {
-                            Data::CommentRangeStart(c) =>
-                                Some(json!({"type":n.dom_type().as_str(),"id":c.id})),
-                            Data::CommentRangeEnd(c) =>
-                                Some(json!({"type":n.dom_type().as_str(),"id":c.id})),
-                            _ => None,
-                        })
-                        .collect::<Vec<_>>()
-                );
-            }
-            observed
-        } else {
-            body_tree::graph(&tree)
-        };
+        let observed = body_tree::graph(&tree);
         assert_eq!(observed, case.expected);
     }
 }
@@ -195,7 +174,7 @@ fn font_family_enclosure_uses_shared_whitespace() {
         });
         let source = format!("<r><sym{attribute}/></r>");
         let xml = parse_xml_string(&source, false).unwrap();
-        let tree = parse_run(&OwnedXmlElement::new(xml.root())).unwrap();
+        let tree = parse_run(&OwnedXmlElement::new(xml.root()), false).unwrap();
         let OpenXmlElementData::Symbol { font, .. } =
             &tree.nodes[tree.nodes[tree.roots[0]].base.children[0]].data
         else {
@@ -213,16 +192,6 @@ fn run_local_names_accept_namespace_aliases() {
 #[test]
 fn body_and_paragraph_local_names_ignore_prefix() {
     check("body_and_paragraph_local_names_ignore_prefix");
-}
-
-#[test]
-fn body_foreign_branches_remain_owned() {
-    check("body_foreign_branches_remain_owned");
-}
-
-#[test]
-fn paragraph_foreign_branches_remain_owned() {
-    check("paragraph_foreign_branches_remain_owned");
 }
 
 #[test]
@@ -253,7 +222,7 @@ fn owned_xml_slices_keep_source_and_namespaces() {
         &owned.source()[range],
         "<w:r><w:t>retained</w:t><w:rPr/></w:r>"
     );
-    let tree = parse_run(&owned).unwrap();
+    let tree = parse_run(&owned, false).unwrap();
     let root = &tree.nodes[tree.roots[0]];
     let maestro_app::browser::docx_preview::OpenXmlElementData::Run { properties, .. } = &root.data
     else {
@@ -275,7 +244,7 @@ fn parsed_tree_survives_source_release() {
                 .to_owned();
         let xml = parse_xml_string(&source, false).unwrap();
         let input = OwnedXmlElement::new(xml.root());
-        parse_paragraph(&input).unwrap()
+        parse_paragraph(&input, false).unwrap()
     };
     let paragraph = &tree.nodes[tree.roots[0]];
     let run_id = paragraph.base.children[0];
@@ -289,7 +258,8 @@ fn parsed_tree_survives_source_release() {
         panic!("comment reference missing")
     };
     assert_eq!(reference.id.as_deref(), Some("kept-id"));
-    let Data::Unparsed { element, .. } = &tree.nodes[paragraph.base.children[1]].data else {
+    let link = &tree.nodes[paragraph.base.children[1]];
+    let Data::Hyperlink(hyperlink) = &link.data else {
         panic!("hyperlink missing")
     };
     let Data::Paragraph { properties } = &paragraph.data else {
@@ -306,8 +276,10 @@ fn parsed_tree_survives_source_release() {
         properties.style_name.as_ref().unwrap().as_deref(),
         Some("inner")
     );
-    assert_eq!(body_tree::raw(element)["local_name"], "hyperlink");
-    assert_eq!(body_tree::raw(element)["namespace"], "urn:w");
+    assert_eq!(hyperlink.id.as_deref(), Some("link"));
+    assert_eq!(hyperlink.anchor, None);
+    assert_eq!(link.base.parent, Some(tree.roots[0]));
+    assert!(link.base.children.is_empty());
 }
 
 #[test]
@@ -321,7 +293,7 @@ fn simple_fields_read_standard_lock_before_alias() {
     ] {
         let source = format!("<w:p xmlns:w=\"urn:w\"><w:fldSimple {attributes}/></w:p>");
         let xml = parse_xml_string(&source, true).unwrap();
-        let tree = parse_paragraph(&OwnedXmlElement::new(xml.root())).unwrap();
+        let tree = parse_paragraph(&OwnedXmlElement::new(xml.root()), false).unwrap();
         assert!(
             matches!(tree.nodes[1].data, Data::SimpleField { lock, dirty: false, .. } if lock == expected)
         );
@@ -339,7 +311,7 @@ fn complex_fields_read_standard_lock_before_alias() {
     ] {
         let source = format!("<w:r xmlns:w=\"urn:w\"><w:fldChar {attributes}/></w:r>");
         let xml = parse_xml_string(&source, true).unwrap();
-        let tree = parse_run(&OwnedXmlElement::new(xml.root())).unwrap();
+        let tree = parse_run(&OwnedXmlElement::new(xml.root()), false).unwrap();
         assert!(
             matches!(tree.nodes[1].data, Data::ComplexField { lock, dirty: false, .. } if lock == expected)
         );
@@ -350,7 +322,7 @@ fn complex_fields_read_standard_lock_before_alias() {
 fn invalid_symbol_fonts_escape_style_element_delimiters() {
     use maestro_app::browser::docx_preview::OpenXmlElementData as Data;
     let xml = parse_xml_string("<r><sym font=\"A&lt;B\"/></r>", true).unwrap();
-    let tree = parse_run(&OwnedXmlElement::new(xml.root())).unwrap();
+    let tree = parse_run(&OwnedXmlElement::new(xml.root()), false).unwrap();
     assert!(
         matches!(&tree.nodes[1].data, Data::Symbol { font: Some(font), .. } if font == "\"A\\3c B\"")
     );

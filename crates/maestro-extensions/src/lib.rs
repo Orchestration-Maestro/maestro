@@ -49,6 +49,7 @@ mod loader;
 /// Owned registration records and callback types.
 pub mod types;
 pub use maestro_catalog::{ConfigValueOperations, ModelRegistry, ResolvedRequestAuth};
+pub use maestro_models::{ParameterSchema, schema_transport};
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
 pub use maestro_session::session_manager::{
@@ -58,13 +59,14 @@ pub use maestro_session::session_manager::{
 pub use maestro_session::{CompactionResult, Presence, SessionManager};
 pub use maestro_theme::LiveTheme;
 pub use types::{
-    AutocompleteProviderFactory, CompactOptions, ContextUsage, EditorFactory, Extension,
-    ExtensionAPI, ExtensionCommandContext, ExtensionCommandContextActions, ExtensionContext,
-    ExtensionContextActions, ExtensionExecution, ExtensionFlag, ExtensionShortcut,
-    ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler,
-    MessageRenderOptions, MessageRenderer, NavigateTreeHandler, NewSessionHandler,
-    RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
-    SwitchSessionHandler, TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
+    AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
+    EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
+    ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionExecution,
+    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, ForkHandler, MessageRenderOptions, MessageRenderer,
+    MessageRendererCall, NavigateTreeHandler, NewSessionHandler, RegisteredCommand,
+    ReplacedSessionContext, ResolvedCommand, ShutdownHandler, SwitchSessionHandler,
+    TerminalInputHandler, UIHostCall, WidgetPlacement, WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
 pub mod runner;
@@ -88,7 +90,13 @@ pub use types::{
 /// Registered-tool invocation adapters.
 pub mod wrapper;
 pub use loader::load_extension_from_factory;
-pub use types::{ExtensionFactory, ExtensionHandler, RegisteredTool, RegisteredToolInput};
+#[cfg(not(target_arch = "wasm32"))]
+pub use loader::{discover_and_load_extensions, load_extensions};
+pub use types::{
+    ExtensionFactory, ExtensionHandler, RegisteredTool, RegisteredToolInput, ToolDefinitionMetadata,
+};
+#[cfg(not(target_arch = "wasm32"))]
+pub use types::{ExtensionLoadError, LoadExtensionsResult, ModuleLoader};
 pub use wrapper::{wrap_registered_tool, wrap_registered_tools};
 
 pub use types::events::*;

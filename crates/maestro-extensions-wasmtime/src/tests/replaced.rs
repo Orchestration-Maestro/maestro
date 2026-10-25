@@ -20,7 +20,7 @@ fn replacement_messages_keep_original_session_while_command_view_becomes_stale()
             users.borrow_mut().push(serde_json::json!([content, options]));
             Box::pin(async { Err("replacement user failure".into()) })
         }));
-        let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+        let (mut pump, admission) = Pump::new();
         let endpoint = pump.registry().replaced(replacement).unwrap();
         let first = endpoint.clone();
         let worker = std::thread::spawn(move || first.command().unwrap());

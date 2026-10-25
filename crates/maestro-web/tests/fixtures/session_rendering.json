@@ -1,0 +1,3073 @@
+[
+  {
+    "id": "link-javascript",
+    "operation": "markdown",
+    "input": {
+      "text": "[**label** *child*](<javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><strong>label</strong> <em>child</em></p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "image-javascript",
+    "operation": "markdown",
+    "input": {
+      "text": "![**literal** &amp; alt](<javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>**literal** &amp;amp; alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "link-JaVaScRiPt",
+    "operation": "markdown",
+    "input": {
+      "text": "[**label** *child*](<JaVaScRiPt:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><strong>label</strong> <em>child</em></p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "image-JaVaScRiPt",
+    "operation": "markdown",
+    "input": {
+      "text": "![**literal** &amp; alt](<JaVaScRiPt:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>**literal** &amp;amp; alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "link-vbscript",
+    "operation": "markdown",
+    "input": {
+      "text": "[**label** *child*](<vbscript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><strong>label</strong> <em>child</em></p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "image-vbscript",
+    "operation": "markdown",
+    "input": {
+      "text": "![**literal** &amp; alt](<vbscript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>**literal** &amp;amp; alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "link-VBSCRIPT",
+    "operation": "markdown",
+    "input": {
+      "text": "[**label** *child*](<VBSCRIPT:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><strong>label</strong> <em>child</em></p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "image-VBSCRIPT",
+    "operation": "markdown",
+    "input": {
+      "text": "![**literal** &amp; alt](<VBSCRIPT:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>**literal** &amp;amp; alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "link-data",
+    "operation": "markdown",
+    "input": {
+      "text": "[**label** *child*](<data:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><strong>label</strong> <em>child</em></p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "image-data",
+    "operation": "markdown",
+    "input": {
+      "text": "![**literal** &amp; alt](<data:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>**literal** &amp;amp; alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "link-DaTa",
+    "operation": "markdown",
+    "input": {
+      "text": "[**label** *child*](<DaTa:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><strong>label</strong> <em>child</em></p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "image-DaTa",
+    "operation": "markdown",
+    "input": {
+      "text": "![**literal** &amp; alt](<DaTa:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>**literal** &amp;amp; alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-link-trim-ascii",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<  javascript:payload  >)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-image-trim-ascii",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<  javascript:payload  >)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-link-trim-feff",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<﻿javascript:payload﻿>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-image-trim-feff",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<﻿javascript:payload﻿>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-link-nontrim-nel",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"javascript:payload\">label</a></p>\n",
+      "consumer": {
+        "tag": "A",
+        "attribute": "javascript:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-image-nontrim-nel",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"javascript:payload\" alt=\"alt\"></p>\n",
+      "consumer": {
+        "tag": "IMG",
+        "attribute": "javascript:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-link-entity-scheme",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<jav&#x61;script:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-image-entity-scheme",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<jav&#x61;script:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-link-encoded-scheme",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<%6aavascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"%6aavascript:payload\">label</a></p>\n",
+      "consumer": {
+        "tag": "A",
+        "attribute": "%6aavascript:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "boundary-image-encoded-scheme",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<%6aavascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"%6aavascript:payload\" alt=\"alt\"></p>\n",
+      "consumer": {
+        "tag": "IMG",
+        "attribute": "%6aavascript:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-tab-javascript",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<java\tscript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-tab-javascript",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<java\tscript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-tab-vbscript",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<vb\tscript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-tab-vbscript",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<vb\tscript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-tab-data",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<da\tta:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-tab-data",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<da\tta:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-c0-javascript",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<\u0001javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-c0-javascript",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<\u0001javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-c0-vbscript",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<\u0001vbscript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-c0-vbscript",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<\u0001vbscript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-c0-data",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<\u0001data:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-c0-data",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<\u0001data:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-nul-leading",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<\u0000javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"\u0000javascript:payload\">label</a></p>\n",
+      "consumer": {
+        "tag": "A",
+        "attribute": "�javascript:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-nul-leading",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<\u0000javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"\u0000javascript:payload\" alt=\"alt\"></p>\n",
+      "consumer": {
+        "tag": "IMG",
+        "attribute": "�javascript:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-nul-interior",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<java\u0000script:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"java\u0000script:payload\">label</a></p>\n",
+      "consumer": {
+        "tag": "A",
+        "attribute": "java�script:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-nul-interior",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<java\u0000script:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"java\u0000script:payload\" alt=\"alt\"></p>\n",
+      "consumer": {
+        "tag": "IMG",
+        "attribute": "java�script:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-interior-space",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<java script:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"java script:payload\">label</a></p>\n",
+      "consumer": {
+        "tag": "A",
+        "attribute": "java script:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-interior-space",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<java script:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"java script:payload\" alt=\"alt\"></p>\n",
+      "consumer": {
+        "tag": "IMG",
+        "attribute": "java script:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-escaped-entity",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<jav&amp;#x61;script:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"jav&amp;#x61;script:payload\">label</a></p>\n",
+      "consumer": {
+        "tag": "A",
+        "attribute": "jav&#x61;script:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-escaped-entity",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<jav&amp;#x61;script:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"jav&amp;#x61;script:payload\" alt=\"alt\"></p>\n",
+      "consumer": {
+        "tag": "IMG",
+        "attribute": "jav&#x61;script:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-entity-feff",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<&#xFEFF;javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>label</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-entity-feff",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<&#xFEFF;javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p>alt</p>\n",
+      "consumer": {
+        "tag": null,
+        "attribute": null,
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-link-entity-nel",
+    "operation": "markdown",
+    "input": {
+      "text": "[label](<&#x85;javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"javascript:payload\">label</a></p>\n",
+      "consumer": {
+        "tag": "A",
+        "attribute": "javascript:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "consumer-image-entity-nel",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt](<&#x85;javascript:payload>)"
+    },
+    "test": "export_markdown_blocks_unsafe_links_and_images",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"javascript:payload\" alt=\"alt\"></p>\n",
+      "consumer": {
+        "tag": "IMG",
+        "attribute": "javascript:payload",
+        "unsafe_scheme": null
+      }
+    }
+  },
+  {
+    "id": "allowed-relative",
+    "operation": "markdown",
+    "input": {
+      "text": "[a **b**](<../file> \"title\") ![alt](<../file> \"image title\")"
+    },
+    "test": "export_markdown_keeps_allowed_destinations",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"../file\" title=\"title\">a <strong>b</strong></a> <img src=\"../file\" alt=\"alt\" title=\"image title\"></p>\n"
+    }
+  },
+  {
+    "id": "allowed-fragment",
+    "operation": "markdown",
+    "input": {
+      "text": "[a **b**](<#part> \"title\") ![alt](<#part> \"image title\")"
+    },
+    "test": "export_markdown_keeps_allowed_destinations",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"#part\" title=\"title\">a <strong>b</strong></a> <img src=\"#part\" alt=\"alt\" title=\"image title\"></p>\n"
+    }
+  },
+  {
+    "id": "allowed-mail",
+    "operation": "markdown",
+    "input": {
+      "text": "[a **b**](<mailto:a@example.test> \"title\") ![alt](<mailto:a@example.test> \"image title\")"
+    },
+    "test": "export_markdown_keeps_allowed_destinations",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"mailto:a@example.test\" title=\"title\">a <strong>b</strong></a> <img src=\"mailto:a@example.test\" alt=\"alt\" title=\"image title\"></p>\n"
+    }
+  },
+  {
+    "id": "allowed-https",
+    "operation": "markdown",
+    "input": {
+      "text": "[a **b**](<https://safe.test/a?q=1&x=2> \"title\") ![alt](<https://safe.test/a?q=1&x=2> \"image title\")"
+    },
+    "test": "export_markdown_keeps_allowed_destinations",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"https://safe.test/a?q=1&amp;x=2\" title=\"title\">a <strong>b</strong></a> <img src=\"https://safe.test/a?q=1&amp;x=2\" alt=\"alt\" title=\"image title\"></p>\n"
+    }
+  },
+  {
+    "id": "allowed-near-prefix",
+    "operation": "markdown",
+    "input": {
+      "text": "[a **b**](<javascriptx:thing> \"title\") ![alt](<javascriptx:thing> \"image title\")"
+    },
+    "test": "export_markdown_keeps_allowed_destinations",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"javascriptx:thing\" title=\"title\">a <strong>b</strong></a> <img src=\"javascriptx:thing\" alt=\"alt\" title=\"image title\"></p>\n"
+    }
+  },
+  {
+    "id": "allowed-empty",
+    "operation": "markdown",
+    "input": {
+      "text": "[a **b**](<> \"title\") ![alt](<> \"image title\")"
+    },
+    "test": "export_markdown_keeps_allowed_destinations",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"\" title=\"title\">a <strong>b</strong></a> <img src=\"\" alt=\"alt\" title=\"image title\"></p>\n"
+    }
+  },
+  {
+    "id": "href-quote",
+    "operation": "markdown",
+    "input": {
+      "text": "[x](<https://safe.test/\" onmouseover=\"alert(1)>)"
+    },
+    "test": "export_markdown_attributes_cannot_create_handlers",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"https://safe.test/&quot; onmouseover=&quot;alert(1)\">x</a></p>\n"
+    }
+  },
+  {
+    "id": "title-quote",
+    "operation": "markdown",
+    "input": {
+      "text": "[x](https://safe.test/ \"a\\\" onclick=\\\"bad\")"
+    },
+    "test": "export_markdown_attributes_cannot_create_handlers",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"https://safe.test/\" title=\"a&quot; onclick=&quot;bad\">x</a></p>\n"
+    }
+  },
+  {
+    "id": "image-quotes",
+    "operation": "markdown",
+    "input": {
+      "text": "![a\\\" onerror=\\\"x](ok.png \"t\\\" onload=\\\"x\")"
+    },
+    "test": "export_markdown_attributes_cannot_create_handlers",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"ok.png\" alt=\"a\\&quot; onerror=\\&quot;x\" title=\"t&quot; onload=&quot;x\"></p>\n"
+    }
+  },
+  {
+    "id": "image-src-quote",
+    "operation": "markdown",
+    "input": {
+      "text": "![a](<https://safe.test/\" onerror=\"bad>)"
+    },
+    "test": "export_markdown_attributes_cannot_create_handlers",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"https://safe.test/&quot; onerror=&quot;bad\" alt=\"a\"></p>\n"
+    }
+  },
+  {
+    "id": "unicode-attrs",
+    "operation": "markdown",
+    "input": {
+      "text": "[雪](<https://safe.test/é?q=&amp;> \"<&amp;>'雪\")"
+    },
+    "test": "export_markdown_attributes_cannot_create_handlers",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"https://safe.test/é?q=&amp;\" title=\"&lt;&amp;&gt;&#39;雪\">雪</a></p>\n"
+    }
+  },
+  {
+    "id": "html-tags",
+    "operation": "markdown",
+    "input": {
+      "text": "<script>alert(1)</script>\n\n<div>**literal**</div>"
+    },
+    "test": "export_markdown_treats_authored_markup_and_math_literally",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>\n<p>&lt;div&gt;<strong>literal</strong>&lt;/div&gt;</p>\n"
+    }
+  },
+  {
+    "id": "html-comment",
+    "operation": "markdown",
+    "input": {
+      "text": "<!-- **comment** -->"
+    },
+    "test": "export_markdown_treats_authored_markup_and_math_literally",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!-- **comment** --&gt;</p>\n"
+    }
+  },
+  {
+    "id": "doctype",
+    "operation": "markdown",
+    "input": {
+      "text": "<!DOCTYPE html>"
+    },
+    "test": "export_markdown_treats_authored_markup_and_math_literally",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!DOCTYPE html&gt;</p>\n"
+    }
+  },
+  {
+    "id": "inline-tags",
+    "operation": "markdown",
+    "input": {
+      "text": "before <b>x</b> after <img src=x onerror=bad>"
+    },
+    "test": "export_markdown_treats_authored_markup_and_math_literally",
+    "branch": "success",
+    "expected": {
+      "html": "<p>before &lt;b&gt;x&lt;/b&gt; after &lt;img src=x onerror=bad&gt;</p>\n"
+    }
+  },
+  {
+    "id": "angle-autolinks",
+    "operation": "markdown",
+    "input": {
+      "text": "<https://safe.test/a> <a@example.test>"
+    },
+    "test": "export_markdown_treats_authored_markup_and_math_literally",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"https://safe.test/a\">https://safe.test/a</a> <a href=\"mailto:a@example.test\">a@example.test</a></p>\n"
+    }
+  },
+  {
+    "id": "html-like-less",
+    "operation": "markdown",
+    "input": {
+      "text": "< text > and 2 < 3 &amp; 4 > 1"
+    },
+    "test": "export_markdown_treats_authored_markup_and_math_literally",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt; text &gt; and 2 &lt; 3 &amp; 4 &gt; 1</p>\n"
+    }
+  },
+  {
+    "id": "literal-math",
+    "operation": "markdown",
+    "input": {
+      "text": "$x$ $$y$$ \\(z\\) \\[w\\]"
+    },
+    "test": "export_markdown_treats_authored_markup_and_math_literally",
+    "branch": "success",
+    "expected": {
+      "html": "<p>$x$ $$y$$ (z) [w]</p>\n"
+    }
+  },
+  {
+    "id": "empty",
+    "operation": "markdown",
+    "input": {
+      "text": ""
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": ""
+    }
+  },
+  {
+    "id": "blank",
+    "operation": "markdown",
+    "input": {
+      "text": " \t\n\n"
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": ""
+    }
+  },
+  {
+    "id": "soft-hard",
+    "operation": "markdown",
+    "input": {
+      "text": "a\nb\n\nc  \nd"
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": "<p>a<br>b</p>\n<p>c<br>d</p>\n"
+    }
+  },
+  {
+    "id": "crlf-cr",
+    "operation": "markdown",
+    "input": {
+      "text": "a\r\nb\rc"
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": "<p>a<br>b<br>c</p>\n"
+    }
+  },
+  {
+    "id": "nested-break",
+    "operation": "markdown",
+    "input": {
+      "text": "> a\n> b\n\n- first\n  next"
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": "<blockquote>\n<p>a<br>b</p>\n</blockquote>\n<ul>\n<li>first<br>next</li>\n</ul>\n"
+    }
+  },
+  {
+    "id": "entity-newline",
+    "operation": "markdown",
+    "input": {
+      "text": "a&#10;b and a\\\nb"
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": "<p>a&#10;b and a<br>b</p>\n"
+    }
+  },
+  {
+    "id": "structures",
+    "operation": "markdown",
+    "input": {
+      "text": "# Heading\n\n**bold** *em*\n\n---\n\n1. first\n2. second\n\n- [x] checked\n- [ ] unchecked"
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": "<h1>Heading</h1>\n<p><strong>bold</strong> <em>em</em></p>\n<hr>\n<ol>\n<li>first</li>\n<li>second</li>\n</ol>\n<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> checked</li>\n<li><input disabled=\"\" type=\"checkbox\"> unchecked</li>\n</ul>\n"
+    }
+  },
+  {
+    "id": "table",
+    "operation": "markdown",
+    "input": {
+      "text": "| head | align |\n| :- | -: |\n| a & b | `x` |"
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": "<table>\n<thead>\n<tr>\n<th align=\"left\">head</th>\n<th align=\"right\">align</th>\n</tr>\n</thead>\n<tbody><tr>\n<td align=\"left\">a &amp; b</td>\n<td align=\"right\"><code>x</code></td>\n</tr>\n</tbody></table>\n"
+    }
+  },
+  {
+    "id": "table-all-alignments",
+    "operation": "markdown",
+    "input": {
+      "text": "| default | left | center | right |\n| --- | :--- | :---: | ---: |\n| a | b | c | d |"
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": "<table>\n<thead>\n<tr>\n<th>default</th>\n<th align=\"left\">left</th>\n<th align=\"center\">center</th>\n<th align=\"right\">right</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>a</td>\n<td align=\"left\">b</td>\n<td align=\"center\">c</td>\n<td align=\"right\">d</td>\n</tr>\n</tbody></table>\n"
+    }
+  },
+  {
+    "id": "reference-identity",
+    "operation": "markdown",
+    "input": {
+      "text": "[r][r] ![alt][img]\n\n[r]: /docs \"tip\"\n[img]: /image.png \"image tip\""
+    },
+    "test": "export_markdown_preserves_structure_and_hard_breaks",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"/docs\" title=\"tip\">r</a> <img src=\"/image.png\" alt=\"alt\" title=\"image tip\"></p>\n"
+    }
+  },
+  {
+    "id": "strike-double",
+    "operation": "markdown",
+    "input": {
+      "text": "~~ab~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>ab</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-one-char",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-single",
+    "operation": "markdown",
+    "input": {
+      "text": "~ab~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~ab~</p>\n"
+    }
+  },
+  {
+    "id": "strike-triple",
+    "operation": "markdown",
+    "input": {
+      "text": "~~~ab~~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"></code></pre>"
+    }
+  },
+  {
+    "id": "strike-leading-space",
+    "operation": "markdown",
+    "input": {
+      "text": "~~ ab~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~ ab~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-trailing-space",
+    "operation": "markdown",
+    "input": {
+      "text": "~~ab ~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~ab ~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-empty",
+    "operation": "markdown",
+    "input": {
+      "text": "~~~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"></code></pre>"
+    }
+  },
+  {
+    "id": "strike-open",
+    "operation": "markdown",
+    "input": {
+      "text": "~~ab"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~ab</p>\n"
+    }
+  },
+  {
+    "id": "strike-escaped",
+    "operation": "markdown",
+    "input": {
+      "text": "\\~\\~ab~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~ab~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-nested",
+    "operation": "markdown",
+    "input": {
+      "text": "~~**bold** [label](/docs)~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del><strong>bold</strong> <a href=\"/docs\">label</a></del></p>\n"
+    }
+  },
+  {
+    "id": "strike-newline",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a\nb~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a<br>b</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-feff",
+    "operation": "markdown",
+    "input": {
+      "text": "~~﻿a~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~﻿a~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-nel",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-trailing-tilde",
+    "operation": "markdown",
+    "input": {
+      "text": "~~ab~~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~ab~~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-escaped-close",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a\\~b~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a~b</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-inline-triple",
+    "operation": "markdown",
+    "input": {
+      "text": "before ~~~ab~~~ after"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>before ~~~ab~~~ after</p>\n"
+    }
+  },
+  {
+    "id": "strike-single-inner",
+    "operation": "markdown",
+    "input": {
+      "text": "before ~a **b**~ after"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>before ~a <strong>b</strong>~ after</p>\n"
+    }
+  },
+  {
+    "id": "strike-trailing-feff",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a﻿~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~a﻿~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-trailing-nel",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-leading-nbsp",
+    "operation": "markdown",
+    "input": {
+      "text": "~~ a~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~ a~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-following-neighbor",
+    "operation": "markdown",
+    "input": {
+      "text": "~~ab~~ next"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>ab</del> next</p>\n"
+    }
+  },
+  {
+    "id": "strike-odd-backslash",
+    "operation": "markdown",
+    "input": {
+      "text": "\\\\~~ab~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>\\<del>ab</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-even-backslash",
+    "operation": "markdown",
+    "input": {
+      "text": "\\\\\\\\~~ab~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>\\\\<del>ab</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-reference",
+    "operation": "markdown",
+    "input": {
+      "text": "~~[r][r]~~\n\n[r]: /docs \"tip\""
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del><a href=\"/docs\" title=\"tip\">r</a></del></p>\n"
+    }
+  },
+  {
+    "id": "strike-image",
+    "operation": "markdown",
+    "input": {
+      "text": "~~![alt](x.png)~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del><img src=\"x.png\" alt=\"alt\"></del></p>\n"
+    }
+  },
+  {
+    "id": "strike-block-looking",
+    "operation": "markdown",
+    "input": {
+      "text": "~~# title~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del># title</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-label",
+    "operation": "markdown",
+    "input": {
+      "text": "[~~label~~](/docs \"tip\")"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"/docs\" title=\"tip\"><del>label</del></a></p>\n"
+    }
+  },
+  {
+    "id": "strike-interior-tilde",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a~b~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a~b</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-escaped-leading-space",
+    "operation": "markdown",
+    "input": {
+      "text": "~~\\ a~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>\\ a</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-escaped-trailing-space",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a\\ ~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a\\ </del></p>\n"
+    }
+  },
+  {
+    "id": "strike-escaped-newline",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a\\\nb~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p>~~a<br>b~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-escaped-final-tilde",
+    "operation": "markdown",
+    "input": {
+      "text": "~~\\~~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>~</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-escaped-final-backslash",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a\\\\~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a\\</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-consumes-destination",
+    "operation": "markdown",
+    "input": {
+      "text": "~~[label](u~~)"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>[label](u</del>)</p>\n"
+    }
+  },
+  {
+    "id": "strike-unsafe-link",
+    "operation": "markdown",
+    "input": {
+      "text": "~~[label](javascript:x)~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>label</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-reference-label",
+    "operation": "markdown",
+    "input": {
+      "text": "[~~# title~~][r]\n\n[r]: /docs \"tip\""
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"/docs\" title=\"tip\"><del># title</del></a></p>\n"
+    }
+  },
+  {
+    "id": "strike-code-child",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a `b` c~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a <code>b</code> c</del></p>\n"
+    }
+  },
+  {
+    "id": "strike-code-contains-closer",
+    "operation": "markdown",
+    "input": {
+      "text": "~~a `b~~` c~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><del>a `b</del>` c~~</p>\n"
+    }
+  },
+  {
+    "id": "strike-code-only",
+    "operation": "markdown",
+    "input": {
+      "text": "`~~x~~`"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><code>~~x~~</code></p>\n"
+    }
+  },
+  {
+    "id": "strike-code-before-opener",
+    "operation": "markdown",
+    "input": {
+      "text": "`x ~~y` z~~"
+    },
+    "test": "export_markdown_requires_strict_double_tilde_delimiters",
+    "branch": "success",
+    "expected": {
+      "html": "<p><code>x ~~y</code> z~~</p>\n"
+    }
+  },
+  {
+    "id": "inline-code",
+    "operation": "markdown",
+    "input": {
+      "text": "`<script>&amp;\"' 雪</script>`"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<p><code>&lt;script&gt;&amp;amp;&quot;&#39; 雪&lt;/script&gt;</code></p>\n"
+    }
+  },
+  {
+    "id": "known-code",
+    "operation": "markdown",
+    "input": {
+      "text": "```javascript\nconst x = \"<&>\";\n```"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"><span class=\"hljs-keyword\">const</span> x = <span class=\"hljs-string\">&quot;&lt;&amp;&gt;&quot;</span>;</code></pre>"
+    }
+  },
+  {
+    "id": "no-label-code",
+    "operation": "markdown",
+    "input": {
+      "text": "```\nconst x = 12;\n```"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"><span class=\"hljs-type\">const</span> x = <span class=\"hljs-number\">12</span>;</code></pre>"
+    }
+  },
+  {
+    "id": "unknown-label-code",
+    "operation": "markdown",
+    "input": {
+      "text": "```missing-language\nconst x = 12;\n```"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"><span class=\"hljs-type\">const</span> x = <span class=\"hljs-number\">12</span>;</code></pre>"
+    }
+  },
+  {
+    "id": "full-info-code",
+    "operation": "markdown",
+    "input": {
+      "text": "```js title=file\nlet x = 1;\n```"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"><span class=\"hljs-built_in\">let</span> x = 1;</code></pre>"
+    }
+  },
+  {
+    "id": "empty-code",
+    "operation": "markdown",
+    "input": {
+      "text": "```js\n```"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"></code></pre>"
+    }
+  },
+  {
+    "id": "extra-blank-code",
+    "operation": "markdown",
+    "input": {
+      "text": "```text\na\n\n```"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\">a\n</code></pre>"
+    }
+  },
+  {
+    "id": "unclosed-code",
+    "operation": "markdown",
+    "input": {
+      "text": "```js\nlet x = 1;"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"><span class=\"hljs-keyword\">let</span> x = <span class=\"hljs-number\">1</span>;</code></pre>"
+    }
+  },
+  {
+    "id": "indented-code",
+    "operation": "markdown",
+    "input": {
+      "text": "    <tag>&amp;\n    雪"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"><span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">tag</span>&gt;</span><span class=\"hljs-symbol\">&amp;amp;</span>\n雪</span></code></pre>"
+    }
+  },
+  {
+    "id": "nested-code",
+    "operation": "markdown",
+    "input": {
+      "text": "> ```python\n> print(\"x\")\n> ```"
+    },
+    "test": "export_code_uses_viewer_policy_without_chat_controls",
+    "branch": "success",
+    "expected": {
+      "html": "<blockquote>\n<pre><code class=\"hljs\"><span class=\"hljs-built_in\">print</span>(<span class=\"hljs-string\">&quot;x&quot;</span>)</code></pre></blockquote>\n"
+    }
+  },
+  {
+    "id": "plain-empty",
+    "operation": "output",
+    "input": {
+      "text": "",
+      "maxLines": 5
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div></div></div>"
+    }
+  },
+  {
+    "id": "plain-short",
+    "operation": "output",
+    "input": {
+      "text": "one\ntwo",
+      "maxLines": 5
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div>one</div><div>two</div></div>"
+    }
+  },
+  {
+    "id": "plain-blank-tabs",
+    "operation": "output",
+    "input": {
+      "text": "\tfirst\n\n third\t\n",
+      "maxLines": 2
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\"><div class=\"output-preview\"><div>   first</div><div></div><div class=\"expand-hint\">... (2 more lines)</div></div><div class=\"output-full\"><div>   first</div><div></div><div> third   </div><div></div></div></div>"
+    }
+  },
+  {
+    "id": "plain-html",
+    "operation": "output",
+    "input": {
+      "text": "<script>&amp;\"'雪",
+      "maxLines": 5
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div>&lt;script&gt;&amp;amp;&quot;&#39;雪</div></div>"
+    }
+  },
+  {
+    "id": "zero-preview",
+    "operation": "output",
+    "input": {
+      "text": "one\ntwo",
+      "maxLines": 0
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\"><div class=\"output-preview\"><div class=\"expand-hint\">... (2 more lines)</div></div><div class=\"output-full\"><div>one</div><div>two</div></div></div>"
+    }
+  },
+  {
+    "id": "five-at-boundary",
+    "operation": "output",
+    "input": {
+      "text": "1\n2\n3\n4\n5",
+      "maxLines": 5
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div></div>"
+    }
+  },
+  {
+    "id": "five-over-boundary",
+    "operation": "output",
+    "input": {
+      "text": "1\n2\n3\n4\n5\n6",
+      "maxLines": 5
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\"><div class=\"output-preview\"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div class=\"expand-hint\">... (1 more lines)</div></div><div class=\"output-full\"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div></div></div>"
+    }
+  },
+  {
+    "id": "ten-over-boundary",
+    "operation": "output",
+    "input": {
+      "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
+      "maxLines": 10
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\"><div class=\"output-preview\"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div class=\"expand-hint\">... (1 more lines)</div></div><div class=\"output-full\"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div></div></div>"
+    }
+  },
+  {
+    "id": "twenty-over-boundary",
+    "operation": "output",
+    "input": {
+      "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20",
+      "maxLines": 20
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\"><div class=\"output-preview\"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div><div>19</div><div class=\"expand-hint\">... (1 more lines)</div></div><div class=\"output-full\"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div><div>19</div><div>20</div></div></div>"
+    }
+  },
+  {
+    "id": "plain-crlf",
+    "operation": "output",
+    "input": {
+      "text": "a\r\nb\rc",
+      "maxLines": 1
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\"><div class=\"output-preview\"><div>a\r</div><div class=\"expand-hint\">... (1 more lines)</div></div><div class=\"output-full\"><div>a\r</div><div>b\rc</div></div></div>"
+    }
+  },
+  {
+    "id": "code-short",
+    "operation": "output",
+    "input": {
+      "text": "const x = 1;",
+      "maxLines": 5,
+      "lang": "javascript"
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><pre><code class=\"hljs\"><span class=\"hljs-keyword\">const</span> x = <span class=\"hljs-number\">1</span>;</code></pre></div>"
+    }
+  },
+  {
+    "id": "code-expand",
+    "operation": "output",
+    "input": {
+      "text": "/* open\ncomment\nend */\nlet x = 1;",
+      "maxLines": 2,
+      "lang": "javascript"
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\">\n              <div class=\"output-preview\"><pre><code class=\"hljs\"><span class=\"hljs-comment\">/* open\ncomment</span></code></pre>\n              <div class=\"expand-hint\">... (2 more lines)</div></div>\n              <div class=\"output-full\"><pre><code class=\"hljs\"><span class=\"hljs-comment\">/* open\ncomment\nend */</span>\n<span class=\"hljs-keyword\">let</span> x = <span class=\"hljs-number\">1</span>;</code></pre></div></div>"
+    }
+  },
+  {
+    "id": "code-blank-tabs",
+    "operation": "output",
+    "input": {
+      "text": "\tlet x;\n\n\tlet y;\n",
+      "maxLines": 2,
+      "lang": "javascript"
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\">\n              <div class=\"output-preview\"><pre><code class=\"hljs\">   <span class=\"hljs-keyword\">let</span> x;\n</code></pre>\n              <div class=\"expand-hint\">... (2 more lines)</div></div>\n              <div class=\"output-full\"><pre><code class=\"hljs\">   <span class=\"hljs-keyword\">let</span> x;\n\n   <span class=\"hljs-keyword\">let</span> y;\n</code></pre></div></div>"
+    }
+  },
+  {
+    "id": "unsupported-output-label",
+    "operation": "output",
+    "input": {
+      "text": "<tag>&amp;\nnext",
+      "maxLines": 1,
+      "lang": "missing-language"
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\">\n              <div class=\"output-preview\"><pre><code class=\"hljs\">&lt;tag&gt;&amp;amp;</code></pre>\n              <div class=\"expand-hint\">... (1 more lines)</div></div>\n              <div class=\"output-full\"><pre><code class=\"hljs\">&lt;tag&gt;&amp;amp;\nnext</code></pre></div></div>"
+    }
+  },
+  {
+    "id": "empty-output-label",
+    "operation": "output",
+    "input": {
+      "text": "a\nb",
+      "maxLines": 1,
+      "lang": ""
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\"><div class=\"output-preview\"><div>a</div><div class=\"expand-hint\">... (1 more lines)</div></div><div class=\"output-full\"><div>a</div><div>b</div></div></div>"
+    }
+  },
+  {
+    "id": "plain-9-limit-10",
+    "operation": "output",
+    "input": {
+      "text": "0\n1\n2\n3\n4\n5\n6\n7\n8",
+      "maxLines": 10
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div></div>"
+    }
+  },
+  {
+    "id": "plain-10-limit-10",
+    "operation": "output",
+    "input": {
+      "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9",
+      "maxLines": 10
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div></div>"
+    }
+  },
+  {
+    "id": "plain-19-limit-20",
+    "operation": "output",
+    "input": {
+      "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18",
+      "maxLines": 20
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div></div>"
+    }
+  },
+  {
+    "id": "plain-20-limit-20",
+    "operation": "output",
+    "input": {
+      "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19",
+      "maxLines": 20
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div><div>19</div></div>"
+    }
+  },
+  {
+    "id": "plain-untruncated-blanks",
+    "operation": "output",
+    "input": {
+      "text": "a\n\nb\n",
+      "maxLines": 10
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output\"><div>a</div><div></div><div>b</div><div></div></div>"
+    }
+  },
+  {
+    "id": "plain-tab-in-escape-looking-text",
+    "operation": "output",
+    "input": {
+      "text": "\u001b]0;ti\tle\u0007\nnext",
+      "maxLines": 1
+    },
+    "test": "expandable_output_keeps_lines_previews_and_independent_code_bodies",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\"><div class=\"output-preview\"><div>\u001b]0;ti   le\u0007</div><div class=\"expand-hint\">... (1 more lines)</div></div><div class=\"output-full\"><div>\u001b]0;ti   le\u0007</div><div>next</div></div></div>"
+    }
+  },
+  {
+    "id": "explicit-markdown-failure",
+    "operation": "highlight-fault",
+    "input": {
+      "surface": "markdown",
+      "text": "```javascript\nlet x = 1;\n```",
+      "method": "highlight",
+      "failCall": 1
+    },
+    "test": "export_highlighter_failures_preserve_the_other_body",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\">let x = 1;</code></pre>",
+      "calls": [
+        [
+          "let x = 1;",
+          {
+            "language": "javascript"
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": "unlabelled-markdown-failure",
+    "operation": "highlight-fault",
+    "input": {
+      "surface": "markdown",
+      "text": "```\nlet x = 1;\n```",
+      "method": "highlightAuto",
+      "failCall": 1
+    },
+    "test": "export_highlighter_failures_preserve_the_other_body",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\">let x = 1;</code></pre>",
+      "calls": [
+        [
+          "let x = 1;"
+        ]
+      ]
+    }
+  },
+  {
+    "id": "unknown-markdown-failure",
+    "operation": "highlight-fault",
+    "input": {
+      "surface": "markdown",
+      "text": "```missing-language\nlet x = 1;\n```",
+      "method": "highlightAuto",
+      "failCall": 1
+    },
+    "test": "export_highlighter_failures_preserve_the_other_body",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\">let x = 1;</code></pre>",
+      "calls": [
+        [
+          "let x = 1;"
+        ]
+      ]
+    }
+  },
+  {
+    "id": "output-full-failure",
+    "operation": "highlight-fault",
+    "input": {
+      "surface": "output",
+      "text": "/* one\ntwo\nend */",
+      "maxLines": 1,
+      "lang": "javascript",
+      "method": "highlight",
+      "failCall": 1
+    },
+    "test": "export_highlighter_failures_preserve_the_other_body",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\">\n              <div class=\"output-preview\"><pre><code class=\"hljs\"><span class=\"hljs-comment\">/* one</span></code></pre>\n              <div class=\"expand-hint\">... (2 more lines)</div></div>\n              <div class=\"output-full\"><pre><code class=\"hljs\">/* one\ntwo\nend */</code></pre></div></div>",
+      "calls": [
+        [
+          "/* one\ntwo\nend */",
+          {
+            "language": "javascript"
+          }
+        ],
+        [
+          "/* one",
+          {
+            "language": "javascript"
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": "output-preview-failure",
+    "operation": "highlight-fault",
+    "input": {
+      "surface": "output",
+      "text": "/* one\ntwo\nend */",
+      "maxLines": 1,
+      "lang": "javascript",
+      "method": "highlight",
+      "failCall": 2
+    },
+    "test": "export_highlighter_failures_preserve_the_other_body",
+    "branch": "success",
+    "expected": {
+      "html": "<div class=\"tool-output expandable\">\n              <div class=\"output-preview\"><pre><code class=\"hljs\">/* one</code></pre>\n              <div class=\"expand-hint\">... (2 more lines)</div></div>\n              <div class=\"output-full\"><pre><code class=\"hljs\"><span class=\"hljs-comment\">/* one\ntwo\nend */</span></code></pre></div></div>",
+      "calls": [
+        [
+          "/* one\ntwo\nend */",
+          {
+            "language": "javascript"
+          }
+        ],
+        [
+          "/* one",
+          {
+            "language": "javascript"
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": "display-missing",
+    "operation": "str",
+    "input": {},
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "id": "display-null",
+    "operation": "str",
+    "input": {
+      "value": null
+    },
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "id": "display-empty",
+    "operation": "str",
+    "input": {
+      "value": ""
+    },
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "id": "display-text",
+    "operation": "str",
+    "input": {
+      "value": "雪"
+    },
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": "雪"
+    }
+  },
+  {
+    "id": "display-number",
+    "operation": "str",
+    "input": {
+      "value": 1
+    },
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "display-false",
+    "operation": "str",
+    "input": {
+      "value": false
+    },
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "display-true",
+    "operation": "str",
+    "input": {
+      "value": true
+    },
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "display-object",
+    "operation": "str",
+    "input": {
+      "value": {}
+    },
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "display-array",
+    "operation": "str",
+    "input": {
+      "value": []
+    },
+    "test": "export_display_string_keeps_missing_null_and_invalid_distinct",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-ts",
+    "operation": "language",
+    "input": {
+      "path": "a.ts"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "typescript"
+    }
+  },
+  {
+    "id": "path-tsx",
+    "operation": "language",
+    "input": {
+      "path": "a.tsx"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "typescript"
+    }
+  },
+  {
+    "id": "path-js",
+    "operation": "language",
+    "input": {
+      "path": "a.js"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "javascript"
+    }
+  },
+  {
+    "id": "path-jsx",
+    "operation": "language",
+    "input": {
+      "path": "a.jsx"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "javascript"
+    }
+  },
+  {
+    "id": "path-py",
+    "operation": "language",
+    "input": {
+      "path": "a.py"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "python"
+    }
+  },
+  {
+    "id": "path-rb",
+    "operation": "language",
+    "input": {
+      "path": "a.rb"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "ruby"
+    }
+  },
+  {
+    "id": "path-rs",
+    "operation": "language",
+    "input": {
+      "path": "a.rs"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "rust"
+    }
+  },
+  {
+    "id": "path-go",
+    "operation": "language",
+    "input": {
+      "path": "a.go"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "go"
+    }
+  },
+  {
+    "id": "path-java",
+    "operation": "language",
+    "input": {
+      "path": "a.java"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "java"
+    }
+  },
+  {
+    "id": "path-c",
+    "operation": "language",
+    "input": {
+      "path": "a.c"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "c"
+    }
+  },
+  {
+    "id": "path-cpp",
+    "operation": "language",
+    "input": {
+      "path": "a.cpp"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "cpp"
+    }
+  },
+  {
+    "id": "path-h",
+    "operation": "language",
+    "input": {
+      "path": "a.h"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "c"
+    }
+  },
+  {
+    "id": "path-hpp",
+    "operation": "language",
+    "input": {
+      "path": "a.hpp"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "cpp"
+    }
+  },
+  {
+    "id": "path-cs",
+    "operation": "language",
+    "input": {
+      "path": "a.cs"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "csharp"
+    }
+  },
+  {
+    "id": "path-php",
+    "operation": "language",
+    "input": {
+      "path": "a.php"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "php"
+    }
+  },
+  {
+    "id": "path-sh",
+    "operation": "language",
+    "input": {
+      "path": "a.sh"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "bash"
+    }
+  },
+  {
+    "id": "path-bash",
+    "operation": "language",
+    "input": {
+      "path": "a.bash"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "bash"
+    }
+  },
+  {
+    "id": "path-zsh",
+    "operation": "language",
+    "input": {
+      "path": "a.zsh"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "bash"
+    }
+  },
+  {
+    "id": "path-sql",
+    "operation": "language",
+    "input": {
+      "path": "a.sql"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "sql"
+    }
+  },
+  {
+    "id": "path-html",
+    "operation": "language",
+    "input": {
+      "path": "a.html"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "html"
+    }
+  },
+  {
+    "id": "path-css",
+    "operation": "language",
+    "input": {
+      "path": "a.css"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "css"
+    }
+  },
+  {
+    "id": "path-scss",
+    "operation": "language",
+    "input": {
+      "path": "a.scss"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "scss"
+    }
+  },
+  {
+    "id": "path-json",
+    "operation": "language",
+    "input": {
+      "path": "a.json"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "json"
+    }
+  },
+  {
+    "id": "path-yaml",
+    "operation": "language",
+    "input": {
+      "path": "a.yaml"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "yaml"
+    }
+  },
+  {
+    "id": "path-yml",
+    "operation": "language",
+    "input": {
+      "path": "a.yml"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "yaml"
+    }
+  },
+  {
+    "id": "path-xml",
+    "operation": "language",
+    "input": {
+      "path": "a.xml"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "xml"
+    }
+  },
+  {
+    "id": "path-md",
+    "operation": "language",
+    "input": {
+      "path": "a.md"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "markdown"
+    }
+  },
+  {
+    "id": "path-dockerfile",
+    "operation": "language",
+    "input": {
+      "path": "a.dockerfile"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "dockerfile"
+    }
+  },
+  {
+    "id": "path-extra-FILE.TS",
+    "operation": "language",
+    "input": {
+      "path": "FILE.TS"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "typescript"
+    }
+  },
+  {
+    "id": "path-extra-Dockerfile",
+    "operation": "language",
+    "input": {
+      "path": "Dockerfile"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "dockerfile"
+    }
+  },
+  {
+    "id": "path-extra-/a/Dockerfile",
+    "operation": "language",
+    "input": {
+      "path": "/a/Dockerfile"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-extra-a.toml",
+    "operation": "language",
+    "input": {
+      "path": "a.toml"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-extra-a.mjs",
+    "operation": "language",
+    "input": {
+      "path": "a.mjs"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-extra-a.js?x",
+    "operation": "language",
+    "input": {
+      "path": "a.js?x"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-extra-.rs",
+    "operation": "language",
+    "input": {
+      "path": ".rs"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "rust"
+    }
+  },
+  {
+    "id": "path-extra-a.",
+    "operation": "language",
+    "input": {
+      "path": "a."
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-extra-a.rs.bak",
+    "operation": "language",
+    "input": {
+      "path": "a.rs.bak"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-extra-a.rs/no-dot",
+    "operation": "language",
+    "input": {
+      "path": "a.rs/no-dot"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-extra- a.rs ",
+    "operation": "language",
+    "input": {
+      "path": " a.rs "
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "path-extra-a\\path.PY",
+    "operation": "language",
+    "input": {
+      "path": "a\\path.PY"
+    },
+    "test": "export_path_language_reuses_only_viewer_suffixes",
+    "branch": "success",
+    "expected": {
+      "value": "python"
+    }
+  },
+  {
+    "id": "result-empty",
+    "operation": "result",
+    "input": {
+      "entries": [],
+      "id": "x"
+    },
+    "test": "export_tool_results_keep_first_match_and_reached_errors",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "result-first-wins",
+    "operation": "result",
+    "input": {
+      "entries": [
+        {
+          "id": "before",
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "x",
+            "text": "first"
+          }
+        },
+        {
+          "id": "later",
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "x",
+            "text": "last"
+          }
+        }
+      ],
+      "id": "x"
+    },
+    "test": "export_tool_results_keep_first_match_and_reached_errors",
+    "branch": "success",
+    "expected": {
+      "value": {
+        "role": "toolResult",
+        "toolCallId": "x",
+        "text": "first"
+      }
+    }
+  },
+  {
+    "id": "result-out-of-order",
+    "operation": "result",
+    "input": {
+      "entries": [
+        {
+          "id": "result",
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "x",
+            "text": "result"
+          }
+        },
+        {
+          "id": "assistant",
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "toolCallId": "x",
+            "text": "ignored"
+          }
+        }
+      ],
+      "id": "x"
+    },
+    "test": "export_tool_results_keep_first_match_and_reached_errors",
+    "branch": "success",
+    "expected": {
+      "value": {
+        "role": "toolResult",
+        "toolCallId": "x",
+        "text": "result"
+      }
+    }
+  },
+  {
+    "id": "result-different-id",
+    "operation": "result",
+    "input": {
+      "entries": [
+        {
+          "id": "result",
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "y",
+            "text": "other"
+          }
+        }
+      ],
+      "id": "x"
+    },
+    "test": "export_tool_results_keep_first_match_and_reached_errors",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "result-other-role",
+    "operation": "result",
+    "input": {
+      "entries": [
+        {
+          "id": "assistant",
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "toolCallId": "x",
+            "text": "ignored"
+          }
+        }
+      ],
+      "id": "x"
+    },
+    "test": "export_tool_results_keep_first_match_and_reached_errors",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "result-unknown-type",
+    "operation": "result",
+    "input": {
+      "entries": [
+        {
+          "type": "custom",
+          "message": null
+        }
+      ],
+      "id": "x"
+    },
+    "test": "export_tool_results_keep_first_match_and_reached_errors",
+    "branch": "success",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "id": "result-missing-message",
+    "operation": "result",
+    "input": {
+      "entries": [
+        {
+          "type": "message"
+        }
+      ],
+      "id": "x"
+    },
+    "test": "export_tool_results_keep_first_match_and_reached_errors",
+    "branch": "error",
+    "expected": {
+      "kind": "InvalidData"
+    }
+  },
+  {
+    "id": "result-null-message",
+    "operation": "result",
+    "input": {
+      "entries": [
+        {
+          "type": "message",
+          "message": null
+        }
+      ],
+      "id": "x"
+    },
+    "test": "export_tool_results_keep_first_match_and_reached_errors",
+    "branch": "error",
+    "expected": {
+      "kind": "InvalidData"
+    }
+  },
+  {
+    "id": "literal-operands-1",
+    "operation": "markdown",
+    "input": {
+      "text": "\\<"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-2",
+    "operation": "markdown",
+    "input": {
+      "text": "\\<div>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;div&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-3",
+    "operation": "markdown",
+    "input": {
+      "text": "[r][r]\n\n[r]: <https://safe.test>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"https://safe.test\">r</a></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-4",
+    "operation": "markdown",
+    "input": {
+      "text": "[r][r]\n\n[r]: </docs>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"/docs\">r</a></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-5",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt][r]\n\n[r]: </image.png>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"/image.png\" alt=\"alt\"></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-6",
+    "operation": "markdown",
+    "input": {
+      "text": "<div>\n```text\n<tag>\n```\n</div>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;div&gt;</p>\n<pre><code class=\"hljs\">&lt;tag&gt;</code></pre><p>&lt;/div&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-7",
+    "operation": "markdown",
+    "input": {
+      "text": "\\<!DOCTYPE html>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!DOCTYPE html&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-10",
+    "operation": "markdown",
+    "input": {
+      "text": "a <!-- **comment** --> z"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>a &lt;!-- **comment** --&gt; z</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-11",
+    "operation": "markdown",
+    "input": {
+      "text": "<div>**literal** [r][r]</div>\n\n[r]: </docs>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;div&gt;<strong>literal</strong> <a href=\"/docs\">r</a>&lt;/div&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-13",
+    "operation": "markdown",
+    "input": {
+      "text": "    <tag>\n"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"><span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">tag</span>&gt;</span></span></code></pre>"
+    }
+  },
+  {
+    "id": "literal-operands-14",
+    "operation": "markdown",
+    "input": {
+      "text": "`<tag>`"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><code>&lt;tag&gt;</code></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-15",
+    "operation": "markdown",
+    "input": {
+      "text": "[a](</docs> \"<title>\") ![a](</image.png>)"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"/docs\" title=\"&lt;title&gt;\">a</a> <img src=\"/image.png\" alt=\"a\"></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-16",
+    "operation": "markdown",
+    "input": {
+      "text": "<!DOCTYPE **html**>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!DOCTYPE **html**&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-17",
+    "operation": "markdown",
+    "input": {
+      "text": "<!-- **comment**\n-->\n```text\n<tag>\n```"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!-- **comment**<br>--&gt;</p>\n<pre><code class=\"hljs\">&lt;tag&gt;</code></pre>"
+    }
+  },
+  {
+    "id": "literal-operands-18",
+    "operation": "markdown",
+    "input": {
+      "text": "<div>\n<div>\n<tag>\n</div>\n</div>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;div&gt;</p>\n<p>&lt;div&gt;<br>&lt;tag&gt;</p>\n<p>&lt;/div&gt;</p>\n<p>&lt;/div&gt;</p>\n"
+    }
+  }
+]

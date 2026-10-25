@@ -234,6 +234,18 @@ stored parts. Missing part relationships fall back to root relationships while
 retaining the supplied part folder; an empty list does not fall back. External
 relationship paths retain their resolved absolute URLs. Resource lookup reads
 bytes on demand without network requests or filesystem writes. XML entry decoding uses lossy UTF-8. DOCTYPE is rejected.
+Before inflation, the reader returns an archive error if an entry declares more
+than 512 MiB expanded. The archive library rejects data that exceeds its declared
+size. Word, presentation and spreadsheet attachment builders also reject
+extracted output above 512 MiB with a document processing error. The reader has no
+cumulative read quota. These bounds do not cover parsed document structures,
+archive metadata or lossy UTF-8 expansion.
+
+`WordDocument::document_body` reparses the retained main-part XML and returns the
+[owned body tree](#owned-word-element-tree), or `None` when the package has no
+main part or the main part has no `w:body` element. Loading parses the main part
+once while it admits the package parts, and an extraction parses it again to
+build the tree rather than rereading the archive.
 
 `parse_xml_string` provides borrowed element/attribute queries and descendant
 text. Element selection uses immediate children and local names; attribute
@@ -261,27 +273,32 @@ Preparation selects the first element, ignoring preceding whitespace, comments,
 processing instructions and CDATA. A property with no value element fails.
 Selection and decoding follow the [XML reader](#word-package-reader).
 
-`CommentsPart` reuses the [owned body parser](#owned-word-element-tree) for each
-comment's content, retaining raw author, initials, date and identifier.
+`CommentsPart` reuses the [owned body parser](#owned-word-element-tree) and its
+width policy for each comment's content, retaining raw author, initials, date
+and identifier.
 `CommentsExtendedPart` retains paragraph/parent links and nullable exact-token
 completion flags. Both expose source-order lists and last-key-wins maps sharing
 `Arc<RwLock<_>>` records. Missing IDs use the key `null`; numeric keys enumerate
 first in ascending order. Editing a record does not update its snapshot lookup
 key, and external handles survive removal or document release.
 
-`WordDocument::load` prepares these records even without rendering. It admits
-relationships first, XML second and semantic data third, before traversing that
-part's descendants. Semantic failures return `DocxError::Xml` with the part path;
-no partial document is returned. The four named property/comment accessors borrow
-the latest designated data. Custom properties are available through `parts()`
-and `PartData::CustomProps`; unsupported semantic kinds retain `data: None`.
+`WordDocument::load` prepares these records even without rendering; comment
+bodies keep their cell widths. It admits relationships first, XML second and
+semantic data third, before traversing that part's descendants. Semantic failures return
+`DocxError::Xml` with the part path; no partial document is returned. The four
+named property/comment accessors borrow the latest designated data. Custom
+properties are available through `parts()` and `PartData::CustomProps`;
+unsupported semantic kinds retain `data: None`.
 
 ## Owned Word element tree
 
 `maestro_app::browser::docx_preview::{parse_body_elements, parse_paragraph,
 parse_run}` parse an `OwnedXmlElement` selection into an `OpenXmlElementTree`.
-Ordered arena positions preserve separate runs and their paragraph or simple-field
-parents, including hidden paragraphs used by content controls and change wrappers.
+Their `ignore_width` flag suppresses cell widths in every property group; table
+widths remain.
+Ordered arena positions preserve separate runs and their parents: a paragraph or
+simple field, or a hyperlink or smart tag inside one. Hidden paragraphs used by
+content controls and change wrappers remain.
 Text, breaks, tabs, symbols, note references and field metadata remain typed;
 paragraph-level simple fields retain their result runs without evaluating fields.
 Field locks read `fldLock`, falling back to `lock` only when `fldLock` is absent;
@@ -306,9 +323,18 @@ whole earlier group; later paragraph property groups without a section retain th
 existing section. Package-level section composition, pagination, inheritance and
 rendering remain separate work.
 
-Recognized foreign branches retain shared complete XML source with selected byte
-ranges, preserving ancestor namespaces. Tables, links and smart tags remain
-uninterpreted here. Comment references and range markers retain typed nullable
+Tables keep their rows, the last grid's column widths and separate table and
+cell style maps from their last property group. Style references, look classes
+and band sizes survive later groups. Centered and right-aligned tables use
+automatic margins, floating positions add their text distances to any existing
+margin, and hidden tables are not displayed. Rows keep conditional classes,
+nullable header flags and grid offsets. Cells keep nested paragraphs and tables,
+spans, merge markers (a missing value continues the merge), conditional classes
+and text directions, which apply after the cell's other properties.
+
+Hyperlinks keep nullable relationship identifiers and anchors; smart tags keep
+nonempty URIs and element names. Both own their immediate runs, and those runs
+point back to them. Comment references and range markers retain typed nullable
 identifiers in inline order; comment rendering remains separate work.
 
 Bookmarks retain nullable identifiers, names and independent column numbers in
@@ -373,7 +399,8 @@ neither operation renders a preview.
 `maestro_app::browser::docx_preview` exposes `StylesPart`, `ThemePart`,
 `HeaderPart`, `FooterPart`, `FootnotesPart`, `EndnotesPart` and `SettingsPart`.
 Their `parse_xml` factories prepare owned records separately from package
-loading; headers, footers and notes reuse the ordinary body parser.
+loading; headers, footers and notes reuse the ordinary body parser with the
+caller's width policy.
 
 Styles retain ordered named/default definitions, repeated identifiers,
 relationships and CSS declarations without resolving inheritance. Each style
@@ -419,45 +446,133 @@ XOR-decoding at most the first 32 bytes with the reversed hexadecimal key and
 leaving the tail unchanged. The archive is not rewritten. These operations do
 not create browser URLs, load fonts into a browser or render a preview.
 
-## Word stylesheet preparation
+## Word page rendering
 
-The browser library's private stylesheet renderer prepares owned style records
-from those factories. Lookup selects the last occurrence of an exact nonempty
-identifier; CSS emission retains every occurrence in document order. Linked
-styles append their resolved declarations without merging metadata. Class names
-retain the caller's namespace, and the wrapper escapes that namespace while
-preserving trusted child markup.
+`maestro_web::docx_preview::parse_async` opens a Word package with the readers
+above and prepares its body, styles, theme, numbering, fonts, notes, headers and
+footers. A malformed part fails the load with `DocxError`, so rendering itself
+cannot fail. `WordPreview::render` returns the styles, the pages and the resource
+styles one rendering composes; `render_sections` returns the pages alone, with the
+object URLs their nodes name.
+`docx_preview::Options` defaults to the `docx` class namespace, XML declaration
+trimming, page-break detection, ignored last-rendered page breaks, kept page
+sizes, rendered headers, footers and note lists, the page wrapper, loaded fonts,
+object URLs and rendered alternate chunks. The reading options decide the URL
+kind; a later rendering cannot change it.
 
-Inheritance fills only missing declarations and metadata, keeping child values,
-including explicit nulls, false flags and empty tab arrays. Missing property
-groups inherit owned values. Each chain reads unchanged definitions and stops on
-its first repeated occurrence, retaining the formatting gathered before that
-revisit. This corrects overwritten child metadata, missing inherited groups,
-forward-chain formatting loss and cyclic formatting loss. A present spacing
-group retains its nullable fields rather than inheriting over them.
+A paragraph's section properties end a section after that paragraph, and the
+body's own section properties apply to the sections after the last such
+paragraph. A page break inside a paragraph splits the paragraph, and the run
+holding the break, across two pages; a break that ends the paragraph only ends the
+page.
+A paragraph style with page-break-before ends the current section before the
+paragraph, and the ended section uses the properties of the group after it. While
+last-rendered page breaks are ignored, each section starts a new page; otherwise
+pages break at page breaks, last-rendered page breaks and changes of orientation
+or page size.
 
-The renderer emits ordered stylesheet text with CRLF rule delimiters, default
-document CSS with an explicit print-wrapper policy, and wrapper HTML. It does not
-mount a preview.
+Each page carries the margins, width and minimum height of its first section,
+unless widths or heights are ignored, and the document background. Each
+section's content carries its column count, gap and rule. The first page of a
+section with a title page uses the first-page header and footer, even pages use
+the even ones, and other pages the default ones. Their offsets from the page
+margins are written as `calc()` expressions, and a reference to a missing part
+renders nothing. Footnotes are numbered per page and listed at the end of their
+page; endnotes are numbered through the document and listed at the end of the
+last page. A reference keeps its number when its note is missing, and repeated
+note identifiers use the last note. Tables keep their column widths, cell spans
+and placeholder cells for grid offsets. In a vertical merge the first cell spans
+the merged rows and the others are hidden. Body, header and footer tables hand
+their cell borders and margins to cells that declare none.
 
-The same private renderer emits native paragraphs, runs and inline text from the
-owned element tree. Insertions flatten into ordered children; deleted content,
-field runs and non-wrapping breaks are omitted by this selected profile. Tabs use
-an em space, and nonbreaking hyphens remain visible without introducing a break.
-Symbols decode numeric entities without interpreting authored suffixes as HTML.
-Native class tokens, CSS properties and attributes retain browser validation.
-Paragraph tabs inherit only when absent, while an explicit empty group stays
-empty. Local numbering groups suppress style fallback, including empty groups.
-Numbering preparation updates the last retained matching style occurrence.
+Insertions flatten into ordered children; deleted content, field runs and
+non-wrapping breaks are omitted. Tabs use an em space, and nonbreaking hyphens
+remain visible without introducing a break. Symbols decode numeric references
+without reading authored suffixes as markup. Paragraph and run classes keep the
+caller's namespace; a local numbering group, even an empty one, suppresses the
+style's numbering class.
 
-Numbering CSS preserves counter levels, resets, authored declarations and picture
-placeholders. Literal marker text is serialized separately from numeric counter
-placeholders, so quotes, backslashes, newlines and literal percent signs cannot
-become CSS syntax or phantom counters. Picture loading and alternate-chunk
-settlement remain with [complete preview composition](https://github.com/Orchestration-Maestro/maestro/issues/784).
-[Hyperlink and smart-tag wiring](https://github.com/Orchestration-Maestro/maestro/issues/760)
-and [element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
-remain separate consumers; this does not expose a partial preview entry point.
+A link reads the relationships of the part that holds it: the main document for
+the body, the header or footer part for its content, and the notes part for
+notes. Its target is the first of those relationships, in retained order, whose
+identifier equals the link's nonempty identifier and whose target mode is
+exactly `External`; the relationship type is not checked. A matched
+relationship without a target gives an empty target and ends the search, and an
+absent, empty or unmatched identifier gives an empty target too. A nonempty
+anchor appends `#` and the anchor, so the target becomes `target#anchor`, or
+`#anchor` alone. The value keeps its authored spelling, with no percent-encoding
+or trimming. It then passes the same
+[`executable`](../../crates/maestro-app/src/browser/links.rs) check the
+worksheet tables use. A refused link keeps its element and text but has no
+`href`, so following it does nothing.
+
+Style lookup selects the last occurrence of an exact nonempty identifier. A
+style's numbering and page-break-before come from the nearest style along its
+base chain that sets them, with the numbering identifier and level resolved
+separately, so a style's own values, false flags included, win over its bases.
+Each chain reads unchanged definitions and stops at its first repeated style.
+This corrects base values overwriting a style's own, styles without paragraph
+properties inheriting nothing, and styles defined before their base losing the
+rest of the chain.
+
+Each style value stays inside its own declaration: a value whose strings or
+brackets do not close, or that holds a separator, block, comment, priority or
+escape outside a string, is dropped, as an invalid style property is, so a
+document cannot add declarations. Values the renderer composes itself, such as
+resource URLs, counters and level text, are written as composed.
+
+## Word preview composition
+
+One rendering carries the library stylesheet, the page wrapper, theme variables,
+document and list styles, embedded font faces, the pages, the images and shapes
+they name, and the alternate format chunks. `WordPreview::render` returns them as
+a `Rendering`: `styles` holds the style elements in the order the library mounts
+them, `body` holds the page wrapper or the pages themselves, and `resource_styles`
+holds the picture-bullet variables and font faces that follow the body. A mount
+writes `styles` and then `resource_styles` into the style container, which is the
+body container unless one is given, and `body` into the body container, so a
+shared container shows the picture bullets and font faces after the pages.
+
+The style container holds the library stylesheet, the theme, the document styles,
+the list styles, the picture-bullet variables and the font faces, in that order.
+The library stylesheet declares the page frame, the page box, the page content,
+the tables and the inline defaults under the class namespace; the two wrapper
+rules sit inside `@media not print` when the wrapper is hidden on print. The theme
+declares `--docx-majorHAnsi-font`, `--docx-minorHAnsi-font` and one
+`--docx-<slot>-color` per colour slot, writing `null` for a missing typeface or
+colour value and `undefined` for an absent font entry. Document styles emit their
+own resolved substyles, then their linked style's, with the last default
+definition of a target also matching that target anywhere in the document. List styles emit a marker, a counter set per level and a
+`counter-reset` on the page wrapper, or on the document root when the pages are
+unwrapped. Font faces name their embedded bytes once de-obfuscated and add
+`font-weight` and `font-style` by face kind.
+
+Images, picture bullets, fonts and alternate chunks load against the part whose
+relationships name them: the document part by default, and each header, footer
+and note part for its own content. Their bytes become a data URL when the package
+was read with base64 URLs, and an object URL otherwise; the rendering keeps that
+object URL until it is dropped. A drawing becomes an inline block holding its content, a
+picture carries its crop and rotation as a transform and a clip path, shapes
+become SVG, equations become MathML, and a chunk becomes a frame whose `srcdoc`
+holds the chunk's text and which runs no script.
+
+`render_document` clears the containers and mounts a rendering as nodes built with
+`createElementNS` in each element's namespace, assigning attributes in order. One
+frame later it sizes each shape image to its shape's bounding box.
+`render_async` parses and mounts in one call, returning the parsed preview beside
+the mounted document. The `RenderedDocument` it returns cancels pending shape
+sizing and revokes its object URLs when it is dropped.
+The attachment mount belongs to
+[the attachment DOM switch](https://github.com/Orchestration-Maestro/maestro/issues/1761).
+
+These corrections to the library are kept: an alternate chunk's frame carries
+`sandbox=""` so its scripts never run; a value that would leave its own
+declaration, and a style, counter or variable token that is not a plain
+identifier, are dropped; a font name CSS would reject is enclosed as a string; a
+missing resource leaves its reference unset instead of writing `null`; an image in
+a note reads the notes part's own relationships; a bottom bar underlines its base;
+a malformed equation takes the documented default instead of failing the document;
+and list level text keeps its literal `%`, quotes and backslashes.
 
 ## Worksheet tables
 

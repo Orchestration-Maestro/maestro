@@ -1,6 +1,8 @@
 //! Strict model-picker corpus and controlled owner operations.
+use crate::bindings::Binding;
 use maestro_app::{
-    AuthStorage, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput, ProviderModelInput,
+    AuthStorage, ConfigValueOperations, ConfigValues, Model, ModelFileOperations, ModelRegistry,
+    ProviderConfigInput, ProviderModelInput, SharedHandle,
 };
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use serde::Deserialize;
@@ -12,7 +14,22 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+/// Configured-value commands that selector fixtures never execute.
+pub struct UnusedCommands;
+
+impl ConfigValueOperations for UnusedCommands {
+    fn execute(&self, _: &str) -> Option<Vec<u8>> {
+        None
+    }
+}
+
+/// Credential command handle for selector fixtures.
+pub fn no_commands() -> ConfigValues {
+    SharedHandle::new(UnusedCommands)
+}
+
 /// Every accepted environment authentication route, excluded from each child.
+#[cfg(not(target_arch = "wasm32"))]
 pub const AUTH_ENVIRONMENT: &[(&str, Option<&str>)] = &[
     ("COPILOT_GITHUB_TOKEN", None),
     ("GH_TOKEN", None),
@@ -69,9 +86,10 @@ pub struct Descriptor {
 impl Descriptor {
     /// Builds a full record using the existing owner's default metadata.
     pub fn model(&self) -> Model {
-        let mut model = maestro_app::ModelRegistry::in_memory(Arc::new(AuthStorage::in_memory(
-            std::iter::empty().collect(),
-        )))
+        let mut model = maestro_app::ModelRegistry::in_memory(
+            SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect())),
+            no_commands(),
+        )
         .unwrap()
         .get_all()
         .read()
@@ -150,7 +168,7 @@ pub struct Query {
     pub initial: Option<String>,
     /// Initial binding overrides.
     #[serde(default)]
-    pub bindings: BTreeMap<String, Keys>,
+    pub bindings: BTreeMap<String, Binding>,
     /// Synchronous selection reentry.
     #[serde(default)]
     pub reenter: bool,
@@ -166,15 +184,6 @@ pub struct Query {
 /// Ordinary frame width.
 fn width() -> usize {
     120
-}
-/// Binding scalar/list shapes.
-#[derive(Deserialize)]
-#[serde(untagged)]
-pub enum Keys {
-    /// Single key.
-    One(String),
-    /// Multiple keys, including empty.
-    Many(Vec<String>),
 }
 /// Native model edit.
 #[derive(Deserialize)]
@@ -210,7 +219,7 @@ pub enum Operation {
 #[serde(rename_all = "camelCase")]
 pub enum Action {
     /// Publish bindings.
-    Bindings(BTreeMap<String, Keys>),
+    Bindings(BTreeMap<String, Binding>),
     /// Publish theme.
     Theme(u8),
     /// Set outer focus.
@@ -297,25 +306,6 @@ pub fn colors(shift: u8) -> Rc<Theme> {
         .unwrap(),
     )
 }
-/// Replace the active manager in an isolated child transaction.
-pub fn bindings(keys: BTreeMap<String, Keys>) {
-    let overrides = keys
-        .into_iter()
-        .map(|(name, keys)| {
-            (
-                name,
-                Some(match keys {
-                    Keys::One(key) => maestro_tui::KeybindingKeys::Single(key),
-                    Keys::Many(keys) => maestro_tui::KeybindingKeys::Multiple(keys),
-                }),
-            )
-        })
-        .collect();
-    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_tui::TUI_KEYBINDINGS.clone(),
-        overrides,
-    ));
-}
 /// Read counter and optional diagnostic owned by a real file boundary.
 struct Files {
     /// Number of reads.
@@ -341,7 +331,7 @@ impl ModelFileOperations for Files {
 pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicUsize>) {
     let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let registry = ModelRegistry::with_operations(
-        Arc::new(AuthStorage::in_memory(std::iter::empty().collect())),
+        SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect())),
         query
             .read_failure
             .as_ref()
@@ -351,6 +341,7 @@ pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicU
             reads: reads.clone(),
             failure: query.read_failure.as_ref().map(|f| f.message.clone()),
         },
+        no_commands(),
     )
     .unwrap();
     let mut providers: Vec<(String, Vec<ProviderModelInput>)> = vec![];
@@ -368,7 +359,7 @@ pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicU
         registry
             .register_provider(
                 &provider,
-                Arc::new(RwLock::new(ProviderConfigInput {
+                SharedHandle::new(RwLock::new(ProviderConfigInput {
                     base_url: Some("https://example.invalid".into()),
                     api_key: Some("fixture-key".into()),
                     api: Some("openai-completions".into()),
@@ -385,13 +376,14 @@ pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicU
 /// Malformed data is parsed by the real catalog loader.
 pub fn malformed_registry() -> ModelRegistry {
     let registry = ModelRegistry::with_operations(
-        Arc::new(AuthStorage::in_memory(std::iter::empty().collect())),
+        SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect())),
         "<malformed-models-file>",
         Files {
             reads: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             failure: None,
             text: "{".into(),
         },
+        no_commands(),
     )
     .unwrap();
     assert!(

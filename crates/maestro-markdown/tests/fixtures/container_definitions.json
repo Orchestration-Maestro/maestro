@@ -1,0 +1,1002 @@
+[
+  {
+    "id": "ordered-table",
+    "input": "1. step\n| a | b |\n|---|---|\n| 1 | 2 |",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "item-table",
+    "input": "- item\n| a | b |\n|---|---|",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "lazy-lines-table",
+    "input": "- a\nb\n| x | y |\n|---|---|",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "indented-table",
+    "input": "- item\n  | a | b |\n  |---|---|",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "quote-table",
+    "input": "> q\n| A | B |\n| --- | --- |\n| 1 | 2 |",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "refused-lazy",
+    "input": "- item\na  \n|---|---|\nmore text",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "refused-indented",
+    "input": "- item\n  a  \n  |---|---|\n  more text",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "short-indent-before-refused",
+    "input": "- item\n    code\n|---|---|",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "lazy-underline",
+    "input": "> quote\nlazy\n===\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "underline-spelling",
+    "input": "> a\nb\n  ==\nc\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "underline-prefix",
+    "input": "Some text\n> quote\nlazy\n===\n\nafter",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "underline-eof",
+    "input": "> quote\nlazy\n===",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "underline-dash",
+    "input": "> q\nx\n---\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "lazy-definition",
+    "input": "> q\n[r]: https://r.s\n\n[r]\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "lazy-code",
+    "input": "> q\n    code\n    more\n> x\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "lazy-code-eof",
+    "input": "> q\n    code",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "container-rest",
+    "input": "> - item\nlazy\n> q *e*\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "nested-rest",
+    "input": "> > nested\nlazy\n> - item\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "former-hang",
+    "input": "> - a\n      p\n> [s]: /y\ne",
+    "targets": [
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "four-space-reentry",
+    "input": "> - a\n    p\n> [s]: /y\ne",
+    "targets": [
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quoted-last",
+    "input": "> - a\n      p\n> [s]: /y\n> e",
+    "targets": [
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unquoted-definition",
+    "input": "> - a\n      p\n[s]: /y\ne",
+    "targets": [
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "item-code-line",
+    "input": "- a\n      code\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "item-code-tab",
+    "input": "- a\n\t  code\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "item-code-lines",
+    "input": "- a\n      x\n       y\n  z\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "ordered-item-code",
+    "input": "1. a\n       code\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "short-item-indent",
+    "input": "- a\n    b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "loose-task-regression",
+    "input": "- [ ] task\n    - deep\n\n\tcode\n\tcode\n      code\n    four",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "empty-end",
+    "input": ">",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "empty-after-paragraph",
+    "input": "a\n>",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "empty-in-item",
+    "input": "- item\n>",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "empty-newline",
+    "input": ">\n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "empty-ordered",
+    "input": "1. one\n>",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "only-empty-child",
+    "input": "- >",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "ordered-two",
+    "input": "- item\n  2. two",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "nested-state",
+    "input": "- a\n  - b\n\n  c\n  | x |\n  |---|---|",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "quote-state",
+    "input": "- a\n  > b\n  c\n  | x |\n  |---|---|",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "literal-html",
+    "input": "- item\n  <span>",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "lazy-tab",
+    "input": "- a\n`b\tc`",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "aligned-tab",
+    "input": "- a\n  `b\tc`",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "quote-tab-prefix",
+    "input": ">\tvalue\n> x",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "quote-three-spaces",
+    "input": "   > q",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "quote-four-spaces",
+    "input": "    > q",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "list-empty",
+    "input": "-\n- b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "list-empty-blank",
+    "input": "-\n\n- b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "list-bullet-change",
+    "input": "- a\n+ b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "ordered-delimiter-change",
+    "input": "1. a\n2) b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "ordered-nine-digits",
+    "input": "123456789. a",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "ordered-ten-digits",
+    "input": "1234567890. a",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "fence-first",
+    "input": "- a\n```\nx\n```",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "heading-first",
+    "input": "- a\n# heading",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "rule-first",
+    "input": "- a\n---",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "quote-after-item",
+    "input": "- a\n> q",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "html-after-item",
+    "input": "- a\n<div>\nx\n</div>",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "plain-lines",
+    "input": "- a\nb\nc",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "definition-separator",
+    "input": "> q\n[r]: /x\n> y",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "definition-item-separator",
+    "input": "- x\n  [a]: b\n  |---|",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "continued-code-blank",
+    "input": "> q\n    code\n>\n> y",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "raw-corruption-dash",
+    "input": ">\n> - item\n      deep\n> [s]: /y\n    code\n> > nested\n---\n",
+    "targets": [
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "raw-corruption-ordered",
+    "input": "> - item\n[r]: /x \"t\"\n      deep\n> [s]: /y\n  ==\nmore text\n1. one\n",
+    "targets": [
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/y",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unicode-mapped",
+    "input": "> é\n    😀\n> https://frame.test/é",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "whitespace-feff",
+    "input": "- a\n  ﻿",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "whitespace-nel",
+    "input": "- a\n  ",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "crlf-container",
+    "input": "> q\r\n> x\r",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "first-leading-tab",
+    "input": "-\ta",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "tab-after-space",
+    "input": "- \ta",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "duplicate-definition-tail",
+    "input": "> [s]: /first\n> - a\n      p\n> [s]: /y\ne",
+    "targets": [
+      {
+        "s": [
+          "/first",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/first",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/first",
+          ""
+        ]
+      },
+      {
+        "s": [
+          "/first",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "first-empty-space",
+    "input": "- \n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "next-empty-space",
+    "input": "- a\n- \n",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "list-trailing-space",
+    "input": "- a ",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "single-space-quote-reentry",
+    "input": "> - a \nlazy",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "accent-history",
+    "input": "- a\né    code\noutside",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "astral-history",
+    "input": "- a\n😀    code\noutside",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "first-four-spaces",
+    "input": "-    a\noutside",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "first-tab-code",
+    "input": "- \tcode\noutside",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "leading-tab-control",
+    "input": "-\tcode\noutside",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "empty-third-blank",
+    "input": "-\n\n\n- b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "ascii-history-control",
+    "input": "- a\nxx    code\noutside",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "surrogate-boundary-control",
+    "input": "-\ta\n😀    code\noutside",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "blank-feff-before-item",
+    "input": "- a\n﻿\n- b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "blank-feff-before-content",
+    "input": "- a\n﻿\n  b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "space-only-history",
+    "input": "- a\naa    \noutside",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "blank-item-feff",
+    "input": "-\n﻿\n- b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "space-blank-loose",
+    "input": "- a\n \n- b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "tab-blank-loose",
+    "input": "- a\n\t\n- b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  {
+    "id": "two-blank-loose",
+    "input": "- a\n\n\n- b",
+    "targets": [
+      {},
+      {},
+      {},
+      {}
+    ]
+  }
+]

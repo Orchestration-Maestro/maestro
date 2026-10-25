@@ -1,10 +1,9 @@
 //! Recorded shell inputs driven through the public operation seam.
 #![cfg(test)]
 
+use crate::runtime::run_paused;
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};
-use maestro_models::{
-    Cancellation, DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
-};
+use maestro_models::{Cancellation, DiagnosticErrorInfo};
 use maestro_tools::{
     BashError, BashExecOptions, BashExecResult, BashOperations, BashSpawnContext, BashToolDetails,
     BashToolInput, BashToolOptions, create_bash_tool, create_bash_tool_definition,
@@ -228,10 +227,6 @@ pub fn result_value<D: Serialize>(result: AgentToolResult<D>) -> Value {
     }
     value
 }
-/// Build an error through the existing diagnostic boundary.
-pub fn failure(message: &str) -> DiagnosticErrorInfo {
-    extract_diagnostic_error(DiagnosticInput::Text(message))
-}
 /// Read and validate the fixture once per selected test.
 pub fn fixture() -> Fixture {
     let fixture: Fixture =
@@ -249,20 +244,12 @@ pub fn fixture() -> Fixture {
     }
     fixture
 }
-/// Test runtime with externally advanced time.
-pub fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-}
 /// Replay selected cases, each owning a fresh transcript and completed operation.
 pub fn cases(ids: &[&str]) {
     let fixture = fixture();
     for id in ids {
         let row = fixture.rows.iter().find(|row| &row.id == id).unwrap();
-        runtime().block_on(check_row(row, None));
+        run_paused(check_row(row, None));
     }
 }
 /// Replay the existing controlled oracle with a caller-supplied public constructor.
@@ -270,7 +257,7 @@ pub fn cases_with(ids: &[&str], factory: &dyn Fn(BashToolOptions) -> maestro_age
     let fixture = fixture();
     for id in ids {
         let row = fixture.rows.iter().find(|row| &row.id == id).unwrap();
-        runtime().block_on(check_row(row, Some(factory)));
+        run_paused(check_row(row, Some(factory)));
     }
 }
 /// Invoke the public definition or wrapped tool and inspect every expected field.
@@ -422,7 +409,7 @@ fn hook(input: &Arc<Input>, log: &Log) -> Option<maestro_tools::BashSpawnHook> {
         assert_eq!(context.command, expected);
         assert_eq!(context.cwd, "/work");
         if let Some(error) = &input.hook_error {
-            return Err(failure(error));
+            return Err(DiagnosticErrorInfo::error(error));
         }
         let hook = input.hook.as_ref().unwrap();
         Ok(BashSpawnContext {
@@ -462,21 +449,7 @@ pub fn normalize(result: &mut Value, updates: &mut [Value]) -> Vec<Vec<u8>> {
     let bytes = paths
         .iter()
         .map(|path| {
-            let filename = std::path::Path::new(path)
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap();
-            let id = filename
-                .strip_prefix("maestro-bash-")
-                .unwrap()
-                .strip_suffix(".log")
-                .unwrap();
-            assert_eq!(id.len(), 16);
-            assert!(
-                id.bytes()
-                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-            );
+            assert_output_file_name(path);
             let bytes = std::fs::read(path).unwrap();
             std::fs::remove_file(path).unwrap();
             bytes
@@ -486,6 +459,27 @@ pub fn normalize(result: &mut Value, updates: &mut [Value]) -> Vec<Vec<u8>> {
         replace_paths(value, &paths);
     }
     bytes
+}
+/// Require the full-output file name: `maestro-bash-`, 16 lowercase hex digits, `.log`.
+///
+/// # Panics
+/// Panics when the name differs.
+pub fn assert_output_file_name(path: &str) {
+    let filename = std::path::Path::new(path)
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap();
+    let id = filename
+        .strip_prefix("maestro-bash-")
+        .unwrap()
+        .strip_suffix(".log")
+        .unwrap();
+    assert_eq!(id.len(), 16);
+    assert!(
+        id.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
 }
 /// Keep the complete JSON tree while replacing only known artifact strings.
 fn replace_paths(value: &mut Value, paths: &[String]) {
@@ -530,7 +524,7 @@ pub fn hook_sequence() {
     let hook = Arc::new(move |context| {
         hook_phases.lock().unwrap().push("hook");
         if hook_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0 {
-            Err(failure("hook rejected"))
+            Err(DiagnosticErrorInfo::error("hook rejected"))
         } else {
             Ok(context)
         }
@@ -555,7 +549,7 @@ pub fn hook_sequence() {
     for _ in 0..2 {
         let update_phases = phases.clone();
         let update = Arc::new(move |_| update_phases.lock().unwrap().push("update"));
-        let result = runtime().block_on((definition.execute)(
+        let result = run_paused((definition.execute)(
             "call".into(),
             BashToolInput {
                 command: sequence["input"]["command"].as_str().unwrap().into(),
@@ -588,11 +582,11 @@ pub fn environment_sequence() {
         .into_iter()
         .find(|value| value["id"] == "fresh_spawn_context_per_call")
         .unwrap();
-    if std::env::var_os("MAESTRO_SHELL_SEQUENCE_CHILD").is_none() {
-        let test = crate::child_process::selector(SEQUENCE_TEST).unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .env("MAESTRO_SHELL_SEQUENCE_CHILD", "1")
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(SEQUENCE_TEST)
+            .unwrap()
+            .nocapture()
+            .case("*")
             .env_remove("ADDED")
             .envs(
                 sequence["input"]["env"]
@@ -604,7 +598,6 @@ pub fn environment_sequence() {
             .output()
             .unwrap();
         assert!(output.status.success());
-        crate::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     assert_eq!(sequence.as_object().unwrap().len(), 3);
@@ -620,18 +613,17 @@ pub fn environment_sequence() {
         sequence["input"]["prefix"].as_str().unwrap().into(),
     );
     for command in sequence["input"]["commands"].as_array().unwrap() {
-        let result = runtime()
-            .block_on((definition.execute)(
-                "call".into(),
-                BashToolInput {
-                    command: command.as_str().unwrap().into(),
-                    timeout: None,
-                },
-                None,
-                None,
-                None,
-            ))
-            .unwrap();
+        let result = run_paused((definition.execute)(
+            "call".into(),
+            BashToolInput {
+                command: command.as_str().unwrap().into(),
+                timeout: None,
+            },
+            None,
+            None,
+            None,
+        ))
+        .unwrap();
         assert_eq!(
             result_value(result),
             json!({"content":[{"type":"text", "text":"(no output)"}]})

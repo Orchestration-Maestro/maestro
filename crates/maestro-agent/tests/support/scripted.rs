@@ -1,12 +1,12 @@
 //! Registered scripted-model fixtures and Agent history observations.
 use maestro_agent::{
-    Agent, AgentEvent, AgentInitialState, AgentMessage, AgentOptions, AgentSpawner, ThinkingLevel,
+    Agent, AgentInitialState, AgentMessage, AgentOptions, AgentSpawner, ThinkingLevel,
 };
 use maestro_models::{
     AssistantContent, AssistantMessage, FauxAssistantMessageOptions, FauxProviderRegistration,
-    FauxResponseStep, FauxToolCallOptions, JsonObject, Model, RegisterFauxProviderOptions,
-    StopReason, TextContent, UserBlock, UserContent, UserMessage, faux_assistant_message,
-    faux_text, faux_tool_call, register_faux_provider,
+    FauxResponseStep, FauxToolCallOptions, Model, RegisterFauxProviderOptions, StopReason,
+    TextContent, UserBlock, UserContent, UserMessage, faux_assistant_message, faux_text,
+    faux_tool_call, register_faux_provider,
 };
 use serde_json::json;
 use std::sync::{Arc, Mutex, RwLock};
@@ -43,16 +43,16 @@ pub fn say(content: impl Into<maestro_models::FauxAssistantContent>) -> FauxResp
 /// Panics if a controlled fixture lock is poisoned or a fixture is malformed.
 #[must_use]
 pub fn ask_calculator(id: &str, expression: &str) -> FauxResponseStep {
-    let arguments: JsonObject = json!({"expression": expression})
-        .as_object()
-        .unwrap()
-        .clone();
     let options = FauxToolCallOptions {
         id: Some(id.into()),
     };
     let content = vec![
         AssistantContent::Text(faux_text("Let me calculate that.")),
-        AssistantContent::ToolCall(faux_tool_call("calculate", arguments, options)),
+        AssistantContent::ToolCall(faux_tool_call(
+            "calculate",
+            json!({"expression": expression}),
+            options,
+        )),
     ];
     let options = FauxAssistantMessageOptions {
         stop_reason: Some(StopReason::ToolUse),
@@ -85,10 +85,7 @@ pub fn agent_for(model: &Model, tools: Vec<maestro_agent::SharedAgentTool>) -> A
 /// A user entry made of one text block.
 #[must_use]
 pub fn user<C: maestro_agent::CustomAgentMessages>(text: &str) -> AgentMessage<C> {
-    let block = UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    });
+    let block = UserBlock::Text(TextContent::new(text.into()));
     AgentMessage::User(Arc::new(RwLock::new(UserMessage {
         content: UserContent::Blocks(vec![block]),
         timestamp: 1.0,
@@ -115,17 +112,10 @@ pub fn block_text(block: &UserBlock) -> Option<&str> {
 /// Panics if a controlled fixture lock is poisoned or a fixture is malformed.
 #[must_use]
 pub fn describe(message: &AgentMessage) -> (&'static str, String) {
-    let joined = |blocks: &[UserBlock]| {
-        blocks
-            .iter()
-            .filter_map(block_text)
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
     match message {
         AgentMessage::User(user) => match &user.read().unwrap().content {
             UserContent::Text(text) => ("user", text.clone()),
-            UserContent::Blocks(blocks) => ("user", joined(blocks)),
+            UserContent::Blocks(blocks) => ("user", UserBlock::text_output(blocks)),
         },
         AgentMessage::Assistant(assistant) => {
             let content = &assistant.read().unwrap().content;
@@ -135,7 +125,10 @@ pub fn describe(message: &AgentMessage) -> (&'static str, String) {
             });
             ("assistant", texts.collect::<Vec<_>>().join("\n"))
         }
-        AgentMessage::ToolResult(result) => ("toolResult", joined(&result.read().unwrap().content)),
+        AgentMessage::ToolResult(result) => (
+            "toolResult",
+            UserBlock::text_output(&result.read().unwrap().content),
+        ),
         AgentMessage::Custom(never) => match *never.read().unwrap() {},
     }
 }
@@ -167,22 +160,6 @@ pub fn last_assistant(agent: &Agent) -> AssistantMessage {
 pub fn streaming(agent: &Agent) -> bool {
     agent.state().read().unwrap().is_streaming()
 }
-/// The event name of an Agent event.
-#[must_use]
-pub fn label(event: &AgentEvent) -> &'static str {
-    match event {
-        AgentEvent::AgentStart => "agent_start",
-        AgentEvent::AgentEnd { .. } => "agent_end",
-        AgentEvent::TurnStart => "turn_start",
-        AgentEvent::TurnEnd { .. } => "turn_end",
-        AgentEvent::MessageStart { .. } => "message_start",
-        AgentEvent::MessageUpdate { .. } => "message_update",
-        AgentEvent::MessageEnd { .. } => "message_end",
-        AgentEvent::ToolExecutionStart { .. } => "tool_execution_start",
-        AgentEvent::ToolExecutionUpdate { .. } => "tool_execution_update",
-        AgentEvent::ToolExecutionEnd { .. } => "tool_execution_end",
-    }
-}
 /// Record the label of every event the Agent emits.
 ///
 /// # Panics
@@ -191,7 +168,9 @@ pub fn record_events(agent: &Arc<Agent>) -> Arc<Mutex<Vec<&'static str>>> {
     let events = Arc::new(Mutex::new(vec![]));
     let sink = Arc::clone(&events);
     agent.subscribe(Arc::new(move |event, _| {
-        sink.lock().unwrap().push(label(&event.read().unwrap()));
+        sink.lock()
+            .unwrap()
+            .push(super::observable::kind(&event.read().unwrap()));
         Box::pin(std::future::ready(Ok(())))
     }));
     events

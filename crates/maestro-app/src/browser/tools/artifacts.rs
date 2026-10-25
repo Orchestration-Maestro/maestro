@@ -1,13 +1,19 @@
 //! Retained artifact commands with caller-supplied presentation operations.
+use super::super::components::sandbox::{
+    artifacts_runtime_provider::{AgentLike, ArtifactsRuntimeProvider},
+    attachments_runtime_provider::AttachmentsRuntimeProvider,
+    sandbox_runtime_provider::{RuntimeProviderValue, SandboxRuntimeProvider},
+};
 use super::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ATTACHMENTS_RUNTIME_DESCRIPTION,
     artifacts_tool_description,
 };
+use crate::utils::lock::{read, write};
 use chrono::{DateTime, Utc};
 use indexmap::IndexMap;
 use maestro_agent::{AgentTool, AgentToolResult, LocalAgentTool};
 use maestro_models::{
-    BoxFuture, StringEnumOptions, TextContent, Tool, UserBlock, present, string_enum,
+    BoxFuture, Execution, SharedHandle, StringEnumOptions, Threaded, Tool, present, string_enum,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -96,14 +102,19 @@ pub type ArtifactLogReader = Arc<dyn Fn() -> String>;
 pub trait ArtifactPresentation {
     /// Observe the current date.
     fn now(&self) -> DateTime<Utc>;
-    /// Upsert a view with the current retained store.
-    fn get_or_create_artifact_element(&self, filename: &str, content: &str, artifacts: Artifacts);
+    /// Upsert a view; an HTML view takes its runtime providers from the live panel state.
+    fn get_or_create_artifact_element(
+        &self,
+        filename: &str,
+        content: &str,
+        panel: ArtifactsPanelState,
+    );
     /// Select a view.
     fn show_artifact(&self, filename: &str);
     /// Remove its retained view.
     fn remove_artifact_element(&self, filename: &str);
-    /// Refresh mounted HTML views using the current store.
-    fn reload_all_html_artifacts(&self, artifacts: Artifacts);
+    /// Refresh mounted HTML views with runtime providers from the live panel state.
+    fn reload_all_html_artifacts(&self, panel: ArtifactsPanelState);
     /// Capture the current HTML view's log reader.
     ///
     /// # Errors
@@ -124,24 +135,55 @@ pub type SharedArtifactPresentation = Arc<dyn ArtifactPresentation + Send + Sync
 /// Browser-local shared presentation operations.
 #[cfg(target_arch = "wasm32")]
 pub type SharedArtifactPresentation = Arc<dyn ArtifactPresentation>;
-/// Current replaceable map slot and selected filename.
+/// Current replaceable map slot, selected filename and conversation.
 struct State {
     /// Current ordered map owner.
     artifacts: Artifacts,
     /// Selected filename, if any.
     active: Option<String>,
+    /// Conversation whose attachments HTML artifacts can read, while its owner keeps it alive.
+    agent: Option<<Threaded as Execution>::Weak<dyn AgentLike>>,
+}
+/// Shared panel state, independent of its presentation operations.
+#[derive(Clone)]
+pub struct ArtifactsPanelState(Arc<RwLock<State>>);
+impl ArtifactsPanelState {
+    /// Return the current map handle; create and delete replace its container.
+    #[must_use]
+    pub fn artifacts(&self) -> Artifacts {
+        Arc::clone(&read(&self.0).artifacts)
+    }
+    /// Runtime providers for HTML artifacts: the conversation's attachments, when it
+    /// has any, then read-only access to this panel's artifacts.
+    #[must_use]
+    pub fn get_html_artifact_runtime_providers<V: RuntimeProviderValue>(
+        &self,
+    ) -> Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>> {
+        let agent = read(&self.0).agent.as_ref().and_then(Threaded::upgrade);
+        let attachments = agent.map(|agent| agent.attachments()).unwrap_or_default();
+        let mut providers: Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>> = Vec::new();
+        if !attachments.is_empty() {
+            providers.push(SharedHandle::new(AttachmentsRuntimeProvider::new(
+                Arc::new(RwLock::new(attachments)),
+            )));
+        }
+        providers.push(SharedHandle::new(ArtifactsRuntimeProvider::read_only(
+            self.clone(),
+        )));
+        providers
+    }
 }
 /// Retained command policy, independent of a concrete browser panel.
 #[derive(Clone)]
 pub struct ArtifactsPanel<P = SharedArtifactPresentation> {
     /// Shared current state slot.
-    state: Arc<RwLock<State>>,
+    pub(crate) state: ArtifactsPanelState,
     /// Owned view and clock operations.
-    presentation: P,
+    pub(crate) presentation: P,
 }
 /// Reconstruction-only notification and wait controls.
 #[derive(Default)]
-struct Options {
+pub(crate) struct Options {
     /// Suppress mutation notifications.
     silent: bool,
     /// Suppress the HTML log delay.
@@ -160,10 +202,11 @@ macro_rules! caller {
             #[must_use]
             pub fn $new(presentation: $presentation) -> Self {
                 Self {
-                    state: Arc::new(RwLock::new(State {
+                    state: ArtifactsPanelState(Arc::new(RwLock::new(State {
                         artifacts: Arc::new(RwLock::new(IndexMap::new())),
                         active: None,
-                    })),
+                        agent: None,
+                    }))),
                     presentation,
                 }
             }
@@ -172,27 +215,16 @@ macro_rules! caller {
             pub fn tool(&self) -> $tool {
                 let panel = self.clone();
                 $tool::typed(
-                    Tool {
-                        name: "artifacts".into(),
-                        description: artifacts_tool_description(&[
-                            ATTACHMENTS_RUNTIME_DESCRIPTION,
-                            ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO,
-                        ]),
-                        parameters: schema(),
-                    },
+                    definition(),
                     "Artifacts".into(),
                     std::$module::$pointer::new(move |_, Parameters(params), _, _| {
                         let panel = panel.clone();
                         Box::pin(async move {
-                            let text = panel.execute(params, Options::default()).await;
-                            Ok(AgentToolResult::<()> {
-                                content: vec![UserBlock::Text(TextContent {
-                                    text,
-                                    text_signature: None,
-                                })],
-                                details: None,
-                                terminate: None,
-                            })
+                            let text = panel
+                                .execute(&params, Options::default())
+                                .await
+                                .unwrap_or_else(|error| error);
+                            Ok(AgentToolResult::<()>::text_result(text, None))
                         })
                     }),
                 )
@@ -219,12 +251,16 @@ where
     /// Return the current map handle; create and delete replace its container.
     #[must_use]
     pub fn artifacts(&self) -> Artifacts {
-        Arc::clone(&read(&self.state).artifacts)
+        self.state.artifacts()
     }
     /// Observe the shared selected filename, including unknown or empty names.
     #[must_use]
     pub fn active_filename(&self) -> Option<String> {
-        read(&self.state).active.clone()
+        read(&self.state.0).active.clone()
+    }
+    /// Retain the conversation whose attachments HTML artifacts can read without owning it.
+    pub fn set_agent(&self, agent: Option<&SharedHandle<dyn AgentLike>>) {
+        write(&self.state.0).agent = agent.map(Threaded::downgrade);
     }
     /// Select an existing file and request that the host open the panel.
     pub fn open_artifact(&self, filename: &str) {
@@ -237,18 +273,22 @@ where
     /// Select a filename without holding the state guard through host operations.
     pub fn show_artifact(&self, filename: &str) {
         self.presentation.show_artifact(filename);
-        write(&self.state).active = Some(filename.into());
+        write(&self.state.0).active = Some(filename.into());
         self.presentation.request_update();
     }
-    /// Dispatch one typed command.
-    async fn execute(&self, params: ArtifactsParams, options: Options) -> String {
+    /// Dispatch one typed command; a failure keeps its returned error text.
+    pub(crate) async fn execute(
+        &self,
+        params: &ArtifactsParams,
+        options: Options,
+    ) -> Result<String, String> {
         match params.command {
             ArtifactCommand::Create => self.create(params, options).await,
             ArtifactCommand::Update | ArtifactCommand::Rewrite => self.edit(params, options).await,
-            ArtifactCommand::Get => match self.find(&params.filename) {
-                Ok(record) => read(&record).content.clone(),
-                Err(error) => error,
-            },
+            ArtifactCommand::Get => {
+                let record = self.find(&params.filename)?;
+                Ok(read(&record).content.clone())
+            }
             ArtifactCommand::Delete => self.delete(&params.filename),
             ArtifactCommand::Logs => self.logs(&params.filename),
         }
@@ -273,55 +313,47 @@ where
     /// Replace the current map container after mutating its surviving aliases.
     fn replace_map(&self, artifacts: &Artifacts) {
         let copy = read(artifacts).clone();
-        write(&self.state).artifacts = Arc::new(RwLock::new(copy));
+        write(&self.state.0).artifacts = Arc::new(RwLock::new(copy));
     }
     /// Create a dated record before issuing presentation effects.
-    async fn create(&self, params: ArtifactsParams, options: Options) -> String {
-        let Some(content) = params.content.filter(|content| !content.is_empty()) else {
-            return "Error: create command requires filename and content".into();
-        };
-        if params.filename.is_empty() {
-            return "Error: create command requires filename and content".into();
-        }
+    async fn create(&self, params: &ArtifactsParams, options: Options) -> Result<String, String> {
         let artifacts = self.artifacts();
-        if read(&artifacts).contains_key(&params.filename) {
-            return format!("Error: File {} already exists", params.filename);
-        }
+        let exists = read(&artifacts).contains_key(&params.filename);
+        let content = created_content(params, exists)?;
+        self.insert(&artifacts, &params.filename, content);
+        self.replace_map(&artifacts);
+        Ok(self.created(&params.filename, content, options).await)
+    }
+    /// Insert a new record dated by two clock observations.
+    fn insert(&self, artifacts: &Artifacts, filename: &str, content: &str) {
         let record = Artifact {
-            filename: params.filename.clone(),
-            content: content.clone(),
+            filename: filename.into(),
+            content: content.into(),
             created_at: self.presentation.now(),
             updated_at: self.presentation.now(),
         };
-        write(&artifacts).insert(params.filename.clone(), Arc::new(RwLock::new(record)));
-        self.replace_map(&artifacts);
-        self.presentation.get_or_create_artifact_element(
-            &params.filename,
-            &content,
-            self.artifacts(),
-        );
+        write(artifacts).insert(filename.into(), Arc::new(RwLock::new(record)));
+    }
+    /// Show a newly inserted file, notify unless silent, then refresh its dependents.
+    async fn created(&self, filename: &str, content: &str, options: Options) -> String {
+        self.presentation
+            .get_or_create_artifact_element(filename, content, self.state.clone());
         if !options.silent {
-            self.show_artifact(&params.filename);
+            self.show_artifact(filename);
             self.presentation.on_artifacts_change();
             self.presentation.request_update();
         }
         self.finish(
-            &params.filename,
-            format!("Created file {}", params.filename),
+            filename,
+            format!("Created file {filename}"),
             options.skip_wait,
         )
         .await
     }
     /// Edit a retained record and publish its content before notifications.
-    async fn edit(&self, params: ArtifactsParams, options: Options) -> String {
-        let record = match self.find(&params.filename) {
-            Ok(record) => record,
-            Err(error) => return error,
-        };
-        let content = match Self::edited_content(&params, &record) {
-            Ok(content) => content,
-            Err(error) => return error,
-        };
+    async fn edit(&self, params: &ArtifactsParams, options: Options) -> Result<String, String> {
+        let record = self.find(&params.filename)?;
+        let content = edited_content(params, &read(&record).content)?;
         let now = self.presentation.now();
         {
             let mut record = write(&record);
@@ -332,7 +364,7 @@ where
         self.presentation.get_or_create_artifact_element(
             &params.filename,
             &content,
-            self.artifacts(),
+            self.state.clone(),
         );
         let update = matches!(params.command, ArtifactCommand::Update);
         if !options.silent {
@@ -347,41 +379,14 @@ where
         } else {
             String::new()
         };
-        self.finish(&params.filename, result, options.skip_wait)
-            .await
-    }
-    /// Validate optional edit operands after the filename lookup.
-    fn edited_content(
-        params: &ArtifactsParams,
-        record: &RwLock<Artifact>,
-    ) -> Result<String, String> {
-        if matches!(params.command, ArtifactCommand::Rewrite) {
-            return params
-                .content
-                .as_ref()
-                .filter(|content| !content.is_empty())
-                .cloned()
-                .ok_or_else(|| "Error: rewrite command requires content".into());
-        }
-        let (Some(old), Some(new)) = (
-            params.old_str.as_ref().filter(|old| !old.is_empty()),
-            params.new_str.as_ref(),
-        ) else {
-            return Err("Error: update command requires old_str and new_str".into());
-        };
-        let record = read(record);
-        if !record.content.contains(old) {
-            return Err(format!(
-                "Error: String not found in file. Here is the full content:\n\n{}",
-                record.content
-            ));
-        }
-        Ok(record.content.replacen(old, new, 1))
+        Ok(self
+            .finish(&params.filename, result, options.skip_wait)
+            .await)
     }
     /// Refresh dependencies, then capture and await the selected HTML log reader.
     async fn finish(&self, filename: &str, mut result: String, skip_wait: bool) -> String {
         self.presentation
-            .reload_all_html_artifacts(self.artifacts());
+            .reload_all_html_artifacts(self.state.clone());
         if get_file_type(filename) == FileType::Html && !skip_wait {
             let reader = self.presentation.get_logs(filename).ok();
             result.push('\n');
@@ -393,39 +398,82 @@ where
         result
     }
     /// Delete a record and view, retaining removed records through existing aliases.
-    fn delete(&self, filename: &str) -> String {
-        if let Err(error) = self.find(filename) {
-            return error;
-        }
+    fn delete(&self, filename: &str) -> Result<String, String> {
+        self.find(filename)?;
         let artifacts = self.artifacts();
         write(&artifacts).shift_remove(filename);
         self.replace_map(&artifacts);
         self.presentation.remove_artifact_element(filename);
-        let active = read(&self.state).active.as_deref() == Some(filename);
+        let active = read(&self.state.0).active.as_deref() == Some(filename);
         if active {
             let next = read(&self.artifacts()).keys().next().cloned();
             if let Some(next) = next {
                 self.show_artifact(&next);
             } else {
-                write(&self.state).active = None;
+                write(&self.state.0).active = None;
                 self.presentation.request_update();
             }
         }
         self.presentation.on_artifacts_change();
         self.presentation.request_update();
         self.presentation
-            .reload_all_html_artifacts(self.artifacts());
-        format!("Deleted file {filename}")
+            .reload_all_html_artifacts(self.state.clone());
+        Ok(format!("Deleted file {filename}"))
     }
     /// Read the current view, independently of record presence.
-    fn logs(&self, filename: &str) -> String {
+    fn logs(&self, filename: &str) -> Result<String, String> {
         match self.presentation.get_logs(filename) {
-            Ok(reader) => reader(),
-            Err(ArtifactLogError::Missing) => self.missing(filename),
-            Err(ArtifactLogError::NotHtml) => format!(
+            Ok(reader) => Ok(reader()),
+            Err(ArtifactLogError::Missing) => Err(self.missing(filename)),
+            Err(ArtifactLogError::NotHtml) => Err(format!(
                 "Error: File {filename} is not an HTML file. Logs are only available for HTML files."
-            ),
+            )),
         }
+    }
+}
+/// Admit create operands: nonempty content and filename for a file not yet present.
+fn created_content(params: &ArtifactsParams, exists: bool) -> Result<&str, String> {
+    let content = params.content.as_deref().unwrap_or_default();
+    if content.is_empty() || params.filename.is_empty() {
+        return Err("Error: create command requires filename and content".into());
+    }
+    if exists {
+        return Err(format!("Error: File {} already exists", params.filename));
+    }
+    Ok(content)
+}
+/// Admit edit operands against the current content and return the edited content.
+fn edited_content(params: &ArtifactsParams, current: &str) -> Result<String, String> {
+    if matches!(params.command, ArtifactCommand::Rewrite) {
+        return params
+            .content
+            .as_ref()
+            .filter(|content| !content.is_empty())
+            .cloned()
+            .ok_or_else(|| "Error: rewrite command requires content".into());
+    }
+    let (Some(old), Some(new)) = (
+        params.old_str.as_ref().filter(|old| !old.is_empty()),
+        params.new_str.as_ref(),
+    ) else {
+        return Err("Error: update command requires old_str and new_str".into());
+    };
+    if !current.contains(old.as_str()) {
+        return Err(format!(
+            "Error: String not found in file. Here is the full content:\n\n{current}"
+        ));
+    }
+    Ok(current.replacen(old.as_str(), new, 1))
+}
+/// The model-facing declaration shared by both executable tools and history replay.
+fn definition() -> Tool {
+    Tool {
+        name: "artifacts".into(),
+        description: artifacts_tool_description(&[
+            ATTACHMENTS_RUNTIME_DESCRIPTION,
+            ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO,
+        ]),
+        parameters: schema(),
     }
 }
 /// Artifact view selected from the literal filename suffix.
@@ -473,7 +521,22 @@ pub fn get_file_type(filename: &str) -> FileType {
     }
 }
 /// Model schema using the shared string-enum owner.
-fn schema() -> serde_json::Value {
+fn schema() -> maestro_models::ParameterSchema {
+    maestro_models::ParameterSchema::authored(typed_schema(), authored_kinds())
+}
+/// Declared node kinds of the artifact parameters.
+fn authored_kinds() -> [(String, maestro_models::SchemaKind); 5] {
+    use maestro_models::SchemaKind;
+    [
+        (String::new(), SchemaKind::Object),
+        ("/properties/filename".to_owned(), SchemaKind::String),
+        ("/properties/content".to_owned(), SchemaKind::String),
+        ("/properties/old_str".to_owned(), SchemaKind::String),
+        ("/properties/new_str".to_owned(), SchemaKind::String),
+    ]
+}
+/// Ordinary JSON Schema text of the artifact parameters.
+fn typed_schema() -> serde_json::Value {
     json!({"type":"object", "required":["command","filename"], "properties": {
         "command": string_enum(&["create", "update", "rewrite", "get", "delete", "logs"], Some(StringEnumOptions { description: Some("The operation to perform"), default: None })),
         "filename": {"type":"string", "description":"Filename including extension (e.g., 'index.html', 'script.js')"},
@@ -482,15 +545,7 @@ fn schema() -> serde_json::Value {
         "new_str": {"type":"string", "description":"Replacement string (for update command)"}
     }})
 }
-/// Recover the retained state after a caller unwinds while holding its write guard.
-fn read<T>(lock: &RwLock<T>) -> std::sync::RwLockReadGuard<'_, T> {
-    lock.read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-}
-/// Mutate retained state even after a caller has poisoned its lock.
-fn write<T>(lock: &RwLock<T>) -> std::sync::RwLockWriteGuard<'_, T> {
-    lock.write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-}
+mod reconstruction;
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests;

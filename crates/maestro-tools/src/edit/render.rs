@@ -12,7 +12,7 @@ use crate::{
     utils::diagnostics::diagnostic,
 };
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
-use maestro_theme::{Theme, ThemeBg, ThemeColor};
+use maestro_theme::{LiveTheme, Theme, ThemeBg, ThemeColor};
 use maestro_tui::{Box as TuiBox, Component, Container, Spacer, Text, tui::ComponentHandle};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
@@ -275,13 +275,14 @@ fn publish(
 /// Render the call after admitting complete input on the supplied runtime.
 pub(super) fn render_call(
     args: Option<&Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<ComponentHandle> {
     let args = render_args(args);
     let component = call_component(context);
     admit_preview(&component, preview_input(args), context)?;
-    build_call(&component, args, theme, context)?;
+    let resolved = themed(theme.get())?;
+    build_call(&component, args, &resolved, context)?;
     Ok(component)
 }
 
@@ -289,19 +290,11 @@ pub(super) fn render_call(
 fn format_result(
     preview: Option<&EditPreview>,
     result: &ToolRenderResultLike<'_, Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<Option<String>> {
     if context.is_error {
-        let text = result
-            .content
-            .iter()
-            .filter_map(|block| match block {
-                UserBlock::Text(text) => Some(text.text.as_str()),
-                UserBlock::Image(_) => None,
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+        let text = UserBlock::text_output(result.content);
         if text.is_empty()
             || preview.is_some_and(|preview| {
                 preview
@@ -312,7 +305,8 @@ fn format_result(
         {
             return Ok(None);
         }
-        return paint(theme, &ThemeColor::Error, &text).map(Some);
+        let resolved = themed(theme.get())?;
+        return paint(&resolved, &ThemeColor::Error, &text).map(Some);
     }
     let Some(details) = result
         .details
@@ -372,14 +366,15 @@ fn settle(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     _options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<ComponentHandle> {
     let call = context.state.borrow().call_component.clone();
     if let Some(call) = &call
         && settle(call, result, context)
     {
-        build_call(call, render_args(context.args), theme, context)?;
+        let resolved = themed(theme.get())?;
+        build_call(call, render_args(context.args), &resolved, context)?;
     }
     let output = match &call {
         Some(call) => format_result(call.state.borrow().preview.as_ref(), result, theme, context)?,

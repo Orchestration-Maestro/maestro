@@ -1,154 +1,155 @@
 //! Request behavior of the standard response endpoint.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::response_endpoint as endpoint;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_build_default_payload() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_build_default_payload"),
-    )
+    crate::runtime::run(endpoint::assert_rows("responses_build_default_payload"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_resolve_retention_before_affinity() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_resolve_retention_before_affinity"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_resolve_retention_before_affinity",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_keep_request_id_when_session_header_disabled() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_keep_request_id_when_session_header_disabled"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_keep_request_id_when_session_header_disabled",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_apply_header_layers_case_insensitively() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_apply_header_layers_case_insensitively"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_apply_header_layers_case_insensitively",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_trim_scope_with_script_whitespace() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_trim_scope_with_script_whitespace"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_trim_scope_with_script_whitespace",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_distinguish_raw_and_simple_missing_keys() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_distinguish_raw_and_simple_missing_keys"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_distinguish_raw_and_simple_missing_keys",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_resolve_gateway_url_and_authorization() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_resolve_gateway_url_and_authorization"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_resolve_gateway_url_and_authorization",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_derive_account_headers_from_history() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_derive_account_headers_from_history"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_derive_account_headers_from_history",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_select_effort_summary_and_encrypted_replay() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_select_effort_summary_and_encrypted_replay"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_select_effort_summary_and_encrypted_replay",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_preserve_numeric_option_omissions() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_preserve_numeric_option_omissions"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_preserve_numeric_option_omissions",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_preserve_service_tier_null_and_values() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_preserve_service_tier_null_and_values"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_preserve_service_tier_null_and_values",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_keep_raw_options_distinct_from_simple() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_keep_raw_options_distinct_from_simple"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_keep_raw_options_distinct_from_simple",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_default_simple_budget_from_model() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_default_simple_budget_from_model"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_default_simple_budget_from_model",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_clamp_simple_reasoning_to_supported_levels() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_clamp_simple_reasoning_to_supported_levels"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_clamp_simple_reasoning_to_supported_levels",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_omit_empty_tools_and_use_shared_conversion() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_omit_empty_tools_and_use_shared_conversion"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_omit_empty_tools_and_use_shared_conversion",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_replay_history_through_endpoint_conversion() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_replay_history_through_endpoint_conversion"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_replay_history_through_endpoint_conversion",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_keep_body_content_type_and_gateway_token_precedence() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_keep_body_content_type_and_gateway_token_precedence"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_keep_body_content_type_and_gateway_token_precedence",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_ignore_unsupported_common_options() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("responses_ignore_unsupported_common_options"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "responses_ignore_unsupported_common_options",
+    ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_summary_only_uses_literal_medium() -> chat::TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for mapped in ["low", ""] {
             let actual = endpoint::run_case(&serde_json::json!({
                 "model":{"reasoning":true,"thinkingLevelMap":{"medium":mapped}},
@@ -164,9 +165,10 @@ fn responses_summary_only_uses_literal_medium() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_preserve_payload_insertion_order_at_hook_and_wire() -> chat::TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let actual = endpoint::run_case(&serde_json::json!({
             "hook":"order","model":{"reasoning":true},
             "context":{"tools":[{"name":"lookup","description":"Find","parameters":{"type":"object"}}]},
@@ -201,6 +203,7 @@ fn responses_preserve_payload_insertion_order_at_hook_and_wire() -> chat::TestRe
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CompatibilityQuery {
@@ -208,9 +211,10 @@ struct CompatibilityQuery {
     input: serde_json::Value,
     expected: serde_json::Value,
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_open_options_keep_affinity_and_retention() -> chat::TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let rows: Vec<CompatibilityQuery> =
             serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
         for (index, row) in rows

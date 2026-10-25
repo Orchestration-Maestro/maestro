@@ -270,13 +270,6 @@ impl OwnedXmlElement {
     pub fn source_range(&self) -> Range<usize> {
         self.range.clone()
     }
-    /// Retain another element from the same parsed source allocation.
-    pub(crate) fn slice(&self, element: XmlElement<'_, '_>) -> Self {
-        Self {
-            source: Arc::clone(&self.source),
-            range: element.source_range(),
-        }
-    }
 }
 impl XmlElement<'_, '_> {
     /// Return the element's byte range in the parser's admitted source.

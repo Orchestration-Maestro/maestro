@@ -7,7 +7,7 @@ use serde_json::{Map, Value, json};
 
 use super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, native};
 use crate::projection::IMAGE_PLACEHOLDER;
-use crate::providers::json_text::{compact_object, json_value, member, raw_json, raw_number};
+use crate::providers::json_text::{compact_json, json_value, member, raw_json, raw_number};
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, Message, Model, ModelInput,
     TextContent, TextPhase, Tool, ToolCall, ToolResultMessage, UserBlock, UserContent, UserMessage,
@@ -244,7 +244,7 @@ fn function_call(call: &ToolCall, other_model: bool) -> Result<Value, Diagnostic
     }
     item.insert("call_id".to_owned(), json!(call_id));
     item.insert("name".to_owned(), json!(call.name));
-    let arguments = compact_object(&call.arguments).map_err(|error| native(&error))?;
+    let arguments = compact_json(&call.arguments).map_err(|error| native(&error))?;
     item.insert("arguments".to_owned(), json!(arguments));
     Ok(Value::Object(item))
 }
@@ -252,15 +252,7 @@ fn function_call(call: &ToolCall, other_model: bool) -> Result<Value, Diagnostic
 /// Convert a tool result. Its text lines are joined; images follow the text when the model
 /// reads images, and otherwise only the text, or a placeholder, is sent.
 fn convert_tool_result(result: &ToolResultMessage, model: &Model) -> Value {
-    let text = result
-        .content
-        .iter()
-        .filter_map(|block| match block {
-            UserBlock::Text(text) => Some(text.text.as_str()),
-            UserBlock::Image(_) => None,
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
+    let text = UserBlock::text_output(&result.content);
     let images: Vec<Value> = result
         .content
         .iter()

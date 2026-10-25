@@ -33,3 +33,75 @@ fn labels_use_supplied_home_checkout_and_path_fallback() {
         assert_eq!(fallback_label_from_cwd(&native, None), "/�");
     }
 }
+
+#[test]
+fn native_discovery_preserves_footer_and_workspace_metadata_rules() {
+    use super::support::snapshot::Directory;
+    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    for scenario in ["unspaced", "empty", "unreadable-common", "directory-head"] {
+        let dir = Directory::new();
+        let root = dir.path().join("repo");
+        std::fs::create_dir(&root).unwrap();
+        let marker = root.join(".git");
+        if scenario == "unspaced" || scenario == "empty" {
+            std::fs::create_dir(dir.path().join("store")).unwrap();
+            std::fs::write(dir.path().join("store/HEAD"), "ref: refs/heads/work").unwrap();
+            std::fs::write(root.join("HEAD"), "ref: refs/heads/empty").unwrap();
+            let target = if scenario == "unspaced" {
+                "../store"
+            } else {
+                ""
+            };
+            std::fs::write(&marker, format!("gitdir:{target}")).unwrap();
+        } else {
+            std::fs::create_dir(&marker).unwrap();
+            if scenario == "directory-head" {
+                std::fs::create_dir(marker.join("HEAD")).unwrap();
+            } else {
+                std::fs::write(marker.join("HEAD"), "ref: refs/heads/main").unwrap();
+            }
+            std::fs::create_dir(marker.join("commondir")).unwrap();
+        }
+        let workspace = discover_git_paths_with(&root, DiscoveryPolicy::Workspace);
+        let footer = discover_git_paths_with(&root, DiscoveryPolicy::Footer);
+        match scenario {
+            "unspaced" => {
+                assert_eq!(workspace.unwrap().git_dir, dir.path().join("store"));
+                assert!(footer.is_none());
+            }
+            "empty" => {
+                assert_eq!(workspace.unwrap().git_dir, root);
+                assert!(footer.is_none());
+            }
+            _ => {
+                if scenario == "directory-head" {
+                    assert!(workspace.is_none());
+                } else {
+                    assert_eq!(workspace.unwrap().git_common_dir, marker);
+                }
+                let footer = footer.unwrap();
+                assert_eq!(footer.git_dir, marker);
+                assert_eq!(footer.git_common_dir, marker);
+            }
+        }
+    }
+}
+
+#[test]
+fn native_worktree_unreadable_common_metadata_keeps_workspace_identity() {
+    use super::support::snapshot::Directory;
+    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    let dir = Directory::new();
+    let root = dir.path().join("repo");
+    let metadata = dir.path().join("store");
+    std::fs::create_dir(&root).unwrap();
+    std::fs::create_dir(&metadata).unwrap();
+    std::fs::write(root.join(".git"), "gitdir: ../store").unwrap();
+    std::fs::write(metadata.join("HEAD"), "ref: refs/heads/work").unwrap();
+    std::fs::create_dir(metadata.join("commondir")).unwrap();
+    let workspace = discover_git_paths_with(&root, DiscoveryPolicy::Workspace).unwrap();
+    assert_eq!(workspace.repo_root, root);
+    assert_eq!(workspace.git_dir, metadata);
+    assert_eq!(workspace.git_common_dir, metadata);
+    assert!(discover_git_paths_with(&root, DiscoveryPolicy::Footer).is_none());
+}

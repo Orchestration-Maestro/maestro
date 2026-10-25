@@ -1,5 +1,7 @@
 //! Observe normalized calls separately from execution arguments through the loop.
 #![cfg(test)]
+use crate::read_support::Fixture;
+use crate::runtime;
 use crate::{loop_support, read_support};
 use maestro_agent::{AgentContext, AgentEvent, ToolExecutionMode, run_agent_loop};
 use maestro_tools::{EditToolOptions, create_edit_tool};
@@ -12,7 +14,7 @@ pub fn observe(mode: ToolExecutionMode) {
         json!({"path":"file","edits":"[{\"oldText\":\"hello\",\"newText\":\"world\"}]"}),
         json!({"path":"file","oldText":"hello","newText":"world"}),
     ] {
-        let dir = read_support::TempDir::new();
+        let dir = read_support::Scratch::new().unwrap();
         let path = dir.file("file", b"hello");
         let mut normalized = input.clone();
         if input.get("edits").is_some() {
@@ -44,7 +46,7 @@ pub fn observe(mode: ToolExecutionMode) {
                 progress
                     .lock()
                     .unwrap()
-                    .push(("progress", Value::Object(tool_call.arguments)));
+                    .push(("progress", tool_call.arguments));
             }
             Box::pin(async { Ok(()) })
         });
@@ -73,7 +75,7 @@ fn observer_config(
         before
             .lock()
             .unwrap()
-            .push(("before", Value::Object(context.tool_call.arguments.clone())));
+            .push(("before", context.tool_call.arguments.clone()));
         Box::pin(async { Ok(None) })
     }));
     let after = Arc::clone(observations);
@@ -81,7 +83,7 @@ fn observer_config(
         after
             .lock()
             .unwrap()
-            .push(("after", Value::Object(context.tool_call.arguments.clone())));
+            .push(("after", context.tool_call.arguments.clone()));
         Box::pin(async { Ok(None) })
     }));
     config
@@ -101,7 +103,7 @@ fn run(
         messages: Arc::new(RwLock::new(Vec::new())),
         tools: Some(Arc::new(RwLock::new(vec![Arc::new(RwLock::new(tool))]))),
     };
-    read_support::run(run_agent_loop(
+    runtime::run(run_agent_loop(
         vec![loop_support::user("go")],
         context,
         config,
@@ -116,5 +118,5 @@ fn run(
     let maestro_models::AssistantContent::ToolCall(call) = &message.content[1] else {
         panic!("missing retained call");
     };
-    assert_eq!(Value::Object(call.arguments.clone()), *normalized);
+    assert_eq!(call.arguments, *normalized);
 }

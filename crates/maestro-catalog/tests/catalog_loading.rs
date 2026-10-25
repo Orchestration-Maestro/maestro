@@ -1,8 +1,8 @@
 #![cfg(test)]
 //! File loading through the public registry.
 use maestro_catalog::{ModelFileOperations, ModelRegistry};
-use maestro_credentials::{AuthStorage, AuthStorageData};
-use maestro_models::{get_models, get_providers};
+use maestro_models::{SharedHandle, get_models, get_providers};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
 /// Adapter that rejects any unexpected read.
@@ -18,15 +18,17 @@ impl ModelFileOperations for Missing {
 }
 #[test]
 fn memory_and_missing_files_use_complete_offline_catalog() {
-    let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::new()));
+    let auth = support::auth();
     let expected: Vec<_> = get_providers().iter().flat_map(|p| get_models(p)).collect();
     assert_eq!(expected.len(), 970);
     for registry in [
-        ModelRegistry::in_memory(auth.clone()).unwrap(),
-        ModelRegistry::with_operations(auth.clone(), "absent", Missing).unwrap(),
-        ModelRegistry::with_operations(auth.clone(), "", Missing).unwrap(),
+        ModelRegistry::in_memory(auth.clone(), crate::support::values()).unwrap(),
+        ModelRegistry::with_operations(auth.clone(), "absent", Missing, crate::support::values())
+            .unwrap(),
+        ModelRegistry::with_operations(auth.clone(), "", Missing, crate::support::values())
+            .unwrap(),
     ] {
-        assert!(Arc::ptr_eq(registry.auth_storage(), &auth));
+        assert!(SharedHandle::ptr_eq(registry.auth_storage(), &auth));
         assert_eq!(registry.get_error(), None);
         let all = registry.get_all();
         let actual: Vec<_> = all
@@ -63,11 +65,17 @@ fn loading_never_resolves_keys_or_headers() {
     let marker = support::File::new(b"untouched");
     let command = format!("!printf changed > '{}'", marker.path());
     let input = serde_json::json!({"providers":{"custom":{"baseUrl":"u","api":"a","apiKey":command,"headers":{"X-Provider":command},"models":[{"id":"marker","headers":{"X-Model":command}}]}}}).to_string();
+    #[cfg(not(target_arch = "wasm32"))]
     let file = support::File::new(input.as_bytes());
-    for registry in [
-        support::registry(&input),
-        ModelRegistry::create(support::auth(), file.path()).unwrap(),
-    ] {
+    let registries = vec![support::registry_with(&input, crate::support::forbidden())];
+    #[cfg(not(target_arch = "wasm32"))]
+    let registries = registries.into_iter().chain([ModelRegistry::create(
+        support::auth(),
+        file.path(),
+        crate::support::forbidden(),
+    )
+    .unwrap()]);
+    for registry in registries {
         assert_eq!(registry.get_error(), None);
         assert!(
             registry
@@ -92,7 +100,9 @@ fn schema_diagnostics_keep_distinct_errors_in_source_order() {
     support::corpus("schema_diagnostics_keep_distinct_errors_in_source_order");
 }
 /// File disappears after existence is observed.
+#[cfg(not(target_arch = "wasm32"))]
 struct Disappearing(Arc<std::sync::atomic::AtomicBool>);
+#[cfg(not(target_arch = "wasm32"))]
 impl ModelFileOperations for Disappearing {
     fn exists(&self, _: &str) -> bool {
         true
@@ -105,14 +115,13 @@ impl ModelFileOperations for Disappearing {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_and_controlled_reads_share_failure_boundaries() {
     let initial = r#"{"providers":{}}"#;
     let file = support::File::new(initial.as_bytes());
     let text = support::Text(Arc::new(std::sync::Mutex::new(Some(initial.into()))));
-    let mut native = ModelRegistry::create(support::auth(), file.path()).unwrap();
-    let mut controlled =
-        ModelRegistry::with_operations(support::auth(), "<models-file>", text.clone()).unwrap();
+    let (mut native, mut controlled) = paired_registries(&file, &text);
     std::fs::remove_file(file.path()).unwrap();
     *text.0.lock().unwrap() = None;
     for registry in [&mut native, &mut controlled] {
@@ -135,9 +144,13 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     );
     std::fs::remove_dir(file.path()).unwrap();
     let fail = Arc::new(std::sync::atomic::AtomicBool::new(true));
-    let disappeared =
-        ModelRegistry::with_operations(support::auth(), "gone", Disappearing(fail.clone()))
-            .unwrap();
+    let disappeared = ModelRegistry::with_operations(
+        support::auth(),
+        "gone",
+        Disappearing(fail.clone()),
+        crate::support::values(),
+    )
+    .unwrap();
     assert!(
         disappeared
             .get_error()
@@ -163,7 +176,16 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     }
     native_replacement_decodes_utf8();
 }
+/// A native registry and a controlled one over the same initial text.
+#[cfg(not(target_arch = "wasm32"))]
+fn paired_registries(file: &support::File, text: &support::Text) -> (ModelRegistry, ModelRegistry) {
+    let native =
+        ModelRegistry::create(support::auth(), file.path(), crate::support::values()).unwrap();
+    let controlled = support::text_registry("<models-file>", text, crate::support::values());
+    (native, controlled)
+}
 /// Check native replacement decoding before JSON admission.
+#[cfg(not(target_arch = "wasm32"))]
 fn native_replacement_decodes_utf8() {
     let mut invalid =
         r#"{"providers":{"custom":{"baseUrl":"u","apiKey":"unused","api":"a","models":[{"id":""#
@@ -172,7 +194,8 @@ fn native_replacement_decodes_utf8() {
     invalid.push(255);
     invalid.extend_from_slice(b"\"}]}}}");
     let lossy = support::File::new(&invalid);
-    let registry = ModelRegistry::create(support::auth(), lossy.path()).unwrap();
+    let registry =
+        ModelRegistry::create(support::auth(), lossy.path(), crate::support::values()).unwrap();
     assert!(registry.find("custom", "\u{fffd}").is_some());
     assert_eq!(registry.get_error(), None);
 }

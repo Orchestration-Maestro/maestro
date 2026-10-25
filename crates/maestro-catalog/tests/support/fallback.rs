@@ -17,11 +17,17 @@ pub struct Case {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Input {
+    #[cfg(not(target_arch = "wasm32"))]
     pub operation: Option<String>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub configured: Option<bool>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub fallback: Option<String>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub failure_index: Option<usize>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub models: Option<Vec<Descriptor>>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub include_config: Option<bool>,
     pub patterns: Option<Vec<String>>,
     pub chosen: Option<String>,
@@ -53,7 +59,8 @@ pub fn registry(configured: bool) -> ModelRegistry {
         *registry.get_all().write().unwrap() = vec![model];
         registry
     } else {
-        let registry = ModelRegistry::in_memory(crate::support::auth()).unwrap();
+        let registry =
+            ModelRegistry::in_memory(crate::support::auth(), crate::support::values()).unwrap();
         *registry.get_all().write().unwrap() = vec![model];
         registry
     }
@@ -86,6 +93,7 @@ pub fn error_value(error: &CatalogError) -> Value {
     crate::credential_fallback::error_value(error)
 }
 /// Whole result plus the callback transcript.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn outcome<T>(result: Result<T, CatalogError>, calls: &Arc<Mutex<Vec<String>>>) -> Value {
     let error = result.err().expect("expected lookup failure");
     json!({"branch":"error", "error":error_value(&error), "calls":*calls.lock().unwrap()})

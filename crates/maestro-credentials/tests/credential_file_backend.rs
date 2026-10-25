@@ -1,46 +1,92 @@
 //! Native credential file backend through the public interface.
 #[cfg(test)]
-mod gate_support;
-#[cfg(test)]
-mod oauth_support;
-#[cfg(test)]
-mod support;
-#[cfg(test)]
 mod tests {
 
-    use super::gate_support::gated;
-    use super::oauth_support::{
+    use crate::gate_support::gated;
+    use crate::oauth_support::{
         ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials,
     };
-    use super::support::{TempDir, block_on, block_on_paused, is_child, run_child};
+    use crate::support::{
+        TempDir, api_key, block_on, block_on_paused, is_child, memory_text, run_child,
+    };
     use maestro_credentials::{
-        ApiKeyCredential, AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend,
-        ConfigValueOperations, FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
+        AsyncLockUpdate, AuthStorage, AuthStorageBackend, ConfigValueOperations,
+        FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
     };
     use maestro_models::{BoxFuture, OAuthCredentials, OAuthError};
+    use maestro_test_process::{TestProcess, selection};
     use std::fs::{File, TryLockError};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::time::Duration;
 
-    /// Environment-free configuration operations.
+    /// Clearing the environment keeps the profile until a caller overrides it.
+    #[test]
+    fn cleared_child_preserves_profile_and_explicit_override() {
+        const NAME: &str =
+            "credential_file_backend::tests::cleared_child_preserves_profile_and_explicit_override";
+        const PROFILE: &str = "inherited-%p-%m.profraw";
+        const OVERRIDE: &str = "explicit-%p-%m.profraw";
+        if selection().is_child() {
+            let stage = ["outer", "inherited", "override"]
+                .into_iter()
+                .find(|stage| selection().runs_case(stage))
+                .expect("selected profile stage");
+            let cwd = std::env::current_dir().unwrap();
+            assert_eq!(
+                cwd,
+                std::path::Path::new(&std::env::var("MAESTRO_PROFILE_CWD").unwrap())
+            );
+            if stage != "outer" {
+                assert!(is_child());
+                assert!(std::env::var_os("MAESTRO_PROFILE_SENTINEL").is_none());
+                assert_eq!(
+                    std::env::var("LLVM_PROFILE_FILE").unwrap(),
+                    if stage == "inherited" {
+                        PROFILE
+                    } else {
+                        OVERRIDE
+                    }
+                );
+                return;
+            }
+            assert_eq!(std::env::var("LLVM_PROFILE_FILE").unwrap(), PROFILE);
+            assert_eq!(
+                std::env::var("MAESTRO_PROFILE_SENTINEL").unwrap(),
+                "ambient"
+            );
+            let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+            for (stage, profile) in [("inherited", None), ("override", Some(OVERRIDE))] {
+                let cwd_text = cwd.to_str().unwrap();
+                let mut envs = vec![("MAESTRO_PROFILE_CWD", cwd_text)];
+                envs.extend(profile.map(|value| ("LLVM_PROFILE_FILE", value)));
+                let process = TestProcess::named(NAME).unwrap().env_clear().case(stage);
+                run_child(process, &cwd, &envs);
+            }
+            let unchanged =
+                std::env::vars_os().collect::<std::collections::BTreeMap<_, _>>() == before;
+            assert!(unchanged, "child launches changed the outer environment");
+            return;
+        }
+        let dir = TempDir::new("profile-order");
+        run_child(
+            TestProcess::named(NAME).unwrap().env_clear().case("outer"),
+            dir.root(),
+            &[
+                ("MAESTRO_PROFILE_CWD", dir.root().to_str().unwrap()),
+                ("LLVM_PROFILE_FILE", PROFILE),
+                ("MAESTRO_PROFILE_SENTINEL", "ambient"),
+            ],
+        );
+    }
+
+    /// Configuration operations that resolve no command.
     struct NoOperations;
 
     impl ConfigValueOperations for NoOperations {
-        fn environment(&self, _name: &str) -> Option<String> {
-            None
-        }
-
         fn execute(&self, _command: &str) -> Option<Vec<u8>> {
             None
         }
-    }
-
-    /// Stored API key credential.
-    fn api_key(key: &str) -> AuthCredential {
-        AuthCredential::ApiKey(ApiKeyCredential {
-            key: key.to_owned(),
-        })
     }
 
     /// Pretty text of one API key record per entry.
@@ -127,7 +173,7 @@ mod tests {
         }
         let dir = TempDir::new("relative");
         run_child(
-            "tests::relative_credentials_path_follows_working_directory",
+            TestProcess::named("credential_file_backend::tests::relative_credentials_path_follows_working_directory").unwrap().env_clear().case("*"),
             dir.root(),
             &[],
         );
@@ -330,18 +376,6 @@ mod tests {
         let text = std::fs::read_to_string(&path).unwrap();
         assert!(text.contains("\"key\": \"k\u{fffd}\u{fffd}z\""));
         assert!(text.contains("\"expires\": 1730000000000,\n    \"zeta\": 1,\n    \"alpha\": {\n      \"y\": 1,\n      \"x\": 2\n    }"));
-    }
-
-    /// Text held by a memory backend.
-    fn memory_text(backend: &InMemoryAuthStorageBackend) -> Option<String> {
-        let mut text = None;
-        backend
-            .with_lock(&mut |current| {
-                text = current.map(str::to_owned);
-                Ok(None)
-            })
-            .unwrap();
-        text
     }
 
     /// Callback that keeps the text it saw and returns `next`.

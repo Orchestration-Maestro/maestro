@@ -9,12 +9,12 @@ pub struct FootnotesPart {
     pub notes: Vec<WmlFootnote>,
 }
 impl FootnotesPart {
-    /// Prepare immediate footnotes using the shared body parser.
+    /// Prepare immediate footnotes using the shared body parser and its width policy.
     ///
     /// # Errors
     /// Propagates XML admission or selection failures.
-    pub fn parse_xml(input: &OwnedXmlElement) -> Result<Self, DocxError> {
-        parse_notes(input, "footnote").map(|notes| Self {
+    pub fn parse_xml(input: &OwnedXmlElement, ignore_width: bool) -> Result<Self, DocxError> {
+        parse_notes(input, "footnote", ignore_width).map(|notes| Self {
             notes: notes.into_iter().map(|base| WmlFootnote { base }).collect(),
         })
     }
@@ -26,18 +26,22 @@ pub struct EndnotesPart {
     pub notes: Vec<WmlEndnote>,
 }
 impl EndnotesPart {
-    /// Prepare immediate endnotes using the shared body parser.
+    /// Prepare immediate endnotes using the shared body parser and its width policy.
     ///
     /// # Errors
     /// Propagates XML admission or selection failures.
-    pub fn parse_xml(input: &OwnedXmlElement) -> Result<Self, DocxError> {
-        parse_notes(input, "endnote").map(|notes| Self {
+    pub fn parse_xml(input: &OwnedXmlElement, ignore_width: bool) -> Result<Self, DocxError> {
+        parse_notes(input, "endnote", ignore_width).map(|notes| Self {
             notes: notes.into_iter().map(|base| WmlEndnote { base }).collect(),
         })
     }
 }
 /// Admit and select once, then construct independent arenas from borrowed notes.
-fn parse_notes(input: &OwnedXmlElement, name: &str) -> Result<Vec<WmlBaseNote>, DocxError> {
+fn parse_notes(
+    input: &OwnedXmlElement,
+    name: &str,
+    ignore_width: bool,
+) -> Result<Vec<WmlBaseNote>, DocxError> {
     let xml = parse_xml_string(input.source(), false)?;
     let selected = xml.selected(input)?;
     xml.elements(selected, Some(name))
@@ -45,7 +49,7 @@ fn parse_notes(input: &OwnedXmlElement, name: &str) -> Result<Vec<WmlBaseNote>, 
             Ok(WmlBaseNote {
                 id: xml.attr(note, "id").map(str::to_owned),
                 note_type: xml.attr(note, "type").map(str::to_owned),
-                children: parse_selected(&xml, note, input, Framing::Body)?,
+                children: parse_selected(&xml, note, Framing::Body, ignore_width)?,
             })
         })
         .collect()

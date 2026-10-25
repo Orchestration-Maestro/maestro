@@ -45,6 +45,7 @@ fn check(name: &str) {
             Err(DocxError::Xml { path, .. }) => {
                 serde_json::json!({"kind":"invalid-xml-part","path":path})
             }
+            Err(DocxError::Output(_)) => panic!("unexpected extracted-output failure"),
             Err(DocxError::FontKey) => panic!("Unexpected font-key error while parsing metadata"),
             Err(DocxError::Archive(_)) => panic!("unexpected archive error"),
             Ok(doc) => match case.input.operation.as_str() {

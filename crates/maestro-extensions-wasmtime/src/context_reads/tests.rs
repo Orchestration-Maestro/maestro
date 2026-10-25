@@ -22,7 +22,7 @@ fn model_reads_keep_the_captured_reader_across_rebinding() {
 async fn captured_models(command: bool) {
     use maestro_extensions::{ExtensionContextActions, ExtensionExecution, types::ProviderActions};
     let runner = runner("/models");
-    let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+    let (pump, admission) = Pump::new();
     let registry = pump.registry();
     let mut endpoints = Vec::new();
     for id in ["original", "replacement"] {
@@ -70,7 +70,7 @@ fn primitive_requests_observe_rebinding_and_retirement() {
             } else {
                 Owner::Base(runner.create_context())
             };
-            let (mut pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let (mut pump, admission) = Pump::new();
             let endpoint = pump.registry().context(owner).unwrap();
             let worker = std::thread::spawn(move || observe(&endpoint));
             for _ in 0..9 {

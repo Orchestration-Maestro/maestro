@@ -1,6 +1,6 @@
 //! Real browser qualification of the generic file view.
 #![cfg(all(test, target_arch = "wasm32"))]
-pub mod support;
+use crate::support;
 use maestro_web::{
     ArtifactElement, I18n,
     browser::attachment_content::BrowserAttachmentHost,
@@ -25,14 +25,14 @@ impl View {
     /// Bind the supplied canvas, not a synthesized native sample.
     fn new() -> Self {
         std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
+            web_sys::console::error_1(&info.to_string().into());
         }));
         let doc = web_sys::window().unwrap().document().unwrap();
         let canvas = doc.get_element_by_id("canvas").unwrap().dyn_into().unwrap();
         let host = Rc::new(BrowserAttachmentHost::new(canvas).unwrap());
         Self {
             element: create_artifact_element("a.md.zip", "AAEC//79", host).unwrap(),
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
+            pack: support::brand::pack("brand.json").unwrap(),
             i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
             context: egui::Context::default(),
             labels: Vec::new(),
@@ -208,5 +208,3 @@ pub fn generic_download_saves_original_blob_bytes() {
             .unwrap()
     );
 }
-
-pub mod highlighter_support;

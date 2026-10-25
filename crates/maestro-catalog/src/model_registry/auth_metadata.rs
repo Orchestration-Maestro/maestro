@@ -1,8 +1,8 @@
 //! Authentication presence and provider metadata without request resolution.
 use super::{ModelRegistry, read_provider};
 use crate::CatalogError;
-use maestro_credentials::{AuthSource, AuthStatus, ConfigValueOperations};
-use maestro_models::Model;
+use maestro_credentials::{AuthSource, AuthStatus};
+use maestro_models::{Model, SharedHandle};
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Check credential presence, then freshly read the configured provider identity.
@@ -45,11 +45,7 @@ impl ModelRegistry {
     ///
     /// # Errors
     /// Returns the original credential metadata failure.
-    pub fn get_provider_auth_status(
-        &self,
-        provider: &str,
-        operations: &dyn ConfigValueOperations,
-    ) -> Result<AuthStatus, CatalogError> {
+    pub fn get_provider_auth_status(&self, provider: &str) -> Result<AuthStatus, CatalogError> {
         let status = self.auth_storage.get_auth_status(provider)?;
         if status.source.is_some() {
             return Ok(status);
@@ -64,10 +60,7 @@ impl ModelRegistry {
         };
         let (source, label) = if key.starts_with('!') {
             (AuthSource::ModelsJsonCommand, None)
-        } else if operations
-            .environment(key)
-            .is_some_and(|value| !value.is_empty())
-        {
+        } else if std::env::var(key).is_ok_and(|value| !value.is_empty()) {
             (AuthSource::Environment, Some(key.clone()))
         } else {
             (AuthSource::ModelsJsonKey, None)
@@ -87,7 +80,7 @@ impl ModelRegistry {
             .unwrap_or_else(PoisonError::into_inner)
             .registered_providers
             .get(provider)
-            .map(|(_, c)| Arc::clone(c));
+            .map(|(_, c)| SharedHandle::clone(c));
         let registered = retained.map(|config| {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
             (config.name.clone(), config.oauth.clone())

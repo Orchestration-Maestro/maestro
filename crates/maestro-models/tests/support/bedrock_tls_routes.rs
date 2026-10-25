@@ -1,6 +1,6 @@
 //! Real destination TLS exchanges observed after isolated provider calls finish.
 
-use crate::{TestResult, bedrock, child_process, loopback, tls, transport};
+use crate::{TestResult, bedrock, loopback, tls, transport};
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use maestro_models::{Context, Model, StreamOptions};
 use serde::Deserialize;
@@ -330,7 +330,12 @@ fn parent(row: &Row, test: &str) -> TestResult {
         .iter()
         .map(|(key, value)| (key.as_str(), value.as_str()))
         .collect();
-    let output = child_process::capture(test, &row.input.id, &variables)?;
+    let output = maestro_test_process::TestProcess::current(test)?
+        .nocapture()
+        .env_clear()
+        .envs(variables.iter().copied())
+        .case(&row.input.id)
+        .output()?;
     let origin_done = origin.finish();
     let proxy_done = proxy.finish();
     let decoy_done = decoy.finish();
@@ -448,11 +453,12 @@ fn check_proxy(row: &Row, seen: &Observations, authority: &str) {
 /// Run exactly the recorded rows owned by this witness in fresh child environments.
 pub(crate) fn run_cases(test: &str) -> TestResult {
     let corpus = corpus()?;
-    if let Some(id) = child_process::child_case() {
+    let id = maestro_test_process::selection();
+    if id.is_child() {
         let row = corpus
             .rows
             .iter()
-            .find(|row| row.input.id == id && row.input.test == test)
+            .find(|row| id.runs_case(&row.input.id) && row.input.test == test)
             .ok_or("unknown child case")?;
         return child(corpus.common, row);
     }

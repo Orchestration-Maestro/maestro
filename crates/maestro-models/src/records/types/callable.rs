@@ -72,6 +72,26 @@ pub enum ProviderInvocation<K: StreamOptionsFamily> {
         Option<ProviderSpawner<Threaded>>,
     ),
 }
+impl<K: StreamOptionsFamily> ProviderInvocation<K> {
+    /// Invoke only the selected family with the original inputs and admission.
+    pub(crate) fn dispatch<R>(
+        self,
+        model: Model,
+        context: Context,
+        local: impl FnOnce(Model, Context, Option<K::Options<Local>>, ProviderSpawner<Local>) -> R,
+        threaded: impl FnOnce(
+            Model,
+            Context,
+            Option<K::Options<Threaded>>,
+            Option<ProviderSpawner<Threaded>>,
+        ) -> R,
+    ) -> R {
+        match self {
+            Self::Local(options, submit) => local(model, context, options, submit),
+            Self::Threaded(options, submit) => threaded(model, context, options, submit),
+        }
+    }
+}
 /// Provider setup result, independent of the selected execution family.
 type Output = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
 /// Retained provider owner callable in either execution family.
@@ -102,26 +122,32 @@ pub trait StreamCallback<K: StreamOptionsFamily>:
     /// # Errors
     /// Returns the provider's setup failure unchanged.
     fn call(&self, model: Model, context: Context, invocation: ProviderInvocation<K>) -> Output {
-        match invocation {
-            ProviderInvocation::Local(options, submit) => Invoke::<Local, _>::invoke(
-                self,
-                ProviderCall {
-                    model,
-                    context,
-                    options,
-                    submit,
-                },
-            ),
-            ProviderInvocation::Threaded(options, submit) => Invoke::<Threaded, _>::invoke(
-                self,
-                ProviderCall {
-                    model,
-                    context,
-                    options,
-                    submit,
-                },
-            ),
-        }
+        invocation.dispatch(
+            model,
+            context,
+            |model, context, options, submit| {
+                Invoke::<Local, _>::invoke(
+                    self,
+                    ProviderCall {
+                        model,
+                        context,
+                        options,
+                        submit,
+                    },
+                )
+            },
+            |model, context, options, submit| {
+                Invoke::<Threaded, _>::invoke(
+                    self,
+                    ProviderCall {
+                        model,
+                        context,
+                        options,
+                        submit,
+                    },
+                )
+            },
+        )
     }
 }
 impl<K: StreamOptionsFamily, T> StreamCallback<K> for T where

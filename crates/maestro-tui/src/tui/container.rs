@@ -87,7 +87,7 @@ impl Container {
     /// shifts the later children back, so the next one is skipped, and a child listed twice
     /// is visited once per position reached. `clear`, and `set_children` with another
     /// array, install an array that this walk never visits anything in.
-    fn walk(&self) -> impl Iterator<Item = ComponentHandle> + use<> {
+    pub fn walk(&self) -> impl Iterator<Item = ComponentHandle> + use<> {
         let array = self.children();
         (0..).map_while(move |index| array.borrow().get(index).cloned())
     }
@@ -96,10 +96,7 @@ impl Container {
 impl Component for Container {
     /// Renders the children in order, walking the array held when the render starts.
     fn render(&self, width: usize) -> Vec<String> {
-        self.render_children(width, |child, width| {
-            Ok::<_, std::convert::Infallible>(child.render(width))
-        })
-        .unwrap_or_else(|never| match never {})
+        crate::tui::render_infallible(|render| self.render_children(width, render))
     }
 
     fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {

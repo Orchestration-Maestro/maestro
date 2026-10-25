@@ -118,7 +118,7 @@ fn continuation_owns_work_after_observation_drop() {
                 None
             };
             Box::pin(async move {
-                wait_end_gate(gate).await;
+                support::wait_gate(gate).await;
                 Ok(())
             })
         }));
@@ -209,19 +209,6 @@ fn continuation_captures_history_tools_model_and_stream() {
             4
         );
     });
-}
-
-/// Acknowledgment is emitted before the pending listener effect completes.
-async fn wait_end_gate(
-    gate: Option<(
-        tokio::sync::oneshot::Sender<()>,
-        tokio::sync::oneshot::Receiver<()>,
-    )>,
-) {
-    if let Some((entered, released)) = gate {
-        entered.send(()).unwrap();
-        released.await.unwrap();
-    }
 }
 
 /// Captured request operands from one controlled continuation.

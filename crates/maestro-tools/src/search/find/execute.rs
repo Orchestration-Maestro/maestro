@@ -1,11 +1,8 @@
 //! Search routing, path projection and result policy.
 use super::{FindGlobOptions, FindOperations, FindToolDetails, FindToolInput};
 use crate::{
-    output::{
-        render_parts::{float, num},
-        text_block,
-    },
-    path_utils::{resolve_path, resolve_to_cwd},
+    output::render_parts::{float, num},
+    path_utils::{resolve_existing_path, resolve_path},
     search::{listing::select_listing, tools_manager::ToolsManager},
     utils::diagnostics::{aborted, diagnostic, failure, guarded},
 };
@@ -46,7 +43,7 @@ impl Finder {
         if signal.is_some_and(Cancellation::is_aborted) {
             return Err(aborted());
         }
-        let root = resolve_to_cwd(
+        let root = resolve_existing_path(
             input
                 .path
                 .as_deref()
@@ -87,11 +84,10 @@ fn format_paths(
     native: bool,
 ) -> Result<AgentToolResult<FindToolDetails>, DiagnosticErrorInfo> {
     if paths.is_empty() {
-        return Ok(AgentToolResult {
-            content: vec![text_block("No files found matching pattern".into())],
-            details: None,
-            terminate: None,
-        });
+        return Ok(AgentToolResult::text_result(
+            "No files found matching pattern".into(),
+            None,
+        ));
     }
     let root = resolve_path(&[root]).map_err(|e| diagnostic(&e))?;
     let reached = (!native || limit > 0.0) && float(paths.len()) >= limit;
@@ -115,12 +111,11 @@ fn format_paths(
     };
     let (text, truncation) = select_listing(&body, notices, None);
     let reported = reached || truncation.is_some();
-    Ok(AgentToolResult {
-        content: vec![text_block(text)],
-        details: reported.then_some(FindToolDetails {
+    Ok(AgentToolResult::text_result(
+        text,
+        reported.then_some(FindToolDetails {
             truncation,
             result_limit_reached: reached.then_some(limit),
         }),
-        terminate: None,
-    })
+    ))
 }

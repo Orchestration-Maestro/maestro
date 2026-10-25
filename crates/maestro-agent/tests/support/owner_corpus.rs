@@ -1,8 +1,8 @@
 //! Replay complete recorded owned-run inputs through the public Agent.
-use super::{assistant, owned, ready};
+use super::{assistant, observations, owned, ready};
 use maestro_agent::{
-    Agent, AgentEvent, AgentInitialState, AgentMessage, AgentOptions, AgentTool,
-    CustomAgentMessages, PromptInput,
+    Agent, AgentInitialState, AgentMessage, AgentOptions, AgentTool, CustomAgentMessages,
+    PromptInput,
 };
 use maestro_models::{
     AssistantContent, AssistantMessageEvent, AssistantMessageEventStream, StopReason, TextContent,
@@ -99,58 +99,6 @@ fn state(agent: &Agent<Notice>) -> Value {
     }
     if let Some(error) = state.error_message() {
         value["errorMessage"] = json!(error);
-    }
-    value
-}
-/// Project the delivered event variants into the recorded observable shape.
-fn event(event: &AgentEvent<Notice>) -> Value {
-    match event {
-        AgentEvent::AgentStart => json!({"type":"agent_start"}),
-        AgentEvent::TurnStart => json!({"type":"turn_start"}),
-        AgentEvent::AgentEnd { messages } => {
-            json!({"type":"agent_end","messages":messages.iter().map(message).collect::<Vec<_>>()})
-        }
-        AgentEvent::MessageStart { message: value } => {
-            json!({"type":"message_start","message":message(value)})
-        }
-        AgentEvent::MessageEnd { message: value } => {
-            json!({"type":"message_end","message":message(value)})
-        }
-        AgentEvent::MessageUpdate {
-            message,
-            assistant_message_event,
-        } => {
-            json!({"type":"message_update","message":&*message.read().unwrap(),"assistantMessageEvent":assistant_message_event})
-        }
-        AgentEvent::TurnEnd {
-            message,
-            tool_results,
-        } => {
-            json!({"type":"turn_end","message":&*message.read().unwrap(),"toolResults":tool_results})
-        }
-        AgentEvent::ToolExecutionStart { tool_call } => {
-            json!({"type":"tool_execution_start","toolCallId":tool_call.id,"toolName":tool_call.name,"args":tool_call.arguments})
-        }
-        AgentEvent::ToolExecutionUpdate {
-            tool_call,
-            partial_result,
-        } => {
-            json!({"type":"tool_execution_update","toolCallId":tool_call.id,"toolName":tool_call.name,"args":tool_call.arguments,"partialResult":artifact(partial_result)})
-        }
-        AgentEvent::ToolExecutionEnd {
-            tool_call,
-            result,
-            is_error,
-        } => {
-            json!({"type":"tool_execution_end","toolCallId":tool_call.id,"toolName":tool_call.name,"result":artifact(result),"isError":is_error})
-        }
-    }
-}
-/// Omit absent termination rather than replacing it with null.
-fn artifact(result: &maestro_agent::AgentToolResult) -> Value {
-    let mut value = json!({"content":result.content,"details":result.details});
-    if let Some(terminate) = result.terminate {
-        value["terminate"] = json!(terminate);
     }
     value
 }
@@ -257,7 +205,7 @@ fn install_listener(agent: &Arc<Agent<Notice>>, input: Arc<Input>, events: Arc<M
     let failed = Arc::new(Mutex::new(false));
     agent.subscribe(Arc::new(move |value, _| {
         let agent = owner.upgrade().unwrap();
-        let value = event(&value.read().unwrap());
+        let value = observations::event(&value.read().unwrap(), message);
         events.lock().unwrap().push(
             json!({"event":value,"state":state(&agent),"signalSame":agent.signal().is_some()}),
         );
@@ -291,7 +239,7 @@ fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
         definition: maestro_models::Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: json!({"type":"object","properties":{}}),
+            parameters: json!({"type":"object","properties":{}}).into(),
         },
         label: "Echo".into(),
         prepare_arguments: None,
@@ -299,19 +247,17 @@ fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
         execute: Arc::new(move |_, _, _, update| {
             if input.fail.as_deref() == Some("tool_execution_update") {
                 update.unwrap()(maestro_agent::AgentToolResult {
-                    content: vec![maestro_models::UserBlock::Text(TextContent {
-                        text: "partial".into(),
-                        text_signature: None,
-                    })],
+                    content: vec![maestro_models::UserBlock::Text(TextContent::new(
+                        "partial".into(),
+                    ))],
                     details: Some(json!({"partial":true})),
                     terminate: None,
                 });
             }
             ready(Ok(maestro_agent::AgentToolResult {
-                content: vec![maestro_models::UserBlock::Text(TextContent {
-                    text: "result".into(),
-                    text_signature: None,
-                })],
+                content: vec![maestro_models::UserBlock::Text(TextContent::new(
+                    "result".into(),
+                ))],
                 details: Some(json!({"result":true})),
                 terminate: Some(true),
             }))
@@ -386,7 +332,7 @@ fn updates(stream: &AssistantMessageEventStream) {
         let call = maestro_models::ToolCall {
             id: "preview".into(),
             name: "echo".into(),
-            arguments: maestro_models::JsonObject::new(),
+            arguments: maestro_models::JsonObject::new().into(),
             thought_signature: None,
         };
         partial.write().unwrap().content = vec![match i {
@@ -396,10 +342,7 @@ fn updates(stream: &AssistantMessageEventStream) {
                 redacted: None,
             }),
             6..=8 => AssistantContent::ToolCall(call.clone()),
-            _ => AssistantContent::Text(TextContent {
-                text: content.clone(),
-                text_signature: None,
-            }),
+            _ => AssistantContent::Text(TextContent::new(content.clone())),
         }];
         stream.push(update(i, partial, content, call));
     }
@@ -485,7 +428,7 @@ fn call(id: &str) -> maestro_models::ToolCall {
     maestro_models::ToolCall {
         id: id.into(),
         name: "echo".into(),
-        arguments: maestro_models::JsonObject::new(),
+        arguments: maestro_models::JsonObject::new().into(),
         thought_signature: None,
     }
 }

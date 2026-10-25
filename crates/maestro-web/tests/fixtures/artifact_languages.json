@@ -1,0 +1,385 @@
+[
+  {
+    "input": {}
+  },
+  {
+    "input": {
+      "filename": ""
+    }
+  },
+  {
+    "input": {
+      "filename": "plain"
+    }
+  },
+  {
+    "input": {
+      "filename": "a."
+    }
+  },
+  {
+    "input": {
+      "filename": "a.unknown"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.js"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.JS"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.jsx"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.JSX"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.ts"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.TS"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.tsx"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.TSX"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.html"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.HTML"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.css"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.CSS"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.scss"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.SCSS"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.json"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.JSON"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.py"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.PY"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.md"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.MD"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.svg"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.SVG"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.xml"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.XML"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.yaml"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.YAML"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.yml"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.YML"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.sh"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.SH"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.bash"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.BASH"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.sql"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.SQL"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.java"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.JAVA"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.c"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.C"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.cpp"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.CPP"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.cs"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.CS"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.go"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.GO"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.rs"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.RS"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.php"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.PHP"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.rb"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.RB"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.swift"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.SWIFT"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.kt"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.KT"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.r"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.R"
+    }
+  },
+  {
+    "input": {
+      "filename": "x/a.PY"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.py?x"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.html.txt"
+    }
+  },
+  {
+    "input": {
+      "filename": ".RS"
+    }
+  },
+  {
+    "input": {
+      "filename": "İ.RS"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.İ"
+    }
+  },
+  {
+    "input": {
+      "filename": "script.javascript"
+    }
+  },
+  {
+    "input": {
+      "filename": "note.markdown"
+    }
+  },
+  {
+    "input": {
+      "filename": "notes.txt"
+    }
+  },
+  {
+    "input": {
+      "filename": "js"
+    }
+  },
+  {
+    "input": {
+      "filename": "x.KT"
+    }
+  },
+  {
+    "input": {
+      "filename": "folder.py/a"
+    }
+  },
+  {
+    "input": {
+      "filename": " a.js"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.js "
+    }
+  },
+  {
+    "input": {
+      "filename": "a.﻿js"
+    }
+  },
+  {
+    "input": {
+      "filename": "a.js"
+    }
+  }
+]

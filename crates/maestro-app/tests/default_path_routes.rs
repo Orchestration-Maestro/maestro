@@ -2,17 +2,15 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::default_configuration as fixture;
-use crate::directories;
+use crate::support::session_harness::no_commands;
 use fixture::{Group, child};
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, paths};
 use maestro_app::{AuthStorage, ModelRegistry, SettingsManager};
-use maestro_resources::{
-    LoadPromptTemplatesOptions, NativeResourceOperations, load_prompt_templates,
-};
+use maestro_resources::{LoadPromptTemplatesOptions, load_prompt_templates};
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{cell::Cell, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 /// The environment override's selected source branch.
 #[derive(Deserialize)]
@@ -132,17 +130,14 @@ fn consumers(input: &RootInput, expected: RootExpected, agent: &str) {
     catalog(agent, expected.credential, &expected.model);
     let cwd = std::env::current_dir().unwrap();
     let home = std::env::var("HOME").unwrap();
-    let prompts = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: cwd.to_str().unwrap(),
-            home: &home,
-            agent_dir: agent,
-            config_dir_name: CONFIG_DIR_NAME,
-            prompt_paths: &[],
-            include_defaults: true,
-        },
-        &NativeResourceOperations,
-    )
+    let prompts = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: cwd.to_str().unwrap(),
+        home: &home,
+        agent_dir: agent,
+        config_dir_name: CONFIG_DIR_NAME,
+        prompt_paths: &[],
+        include_defaults: true,
+    })
     .unwrap();
     let prompt = prompts
         .into_iter()
@@ -205,23 +200,25 @@ fn package(input: &Value, expected: &Value, root: &str) {
         format!("{package}/Cargo.toml"),
         "[package]\nname = 'fixture'\n",
     );
-    let installation = Installation {
-        module_dir: format!("{package}/src"),
-        executable: format!("{package}/bin/maestro"),
-        layout: PackageLayout::Package,
+    let installation = || -> std::io::Result<Installation> {
+        Ok(Installation {
+            module_dir: format!("{package}/src"),
+            executable: format!("{package}/bin/maestro"),
+            layout: PackageLayout::Package,
+        })
     };
     let native_override = std::env::var("MAESTRO_PACKAGE_DIR").ok();
     assert_eq!(native_override, input.package_override);
     let home = std::env::var("HOME").unwrap();
     let native = paths::get_package_dir(
-        &installation,
+        installation,
         native_override.as_deref(),
         || Ok(home.clone()),
         |p| Path::new(p).exists(),
     )
     .unwrap();
     let controlled = paths::get_package_dir(
-        &installation,
+        installation,
         input.package_override.as_deref(),
         || Ok(home),
         |p| p == format!("{package}/Cargo.toml"),
@@ -229,15 +226,7 @@ fn package(input: &Value, expected: &Value, root: &str) {
     .unwrap();
     assert_eq!(native, expected.package_directory);
     assert_eq!(controlled, expected.package_directory);
-    let operations = directories::Directories {
-        cwd: Ok(root.to_owned()),
-        reads: Cell::new(0),
-    };
-    let readme = paths::get_readme_path(&native, &NativeResourceOperations).unwrap();
-    assert_eq!(
-        paths::get_readme_path(&controlled, &operations).unwrap(),
-        readme
-    );
+    let readme = paths::get_readme_path(&native).unwrap();
     assert_eq!(readme, expected.readme);
     fixture::write(&readme, &input.readme_content);
     assert_eq!(
@@ -255,7 +244,7 @@ fn package(input: &Value, expected: &Value, root: &str) {
 /// Run a row in a disposable child with explicitly supplied ambient state.
 fn child_case(name: &str, group: Group, index: usize) {
     let scratch = child::Scratch::new();
-    let root = scratch.0.to_str().unwrap();
+    let root = scratch.0.path().to_str().unwrap();
     let home = scratch.join("home");
     std::fs::create_dir(&home).unwrap();
     let rows = fixture::cases::<Value, Value>(group);
@@ -263,7 +252,6 @@ fn child_case(name: &str, group: Group, index: usize) {
     let mut envs = vec![
         ("HOME".to_owned(), home),
         ("MAESTRO_DEFAULT_ROOT".into(), root.into()),
-        ("MAESTRO_DEFAULT_CASE".into(), index.to_string()),
     ];
     if group == Group::PackageAndBinaryPathsReachRealFiles {
         let input: PackageInput = fixture::instantiate(&row.input, root, "");
@@ -284,8 +272,10 @@ fn child_case(name: &str, group: Group, index: usize) {
     let refs: Vec<_> = envs.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
     assert_eq!(
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
-            &scratch.0,
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case(index.to_string()),
+            scratch.0.path(),
             &refs,
             fixture::REMOVED
         ),
@@ -294,10 +284,17 @@ fn child_case(name: &str, group: Group, index: usize) {
 }
 /// Exercise removal from an outer child with competing environment overrides.
 fn qualify(name: &str, group: Group) {
-    if let Ok(index) = std::env::var("MAESTRO_DEFAULT_CASE") {
+    if maestro_test_process::selection().is_child()
+        && !maestro_test_process::selection().runs_case("outer")
+    {
         let root = std::env::var("MAESTRO_DEFAULT_ROOT").unwrap();
         let rows = fixture::cases::<Value, Value>(group);
-        let row = &rows[index.parse::<usize>().unwrap()];
+        let row = rows
+            .iter()
+            .enumerate()
+            .find(|(index, _)| maestro_test_process::selection().runs_case(&index.to_string()))
+            .map(|(_, row)| row)
+            .expect("selected route row");
         if group == Group::PackageAndBinaryPathsReachRealFiles {
             package(&row.input, &row.expected, &root);
         } else {
@@ -317,8 +314,10 @@ fn qualify(name: &str, group: Group) {
         let scratch = child::Scratch::new();
         assert_eq!(
             child::probe(
-                &crate::child_process::selector(name).unwrap(),
-                &scratch.0,
+                maestro_test_process::TestProcess::current(name)
+                    .unwrap()
+                    .case("outer"),
+                scratch.0.path(),
                 &[
                     ("MAESTRO_DEFAULT_OUTER", "1"),
                     ("MAESTRO_CODING_AGENT_DIR", "inherited-decoy"),
@@ -369,7 +368,8 @@ fn catalog(agent: &str, credential: Value, expected: &Model) {
         auth.get("qualification").as_ref() == Some(&credential),
         "selected dummy credential"
     );
-    let registry = ModelRegistry::create(auth, paths::get_models_path(agent)).unwrap();
+    let registry =
+        ModelRegistry::create(auth, paths::get_models_path(agent), no_commands()).unwrap();
     assert!(registry.get_error().is_none());
     let model = registry
         .find(&expected.provider, &expected.id)

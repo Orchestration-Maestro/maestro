@@ -1,11 +1,14 @@
 //! Strict recorded message constructor and operation replay.
 mod input;
+mod summaries;
 use crate::palette;
 use crate::published;
+pub use summaries::{summary_controls, user_styles};
 mod widget;
 use crate::registry::REGISTRY;
 use input::{Action, Case};
-use maestro_tui::{Component, KeybindingsManager, get_keybindings, set_keybindings};
+use maestro_theme::LiveTheme;
+use maestro_tui::{Component, KeybindingsManager, MarkdownTheme, get_keybindings, set_keybindings};
 use std::{collections::HashSet, rc::Rc};
 use widget::Widget;
 
@@ -30,6 +33,14 @@ fn bind(keys: Vec<String>) {
         vec![],
     ));
 }
+/// Uses the controlled palette with the real Markdown callbacks and highlighter.
+fn markdown(live: LiveTheme, enabled: bool) -> MarkdownTheme {
+    maestro_theme::get_markdown_theme(
+        live,
+        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
+        enabled,
+    )
+}
 /// Replays one complete recorded invocation, preserving frame order.
 fn replay(case: &Case) {
     let input = &case.input;
@@ -37,11 +48,7 @@ fn replay(case: &Case) {
         published::published(&palette::palette(input.palette.as_deref().unwrap_or("a")));
     bind(vec!["ctrl+o".into()]);
     let enabled = input.styles_enabled.unwrap_or(true);
-    let mut markdown = maestro_theme::get_markdown_theme(
-        live.clone(),
-        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
-        enabled,
-    );
+    let mut markdown = markdown(live.clone(), enabled);
     if input.custom_markdown.unwrap_or(false) {
         markdown.heading = Box::new(|text| format!("CUSTOM[{text}]"));
     }
@@ -61,13 +68,13 @@ fn replay(case: &Case) {
             Action::Hide { value } => widget.assistant().set_hide_thinking_block(*value),
             Action::Label { value } => widget.assistant().set_hidden_thinking_label(value.clone()),
             Action::Expand { value } => widget.expand(*value),
-            Action::Invalidate => widget.invalidate(),
+            Action::Invalidate {} => widget.invalidate(),
             Action::Theme { value } => {
                 state.set_theme_instance(palette::palette(value)).unwrap();
             }
             Action::Keys { value } => bind(value.clone()),
-            Action::CaptureChildren => alias = Some(widget.children()),
-            Action::Clear => widget.clear(),
+            Action::CaptureChildren {} => alias = Some(widget.children()),
+            Action::Clear {} => widget.clear(),
             Action::AppendAlias { text } => alias
                 .as_ref()
                 .unwrap()
@@ -114,11 +121,7 @@ pub fn group(name: &str) {
 /// Weak handles prove replacement and final-drop release without a clock.
 pub fn releases_handles() {
     let (_, live) = published::published(&palette::palette("a"));
-    let markdown = Rc::new(maestro_theme::get_markdown_theme(
-        live.clone(),
-        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
-        true,
-    ));
+    let markdown = Rc::new(markdown(live.clone(), true));
     let original = widget::message(None);
     let old = std::sync::Arc::downgrade(&original);
     let component = maestro_chat::AssistantMessageComponent::new(
@@ -136,4 +139,85 @@ pub fn releases_handles() {
     assert!(last.upgrade().is_some());
     drop(component);
     assert!(last.upgrade().is_none());
+}
+
+/// Literal and decoded attacks, with ordinary terminal styling as a control.
+const TERMINAL_CONTROL_CASES: &[(&str, &str)] = &[
+    ("clipboard", "\x1b]52;c;b3duZWQ=\x07"),
+    ("whitespace", "tab\tvalue\r\nline\nnext"),
+    (
+        "binary",
+        "left\x01\x08\x0b\x1f\u{fff9}\u{fffa}\u{fffb}right",
+    ),
+    ("unicode", "café 中文 👩‍💻"),
+    ("safe styles", "**bold** [safe](https://safe.example)"),
+    ("numeric entity", "&#27;]52;c;b3duZWQ=&#7;"),
+    (
+        "entity label",
+        "[&#27;&#93;52;c;b3duZWQ=&#7;](https://safe.example)",
+    ),
+    (
+        "entity destination",
+        "[label](https://safe.example/&#27;]52;c;b3duZWQ=&#7;)",
+    ),
+    ("split entity", "&\x01#27;]52;c;b3duZWQ=&#7;"),
+    ("code span", "`\x1b]52;c;b3duZWQ=\x07`"),
+    ("title", "\x1b]0;owned\x07"),
+    ("clear", "\x1b[2J"),
+    (
+        "link",
+        "\x1b]8;;https://attacker.example/\x07docs.example\x1b]8;;\x07",
+    ),
+];
+
+/// Text and thinking that carry terminal control sequences in prose and fenced code
+/// render without them, keeping the words around them.
+pub fn drops_terminal_controls() {
+    let (_, live) = published::published(&palette::palette("a"));
+    let markdown = Rc::new(markdown(live.clone(), true));
+    let mut leaks = Vec::new();
+    for &(name, control) in TERMINAL_CONTROL_CASES {
+        let text = format!("before {control} after\n\n```\ncode {control} end\n```");
+        let message = widget::message(None);
+        message.write().unwrap().content = serde_json::from_value(serde_json::json!([
+            {"type": "thinking", "thinking": text},
+            {"type": "text", "text": text},
+        ]))
+        .unwrap();
+        let terminal = maestro_tui::TerminalImage::new(|_| None, || 1);
+        terminal.set_capabilities(maestro_tui::TerminalCapabilities {
+            hyperlinks: true,
+            ..Default::default()
+        });
+        let component = maestro_chat::AssistantMessageComponent::new(
+            Some(message),
+            maestro_chat::AssistantMessageOptions::default(),
+            live.clone(),
+            markdown.clone(),
+            terminal,
+        );
+        let rendered = component.render(80).join("\n");
+        if name == "safe styles" {
+            assert!(rendered.contains("\x1b[1m"), "bold styling lost");
+            assert!(
+                rendered.contains("\x1b]8;;https://safe.example\x1b\\"),
+                "hyperlink lost"
+            );
+        }
+        let markers = ["\x1b]52;", "\x1b]0;", "\x1b[2J", "attacker.example"];
+        leaks.extend(
+            markers
+                .iter()
+                .filter(|marker| rendered.contains(**marker))
+                .map(|marker| (name, *marker)),
+        );
+        for word in ["before", "after", "code", "end"] {
+            assert_eq!(
+                rendered.matches(word).count(),
+                2,
+                "{name} {word}: {rendered:?}"
+            );
+        }
+    }
+    assert!(leaks.is_empty(), "rendered controls: {leaks:?}");
 }

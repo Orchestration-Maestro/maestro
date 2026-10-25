@@ -1,13 +1,10 @@
 //! Guarded command operations and owned replacement contexts.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod local_support;
-#[path = "support/model.rs"]
-mod model_support;
-#[path = "support/ui_host.rs"]
-mod ui_host;
+use crate::context_actions;
+use crate::local_support;
+use crate::model_support;
+use crate::ui_host;
 use local_support::runner;
 use maestro_extensions::ExtensionContextActions;
 use std::{rc::Rc, sync::RwLock};
@@ -114,7 +111,7 @@ mod command;
 use command::{Call, Recorder};
 use local_support::local;
 use maestro_extensions::{
-    ExtensionCommandContextActions, ReplacedSessionContext,
+    CommandContextOperations, ExtensionCommandContextActions, ReplacedSessionContext,
     types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions},
 };
 use maestro_session::session_manager::{ForkPosition, NavigateTreeOptions, ReadonlySessionManager};
@@ -125,12 +122,12 @@ fn command_options_preserve_absence_and_every_callback() {
     local(async {
         let runner = runner(&Rc::new(RwLock::new(Vec::new())));
         let record = Recorder::default();
-        let actions = record.actions(false);
-        let _: &maestro_extensions::NewSessionHandler = &actions.new_session;
-        let _: &maestro_extensions::ForkHandler = &actions.fork;
-        let _: &maestro_extensions::NavigateTreeHandler = &actions.navigate_tree;
-        let _: &maestro_extensions::SwitchSessionHandler = &actions.switch_session;
-        runner.bind_command_context(Some(actions));
+        let operations = record.operations(false);
+        let _: &maestro_extensions::NewSessionHandler = &operations.new_session;
+        let _: &maestro_extensions::ForkHandler = &operations.fork;
+        let _: &maestro_extensions::NavigateTreeHandler = &operations.navigate_tree;
+        let _: &maestro_extensions::SwitchSessionHandler = &operations.switch_session;
+        runner.bind_command_context(Some(ExtensionCommandContextActions::new(operations)));
         let ctx = runner.create_command_context();
         let setup: Rc<dyn Fn(Rc<RefCell<maestro_session::SessionManager>>) -> TestFuture<()>> =
             Rc::new(|_| panic!("setup must stay with the application"));
@@ -337,21 +334,23 @@ async fn replacement_flow(operation: &'static str) {
         )) as TestFuture<maestro_extensions::types::SessionChangeResult>
     });
     let (new, fork, switch) = (apply.clone(), apply.clone(), apply);
-    old.bind_command_context(Some(ExtensionCommandContextActions {
-        new_session: Rc::new(move |options| {
-            let options = options.unwrap();
-            new(options.setup, options.with_session)
-        }),
-        fork: Rc::new(move |id, options| {
-            assert_eq!(id, "entry-1");
-            fork(None, options.unwrap().with_session)
-        }),
-        switch_session: Rc::new(move |path, options| {
-            assert_eq!(path, "/s.jsonl");
-            switch(None, options.unwrap().with_session)
-        }),
-        ..Default::default()
-    }));
+    old.bind_command_context(Some(ExtensionCommandContextActions::new(
+        CommandContextOperations {
+            new_session: Rc::new(move |options| {
+                let options = options.unwrap();
+                new(options.setup, options.with_session)
+            }),
+            fork: Rc::new(move |id, options| {
+                assert_eq!(id, "entry-1");
+                fork(None, options.unwrap().with_session)
+            }),
+            switch_session: Rc::new(move |path, options| {
+                assert_eq!(path, "/s.jsonl");
+                switch(None, options.unwrap().with_session)
+            }),
+            ..context_actions::silent_command_operations()
+        },
+    )));
     let ctx = old.create_command_context();
     let result = invoke_replacement(&ctx, operation, setup, with).await;
     trace
@@ -657,8 +656,7 @@ fn assert_stale_base(ctx: &maestro_extensions::ExtensionCommandContext) {
     assert!(ctx.get_system_prompt().is_err());
 }
 
-#[path = "support/error.rs"]
-mod error_support;
+use crate::error_support;
 use error_support::Marker;
 /// Returns a typed marker without reconstructing it.
 fn failure<T: 'static>(index: usize) -> TestFuture<T> {
@@ -668,14 +666,16 @@ fn failure<T: 'static>(index: usize) -> TestFuture<T> {
 fn command_operation_errors_propagate_unchanged() {
     local(async {
         let runner = runner(&Rc::new(RwLock::new(Vec::new())));
-        runner.bind_command_context(Some(ExtensionCommandContextActions {
-            wait_for_idle: Rc::new(|| failure(0)),
-            new_session: Rc::new(|_| failure(1)),
-            fork: Rc::new(|_, _| failure(2)),
-            navigate_tree: Rc::new(|_, _| failure(3)),
-            switch_session: Rc::new(|_, _| failure(4)),
-            reload: Rc::new(|| failure(5)),
-        }));
+        runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+            CommandContextOperations {
+                wait_for_idle: Rc::new(|| failure(0)),
+                new_session: Rc::new(|_| failure(1)),
+                fork: Rc::new(|_, _| failure(2)),
+                navigate_tree: Rc::new(|_, _| failure(3)),
+                switch_session: Rc::new(|_, _| failure(4)),
+                reload: Rc::new(|| failure(5)),
+            },
+        )));
         for (index, result) in all_commands(&runner.create_command_context())
             .await
             .into_iter()
@@ -738,13 +738,15 @@ fn reload_keeps_the_old_command_frame_running_with_a_stale_context() {
         let owner = local_support::loaded("/reload", bus.controller.for_extension());
         let runner = Rc::new(runner(&owner.owners));
         let weak = Rc::downgrade(&runner);
-        runner.bind_command_context(Some(ExtensionCommandContextActions {
-            reload: Rc::new(move || {
-                weak.upgrade().unwrap().invalidate(None);
-                Box::pin(async { Ok(()) })
-            }),
-            ..Default::default()
-        }));
+        runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+            CommandContextOperations {
+                reload: Rc::new(move || {
+                    weak.upgrade().unwrap().invalidate(None);
+                    Box::pin(async { Ok(()) })
+                }),
+                ..context_actions::silent_command_operations()
+            },
+        )));
         owner
             .api
             .register_command(
@@ -786,6 +788,15 @@ fn replaced_context_forwards_both_message_operations() {
         let ctx = ReplacedSessionContext::new(
             runner.create_command_context(),
             Rc::new(move |message, options| {
+                if let maestro_session::Presence::Present(details) = &message.details {
+                    assert_ne!(details.as_f64().map(f64::to_bits), Some(0.0_f64.to_bits()));
+                    assert!(
+                        details
+                            .as_object()
+                            .is_none_or(|object| !object.contains_key("z")
+                                || object.keys().map(String::as_str).eq(["z", "a"]))
+                    );
+                }
                 customs
                     .borrow_mut()
                     .push(serde_json::json!([message, options]));
@@ -822,7 +833,8 @@ async fn message_roundtrip(
     use maestro_session::messages::{MessageDelivery, SendMessageOptions};
     use serde_json::json;
     for details in [None, Some(serde_json::Value::Null), Some(json!({"k":1}))] {
-        for mode in 0..3 {
+        let modes = if details.is_none() { 0..6 } else { 0..3 };
+        for mode in modes {
             let mut input = json!({"customType":"note","content":"hello","display":true});
             if let Some(details) = &details {
                 input["details"] = details.clone();
@@ -830,9 +842,21 @@ async fn message_roundtrip(
             let options = match mode {
                 0 => None,
                 1 => Some(SendMessageOptions::default()),
-                _ => Some(SendMessageOptions {
+                2 => Some(SendMessageOptions {
                     trigger_turn: Some(true),
                     deliver_as: Some(MessageDelivery::NextTurn),
+                }),
+                3 => Some(SendMessageOptions {
+                    trigger_turn: Some(false),
+                    deliver_as: None,
+                }),
+                4 => Some(SendMessageOptions {
+                    trigger_turn: None,
+                    deliver_as: Some(MessageDelivery::Steer),
+                }),
+                _ => Some(SendMessageOptions {
+                    trigger_turn: None,
+                    deliver_as: Some(MessageDelivery::FollowUp),
                 }),
             };
             ctx.send_message(serde_json::from_value(input.clone()).unwrap(), options)
@@ -841,7 +865,10 @@ async fn message_roundtrip(
             let expected_options = match mode {
                 0 => serde_json::Value::Null,
                 1 => json!({}),
-                _ => json!({"triggerTurn":true,"deliverAs":"nextTurn"}),
+                2 => json!({"triggerTurn":true,"deliverAs":"nextTurn"}),
+                3 => json!({"triggerTurn":false}),
+                4 => json!({"deliverAs":"steer"}),
+                _ => json!({"deliverAs":"followUp"}),
             };
             assert_eq!(
                 std::mem::take(&mut *messages.borrow_mut()),
@@ -849,7 +876,41 @@ async fn message_roundtrip(
             );
         }
     }
+    message_field_roundtrip(ctx, messages).await;
     user_message_roundtrip(ctx, messages).await;
+}
+
+/// Exercises one independent custom-message field at a time.
+async fn message_field_roundtrip(
+    ctx: &ReplacedSessionContext,
+    messages: &Rc<RefCell<Vec<serde_json::Value>>>,
+) {
+    use serde_json::json;
+    for (field, value) in [
+        ("details", json!("details")),
+        ("details", json!(13.25)),
+        ("details", json!(false)),
+        ("details", json!([null, true])),
+        ("details", json!(-0.0)),
+        ("details", json!({"z":1,"a":2})),
+        (
+            "content",
+            json!([{"type":"text","text":"a"},{"type":"image","data":"image-data","mimeType":"image/png"}]),
+        ),
+        ("content", json!("")),
+        ("content", json!([])),
+        ("display", json!(false)),
+    ] {
+        let mut input = json!({"customType":"note","content":"hello","display":true});
+        input[field] = value;
+        ctx.send_message(serde_json::from_value(input.clone()).unwrap(), None)
+            .await
+            .unwrap();
+        assert_eq!(
+            std::mem::take(&mut *messages.borrow_mut()),
+            [json!([input, null])]
+        );
+    }
 }
 
 /// Message operations preserve typed failures even when stale.
@@ -895,16 +956,24 @@ async fn user_message_roundtrip(
     for content in [
         json!("hello"),
         json!([{"type":"text","text":"a"}, {"type":"image","data":"image-data","mimeType":"image/png"}]),
+        json!(""),
+        json!([]),
     ] {
-        for mode in 0..3 {
+        let modes = if content == json!("") || content == json!([]) {
+            0..1
+        } else {
+            0..4
+        };
+        for mode in modes {
             let options = match mode {
                 0 => None,
                 1 => Some(SendUserMessageOptions {
                     deliver_as: Some(UserMessageDelivery::Steer),
                 }),
-                _ => Some(SendUserMessageOptions {
+                2 => Some(SendUserMessageOptions {
                     deliver_as: Some(UserMessageDelivery::FollowUp),
                 }),
+                _ => Some(SendUserMessageOptions::default()),
             };
             ctx.send_user_message(serde_json::from_value(content.clone()).unwrap(), options)
                 .await
@@ -912,7 +981,8 @@ async fn user_message_roundtrip(
             let expected_options = match mode {
                 0 => serde_json::Value::Null,
                 1 => json!({"deliverAs":"steer"}),
-                _ => json!({"deliverAs":"followUp"}),
+                2 => json!({"deliverAs":"followUp"}),
+                _ => json!({}),
             };
             assert_eq!(
                 std::mem::take(&mut *messages.borrow_mut()),

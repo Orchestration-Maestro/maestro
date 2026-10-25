@@ -1,5 +1,7 @@
 //! Configured sources through the supplied-operation manager.
 #[cfg(unix)]
+use crate::resolution_support::{case_in_child, case_in_removed_cwd};
+#[cfg(unix)]
 use crate::scratch;
 use crate::support;
 use maestro_packages::PackageManager;
@@ -16,7 +18,6 @@ fn construction_stores_dependencies_without_observing_them() {
     ));
     let held = settings.borrow_mut();
     let effects = Rc::new(Effects::default());
-    effects.fail_ambient.set(true);
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: "relative".into(),
@@ -25,9 +26,7 @@ fn construction_stores_dependencies_without_observing_them() {
         },
         Controlled(effects.clone()),
     );
-    assert!(effects.reads.borrow().is_empty());
     assert!(effects.calls.borrow().is_empty());
-    assert!(effects.paths.borrow().is_empty());
     assert_eq!(
         manager
             .add_source_to_settings("npm:pkg", None)
@@ -40,18 +39,25 @@ fn construction_stores_dependencies_without_observing_them() {
 #[test]
 #[cfg(unix)]
 fn source_classification_preserves_npm_and_local_precedence() {
+    let Some(root) = case_in_child("home", fake_home) else {
+        return;
+    };
     let rows: Vec<SourceVector> =
         serde_json::from_str(include_str!("source_vectors.json")).unwrap();
-    let (manager, _, effects) = support::manager(&json!({}));
-    effects.exists.set(true);
+    let (manager, _, _) = support::manager_below(&root, &json!({}), &json!([]), None);
     let mut visited = std::collections::HashSet::new();
     for row in rows {
         assert!(visited.insert(row.input.clone()), "duplicate query");
+        let expected = support::below(&root, &row.expected);
+        std::fs::create_dir_all(&expected).unwrap();
         assert_eq!(
             manager
-                .get_installed_path(&row.input, maestro_packages::InstalledSourceScope::Project)
+                .get_installed_path(
+                    &support::below(&root, &row.input),
+                    maestro_packages::InstalledSourceScope::Project
+                )
                 .unwrap(),
-            Some(row.expected),
+            Some(expected),
             "{}",
             row.input
         );
@@ -62,6 +68,9 @@ fn source_classification_preserves_npm_and_local_precedence() {
 #[cfg(unix)]
 fn scoped_local_storage_and_matching_use_different_bases() {
     use maestro_packages::InstalledSourceScope::{Project, User};
+    let Some(root) = case_in_child("home", fake_home) else {
+        return;
+    };
     let rows: Vec<NormalizationVector> =
         serde_json::from_str(include_str!("normalization_vectors.json")).unwrap();
     let mut visited = std::collections::HashSet::new();
@@ -72,28 +81,22 @@ fn scoped_local_storage_and_matching_use_different_bases() {
             "project" => Project,
             _ => panic!("unknown scope"),
         };
-        let (manager, settings, _) = support::manager(&json!({}));
-        assert!(
-            manager
-                .add_source_to_settings(&row.input, Some(scope))
-                .unwrap()
-        );
+        let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]), None);
+        let input = support::below(&root, &row.input);
+        assert!(manager.add_source_to_settings(&input, Some(scope)).unwrap());
         let stored = match scope {
             User => settings.borrow().get_global_settings(),
             Project => settings.borrow().get_project_settings(),
         };
         assert_eq!(stored.0["packages"], json!([row.expected]), "{}", row.input);
-        assert!(
-            !manager
-                .add_source_to_settings(&row.input, Some(scope))
-                .unwrap()
-        );
+        assert!(!manager.add_source_to_settings(&input, Some(scope)).unwrap());
     }
     assert_eq!(visited.len(), 26);
-    let (manager, settings, _) = support::manager(&json!({}));
+    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]), None);
+    let project = support::below(&root, "/work/project/.maestro");
     assert!(
         manager
-            .add_source_to_settings("/work/project/.maestro", Some(Project))
+            .add_source_to_settings(&project, Some(Project))
             .unwrap()
     );
     assert_eq!(
@@ -214,14 +217,21 @@ fn local_input_and_stored_paths_match_in_their_own_scopes() {
 #[cfg(unix)]
 fn configured_listing_retains_order_duplicates_and_object_flags() {
     use maestro_packages::InstalledSourceScope::{Project, User};
-    let (manager, settings, effects) = support::manager(
+    let (manager, _, _, tree) = support::uninstalled(
         &json!({"packages":["./local", {"source":"https://github.com/u/r","skills":null}, "./local"]}),
+        &json!(["./local", "https://github.com/u/r"]),
     );
-    settings.borrow_mut().set_project_packages(vec![
-        maestro_settings::PackageSource::Source("./local".into()),
-        maestro_settings::PackageSource::Source("https://github.com/u/r".into()),
-    ]);
-    effects.exists.set(true);
+    let expected = [
+        "/home/reader/agent/local",
+        "/home/reader/agent/git/github.com/u/r",
+        "/home/reader/agent/local",
+        "/work/project/.maestro/local",
+        "/work/project/.maestro/git/github.com/u/r",
+    ]
+    .map(|path| support::below(tree.path(), path));
+    for path in &expected {
+        std::fs::create_dir_all(path).unwrap();
+    }
     let rows = manager.list_configured_packages().unwrap();
     assert_eq!(
         rows.iter()
@@ -236,18 +246,11 @@ fn configured_listing_retains_order_duplicates_and_object_flags() {
         ]
     );
     assert_eq!(
-        rows.iter()
-            .map(|r| r.installed_path.as_deref())
+        rows.into_iter()
+            .map(|r| r.installed_path.unwrap())
             .collect::<Vec<_>>(),
-        vec![
-            Some("/home/reader/agent/local"),
-            Some("/home/reader/agent/git/github.com/u/r"),
-            Some("/home/reader/agent/local"),
-            Some("/work/project/.maestro/local"),
-            Some("/work/project/.maestro/git/github.com/u/r")
-        ]
+        expected
     );
-    assert_eq!(effects.paths.borrow().len(), 5);
     snapshot_before_lookup().unwrap();
 }
 #[test]
@@ -299,7 +302,8 @@ fn raw_package_errors_follow_the_consumed_entry() {
 #[cfg(unix)]
 fn later_bad_entries_preserve_earlier_root_cache_effects() {
     use maestro_settings::PackageSource;
-    let (manager, settings, effects) = support::manager(&json!({"packages":["npm:first",{}]}));
+    let (manager, settings, effects, tree) =
+        support::uninstalled(&json!({"packages":["npm:first",{}]}), &json!([]));
     assert!(manager.list_configured_packages().is_err());
     assert_eq!(
         *effects.calls.borrow(),
@@ -308,66 +312,52 @@ fn later_bad_entries_preserve_earlier_root_cache_effects() {
     settings
         .borrow_mut()
         .set_packages(vec![PackageSource::Source("npm:second".into())]);
+    let second = support::below(tree.path(), "/root/second");
+    std::fs::create_dir_all(&second).unwrap();
     let rows = manager.list_configured_packages().unwrap();
     assert_eq!(rows[0].source, "npm:second");
+    assert_eq!(rows[0].installed_path, Some(second));
     assert_eq!(effects.calls.borrow().len(), 1);
-    assert_eq!(*effects.paths.borrow(), vec!["/root/first", "/root/second"]);
 }
 #[test]
 #[cfg(unix)]
 fn local_resolution_reads_home_and_cwd_only_when_needed() {
     use maestro_packages::InstalledSourceScope::User;
-    let (manager, settings, effects) = support::manager(&json!({}));
-    effects.fail_ambient.set(true);
-    effects.exists.set(true);
+    relative_home_storage_needs_cwd();
+    let Some((root, _removed)) = case_in_removed_cwd("removed working directory", |_| vec![])
+    else {
+        return;
+    };
+    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]), None);
+    let absolute = support::below(&root, "/absolute/pkg");
+    let local = support::below(&root, "/home/reader/agent/pkg");
+    for path in [&absolute, &local] {
+        std::fs::create_dir_all(path).unwrap();
+    }
     assert_eq!(
-        manager.get_installed_path("/absolute/pkg", User).unwrap(),
-        Some("/absolute/pkg".into())
+        manager.get_installed_path(&absolute, User).unwrap(),
+        Some(absolute)
     );
     assert_eq!(
         manager.get_installed_path("./pkg", User).unwrap(),
-        Some("/home/reader/agent/pkg".into())
+        Some(local)
     );
     assert!(!manager.remove_source_from_settings("~", None).unwrap());
-    assert!(effects.reads.borrow().is_empty());
-    assert_eq!(
-        manager
-            .get_installed_path("~", User)
-            .unwrap_err()
-            .to_string(),
-        "home unavailable"
-    );
-    assert_eq!(
-        manager
-            .add_source_to_settings("~", None)
-            .unwrap_err()
-            .to_string(),
-        "home unavailable"
-    );
-    assert!(
-        !settings
-            .borrow()
-            .get_global_settings()
-            .0
-            .contains_key("packages")
-    );
     let relative = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: "relative".into(),
             agent_dir: "relative-agent".into(),
             settings_manager: settings,
         },
-        Controlled(effects.clone()),
+        Controlled(Rc::new(Effects::default())),
     );
     assert_eq!(
         relative
             .get_installed_path("./pkg", User)
             .unwrap_err()
-            .to_string(),
-        "cwd unavailable"
+            .kind(),
+        std::io::ErrorKind::NotFound
     );
-    assert_eq!(*effects.reads.borrow(), vec!["home", "home", "cwd"]);
-    relative_home_storage_needs_cwd().unwrap();
 }
 #[test]
 #[cfg(unix)]
@@ -393,14 +383,14 @@ fn installed_paths_require_existing_contents_in_the_selected_scope() {
         ("./local", User, "/home/reader/agent/local"),
         ("./local", Project, "/work/project/.maestro/local"),
     ] {
-        let (manager, _, effects) = support::manager(&json!({}));
+        let (manager, _, _, tree) = support::uninstalled(&json!({}), &json!([]));
         assert_eq!(manager.get_installed_path(source, scope).unwrap(), None);
-        effects.exists.set(true);
+        let expected = support::below(tree.path(), expected);
+        std::fs::create_dir_all(&expected).unwrap();
         assert_eq!(
             manager.get_installed_path(source, scope).unwrap(),
-            Some(expected.into())
+            Some(expected)
         );
-        assert_eq!(*effects.paths.borrow(), vec![expected, expected]);
     }
 }
 /// Exercises one operation sequence against any supplied adapter.
@@ -471,7 +461,7 @@ fn workflow(
 fn configured_sources_work_without_acquisition() {
     use maestro_packages::NativePackageOperations;
     let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.0.to_str().unwrap();
+    let base = scratch.path().to_str().unwrap();
     let cwd = maestro_path::join(&[base, "project"]);
     let agent = maestro_path::join(&[base, "agent"]);
     let root = maestro_path::join(&[base, "global"]);
@@ -480,7 +470,6 @@ fn configured_sources_work_without_acquisition() {
     std::fs::write(maestro_path::join(&[&root, "@scope/pkg"]), "contents").unwrap();
     workflow(
         NativePackageOperations::new(
-            |_| false,
             Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         ),
@@ -494,13 +483,7 @@ fn configured_sources_work_without_acquisition() {
         .outputs
         .borrow_mut()
         .push_back(Ok(support::output(&root, "", Some(0))));
-    workflow(
-        WorkflowOperations(Controlled(effects.clone())),
-        &cwd,
-        &agent,
-        &root,
-    )
-    .unwrap();
+    workflow(Controlled(effects.clone()), &cwd, &agent, &root).unwrap();
     assert_eq!(
         *effects.calls.borrow(),
         vec![(
@@ -582,9 +565,7 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
         },
         Controlled(Rc::new(Effects::default())),
     );
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     assert!(
         manager
             .add_source_to_settings("npm: pkg@latest ", None)
@@ -670,87 +651,6 @@ impl SettingsStorage for Storage {
     }
 }
 
-#[cfg(unix)]
-use maestro_packages::PackageOperations;
-/// A controlled adapter using the same isolated existence set.
-#[cfg(unix)]
-struct WorkflowOperations(Controlled);
-#[cfg(unix)]
-impl PackageOperations for WorkflowOperations {
-    fn temp_dir(&self) -> String {
-        std::env::temp_dir().to_string_lossy().into_owned()
-    }
-    fn resource_operations(&self) -> &dyn maestro_resources::skills::ResourceOperations {
-        &maestro_resources::NativeResourceOperations
-    }
-    fn read_file(&self, path: &str) -> std::io::Result<String> {
-        self.0.read_file(path)
-    }
-    fn offline_value(&self) -> Option<String> {
-        self.0.offline_value()
-    }
-    fn spawn(
-        &self,
-        operation: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>,
-    ) -> std::io::Result<()> {
-        self.0.spawn(operation)
-    }
-    fn run_command_capture<'a>(
-        &'a self,
-        command: &'a str,
-        args: &'a [String],
-        options: maestro_packages::CommandCaptureOptions<'a>,
-    ) -> maestro_packages::PackageFuture<'a, String> {
-        self.0.run_command_capture(command, args, options)
-    }
-
-    fn exists(&self, path: &str) -> bool {
-        !path.ends_with("/local")
-    }
-    fn home_dir(&self) -> std::io::Result<String> {
-        self.0.home_dir()
-    }
-    fn current_dir(&self) -> std::io::Result<String> {
-        self.0.current_dir()
-    }
-    fn drive_directory(&self, drive: char) -> Option<String> {
-        self.0.drive_directory(drive)
-    }
-    fn run_command_sync(
-        &self,
-        command: &str,
-        args: &[String],
-    ) -> std::io::Result<maestro_packages::CommandOutput> {
-        self.0.run_command_sync(command, args)
-    }
-    fn create_temp_dir(&self, parent: &str) -> std::io::Result<String> {
-        self.0.create_temp_dir(parent)
-    }
-    fn rename_path(&self, from: &str, to: &str) -> std::io::Result<()> {
-        self.0.rename_path(from, to)
-    }
-    fn create_dir_all(&self, path: &str) -> std::io::Result<()> {
-        self.0.create_dir_all(path)
-    }
-    fn write_file(&self, path: &str, text: &str, exclusive: bool) -> std::io::Result<()> {
-        self.0.write_file(path, text, exclusive)
-    }
-    fn directory_is_empty(&self, path: &str) -> std::io::Result<bool> {
-        self.0.directory_is_empty(path)
-    }
-    fn remove_path(&self, path: &str) -> std::io::Result<()> {
-        self.0.remove_path(path)
-    }
-    fn run_command<'a>(
-        &'a self,
-        command: &'a str,
-        args: &'a [String],
-        cwd: Option<&'a str>,
-    ) -> maestro_packages::PackageFuture<'a, Option<i32>> {
-        self.0.run_command(command, args, cwd)
-    }
-}
-
 /// Every public walk rejects this malformed selected value without a write.
 fn rejects_packages(root: &serde_json::Value) {
     let (manager, settings, _) = support::manager(&json!({"packages":root}));
@@ -791,12 +691,13 @@ struct NormalizationVector {
 #[cfg(unix)]
 fn snapshot_before_lookup() -> std::io::Result<()> {
     use maestro_packages::InstalledSourceScope::{Project, User};
-    let (manager, settings, effects) = support::manager(&json!({"packages":["npm:first"]}));
-    settings
-        .borrow_mut()
-        .set_project_packages(vec![maestro_settings::PackageSource::Source(
-            "./local".into(),
-        )]);
+    let (manager, settings, effects, tree) =
+        support::uninstalled(&json!({"packages":["npm:first"]}), &json!(["./local"]));
+    let expected = ["/root/first", "/work/project/.maestro/local"]
+        .map(|path| support::below(tree.path(), path));
+    for path in &expected {
+        std::fs::create_dir_all(path).unwrap();
+    }
     *effects.on_command.borrow_mut() =
         Some(Box::new(move || {
             settings.borrow_mut().set_project_packages(vec![
@@ -811,27 +712,24 @@ fn snapshot_before_lookup() -> std::io::Result<()> {
         vec![("npm:first", User), ("./local", Project)]
     );
     assert_eq!(
-        *effects.paths.borrow(),
-        vec!["/root/first", "/work/project/.maestro/local"]
+        rows.into_iter()
+            .map(|row| row.installed_path.unwrap())
+            .collect::<Vec<_>>(),
+        expected
     );
     Ok(())
 }
 
 /// A relative home operand needs ambient context only for scope-relative storage.
 #[cfg(unix)]
-fn relative_home_storage_needs_cwd() -> std::io::Result<()> {
-    let (manager, settings, effects) = support::manager(&json!({}));
-    *effects.home_override.borrow_mut() = Some("relative-home".into());
-    effects.fail_ambient.set(true);
-    let result = manager.add_source_to_settings("~", None);
-    assert!(
-        result.is_err(),
-        "relative home storage must read ambient cwd"
-    );
-    if let Err(error) = result {
-        assert_eq!(error.to_string(), "cwd unavailable");
-    }
-    assert_eq!(*effects.reads.borrow(), vec!["home", "cwd"]);
+fn relative_home_storage_needs_cwd() {
+    let home = |_: &str| vec![("HOME", Some("relative-home".into()))];
+    let Some((root, _removed)) = case_in_removed_cwd("relative home", home) else {
+        return;
+    };
+    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]), None);
+    let error = manager.add_source_to_settings("~", None).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     assert!(
         !settings
             .borrow()
@@ -839,13 +737,19 @@ fn relative_home_storage_needs_cwd() -> std::io::Result<()> {
             .0
             .contains_key("packages")
     );
-    effects.fail_ambient.set(false);
-    assert!(manager.add_source_to_settings("~", None)?);
+    let ambient = support::below(&root, "/ambient");
+    std::fs::create_dir(&ambient).unwrap();
+    std::env::set_current_dir(ambient).unwrap();
+    assert!(manager.add_source_to_settings("~", None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
         json!(["../../../ambient/relative-home"])
     );
-    Ok(())
+}
+/// The child environment whose home is the fixture's `/home/fake`.
+#[cfg(unix)]
+fn fake_home(root: &str) -> Vec<(&'static str, Option<String>)> {
+    vec![("HOME", Some(format!("{root}/home/fake")))]
 }
 
 #[test]

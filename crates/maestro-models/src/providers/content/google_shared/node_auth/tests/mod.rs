@@ -29,6 +29,23 @@ fn client_key_pem() -> String {
 }
 
 use crate::tests::content_credentials::{Files, workforce};
+use crate::tests::runtime::{run, run_paused};
+
+impl Files {
+    /// Write one new fixture file, preserving any pre-existing file.
+    fn write(&self, name: &str, bytes: &[u8]) -> String {
+        use std::io::Write;
+        let path = self.path(name);
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .unwrap()
+            .write_all(bytes)
+            .unwrap();
+        path
+    }
+}
 
 /// Retained native content client with a real credential provider.
 fn client(
@@ -55,15 +72,6 @@ async fn prepare(client: &super::super::ApiClient) -> super::super::PreparedCont
     client.prepare_request(projected, None).await.unwrap()
 }
 
-/// Drive a focused native operation without mutating process environment.
-fn run<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
-
 /// Fetch recording each requested URL and answering through `reply`.
 fn recording(
     reply: impl Fn(&str) -> Result<crate::HttpResponse, crate::FetchError> + Send + Sync + 'static,
@@ -79,19 +87,14 @@ fn recording(
 
 /// A successful metadata response naming the expected flavor.
 fn google_response() -> crate::HttpResponse {
-    let mut response = response(&serde_json::json!({}));
+    google_response_with(&serde_json::json!({}))
+}
+
+/// A successful metadata response carrying `value` and naming the expected flavor.
+fn google_response_with(value: &serde_json::Value) -> crate::HttpResponse {
+    let mut response = response(value);
     response
         .headers
         .insert("metadata-flavor".into(), "Google".into());
     response
-}
-
-/// Drive a paused-clock runtime so retry backoff never sleeps for real.
-fn run_paused<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(future)
 }

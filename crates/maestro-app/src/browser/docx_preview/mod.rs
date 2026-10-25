@@ -8,13 +8,15 @@ pub use parser::xml_parser::{
     OwnedXmlElement, XmlAttribute, XmlElement, XmlParser, parse_xml_string,
 };
 
-/// Failure opening an archive or one of its XML parts.
+/// Failure reading a document package or building extracted text.
 #[derive(Debug)]
 pub enum DocxError {
     /// An existing embedded resource has no supplied key.
     FontKey,
     /// Archive decoding or entry-read failure.
     Archive(String),
+    /// Extracted text exceeds 512 MiB or its output allocation failed.
+    Output(String),
     /// XML admission failure with an optional package path.
     Xml {
         /// Failing package part, if known.
@@ -27,7 +29,7 @@ impl std::fmt::Display for DocxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::FontKey => f.write_str("Embedded font key is missing"),
-            Self::Archive(message) => write!(f, "{message}"),
+            Self::Archive(message) | Self::Output(message) => write!(f, "{message}"),
             Self::Xml { path, message } => {
                 write!(f, "{}: {message}", path.as_deref().unwrap_or("XML"))
             }
@@ -40,6 +42,7 @@ pub(crate) use common::open_xml_package::OpenXmlPackage;
 #[cfg(test)]
 mod tests;
 mod utils;
+pub use utils::enclose_font_family;
 pub(crate) use utils::resolve_path;
 mod word_document;
 pub use common::{
@@ -65,11 +68,12 @@ impl Default for Options {
 mod document_parser;
 pub use document::dom::{
     DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData, OpenXmlElementTree,
+    WmlHyperlink, WmlSmartTag, WmlTable, WmlTableCell, WmlTableColumn, WmlTableRow,
 };
 pub use document_parser::{
-    DefaultPropertiesOptions, TableStyle, parse_background, parse_body_elements,
-    parse_border_properties, parse_default_properties, parse_paragraph, parse_run,
-    parse_table_style,
+    DefaultPropertiesOptions, TableStyle, WordBody, parse_background, parse_body_elements,
+    parse_border_properties, parse_default_properties, parse_document_file, parse_paragraph,
+    parse_run, parse_table_style,
 };
 
 pub use document::border::{Border, Borders};

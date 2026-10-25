@@ -2,19 +2,16 @@
 //! the native file locking.
 
 #[cfg(test)]
-mod support;
-
-#[cfg(test)]
 mod tests {
-    use super::support;
+    use crate::support;
     use std::fs;
     use std::path::Path;
     use std::sync::Arc;
 
     use serde_json::json;
 
-    use super::support::{
-        ControlledStorage, Holder, TempDir, block_on, file_storage, location, probe_lock, raw,
+    use crate::support::{
+        ControlledStorage, Holder, Scratch, block_on, file_storage, location, probe_lock, raw,
     };
     use maestro_settings::{
         FileSettingsStorage, InMemorySettingsStorage, PackageSource, SettingsManager,
@@ -22,6 +19,109 @@ mod tests {
     };
 
     const BOTH: [SettingsScope; 2] = [SettingsScope::Global, SettingsScope::Project];
+
+    #[test]
+    fn checked_child_rejects_missing_identity() {
+        assert!(
+            support::child_command("settings_storage::tests::missing_child_identity", "missing")
+                .output()
+                .is_err(),
+            "stale selection passed with zero tests"
+        );
+    }
+
+    /// Handles the selected environment control and intentional failure bodies.
+    fn report_checked_environment_child() -> bool {
+        match support::child_case().as_deref() {
+            Some("control") => {
+                let cwd = std::env::current_dir().unwrap();
+                let expected =
+                    std::path::PathBuf::from(std::env::var_os("MAESTRO_EXPECT_CWD").unwrap());
+                assert_eq!(
+                    cwd.canonicalize().unwrap(),
+                    expected.canonicalize().unwrap()
+                );
+                assert_eq!(
+                    std::env::var_os("LLVM_PROFILE_FILE").unwrap(),
+                    expected.join("literal-%p-%m.profraw")
+                );
+                assert_eq!(std::env::var("MAESTRO_ORDER").unwrap(), "replacement");
+                assert!(std::env::var_os("MAESTRO_REMOVE").is_none());
+                support::report(&json!({"selected": true, "value": "replacement"}));
+                true
+            }
+            Some("failure" | "probe") => {
+                support::report(&json!("free"));
+                panic!("report does not establish successful completion");
+            }
+            Some("seed") | None => false,
+            Some(_) => panic!("unexpected child case"),
+        }
+    }
+
+    #[test]
+    fn checked_child_preserves_environment_reports_and_flags() {
+        const NAME: &str =
+            "settings_storage::tests::checked_child_preserves_environment_reports_and_flags";
+        if report_checked_environment_child() {
+            return;
+        }
+        if support::child_case().is_none() {
+            let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+            let output = support::child_command(NAME, "seed")
+                .env("MAESTRO_REMOVE", "inherited")
+                .env("MAESTRO_ORDER", "original")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(
+                before == std::env::vars_os().collect(),
+                "parent environment changed"
+            );
+            return;
+        }
+        assert_eq!(std::env::var("MAESTRO_REMOVE").unwrap(), "inherited");
+        let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+        let root = Scratch::new().unwrap();
+        let output = support::child_command(NAME, "control")
+            .current_dir(root.path())
+            .env("MAESTRO_EXPECT_CWD", root.path())
+            .env(
+                "LLVM_PROFILE_FILE",
+                root.path().join("literal-%p-%m.profraw"),
+            )
+            .env_remove("MAESTRO_ORDER")
+            .env("MAESTRO_ORDER", "replacement")
+            .env_remove("MAESTRO_REMOVE")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(
+            support::child_report(&output),
+            json!({"selected": true, "value": "replacement"})
+        );
+        let text = String::from_utf8(output.stdout).unwrap();
+        assert!(text.starts_with("\nrunning 1 test\n"));
+        assert!(text.lines().any(|line| line == "."));
+        assert!(!text.contains("test settings_storage::"));
+        assert!(output.stderr.is_empty());
+        let failed = support::child_command(NAME, "failure").output().unwrap();
+        assert!(!failed.status.success());
+        assert_eq!(support::child_report(&failed), json!("free"));
+        assert!(
+            std::panic::catch_unwind(|| support::probe_lock(NAME, &root.path().join("lock")))
+                .is_err(),
+            "failed child report was accepted"
+        );
+        assert!(
+            before == std::env::vars_os().collect(),
+            "parent environment changed"
+        );
+    }
 
     /// Runs `update` against one scope and returns the text it saw.
     fn transact(
@@ -94,7 +194,7 @@ mod tests {
     fn adapters_share_raw_transaction_contract() {
         assert_raw_transaction_contract(&InMemorySettingsStorage::new());
         assert_raw_transaction_contract(&*ControlledStorage::new());
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         assert_raw_transaction_contract(&file_storage(root.path()));
         assert_eq!(
             fs::read_to_string(root.path().join("agent/settings.json")).unwrap(),
@@ -181,7 +281,7 @@ mod tests {
 
     #[test]
     fn supplied_paths_fold_dot_segments_before_reading() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let (agent, config) = (root.path().join("agent"), root.path().join("work/.maestro"));
         fs::create_dir_all(&agent).unwrap();
         fs::create_dir_all(&config).unwrap();
@@ -198,7 +298,7 @@ mod tests {
 
     #[test]
     fn supplied_paths_fold_dot_segments_before_writing() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = dotted_storage(root.path());
         for scope in BOTH {
             transact(&storage, scope, Ok(Some("written"))).1.unwrap();
@@ -232,7 +332,7 @@ mod tests {
         if support::child_case().is_some() {
             return replace_through_relative_locations();
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let process_directory = root.path().join("a/b");
         let files = [
             root.path().join("a/agent/settings.json"),
@@ -243,10 +343,14 @@ mod tests {
             fs::create_dir_all(file.parent().unwrap()).unwrap();
             fs::write(file, text).unwrap();
         }
-        let output = support::child_command("relative_locations_keep_their_leading_parents", "run")
-            .current_dir(&process_directory)
-            .output()
-            .unwrap();
+        let output = support::child_command(
+            "settings_storage::tests::relative_locations_keep_their_leading_parents",
+            "run",
+        )
+        .current_dir(&process_directory)
+        .output()
+        .unwrap();
+        assert!(output.status.success());
         assert_eq!(
             support::child_report(&output),
             json!(["global seed", "project seed"]),
@@ -266,9 +370,109 @@ mod tests {
         )
     }
 
+    /// File adapter observing exclusion at the actual manager-write callback.
+    struct ObservedStorage {
+        inner: FileSettingsStorage,
+        sidecar: std::path::PathBuf,
+        writes: std::sync::atomic::AtomicUsize,
+    }
+
+    impl ObservedStorage {
+        /// Probe the sidecar while the file adapter still owns its exclusion.
+        fn observe_write(&self, scope: SettingsScope, replacement: bool) {
+            if scope == SettingsScope::Global && replacement {
+                assert_eq!(
+                    probe_lock(
+                        "settings_storage::tests::global_key_edit_merges_fresh_global_scope",
+                        &self.sidecar
+                    ),
+                    "blocked"
+                );
+                self.writes
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
+        }
+    }
+
+    impl SettingsStorage for ObservedStorage {
+        fn with_lock(
+            &self,
+            scope: SettingsScope,
+            update: &mut dyn FnMut(Option<&str>) -> maestro_settings::SettingsUpdate,
+        ) -> Result<(), SettingsStorageError> {
+            self.inner.with_lock(scope, update)
+        }
+
+        fn with_write_lock(
+            &self,
+            scope: SettingsScope,
+            update: &mut dyn FnMut(Option<&str>) -> maestro_settings::SettingsUpdate,
+        ) -> Result<(), SettingsStorageError> {
+            self.inner.with_write_lock(scope, &mut |current| {
+                let next = update(current)?;
+                self.observe_write(scope, next.is_some());
+                Ok(next)
+            })
+        }
+    }
+
+    #[test]
+    fn global_key_edit_merges_fresh_global_scope() {
+        if support::run_lock_child() {
+            return;
+        }
+        let root = Scratch::new().unwrap();
+        let agent = root.path().join("agent");
+        fs::create_dir_all(&agent).unwrap();
+        let file = agent.join("settings.json");
+        let seed = json!({"multiplexer": {"onboarding": true}, "theme": "chat"});
+        fs::write(&file, serde_json::to_string_pretty(&seed).unwrap()).unwrap();
+        let project = root.path().join("work/.maestro/settings.json");
+        fs::create_dir_all(project.parent().unwrap()).unwrap();
+        let project_bytes = b"{ \"multiplexer\": { \"mouseCapture\": true } }\n";
+        fs::write(&project, project_bytes).unwrap();
+        let storage = Arc::new(ObservedStorage {
+            inner: file_storage(root.path()),
+            sidecar: agent.join("settings.json.lock"),
+            writes: std::sync::atomic::AtomicUsize::new(0),
+        });
+        let mut first = SettingsManager::from_storage(storage.clone());
+        let mut second = SettingsManager::from_storage(storage.clone());
+        let fresh = json!({
+            "multiplexer": {"onboarding": true, "mouseCapture": false},
+            "theme": "chat",
+            "external": ["kept"]
+        });
+        fs::write(&file, serde_json::to_string_pretty(&fresh).unwrap()).unwrap();
+
+        first.set_global_key("multiplexer", "onboarding", false);
+        block_on(first.flush());
+        second.set_global_key("multiplexer", "copyOnSelect", false);
+        block_on(second.flush());
+
+        let saved: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&file).unwrap()).unwrap();
+        assert_eq!(
+            saved,
+            json!({
+                "multiplexer": {
+                    "onboarding": false,
+                    "mouseCapture": false,
+                    "copyOnSelect": false
+                },
+                "theme": "chat",
+                "external": ["kept"]
+            })
+        );
+        assert!(first.drain_errors().is_empty());
+        assert!(second.drain_errors().is_empty());
+        assert_eq!(fs::read(project).unwrap(), project_bytes);
+        assert_eq!(storage.writes.load(std::sync::atomic::Ordering::Relaxed), 2);
+    }
+
     #[test]
     fn missing_read_creates_nothing() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         fs::create_dir_all(root.path().join("work")).unwrap();
         let mut settings = create_manager(root.path());
         assert!(settings.drain_errors().is_empty());
@@ -302,7 +506,7 @@ mod tests {
 
     #[test]
     fn missing_write_calls_before_acquiring() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let config = root.path().join("work/.maestro");
         let mut calls = 0;
@@ -340,7 +544,7 @@ mod tests {
 
     #[test]
     fn first_project_write_creates_the_configuration_directory() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         fs::create_dir_all(root.path().join("agent")).unwrap();
         fs::write(
             root.path().join("agent/settings.json"),
@@ -368,11 +572,11 @@ mod tests {
 
     #[test]
     fn existing_transaction_holds_exclusion() {
-        const TEST: &str = "existing_transaction_holds_exclusion";
+        const TEST: &str = "settings_storage::tests::existing_transaction_holds_exclusion";
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let (agent, config) = (root.path().join("agent"), root.path().join("work/.maestro"));
         fs::create_dir_all(&config).unwrap();
@@ -407,11 +611,11 @@ mod tests {
 
     #[test]
     fn held_sidecar_skips_update_until_released() {
-        const TEST: &str = "held_sidecar_skips_update_until_released";
+        const TEST: &str = "settings_storage::tests::held_sidecar_skips_update_until_released";
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         fs::create_dir_all(&agent).unwrap();
@@ -434,7 +638,7 @@ mod tests {
 
     #[test]
     fn sidecar_open_and_read_failures_skip_update() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         fs::create_dir_all(agent.join("settings.json.lock")).unwrap();
@@ -453,11 +657,11 @@ mod tests {
 
     #[test]
     fn callback_and_write_failure_release_lock() {
-        const TEST: &str = "callback_and_write_failure_release_lock";
+        const TEST: &str = "settings_storage::tests::callback_and_write_failure_release_lock";
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         fs::create_dir_all(&agent).unwrap();
@@ -489,11 +693,11 @@ mod tests {
 
     #[test]
     fn sidecar_remains_stable_after_release() {
-        const TEST: &str = "sidecar_remains_stable_after_release";
+        const TEST: &str = "settings_storage::tests::sidecar_remains_stable_after_release";
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         transact(&storage, SettingsScope::Global, Ok(Some("one")))
@@ -521,7 +725,7 @@ mod tests {
 
     /// Child side: successful saves, a reload and a failed load, with nothing printed.
     fn run_quiet_operations() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         fs::create_dir_all(root.path().join("agent")).unwrap();
         let mut settings = create_manager(root.path());
         settings.set_theme("quiet".into());
@@ -540,9 +744,12 @@ mod tests {
         if support::child_case().is_some() {
             return run_quiet_operations();
         }
-        let output = support::child_command("settings_operations_are_silent", "quiet")
-            .output()
-            .unwrap();
+        let output = support::child_command(
+            "settings_storage::tests::settings_operations_are_silent",
+            "quiet",
+        )
+        .output()
+        .unwrap();
         assert!(
             output.status.success(),
             "{}",

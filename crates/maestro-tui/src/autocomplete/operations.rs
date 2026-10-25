@@ -145,15 +145,11 @@ impl<E: Fn(&str) -> Option<String>> AutocompleteOperations for NativeAutocomplet
     }
 
     fn home_dir(&self) -> io::Result<String> {
-        std::env::home_dir()
-            .map(|path| path.to_string_lossy().into_owned())
-            .ok_or_else(|| io::Error::other("home directory unavailable"))
+        maestro_resources::paths::home_directory()
     }
 
     fn read_dir(&self, path: &str) -> io::Result<Vec<DirectoryEntry>> {
-        let mut entries = std::fs::read_dir(path)?.collect::<io::Result<Vec<_>>>()?;
-        entries.sort_by_key(std::fs::DirEntry::file_name);
-        entries
+        maestro_listing::read_dir(path)?
             .into_iter()
             .map(|entry| {
                 let kind = entry.file_type()?;

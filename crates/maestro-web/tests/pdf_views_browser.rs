@@ -1,16 +1,12 @@
 //! Real browser PDF pages, native errors and surface transitions.
 #![cfg(all(test, target_arch = "wasm32"))]
-pub mod support;
+use crate::support;
 use maestro_web::{
     AttachmentOverlay, browser::attachment_content::*, tools::artifacts::create_artifact_element,
 };
 use num_traits::ToPrimitive as _;
 use std::{cell::RefCell, rc::Rc};
-use wasm_bindgen::prelude::*;
-/// Evaluate document observations without shipping test bindings.
-fn js(code: &str) -> JsValue {
-    js_sys::eval(code).unwrap()
-}
+use wasm_bindgen::{JsCast as _, prelude::*};
 /// Original complete fixture bytes.
 fn bytes(multi: bool) -> &'static [u8] {
     if multi {
@@ -24,8 +20,8 @@ fn encoded(multi: bool) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(multi))
 }
-mod reading_browser_support;
-use reading_browser_support::{View, click};
+use crate::reading_browser_support;
+use reading_browser_support::{View, check, click, js, run};
 /// Original aliased PDF attachment.
 fn record() -> Rc<RefCell<maestro_web::Attachment>> {
     Rc::new(RefCell::new(maestro_web::Attachment {
@@ -39,14 +35,6 @@ fn record() -> Rc<RefCell<maestro_web::Attachment>> {
         preview: None,
     }))
 }
-/// Assert a native document observation.
-fn check(code: &str) {
-    assert!(
-        js(code).as_bool().unwrap(),
-        "native document assertion failed: {code}"
-    );
-}
-
 /// All native pages retain original order, raster dimensions and bounded geometry.
 #[wasm_bindgen]
 pub fn pdf_native_pages_keep_order_geometry_and_separators() {
@@ -56,21 +44,22 @@ pub fn pdf_native_pages_keep_order_geometry_and_separators() {
         assert_eq!(
             js("document.querySelectorAll('.maestro-pdf img').length")
                 .as_f64()
-                .unwrap(),
-            f64::from(count)
+                .unwrap()
+                .to_bits(),
+            f64::from(count).to_bits()
         );
     }
     check(
         "(()=>{const r=document.querySelector('.maestro-pdf');const p=[...r.querySelectorAll('img')];return r.querySelectorAll('hr').length===2&&p.every(p=>p.width>0&&p.getAttribute('width')==='300'&&p.getAttribute('height')==='150')&&p[0].src!==p[1].src&&p[0].src===p[2].src&&getComputedStyle(r).padding==='16px'&&r.lastElementChild.lastElementChild.tagName==='IMG'&&getComputedStyle(p[0]).backgroundColor==='rgb(255, 255, 255)'&&getComputedStyle(p[0]).boxShadow!=='none'&&getComputedStyle(p[0]).borderRadius!=='0px'&&r.parentElement.scrollHeight>r.parentElement.clientHeight})()",
     );
-    js(
+    run(
         "globalThis.pages=[...document.querySelectorAll('.maestro-pdf img')].map(p=>p.src);globalThis.root=document.querySelector('.maestro-pdf');",
     );
     view.draw(false, vec![]);
     check(
         "root===document.querySelector('.maestro-pdf')&&pages.every((p,i)=>p===root.querySelectorAll('img')[i].src)",
     );
-    js(
+    run(
         "globalThis.savedWrapper=root.parentElement;savedWrapper.scrollTop=41.5;globalThis.savedScroll=savedWrapper.scrollTop;document.querySelector('#canvas').style.width='600px';document.querySelector('#canvas').style.height='300px';",
     );
     view.density = 1.25;
@@ -78,7 +67,7 @@ pub fn pdf_native_pages_keep_order_geometry_and_separators() {
     check(
         "root===document.querySelector('.maestro-pdf')&&savedWrapper.scrollTop===savedScroll&&Math.abs(savedWrapper.getBoundingClientRect().width-375)<1&&Math.abs(savedWrapper.getBoundingClientRect().height-187.5)<1",
     );
-    js(
+    run(
         "document.querySelector('#canvas').style.width='800px';document.querySelector('#canvas').style.height='600px';",
     );
     view.density = 1.;
@@ -131,7 +120,7 @@ pub fn pdf_overlay_native_page_gap_follows_source_spacing() {
 pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
     let mut view = View::new("current.pdf", &encoded(true));
     for pack in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(pack).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -185,13 +174,13 @@ pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
 pub fn pdf_same_content_rewrite_retains_pages_and_scroll() {
     let mut view = View::new("current.pdf", &encoded(true));
     view.draw(false, vec![]);
-    js("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
+    run("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
     view.element.set_content(encoded(true));
     for _ in 0..2 {
         view.draw(false, vec![]);
     }
     check("firstPage===document.querySelector('.maestro-pdf img')");
-    js(
+    run(
         "globalThis.retainedRoot=document.querySelector('.maestro-pdf');globalThis.retainedPages=[...retainedRoot.querySelectorAll('img')];globalThis.retainedWrapper=retainedRoot.parentElement;retainedWrapper.scrollTop=41.5;globalThis.retainedScroll=retainedWrapper.scrollTop;",
     );
     check("retainedPages.length===3&&retainedScroll>0");
@@ -207,7 +196,7 @@ pub fn pdf_same_content_rewrite_retains_pages_and_scroll() {
 pub fn pdf_native_modes_and_error_text_follow_brand_and_localization() {
     let mut view = View::new("current.pdf", &encoded(true));
     for pack in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(pack).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -268,13 +257,13 @@ pub fn pdf_native_modes_and_error_text_follow_brand_and_localization() {
 pub fn pdf_native_replacement_and_download_use_current_document() {
     let mut view = View::new("current.pdf", &encoded(true));
     view.draw(false, vec![]);
-    js("globalThis.oldPage=document.querySelector('.maestro-pdf img')");
+    run("globalThis.oldPage=document.querySelector('.maestro-pdf img')");
     view.element.set_content(encoded(false));
     view.draw(false, vec![]);
     check(
         "!oldPage.isConnected&&document.querySelectorAll('.maestro-pdf img').length===1&&document.querySelector('.maestro-pdf img').getAttribute('height')==='300'",
     );
-    js(
+    run(
         "globalThis.currentPage=document.querySelector('.maestro-pdf img');globalThis.currentRoot=currentPage.closest('.maestro-pdf');globalThis.wrapper=currentRoot.parentElement;wrapper.scrollTop=10;",
     );
     for _ in 0..4 {
@@ -302,7 +291,7 @@ pub fn pdf_native_replacement_and_download_use_current_document() {
     view.draw(true, vec![]);
     view.draw(true, click(egui::pos2(18., 16.)));
     check("document.querySelector('a[download]')===null");
-    js("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
+    run("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
     drop(view);
     check("!lastRoot.isConnected");
 }
@@ -312,7 +301,7 @@ pub fn pdf_native_replacement_and_download_use_current_document() {
 pub fn pdf_native_clear_while_rendering_keeps_completed_pages() {
     let mut view = View::new("current.pdf", &encoded(true));
     view.draw(false, vec![]);
-    js("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
+    run("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
     view.element.set_content(String::new());
     for _ in 0..3 {
         view.draw(false, vec![]);
@@ -343,7 +332,7 @@ pub fn overlay_native_errors_preserve_existing_behaviour() {
             .unwrap(),
         "preview failure"
     );
-    js(
+    run(
         "globalThis.errorRoot=document.querySelector('.maestro-file-error');const range=document.createRange();range.selectNodeContents(errorRoot.querySelector('p'));getSelection().removeAllRanges();getSelection().addRange(range)",
     );
     for mime in [
@@ -382,7 +371,7 @@ pub fn reading_content_switches_release_old_native_roots() {
     record.borrow_mut().mime_type = "application/pdf".into();
     view.overlay(&mut overlay, vec![]);
     check("document.querySelectorAll('.maestro-pdf img').length===1");
-    js(
+    run(
         "globalThis.oldRoot=document.querySelector('.maestro-pdf');globalThis.firstPage=oldRoot.querySelector('img').src;",
     );
     view.toggle(&mut overlay, "Text");
@@ -394,7 +383,7 @@ pub fn reading_content_switches_release_old_native_roots() {
         "document.querySelectorAll('.maestro-pdf img').length===1&&document.querySelector('.maestro-pdf img').src===firstPage",
     );
     for mime in ["text/plain", "image/png", "wordprocessingml"] {
-        js("globalThis.oldRoot=document.querySelector('.maestro-pdf')");
+        run("globalThis.oldRoot=document.querySelector('.maestro-pdf')");
         record.borrow_mut().mime_type = mime.into();
         record.borrow_mut().r#type = if mime == "image/png" {
             maestro_app::browser::utils::attachment_utils::AttachmentType::Image
@@ -417,12 +406,12 @@ pub fn reading_content_switches_release_old_native_roots() {
     check(
         "document.querySelector('.maestro-file-error h3').textContent==='Error loading file'&&document.querySelector('.maestro-file-error p').textContent==='failure'",
     );
-    js("globalThis.oldError=document.querySelector('.maestro-file-error')");
+    run("globalThis.oldError=document.querySelector('.maestro-file-error')");
     view.toggle(&mut overlay, "Text");
     check("!oldError.isConnected&&!document.querySelector('.maestro-file-error')");
     view.toggle(&mut overlay, "PDF");
     check("document.querySelectorAll('.maestro-pdf img').length===1");
-    js("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
+    run("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
     drop(overlay);
     check(
         "!lastRoot.isConnected&&!document.querySelector('.maestro-pdf')&&!document.querySelector('.maestro-file-error')",
@@ -453,7 +442,7 @@ fn assert_artifact_error_chrome(view: &mut View) {
     check(
         "(()=>{const r=document.querySelector('.maestro-file-error'),p=r.querySelector('div'),s=getComputedStyle(r),c=getComputedStyle(p);return c.maxWidth==='672px'&&getComputedStyle(r).padding==='16px'&&c.backgroundColor!==s.color&&c.borderTopColor===s.color&&c.overflowWrap==='anywhere'&&s.fontFamily.replaceAll(String.fromCharCode(34),'')===s.getPropertyValue('--maestro-type-body-font').trim().replaceAll(String.fromCharCode(34),'')})()",
     );
-    js(
+    run(
         "globalThis.errorRoot=document.querySelector('.maestro-file-error');const range=document.createRange();range.selectNodeContents(errorRoot.querySelector('p'));getSelection().removeAllRanges();getSelection().addRange(range);globalThis.selected=getSelection().toString();",
     );
     view.draw(false, vec![]);
@@ -522,7 +511,11 @@ fn assert_overlay_text_failure(
     *view.host.failure.borrow_mut() = Some("publication rejected".into());
     assert!(matches!(
         view.try_overlay(overlay, vec![]),
-        Err(AttachmentUiError::Presentation(_))
+        Err(
+            maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(
+                AttachmentHostError::Presentation(_)
+            )
+        )
     ));
     view.overlay(overlay, vec![]);
     assert_eq!(
@@ -566,10 +559,17 @@ fn assert_empty_error_and_save_failure(view: &View, record: &Rc<RefCell<maestro_
     view.toggle(&mut overlay, "Text");
     view.host.fail_download.set(true);
     let result = view.try_overlay(&mut overlay, click(egui::pos2(728., 24.)));
-    assert!(matches!(result, Err(AttachmentUiError::Host(_))));
+    assert!(matches!(
+        result,
+        Err(
+            maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(
+                AttachmentHostError::Host(_)
+            )
+        )
+    ));
     assert!(Rc::ptr_eq(
         view.host.downloads.borrow().last().unwrap(),
-        &record
+        record
     ));
     view.host.fail_download.set(false);
     view.overlay(&mut overlay, vec![]);
@@ -604,7 +604,7 @@ pub async fn reading_frame_shadow_paints_outside_clipped_viewport() {
     view.overlay(&mut overlay, vec![]);
     support::reading_paint::observe("overlay-shadow").await;
     for path in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(path, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(path).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -626,7 +626,7 @@ pub async fn reading_frame_neighbors_keep_existing_paint() {
     let mut view = View::new("current.pdf", &encoded(true));
     view.density = js("devicePixelRatio").as_f64().unwrap().to_f32().unwrap();
     for pack in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(pack).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -655,4 +655,139 @@ pub async fn reading_frame_neighbors_keep_existing_paint() {
     let mut overlay = AttachmentOverlay::open(record, None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
     support::reading_paint::observe("neighbors-text").await;
+}
+
+/// Exercise the actual native content boundary, not a controlled outer host.
+/// # Panics
+/// Panics if an injected phase is not reached or changes its error category.
+/// # Errors
+/// Returns native fixture setup or restoration failures.
+#[wasm_bindgen]
+pub fn pptx_native_failures_retag_only_the_content_call() -> Result<(), JsValue> {
+    let host = reading_browser_support::Host::new();
+    let pack = support::brand::pack("brand.json").map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let presentation = pack
+        .presentation(maestro_theme::BrandMode::Dark)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    for retained in [false, true] {
+        for phase in [
+            "create",
+            "replacement",
+            "placement",
+            "content",
+            "append",
+            "visibility",
+        ] {
+            if phase != "replacement" || retained {
+                presentation_phase(&host.native, phase, retained, &presentation)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Fault one reached native phase, then retry the same retained host.
+fn presentation_phase(
+    host: &BrowserAttachmentHost,
+    phase: &str,
+    retained: bool,
+    p: &maestro_theme::BrandPresentation<'_>,
+) -> Result<(), JsValue> {
+    let id = egui::Id::new(("presentation-phase", retained, phase));
+    if retained {
+        if matches!(phase, "create" | "replacement") {
+            host.set_retained_visibility(id, true, None)
+                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        } else {
+            native_text(host, id, TextView::Plain, p)
+                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        }
+        if phase == "append" {
+            let _ = js("document.querySelector('pre').parentElement.remove()");
+        }
+    }
+    let install = js_sys::Function::new_with_args(
+        "phase",
+        include_str!("reading_browser_support/presentation_fault.js"),
+    );
+    let fault = install.call1(&JsValue::NULL, &phase.into())?;
+    let result = native_text(host, id, TextView::Presentation, p);
+    assert!(
+        stop_presentation_fault(&fault)?,
+        "phase not reached: {phase}"
+    );
+    let Err(error) = result else {
+        return Err("expected reached native failure".into());
+    };
+    assert_eq!(
+        matches!(error, AttachmentHostError::Presentation(_)),
+        phase == "content"
+    );
+    assert!(error.to_string().contains("native phase marker"));
+    let nested = maestro_web::dialogs::attachment_overlay::AttachmentUiError::from(error);
+    assert!(
+        std::error::Error::source(&nested)
+            .is_some_and(<dyn std::error::Error>::is::<AttachmentHostError>)
+    );
+    native_text(host, id, TextView::Presentation, p)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    host.remove(id);
+    if phase == "content" {
+        ordinary_content_neighbor(host, id, p)?;
+    }
+    Ok(())
+}
+
+/// Restore every patched browser method before inspecting the returned error.
+fn stop_presentation_fault(fault: &JsValue) -> Result<bool, JsValue> {
+    let stop = js_sys::Reflect::get(fault, &"stop".into())?.dyn_into::<js_sys::Function>()?;
+    stop.call0(fault)?
+        .as_bool()
+        .ok_or_else(|| JsValue::from_str("missing native fault observation"))
+}
+
+/// The adjacent plain-text branch must not inherit the presentation-only retag.
+fn ordinary_content_neighbor(
+    host: &BrowserAttachmentHost,
+    id: egui::Id,
+    p: &maestro_theme::BrandPresentation<'_>,
+) -> Result<(), JsValue> {
+    let install = js_sys::Function::new_with_args(
+        "phase",
+        include_str!("reading_browser_support/presentation_fault.js"),
+    );
+    let fault = install.call1(&JsValue::NULL, &"content".into())?;
+    let result = native_text(host, id, TextView::Plain, p);
+    assert!(stop_presentation_fault(&fault)?);
+    let Err(error) = result else {
+        return Err("expected ordinary-text native failure".into());
+    };
+    assert!(matches!(error, AttachmentHostError::Host(_)));
+    native_text(host, id, TextView::Plain, p).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    host.remove(id);
+    Ok(())
+}
+
+/// Present one explicit text branch through the default native host.
+fn native_text(
+    host: &BrowserAttachmentHost,
+    id: egui::Id,
+    view: TextView,
+    presentation: &maestro_theme::BrandPresentation<'_>,
+) -> Result<(), AttachmentHostError> {
+    host.present(
+        AttachmentSurface {
+            id,
+            rect: egui::Rect::from_min_size(egui::pos2(10., 10.), egui::vec2(100., 100.)),
+            clip_rect: egui::Rect::EVERYTHING,
+            pixels_per_point: 1.,
+            opacity: 1.,
+            occluders: vec![],
+            content: AttachmentContent::Text {
+                text: "literal phase text",
+                view,
+            },
+        },
+        presentation,
+    )
 }

@@ -147,7 +147,49 @@
       scroller: [style(q('.maestro-table-scroll'), 'borderTopColor'), c.border],
     }).filter(([, [actual, role]]) => actual !== rgb(role)).map(([name, [actual, role]]) => `${name}: ${actual} != ${rgb(role)}`);
   }
+  // Compare a mounted formula at the recorder's typography and containing width.
+  async function measureMath() {
+    const container = document.querySelector('.maestro-markdown');
+    container.style.cssText += ';width:800px;font-size:16px;font-family:"Times New Roman";line-height:normal';
+    await document.fonts.ready;
+    await Promise.all(['KaTeX_Main', 'KaTeX_Math', 'KaTeX_Size1', 'KaTeX_Size2'].map(f => document.fonts.load(`16px ${f}`)));
+    await document.fonts.ready;
+    const expected = JSON.parse(globalThis.mathExpected), branch = globalThis.mathBranch;
+    if (container.querySelector('img,script,iframe')) return 'executable element in formula';
+    if (branch === 'throw') {
+      const fallback = container.querySelector('.maestro-math-fallback');
+      if (!fallback || fallback.textContent !== globalThis.mathSource) return 'delimiter fallback text';
+      return globalThis.maestro.diff(container, expected);
+    }
+    const root = container.querySelector('.katex,.katex-error');
+    if (!root) return 'missing formula';
+    const error = root.classList.contains('katex-error');
+    if (error !== (branch === 'error')) return 'wrong error branch';
+    if (error && (!root.title || root.style.color !== 'var(--maestro-color-error)')) return 'error tooltip or selected role';
+    const origin = root.getBoundingClientRect();
+    const bounds = r => ({left:r.x-origin.x, top:r.y-origin.y, width:r.width, height:r.height});
+    const glyphs = [], walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const text = walker.currentNode;
+      if (text.parentElement.closest('svg') || text.textContent === '\u200b') continue;
+      const range = document.createRange(); range.selectNodeContents(text);
+      const rect = range.getBoundingClientRect();
+      if (rect.width || rect.height) glyphs.push({text:text.textContent, ...bounds(rect)});
+    }
+    const actual = {text:root.textContent, width:origin.width, height:origin.height, glyphs,
+      svg:[...root.querySelectorAll('svg')].map(s => bounds(s.getBoundingClientRect()))};
+    // Preserve every recorded field, ordering and repeated glyph occurrence.
+    const compare = (a, b, path) => {
+      if (typeof b === 'number') return Math.abs(a-b) <= 1/64 ? '' : `${path}: ${a} != ${b}`;
+      if (b === null || typeof b !== 'object') return a === b ? '' : `${path}: text differs`;
+      if (JSON.stringify(Object.keys(a)) !== JSON.stringify(Object.keys(b))) return `${path}: fields differ`;
+      for (const key of Object.keys(b)) { const d = compare(a[key], b[key], `${path}/${key}`); if (d) return d; }
+      return '';
+    };
+    return compare(actual, expected, 'formula');
+  }
   globalThis.maestro = {
+    measureMath,
     paintFailures,
     formulas: [],
     // First difference between the native structure and a recorded tree, or "".

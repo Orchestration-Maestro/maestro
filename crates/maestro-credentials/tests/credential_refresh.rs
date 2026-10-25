@@ -1,23 +1,11 @@
 //! Locked refresh, login and provider listing through the public interface.
 #[cfg(test)]
-#[allow(
-    dead_code,
-    reason = "Refresh witnesses share only callback and fixture helpers."
-)]
-mod fallback_support;
-#[cfg(test)]
-mod gate_support;
-#[cfg(test)]
-mod oauth_support;
-#[cfg(test)]
-mod support;
-#[cfg(test)]
 mod tests {
-    use super::gate_support::gated;
-    use super::oauth_support::{
+    use crate::gate_support::gated;
+    use crate::oauth_support::{
         ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials, error,
     };
-    use super::support::{TempDir, block_on, is_child, run_child};
+    use crate::support::{TempDir, api_key, block_on, is_child, run_isolated};
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageError,
         AuthStorageFuture, ConfigValueOperations, FileAuthStorageBackend,
@@ -30,14 +18,10 @@ mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex, Weak};
 
-    /// Environment-free configuration operations.
+    /// Configuration operations that resolve no command.
     struct NoOperations;
 
     impl ConfigValueOperations for NoOperations {
-        fn environment(&self, _name: &str) -> Option<String> {
-            None
-        }
-
         fn execute(&self, _command: &str) -> Option<Vec<u8>> {
             None
         }
@@ -256,12 +240,7 @@ mod tests {
                 let accepted: Vec<String> = document.as_object().unwrap().keys().cloned().collect();
                 assert_eq!(storage.list(), accepted);
                 assert!(probe.writes.lock().unwrap().is_empty());
-                storage.set(
-                    "later",
-                    AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
-                        key: "l".into(),
-                    }),
-                );
+                storage.set("later", api_key("l"));
                 assert_eq!(probe.writes.lock().unwrap().len(), 1);
                 probe.in_lock.lock().unwrap().take();
             }
@@ -403,10 +382,8 @@ mod tests {
         if is_child() {
             return block_on(refresh_failures_block_ambient_sources());
         }
-        let dir = TempDir::new("refresh-failures");
-        run_child(
-            "tests::maestro_refresh_failure_blocks_ambient_fallback",
-            dir.root(),
+        run_isolated(
+            "credential_refresh::tests::maestro_refresh_failure_blocks_ambient_fallback",
             &[("OPENAI_API_KEY", "env-key")],
         );
     }
@@ -590,12 +567,7 @@ mod tests {
             let document = json!({"gone": key_record("g"), "r9": record("old", 1000.0), "keep": key_record("k")});
             let (probe, storage) = setup(&document);
             edited_during_refresh(&storage, "r9", (&gates.0, &gates.1), || {
-                storage.set(
-                    "added",
-                    AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
-                        key: "a".into(),
-                    }),
-                );
+                storage.set("added", api_key("a"));
                 storage.remove("gone");
             })
             .await;
@@ -619,12 +591,7 @@ mod tests {
             .unwrap();
             let storage = AuthStorage::create(&path);
             edited_during_refresh(&storage, "r9-file", (&gates.0, &gates.1), || {
-                storage.set(
-                    "added",
-                    AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
-                        key: "a".into(),
-                    }),
-                );
+                storage.set("added", api_key("a"));
             })
             .await;
             assert_eq!(storage.drain_errors().len(), 1);
@@ -808,7 +775,7 @@ mod tests {
         ));
     }
     /// Exercise one locked-refresh boundary before selecting the ambient fallback.
-    async fn refresh_fallback_case(case: super::fallback_support::Case) {
+    async fn refresh_fallback_case(case: crate::fallback_support::Case) {
         let input = case.input;
         assert!(
             input.operation.is_none()
@@ -830,13 +797,13 @@ mod tests {
         if phase == "reread-removed" {
             replace_text(&probe, &json!({}));
         }
-        let calls = super::fallback_support::install(&storage, &input.fallback);
+        let calls = crate::fallback_support::install(&storage, &input.fallback);
         let result = request(&storage, &id).await;
         let calls = calls.lock().unwrap().clone();
         let actual = match result {
             Ok(value) => json!({"branch":"ok", "value":value, "calls":calls}),
             Err(error) => {
-                json!({"branch":"error", "error":super::fallback_support::error_value(&error), "calls":calls})
+                json!({"branch":"error", "error":crate::fallback_support::error_value(&error), "calls":calls})
             }
         };
         assert!(actual == case.expected, "recorded refresh outcome");
@@ -849,7 +816,7 @@ mod tests {
     fn fallback_error_after_empty_refresh_is_not_recorded() {
         block_on(async {
             for case in
-                super::fallback_support::cases("fallback_error_after_empty_refresh_is_not_recorded")
+                crate::fallback_support::cases("fallback_error_after_empty_refresh_is_not_recorded")
             {
                 refresh_fallback_case(case).await;
             }

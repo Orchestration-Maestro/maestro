@@ -474,12 +474,7 @@ async fn injection_failure_case() {
 }
 /// Controlled callback diagnostic with no credential-bearing payload.
 fn control_error(message: &str) -> maestro_models::DiagnosticErrorInfo {
-    maestro_models::DiagnosticErrorInfo {
-        name: None,
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    maestro_models::DiagnosticErrorInfo::new(None, message)
 }
 
 /// Entry steering cannot run before the final entry observation settles.

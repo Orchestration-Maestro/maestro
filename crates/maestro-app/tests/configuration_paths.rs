@@ -13,26 +13,36 @@ struct Case<I, E> {
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct TildeCase {
+    input: TildeInput,
+    home: String,
+    expected: String,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct TildeInput {
     args: [String; 1],
 }
 #[test]
 fn tilde_expansion_changes_only_supported_prefixes() {
-    let cases: Vec<Case<TildeInput, String>> = serde_json::from_str(include_str!(
+    let cases: Vec<TildeCase> = serde_json::from_str(include_str!(
         "fixtures/configuration/tilde_expansion_changes_only_supported_prefixes.json"
     ))
     .unwrap();
-    assert_eq!(cases.len(), 8);
+    assert_eq!(cases.len(), 11);
     for case in cases {
+        let written = &case.input.args[0];
         assert_eq!(
-            paths::expand_tilde_path(&case.input.args[0], || Ok("/home/sample".to_owned()))
-                .unwrap(),
-            case.expected
+            paths::expand_tilde_path(written, || Ok(case.home.clone())).unwrap(),
+            case.expected,
+            "{written:?} with home {:?}",
+            case.home
         );
     }
 }
 
 use maestro_app::configuration::config::installation::{Installation, PackageLayout};
+#[cfg(not(windows))]
 use std::cell::RefCell;
 
 #[derive(Deserialize, Default)]
@@ -69,7 +79,9 @@ struct PathInput {
     exec_path: Option<String>,
     exists: Option<Vec<String>>,
     platform: Option<String>,
+    #[cfg(not(target_arch = "wasm32"))]
     home: Option<String>,
+    #[cfg(not(target_arch = "wasm32"))]
     asset_name: Option<String>,
 }
 impl PathInput {
@@ -93,6 +105,7 @@ impl PathInput {
     fn windows(&self) -> bool {
         self.platform.as_deref() == Some("win32")
     }
+    #[cfg(not(target_arch = "wasm32"))]
     fn home(&self) -> String {
         self.home.clone().unwrap_or_else(|| {
             if self.windows() {
@@ -121,11 +134,13 @@ struct ObservedCase<I, E, O> {
     expected: E,
     observations: O,
 }
+#[cfg(not(windows))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ExistsLog {
     exists: Vec<String>,
 }
+#[cfg(not(windows))]
 fn check_package_cases(text: &str, count: usize) {
     let cases: Vec<ObservedCase<PathInput, String, ExistsLog>> =
         serde_json::from_str(text).unwrap();
@@ -133,7 +148,7 @@ fn check_package_cases(text: &str, count: usize) {
     for case in cases {
         let probes = RefCell::new(Vec::new());
         let result = paths::get_package_dir(
-            &case.input.installation(),
+            || Ok(case.input.installation()),
             case.input.env.package.as_deref(),
             || Ok("/home/sample".to_owned()),
             |path| {
@@ -171,10 +186,52 @@ fn identity_constants_share_branding() {
     assert_eq!(SERVICE_ORIGIN, "");
 }
 
-use crate::directories;
-use directories::Directories;
 use std::cell::Cell;
 
+/// Run the calling test in a child whose working directory is a fresh `work` directory,
+/// or one that no longer exists when `removed`. Returns the child's working directory
+/// in the child, `None` in the calling process once the child passed.
+#[cfg(not(target_arch = "wasm32"))]
+fn in_work_directory(test: &str, removed: bool) -> Option<String> {
+    let case = if removed { "removed-work" } else { "work" };
+    let selection = maestro_test_process::selection();
+    if !selection.is_child() {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let work = scratch.path().join("work");
+        std::fs::create_dir(&work).unwrap();
+        let output = maestro_test_process::TestProcess::current(test)
+            .unwrap()
+            .nocapture()
+            .case(case)
+            .current_dir(&work)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{case}: {output:?}");
+        return None;
+    }
+    if !selection.runs_case(case) {
+        return None;
+    }
+    let work = std::env::current_dir().unwrap();
+    if removed {
+        std::fs::remove_dir(&work).unwrap();
+    }
+    Some(work.to_str().unwrap().to_owned())
+}
+
+/// Replace the recorded working directory at the start of quoted fixture paths with `cwd`.
+#[cfg(not(target_arch = "wasm32"))]
+fn at_work(text: &str, cwd: &str) -> String {
+    let recorded = if cfg!(windows) {
+        r#""C:\\work"#
+    } else {
+        r#""/work"#
+    };
+    let replacement = serde_json::to_string(cwd).unwrap();
+    text.replace(recorded, &replacement[..replacement.len() - 1])
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct Paths {
@@ -217,32 +274,29 @@ struct Paths {
     #[serde(rename = "getBundledInteractiveAssetPath")]
     bundled_interactive_asset_path: String,
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn observe_paths(input: &PathInput) -> Paths {
     let installation = input.installation();
     let package = paths::get_package_dir(
-        &installation,
+        || Ok(input.installation()),
         input.env.package.as_deref(),
         || Ok(input.home()),
         |p| input.exists(p),
     )
     .unwrap();
     let agent = paths::get_agent_dir(input.env.agent.as_deref(), || Ok(input.home())).unwrap();
-    let operations = Directories {
-        cwd: Ok(if input.windows() { "C:\\work" } else { "/work" }.to_owned()),
-        reads: Cell::new(0),
-    };
     let assets =
         paths::get_interactive_assets_dir(&package, installation.layout, |p| input.exists(p));
     Paths {
         package_dir: package.clone(),
-        themes_dir: paths::get_themes_dir(&package, installation.layout, |p| input.exists(p)),
+        themes_dir: paths::get_themes_dir(&package, installation.layout),
         export_template_dir: paths::get_export_template_dir(&package, installation.layout, |p| {
             input.exists(p)
         }),
-        readme_path: paths::get_readme_path(&package, &operations).unwrap(),
-        docs_path: paths::get_docs_path(&package, &operations).unwrap(),
-        examples_path: paths::get_examples_path(&package, &operations).unwrap(),
-        changelog_path: paths::get_changelog_path(&package, &operations).unwrap(),
+        readme_path: paths::get_readme_path(&package).unwrap(),
+        docs_path: paths::get_docs_path(&package).unwrap(),
+        examples_path: paths::get_examples_path(&package).unwrap(),
+        changelog_path: paths::get_changelog_path(&package).unwrap(),
         interactive_assets_dir: assets.clone(),
         agent_dir: agent.clone(),
         custom_themes_dir: paths::get_custom_themes_dir(&agent),
@@ -260,8 +314,12 @@ fn observe_paths(input: &PathInput) -> Paths {
         ),
     }
 }
-fn check_paths(text: &str, expected_rows: usize) {
-    let cases: Vec<Case<PathInput, Paths>> = serde_json::from_str(text).unwrap();
+#[cfg(not(target_arch = "wasm32"))]
+fn check_paths(name: &str, text: &str, expected_rows: usize) {
+    let Some(cwd) = in_work_directory(name, false) else {
+        return;
+    };
+    let cases: Vec<Case<PathInput, Paths>> = serde_json::from_str(&at_work(text, &cwd)).unwrap();
     let mut consumed = 0;
     for case in cases {
         if case.input.windows() != cfg!(windows) {
@@ -272,18 +330,21 @@ fn check_paths(text: &str, expected_rows: usize) {
     }
     assert_eq!(consumed, expected_rows);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn asset_and_user_paths_select_layout() {
     check_paths(
+        "asset_and_user_paths_select_layout",
         include_str!("fixtures/configuration/asset_and_user_paths_select_layout.json"),
         if cfg!(windows) { 3 } else { 5 },
     );
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[test]
 fn agent_directory_keeps_override_precedence() {
     check_paths(
+        "agent_directory_keeps_override_precedence",
         include_str!("fixtures/configuration/agent_directory_keeps_override_precedence.json"),
         9,
     );
@@ -298,6 +359,7 @@ fn rust_package_markers_preserve_package_walk() {
     );
 }
 
+#[cfg(not(windows))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct HomeInput {
@@ -382,7 +444,7 @@ fn directory_operations_read_home_only_when_needed() {
         };
         let result = match case.input.op {
             HomeOperation::Package => paths::get_package_dir(
-                &PathInput::default().installation(),
+                || panic!("override must skip the installation"),
                 case.input.env.package.as_deref(),
                 home,
                 |_| panic!("override must skip marker probes"),
@@ -395,6 +457,7 @@ fn directory_operations_read_home_only_when_needed() {
     }
 }
 
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct CwdInput {
@@ -402,6 +465,7 @@ struct CwdInput {
     env: Environment,
     cwd_error: bool,
 }
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[derive(Deserialize)]
 enum TextOperation {
     #[serde(rename = "getReadmePath")]
@@ -413,33 +477,32 @@ enum TextOperation {
     #[serde(rename = "getChangelogPath")]
     Changelog,
 }
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[test]
 fn packaged_text_paths_read_cwd_only_when_needed() {
-    let cases: Vec<Case<CwdInput, Expected>> = serde_json::from_str(include_str!(
-        "fixtures/configuration/packaged_text_paths_read_cwd_only_when_needed.json"
-    ))
-    .unwrap();
-    assert_eq!(cases.len(), 8);
-    for case in cases {
-        let operations = Directories {
-            cwd: if case.input.cwd_error {
-                Err(io::Error::from_raw_os_error(2))
-            } else {
-                Ok("/work".to_owned())
-            },
-            reads: Cell::new(0),
+    let text =
+        include_str!("fixtures/configuration/packaged_text_paths_read_cwd_only_when_needed.json");
+    let name = "packaged_text_paths_read_cwd_only_when_needed";
+    for removed in [false, true] {
+        let Some(cwd) = in_work_directory(name, removed) else {
+            continue;
         };
-        let root = case.input.env.package.as_deref().unwrap();
-        let result = match case.input.op {
-            TextOperation::Readme => paths::get_readme_path(root, &operations),
-            TextOperation::Docs => paths::get_docs_path(root, &operations),
-            TextOperation::Examples => paths::get_examples_path(root, &operations),
-            TextOperation::Changelog => paths::get_changelog_path(root, &operations),
-        };
-        let needs_cwd = matches!(&case.expected, Expected::Error(_));
-        check_result(result, case.expected);
-        assert_eq!(operations.reads.get(), usize::from(needs_cwd));
+        let cases: Vec<Case<CwdInput, Expected>> =
+            serde_json::from_str(&at_work(text, &cwd)).unwrap();
+        assert_eq!(cases.len(), 8);
+        for case in cases
+            .into_iter()
+            .filter(|case| case.input.cwd_error == removed)
+        {
+            let root = case.input.env.package.as_deref().unwrap();
+            let result = match case.input.op {
+                TextOperation::Readme => paths::get_readme_path(root),
+                TextOperation::Docs => paths::get_docs_path(root),
+                TextOperation::Examples => paths::get_examples_path(root),
+                TextOperation::Changelog => paths::get_changelog_path(root),
+            };
+            check_result(result, case.expected);
+        }
     }
 }
 
@@ -448,7 +511,7 @@ use crate::child;
 #[cfg(unix)]
 #[test]
 fn native_agent_root_reads_disposable_environment() {
-    if std::env::var_os("MAESTRO_CONFIGURATION_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         let matches_expected = maestro_app::get_agent_dir().unwrap()
             == std::env::var("MAESTRO_CONFIGURATION_EXPECTED").unwrap();
         assert!(matches_expected);
@@ -464,11 +527,13 @@ fn native_agent_root_reads_disposable_environment() {
         ("../raw/./agent", "../raw/./agent".to_owned()),
     ] {
         let output = child::probe(
-            &crate::child_process::selector("native_agent_root_reads_disposable_environment")
-                .unwrap(),
-            &scratch.0,
+            maestro_test_process::TestProcess::current(
+                "native_agent_root_reads_disposable_environment",
+            )
+            .unwrap()
+            .case("*"),
+            scratch.0.path(),
             &[
-                ("MAESTRO_CONFIGURATION_CHILD", "1"),
                 ("MAESTRO_CONFIGURATION_EXPECTED", &expected),
                 ("HOME", &home),
                 ("MAESTRO_CODING_AGENT_DIR", override_dir),
@@ -477,4 +542,64 @@ fn native_agent_root_reads_disposable_environment() {
         );
         assert_eq!(output, ["agent-directory-ok", env!("CARGO_PKG_VERSION")]);
     }
+}
+
+/// A zero-match child must not qualify as an executed probe.
+#[cfg(unix)]
+#[test]
+fn native_probe_rejects_missing_selection() {
+    let scratch = child::Scratch::new();
+    assert!(
+        std::panic::catch_unwind(|| {
+            child::probe(
+                maestro_test_process::TestProcess::named("configuration_paths::missing_probe")
+                    .unwrap(),
+                scratch.0.path(),
+                &[],
+                &[],
+            )
+        })
+        .is_err(),
+        "unselected probe returned success"
+    );
+}
+
+/// The shared probe keeps cwd, ordered edits and record framing.
+#[cfg(unix)]
+#[test]
+fn native_probe_preserves_cwd_and_environment_order() {
+    const KEY: &str = "MAESTRO_PROBE_ORDER";
+    if let Ok(expected) = std::env::var("MAESTRO_PROBE_CWD") {
+        assert_eq!(
+            std::env::current_dir().unwrap(),
+            std::path::Path::new(&expected)
+        );
+        assert_eq!(std::env::var(KEY).unwrap(), "replacement");
+        assert_eq!(
+            std::env::var("PATH").ok(),
+            std::env::var("MAESTRO_PROBE_PATH").ok()
+        );
+        println!("\nPROBE first");
+        println!("unrelated output");
+        println!("PROBE second");
+        return;
+    }
+    let before = std::env::var_os(KEY);
+    let scratch = child::Scratch::new();
+    let records = child::probe(
+        maestro_test_process::TestProcess::current(
+            "native_probe_preserves_cwd_and_environment_order",
+        )
+        .unwrap()
+        .case("*"),
+        scratch.0.path(),
+        &[
+            ("MAESTRO_PROBE_CWD", scratch.0.path().to_str().unwrap()),
+            (KEY, "replacement"),
+            ("MAESTRO_PROBE_PATH", &std::env::var("PATH").unwrap()),
+        ],
+        &[KEY],
+    );
+    assert_eq!(records, ["first", "second"]);
+    assert_eq!(std::env::var_os(KEY), before);
 }

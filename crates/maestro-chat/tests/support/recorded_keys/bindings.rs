@@ -1,7 +1,8 @@
 //! Recorded scalar/list overrides and active-manager configuration.
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;
 use maestro_tui::{
-    KeybindingKeys, KeybindingsConfig, KeybindingsManager, get_keybindings, set_keybindings,
+    KeybindingKeys, KeybindingsConfig, KeybindingsManager, TUI_KEYBINDINGS, get_keybindings,
+    set_keybindings,
 };
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -14,10 +15,17 @@ pub enum Binding {
     /// An explicit list, including a disabled empty list.
     Multiple(Vec<String>),
 }
-/// Replace the active manager with recorded caller overrides.
+/// Replace the active manager with recorded caller overrides of the application defaults.
 pub fn replace(values: &BTreeMap<String, Binding>) {
     set_keybindings(KeybindingsManager::new(
         KEYBINDINGS.clone(),
+        bindings(values),
+    ));
+}
+/// Replace the active manager with recorded caller overrides of the toolkit defaults alone.
+pub fn replace_toolkit(values: &BTreeMap<String, Binding>) {
+    set_keybindings(KeybindingsManager::new(
+        TUI_KEYBINDINGS.clone(),
         bindings(values),
     ));
 }

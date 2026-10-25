@@ -1,6 +1,8 @@
-//! Terminal cell widths for individual Unicode scalars.
+//! Terminal scalar properties and tailored streaming cluster boundaries.
 
-mod props;
+pub(crate) mod grapheme;
+pub(crate) mod props;
+mod variation;
 
 /// Return the terminal cell width of a Unicode scalar: zero, one or two.
 ///
@@ -18,3 +20,6 @@ mod props;
 pub fn codepoint_width(c: char) -> u8 {
     props::Properties::get(c).width
 }
+
+#[cfg(test)]
+mod tests;

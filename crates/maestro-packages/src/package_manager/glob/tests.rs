@@ -1,15 +1,8 @@
 //! Direct native expansion before collectors and canonical deduplication.
 #![cfg(target_os = "linux")]
-mod mixed_case;
 use super::glob_sync;
-use maestro_resources::NativeResourceOperations;
 use serde::Deserialize;
-use std::{
-    collections::BTreeMap,
-    fs,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{collections::BTreeMap, fs, io::Write, path::Path};
 /// One original native setup, not a fake filesystem.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -35,10 +28,10 @@ struct Row {
     expected: Vec<String>,
 }
 /// Removes the disposable native tree after the last observation.
-struct Scene(PathBuf);
-impl Drop for Scene {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
+struct Scene(maestro_test_directory::Scratch);
+impl Scene {
+    fn path(&self) -> &Path {
+        self.0.path()
     }
 }
 /// Creates a native tree exclusively.
@@ -60,21 +53,12 @@ fn setup(root: &Path, setup: Setup) {
     for (name, target) in setup.links {
         let path = root.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
-        #[cfg(unix)]
         std::os::unix::fs::symlink(target, path).unwrap();
-        #[cfg(windows)]
-        if root.join(&target).is_dir() {
-            std::os::windows::fs::symlink_dir(target, path).unwrap();
-        } else {
-            std::os::windows::fs::symlink_file(target, path).unwrap();
-        }
     }
 }
 /// Every direct observation retains its ordered path identities.
-#[cfg(unix)]
 #[test]
 fn synchronous_walk_matches_native_filesystem_cases() {
-    use std::os::unix::fs::PermissionsExt;
     let inputs: Setup = serde_json::from_str(include_str!(
         "../../../tests/fixtures/glob_native_setup.json"
     ))
@@ -83,25 +67,22 @@ fn synchronous_walk_matches_native_filesystem_cases() {
         "../../../tests/fixtures/glob_native_walk.json"
     ))
     .unwrap();
-    let scene =
-        Scene(std::env::temp_dir().join(format!("maestro-glob-native-{}", std::process::id())));
-    fs::create_dir(&scene.0).unwrap();
-    setup(&scene.0, inputs);
-    let base = scene.0.to_string_lossy();
+    let scene = Scene(maestro_test_directory::Scratch::new().unwrap());
+    setup(scene.path(), inputs);
+    let base = scene.path().to_string_lossy();
     for row in rows {
-        if row.case == "denied_read" {
-            fs::set_permissions(scene.0.join("denied"), fs::Permissions::from_mode(0o0)).unwrap();
-            assert!(fs::read_dir(scene.0.join("denied")).is_err());
+        let denied = (row.case == "denied_read")
+            .then(|| maestro_test_directory::deny(scene.path().join("denied"), 0o0).unwrap());
+        // A privileged run reads the denied directory anyway.
+        if matches!(denied, Some(None)) {
+            continue;
         }
         let actual = glob_sync(
             &row.pattern.replace("$SCENE", &base),
             &row.cwd.replace("$SCENE", &base),
-            &NativeResourceOperations,
         )
         .unwrap();
-        if row.case == "denied_read" {
-            fs::set_permissions(scene.0.join("denied"), fs::Permissions::from_mode(0o755)).unwrap();
-        }
+        drop(denied);
         let actual: Vec<_> = actual
             .iter()
             .map(|s| s.replace(base.as_ref(), "$SCENE"))
@@ -114,17 +95,14 @@ fn synchronous_walk_matches_native_filesystem_cases() {
 #[test]
 fn globstar_literals_keep_platform_case_policy() {
     use maestro_pattern::{Minimatch, MinimatchOptions, Platform};
-    let scene =
-        Scene(std::env::temp_dir().join(format!("maestro-glob-case-{}", std::process::id())));
-    fs::create_dir(&scene.0).unwrap();
+    let scene = Scene(maestro_test_directory::Scratch::new().unwrap());
     for name in ["main.ts", "maint.ts"] {
-        fs::write(scene.0.join(name), "fixture").unwrap();
+        fs::write(scene.path().join(name), "fixture").unwrap();
     }
-    let root = scene.0.to_str().unwrap();
+    let root = scene.path().to_str().unwrap();
     for platform in [Platform::Darwin, Platform::Windows, Platform::Posix] {
         let matcher = Minimatch::new("**/MAIN.ts", MinimatchOptions::Filesystem(platform)).unwrap();
-        let actual =
-            super::walker::walk(&matcher, root, platform, &NativeResourceOperations).unwrap();
+        let actual = super::walker::walk(&matcher, root, platform).unwrap();
         let expected = if platform == Platform::Posix {
             vec![]
         } else {

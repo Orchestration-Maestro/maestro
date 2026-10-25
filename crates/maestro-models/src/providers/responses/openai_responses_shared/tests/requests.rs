@@ -2,14 +2,18 @@
 
 use super::super::messages::{convert_responses_messages, convert_responses_tools};
 use super::super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions};
-use super::{TestResult, block_on, responses};
+use super::{TestResult, responses};
 use crate as maestro_models;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::tests::runtime::run;
 use maestro_models::Tool;
+#[cfg(not(target_arch = "wasm32"))]
 use responses::{Fields, Script};
 use serde_json::{Value, json};
 
 /// Rows of conversion cases and the expectations they carry.
 const REQUESTS: &str = include_str!("fixtures/requests.json");
+#[cfg(not(target_arch = "wasm32"))]
 /// Rows of reduction cases, checked here only for unique questions.
 const EVENTS: &str = include_str!("fixtures/events.json");
 
@@ -147,11 +151,13 @@ fn maestro_responses_options_default_to_prompt_and_strict_false() -> TestResult 
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// `containers` arrays nested around `0`.
 fn nested(containers: usize) -> String {
     format!("{}0{}", "[".repeat(containers), "]".repeat(containers))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
     let replay = |depth: usize| {
@@ -188,7 +194,7 @@ fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
             done,
             completed.to_owned(),
         ])?;
-        Ok::<_, Box<dyn std::error::Error>>((item, block_on(false, responses::reduce(script))?))
+        Ok::<_, Box<dyn std::error::Error>>((item, run(responses::reduce(script))?))
     };
     let (item, accepted) = reduce_item(127)?;
     accepted.outcome?;
@@ -215,6 +221,7 @@ fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_fixtures_hold_unique_queries_and_reject_unread_members() -> TestResult {
     responses::assert_unique_queries(REQUESTS)?;
@@ -240,7 +247,7 @@ fn maestro_responses_fixtures_hold_unique_queries_and_reject_unread_members() ->
         let mut fields = Fields::new("sample", row)?;
         fields.take("test");
         fields.take("id");
-        block_on(false, responses::check_events(fields))
+        run(responses::check_events(fields))
     };
     consume(sample.clone())?;
     let mut nested = sample.clone();
