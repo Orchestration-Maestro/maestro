@@ -8,6 +8,10 @@ use maestro_app::AuthCredential;
 use maestro_theme::Collator;
 use std::{error::Error, rc::Rc, sync::Arc};
 
+mod providers;
+
+pub use providers::is_api_key_login_provider;
+
 /// The notice shown when no stored credential can be removed.
 const NO_STORED_CREDENTIALS: &str = "No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.";
 

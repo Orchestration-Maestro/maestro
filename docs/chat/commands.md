@@ -319,6 +319,15 @@ every model enabled, or as many as the panel opened with, removes the setting.
 An empty or other explicit selection is saved as it is. Escape closes the panel,
 keeping the session's edits and leaving the setting as it was.
 
+## Providers offered for API-key sign-in
+
+`maestro_chat::interactive_mode::is_api_key_login_provider` decides whether a
+provider can sign in with an API key. A provider with a nonempty shipped display
+name always can. Otherwise a shipped catalog provider cannot, and neither can a
+provider that signs in only by subscription; any other provider can. A caller may
+pass its own set of shipped providers in place of the catalog's. Identifiers are
+compared exactly, so `Anthropic` and `anthropic` are different providers.
+
 ## Removing stored credentials
 
 `/logout` lists the credentials saved by `/login` in the panel that replaces the
@@ -367,6 +376,8 @@ show it once. Checking at startup comes with the prompt loop.
 
 ## What is missing
 
+- Interactive sign-in (`/login`) is not delivered yet; only its API-key provider
+  check above is. It stays part of the same work.
 - Import (`/import <path.jsonl>`) is not delivered. It waits for the shared
   dialog host and the session rebuild helpers, and it stays part of the same work.
 - The complete offline viewer is separate work (#1762); the export tests supply a
