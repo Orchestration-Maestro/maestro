@@ -55,6 +55,21 @@ parameters and details reach a page renderer by reference, without
 serialization. The page `DefaultRenderer` also renders this content directly
 from JSON operands.
 
+Native command, calculation and current-time cards use the same branch preparation
+as their drawing counterparts. Select `Box<dyn DomContent>` explicitly when
+calling these renderers directly; the default registrations still use drawing
+content. Native console bodies keep their root and copy control while the
+console branch remains selected.
+
+The browser-only `tools::renderer_registry::header::dom` module provides native
+plain and collapsible headers. `ToolHeaderText<Box<dyn DomContent>>` accepts
+literal text or a mounted child. `ToolHeaderRefs` keeps live content and chevron
+references: rebinding either changes the next activation, and missing either
+makes activation a no-op. Initial expansion selects the chevron, not the caller's
+body state. Rich descendants use native bubbling rather than a second parent
+action. These headers are temporarily hidden from generated API documentation;
+the existing root header functions remain the drawing API.
+
 ## Drawing a retained row
 
 Keep one `ToolRenderState` per row outside the frame loop. Given the caller's
@@ -159,9 +174,10 @@ highlighter or outer-style cause; JSON and operand preparation preserve their
 existing literal messages. `Error::source` exposes each typed cause.
 
 Console output shares `components::code_block::ReadingUiError`; its outer-style
-Presentation variant retains the original I/O error. Native console and header
-factories return `AttachmentHostError`. Rust callers must update return types
-and matches when adopting the output record. The named leaf causes are preserved.
+Presentation variant retains the original I/O error. Canvas-host console and header
+factories return `AttachmentHostError`; native page mounting returns `ToolUiError`.
+Rust callers must update return types and matches when adopting the output record.
+The named leaf causes are preserved.
 
 ## Command, calculation and time cards
 

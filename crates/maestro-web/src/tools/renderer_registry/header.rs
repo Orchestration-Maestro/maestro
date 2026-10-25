@@ -53,15 +53,16 @@ pub(crate) fn render_inline_header(
 
 pub(crate) mod browser;
 #[cfg(target_arch = "wasm32")]
-pub(crate) mod dom;
+#[doc(hidden)]
+pub mod dom;
 use browser::{NativeText, TextKind};
 
 /// Literal text or independently executable rich caption content.
-pub enum ToolHeaderText {
+pub enum ToolHeaderText<C = Box<dyn ToolContent>> {
     /// Literal caption, never localized by the header.
     Text(String),
     /// Owned rich child with its own retained state.
-    Content(Box<dyn ToolContent>),
+    Content(C),
 }
 /// Build a plain status header with a trailing pending loader.
 #[must_use]

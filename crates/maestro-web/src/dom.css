@@ -390,3 +390,10 @@ code-block, markdown-block, thinking-block {
 .maestro-tile-remove { position: absolute; top: -.25rem; right: -.25rem; width: 1.25rem; height: 1.25rem; padding: 0; border: 1px solid var(--maestro-color-border); border-radius: 50%; background: var(--maestro-color-panel); color: var(--maestro-color-muted); transition: opacity .15s; }
 .maestro-tile-remove:hover { background: var(--maestro-color-border); color: var(--maestro-color-text); }
 @media (hover: hover) { .maestro-tile-remove { opacity: 0; } .maestro-tile-shell:hover .maestro-tile-remove, .maestro-tile-remove:focus-visible { opacity: 1; } }
+
+.maestro-tool-toggle { width: 100%; border: 0; padding: 0; background: transparent; font-family: inherit; text-align: left; cursor: pointer; transition: color .15s; }
+.maestro-tool-toggle:hover { color: var(--maestro-color-text); }
+.maestro-tool-toggle:focus-visible { outline: 2px solid var(--maestro-color-accent); }
+.maestro-tool-chevron { display: inline-block; color: var(--maestro-color-muted); }
+.maestro-tool-chevron .hidden { display: none; }
+.maestro-tool-card > * + * { margin-top: .75rem; }

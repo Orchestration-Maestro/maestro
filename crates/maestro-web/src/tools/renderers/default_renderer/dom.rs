@@ -66,8 +66,8 @@ impl DomContent for DefaultDomContent {
             self.state,
             &no_output,
         )?;
-        let header = crate::tools::renderer_registry::header::dom::render_header(
-            &view.document,
+        let header = crate::tools::renderer_registry::header::dom::render_header_element(
+            view,
             self.state,
             "Code",
             prepared.caption,

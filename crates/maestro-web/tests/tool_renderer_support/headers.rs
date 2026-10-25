@@ -29,7 +29,7 @@ fn recipe(
         .unwrap()
         .shift_remove("Code")
         .unwrap();
-    let text = if rich {
+    let text: ToolHeaderText = if rich {
         ToolHeaderText::Content(Box::new(ListingRecipe { code: text.into() }))
     } else {
         ToolHeaderText::Text(text.into())

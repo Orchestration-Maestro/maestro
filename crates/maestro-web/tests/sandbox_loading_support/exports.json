@@ -145,7 +145,12 @@
     "tile_dom_preview_fallback_badge_and_utf16_names",
     "tile_dom_remove_does_not_open_and_uses_current_callback",
     "tile_dom_opened_overlays_outlive_tiles",
-    "user_dom_selects_first_text_and_preserves_attachment_handles"
+    "user_dom_selects_first_text_and_preserves_attachment_handles",
+    "tool_headers_dom_keep_state_icons_and_literal_captions",
+    "native_header_targets_and_pill_bubbling_follow_current_elements",
+    "bash_dom_matches_all_command_result_branches",
+    "native_binding_keeps_typed_json_and_details_agnostic_views",
+    "native_binding_reentrant_replacement_and_retained_handle"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

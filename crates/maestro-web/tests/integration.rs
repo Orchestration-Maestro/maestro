@@ -146,3 +146,5 @@ mod offline_tool_cards_browser;
 #[path = "../../maestro-app/tests/support/artifact_presentation.rs"]
 mod artifact_presentation_support;
 mod sample_sessions_browser;
+
+mod native_tool_browser;

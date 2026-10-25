@@ -112,9 +112,9 @@ impl CardContent {
         Ok(row.response)
     }
     /// Prepare an ordinary outer card with this owned recipe.
-    pub(super) fn result(self) -> ToolRenderResult {
+    pub(super) fn result<C: CardOutput>(self) -> ToolRenderResult<C> {
         ToolRenderResult {
-            content: Box::new(self),
+            content: C::card(self),
             is_custom: false,
         }
     }
@@ -203,3 +203,16 @@ impl ArtifactCaption {
         row.inner.map(|()| row.response)
     }
 }
+
+/// Content construction shared by branch-selecting renderer implementations.
+pub(super) trait CardOutput: Sized {
+    /// Retain the selected branch in this representation.
+    fn card(card: CardContent) -> Self;
+}
+impl CardOutput for Box<dyn ToolContent> {
+    fn card(card: CardContent) -> Self {
+        Box::new(card)
+    }
+}
+#[cfg(target_arch = "wasm32")]
+mod dom;
