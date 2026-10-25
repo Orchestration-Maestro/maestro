@@ -201,6 +201,7 @@ mod subscription_accounts;
 #[cfg(target_os = "linux")]
 #[path = "support/tls.rs"]
 mod tls;
+mod tool_argument_roots;
 #[path = "tool_images.rs"]
 mod tool_images;
 #[path = "support/transport.rs"]

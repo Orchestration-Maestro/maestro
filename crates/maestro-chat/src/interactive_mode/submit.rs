@@ -1,4 +1,5 @@
-//! Editor submission, the single waiting input operation and the prompt loop.
+//! Editor submission, its session commands, the single waiting input operation and
+//! the prompt loop.
 use super::InteractiveMode;
 use super::bash::selected_shell_command;
 use maestro_app::messages::UserMessageDelivery;
@@ -66,25 +67,28 @@ impl InteractiveMode {
         })));
     }
 
-    /// Runs a recognized command, handing a failure beyond the transcript to the terminal
-    /// runtime, and says whether `text` was handled as a command. A share or copy command
-    /// is admitted on that runtime and clears the editor once it settles.
+    /// Runs the session command `text` names, handing a failure beyond the transcript to
+    /// the terminal runtime, and says whether `text` was handled as a command.
     fn runs_command(self: &Rc<Self>, text: &str) -> bool {
-        if text == "/changelog" {
-            if let Err(error) = self.handle_changelog_command() {
-                self.report(Err(error));
-            }
-            return true;
-        }
-        if text == "/export" || text.starts_with("/export ") {
-            if let Err(error) = self.handle_export_command(text) {
-                self.report(Err(error));
-            }
-            return true;
-        }
         let share = text == "/share";
         if !share && text != "/copy" {
-            return false;
+            let result = if text == "/name" || text.starts_with("/name ") {
+                self.handle_name_command(text)
+            } else if text == "/session" {
+                self.handle_session_command()
+            } else if text == "/debug" {
+                self.handle_debug_command()
+            } else if text == "/changelog" {
+                self.handle_changelog_command()
+            } else if text == "/export" || text.starts_with("/export ") {
+                self.handle_export_command(text)
+            } else {
+                return false;
+            };
+            if let Err(error) = result {
+                self.report(Err(error));
+            }
+            return true;
         }
         let mode = Rc::clone(self);
         self.tool_environment

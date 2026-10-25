@@ -60,7 +60,7 @@ impl InteractiveMode {
         };
         let indicator = self.working.working_indicator_options.borrow().clone();
         Loader::new(
-            self.ui.clone(),
+            self.ui.as_ref().clone(),
             color(ThemeColor::Accent),
             color(ThemeColor::Muted),
             Some(self.get_working_loader_message()),

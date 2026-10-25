@@ -22,7 +22,7 @@ use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
 
 /// An extension answering `event` with `answer`, which sees the event.
-fn handling<V: 'static, R: 'static>(
+pub(super) fn handling<V: 'static, R: 'static>(
     event: &'static str,
     answer: impl Fn(&mut V) -> Result<Option<R>, &'static str> + 'static,
 ) -> ExtensionFactory<Local> {

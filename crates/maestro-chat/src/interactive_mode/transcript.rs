@@ -12,7 +12,7 @@ use maestro_app::{
     TruncationOptions, UserBlock, UserContent, parse_skill_block, truncate_tail,
 };
 use maestro_theme::ThemeColor;
-use maestro_tui::{Component, EditorComponent, MarkdownTheme, Spacer, Text};
+use maestro_tui::{Component, EditorComponent, MarkdownTheme, Spacer, TUI, Text};
 use std::{error::Error, rc::Rc, sync::PoisonError};
 
 impl InteractiveMode {
@@ -228,7 +228,7 @@ impl InteractiveMode {
     fn add_bash_execution(&self, message: BashExecutionMessage) -> Result<(), Box<dyn Error>> {
         let component = BashExecutionComponent::new(
             message.command,
-            self.ui.clone(),
+            TUI::clone(&self.ui),
             self.themes.theme(),
             matches!(message.exclude_from_context, Presence::Present(true)),
         );

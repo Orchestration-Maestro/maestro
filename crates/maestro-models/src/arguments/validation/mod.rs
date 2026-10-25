@@ -11,7 +11,7 @@ mod references;
 mod scalars;
 mod schema;
 
-use crate::{DiagnosticErrorInfo, JsonObject, Tool, ToolCall};
+use crate::{DiagnosticErrorInfo, Tool, ToolCall};
 use serde_json::Value;
 
 /// Select the first declaration with the invocation's exact name and check its arguments.
@@ -22,7 +22,7 @@ use serde_json::Value;
 pub fn validate_tool_call(
     tools: &[Tool],
     tool_call: &ToolCall,
-) -> Result<JsonObject, DiagnosticErrorInfo> {
+) -> Result<Value, DiagnosticErrorInfo> {
     let tool = tools
         .iter()
         .find(|tool| tool.name == tool_call.name)
@@ -44,17 +44,15 @@ pub fn validate_tool_call(
 pub fn validate_tool_arguments(
     tool: &Tool,
     tool_call: &ToolCall,
-) -> Result<JsonObject, DiagnosticErrorInfo> {
+) -> Result<Value, DiagnosticErrorInfo> {
     let schema = tool.parameters.as_json();
-    let mut candidate = Value::Object(tool_call.arguments.clone());
+    let mut candidate = tool_call.arguments.clone();
     authored::convert(&mut candidate, schema, tool.parameters.conversions());
     coercion::coerce(&mut candidate, schema);
     let errors =
         check::check(schema, &[], &candidate).map_err(|error| diagnostic(error.to_string()))?;
-    if errors.is_empty()
-        && let Value::Object(arguments) = candidate
-    {
-        return Ok(arguments);
+    if errors.is_empty() {
+        return Ok(candidate);
     }
     Err(diagnostic(format!(
         "Validation failed for tool \"{}\":\n{}\n\nReceived arguments:\n{}",

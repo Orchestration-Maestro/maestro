@@ -282,7 +282,7 @@ fn blocking_reason() -> ToolCallEventResult {
 
 /// The answer calling `echo` once.
 fn echo_call() -> AssistantMessage {
-    let arguments = json!({"text": "hello"}).as_object().unwrap().clone();
+    let arguments = json!({"text": "hello"});
     let options = FauxToolCallOptions {
         id: Some("tool-1".into()),
     };
