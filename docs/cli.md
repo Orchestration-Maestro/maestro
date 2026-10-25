@@ -78,8 +78,8 @@ run returns successfully, dispatch closes the watcher, restores managed stdout
 and returns the print status, including nonzero statuses. Errors stop at their
 original phase.
 
-The startup entry, production native extension loader and executable wiring are
-not delivered by this operation.
+The library startup entry composes this dispatch with parsing, session selection
+and runtime creation. Native executable wiring remains separate.
 
 ## Print mode
 
@@ -97,6 +97,24 @@ account file, not the session credential store. See
 [standalone account commands](model_login.md).
 
 ## Startup
+
+`maestro_cli::main(args, options, host)` runs startup through the application
+services and returns its requested exit status. `MainOptions` supplies ordered
+extra extension factories. `startup::main::MainHost` supplies package operations,
+selector presentations, mode launchers, streams, file preparation, the extension
+module loader and timing observations. Borrowed input and effects stay with the
+caller; only owned handles enter the retained runtime factory.
+
+Package commands run before configuration commands, parsing and stdout takeover.
+The caller's startup callback receives the raw offline selection before either
+command. Non-interactive ordinary output uses the application's managed stdout
+route; print and RPC protocol output keep their raw route. Help and model listing
+run after extension registration but before fatal runtime diagnostics.
+
+The retained factory rebuilds directory-bound settings, resources and providers
+when a session changes directory. Replacements share the original auth store,
+startup-relative resource paths, extra factories and stream handles. Each write
+or flush borrows its stream only for that call.
 
 `startup::main` selects what a run does before any frontend starts, in the
 order the authored arguments decide it. `bootstrap` picks the presentation mode
@@ -127,7 +145,8 @@ for malformed UTF-8, then removes authored whitespace at the edges.
 existing file owner before consuming the first queued prompt. `prompt_confirm`
 flushes its question before reading an untrimmed answer; an unterminated answer
 at EOF supplies no decision. These operations accept caller-owned streams and
-file effects; the startup entry and executable wiring remain separate work.
+file effects. The library entry composes them; native executable wiring remains
+separate.
 
 `presentation::prompt_for_missing_session_cwd` offers Continue and Cancel using
 an application-supplied selection component. It loads the theme and keybindings
