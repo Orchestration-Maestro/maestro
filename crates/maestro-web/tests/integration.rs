@@ -136,3 +136,8 @@ mod offline_tool_card_support;
 mod offline_tool_cards;
 
 mod offline_tool_cards_browser;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "../../maestro-app/tests/support/artifact_presentation.rs"]
+mod artifact_presentation_support;
+mod sample_sessions_browser;

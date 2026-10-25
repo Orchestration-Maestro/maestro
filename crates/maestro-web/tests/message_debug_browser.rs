@@ -3,7 +3,7 @@
 use crate::{markdown_support, support};
 
 use maestro_web::ToolMessageDebugView;
-use markdown_support::{Surface, check, js, publish};
+use markdown_support::{Surface, check, publish};
 use serde_json::{Value, json};
 use wasm_bindgen::prelude::*;
 
@@ -11,13 +11,6 @@ use wasm_bindgen::prelude::*;
 mod tests {
     use super::*;
 
-    /// Bind the existing real-document harness to its canvas.
-    fn surface() -> Surface {
-        let _ = js(
-            "if (!document.getElementById('canvas')) { const c=document.createElement('canvas'); c.id='canvas'; c.width=800; c.height=600; document.body.appendChild(c); }",
-        );
-        Surface::new()
-    }
     /// Publish one composed debug frame through the shared reading harness.
     fn draw(surface: &mut Surface, row: &mut ToolMessageDebugView) {
         let host = surface.host();
@@ -55,7 +48,7 @@ mod tests {
     /// Panics if rendering or a native observation fails.
     #[wasm_bindgen]
     pub fn debug_values_keep_missing_null_and_json_text_distinct() {
-        let mut surface = surface();
+        let mut surface = Surface::new();
         let mut row = ToolMessageDebugView::new(surface.host());
         row.has_result = true;
         for (input, text, language) in [
@@ -107,7 +100,7 @@ mod tests {
     /// Panics if rendering or a native observation fails.
     #[wasm_bindgen]
     pub fn debug_text_output_keeps_only_ordered_text_blocks() {
-        let mut surface = surface();
+        let mut surface = Surface::new();
         let mut row = ToolMessageDebugView::new(surface.host());
         row.has_result = true;
         let text = |value: &str| json!({"type":"text","text":value});
@@ -137,7 +130,7 @@ mod tests {
     /// Panics if rendering, clipboard completion or a native observation fails.
     #[wasm_bindgen]
     pub async fn debug_listings_never_decode_literal_base64() {
-        let mut surface = surface();
+        let mut surface = Surface::new();
         let mut row = ToolMessageDebugView::new(surface.host());
         row.call_args = Some(json!("YWJj"));
         row.has_result = true;
@@ -166,7 +159,7 @@ mod tests {
     /// Panics if rendering or a native observation fails.
     #[wasm_bindgen]
     pub fn debug_result_presence_is_independent_of_the_payload() {
-        let mut surface = surface();
+        let mut surface = Surface::new();
         let mut row = ToolMessageDebugView::new(surface.host());
         for (language, call, result_label, absent) in [
             ("en", "Call", "Result", "(no result)"),

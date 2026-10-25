@@ -18,9 +18,6 @@ mod tests {
     use wasm_bindgen::prelude::*;
 
     pub(crate) fn surface() -> Surface {
-        let _ = js(
-            "if (!document.getElementById('canvas')) { const canvas = document.createElement('canvas'); canvas.id = 'canvas'; canvas.width=800; canvas.height=600; document.body.appendChild(canvas); }",
-        );
         Surface::new()
     }
 

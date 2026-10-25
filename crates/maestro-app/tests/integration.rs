@@ -225,3 +225,7 @@ mod watching;
 mod wire_records;
 mod workbook_fixture;
 mod workbooks;
+
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/artifact_presentation.rs"]
+mod artifact_presentation_support;

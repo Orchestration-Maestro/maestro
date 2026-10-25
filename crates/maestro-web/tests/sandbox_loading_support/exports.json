@@ -50,7 +50,9 @@
     "docx_artifact_dom_uses_full_document_options",
     "docx_artifact_dom_styles_and_safe_targets",
     "docx_artifact_dom_errors_retry_and_keep_download",
-    "docx_artifact_dom_retains_and_releases_resources"
+    "docx_artifact_dom_retains_and_releases_resources",
+    "simple_html_session_replays_existing_browser_owners",
+    "long_session_replays_existing_browser_owners"
   ],
   "contributions": [
     "mounted_content_keeps_one_root_while_its_content_type_stays",

@@ -465,7 +465,7 @@ mod tests {
         }
     }
     impl Surface {
-        /// Bind to the runner's canvas and install the browser-side projections.
+        /// Bind the shared test canvas and install the browser-side projections.
         ///
         /// # Panics
         /// Panics if the test fixture or browser precondition is not satisfied.
@@ -474,6 +474,9 @@ mod tests {
             std::panic::set_hook(Box::new(|info| {
                 web_sys::console::error_1(&info.to_string().into());
             }));
+            let _ = js(
+                "if (!document.getElementById('canvas')) { const c=document.createElement('canvas'); c.id='canvas'; c.width=800; c.height=600; document.body.appendChild(c); }",
+            );
             let _ = js(include_str!("dom.js"));
             walk::set_formulas();
             let canvas = web_sys::window()

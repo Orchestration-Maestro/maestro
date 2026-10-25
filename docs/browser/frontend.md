@@ -67,6 +67,22 @@ The root exports `Attachment`, `load_attachment`, `UserMessageWithAttachments`,
 supporting records remain in the public application modules. See
 [application attachment policy](../application/browser-attachments.md).
 
+### Sample-session replay data
+
+The [session fixture](../../crates/maestro-web/tests/fixtures/test_sessions.json)
+keeps two complete offline conversations. The
+[replay tests](../../crates/maestro-web/tests/sample_sessions_browser.rs),
+`simple_html_session_replays_existing_browser_owners` and
+`long_session_replays_existing_browser_owners`, render their user and assistant
+rows, inspect tool cards and compare complete reconstructed artifact files.
+Missing timestamps become zero and historical tool outputs become text blocks
+only in the tests' owned copies. Recorded browser commands and model requests
+are not executed. HTML is observed through source/diff cards and reconstructed
+file data, not a specialized preview.
+
+Both tests run in the existing loading family with the `just browser-test`
+command below.
+
 ## Input, timers and dialogs
 
 [Browser input, timers and dialogs](components.md) reuse the attachment content host for
