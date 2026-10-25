@@ -1,0 +1,37 @@
+name: Windows retained component proof
+"on":
+  push:
+    branches: [ci/1595-windows-proof]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Pinned toolchain
+        shell: bash
+        run: |
+          rustup toolchain install
+          rustup target add x86_64-pc-windows-msvc
+      - name: Red retained component checks
+        shell: bash
+        run: |
+          git checkout -q 5fba43ba72960df46221dc45423a6183ae090abc
+          git log -1 --format='%H %s'
+          set +e
+          cargo check --locked --target x86_64-pc-windows-msvc --tests -p maestro-extensions-wasmtime 2>&1 | tee "$RUNNER_TEMP/windows-red.log"
+          red=${PIPESTATUS[0]}
+          echo "RED-EXIT $red"
+          [ "$red" != 0 ] && grep -q 'error\[E0433\]' "$RUNNER_TEMP/windows-red.log" && grep -q futures_util "$RUNNER_TEMP/windows-red.log"
+      - name: Green retained component checks
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          git checkout -q 535534a7951b68b94047e3e19b6317cd7ef99131
+          git log -1 --format='%H %s'
+          cargo check --locked --target x86_64-pc-windows-msvc --tests -p maestro-extensions-wasmtime
