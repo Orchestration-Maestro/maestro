@@ -153,6 +153,29 @@ impl InteractiveMode {
     }
 }
 
+/// The runtime's replacement continuation: rebinds the mode, while it is alive, before
+/// the runtime continues with the replacement session.
+///
+/// The mode is reached weakly, so the runtime that the mode owns does not keep it alive.
+pub(super) fn rebind_callback(mode: std::rc::Weak<InteractiveMode>) -> maestro_app::RebindSession {
+    Rc::new(move |_session| {
+        let mode = mode.upgrade();
+        Box::pin(async move {
+            let Some(mode) = mode else {
+                return Ok(());
+            };
+            mode.rebind_current_session().await.map_err(|error| {
+                error
+                    .downcast::<maestro_app::DiagnosticErrorInfo>()
+                    .map_or_else(
+                        |error| maestro_app::DiagnosticErrorInfo::error(error.to_string()),
+                        |error| *error,
+                    )
+            })
+        })
+    })
+}
+
 /// The interceptor that starts the first selected handler matching the typed input.
 ///
 /// The mode is reached weakly, so an installed or retired interceptor keeps it alive only

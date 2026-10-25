@@ -1338,3 +1338,228 @@ fn native_binding_owned_context_keeps_the_mode_and_then_restores_no_ui() {
         },
     );
 }
+
+/// A `ctrl+q` shortcut that records which runner its context reads.
+fn reading_shortcut(log: &Rc<RefCell<Vec<Value>>>) -> ExtensionShortcut<Local> {
+    let log = Rc::clone(log);
+    ctrl_q(move |context| {
+        let model = context
+            .model()?
+            .map(|model| model.read().unwrap().id.clone());
+        log.borrow_mut().push(json!({
+            "ui": context.has_ui()?,
+            "cwd": context.cwd()?,
+            "model": model,
+            "idle": context.is_idle()?,
+            "pending": context.has_pending_messages()?,
+            "prompt": !context.get_system_prompt()?.is_empty(),
+        }));
+        Ok(())
+    })
+}
+
+/// A replacement factory over fresh services; each replacement lists one context file,
+/// selects the model `replacement-<n>` and loads an extension with `reading_shortcut`.
+fn renaming_replacements(
+    directory: &Path,
+    log: &Rc<RefCell<Vec<Value>>>,
+) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    let created = Rc::new(Cell::new(0));
+    let context = directory.join("AGENTS.md").to_str().unwrap().to_owned();
+    let log = Rc::clone(log);
+    Rc::new(move |options| {
+        created.set(created.get() + 1);
+        let extensions = super::loaded(&options.cwd, idle(), Vec::new());
+        let owner = &extensions.extensions[0];
+        let mut shortcut = reading_shortcut(&log);
+        shortcut.extension_path = owner.read().unwrap().path.clone();
+        owner
+            .write()
+            .unwrap()
+            .shortcuts
+            .insert(shortcut.shortcut.clone(), Rc::new(RwLock::new(shortcut)));
+        let resources = super::Resources {
+            context: vec![maestro_app::ContextFile {
+                path: context.clone(),
+                content: "context".to_owned(),
+            }],
+            skills: Vec::new(),
+            prompts: Vec::new(),
+            themes: Vec::new(),
+            extensions: Vec::new(),
+            errors: Vec::new(),
+            commands: Vec::new(),
+            diagnostics: super::LoadedDiagnostics::default(),
+        };
+        let replacement = super::session::session(&options.cwd, None, |inner| {
+            Rc::new(super::ForwardingLoader::new(
+                inner,
+                resources,
+                Some(extensions),
+            ))
+        });
+        let state = replacement.session.state();
+        let mut model = state.read().unwrap().model.read().unwrap().clone();
+        model.id = format!("replacement-{}", created.get());
+        state.write().unwrap().model = std::sync::Arc::new(std::sync::RwLock::new(model));
+        std::mem::swap(
+            &mut *replacement.session.session_manager().borrow_mut(),
+            &mut *options.session_manager.borrow_mut(),
+        );
+        Box::pin(async { Ok(replacement) })
+    })
+}
+
+/// What the replacement continuation observes of the mode and its new context.
+fn continued(
+    mode: &Weak<InteractiveMode>,
+    seen: &Rc<RefCell<Vec<Value>>>,
+    titles: &Rc<RefCell<Vec<String>>>,
+) -> maestro_app::NewSessionCommandOptions {
+    let mode = Weak::clone(mode);
+    let seen = Rc::clone(seen);
+    let titles = Rc::clone(titles);
+    maestro_app::NewSessionCommandOptions {
+        with_session: Some(Rc::new(move |context| {
+            let mode = mode.upgrade().unwrap();
+            let seen = Rc::clone(&seen);
+            let written = titles.borrow().len();
+            Box::pin(async move {
+                let ui = context.has_ui()?;
+                context.ui()?.set_editor_text("continued".to_owned())?;
+                let model = mode
+                    .runtime_host
+                    .session()
+                    .model()
+                    .read()
+                    .unwrap()
+                    .id
+                    .clone();
+                let footer = mode
+                    .footer
+                    .render(200)
+                    .iter()
+                    .any(|row| row.contains(&model));
+                let listed = transcript_of(&mode)
+                    .iter()
+                    .filter(|row| row.contains("[Context]"))
+                    .count();
+                seen.borrow_mut().push(json!({
+                    "ui": ui,
+                    "editor": mode.editor.get_text(),
+                    "footer": footer,
+                    "titled": written,
+                    "subscribed": mode.unsubscribe.borrow().is_some(),
+                    "shortcut": mode.editor.on_extension_shortcut().is_some(),
+                    "listed": listed,
+                }));
+                Ok(())
+            })
+        })),
+        ..maestro_app::NewSessionCommandOptions::default()
+    }
+}
+
+/// The plain transcript rows of `mode`.
+fn transcript_of(mode: &InteractiveMode) -> Vec<String> {
+    mode.chat_container
+        .render(80)
+        .iter()
+        .map(|row| strip_ansi(row).unwrap().trim_end().to_owned())
+        .collect()
+}
+
+/// What the next `ctrl+q` press reads.
+fn next_shortcut_reads(world: &World, log: &RefCell<Vec<Value>>) -> Vec<Value> {
+    log.borrow_mut().clear();
+    press_ctrl_q(world, true);
+    log.take()
+}
+
+/// Replaces the session for the `generation`th time through the runtime, then checks the
+/// continuation, the retired session and context, and what the next shortcut reads.
+async fn replace_once(world: &World, generation: usize, log: &Rc<RefCell<Vec<Value>>>) {
+    let initial = world.host.session().model().read().unwrap().id.clone();
+    let cwd = world
+        .host
+        .session()
+        .session_manager()
+        .borrow()
+        .get_cwd()
+        .to_owned();
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let old_session = world.host.session();
+    let old_context = old_session.extension_runner().create_context();
+    let retired = Rc::downgrade(&old_session);
+    let titles = titles(world);
+    let options = continued(&Rc::downgrade(&world.mode), &seen, &titles);
+    let result = world.host.new_session(options).await.unwrap();
+    assert!(!result.cancelled);
+    assert!(!Rc::ptr_eq(&old_session, &world.host.session()));
+    assert_eq!(
+        *seen.borrow(),
+        [json!({
+            "ui": true,
+            "editor": "continued",
+            "footer": true,
+            "titled": 1,
+            "subscribed": true,
+            "shortcut": true,
+            "listed": generation + 1,
+        })],
+        "the continuation sees the completed binding"
+    );
+    assert!(
+        old_context.is_idle().is_err(),
+        "the retired context is stale"
+    );
+    titles.borrow_mut().clear();
+    world.runtime.settle().unwrap();
+    old_session.set_session_name("retired").unwrap();
+    assert!(titles.borrow().is_empty(), "retired events do not repaint");
+    drop((old_session, old_context));
+    assert!(
+        retired.upgrade().is_none(),
+        "the mode releases the retired session"
+    );
+    let model = format!("replacement-{generation}");
+    assert_ne!(model, initial, "the replacement selects another model");
+    assert_eq!(
+        next_shortcut_reads(world, log),
+        [json!({
+            "ui": true,
+            "cwd": cwd,
+            "model": model,
+            "idle": true,
+            "pending": false,
+            "prompt": true,
+        })],
+        "the next shortcut reads the replacement runner"
+    );
+}
+
+#[test]
+fn real_session_replacement_rebinds_shortcuts_before_continuation() {
+    isolated(
+        "real_session_replacement_rebinds_shortcuts_before_continuation",
+        async |directory| {
+            let log = Rc::new(RefCell::new(Vec::new()));
+            let world = Setup {
+                extension: Some(idle()),
+                create: Some(renaming_replacements(directory, &log)),
+                context: vec![maestro_app::ContextFile {
+                    path: directory.join("AGENTS.md").to_str().unwrap().to_owned(),
+                    content: "context".to_owned(),
+                }],
+                ..Setup::default()
+            }
+            .build(directory);
+            register_shortcut(&world, reading_shortcut(&log));
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            for generation in 1..=2 {
+                replace_once(&world, generation, &log).await;
+            }
+        },
+    );
+}
