@@ -9,6 +9,7 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
 pub(crate) mod effects;
+mod signals;
 mod synchronous;
 #[cfg(test)]
 pub(crate) use synchronous::Completion;
@@ -37,8 +38,8 @@ pub(crate) enum Message {
     ),
     /// Starts an admitted command operation without blocking request consumption.
     Command(u64, crate::command_reads::Request, Admission),
-    /// Reads the original retained cancellation, not the current context signal.
-    Aborted(u64, std::sync::mpsc::Sender<Result<bool, String>>),
+    /// Uses the original retained cancellation, not the current context signal.
+    Signal(u64, signals::Request),
     /// Reads the original live history independently of guarded contexts.
     History(u64, crate::history_reads::Request),
     /// Mutates the original writable session supplied to setup.
@@ -152,16 +153,7 @@ impl Drop for Lease {
 
 pub(crate) use crate::ui_reads::Endpoint as UiEndpoint;
 
-/// A cancellation resource retains its original signal independently of the context.
-#[derive(Clone)]
-pub(crate) struct SignalEndpoint(Arc<Lease>);
-
-impl SignalEndpoint {
-    /// Reads on the local owner through the same request pump as context operations.
-    pub(crate) fn aborted(&self) -> Result<bool, String> {
-        self.0.request(Message::Aborted)
-    }
-}
+pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
@@ -191,6 +183,8 @@ enum Capability {
     BashOutput(Rc<bash_output::Frame>),
     /// Original explicit remover from the existing event bus.
     Subscription(maestro_extensions::Subscription<maestro_extensions::Local>),
+    /// Removes an abort observer explicitly; dropping it keeps the observer.
+    SignalSubscription(Rc<dyn Fn()>),
     /// Original live theme supplied by native rendering.
     Theme {
         /// Ownership alone crosses the opaque canonical theme resource.
@@ -320,13 +314,24 @@ impl Registry {
             .map(crate::tree_reads::Endpoint)
     }
 
-    /// Allocates one independent identity while an existing admission is live.
-    fn insert(&self, capability: Capability) -> Result<Arc<Lease>, String> {
-        let requests = self
-            .requests
+    /// The pump's request sender while an existing admission keeps it live.
+    fn requests(&self) -> Result<UnboundedSender<Message>, String> {
+        self.requests
             .upgrade()
             .filter(|requests| !requests.is_closed())
-            .ok_or_else(|| "extension resource owner ended".to_owned())?;
+            .ok_or_else(|| "extension resource owner ended".to_owned())
+    }
+
+    /// A further admission while an existing one keeps the pump live.
+    pub(crate) fn admission(&self) -> Result<Admission, String> {
+        self.requests().map(|requests| Admission {
+            _requests: requests,
+        })
+    }
+
+    /// Allocates one independent identity while an existing admission is live.
+    fn insert(&self, capability: Capability) -> Result<Arc<Lease>, String> {
+        let requests = self.requests()?;
         let id = {
             let mut resources = self.resources.borrow_mut();
             let id = resources.next;

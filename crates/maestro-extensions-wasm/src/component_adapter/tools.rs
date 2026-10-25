@@ -1,6 +1,6 @@
 //! Preparation and asynchronous execution through host imports.
 use super::exports::encode_value;
-use super::{Exports, Imports, callbacks, contexts};
+use super::{Exports, Imports, callbacks, contexts, signals};
 use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
 use crate::{AgentToolUpdateCallback, ExtensionResult, PrepareArguments, ToolExecute};
 use std::rc::Rc;
@@ -48,7 +48,7 @@ impl<I: Imports> Exports<I> {
         let params = serde_json::from_str(&invocation.params).map_err(|error| error.to_string())?;
         let signal = resources
             .signal
-            .map(|signal| contexts::signal(&self.imports, signal));
+            .map(|signal| signals::signal(&self.imports, signal));
         let update = resources.update.map(|update| {
             let imports = self.imports.clone();
             Rc::new(move |partial| imports.tool_update(&update, &encode_value(&partial)?))

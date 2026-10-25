@@ -29,6 +29,7 @@ mod replaced_imports;
 mod replaced_reads;
 mod session_calls;
 mod session_imports;
+mod signal_imports;
 mod tool_registration;
 mod tree_imports;
 mod tree_reads;

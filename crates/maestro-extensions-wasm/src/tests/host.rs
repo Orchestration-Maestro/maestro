@@ -686,6 +686,21 @@ impl host::Host for State {
             Err(error) => Ok(Err(error)),
         }
     }
+    fn signal_subscribe(
+        &mut self,
+        signal: Resource<Flag>,
+        listener: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Subscription>, String>> {
+        let key = Arc::as_ptr(&self.table.get(&signal)?.0).addr();
+        match self
+            .observed
+            .bus
+            .on(&format!("abort {key}"), listener.rep())
+        {
+            Ok(subscription) => Ok(Ok(self.table.push(subscription)?)),
+            Err(error) => Ok(Err(error)),
+        }
+    }
     fn start_event_tail(
         &mut self,
         _emitter: Resource<super::bus_host::Emitter>,

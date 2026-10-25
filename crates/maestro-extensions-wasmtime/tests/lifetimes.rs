@@ -168,7 +168,7 @@ impl Drop for Released {
 }
 
 /// Retains the teardown signal in the original error reporter, independently of its controller.
-fn observed_reporter(
+pub(super) fn observed_reporter(
     errors: &Rc<RefCell<Vec<String>>>,
 ) -> (
     maestro_extensions::ErrorReporter<Local>,

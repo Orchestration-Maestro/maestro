@@ -32,6 +32,10 @@ mod registrations;
 mod retained;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/signals.rs"]
+mod signals;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/ui.rs"]
 mod ui;
 
@@ -159,6 +163,9 @@ fn command(
         }
         if let Some(path) = args.strip_prefix("command imports:") {
             return Err(commands::observe(&context, path.into()).await?.to_string());
+        }
+        if let Some(request) = args.strip_prefix("signal ") {
+            return Err(signals::command(&api, &context, request)?);
         }
         if args == "schema imports" {
             return Err(schema::observe(&api)?.to_string());

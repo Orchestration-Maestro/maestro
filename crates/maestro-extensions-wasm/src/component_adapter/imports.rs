@@ -297,6 +297,15 @@ pub trait Imports: Clone + 'static {
 
     /// Whether the operation was cancelled.
     fn aborted(&self, signal: &Self::Signal) -> bool;
+    /// Registers a callback the host runs once when `signal` is cancelled.
+    ///
+    /// # Errors
+    /// Returns the host's message when it rejects the registration.
+    fn signal_subscribe(
+        &self,
+        signal: &Self::Signal,
+        listener: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
 
     /// The working directory of the session an ordinary context is bound to.
     ///

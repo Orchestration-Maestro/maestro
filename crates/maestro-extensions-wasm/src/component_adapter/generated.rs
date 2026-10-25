@@ -46,6 +46,7 @@ impl Imports for Generated {
         get_thinking_level() -> ExtensionResult<String> => host::get_thinking_level;
         set_thinking_level(level: &str) -> ExtensionResult<()> => host::set_thinking_level;
         event_on(channel: &str, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::event_on;
+        signal_subscribe(signal: &Self::Signal, listener: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::signal_subscribe;
         start_event_tail(emitter: &Self::Emitter, tail: &Self::Callback) -> ExtensionResult<()> => host::start_event_tail;
         register_message_renderer(custom_type: &str, handler: &host::Callback) -> ExtensionResult<()> => host::register_message_renderer;
         on(event: &str, handler: &host::Callback) -> ExtensionResult<()> => host::on;
@@ -341,6 +342,13 @@ impl<E: Extension> Guest for Glue<E> {
             error,
             emitter,
         ))
+    }
+
+    fn invoke_abort(
+        handler: &host::Callback,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_abort(handler.id(), emitter))
     }
 
     async fn start() -> ExtensionResult<()> {

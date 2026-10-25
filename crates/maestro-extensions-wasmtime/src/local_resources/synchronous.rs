@@ -81,11 +81,7 @@ impl Registry {
                     .to_owned(),
             );
         }
-        let requests = self
-            .requests
-            .upgrade()
-            .filter(|requests| !requests.is_closed())
-            .ok_or_else(|| "extension resource owner ended".to_owned())?;
+        let requests = self.requests()?;
         let id = pump.synchronous.next.get();
         pump.synchronous.next.set(
             id.checked_add(1)

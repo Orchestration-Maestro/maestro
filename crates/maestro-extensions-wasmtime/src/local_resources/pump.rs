@@ -139,14 +139,7 @@ impl State {
             Message::Auth(id, model, reply, admission) => {
                 self.start_auth(id, *model, reply, admission);
             }
-            Message::Aborted(id, reply) => {
-                let capability = self.registry.capability(id);
-                let result = match capability.as_deref() {
-                    Some(Capability::Signal(signal)) => Ok(signal.is_aborted()),
-                    _ => Err("extension signal resource ended".to_owned()),
-                };
-                let _ = reply.send(result);
-            }
+            Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => {
                 let capability = self.registry.capability(id);
                 if let Some(Capability::History(history)) = capability.as_deref() {
@@ -290,10 +283,14 @@ impl State {
 
     /// Retains the same admission while an already-selected operation settles.
     fn admit(&self, work: Work, admission: Admission) {
-        let mut work: Work = Box::pin(async move {
+        self.stage(Box::pin(async move {
             work.await;
             drop(admission);
-        });
+        }));
+    }
+
+    /// Polls work once now and keeps it pending without an admission of its own.
+    pub(super) fn stage(&self, mut work: Work) {
         let waker = self.waker.borrow().clone();
         let mut context = Context::from_waker(&waker);
         if work.as_mut().poll(&mut context).is_pending() {

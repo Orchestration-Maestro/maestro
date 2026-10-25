@@ -86,6 +86,7 @@ mod shared_records;
 mod shell_callbacks;
 pub(crate) mod shell_host;
 mod shutdown_example;
+mod signal_callbacks;
 mod stream_events;
 mod system_prompt_header_example;
 mod tool_callbacks;
@@ -1053,6 +1054,7 @@ fn assert_async_exports(contract: &Contract) {
             "[method]component-view.invalidate",
             "[method]component-view.render",
             "[method]component-view.wants-key-release",
+            "invoke-abort",
             "invoke-command",
             "invoke-compaction-complete",
             "invoke-compaction-error",

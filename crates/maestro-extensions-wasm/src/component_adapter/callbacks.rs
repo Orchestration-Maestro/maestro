@@ -98,6 +98,7 @@ kinds! {
         Tool(crate::ToolExecute),
     }
     once {
+        Abort(crate::AbortListener),
         WithSession(WithSession),
         Setup(crate::SetupSession),
         Tail(crate::ExtensionFuture<'static, ()>),

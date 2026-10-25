@@ -65,6 +65,8 @@ interface host {
     resource abort-signal {
         aborted: func() -> bool;
     }
+    /// Runs a listener once when the signal is cancelled; the subscription removes it.
+    signal-subscribe: func(signal: borrow<abort-signal>, listener: borrow<callback>) -> result<subscription, string>;
 
     /// Partial output delivered by an executing tool.
     resource tool-update { update: func(partial: string) -> result<_, string>; }

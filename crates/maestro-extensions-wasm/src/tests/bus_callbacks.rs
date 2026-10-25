@@ -337,9 +337,9 @@ fn maestro_prepare_arguments_can_emit_before_return() -> ExtensionResult<()> {
 }
 
 /// Reports destruction by emitting through the same host, exercising table reentry.
-struct Reenter {
+pub(super) struct Reenter {
     /// Alternate adapter retained by the capture.
-    host: Controlled,
+    pub(super) host: Controlled,
 }
 impl Drop for Reenter {
     fn drop(&mut self) {

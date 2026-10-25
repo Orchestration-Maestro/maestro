@@ -85,16 +85,28 @@ impl Callbacks {
     }
 
     /// Releases only the retired ownership generation, never a later native retention.
+    ///
+    /// An observer's release names no generation; it releases an identity no native alias
+    /// retains.
     pub(crate) fn release(&mut self, release: &Release) -> Option<u32> {
-        let retired = self
-            .retained
-            .get(&release.id)
-            .is_some_and(|owner| owner.ptr_eq(&release.owner) && owner.strong_count() == 0);
+        let retired = match self.retained.get(&release.id) {
+            Some(owner) => owner.ptr_eq(&release.owner) && owner.strong_count() == 0,
+            None => release.owner.ptr_eq(&Weak::new()),
+        };
         if retired {
             self.retained.remove(&release.id);
             Some(release.id)
         } else {
             None
+        }
+    }
+
+    /// Keeps a callback for an abort observer without retaining this Store.
+    pub(crate) fn observer(&self, id: u32) -> Observer {
+        Observer {
+            id,
+            calls: self.calls.clone(),
+            replies: self.replies.clone(),
         }
     }
 
@@ -161,6 +173,44 @@ impl Drop for Retained {
             id: self.id,
             owner: self.owner.clone(),
         }));
+    }
+}
+
+/// A callback kept by an abort observer, which outlives no Store: the signal it observes
+/// may outlive the extension, so the observer holds the Store receiver weakly.
+pub(crate) struct Observer {
+    /// Authored callback identity.
+    id: u32,
+    /// Upgraded only for one invocation or the final release.
+    calls: WeakUnboundedSender<Call>,
+    /// The Store's fault and settlement owner.
+    replies: Replies,
+}
+
+impl Observer {
+    /// A callback alias for one invocation while the Store and `admission` are live.
+    ///
+    /// Its own release names its generation, which no table retains, so the closure stays.
+    pub(crate) fn handle(&self, admission: Admission) -> Option<Handle> {
+        let calls = self.calls.upgrade().filter(|calls| !calls.is_closed())?;
+        Some(Handle(Arc::new_cyclic(|owner| Retained {
+            id: self.id,
+            owner: owner.clone(),
+            endpoint: StoreEndpoint::new(calls, admission, self.replies.clone()),
+        })))
+    }
+}
+
+impl Drop for Observer {
+    fn drop(&mut self) {
+        if let Some(calls) = self.calls.upgrade() {
+            let _ = calls.send(Call::Release(Release {
+                calls: Some(calls.clone()),
+                completion: self.replies.register(|_: Result<(), String>| {}).ok(),
+                id: self.id,
+                owner: Weak::new(),
+            }));
+        }
     }
 }
 
@@ -244,6 +294,8 @@ pub(crate) enum SynchronousKind {
     CompactionComplete,
     /// Native compaction failure.
     CompactionError,
+    /// Native abort observer; its export takes no data.
+    Abort,
 }
 
 /// Owned canonical operands of one synchronous callback invocation.
