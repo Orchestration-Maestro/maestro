@@ -33,9 +33,9 @@ fallback theme is returned.
 
 ## Startup
 
-`init` runs once; later calls change nothing. It builds the header, then adds the
-header, transcript, pending-messages, status, upper widget, editor and lower widget
-containers and the footer, in that order. The upper widget container starts with
+`init` does nothing while the mode is initialized. After `stop`, it runs again.
+It builds the header, then adds the header, transcript, pending-messages, status,
+upper widget, editor and lower widget containers and the footer, in that order. The upper widget container starts with
 one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
 editor submission and the global debug key, and starts the terminal. A terminal

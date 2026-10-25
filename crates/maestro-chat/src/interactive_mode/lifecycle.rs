@@ -11,15 +11,7 @@ impl InteractiveMode {
     /// Returns the original progress-clearing or UI-stop error. Failed UI stop leaves
     /// the presentation initialized; earlier cleanup is not undone.
     pub fn stop(&self) -> io::Result<()> {
-        if self
-            .runtime_host
-            .session()
-            .settings_manager()
-            .borrow()
-            .get_show_terminal_progress()
-        {
-            self.ui.terminal().borrow_mut().set_progress(false)?;
-        }
+        self.set_terminal_progress(false)?;
         self.release_working_loader();
         self.footer.dispose();
         self.footer_data_provider.dispose();

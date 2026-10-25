@@ -384,7 +384,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the terminal's progress-writing failure.
-    fn set_terminal_progress(&self, active: bool) -> io::Result<()> {
+    pub(super) fn set_terminal_progress(&self, active: bool) -> io::Result<()> {
         let session = self.runtime_host.session();
         if session
             .settings_manager()
