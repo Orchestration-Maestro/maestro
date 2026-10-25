@@ -29,7 +29,7 @@ impl Invocation {
 
 impl Call {
     /// Attaches completion to every reply before the driver starts guest work.
-    pub(super) fn before(&self, completion: &Completion) {
+    pub(crate) fn before(&self, completion: &Completion) {
         match self {
             Self::Start(reply)
             | Self::Setup(_, _, reply)

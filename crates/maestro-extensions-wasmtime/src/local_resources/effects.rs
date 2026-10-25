@@ -27,9 +27,9 @@ pub(crate) struct ToolUpdate(Arc<Lease>);
 
 impl ToolUpdate {
     /// Validates a native result before invoking its observer on the local owner.
-    pub(crate) fn update(&self, partial: String) -> Result<(), String> {
+    pub(crate) fn update(&self, partial: String) -> crate::import_route::Route {
         self.0
-            .request(|id, reply| Message::Effect(id, Request::Update(partial, reply)))
+            .route(|id, reply| Message::Effect(id, Request::Update(partial, reply)))
     }
 }
 

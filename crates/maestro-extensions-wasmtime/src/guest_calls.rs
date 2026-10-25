@@ -12,6 +12,7 @@ use std::{
     sync::{Arc, Weak},
 };
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
+use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
 pub(crate) mod events;
@@ -34,7 +35,7 @@ pub(crate) enum Call<H = Handle, R = Arc<GuestResource>> {
     /// Invokes the actual Local message renderer.
     Renderer(renderers::RendererCall<H>),
     /// Calls a retained guest component through the same Store.
-    Component(renderers::ComponentCall<R>),
+    Component(renderers::ComponentCall<H>),
     /// Enters the authored factory once under the same lifecycle as later callbacks.
     Start(Reply<()>),
     /// Marks a started invocation complete before native settlement.
@@ -109,6 +110,25 @@ impl Callbacks {
 
     /// Retains one callback admission, shared by every native alias of this identity.
     pub(crate) fn retain(&mut self, id: u32, admission: Admission) -> Result<Handle, String> {
+        self.retained_as(id, admission, false)
+    }
+
+    /// Retains a returned authored object, whose destruction waits for Store quiescence.
+    pub(crate) fn retain_object(
+        &mut self,
+        id: u32,
+        admission: Admission,
+    ) -> Result<Handle, String> {
+        self.retained_as(id, admission, true)
+    }
+
+    /// Shares one final-release owner per identity and records how it is destroyed.
+    fn retained_as(
+        &mut self,
+        id: u32,
+        admission: Admission,
+        object: bool,
+    ) -> Result<Handle, String> {
         if let Some(retained) = self.retained.get(&id).and_then(Weak::upgrade) {
             return Ok(Handle(retained));
         }
@@ -119,6 +139,7 @@ impl Callbacks {
             .ok_or_else(|| "extension Store owner ended".to_owned())?;
         let retained = Arc::new_cyclic(|owner| Retained {
             id,
+            object,
             owner: owner.clone(),
             endpoint: StoreEndpoint::new(calls, admission, self.replies.clone()),
         });
@@ -135,6 +156,8 @@ pub(crate) struct Release {
     pub(crate) completion: Option<Reply<()>>,
     /// Authored closure identity.
     id: u32,
+    /// An authored object is destroyed only while no other call is active.
+    pub(crate) object: bool,
     /// A stale queued release cannot release a newly retained callback with the same id.
     owner: Weak<Retained>,
 }
@@ -143,6 +166,8 @@ pub(crate) struct Release {
 struct Retained {
     /// Authored callback identity, not a Store resource-table key.
     id: u32,
+    /// Whether the identity holds a returned authored object rather than a closure.
+    object: bool,
     /// Weak self-identity permits final-release validation without retaining an owner.
     owner: Weak<Retained>,
     /// One lifecycle endpoint retains Store and native request admissions.
@@ -159,6 +184,7 @@ impl Drop for Retained {
                 .register(|_: Result<(), String>| {})
                 .ok(),
             id: self.id,
+            object: self.object,
             owner: self.owner.clone(),
         }));
     }
@@ -183,6 +209,11 @@ impl Handle {
     /// Returns the original authored identity for a temporary canonical borrow.
     pub(crate) fn id(&self) -> u32 {
         self.0.id
+    }
+
+    /// Returns the original shared lifecycle endpoint of this callback.
+    pub(crate) fn endpoint(&self) -> &StoreEndpoint {
+        &self.0.endpoint
     }
 
     /// Calls the actual setup export with the original writable owner.
@@ -237,12 +268,18 @@ type NativeFuture = std::pin::Pin<
 >;
 
 /// Actual synchronous guest entry selected by the native callback owner.
+#[derive(ComponentType, Lower, Clone, Copy)]
+#[component(enum)]
+#[repr(u8)]
 pub(crate) enum SynchronousKind {
     /// Native event listener prefix.
+    #[component(name = "listener")]
     Listener,
     /// Native compaction completion.
+    #[component(name = "compaction-complete")]
     CompactionComplete,
     /// Native compaction failure.
+    #[component(name = "compaction-error")]
     CompactionError,
 }
 
@@ -287,8 +324,8 @@ impl Handle {
         data: String,
         emitter: crate::local_resources::effects::EmitterEndpoint,
     ) -> Result<(), String> {
-        self.0.endpoint.replies.synchronous(registry, |completion| {
-            self.0.endpoint.send(Call::Synchronous(Synchronous {
+        self.0.endpoint.synchronous(registry, |completion| {
+            Ok(Call::Synchronous(Synchronous {
                 handler: self.clone(),
                 kind,
                 data,

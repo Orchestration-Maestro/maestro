@@ -139,4 +139,14 @@ impl Endpoint {
         self.0
             .request(|id, reply| Message::Registration(id, request(reply)))
     }
+
+    /// Registers through a route, for a registration whose native refresh may call back
+    /// into this instance.
+    pub(crate) fn routed_registration(
+        &self,
+        request: impl FnOnce(Reply) -> Request,
+    ) -> crate::import_route::Route {
+        self.0
+            .route(|id, reply| Message::Registration(id, request(reply)))
+    }
 }

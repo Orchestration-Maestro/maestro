@@ -21,8 +21,8 @@ pub struct ComponentDriver {
     last_bash: Option<usize>,
     /// Next invocation-local emitter identity.
     emitter_key: usize,
-    /// Independently returned guest resources.
-    components: Vec<Option<wasmtime::component::ResourceAny>>,
+    /// Independently returned guest components, identified by their shared identity.
+    components: Vec<Option<Resource<super::host::Identity>>>,
     /// The table keys of the flags lent so far, by handle.
     flags: Vec<u32>,
     /// The flag of the previous compaction, which the driver cancels before the next one.
@@ -319,7 +319,10 @@ impl Driver for ComponentDriver {
     ) -> Result<super::renderer_host::Reply, String> {
         self.emitter_key += 1;
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
-        let component = self.components[id].ok_or("component absent")?;
+        let component = {
+            let stored = self.components[id].as_ref().ok_or("component absent")?;
+            Resource::<super::host::Identity>::new_borrow(stored.rep())
+        };
         let emitter = harness
             .store
             .data_mut()
@@ -338,13 +341,17 @@ impl Driver for ComponentDriver {
         result
     }
     async fn drop_component(&mut self, id: usize) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
         if let Some(component) = self.components[id].take() {
-            component
-                .resource_drop_async(
-                    &mut started(&mut self.harness).map_err(|e| e.to_string())?.store,
-                )
+            harness
+                .release(component.rep())
                 .await
                 .map_err(|e| e.to_string())?;
+            crate::bindings::host_side::maestro::extension::host::HostCallback::drop(
+                harness.store.data_mut(),
+                component,
+            )
+            .map_err(|e| e.to_string())?;
         }
         Ok(())
     }
@@ -968,6 +975,9 @@ impl Driver for ComponentDriver {
     }
 
     async fn release_all(&mut self) {
+        for id in 0..self.components.len() {
+            let _ = self.drop_component(id).await;
+        }
         let Ok(harness) = started(&mut self.harness) else {
             return;
         };
@@ -1103,56 +1113,44 @@ fn send_pair_phase(
     });
 }
 
-/// Invokes the selected exported resource method with the same borrowed emitter.
+/// Invokes the selected exported method with the same borrowed emitter.
 async fn component_call(
     harness: &mut Harness,
-    component: wasmtime::component::ResourceAny,
+    component: Resource<super::host::Identity>,
     call: super::renderer_host::Call<'_>,
     emitter: &Resource<super::bus_host::Emitter>,
 ) -> Result<Result<super::renderer_host::Reply, String>, String> {
     use super::renderer_host::{Call, Reply};
-    let resource = harness.exports.component_view();
+    let borrow = Resource::new_borrow(emitter.rep());
     Ok(match call {
-        Call::Render(width) => resource
-            .func_render()
-            .call_async(
-                &mut harness.store,
-                (component, width, Resource::new_borrow(emitter.rep())),
-            )
+        Call::Render(width) => harness
+            .exports
+            .func_component_render()
+            .call_async(&mut harness.store, (component, width, borrow))
             .await
             .map_err(|e| e.to_string())?
             .0
             .map(Reply::Lines),
-        Call::Input(data) => resource
-            .func_handle_input()
-            .call_async(
-                &mut harness.store,
-                (
-                    component,
-                    data.to_owned(),
-                    Resource::new_borrow(emitter.rep()),
-                ),
-            )
+        Call::Input(data) => harness
+            .exports
+            .func_component_handle_input()
+            .call_async(&mut harness.store, (component, data.to_owned(), borrow))
             .await
             .map_err(|e| e.to_string())?
             .0
             .map(|()| Reply::Done),
-        Call::Release => resource
-            .func_wants_key_release()
-            .call_async(
-                &mut harness.store,
-                (component, Resource::new_borrow(emitter.rep())),
-            )
+        Call::Release => harness
+            .exports
+            .func_component_wants_key_release()
+            .call_async(&mut harness.store, (component, borrow))
             .await
             .map_err(|e| e.to_string())?
             .0
             .map(Reply::Release),
-        Call::Invalidate => resource
-            .func_invalidate()
-            .call_async(
-                &mut harness.store,
-                (component, Resource::new_borrow(emitter.rep())),
-            )
+        Call::Invalidate => harness
+            .exports
+            .func_component_invalidate()
+            .call_async(&mut harness.store, (component, borrow))
             .await
             .map_err(|e| e.to_string())?
             .0

@@ -12,7 +12,7 @@ use wasmtime::{
 };
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
-mod completion;
+pub(crate) mod completion;
 mod endpoint;
 pub(crate) use endpoint::{Endpoint as StoreEndpoint, GuestResource};
 mod invocation;
@@ -77,7 +77,8 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::session_imports::add_to_linker(&mut host)?;
     crate::effect_imports::add_to_linker(&mut host)?;
     crate::event_imports::add_to_linker(&mut host)?;
-    crate::registration_imports::add_to_linker(&mut host)
+    crate::registration_imports::add_to_linker(&mut host)?;
+    crate::import_route::link(&mut host)
 }
 
 /// Drives admitted exports; only this owner may leave concurrency to destroy resources.
@@ -110,6 +111,8 @@ struct Activity {
     active: usize,
     /// Only the owning Store may destroy these resources, outside concurrency.
     releases: Vec<wasmtime::component::ResourceAny>,
+    /// Released authored objects, destroyed once no other call is active.
+    objects: Vec<crate::guest_calls::Release>,
 }
 /// Runs one concurrent turn, ending only on unload or healthy quiescence.
 async fn turn(
@@ -121,35 +124,63 @@ async fn turn(
 ) -> wasmtime::Result<bool> {
     while let Some(call) = incoming.recv().await {
         match call {
-            Call::Finished => activity.active -= 1,
+            Call::Finished => finished(accessor, exports, calls, activity)?,
             Call::ReleaseResource(resource) => activity.releases.push(resource),
-            call => {
-                let sender = match &call {
-                    Call::Release(release) => release.calls.clone(),
-                    _ => calls.upgrade(),
-                }
-                .ok_or_else(|| wasmtime::format_err!("extension Store admission ended"))?;
-                let completion = completion::Completion::new(sender);
-                call.before(&completion);
-                let call = call.admitted(&completion);
-                activity.active += 1;
-                let invocation = invocation::Invocation {
-                    exports: exports.clone(),
-                    call,
-                    completion,
-                };
-                accessor.spawn(
-                    async move |accessor: &wasmtime::component::Accessor<State>| {
-                        invocation.run(accessor).await
-                    },
-                )?;
+            Call::Release(release) if release.object && activity.active > 0 => {
+                activity.objects.push(release);
             }
+            call => start(accessor, exports, calls, activity, call)?,
         }
         if activity.active == 0 && !activity.releases.is_empty() {
             return Ok(false);
         }
     }
     Ok(true)
+}
+
+/// Counts one completed call and, at quiescence, starts the deferred object releases.
+fn finished(
+    accessor: &wasmtime::component::Accessor<State>,
+    exports: &Arc<Exports>,
+    calls: &WeakUnboundedSender<Call>,
+    activity: &mut Activity,
+) -> wasmtime::Result<()> {
+    activity.active -= 1;
+    if activity.active > 0 {
+        return Ok(());
+    }
+    for release in std::mem::take(&mut activity.objects) {
+        start(accessor, exports, calls, activity, Call::Release(release))?;
+    }
+    Ok(())
+}
+
+/// Admits one call and spawns its guest invocation on the active accessor.
+fn start(
+    accessor: &wasmtime::component::Accessor<State>,
+    exports: &Arc<Exports>,
+    calls: &WeakUnboundedSender<Call>,
+    activity: &mut Activity,
+    call: Call,
+) -> wasmtime::Result<()> {
+    let sender = match &call {
+        Call::Release(release) => release.calls.clone(),
+        _ => calls.upgrade(),
+    }
+    .ok_or_else(|| wasmtime::format_err!("extension Store admission ended"))?;
+    let completion = completion::Completion::new(sender);
+    call.before(&completion);
+    let call = call.admitted(&completion);
+    activity.active += 1;
+    let invocation = invocation::Invocation {
+        exports: exports.clone(),
+        call,
+        completion,
+    };
+    accessor.spawn(
+        async move |accessor: &wasmtime::component::Accessor<State>| invocation.run(accessor).await,
+    )?;
+    Ok(())
 }
 
 /// After a fault retain registrations, but never enter guest code or guest destructors again.

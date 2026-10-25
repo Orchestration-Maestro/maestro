@@ -604,7 +604,7 @@ fn ui_signatures(
 
 /// The retained UI resource is borrowed while its requests stay synchronous and typed.
 fn assert_ui_contract(contract: &Contract) {
-    let unit = vec!["result<_, string>".to_owned()];
+    let unit = vec!["own<import-route>".to_owned()];
     let self_ = "self: borrow<extension-ui-context>".to_owned();
     let params = [
         vec![
@@ -640,7 +640,7 @@ fn assert_ui_contract(contract: &Contract) {
         assert_eq!(actual, &expected, "retained UI request {index} parameters");
         assert_eq!(
             results, &unit,
-            "retained UI request {index} stays synchronous"
+            "retained UI request {index} stays synchronous through its route"
         );
     }
 }
@@ -760,11 +760,11 @@ fn expected_action_signatures() -> [Signature; 7] {
     [
         (
             vec!["message: string", "options: option<string>"],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec!["content: string", "options: option<string>"],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (vec!["model: string"], vec!["result<bool, string>"]),
         (
@@ -774,7 +774,7 @@ fn expected_action_signatures() -> [Signature; 7] {
                 "on-complete: option<borrow<callback>>",
                 "on-error: option<borrow<callback>>",
             ],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec![
@@ -783,7 +783,7 @@ fn expected_action_signatures() -> [Signature; 7] {
                 "on-complete: option<borrow<callback>>",
                 "on-error: option<borrow<callback>>",
             ],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec![
@@ -940,16 +940,16 @@ fn renderer_signatures(
     [
         (host, "register-message-renderer"),
         (guest, "invoke-renderer"),
-        (guest, "[method]component-view.render"),
-        (guest, "[method]component-view.handle-input"),
-        (guest, "[method]component-view.wants-key-release"),
-        (guest, "[method]component-view.invalidate"),
+        (guest, "component-render"),
+        (guest, "component-handle-input"),
+        (guest, "component-wants-key-release"),
+        (guest, "component-invalidate"),
     ]
     .into_iter()
     .map(|(interface, name)| signature(engine, interface, name, &declared))
     .collect()
 }
-/// Checks actual guest resource methods, not just the free-function inventory.
+/// Checks the renderer and the retained-component exports keyed by callback identity.
 fn assert_renderer_contract(contract: &Contract) {
     let expected = [
         (
@@ -962,11 +962,11 @@ fn assert_renderer_contract(contract: &Contract) {
                 "request: record {message: string, expanded: bool, theme: own<theme>}",
                 "emitter: borrow<callback-emitter>",
             ],
-            vec!["result<option<own<component-view>>, string>"],
+            vec!["result<option<own<callback>>, string>"],
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "width: u32",
                 "emitter: borrow<callback-emitter>",
             ],
@@ -974,7 +974,7 @@ fn assert_renderer_contract(contract: &Contract) {
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "data: string",
                 "emitter: borrow<callback-emitter>",
             ],
@@ -982,14 +982,14 @@ fn assert_renderer_contract(contract: &Contract) {
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "emitter: borrow<callback-emitter>",
             ],
             vec!["result<bool, string>"],
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "emitter: borrow<callback-emitter>",
             ],
             vec!["result<_, string>"],
@@ -1048,10 +1048,10 @@ fn assert_async_exports(contract: &Contract) {
         names(&contract.exports, true),
         [
             "[method]bash-operations.exec",
-            "[method]component-view.handle-input",
-            "[method]component-view.invalidate",
-            "[method]component-view.render",
-            "[method]component-view.wants-key-release",
+            "component-handle-input",
+            "component-invalidate",
+            "component-render",
+            "component-wants-key-release",
             "invoke-command",
             "invoke-compaction-complete",
             "invoke-compaction-error",

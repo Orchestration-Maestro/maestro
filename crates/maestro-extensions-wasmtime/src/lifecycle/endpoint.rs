@@ -32,6 +32,16 @@ impl Endpoint {
             .send(call)
             .map_err(|_| "extension Store owner ended".to_owned())
     }
+    /// Enters a synchronous target, through the active native operation when one owns
+    /// this instance, and services local requests until its typed reply settles.
+    pub(crate) fn synchronous<T: Send + 'static>(
+        &self,
+        registry: &crate::local_resources::Registry,
+        make: impl FnOnce(Reply<T>) -> Result<Call, String>,
+    ) -> Result<T, String> {
+        self.replies
+            .synchronous(registry, |reply| registry.dispatch(self, make(reply)?))
+    }
     /// Registers before submission and returns only the original lifecycle's result.
     pub(crate) async fn submit<T: Send + 'static>(
         &self,

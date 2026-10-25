@@ -65,28 +65,17 @@ pub(crate) enum Message {
     ReplacedCommand(u64, std::sync::mpsc::Sender<Result<Endpoint, String>>),
     /// Uses original native observers and explicit subscription removers.
     Effect(u64, effects::Request),
+    /// Runs a request whose native code may call back into this instance through its route.
+    Routed(
+        Box<Message>,
+        std::sync::mpsc::Sender<crate::import_route::Nested>,
+    ),
     /// Forwards an owned chunk into its original execution's data stream.
     BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
     /// Final release of an independently retained capability.
     Release(u64),
-}
-
-impl Message {
-    /// Whether the Store thread waits for this answer; asynchronous requests carry an admission.
-    fn blocks_store(&self) -> bool {
-        !matches!(
-            self,
-            Self::Completed(..)
-                | Self::Events(_, crate::event_reads::Request::Emit(..))
-                | Self::ApiModel(..)
-                | Self::Command(..)
-                | Self::Auth(..)
-                | Self::Replaced(..)
-                | Self::Release(..)
-        )
-    }
 }
 
 /// A startup or callback admission keeping the pump available.
@@ -141,6 +130,20 @@ impl Lease {
         response
             .recv()
             .map_err(|_| "extension resource reply ended".to_owned())?
+    }
+
+    /// Sends a request whose native code may call back into this instance; the guest
+    /// drives the returned route until the request's own result arrives.
+    pub(crate) fn route(
+        &self,
+        request: impl FnOnce(u64, std::sync::mpsc::Sender<Result<(), String>>) -> Message,
+    ) -> crate::import_route::Route {
+        let (reply, response) = std::sync::mpsc::channel();
+        let (nested, route) = crate::import_route::Route::new(response);
+        let _ = self
+            .requests
+            .send(Message::Routed(Box::new(request(self.id, reply)), nested));
+        route
     }
 }
 

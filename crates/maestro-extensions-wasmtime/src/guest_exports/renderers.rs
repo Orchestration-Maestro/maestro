@@ -9,24 +9,26 @@ use crate::{
 };
 use wasmtime::{
     Store,
-    component::{Accessor, ComponentExportIndex, Instance, Resource, ResourceAny, TypedFunc},
+    component::{Accessor, ComponentExportIndex, Instance, Resource, TypedFunc},
 };
 use wasmtime_wasi::WasiView;
 
 /// Original renderer entry point transfers an optional real guest component.
 type Create = TypedFunc<
     (Resource<Callback>, RenderRequest, Resource<EmitterEndpoint>),
-    (Result<Option<ResourceAny>, String>,),
+    (Result<Option<Resource<Callback>>, String>,),
 >;
 /// Original component rendering method.
 type Render =
-    TypedFunc<(ResourceAny, u32, Resource<EmitterEndpoint>), (Result<Vec<String>, String>,)>;
+    TypedFunc<(Resource<Callback>, u32, Resource<EmitterEndpoint>), (Result<Vec<String>, String>,)>;
 /// Original component input method.
-type Input = TypedFunc<(ResourceAny, String, Resource<EmitterEndpoint>), (Result<(), String>,)>;
+type Input =
+    TypedFunc<(Resource<Callback>, String, Resource<EmitterEndpoint>), (Result<(), String>,)>;
 /// Original component invalidation method.
-type Invalidate = TypedFunc<(ResourceAny, Resource<EmitterEndpoint>), (Result<(), String>,)>;
+type Invalidate = TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<(), String>,)>;
 /// Original component key-release preference.
-type WantsKeyRelease = TypedFunc<(ResourceAny, Resource<EmitterEndpoint>), (Result<bool, String>,)>;
+type WantsKeyRelease =
+    TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<bool, String>,)>;
 
 /// All methods belong to the same canonical component instance.
 pub(super) struct Exports {
@@ -50,24 +52,14 @@ impl Exports {
     ) -> wasmtime::Result<Self> {
         Ok(Self {
             create: super::typed(store, instance, guest, "invoke-renderer")?,
-            render: super::typed(store, instance, guest, "[method]component-view.render")?,
-            input: super::typed(
-                store,
-                instance,
-                guest,
-                "[method]component-view.handle-input",
-            )?,
-            invalidate: super::typed(store, instance, guest, "[method]component-view.invalidate")?,
-            wants_key_release: super::typed(
-                store,
-                instance,
-                guest,
-                "[method]component-view.wants-key-release",
-            )?,
+            render: super::typed(store, instance, guest, "component-render")?,
+            input: super::typed(store, instance, guest, "component-handle-input")?,
+            invalidate: super::typed(store, instance, guest, "component-invalidate")?,
+            wants_key_release: super::typed(store, instance, guest, "component-wants-key-release")?,
         })
     }
     /// Transfers the original theme and borrows only the callback and invocation frame.
-    pub(super) async fn create<T: WasiView + 'static>(
+    pub(super) async fn create<T: crate::callback_imports::CallbackView + 'static>(
         &self,
         accessor: &Accessor<T>,
         call: RendererCall<Callback>,
@@ -89,77 +81,93 @@ impl Exports {
                 ),
             )
             .await;
-        accessor.with(|mut access| {
+        let result = accessor.with(|mut access| {
             let table = access.get().ctx().table;
             table.delete(callback)?;
             table.delete(emitter)?;
-            Ok::<_, wasmtime::Error>(())
+            let component = match result?.0 {
+                Ok(component) => component,
+                Err(error) => return Ok::<_, wasmtime::Error>(Err(error)),
+            };
+            let component = component
+                .map(|component| crate::callback_imports::transferred(access.get(), component));
+            Ok(Ok(component.transpose()?))
         })?;
-        let _ = call.reply.send(result?.0);
+        let _ = call.reply.send(result);
         Ok(())
     }
-    /// Borrows the retained guest owner; its final drop remains the driver's responsibility.
+    /// Borrows the retained authored identity; its final release remains the driver's.
     pub(super) async fn component<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: ComponentCall<ResourceAny>,
+        call: ComponentCall<Callback>,
     ) -> wasmtime::Result<()> {
         match call {
             ComponentCall::Render(owner, width, emitter, reply) => {
-                let emitter = insert(accessor, emitter)?;
+                let (owner, emitter) = insert(accessor, owner, emitter)?;
                 let result = self
                     .render
-                    .call_concurrent(
-                        accessor,
-                        (owner, width, Resource::new_borrow(emitter.rep())),
-                    )
+                    .call_concurrent(accessor, (borrow(&owner), width, borrow(&emitter)))
                     .await;
-                delete(accessor, emitter)?;
+                delete(accessor, owner, emitter)?;
                 let _ = reply.send(result?.0);
             }
             ComponentCall::Unit(owner, method, emitter, reply) => {
-                let emitter = insert(accessor, emitter)?;
-                let borrow = Resource::new_borrow(emitter.rep());
+                let (owner, emitter) = insert(accessor, owner, emitter)?;
+                let (view, frame) = (borrow(&owner), borrow(&emitter));
                 let result = match method {
                     ComponentMethod::Input(data) => {
                         self.input
-                            .call_concurrent(accessor, (owner, data, borrow))
+                            .call_concurrent(accessor, (view, data, frame))
                             .await
                     }
                     ComponentMethod::Invalidate => {
                         self.invalidate
-                            .call_concurrent(accessor, (owner, borrow))
+                            .call_concurrent(accessor, (view, frame))
                             .await
                     }
                 };
-                delete(accessor, emitter)?;
+                delete(accessor, owner, emitter)?;
                 let _ = reply.send(result?.0);
             }
             ComponentCall::WantsKeyRelease(owner, emitter, reply) => {
-                let emitter = insert(accessor, emitter)?;
+                let (owner, emitter) = insert(accessor, owner, emitter)?;
                 let result = self
                     .wants_key_release
-                    .call_concurrent(accessor, (owner, Resource::new_borrow(emitter.rep())))
+                    .call_concurrent(accessor, (borrow(&owner), borrow(&emitter)))
                     .await;
-                delete(accessor, emitter)?;
+                delete(accessor, owner, emitter)?;
                 let _ = reply.send(result?.0);
             }
         }
         Ok(())
     }
 }
-/// Inserts only this call's original native invocation frame.
+/// Inserts the retained identity and this call's original native invocation frame.
 fn insert<T: WasiView + 'static>(
     accessor: &Accessor<T>,
+    owner: Callback,
     emitter: EmitterEndpoint,
-) -> wasmtime::Result<Resource<EmitterEndpoint>> {
-    Ok(accessor.with(|mut access| access.get().ctx().table.push(emitter))?)
+) -> wasmtime::Result<(Resource<Callback>, Resource<EmitterEndpoint>)> {
+    accessor.with(|mut access| {
+        let table = access.get().ctx().table;
+        Ok((table.push(owner)?, table.push(emitter)?))
+    })
 }
-/// Retires the temporary canonical borrow before exposing the native reply.
+/// Lends a temporary table entry to one canonical call.
+fn borrow<R: 'static>(resource: &Resource<R>) -> Resource<R> {
+    Resource::new_borrow(resource.rep())
+}
+/// Retires both temporary canonical borrows before exposing the native reply.
 fn delete<T: WasiView + 'static>(
     accessor: &Accessor<T>,
+    owner: Resource<Callback>,
     emitter: Resource<EmitterEndpoint>,
 ) -> wasmtime::Result<()> {
-    accessor.with(|mut access| access.get().ctx().table.delete(emitter))?;
-    Ok(())
+    accessor.with(|mut access| {
+        let table = access.get().ctx().table;
+        table.delete(owner)?;
+        table.delete(emitter)?;
+        Ok(())
+    })
 }

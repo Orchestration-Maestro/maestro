@@ -5,15 +5,16 @@ interface guest {
     use host.{theme};
     /// Renderer input with owned theme and complete message document.
     record render-request { message: string, expanded: bool, theme: theme }
-    /// Retained authored component, owned by the receiving host.
-    resource component-view {
-        render: async func(width: u32, emitter: borrow<callback-emitter>) -> result<list<string>, string>;
-        handle-input: async func(data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
-        wants-key-release: async func(emitter: borrow<callback-emitter>) -> result<bool, string>;
-        invalidate: async func(emitter: borrow<callback-emitter>) -> result<_, string>;
-    }
-    /// Runs a synchronous renderer and transfers its returned component.
-    invoke-renderer: async func(handler: borrow<callback>, request: render-request, emitter: borrow<callback-emitter>) -> result<option<component-view>, string>;
+    /// Renders one retained authored component.
+    component-render: async func(handler: borrow<callback>, width: u32, emitter: borrow<callback-emitter>) -> result<list<string>, string>;
+    /// Delivers input to one retained authored component.
+    component-handle-input: async func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Reads the key-release preference of one retained authored component.
+    component-wants-key-release: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<bool, string>;
+    /// Invalidates one retained authored component.
+    component-invalidate: async func(handler: borrow<callback>, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Runs a synchronous renderer and transfers the identity of its returned component.
+    invoke-renderer: async func(handler: borrow<callback>, request: render-request, emitter: borrow<callback-emitter>) -> result<option<callback>, string>;
 
     invoke-setup: async func(handler: borrow<callback>, writer: session-manager) -> result<_, string>;
     use host.{autocomplete-item, callback-emitter, tool-update, session-manager, callback, abort-signal, context, command-context, replaced-session-context};

@@ -13,7 +13,7 @@ pub(crate) struct Completion(Arc<Mutex<Option<Operands>>>);
 /// Strong operands are releasable even if Wasmtime retains the invocation future.
 struct Operands {
     /// Original Store receiver, not a second release dispatcher.
-    calls: UnboundedSender<Call>,
+    calls: Option<UnboundedSender<Call>>,
     /// Native owners remain admitted until completion, including cancelled callers.
     retained: Vec<Box<dyn Send>>,
 }
@@ -21,7 +21,14 @@ impl Completion {
     /// Retains admission only until the once-only completion operation.
     pub(crate) fn new(calls: UnboundedSender<Call>) -> Self {
         Self(Arc::new(Mutex::new(Some(Operands {
-            calls,
+            calls: Some(calls),
+            retained: Vec::new(),
+        }))))
+    }
+    /// Releases operands without announcing activity the Store driver never admitted.
+    pub(crate) fn local() -> Self {
+        Self(Arc::new(Mutex::new(Some(Operands {
+            calls: None,
             retained: Vec::new(),
         }))))
     }
@@ -54,7 +61,9 @@ impl Completion {
         let operands = self.operands().take();
         if let Some(Operands { calls, retained }) = operands {
             drop(retained);
-            let _ = calls.send(Call::Finished);
+            if let Some(calls) = calls {
+                let _ = calls.send(Call::Finished);
+            }
         }
     }
 }

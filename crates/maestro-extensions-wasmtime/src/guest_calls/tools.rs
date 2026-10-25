@@ -71,13 +71,13 @@ impl Handle {
         emitter: EmitterEndpoint,
     ) -> Result<Value, String> {
         let args = serde_json::to_string(args).map_err(|error| error.to_string())?;
-        let result = self.0.endpoint.replies.synchronous(registry, |reply| {
-            self.send_tool(ToolCall::Prepare {
+        let result = self.0.endpoint.synchronous(registry, |reply| {
+            Ok(Call::Tool(ToolCall::Prepare {
                 handler: self.clone(),
                 args,
                 emitter,
                 reply,
-            })
+            }))
         })?;
         crate::writer_reads::decode(&result)
     }
@@ -92,11 +92,6 @@ impl Handle {
             let params = serde_json::to_string(&params).map_err(|error| error.to_string());
             Box::pin(invoke_tool(self.clone(), id, params, resources))
         })
-    }
-
-    /// Submits to the same original Store queue as all other retained callbacks.
-    fn send_tool(&self, call: ToolCall) -> Result<(), String> {
-        self.0.endpoint.send(Call::Tool(call))
     }
 }
 

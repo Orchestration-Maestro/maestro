@@ -10,7 +10,7 @@ use wasmtime::component::ResourceAny;
 
 impl Call {
     /// Transfers every admitting operand before Wasmtime can retain the task.
-    pub(super) fn admitted(self, completion: &Completion) -> Call<Callback, ResourceAny> {
+    pub(crate) fn admitted(self, completion: &Completion) -> Call<Callback, ResourceAny> {
         match self {
             Self::Start(reply) => Call::Start(reply),
             Self::Finished => Call::Finished,
@@ -77,17 +77,17 @@ fn registered(call: RegisteredCall, completion: &Completion) -> RegisteredCall<C
     }
 }
 
-/// Transfers guest-resource ownership while preserving each component method.
-fn component(call: ComponentCall, completion: &Completion) -> ComponentCall<ResourceAny> {
+/// Transfers callback ownership while preserving each component method.
+fn component(call: ComponentCall, completion: &Completion) -> ComponentCall<Callback> {
     match call {
         ComponentCall::Render(owner, width, emitter, reply) => {
-            ComponentCall::Render(completion.resource(owner), width, emitter, reply)
+            ComponentCall::Render(completion.callback(owner), width, emitter, reply)
         }
         ComponentCall::Unit(owner, method, emitter, reply) => {
-            ComponentCall::Unit(completion.resource(owner), method, emitter, reply)
+            ComponentCall::Unit(completion.callback(owner), method, emitter, reply)
         }
         ComponentCall::WantsKeyRelease(owner, emitter, reply) => {
-            ComponentCall::WantsKeyRelease(completion.resource(owner), emitter, reply)
+            ComponentCall::WantsKeyRelease(completion.callback(owner), emitter, reply)
         }
     }
 }

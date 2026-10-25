@@ -41,17 +41,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
                 .registration(|reply| Request::Renderer(name, handler, reply)),))
         },
     )?;
-    host.func_wrap(
-        "register-tool",
-        |mut store: StoreContextMut<'_, T>,
-         (metadata, prepare, execute): (String, Option<Resource<Callback>>, Resource<Callback>)| {
-            let prepare = callback_imports::optional(store.data_mut(), prepare.as_ref())?;
-            let execute = callback_imports::retain(store.data_mut(), &execute)?;
-            Ok((store.data().api().registration(|reply| Request::Tool {
-                metadata, prepare, execute, reply,
-            }),))
-        },
-    )?;
+    add_tool(host)?;
     host.func_wrap(
         "register-command",
         |mut store: StoreContextMut<'_, T>,
@@ -78,6 +68,26 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
                 handler,
                 reply,
             }),))
+        },
+    )?;
+    Ok(())
+}
+
+/// Installs tool registration, whose native tool refresh may call back into this instance.
+fn add_tool<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "register-tool",
+        |mut store: StoreContextMut<'_, T>,
+         (metadata, prepare, execute): (String, Option<Resource<Callback>>, Resource<Callback>)| {
+            let prepare = callback_imports::optional(store.data_mut(), prepare.as_ref())?;
+            let execute = callback_imports::retain(store.data_mut(), &execute)?;
+            let route = store.data().api().routed_registration(|reply| Request::Tool {
+                metadata,
+                prepare,
+                execute,
+                reply,
+            });
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
     Ok(())

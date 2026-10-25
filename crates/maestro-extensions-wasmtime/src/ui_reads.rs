@@ -79,4 +79,10 @@ impl crate::read_imports::ReadEndpoint for Endpoint {
     ) -> Result<T, String> {
         self.0.request(|id, reply| Message::Ui(id, request(reply)))
     }
+    fn route(
+        &self,
+        request: impl FnOnce(Sender<Result<(), String>>) -> Request,
+    ) -> crate::import_route::Route {
+        self.0.route(|id, reply| Message::Ui(id, request(reply)))
+    }
 }

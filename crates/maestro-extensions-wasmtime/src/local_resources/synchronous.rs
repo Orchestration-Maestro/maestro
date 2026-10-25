@@ -75,12 +75,6 @@ impl Registry {
             .pump
             .upgrade()
             .ok_or_else(|| "extension resource owner ended".to_owned())?;
-        if pump.store_blocked.get() {
-            return Err(
-                "extension cannot be re-entered while it waits for a synchronous host call"
-                    .to_owned(),
-            );
-        }
         let requests = self
             .requests
             .upgrade()
@@ -124,5 +118,28 @@ impl State {
                 Poll::Pending => std::thread::park(),
             }
         }
+    }
+}
+
+impl Registry {
+    /// Hands a synchronous target to the native operation that currently owns this instance,
+    /// or submits it to the Store when no operation does.
+    pub(crate) fn dispatch(
+        &self,
+        endpoint: &crate::lifecycle::StoreEndpoint,
+        call: crate::guest_calls::Call,
+    ) -> Result<(), String> {
+        let route = self
+            .pump
+            .upgrade()
+            .and_then(|pump| pump.routes.borrow().last().cloned());
+        let Some(route) = route else {
+            return endpoint.send(call);
+        };
+        let completion = crate::lifecycle::completion::Completion::local();
+        call.before(&completion);
+        route
+            .send((call.admitted(&completion), completion))
+            .map_err(|_| "extension native operation ended".to_owned())
     }
 }
