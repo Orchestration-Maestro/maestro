@@ -8,7 +8,7 @@ session events with the working row and the streamed transcript rows, the window
 title, the extension controls of that row and of the hidden-thinking label, the
 expansion and thinking shortcuts, thinking and model cycling, model selection and
 scopes, the editor border, external editing, image paste, compaction and retry
-progress. Installed custom headers, a requested shutdown and the other integrations
+progress and native shutdown. Installed custom headers and the other integrations
 are still to come.
 [Interactive commands](commands.md) describes the session command methods.
 
@@ -34,7 +34,9 @@ fallback theme is returned.
 ## Startup
 
 `init` does nothing while the mode is initialized. After `stop`, it runs again.
-It builds the header, then adds the header, transcript, pending-messages, status,
+Before building the header, it installs termination and output-error handlers. Unix
+initialization runs on a caller-driven Tokio local executor with signal delivery
+enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
 upper widget, editor and lower widget containers and the footer, in that order. The upper widget container starts with
 one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
@@ -58,10 +60,11 @@ Header text keeps the colours of the theme in effect when it was built.
 
 ## Stopping the presentation
 
-`stop` clears terminal progress when enabled, stops and releases the working
-loader, clears extension terminal input listeners, disposes the footer and its
-repository watch, removes the session subscription, and stops the UI if initialized.
-Unrelated terminal listeners stay registered. The status container keeps its
+`stop` removes lifecycle handlers, clears terminal progress when enabled, stops
+and releases the working loader, clears extension terminal input listeners,
+disposes the footer and its repository watch, removes the session subscription,
+and stops the UI if initialized. Unrelated terminal listeners stay registered.
+The status container keeps its
 rows. A later session event no longer restarts this presentation, and the shared
 theme watch stays active.
 
@@ -71,8 +74,33 @@ initialized; only a successful UI stop clears that flag. Reinitialization does
 not restore cleared extension callbacks. The original I/O error is returned.
 Repeating a successful stop does not stop the
 absent loader or UI again. This operation does not dispose the application
-runtime, terminate the process or kill detached children. Signal handling and
-key-triggered shutdown are not connected yet.
+runtime, terminate the process or kill detached children. The registered `app.clear` action clears the editor and requests a frame. A second
+press less than 500 ms after the last clear starts graceful shutdown; exactly
+500 ms clears again. Only the clear branch updates that wall-clock timestamp.
+`app.exit` starts the same shutdown only when the editor is empty. Both actions
+honor configured bindings (by default Ctrl+C and Ctrl+D), preserve editor history
+and do not add signal-only detached-child cleanup.
+
+## Native shutdown
+
+On Unix, TERM kills tracked detached children, then starts graceful shutdown. The
+mode removes its handlers and drains terminal input with the existing 1,000 ms
+maximum and default 50 ms idle period. It stops the presentation, awaits application
+disposal and exits 0. Admission happens before asynchronous work is scheduled;
+repeated requests do not repeat shutdown. A drain, progress, UI-stop or disposal
+failure ends that sequence without a successful exit.
+
+HUP and native stdout/stderr disconnection errors take the emergency route:
+remove handlers, kill tracked children and exit 129, without draining, restoring
+the terminal or disposing the application runtime. EIO, broken-pipe and
+not-connected errors select this route; input errors and other output errors
+keep their existing handling. During graceful disposal, a second termination or
+hangup signal takes its native default action. Windows console-close integration
+is not provided by this mode.
+
+At agent end, a requested shutdown follows transient-row cleanup through this
+same graceful owner instead of requesting a final frame. Extension request
+producers are not connected yet.
 
 ## Loaded resources
 
@@ -228,7 +256,7 @@ fails after the prompt was accepted stays a session event; the mode adds no noti
 for it.
 
 Still to come: rendering the session's events in the transcript, queued input,
-commands, rebinding the presentation to a replaced session, shutdown, update
+commands, rebinding the presentation to a replaced session, update
 notices and the startup check of subscription-based credentials.
 
 ## Session replay
@@ -357,7 +385,8 @@ The agent's events drive the working row and the transcript:
   null;
 - an agent end clears terminal progress when `terminal.showTerminalProgress` is set,
   stops the working row and empties the status rows, removes an unfinished
-  streaming row and forgets the registered calls; completed rows stay.
+  streaming row and forgets the registered calls; completed rows stay. A requested
+  shutdown then runs through the graceful owner; otherwise the mode requests a frame.
 
 Rows change in place, so each frame rewrites only from its first changed row.
 

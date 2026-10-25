@@ -76,6 +76,10 @@ pub struct InteractiveModeOptions {
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {
+    /// Whether an extension requested graceful shutdown after the agent finishes.
+    pub(crate) shutdown_requested: Cell<bool>,
+    /// Retained exit state and native registration ownership.
+    lifecycle: lifecycle::LifecycleState,
     /// Bound extension input registrations and their cleanup operations.
     extension_input: extension_ui::input::ExtensionInput,
     /// Live keyed widgets above the editor.
@@ -182,11 +186,11 @@ impl InteractiveMode {
             operations.clone(),
         );
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
-        themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = settings.borrow().get_theme();
-        themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
+        let hide_thinking = init_theme(&session, &themes, &operations)?;
         Ok(Rc::new_cyclic(|this| Self {
+            shutdown_requested: Cell::new(false),
             this: this.clone(),
+            lifecycle: lifecycle::LifecycleState::default(),
             extension_input: extension_ui::input::ExtensionInput::default(),
             extension_widgets_above: maestro_app::Live::new(),
             extension_widgets_below: maestro_app::Live::new(),
@@ -211,7 +215,7 @@ impl InteractiveMode {
             built_in_header: RefCell::default(),
             tool_environment,
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(settings.borrow().get_hide_thinking_block()),
+            hide_thinking_block: Cell::new(hide_thinking),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
@@ -227,7 +231,7 @@ impl InteractiveMode {
         }))
     }
 
-    /// Selects unseen release history before starting the terminal, builds the header,
+    /// Selects unseen release history, installs lifecycle handlers, builds the header,
     /// adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission and the global debug key, starts
     /// the terminal, lists the loaded resources with their diagnostics, shows selected
@@ -236,6 +240,7 @@ impl InteractiveMode {
     /// changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.
+    /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
@@ -245,6 +250,7 @@ impl InteractiveMode {
             return Ok(());
         }
         *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
+        self.register_signal_handlers()?;
         self.build_header()?;
         self.render_widgets();
         for child in [
@@ -370,4 +376,20 @@ fn create_footer(
     ));
     footer.set_auto_compact_enabled(auto_compact);
     Ok(footer)
+}
+
+/// Registers loaded themes, selects the configured theme, then reads thinking visibility.
+///
+/// # Errors
+/// Returns the theme selection failure.
+fn init_theme(
+    session: &AgentSession,
+    themes: &Rc<ThemeState>,
+    operations: &Rc<dyn FooterOperations>,
+) -> Result<bool, Box<dyn Error>> {
+    themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
+    let settings = session.settings_manager();
+    let selected = settings.borrow().get_theme();
+    themes.init_theme(selected.as_deref(), Some(operations.clone()))?;
+    Ok(settings.borrow().get_hide_thinking_block())
 }

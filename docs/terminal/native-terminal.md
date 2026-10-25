@@ -70,6 +70,11 @@ Tokio runtime with the time driver enabled.
 Dropping the set drops the work still pending. The host's own tasks hold no handle to the
 host; callers release any strong handle their callbacks capture.
 
+The interactive mode installs termination and output-error handlers before starting
+this terminal. Its Unix signal registrations share the process owner's native
+default lifetime: the final removal restores TERM/HUP defaults, including while
+application disposal is pending. See [interactive shutdown](../chat/interactive-mode.md#native-shutdown).
+
 ## Starting and stopping
 
 `new` reads the size of standard output and the write-log setting and does nothing else.

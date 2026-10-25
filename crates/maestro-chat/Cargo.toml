@@ -33,8 +33,15 @@ path = "tests/integration.rs"
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 futures-util = { workspace = true, features = ["async-await"] }
 maestro-models = { path = "../maestro-models" }
+maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [lints]
 workspace = true
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "=1.1.5", default-features = false, features = ["std"] }
+
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { version = "=1.1.5", default-features = false, features = ["std", "process", "stdio", "pipe"] }
