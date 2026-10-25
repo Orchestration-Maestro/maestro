@@ -357,11 +357,11 @@ fn removed(world: &World, expected: &Removed) {
 #[test]
 fn logout_options_keep_saved_kinds_and_stable_names() {
     const TEST: &str = "logout_options_keep_saved_kinds_and_stable_names";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (index, (input, expected)) in cases::<Listing, Listed>(TEST).into_iter().enumerate() {
             assert!(!input.case.is_empty());
             let auth = document_store(directory, index, &input.stored);
-            let world = started_with(directory, Some(auth));
+            let world = started_with(directory, Some(auth)).await;
             for provider in &input.configured {
                 register_one(&world, provider);
             }
@@ -406,9 +406,9 @@ fn logout_options_keep_saved_kinds_and_stable_names() {
 #[test]
 fn logout_empty_command_restores_editor_and_reports_scope() {
     const TEST: &str = "logout_empty_command_restores_editor_and_reports_scope";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Submission, Admitted>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             if input.saved {
                 saved_credential(&world);
             }
@@ -472,9 +472,9 @@ fn status_notice() -> String {
 #[test]
 fn logout_selection_removes_only_chosen_saved_credential() {
     const TEST: &str = "logout_selection_removes_only_chosen_saved_credential";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -503,9 +503,9 @@ fn logout_selection_removes_only_chosen_saved_credential() {
 #[test]
 fn logout_count_uses_scoped_or_available_candidates() {
     const TEST: &str = "logout_count_uses_scoped_or_available_candidates";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -518,9 +518,9 @@ fn logout_count_uses_scoped_or_available_candidates() {
 #[test]
 fn logout_selection_uses_current_session_with_captured_choice() {
     const TEST: &str = "logout_selection_uses_current_session_with_captured_choice";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = replaceable(directory);
+            let world = replaceable(directory).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -628,9 +628,9 @@ fn refuse_after(world: &World, succeeds: usize) {
 #[test]
 fn logout_failures_keep_reached_effects_and_restore_focus() {
     const TEST: &str = "logout_failures_keep_reached_effects_and_restore_focus";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -648,10 +648,10 @@ fn logout_failures_keep_reached_effects_and_restore_focus() {
 #[test]
 fn logout_unavailable_candidates_set_zero_without_error() {
     const TEST: &str = "logout_unavailable_candidates_set_zero_without_error";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
             assert_eq!(input.case.as_str(), "available-failure");
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -665,11 +665,11 @@ fn logout_unavailable_candidates_set_zero_without_error() {
 #[test]
 fn logout_persistence_failure_remains_a_store_diagnostic() {
     const TEST: &str = "logout_persistence_failure_remains_a_store_diagnostic";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
             assert_eq!(input.case.as_str(), "write-failure");
             let auth = document_store(directory, 0, &input.stored);
-            let world = started_with(directory, Some(Arc::clone(&auth)));
+            let world = started_with(directory, Some(Arc::clone(&auth))).await;
             let root = directory.join("store0");
             let Some(_restored) =
                 maestro_test_directory::deny(root.join("auth.json"), 0o400).unwrap()
@@ -704,9 +704,9 @@ fn logout_persistence_failure_remains_a_store_diagnostic() {
 #[test]
 fn logout_cancel_keeps_saved_credentials_and_restores_editor() {
     const TEST: &str = "logout_cancel_keeps_saved_credentials_and_restores_editor";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let panel = open(&world);
             world.terminal.clear_writes();
@@ -729,41 +729,44 @@ fn logout_cancel_keeps_saved_credentials_and_restores_editor() {
 
 #[test]
 fn logout_callbacks_do_not_retain_the_mode() {
-    isolated("logout_callbacks_do_not_retain_the_mode", |directory| {
-        let world = started_with(directory, None);
-        register_one(
-            &world,
-            &Provider {
-                id: "a".into(),
-                models: vec!["one".into()],
-                name: None,
-                key: true,
-                oauth_only: false,
-            },
-        );
-        store_key(&world, "a");
-        let panel = open(&world);
-        let mode = Rc::downgrade(&world.mode);
-        let World {
-            mode: owned,
-            runtime,
-            ..
-        } = world;
-        assert!(mode.upgrade().is_some());
-        panel.handle_input("\r").unwrap();
-        assert_eq!(runtime.futures(), 1, "the admitted removal owns the mode");
-        drop(owned);
-        assert!(
-            mode.upgrade().is_some(),
-            "admitted work keeps the mode until it settles"
-        );
-        assert!(runtime.drain_futures().is_empty());
-        assert!(
-            mode.upgrade().is_none(),
-            "the settled work releases the mode"
-        );
-        panel.handle_input("\r").unwrap();
-        panel.handle_input("\x1b").unwrap();
-        assert_eq!(runtime.futures(), 0, "the retained callbacks start nothing");
-    });
+    isolated(
+        "logout_callbacks_do_not_retain_the_mode",
+        async |directory| {
+            let world = started_with(directory, None).await;
+            register_one(
+                &world,
+                &Provider {
+                    id: "a".into(),
+                    models: vec!["one".into()],
+                    name: None,
+                    key: true,
+                    oauth_only: false,
+                },
+            );
+            store_key(&world, "a");
+            let panel = open(&world);
+            let mode = Rc::downgrade(&world.mode);
+            let World {
+                mode: owned,
+                runtime,
+                ..
+            } = world;
+            assert!(mode.upgrade().is_some());
+            panel.handle_input("\r").unwrap();
+            assert_eq!(runtime.futures(), 1, "the admitted removal owns the mode");
+            drop(owned);
+            assert!(
+                mode.upgrade().is_some(),
+                "admitted work keeps the mode until it settles"
+            );
+            assert!(runtime.drain_futures().is_empty());
+            assert!(
+                mode.upgrade().is_none(),
+                "the settled work releases the mode"
+            );
+            panel.handle_input("\r").unwrap();
+            panel.handle_input("\x1b").unwrap();
+            assert_eq!(runtime.futures(), 0, "the retained callbacks start nothing");
+        },
+    );
 }

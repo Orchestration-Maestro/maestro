@@ -14,11 +14,11 @@ use std::{
 fn terminal_input_reuses_callback_identity_across_repeated_registration() {
     isolated(
         "terminal_input_reuses_callback_identity_across_repeated_registration",
-        |directory| {
+        async |directory| {
             let calls = Rc::new(Cell::new(0));
             let seen = calls.clone();
             let (world, mut handlers) =
-                with_factories(directory, move |api| vec![counting(api, seen.clone())]);
+                with_factories(directory, move |api| vec![counting(api, seen.clone())]).await;
             let host = port(&world.mode);
             let handler = handlers.pop().unwrap();
             let first = host.on_terminal_input(handler.clone()).unwrap();
@@ -51,7 +51,7 @@ fn terminal_input_reuses_callback_identity_across_repeated_registration() {
 fn terminal_input_pass_replace_and_consume_reach_the_focused_editor() {
     isolated(
         "terminal_input_pass_replace_and_consume_reach_the_focused_editor",
-        |directory| {
+        async |directory| {
             for (decision, routed, edited) in [
                 (0, vec!["raw", "after"], "rawafter"),
                 (1, vec!["changed", "after"], "changedafter"),
@@ -59,7 +59,7 @@ fn terminal_input_pass_replace_and_consume_reach_the_focused_editor() {
                 (3, vec!["after"], "after"),
             ] {
                 let (world, mut handlers) =
-                    with_factories(directory, move |api| vec![decided(api, decision)]);
+                    with_factories(directory, move |api| vec![decided(api, decision)]).await;
                 let remove = port(&world.mode)
                     .on_terminal_input(handlers.pop().unwrap())
                     .unwrap();
@@ -84,7 +84,7 @@ fn terminal_input_pass_replace_and_consume_reach_the_focused_editor() {
 fn terminal_input_failure_reports_once_without_forwarding_the_chunk() {
     isolated(
         "terminal_input_failure_reports_once_without_forwarding_the_chunk",
-        |directory| {
+        async |directory| {
             let address = Rc::new(Cell::new(0));
             let captured = address.clone();
             let (world, mut handlers) = with_factories(directory, move |api| {
@@ -95,7 +95,8 @@ fn terminal_input_failure_reports_once_without_forwarding_the_chunk() {
                     captured.set(std::ptr::from_ref(&*error).cast::<()>().addr());
                     Err(error)
                 })]
-            });
+            })
+            .await;
             let remove = port(&world.mode)
                 .on_terminal_input(handlers.pop().unwrap())
                 .unwrap();
@@ -131,12 +132,13 @@ fn terminal_input_failure_reports_once_without_forwarding_the_chunk() {
 fn terminal_input_cleanup_removes_every_remaining_subscription() {
     isolated(
         "terminal_input_cleanup_removes_every_remaining_subscription",
-        |directory| {
+        async |directory| {
             let calls = Rc::new(Cell::new(0));
             let output = calls.clone();
             let (world, mut handlers) = with_factories(directory, move |api| {
                 (0..2).map(|_| counting(api, output.clone())).collect()
-            });
+            })
+            .await;
             let host = port(&world.mode);
             let first = host.on_terminal_input(handlers.pop().unwrap()).unwrap();
             let second = host.on_terminal_input(handlers.pop().unwrap()).unwrap();
@@ -163,30 +165,34 @@ fn terminal_input_cleanup_removes_every_remaining_subscription() {
 
 #[test]
 fn terminal_input_cleanup_has_linear_work() {
-    isolated("terminal_input_cleanup_has_linear_work", |directory| {
-        for count in [32, 64, 128] {
-            let capture = Rc::new(Cell::new(0));
-            let weak = Rc::downgrade(&capture);
-            let (world, handlers) = with_factories(directory, move |api| {
-                (0..count).map(|_| counting(api, capture.clone())).collect()
-            });
-            for handler in handlers {
-                drop(port(&world.mode).on_terminal_input(handler).unwrap());
+    isolated(
+        "terminal_input_cleanup_has_linear_work",
+        async |directory| {
+            for count in [32, 64, 128] {
+                let capture = Rc::new(Cell::new(0));
+                let weak = Rc::downgrade(&capture);
+                let (world, handlers) = with_factories(directory, move |api| {
+                    (0..count).map(|_| counting(api, capture.clone())).collect()
+                })
+                .await;
+                for handler in handlers {
+                    drop(port(&world.mode).on_terminal_input(handler).unwrap());
+                }
+                assert!(weak.upgrade().is_some());
+                let calls = Rc::new(Cell::new(0));
+                let unrelated = world.mode.ui.add_input_listener(observing(calls.clone()));
+                world.mode.extension_input.clear();
+                assert!(
+                    weak.upgrade().is_none(),
+                    "cleanup releases every captured owner"
+                );
+                world.terminal.send_input("kept");
+                assert_eq!(calls.get(), 1);
+                assert_eq!(world.mode.editor.get_text(), "kept");
+                unrelated();
             }
-            assert!(weak.upgrade().is_some());
-            let calls = Rc::new(Cell::new(0));
-            let unrelated = world.mode.ui.add_input_listener(observing(calls.clone()));
-            world.mode.extension_input.clear();
-            assert!(
-                weak.upgrade().is_none(),
-                "cleanup releases every captured owner"
-            );
-            world.terminal.send_input("kept");
-            assert_eq!(calls.get(), 1);
-            assert_eq!(world.mode.editor.get_text(), "kept");
-            unrelated();
-        }
-    });
+        },
+    );
 }
 
 /// A bound callback that counts the chunks reaching it.
@@ -211,11 +217,11 @@ fn decided(api: &ExtensionAPI<Local>, decision: u8) -> TerminalInputHandler {
 fn terminal_input_mode_drop_removes_only_extension_listeners() {
     isolated(
         "terminal_input_mode_drop_removes_only_extension_listeners",
-        |directory| {
+        async |directory| {
             let calls = Rc::new(Cell::new(0));
             let weak_capture = Rc::downgrade(&calls);
             let (world, mut handlers) =
-                with_factories(directory, move |api| vec![counting(api, calls.clone())]);
+                with_factories(directory, move |api| vec![counting(api, calls.clone())]).await;
             drop(
                 port(&world.mode)
                     .on_terminal_input(handlers.pop().unwrap())
@@ -278,18 +284,27 @@ impl Drop for InputRelease {
 fn stopping_the_mode_clears_only_extension_input_listeners() {
     isolated(
         "stopping_the_mode_clears_only_extension_input_listeners",
-        |directory| {
+        async |directory| {
             for initialized in [false, true] {
                 for count in [0, 3] {
-                    stop_input_case(directory, initialized, count);
+                    stop_input_case(directory, initialized, count).await;
                 }
             }
         },
     );
 }
 
+/// Retains the cleanup observation until the registered input callback is released.
+fn retained_input(api: &ExtensionAPI<Local>, capture: &Rc<InputRelease>) -> TerminalInputHandler {
+    let capture = capture.clone();
+    api.ui_callback(move |_, _| {
+        let _ = &capture;
+        Ok(InputListenerResult::Pass)
+    })
+}
+
 /// Checks capture release between the current loader and footer/UI owners.
-fn stop_input_case(directory: &Path, initialized: bool, count: usize) {
+async fn stop_input_case(directory: &Path, initialized: bool, count: usize) {
     let footer = Rc::new(Cell::new(0));
     let capture = Rc::new(InputRelease {
         mode: RefCell::default(),
@@ -298,16 +313,9 @@ fn stop_input_case(directory: &Path, initialized: bool, count: usize) {
     });
     let retained = Rc::downgrade(&capture);
     let (world, mut handlers) = with_factories(directory, move |api| {
-        (0..count)
-            .map(|_| {
-                let capture = capture.clone();
-                api.ui_callback(move |_, _| {
-                    let _ = &capture;
-                    Ok(InputListenerResult::Pass)
-                })
-            })
-            .collect()
-    });
+        (0..count).map(|_| retained_input(api, &capture)).collect()
+    })
+    .await;
     if !initialized {
         world.mode.stop().unwrap();
     }
@@ -344,7 +352,7 @@ fn stop_input_case(directory: &Path, initialized: bool, count: usize) {
         "stop releases extension captures"
     );
     world.mode.stop().unwrap();
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.terminal.send_input("kept");
     assert_eq!(calls.get(), 1);
     assert_eq!(world.mode.editor.get_text(), "kept");
@@ -355,11 +363,11 @@ fn stop_input_case(directory: &Path, initialized: bool, count: usize) {
 fn stopping_the_mode_keeps_input_clear_after_reinitialize() {
     isolated(
         "stopping_the_mode_keeps_input_clear_after_reinitialize",
-        |directory| {
+        async |directory| {
             let calls = Rc::new(Cell::new(0));
             let seen = calls.clone();
             let (world, mut handlers) =
-                with_factories(directory, move |api| vec![counting(api, seen.clone())]);
+                with_factories(directory, move |api| vec![counting(api, seen.clone())]).await;
             let handler = handlers.pop().unwrap();
             let host = port(&world.mode);
             let old = host.on_terminal_input(handler.clone()).unwrap();
@@ -369,7 +377,7 @@ fn stopping_the_mode_keeps_input_clear_after_reinitialize() {
                 .ui
                 .add_input_listener(observing(independent.clone()));
             world.mode.stop().unwrap();
-            world.mode.init().unwrap();
+            world.mode.init().await.unwrap();
             world.terminal.send_input("a");
             assert_eq!(
                 calls.get(),
@@ -402,12 +410,13 @@ fn stopping_the_mode_keeps_input_clear_after_reinitialize() {
 fn stopping_the_mode_preserves_input_cleanup_failure_order() {
     isolated(
         "stopping_the_mode_preserves_input_cleanup_failure_order",
-        |directory| {
+        async |directory| {
             for progress_failure in [true, false] {
                 let capture = Rc::new(Cell::new(0));
                 let retained = Rc::downgrade(&capture);
                 let (world, mut handlers) =
-                    with_factories(directory, move |api| vec![counting(api, capture.clone())]);
+                    with_factories(directory, move |api| vec![counting(api, capture.clone())])
+                        .await;
                 world
                     .host
                     .session()
@@ -448,7 +457,7 @@ fn stopping_the_mode_preserves_input_cleanup_failure_order() {
                 world.terminal.set_stop_error(None);
                 world.mode.stop().unwrap();
                 assert!(retained.upgrade().is_none());
-                world.mode.init().unwrap();
+                world.mode.init().await.unwrap();
                 world.terminal.send_input("after");
                 assert_eq!(
                     world.mode.editor.get_text(),

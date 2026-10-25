@@ -13,12 +13,14 @@ use maestro_tui::tui::{TerminalHandle, TuiRuntime};
 use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
 use std::{
     cell::{Cell, RefCell},
+    collections::VecDeque,
     error::Error,
     rc::{Rc, Weak},
 };
 
 mod actions;
 mod authentication;
+mod autocomplete;
 mod bash;
 mod compaction_queue;
 mod debug;
@@ -106,6 +108,10 @@ pub struct InteractiveMode {
     startup_notices_shown: Cell<bool>,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
+    /// Events waiting for the presentation to initialize, in arrival order.
+    pending_events: RefCell<VecDeque<maestro_app::AgentSessionEvent>>,
+    /// Whether the one initialization continuation is still delivering events.
+    event_initialization_pending: Cell<bool>,
     /// The expandable startup help, absent when startup is quiet.
     built_in_header: RefCell<Option<Rc<startup::ExpandableText>>>,
     /// The runtime, theme, highlighter and image support shared by transcript rows.
@@ -126,6 +132,8 @@ pub struct InteractiveMode {
     pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// The selected search program for file completion, absent until startup prepares it.
+    fd_path: RefCell<Option<String>>,
     /// Whether this mode has shown the subscription billing notice.
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
@@ -194,8 +202,11 @@ impl InteractiveMode {
             changelog_markdown: RefCell::default(),
             startup_notices_shown: Cell::new(false),
             is_initialized: Cell::new(false),
+            pending_events: RefCell::default(),
+            event_initialization_pending: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
+            fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking),
             last_status: RefCell::default(),
@@ -213,7 +224,8 @@ impl InteractiveMode {
         }))
     }
 
-    /// Selects unseen release history, installs lifecycle handlers, builds the header,
+    /// Installs lifecycle handlers, selects unseen release history, prepares search
+    /// programs and completion, then builds the header,
     /// adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission and the global debug key, starts
     /// the terminal, lists the loaded resources with their diagnostics, shows selected
@@ -225,14 +237,16 @@ impl InteractiveMode {
     /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start, of the
-    /// resource listing, of the replay or of the catalog refresh.
-    pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+    /// Returns a failure of lifecycle registration, the managed binary directory, the
+    /// header's theme colours, terminal start, resource listing, replay or catalog refresh.
+    pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
-        *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
         self.register_signal_handlers()?;
+        *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
+        self.prepare_search_tools().await?;
+        self.setup_autocomplete_provider();
         self.build_header()?;
         self.render_widgets();
         for child in [

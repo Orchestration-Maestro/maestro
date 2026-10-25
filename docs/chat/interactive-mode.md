@@ -33,10 +33,12 @@ fallback theme is returned.
 
 ## Startup
 
-`init` does nothing while the mode is initialized. After `stop`, it runs again.
-Before building the header, it installs termination and output-error handlers. Unix
-initialization runs on a caller-driven Tokio local executor with signal delivery
-enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
+`init` is asynchronous. It installs termination and output-error handlers, selects
+startup history, then prepares both search programs and installs
+[completion](extension-ui.md#completion) before building the presentation.
+It does nothing while the mode is initialized. After `stop`, it runs again.
+Unix initialization runs on a caller-driven Tokio local executor with signal
+delivery enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
 upper widget, editor and lower widget containers and the footer, in that order. The upper widget container starts with
 one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
@@ -49,6 +51,12 @@ it lists the loaded resources and their diagnostics in the transcript, shows the
 [startup history](startup.md#startup-history) once, and replays the session (see
 below). The history selection and version recording happen before building the
 header, even if starting the terminal later fails.
+
+The search programs are `fd` and `rg`. Both start before either finishes, so a missing
+program does not delay the other. `fd` stays selected for file completion. The managed
+directory is the application's agent directory under `bin`, never the session's
+working directory. The search owner writes its own progress and advice lines, before
+the terminal takes the screen.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the
@@ -227,7 +235,7 @@ and `/copyx` reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
-`run` initializes the mode and starts the [independent startup checks](startup.md#independent-startup-checks),
+`run` awaits initialization before starting the [independent startup checks](startup.md#independent-startup-checks),
 then shows the startup warnings, sends the startup prompts and keeps sending typed prompts. It never finishes on its own. It returns only an
 initialization failure or a failure to show a notice.
 
@@ -340,13 +348,14 @@ in them goes to the terminal runtime's error route.
 
 One listener carries the session's events into the mode. It is the session's own
 subscription, so the removal operation the session returns is kept for the
-lifecycle that ends it. Delivery is synchronous and borrowed: the mode handles
-each event before the producer returns, keeps no reference to itself through the
-listener, and enqueues no copy of the event. A failure goes to the terminal
-runtime's error route.
+lifecycle that ends it. The listener keeps only a weak mode handle. Events arriving
+before initialization completes wait in arrival order for one continuation on the
+supplied runtime. Once that queue is drained, delivery is synchronous and borrowed:
+the mode handles each event before the producer returns. A failure goes to the
+terminal runtime's error route; a failed event does not discard later events. A
+failed initialization releases its queued batch, and a later event tries again.
 
-An event that arrives before the presentation has started starts it first. Every
-event then invalidates the footer, which the footer does not cache. The events
+Every event then invalidates the footer, which the footer does not cache. The events
 that carry session metadata read the session's live state rather than the values
 the event carries:
 

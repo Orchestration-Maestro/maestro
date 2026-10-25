@@ -147,7 +147,7 @@ impl InteractiveMode {
     /// # Errors
     /// Returns an initialization or notice-presentation failure.
     pub async fn run(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
-        self.init()?;
+        self.init().await?;
         self.start_startup_checks();
         if !self.options.migrated_providers.is_empty() {
             self.show_warning(&format!(

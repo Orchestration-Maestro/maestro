@@ -118,7 +118,7 @@ async fn run_interactive(
     let benchmark = is_truthy_env_flag(request.startup_benchmark.as_deref());
     let mode = (launchers.interactive)(runtime, request.interactive_options)?;
     if benchmark {
-        Rc::clone(&mode).init()?;
+        Rc::clone(&mode).init().await?;
         output.timings.time("interactiveMode.init", output.now);
         output.timings.print_timings(output.stderr)?;
         mode.stop()?;

@@ -87,8 +87,8 @@ impl Recorder {
     }
 }
 impl InteractiveModeRunner for Recorder {
-    fn init(self: Rc<Self>) -> Result<(), Box<dyn Error>> {
-        Ok(self.call("init")?)
+    fn init(self: Rc<Self>) -> maestro_tui::tui::LocalFuture {
+        Box::pin(async move { Ok(self.call("init")?) })
     }
     fn run(self: Rc<Self>) -> maestro_tui::tui::LocalFuture {
         let result = self.call("run");

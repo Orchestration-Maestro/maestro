@@ -177,7 +177,7 @@ struct Expansion {
 #[test]
 fn transcript_expansion_reaches_active_header_and_expandable_rows() {
     let test = "transcript_expansion_reaches_active_header_and_expandable_rows";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Expansion, Transcript>(test) {
             let Expansion {
                 op,
@@ -306,7 +306,7 @@ struct Walked {
 #[test]
 fn transcript_expansion_keeps_the_captured_child_array_live() {
     let test = "transcript_expansion_keeps_the_captured_child_array_live";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Walk, Walked>(test) {
             assert_eq!(input.op, "walk");
             let (slot, rows, seen) = (Slot::default(), Rc::default(), Rc::default());
@@ -360,7 +360,7 @@ fn transcript_expansion_keeps_the_captured_child_array_live() {
 fn transcript_registered_toggle_actions_release_the_mode() {
     isolated(
         "transcript_registered_toggle_actions_release_the_mode",
-        |directory| {
+        async |directory| {
             let World {
                 mode,
                 terminal,
@@ -369,7 +369,7 @@ fn transcript_registered_toggle_actions_release_the_mode() {
                 ..
             } = recorded(directory, Setup::default());
             let world_theme = |_: &Rc<crate::InteractiveMode>| Rc::clone(&themes);
-            mode.init().unwrap();
+            mode.init().await.unwrap();
             runtime.settle().unwrap();
             terminal.send_input("\x0f");
             assert!(mode.tool_output_expanded.get());
@@ -481,7 +481,7 @@ struct UserInput {
 #[test]
 fn transcript_user_text_keeps_order_whitespace_and_history() {
     let test = "transcript_user_text_keeps_order_whitespace_and_history";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<UserInput, Transcript>(test) {
             assert_eq!(input.op, "user");
             let world = recorded(directory, Setup::default());
@@ -512,7 +512,7 @@ fn transcript_skill_block_and_trailing_user_keep_distinct_rows() {
     let test = "transcript_skill_block_and_trailing_user_keep_distinct_rows";
     let skill =
         "<skill name=\"build\" location=\"/skills/build/SKILL.md\">\nDo **work**.\n</skill>";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<SkillInput, Transcript>(test) {
             assert_eq!(input.op, "skill");
             let world = recorded(directory, Setup::default());
@@ -569,7 +569,7 @@ fn role(role: &str) -> Value {
 #[test]
 fn transcript_message_roles_use_existing_components() {
     let test = "transcript_message_roles_use_existing_components";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<RoleInput, Transcript>(test) {
             assert_eq!(input.op, "role");
             let world = recorded(directory, Setup::default());
@@ -624,7 +624,7 @@ fn rendering(outcome: String, calls: Rc<Cell<usize>>) -> ExtensionFactory<Local>
 #[test]
 fn transcript_custom_display_filters_before_renderer_lookup() {
     let test = "transcript_custom_display_filters_before_renderer_lookup";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<CustomInput, Transcript>(test) {
             assert_eq!(input.op, "custom");
             let calls = Rc::new(Cell::new(0));
@@ -663,7 +663,7 @@ struct StatusInput {
 #[test]
 fn transcript_status_reuses_only_the_adjacent_owned_pair() {
     let test = "transcript_status_reuses_only_the_adjacent_owned_pair";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<StatusInput, Transcript>(test) {
             assert_eq!(input.op, "status");
             let world = recorded(directory, Setup::default());
@@ -774,7 +774,7 @@ struct StopInput {
 #[test]
 fn transcript_failed_tool_calls_finish_with_the_exact_notice() {
     let test = "transcript_failed_tool_calls_finish_with_the_exact_notice";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<StopInput, Transcript>(test) {
             assert_eq!(input.op, "stop");
             if input.retry > 0 {
@@ -826,7 +826,7 @@ struct PairInput {
 #[test]
 fn transcript_replay_pairs_results_and_retains_only_unresolved_rows() {
     let test = "transcript_replay_pairs_results_and_retains_only_unresolved_rows";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<PairInput, Transcript>(test) {
             assert_eq!(input.op, "pair");
             let world = recorded(directory, Setup::default());
@@ -888,7 +888,7 @@ fn bordered(row: &str) -> String {
 #[test]
 fn transcript_initial_replay_updates_footer_history_and_compaction_notice() {
     let test = "transcript_initial_replay_updates_footer_history_and_compaction_notice";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<InitialInput, Transcript>(test) {
             assert_eq!(input.op, "initial");
             let world = recorded(directory, Setup::default());
@@ -959,7 +959,7 @@ struct ThinkingInput {
 #[test]
 fn transcript_thinking_toggle_rebuilds_pending_rows_and_keeps_streaming_tail() {
     let test = "transcript_thinking_toggle_rebuilds_pending_rows_and_keeps_streaming_tail";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<ThinkingInput, Transcript>(test) {
             assert_eq!((input.op.as_str(), input.streaming), ("thinking", false));
             let initial = input.initial;
@@ -974,7 +974,7 @@ fn transcript_thinking_toggle_rebuilds_pending_rows_and_keeps_streaming_tail() {
                 &world,
                 vec![user_record("HISTORY"), assistant(&content, "toolUse", None)],
             );
-            world.mode.init().unwrap();
+            world.mode.init().await.unwrap();
             world.runtime.settle().unwrap();
             let before = history(&world);
             world.terminal.send_input("\x14");
@@ -1018,7 +1018,7 @@ struct Bordered {
 #[test]
 fn transcript_footer_refresh_selects_the_current_mode_border() {
     let test = "transcript_footer_refresh_selects_the_current_mode_border";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<BorderInput, Bordered>(test) {
             assert_eq!(input.op, "border");
             let world = recorded(directory, Setup::default());
@@ -1052,7 +1052,7 @@ struct OptionsInput {
 #[test]
 fn transcript_replay_options_do_not_repopulate_history_on_rebuild() {
     let test = "transcript_replay_options_do_not_repopulate_history_on_rebuild";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<OptionsInput, Transcript>(test) {
             assert_eq!(input.op, "options");
             let world = recorded(directory, Setup::default());
@@ -1194,7 +1194,7 @@ fn settings_setup(input: &SettingsInput, custom: Definition) -> Setup {
 #[test]
 fn transcript_tool_settings_reach_renderers_independently() {
     let test = "transcript_tool_settings_reach_renderers_independently";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<SettingsInput, Transcript>(test) {
             let events = Rc::new(RefCell::new(Vec::new()));
             let mut custom = tool("custom");
@@ -1259,7 +1259,7 @@ struct LookupInput {
 #[test]
 fn transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup() {
     let test = "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<LookupInput, Transcript>(test) {
             // The row reads the registered definition once, where it is constructed.
             assert_eq!((input.op.as_str(), expected.lookups), ("lookup", Some(1)));
@@ -1321,7 +1321,7 @@ pub(super) fn kind_value(kind: &str) -> Value {
 #[test]
 fn transcript_message_field_domains_use_the_existing_boundary() {
     let test = "transcript_message_field_domains_use_the_existing_boundary";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<KindInput, Transcript>(test) {
             assert_eq!(input.op, "details");
             let events = Rc::new(RefCell::new(Vec::new()));
@@ -1360,7 +1360,7 @@ fn transcript_message_field_domains_use_the_existing_boundary() {
 #[test]
 fn transcript_tool_argument_domains_reach_the_existing_renderer() {
     let test = "transcript_tool_argument_domains_reach_the_existing_renderer";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<KindInput, Transcript>(test) {
             assert_eq!(input.op, "argument_domain");
             let world = recorded(directory, Setup::default());
@@ -1432,7 +1432,7 @@ fn source_record(kind: &str) -> Value {
 #[test]
 fn transcript_recorded_assistant_keeps_the_existing_paint_owner() {
     let test = "transcript_recorded_assistant_keeps_the_existing_paint_owner";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let world = recorded(directory, Setup::default());
         for (input, expected) in cases::<SourceInput, Phases>(test) {
             assert_eq!(input.op, "assistant_source");
@@ -1528,7 +1528,7 @@ fn replay_work(directory: &Path, count: usize) -> (usize, usize, usize) {
 fn transcript_replay_and_expansion_keep_linear_work() {
     isolated(
         "transcript_replay_and_expansion_keep_linear_work",
-        |directory| {
+        async |directory| {
             let work: Vec<_> = [16, 32, 64]
                 .into_iter()
                 .map(|count| replay_work(directory, count))
@@ -1552,7 +1552,7 @@ fn transcript_replay_and_expansion_keep_linear_work() {
 fn transcript_batched_results_keep_pending_call_order() {
     isolated(
         "transcript_batched_results_keep_pending_call_order",
-        |directory| {
+        async |directory| {
             for count in [16, 32, 64] {
                 let world = recorded(directory, Setup::default());
                 let id = |index: usize| format!("c{index}");

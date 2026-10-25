@@ -1,6 +1,7 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
 mod authentication;
+mod autocomplete;
 mod bash;
 mod debug;
 mod events;
@@ -54,7 +55,7 @@ use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
-    EditorComponent, autocomplete,
+    EditorComponent, autocomplete as tui_autocomplete,
 };
 use serde::{Deserialize, de::DeserializeOwned};
 use std::{
@@ -78,11 +79,11 @@ pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive
 
 /// Runs `body` in a fresh single-test child whose working directory is a disposable root
 /// and whose package directory is `package` inside it, returning its standard error.
-pub(super) fn isolated_package(test: &str, body: impl FnOnce(&Path, &Path)) -> Vec<u8> {
+pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path)) -> Vec<u8> {
     if maestro_test_process::selection().is_child() {
         let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
         let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
-        body(Path::new(&directory), Path::new(&package));
+        on_tasks(body(Path::new(&directory), Path::new(&package)));
         return Vec::new();
     }
     let scratch = child::Scratch::new();
@@ -107,7 +108,7 @@ pub(super) fn isolated_package(test: &str, body: impl FnOnce(&Path, &Path)) -> V
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
-fn isolated(test: &str, body: impl FnOnce(&Path)) {
+fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
     isolated_case(test, "child", &[], body);
 }
 
@@ -121,7 +122,7 @@ pub(super) fn isolated_case(
     test: &str,
     case: &str,
     envs: &[(&str, &str)],
-    body: impl FnOnce(&Path),
+    body: impl AsyncFnOnce(&Path),
 ) {
     if let Some(output) = isolated_output(test, case, envs, "trap '' XFSZ", body) {
         assert!(
@@ -140,13 +141,13 @@ pub(super) fn isolated_output(
     case: &str,
     envs: &[(&str, &str)],
     setup: &str,
-    body: impl FnOnce(&Path),
+    body: impl AsyncFnOnce(&Path),
 ) -> Option<std::process::Output> {
     let selection = maestro_test_process::selection();
     if selection.is_child() {
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
-            body(Path::new(&directory));
+            on_tasks(body(Path::new(&directory)));
         }
         return None;
     }
@@ -605,6 +606,11 @@ impl Setup {
     }
 }
 
+/// Initializes the presentation before settling its first frame.
+pub(super) async fn start(world: &World) {
+    world.mode.init().await.unwrap();
+}
+
 /// Applies an explicit startup selection before any runtime aliases the services.
 fn select_offline(
     result: &mut maestro_app::CreateAgentSessionRuntimeResult,
@@ -658,19 +664,19 @@ fn create(
 }
 
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
-fn started(directory: &Path) -> World {
-    started_with(directory, None)
+async fn started(directory: &Path) -> World {
+    started_with(directory, None).await
 }
 
 /// Builds a mode over `auth`, or over an empty in-memory store, and initializes it,
 /// settling the first frame.
-pub(super) fn started_with(directory: &Path, auth: Option<Arc<AuthStorage>>) -> World {
+pub(super) async fn started_with(directory: &Path, auth: Option<Arc<AuthStorage>>) -> World {
     let world = Setup {
         auth,
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
 }
@@ -834,7 +840,7 @@ pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
 fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
     isolated(
         "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
-        |directory| {
+        async |directory| {
             for (input, expected) in cases::<Input, Expected>(
                 FIXTURES,
                 "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
@@ -863,7 +869,7 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                     ..Setup::default()
                 }
                 .build(directory);
-                world.mode.init().unwrap();
+                start(&world).await;
                 let theme = world.themes.theme().get().unwrap();
                 let expected = painted(&theme, &before);
                 assert_eq!(
@@ -881,7 +887,7 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
 fn startup_notices_keep_labels_styles_padding_and_redraw() {
     isolated(
         "startup_notices_keep_labels_styles_padding_and_redraw",
-        |directory| {
+        async |directory| {
             for (input, expected) in cases::<Input, Expected>(
                 FIXTURES,
                 "startup_notices_keep_labels_styles_padding_and_redraw",
@@ -891,7 +897,7 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
                 else {
                     panic!("a notice case");
                 };
-                let world = started(directory);
+                let world = started(directory).await;
                 assert_eq!(world.runtime.pending(), 0);
                 match kind {
                     NoticeKind::Error => world.mode.show_error(&text),
@@ -914,7 +920,7 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
 fn clear_editor_changes_text_and_requests_a_frame() {
     isolated(
         "clear_editor_changes_text_and_requests_a_frame",
-        |directory| {
+        async |directory| {
             let [(Input::Clear, Expected::Clear { text, renders })] =
                 <[_; 1]>::try_from(cases::<Input, Expected>(
                     FIXTURES,
@@ -925,7 +931,7 @@ fn clear_editor_changes_text_and_requests_a_frame() {
             else {
                 panic!("one clear case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             world.mode.editor.add_to_history("remembered");
             world.mode.editor.set_text("draft");
             world.runtime.settle().unwrap();
@@ -946,12 +952,15 @@ impl AutocompleteProvider for Numbered {
     fn get_suggestions<'a>(
         &'a self,
         _lines: &'a [String],
-        _cursor: autocomplete::CursorPosition,
-        _options: autocomplete::CompletionOptions<'a, Self::Signal>,
+        _cursor: tui_autocomplete::CursorPosition,
+        _options: tui_autocomplete::CompletionOptions<'a, Self::Signal>,
     ) -> Pin<
         Box<
             dyn Future<
-                    Output = Result<Option<AutocompleteSuggestions>, autocomplete::CompletionError>,
+                    Output = Result<
+                        Option<AutocompleteSuggestions>,
+                        tui_autocomplete::CompletionError,
+                    >,
                 > + 'a,
         >,
     > {
@@ -972,11 +981,11 @@ impl AutocompleteProvider for Numbered {
     fn apply_completion(
         &self,
         _lines: &[String],
-        _cursor: autocomplete::CursorPosition,
+        _cursor: tui_autocomplete::CursorPosition,
         item: &AutocompleteItem,
         _prefix: &str,
-    ) -> autocomplete::CompletionResult {
-        autocomplete::CompletionResult {
+    ) -> tui_autocomplete::CompletionResult {
+        tui_autocomplete::CompletionResult {
             lines: vec![item.value.clone()],
             cursor_line: 0,
             cursor_col: item.value.len(),
@@ -985,13 +994,13 @@ impl AutocompleteProvider for Numbered {
 }
 
 /// The candidate rows the mode's editor shows with `maximum` configured.
-fn visible_candidates(directory: &Path, maximum: f64) -> usize {
+async fn visible_candidates(directory: &Path, maximum: f64) -> usize {
     let world = Setup {
         configure: Box::new(move |settings| settings.set_autocomplete_max_visible(maximum)),
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    start(&world).await;
     world
         .mode
         .editor
@@ -1003,13 +1012,13 @@ fn visible_candidates(directory: &Path, maximum: f64) -> usize {
 }
 
 /// The leading spaces of the editor's text row with `padding` configured.
-fn editor_indent(directory: &Path, padding: f64) -> usize {
+async fn editor_indent(directory: &Path, padding: f64) -> usize {
     let world = Setup {
         configure: Box::new(move |settings| settings.set_editor_padding_x(padding)),
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    start(&world).await;
     world.mode.editor.set_text("typed");
     let rows = world.mode.editor.render(40);
     let row = rows.iter().find(|row| row.contains("typed")).unwrap();
@@ -1020,7 +1029,7 @@ fn editor_indent(directory: &Path, padding: f64) -> usize {
 fn startup_constructor_forwards_each_display_setting() {
     isolated(
         "startup_constructor_forwards_each_display_setting",
-        |directory| {
+        async |directory| {
             for (cursor, shrink) in [(true, false), (false, true)] {
                 let world = Setup {
                     configure: Box::new(move |settings| {
@@ -1032,7 +1041,7 @@ fn startup_constructor_forwards_each_display_setting() {
                 .build(directory);
                 assert_eq!(world.mode.ui.get_show_hardware_cursor(), cursor);
                 assert_eq!(world.mode.ui.get_clear_on_shrink(), shrink);
-                world.mode.init().unwrap();
+                start(&world).await;
                 world.runtime.settle().unwrap();
                 world.mode.show_error("tall").unwrap();
                 world.runtime.settle().unwrap();
@@ -1042,15 +1051,15 @@ fn startup_constructor_forwards_each_display_setting() {
                 world.runtime.settle().unwrap();
                 assert_eq!(world.mode.ui.full_redraws() > redraws, shrink);
             }
-            let indents: Vec<_> = [0.0, 1.0, 2.0]
-                .into_iter()
-                .map(|padding| editor_indent(directory, padding))
-                .collect();
+            let mut indents = Vec::new();
+            for padding in [0.0, 1.0, 2.0] {
+                indents.push(editor_indent(directory, padding).await);
+            }
             assert_eq!(indents, [0, 1, 2]);
-            let visible: Vec<_> = [3.0, 5.0, 20.0]
-                .into_iter()
-                .map(|maximum| visible_candidates(directory, maximum))
-                .collect();
+            let mut visible = Vec::new();
+            for maximum in [3.0, 5.0, 20.0] {
+                visible.push(visible_candidates(directory, maximum).await);
+            }
             assert_eq!(visible, [3, 5, 20]);
             for enabled in [true, false] {
                 let world = Setup {
@@ -1058,7 +1067,7 @@ fn startup_constructor_forwards_each_display_setting() {
                     ..Setup::default()
                 }
                 .build(directory);
-                world.mode.init().unwrap();
+                start(&world).await;
                 let footer = world.mode.footer.render(120).join("\n");
                 assert_eq!(footer.contains("(auto)"), enabled);
             }
@@ -1070,7 +1079,7 @@ fn startup_constructor_forwards_each_display_setting() {
 fn startup_constructor_registers_themes_before_selection() {
     isolated(
         "startup_constructor_registers_themes_before_selection",
-        |directory| {
+        async |directory| {
             let world = Setup::default().build(directory);
             let published = world.themes.theme().get().unwrap();
             assert!(Rc::ptr_eq(&published, &world.themes.theme().get().unwrap()));
@@ -1095,47 +1104,50 @@ fn startup_constructor_registers_themes_before_selection() {
 
 #[test]
 fn startup_layout_focus_and_start_happen_once() {
-    isolated("startup_layout_focus_and_start_happen_once", |directory| {
-        let world = started(directory);
-        let mode = &world.mode;
-        let expected: Vec<Rc<dyn Component>> = vec![
-            mode.header_container.clone(),
-            mode.chat_container.clone(),
-            mode.pending_messages_container.clone(),
-            mode.status_container.clone(),
-            mode.widget_container_above.clone(),
-            mode.editor_container.clone(),
-            mode.widget_container_below.clone(),
-            mode.footer.clone(),
-        ];
-        let same = |children: &[Rc<dyn Component>]| {
-            children.len() == expected.len()
-                && children.iter().zip(&expected).all(|(child, expected)| {
-                    std::ptr::addr_eq(Rc::as_ptr(child), Rc::as_ptr(expected))
-                })
-        };
-        assert!(same(&mode.ui.children().borrow()));
-        assert_eq!(mode.widget_container_above.render(80), [""]);
-        assert!(mode.widget_container_below.render(80).is_empty());
-        world.terminal.send_input("x");
-        assert_eq!(mode.editor.get_text(), "x");
-        mode.init().unwrap();
-        assert!(same(&mode.ui.children().borrow()));
-        assert_eq!(world.terminal.events(), ["start"]);
-        assert_eq!(mode.header_container.children().borrow().len(), 3);
-    });
+    isolated(
+        "startup_layout_focus_and_start_happen_once",
+        async |directory| {
+            let world = started(directory).await;
+            let mode = &world.mode;
+            let expected: Vec<Rc<dyn Component>> = vec![
+                mode.header_container.clone(),
+                mode.chat_container.clone(),
+                mode.pending_messages_container.clone(),
+                mode.status_container.clone(),
+                mode.widget_container_above.clone(),
+                mode.editor_container.clone(),
+                mode.widget_container_below.clone(),
+                mode.footer.clone(),
+            ];
+            let same = |children: &[Rc<dyn Component>]| {
+                children.len() == expected.len()
+                    && children.iter().zip(&expected).all(|(child, expected)| {
+                        std::ptr::addr_eq(Rc::as_ptr(child), Rc::as_ptr(expected))
+                    })
+            };
+            assert!(same(&mode.ui.children().borrow()));
+            assert_eq!(mode.widget_container_above.render(80), [""]);
+            assert!(mode.widget_container_below.render(80).is_empty());
+            world.terminal.send_input("x");
+            assert_eq!(mode.editor.get_text(), "x");
+            mode.init().await.unwrap();
+            assert!(same(&mode.ui.children().borrow()));
+            assert_eq!(world.terminal.events(), ["start"]);
+            assert_eq!(mode.header_container.children().borrow().len(), 3);
+        },
+    );
 }
 
 #[test]
 fn startup_failed_terminal_start_does_not_mark_initialized() {
     isolated(
         "startup_failed_terminal_start_does_not_mark_initialized",
-        |directory| {
+        async |directory| {
             let world = Setup::default().build(directory);
             world
                 .terminal
                 .set_hide_error(Some(io::ErrorKind::BrokenPipe));
-            let error = world.mode.init().unwrap_err();
+            let error = world.mode.init().await.unwrap_err();
             assert_eq!(
                 error.downcast_ref::<io::Error>().unwrap().kind(),
                 io::ErrorKind::BrokenPipe
@@ -1149,8 +1161,8 @@ fn startup_failed_terminal_start_does_not_mark_initialized() {
 fn startup_theme_and_branch_notifications_request_fresh_frames() {
     isolated(
         "startup_theme_and_branch_notifications_request_fresh_frames",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let header = world.mode.header_container.render(80);
             let footer = world.mode.footer.render(80);
             world.themes.set_theme_instance(light()).unwrap();
@@ -1175,7 +1187,7 @@ fn startup_theme_and_branch_notifications_request_fresh_frames() {
 fn startup_callback_registration_does_not_retain_the_mode() {
     isolated(
         "startup_callback_registration_does_not_retain_the_mode",
-        |directory| {
+        async |directory| {
             let World {
                 mode,
                 terminal,
@@ -1183,7 +1195,7 @@ fn startup_callback_registration_does_not_retain_the_mode() {
                 themes,
                 host,
                 loader,
-            } = started(directory);
+            } = started(directory).await;
             let provider = mode.footer_data_provider.clone();
             let weak = Rc::downgrade(&mode);
             drop(mode);
@@ -1364,10 +1376,7 @@ fn held_response(world: &World) -> tokio::sync::oneshot::Receiver<Held> {
 /// Runs `body` on the started `world` while its session streams a response the controlled
 /// provider holds open, giving it that response; then ends the response and waits for the
 /// prompt to settle.
-pub(super) async fn with_held_response<T, F>(world: &World, body: impl FnOnce(&Held) -> F) -> T
-where
-    F: Future<Output = T>,
-{
+pub(super) async fn with_held_response<T>(world: &World, body: impl AsyncFnOnce(&Held) -> T) -> T {
     let session = world.mode.runtime_host.session();
     let receiver = held_response(world);
     let prompted = Rc::clone(&session);
@@ -1383,13 +1392,14 @@ where
     value
 }
 
-/// Runs `body` synchronously on the started `world` while its session streams a response
+/// Awaits `body` on the started `world` while its session streams a response
 /// the controlled provider holds open; the response ends afterwards.
-pub(super) fn streaming<T>(world: &World, body: impl FnOnce(&World, &Held) -> T) -> T {
-    on_tasks(with_held_response(world, |held| {
+pub(super) async fn streaming<T>(world: &World, body: impl AsyncFnOnce(&World, &Held) -> T) -> T {
+    with_held_response(world, async |held| {
         world.mode.chat_container.clear();
-        std::future::ready(body(world, held))
-    }))
+        body(world, held).await
+    })
+    .await
 }
 
 /// Runs `body` on the started `world` inside the caller's task set while its session
@@ -1399,7 +1409,7 @@ pub(super) async fn holding<T, F>(world: &World, body: impl FnOnce(Cancellation)
 where
     F: Future<Output = T>,
 {
-    with_held_response(world, |held| body(held.signal.clone())).await
+    with_held_response(world, async |held| body(held.signal.clone()).await).await
 }
 
 /// The editor's top border row as the recorder's painted probe glyph describes it.
@@ -1426,9 +1436,9 @@ pub(super) fn select_level(world: &World, level: maestro_app::ThinkingLevel) {
 }
 
 /// A started mode whose shell prints an output-only marker for the command it runs.
-pub(super) fn echoing_shell(directory: &Path) -> World {
+pub(super) async fn echoing_shell(directory: &Path) -> World {
     let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
-    bash::shelling(directory, &script)
+    bash::shelling(directory, &script).await
 }
 
 /// Submits `count` shell commands while the response streams, awaiting each command it
