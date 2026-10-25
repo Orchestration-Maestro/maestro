@@ -214,6 +214,9 @@ fn seed(world: &World, queues: Queues) {
                     mode: local.mode.delivery(),
                 }),
         );
+    // The recording seeds the queues without showing them; the session's queue updates
+    // drew the rows here, so the case starts from the recorded empty rows.
+    world.mode.pending_messages_container.clear();
 }
 
 /// What `world` holds now, given the queue operations since seeding and the stopped turns.
@@ -359,6 +362,9 @@ fn queued_texts_merge_by_mode_without_reordering_or_deduplication() {
             assert!(calls.borrow().is_empty(), "reading consumes nothing");
             assert_eq!(world.mode.get_all_queued_messages(), before);
             let cleared = world.mode.clear_all_queues();
+            // The session's queue update drew the compaction rows still kept while clearing;
+            // the only caller refreshes the rows right after, as the recording shows.
+            world.mode.update_pending_messages_display().unwrap();
             assert_eq!(
                 Snapshot {
                     steering: before.steering,
@@ -1469,7 +1475,7 @@ fn interrupt_binding(directory: &Path) {
     streaming(&world, |world, held| {
         bind("app.interrupt", Some("alt+z"));
         world.mode.editor.handle_input("\x1b");
-        world.mode.editor.handle_input("\x1a");
+        world.mode.editor.handle_input("z");
         assert_eq!(held.aborts(), 0);
         world.mode.editor.handle_input("\x1bz");
         assert_eq!(held.aborts(), 1);
@@ -1968,28 +1974,11 @@ fn produce_pending(
     Vec<Rc<dyn Component>>,
 ) {
     let world = echoing_shell(directory);
-    let (retained, neighbours) = on_tasks(async {
+    let retained = on_tasks(async {
         holding(&world, |_| async {
             let (rows, errors) = driving(&world, async {
                 start_shells(&world, count).await;
-                seed(
-                    &world,
-                    Queues {
-                        steering: vec!["s".into()],
-                        follow_up: vec!["f".into()],
-                        local: Vec::new(),
-                    },
-                );
-                pending(&world.mode, 80);
-                (
-                    world.mode.pending_shells.borrow().clone(),
-                    world
-                        .mode
-                        .pending_messages_container
-                        .children()
-                        .borrow()
-                        .clone(),
-                )
+                world.mode.pending_shells.borrow().clone()
             })
             .await;
             assert!(errors.is_empty(), "{errors:?}");
@@ -1997,6 +1986,21 @@ fn produce_pending(
         })
         .await
     });
+    seed(
+        &world,
+        Queues {
+            steering: vec!["s".into()],
+            follow_up: vec!["f".into()],
+            local: Vec::new(),
+        },
+    );
+    pending(&world.mode, 80);
+    let neighbours = world
+        .mode
+        .pending_messages_container
+        .children()
+        .borrow()
+        .clone();
     assert_eq!(retained.len(), count, "the response produced the rows");
     (world, retained, neighbours)
 }
@@ -2271,6 +2275,19 @@ fn assert_route(world: &World, heard: &Heard, waiter: &mut Waiting, expected: &E
     }
 }
 
+/// The retained transcript and pending child counts at the observed admission state.
+fn child_counts(world: &World) -> (usize, usize) {
+    (
+        world.mode.chat_container.children().borrow().len(),
+        world
+            .mode
+            .pending_messages_container
+            .children()
+            .borrow()
+            .len(),
+    )
+}
+
 /// Submits `text` in `producer`'s state and checks the route it took.
 fn admission_case(
     directory: &Path,
@@ -2279,15 +2296,7 @@ fn admission_case(
 ) {
     let (world, heard) = controlled(directory, false);
     let mut waiter: Waiting = super::typed::waiting(&world.mode);
-    let baseline = (
-        world.mode.chat_container.children().borrow().len(),
-        world
-            .mode
-            .pending_messages_container
-            .children()
-            .borrow()
-            .len(),
-    );
+    let baseline = child_counts(&world);
     let submitted = text.to_owned();
     let press = move |mode: &Rc<InteractiveMode>| {
         mode.editor.on_submit().unwrap()(&submitted);
@@ -2303,6 +2312,10 @@ fn admission_case(
     let errors = match producer {
         Producer::Streaming => on_tasks(async {
             holding(&world, |_| async {
+                let expected = Expected {
+                    baseline: child_counts(&world),
+                    ..expected
+                };
                 let ((), errors) = driving(&world, async {
                     heard.borrow_mut().clear();
                     press(&world.mode);

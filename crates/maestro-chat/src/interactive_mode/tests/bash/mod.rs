@@ -1249,10 +1249,11 @@ fn streaming_flush(directory: &Path) {
         .await
     });
     assert_eq!(rows.len(), 2, "both commands kept their row");
+    let baseline = world.mode.chat_container.children().borrow().len();
     world.mode.flush_pending_bash_components();
     assert_eq!(
         transcript_positions(&world, &rows),
-        vec![0, 1],
+        vec![baseline, baseline + 1],
         "the rows move once, in submission order"
     );
     assert!(

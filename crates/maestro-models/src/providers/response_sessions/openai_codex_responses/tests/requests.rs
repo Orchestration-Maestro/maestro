@@ -512,7 +512,7 @@ fn maestro_response_sessions_price_all_cost_categories() {
             output: 0.0,
             cache_read: 0.0,
             cache_write: 0.0,
-            total_tokens: 0.0,
+            total_tokens: maestro_request::presence::Presence::Present(0.0),
         };
         super::super::events::apply_service_tier_pricing(&mut usage, row.tier.as_deref(), &row.id);
         assert_eq!(usage.cost, row.expected);

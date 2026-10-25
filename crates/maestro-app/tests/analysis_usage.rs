@@ -48,6 +48,71 @@ fn report(base: &str, extra: &[&str]) -> std::io::Result<crate::analysis_fixture
     run_usage(&args)
 }
 
+/// An assistant entry reporting 7/3/2/1 at cost 1 with `member` as the raw total member.
+fn raw_usage_entry(member: &str) -> String {
+    format!(
+        "{{\"type\":\"message\",\"timestamp\":\"2026-03-09T12:00:00Z\",\"message\":{{\"role\":\"assistant\",\"provider\":\"one\",\"usage\":{{\"input\":7,\"output\":3,\"cacheRead\":2,\"cacheWrite\":1{member},\"cost\":{{\"total\":1}}}}}}}}\n"
+    )
+}
+
+/// One report totals row for a single assistant reporting 7/3/2/1 at cost 1.
+fn totals_row(label: &str, total: &str) -> String {
+    format!(
+        "{label:<16} messages: {:>5}  sessions: {:>3}  input: {:>12}  output: {:>10}  \
+         cache read: {:>13}  cache write: {:>10}  total: {:>13}  cost: {:>10}",
+        "1", "1", "7", "3", "2", "1", total, "$1.0000"
+    )
+}
+
+/// Run the report for `cwd`, whose sessions sit beneath `base`'s home.
+///
+/// # Errors
+/// Returns the report's own rejection.
+fn report_for(base: &str, cwd: &str) -> std::io::Result<crate::analysis_fixtures::Run> {
+    let sessions_base = format!("{base}/home/.maestro/agent/sessions");
+    run_usage(&["--cwd", cwd, "--sessions-base", &sessions_base])
+}
+
+#[test]
+fn usage_report_leaves_missing_total_at_zero() {
+    with_environment(
+        "usage_report_leaves_missing_total_at_zero",
+        &[("TZ", ZONE)],
+        |base| {
+            for (index, (member, shown)) in [
+                ("", "0"),
+                (",\"totalTokens\":null", "0"),
+                (",\"totalTokens\":0", "0"),
+                (",\"totalTokens\":-0.0", "0"),
+                (",\"totalTokens\":97", "97"),
+                (",\"totalTokens\":1.5", "2"),
+                (",\"totalTokens\":-2", "-2"),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let cwd = format!("/project{index}");
+                let journal = raw_usage_entry(member);
+                sessions(
+                    base,
+                    &cwd,
+                    &[("2026-03-09T12-00-00-000Z_a.jsonl", &journal)],
+                );
+                let run = report_for(base, &cwd).expect("the report runs");
+                assert!(run.succeeded(), "{}", run.stderr);
+                for label in ["2026-03-09", "  one", "TOTAL"] {
+                    let row = totals_row(label, shown);
+                    assert!(
+                        run.stdout.contains(&row),
+                        "{member:?} reports no {row:?} in:\n{}",
+                        run.stdout
+                    );
+                }
+            }
+        },
+    );
+}
+
 #[test]
 fn usage_arguments_keep_defaults_aliases_and_decimal_prefixes() {
     with_environment(
