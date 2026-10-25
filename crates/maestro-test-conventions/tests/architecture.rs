@@ -3300,3 +3300,55 @@ fn print_recorder_listener_edge_stays_native_and_development_only() {
         "optional development dependencies are invalid Cargo declarations"
     );
 }
+
+/// The target table the interactive frontend declares its native witness in.
+const WITNESS_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
+
+/// The interactive frontend's manifest, keeping its required edges beside the witness table.
+fn witness_chat(table: &str, extra: &str) -> String {
+    let mut manifest = String::from("[dependencies]\n");
+    for target in required_targets("maestro-chat") {
+        writeln!(
+            manifest,
+            "{} = {{ package = {target:?}, path = \"../{target}\" }}",
+            target.replace('-', "_")
+        )
+        .unwrap();
+    }
+    writeln!(
+        manifest,
+        "[{table}]\nterminal = {{ package = \"maestro-tui-crossterm\", path = \"../maestro-tui-crossterm\"{extra} }}"
+    )
+    .unwrap();
+    manifest
+}
+
+#[test]
+fn interactive_native_witness_edge_is_native_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-tui-crossterm"]);
+    workspace.member(
+        "maestro-chat",
+        "maestro-chat",
+        &witness_chat(WITNESS_DEV, ""),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for table in [
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        workspace.member("maestro-chat", "maestro-chat", &witness_chat(table, ""));
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("maestro-chat: maestro-tui-crossterm test support must be a native, non-optional development dependency".to_owned()),
+            "{table}"
+        );
+    }
+    let optional = witness_chat("dev-dependencies", ", optional = true");
+    workspace.member("maestro-chat", "maestro-chat", &optional);
+    assert!(
+        check_workspace(workspace.root.path())
+            .is_err_and(|error| error.contains("dev-dependencies are not allowed to be optional")),
+        "Cargo refuses an optional development declaration"
+    );
+}

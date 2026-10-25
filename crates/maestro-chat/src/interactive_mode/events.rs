@@ -12,7 +12,6 @@ use maestro_app::{
     NativeAgentMessage, ReadonlySessionManager, SharedAssistantMessage, StopReason, ToolCall,
 };
 use maestro_tui::Component;
-use serde_json::Value;
 use std::{
     error::Error,
     io,
@@ -265,7 +264,7 @@ impl InteractiveMode {
         for call in calls {
             let row = self.pending_tools.borrow().get(&call.id).cloned();
             match row {
-                Some(row) => row.update_args(Some(Value::Object(call.arguments)))?,
+                Some(row) => row.update_args(Some(call.arguments))?,
                 None => drop(self.add_pending_tool(call)?),
             }
         }
@@ -412,8 +411,7 @@ impl InteractiveMode {
         &self,
         call: ToolCall,
     ) -> Result<Rc<ToolExecutionComponent>, Box<dyn Error>> {
-        let row =
-            self.render_tool_call(&call.id, &call.name, Some(Value::Object(call.arguments)))?;
+        let row = self.render_tool_call(&call.id, &call.name, Some(call.arguments))?;
         self.pending_tools
             .borrow_mut()
             .insert(call.id, Rc::clone(&row));

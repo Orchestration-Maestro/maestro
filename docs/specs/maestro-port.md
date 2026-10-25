@@ -352,12 +352,12 @@ from the optional foundation utility described below.
 | `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock` | 0 |
-| `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners` | 1 |
+| `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners`, `maestro-json` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listing` | 1 |
-| `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process` | 1 |
+| `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process`, `maestro-listeners` | 1 |
 | `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-ipc`, `maestro-process`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources` | 2 |
@@ -419,7 +419,9 @@ summaries enable it. User-authored Markdown leaves it disabled.
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.
 Tool renderer field selection reuses `maestro-json` for JSON truth and selected-value
 display. Callers keep field lookup and defaults; the leaf borrows truthy strings and
-writes other truthy values with its compact JSON writer.
+writes other truthy values with its compact JSON writer. `maestro-agent` reuses that
+leaf's truth classification for the falsy reconstructed tool-call argument roots its
+proxy stream falls back from; the edge carries no other coupling.
 
 `maestro-request` defines shared message and model-request records: model
 descriptors, messages, content, usage, stream events and diagnostics, plus
@@ -517,8 +519,11 @@ name decoding and any further ordering.
 It owns one job: retaining callbacks in live registration order. A callback is
 admitted once per identity, so registering a live one again keeps its first
 position, while removing and re-registering it moves it to the last position.
-Traversal sees the collection as it is at each step. Models, the terminal
-toolkit, the agent, the application and the extension runtime may depend on it.
+A caller may instead admit every registration as its own entry, as an
+event-emitter listener list keeps them; each removal operation then removes its
+own registration. Traversal sees the collection as it is at each step. Models,
+the terminal toolkit, the agent, the application, the extension runtime and the
+terminal adapter may depend on it.
 Each caller keeps its own borrowing, locking, delivery and settlement policy:
 the leaf holds no lock, runs no callback under its own borrow and returns removed
 ownership to the caller. Its storage is a flat ordered list plus an identity
@@ -545,8 +550,10 @@ truncation, artifact files, presentation, result mapping and user-facing errors 
 with their feature owners. The process leaf also owns the retained-front byte queue
 shared by pane-process input and native terminal output: ordered admission, partial
 write advancement and failure cleanup. Callers choose the write chunk bound and
-keep descriptor readiness, lifecycle and error-reporting policy.
-It also owns the current process's native signal effects: the default action a
+keep descriptor readiness, lifecycle and error-reporting policy. It owns native
+termination-signal subscription and idempotent removal; a native mode supplies the
+callback and keeps its exit policy. No frontend subscribes to native signals
+itself. It also owns the current process's native signal effects: the default action a
 prepared termination signal or interrupt takes, the job-control stop of the process
 group and the observation of its continuation. Callers keep when to prepare, restore,
 stop and resume.
@@ -625,6 +632,10 @@ provider; it permits no normal or build dependency on models.
 `maestro-cli` to `maestro-listeners`, declared as a non-optional native development
 dependency, supplies retained registration snapshots for the controlled print adapter.
 It permits no normal or build dependency on the listener leaf.
+`maestro-chat` to `maestro-tui-crossterm`, declared for native targets only and
+without optionality, lets the interactive mode's composed witness drive a real
+native terminal; it permits no normal or build dependency on the adapter and does
+not make the interactive frontend a terminal owner.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -915,10 +926,12 @@ and enumeration transport; its WIT and callback identities do not change.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
-keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
-listeners, extension error delivery and terminal input listeners reuse it. For
-shared `Rc` callbacks it also owns subscribing, which returns the removal
+keeps a `ToolInfo` alias over the same owner. Live callback storage
+belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
+default or one per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal
 operation, and the live walk in registration order. What each listener receives
 and when it runs remain with the caller. The collection returns removed ownership
 for release outside guards, and it reclaims retired registrations while no

@@ -160,7 +160,9 @@ fn model_tool_call_uses_default_raw_object_route() {
         assert!(
             render_tool::<_, Value>(
                 &call.name,
-                Some(ToolParams::object(&call.arguments)),
+                Some(ToolParams::object(
+                    call.arguments.as_object().expect("recorded object root"),
+                )),
                 None,
                 false
             )
@@ -178,7 +180,9 @@ fn model_tool_call_uses_default_raw_object_route() {
         assert!(
             render_tool::<_, Value>(
                 &call.name,
-                Some(ToolParams::object(&call.arguments)),
+                Some(ToolParams::object(
+                    call.arguments.as_object().expect("recorded object root"),
+                )),
                 None,
                 false
             )

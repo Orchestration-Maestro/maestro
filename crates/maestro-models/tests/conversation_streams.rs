@@ -85,9 +85,9 @@ fn conversation_streams_order_text_and_thinking_blocks() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn conversation_streams_accumulate_and_finalize_tool_calls() -> TestResult {
+fn conversation_arguments_keep_encoded_root_shapes() -> TestResult {
     crate::runtime::run(corpus::rows(
-        "conversation_streams_accumulate_and_finalize_tool_calls",
+        "conversation_arguments_keep_encoded_root_shapes",
     ))
 }
 

@@ -252,32 +252,26 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
         let prepare = read(&tool).prepare_arguments.clone();
         let arguments = match prepare {
             Some(prepare) => {
-                let mut raw = serde_json::Value::Object(call.arguments.clone());
+                let mut raw = call.arguments.clone();
                 let prepared = prepare(&mut raw);
-                if let serde_json::Value::Object(arguments) = raw {
-                    call.arguments = arguments;
-                }
+                call.arguments = raw;
                 if let Some(AssistantContent::ToolCall(retained)) =
                     super::write(response).content.get_mut(index)
                 {
                     retained.arguments.clone_from(&call.arguments);
                 }
-                let arguments = serde_json::from_value(prepared?)
-                    .map_err(|error| failure(error.to_string()))?;
+                let prepared = prepared?;
                 let candidate = ToolCall {
                     id: call.id.clone(),
                     name: call.name.clone(),
-                    arguments,
+                    arguments: prepared,
                     thought_signature: call.thought_signature.clone(),
                 };
                 maestro_models::validate_tool_arguments(&read(&tool).definition, &candidate)?
             }
             None => maestro_models::validate_tool_arguments(&read(&tool).definition, call)?,
         };
-        Ok(Prepared {
-            tool,
-            arguments: serde_json::Value::Object(arguments),
-        })
+        Ok(Prepared { tool, arguments })
     }
     /// Await execution-end before assigning the tool artifact timestamp.
     async fn execution_end(

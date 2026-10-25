@@ -149,10 +149,13 @@ mod tests {
             let call = ToolCall {
                 id: "call".to_owned(),
                 name: "echo".to_owned(),
-                arguments: Map::from_iter([("value".to_owned(), Value::Object(arguments))]),
+                arguments: Value::Object(Map::from_iter([(
+                    "value".to_owned(),
+                    Value::Object(arguments),
+                )])),
                 thought_signature: None,
             };
-            let mut prepared = Map::new();
+            let mut prepared = Value::Null;
             let performed = work(|| {
                 prepared = validate_tool_arguments(&tool, &call).expect("prepared arguments");
             });
