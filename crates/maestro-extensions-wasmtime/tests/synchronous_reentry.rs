@@ -396,6 +396,50 @@ fn sent_message_renders_through_the_same_instance_before_the_send_returns() {
 }
 
 #[test]
+fn consecutive_guest_listener_deliveries_return_without_the_caller_yielding() {
+    run(async {
+        let trace = Trace::default();
+        let (_owner, _runner, events) = loaded_on(bus(&trace)).await;
+        for _ in 0..64 {
+            events
+                .emit("renderer-created", json!(["repeat", false]))
+                .await;
+        }
+        assert_eq!(*trace.borrow(), ["g1:repeat", "g2:repeat"].repeat(64));
+    });
+}
+
+#[test]
+fn consecutive_renders_return_whether_or_not_they_reach_guest_listeners() {
+    run(async {
+        let trace = Trace::default();
+        let (_owner, runner, events) = loaded_on(bus(&trace)).await;
+        let component = view(&runner, &events, "relay").unwrap().unwrap();
+        for width in 0..64 {
+            assert_eq!(
+                rendered(&component, width),
+                json!([format!("relay:{width}")])
+            );
+        }
+        events.on(
+            "component-rendered",
+            Rc::new(|_, emitter| {
+                emitter.emit("renderer-created", json!(["relayed", false]));
+                Ok(None)
+            }),
+        );
+        trace.borrow_mut().clear();
+        for width in 0..64 {
+            assert_eq!(
+                rendered(&component, width),
+                json!([format!("relay:{width}")])
+            );
+        }
+        assert_eq!(*trace.borrow(), ["g1:relayed", "g2:relayed"].repeat(64));
+    });
+}
+
+#[test]
 fn native_listener_reentry_completes_while_another_component_still_renders() {
     run(async {
         let trace = Trace::default();

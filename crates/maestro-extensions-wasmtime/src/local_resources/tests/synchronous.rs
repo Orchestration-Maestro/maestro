@@ -69,6 +69,26 @@ fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
     );
 }
 
+#[test]
+fn consecutive_synchronous_invocations_return_without_the_caller_task_yielding() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let (pump, admission) = Pump::new();
+            let registry = pump.registry();
+            for _ in 0..1000 {
+                registry
+                    .invoke_sync(|completion| {
+                        completion.complete(Ok(()));
+                        Ok(())
+                    })
+                    .unwrap();
+            }
+            drop((registry, admission, pump));
+        });
+}
+
 /// Observes whether the original asynchronous owner is made runnable again.
 #[derive(Default)]
 struct ExecutorWake(std::sync::atomic::AtomicUsize);

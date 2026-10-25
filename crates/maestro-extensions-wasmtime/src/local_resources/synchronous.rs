@@ -3,6 +3,7 @@ use super::{Message, Registry, pump::State};
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeMap,
+    future::Future,
     sync::Arc,
     task::{Context, Poll, Wake, Waker},
 };
@@ -112,7 +113,11 @@ impl State {
             if let Some(result) = self.synchronous.completed.borrow_mut().remove(&id) {
                 return result;
             }
-            match self.poll_next(&mut context) {
+            // A blocking waiter cannot yield to replenish Tokio's cooperative budget.
+            let mut next = std::pin::pin!(tokio::task::coop::unconstrained(std::future::poll_fn(
+                |context| self.poll_next(context)
+            )));
+            match next.as_mut().poll(&mut context) {
                 Poll::Ready(true) => {}
                 Poll::Ready(false) => return Err("extension resource owner ended".to_owned()),
                 Poll::Pending => std::thread::park(),
