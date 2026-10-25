@@ -25,6 +25,7 @@ mod debug;
 mod events;
 mod info;
 mod key_display;
+mod lifecycle;
 mod models;
 mod notices;
 mod progress;
@@ -220,9 +221,10 @@ impl InteractiveMode {
     /// Builds the header, adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission and the global debug key, starts
     /// the terminal, lists the loaded resources with their diagnostics and replays the
-    /// session, once; theme changes then refresh the editor border, and theme and branch
+    /// session; theme changes then refresh the editor border, and theme and branch
     /// changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
+    /// Calls while initialized do nothing; after `stop`, initialization runs again.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the

@@ -33,9 +33,9 @@ fallback theme is returned.
 
 ## Startup
 
-`init` runs once; later calls change nothing. It builds the header, then adds the
-header, transcript, pending-messages, status, upper widget, editor and lower widget
-containers and the footer, in that order. The upper widget container starts with
+`init` does nothing while the mode is initialized. After `stop`, it runs again.
+It builds the header, then adds the header, transcript, pending-messages, status,
+upper widget, editor and lower widget containers and the footer, in that order. The upper widget container starts with
 one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
 editor submission and the global debug key, and starts the terminal. A terminal
@@ -53,6 +53,21 @@ application name and version, the compact key hints and two onboarding lines. In
 verbose mode it shows the full list of key hints instead. Hints follow the loaded
 bindings: several keys keep their order, and an unbound action shows no key.
 Header text keeps the colours of the theme in effect when it was built.
+
+## Stopping the presentation
+
+`stop` clears terminal progress when enabled, stops and releases the working
+loader, disposes the footer and its repository watch, removes the session
+subscription, and stops the UI if initialized. The status container keeps its
+rows. A later session event no longer restarts this presentation, and the shared
+theme watch stays active.
+
+A progress-clearing failure prevents the remaining cleanup. A UI-stop failure
+leaves the mode initialized; only a successful UI stop clears that flag. The
+original I/O error is returned. Repeating a successful stop does not stop the
+absent loader or UI again. This operation does not dispose the application
+runtime, terminate the process or kill detached children. Signal handling and
+key-triggered shutdown are not connected yet.
 
 ## Loaded resources
 

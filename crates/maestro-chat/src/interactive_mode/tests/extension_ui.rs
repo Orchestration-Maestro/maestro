@@ -86,7 +86,7 @@ fn theme_dirs(root: &Path) -> ThemeDirectories {
 }
 
 /// Adds one custom theme document to the registry directories of `root`.
-fn with_custom_theme(root: &Path) -> ThemeDirectories {
+pub(super) fn with_custom_theme(root: &Path) -> ThemeDirectories {
     let directories = theme_dirs(root);
     let shipped = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-theme/assets/theme");
     let document = std::fs::read_to_string(shipped.join("light.json"))
@@ -210,14 +210,14 @@ fn saved_themes(
 
 /// Watch effects recording each registration and whether it was closed.
 #[derive(Default)]
-struct RecordingWatcher {
+pub(super) struct RecordingWatcher {
     /// Each registration's watched directory and its closed flag.
     watches: RefCell<Vec<(String, Rc<Cell<bool>>)>>,
 }
 
 impl RecordingWatcher {
     /// The watched directories, in registration order.
-    fn paths(&self) -> Vec<String> {
+    pub(super) fn paths(&self) -> Vec<String> {
         self.watches
             .borrow()
             .iter()
@@ -226,7 +226,7 @@ impl RecordingWatcher {
     }
 
     /// Whether the registration at `index` was closed.
-    fn closed(&self, index: usize) -> bool {
+    pub(super) fn closed(&self, index: usize) -> bool {
         self.watches.borrow()[index].1.get()
     }
 }
