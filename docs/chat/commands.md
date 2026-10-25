@@ -10,8 +10,9 @@ waiting input and never enters the editor history. Any other text, including
 
 The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
 `/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
-`/debug`, `/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume` and
-`/quit`. The offline viewer and packaged asset injection are not delivered yet (see
+`/debug`, `/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume`, `/new`,
+`/compact` and `/quit`. The offline viewer and packaged asset injection are not
+delivered yet (see
 [what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
@@ -67,6 +68,48 @@ After the shared trim, exact `/quit` clears the editor and starts graceful
 shutdown before input, queue or history delivery, without requesting an extra
 frame. It also works while a response streams or the session compacts. `/QUIT`,
 `/quit extra` and `/quit` followed by U+0085 remain ordinary input.
+
+## `/new`
+
+After the shared trim, exact `/new` clears the editor and starts a new session.
+The `app.session.new` editor action does the same but leaves the editor's text
+alone. It has no default key: bind one in `keybindings.json`, and a live
+remapping takes effect at once. `/NEW`, `/new extra` and `/newer` remain
+ordinary input.
+
+The command first stops working progress and empties the status rows. An
+extension can veto the switch through `session_before_switch`. A vetoed request
+keeps the session, its transcript, its queued input and its pending shell rows,
+and shows nothing.
+
+Once the new session starts, the mode clears the transcript, the pending area,
+the input queued during a compaction and the shell rows still waiting to move.
+It then replays the new session and shows `✓ New session started` in the accent
+colour. A shell command from the old session never reappears later.
+
+If the session cannot be created or replayed, the mode shows
+`Error: Failed to create session: <failure>`, stops the terminal and exits with
+status 1.
+
+## `/compact`
+
+After the shared trim, `/compact` alone or followed by a space and instructions
+compacts the session. The instructions are trimmed with the same whitespace rule
+and passed to the compaction as written, inner spaces included; a command with
+nothing after the space passes none. `/COMPACT`, `/compactx` and `/compact`
+followed by a tab, a newline or a no-break space remain ordinary input.
+
+The command counts the stored message entries of the whole session, including
+those outside the selected branch; other entries, such as custom messages and
+labels, do not count. With fewer than two, it shows
+`Warning: Nothing to compact (no messages yet)` and leaves working progress
+alone. Otherwise it stops working progress, empties the status rows and starts
+the compaction.
+
+The compaction's own events show what happened: a summary row on success,
+`Error: Compaction cancelled` when an extension cancels it, or
+`Error: Compaction failed: <failure>`. Input submitted while it runs is delivered
+to the session once it ends. The command adds no message of its own.
 
 ## Shell input
 

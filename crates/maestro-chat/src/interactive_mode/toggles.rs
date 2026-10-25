@@ -45,6 +45,11 @@ impl InteractiveMode {
             mode.toggle_thinking_block_visibility()
         });
         self.on_action("app.editor.external", |mode| mode.open_external_editor());
+        self.on_action("app.session.new", |mode| {
+            let work = Box::pin(Rc::clone(mode).handle_clear_command());
+            mode.tool_environment.runtime.spawn_local(work);
+            Ok(())
+        });
         self.setup_editor_callbacks();
     }
 
