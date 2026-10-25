@@ -63,16 +63,9 @@ impl Exports {
         instance: &Instance,
         guest: &ComponentExportIndex,
     ) -> wasmtime::Result<Self> {
-        let mut index = |name| {
-            instance
-                .get_export_index(&mut *store, Some(guest), name)
-                .ok_or_else(|| wasmtime::format_err!("missing extension guest export {name}"))
-        };
-        let prepare = index("invoke-prepare")?;
-        let execute = index("invoke-tool")?;
         Ok(Self {
-            prepare: instance.get_typed_func(&mut *store, prepare)?,
-            execute: instance.get_typed_func(&mut *store, execute)?,
+            prepare: super::typed(store, instance, guest, "invoke-prepare")?,
+            execute: super::typed(store, instance, guest, "invoke-tool")?,
         })
     }
 

@@ -128,6 +128,21 @@ async fn observe_callbacks(
 }
 
 #[test]
+fn production_factory_completes_a_positive_component_clock_wait() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = create_event_bus_for::<Local>(Rc::new(drop), Rc::new(|_| {}));
+        let (_owner, runner, _events) =
+            super::retained_components::loaded_on(bus.for_extension()).await;
+        let command = runner.get_command("bridge-observe").unwrap().command;
+        let result = (command.handler)("clock wait".into(), runner.create_command_context()).await;
+        assert_eq!(result.unwrap_err().to_string(), "clock waited");
+    });
+}
+
+#[test]
 fn canonical_imports_reach_real_domain_owners() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()

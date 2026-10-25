@@ -49,6 +49,8 @@ async fn tool() {
     metadata(&definition);
     let runner = Rc::new(super::runner("/native-tool"));
     let wrapped = maestro_extensions::wrap_registered_tool(&definition, runner);
+    let prepare = wrapped.prepare_arguments.clone().unwrap();
+    super::reports_reentry(&mut pump, move || prepare(&mut json!({"before":true}))).await;
     let worker = std::thread::spawn(move || invoke(incoming));
     let mut args = json!({"before":true});
     args = wrapped.prepare_arguments.as_ref().unwrap()(&mut args).unwrap();

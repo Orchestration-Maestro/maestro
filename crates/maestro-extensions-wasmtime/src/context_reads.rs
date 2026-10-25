@@ -90,14 +90,14 @@ impl Owner {
         }
     }
 
-    /// Serializes an owned model after releasing its native read guard.
+    /// Serializes the model through its native read guard, without copying it.
     fn model(&self) -> Result<Option<String>, String> {
         self.base()
             .model()
             .map_err(|error| error.to_string())?
             .map(|model| {
-                let owned = model.read().map_err(|error| error.to_string())?.clone();
-                serde_json::to_string(&owned).map_err(|error| error.to_string())
+                let model = model.read().map_err(|error| error.to_string())?;
+                serde_json::to_string(&*model).map_err(|error| error.to_string())
             })
             .transpose()
     }

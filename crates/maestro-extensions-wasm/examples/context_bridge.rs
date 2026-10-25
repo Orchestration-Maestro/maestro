@@ -144,6 +144,10 @@ fn command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if args == "clock wait" {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            return Err("clock waited".into());
+        }
         if args == "retain-suspended" {
             return retained::observe(api, context).await;
         }

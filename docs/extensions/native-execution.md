@@ -17,6 +17,14 @@ contexts, UI and session owners stay on their original thread. Typed requests
 connect those owners to the Store; synchronous callbacks use that same receiver.
 Retained UI and history resources keep their original owners when bindings change.
 
+A component that waits for a synchronous host call cannot run again until that
+call returns. A native call into that same component in the meantime, such as its
+message renderer, a retained component, tool argument preparation, a compaction
+notification or a listener, fails at once with `extension cannot be re-entered
+while it waits for a synchronous host call`. Calls into other components still
+complete. Asynchronous host calls leave the component free, so native work they
+start can call back into it.
+
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,
 status, working-row, indicator, hidden-thinking-label, widget and title requests

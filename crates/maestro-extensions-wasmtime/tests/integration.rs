@@ -14,6 +14,7 @@ mod module_location;
 mod retained_components;
 mod retained_contexts;
 mod startup;
+mod synchronous_reentry;
 
 #[path = "../../maestro-extensions/tests/support/session.rs"]
 mod session;

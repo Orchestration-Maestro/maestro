@@ -38,11 +38,8 @@ impl Exports {
         instance: &Instance,
         guest: &ComponentExportIndex,
     ) -> wasmtime::Result<Self> {
-        let index = instance
-            .get_export_index(&mut *store, Some(guest), "[method]bash-operations.exec")
-            .ok_or_else(|| wasmtime::format_err!("missing extension bash-operations.exec"))?;
         Ok(Self {
-            execute: instance.get_typed_func(&mut *store, index)?,
+            execute: super::typed(store, instance, guest, "[method]bash-operations.exec")?,
         })
     }
 

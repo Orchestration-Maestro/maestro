@@ -124,8 +124,7 @@ impl Request {
 /// Validates a canonical optional string without JSON-quoting its content.
 pub(crate) fn optional_string(value: Option<&serde_json::Value>) -> Result<Option<String>, String> {
     value
-        .cloned()
-        .map(serde_json::from_value)
+        .map(<String as serde::Deserialize>::deserialize)
         .transpose()
         .map_err(|error| error.to_string())
 }

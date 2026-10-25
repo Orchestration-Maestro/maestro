@@ -38,7 +38,6 @@ impl Request {
                 let result = list
                     .read()
                     .map_err(|error| error.to_string())
-                    .map(|list| list.clone())
                     .and_then(|models| encode_models(&models));
                 let _ = reply.send(result);
             }
@@ -53,8 +52,8 @@ impl Request {
                 let result = catalog
                     .find(&provider, &id)
                     .map(|model| {
-                        let owned = model.read().map_err(|error| error.to_string())?.clone();
-                        serde_json::to_string(&owned).map_err(|error| error.to_string())
+                        let model = model.read().map_err(|error| error.to_string())?;
+                        serde_json::to_string(&*model).map_err(|error| error.to_string())
                     })
                     .transpose();
                 let _ = reply.send(result);
@@ -63,18 +62,14 @@ impl Request {
     }
 }
 
-/// Releases model guards before encoding the crossing's owned decoded values.
-fn encode_models<T: Clone + Serialize>(models: &[Arc<RwLock<T>>]) -> Result<String, String> {
-    let owned: Result<Vec<T>, String> = models
+/// Encodes the descriptors through their read guards, without copying them.
+fn encode_models<T: Serialize>(models: &[Arc<RwLock<T>>]) -> Result<String, String> {
+    let guards = models
         .iter()
-        .map(|model| {
-            model
-                .read()
-                .map(|model| model.clone())
-                .map_err(|error| error.to_string())
-        })
-        .collect();
-    serde_json::to_string(&owned?).map_err(|error| error.to_string())
+        .map(|model| model.read().map_err(|error| error.to_string()))
+        .collect::<Result<Vec<_>, _>>()?;
+    let models: Vec<&T> = guards.iter().map(|model| &**model).collect();
+    serde_json::to_string(&models).map_err(|error| error.to_string())
 }
 
 /// Store-owned identity of the original live catalog.

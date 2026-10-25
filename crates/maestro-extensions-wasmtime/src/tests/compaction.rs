@@ -64,6 +64,8 @@ async fn compaction(command: bool) {
     }
     worker.join().unwrap();
     let full = full_options(std::mem::take(&mut *requests.borrow_mut()));
+    let on_error = full.on_error.clone().unwrap();
+    super::reports_reentry(&mut pump, move || on_error(" error ".into())).await;
     let worker = std::thread::spawn(move || notifications(incoming));
     let complete = (full.on_complete.as_ref().unwrap())(
         serde_json::from_value(

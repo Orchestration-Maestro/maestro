@@ -57,18 +57,10 @@ impl Exports {
         instance: &Instance,
         guest: &ComponentExportIndex,
     ) -> wasmtime::Result<Self> {
-        let mut index = |name| {
-            instance
-                .get_export_index(&mut *store, Some(guest), name)
-                .ok_or_else(|| wasmtime::format_err!("missing extension guest export {name}"))
-        };
-        let command = index("invoke-command")?;
-        let completion = index("invoke-completion")?;
-        let shortcut = index("invoke-shortcut")?;
         Ok(Self {
-            command: instance.get_typed_func(&mut *store, command)?,
-            completion: instance.get_typed_func(&mut *store, completion)?,
-            shortcut: instance.get_typed_func(&mut *store, shortcut)?,
+            command: super::typed(store, instance, guest, "invoke-command")?,
+            completion: super::typed(store, instance, guest, "invoke-completion")?,
+            shortcut: super::typed(store, instance, guest, "invoke-shortcut")?,
         })
     }
 

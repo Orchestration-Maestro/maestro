@@ -36,11 +36,8 @@ impl Exports {
         instance: &Instance,
         guest: &ComponentExportIndex,
     ) -> wasmtime::Result<Self> {
-        let index = instance
-            .get_export_index(&mut *store, Some(guest), "invoke-event")
-            .ok_or_else(|| wasmtime::format_err!("missing extension invoke-event"))?;
         Ok(Self {
-            invoke: instance.get_typed_func(store, index)?,
+            invoke: super::typed(store, instance, guest, "invoke-event")?,
         })
     }
     /// Retains callback ownership through completion and removes its temporary borrow.
