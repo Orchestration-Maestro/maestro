@@ -263,12 +263,12 @@ enum Action {
     /// Refresh after the shared mode owner changes selection.
     Mode,
 }
-/// Element retains its creating operands even after its caller drops the returned handle.
-struct Element {
+/// Attachment element retains its creating operands even after its caller drops the returned handle.
+struct AttachmentElement {
     /// State exists only for an explicitly opened element.
     state: Option<Rc<State>>,
 }
-impl custom_element::CustomElement for Element {
+impl custom_element::CustomElement for AttachmentElement {
     fn disconnected_callback(&mut self) {
         if let Some(state) = &self.state {
             state.disconnect();
@@ -286,8 +286,10 @@ fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
         .get("attachment-overlay")
         .is_undefined()
     {
-        dom::define_element("attachment-overlay", Vec::new(), &[], |_, _| Element {
-            state: CREATING.take(),
+        dom::define_element("attachment-overlay", Vec::new(), &[], |_, _| {
+            AttachmentElement {
+                state: CREATING.take(),
+            }
         })
         .map_err(|error| ToolUiError::native(&error))?;
     }

@@ -10,6 +10,10 @@ use crate::{
 use maestro_app::{browser::utils::attachment_utils::AttachmentType, truncate_utf16};
 use maestro_theme::BrandPresentation;
 use std::{rc::Rc, sync::Arc};
+/// Native page attachment tiles.
+#[doc(hidden)]
+pub mod dom;
+
 /// A caller-owned attachment tile.
 pub struct AttachmentTile {
     /// Original mutable record.
@@ -72,7 +76,7 @@ impl AttachmentTile {
         p: &BrandPresentation<'_>,
     ) -> Result<Option<AttachmentOverlay>, AttachmentUiError> {
         style(ui, p).map_err(|error| AttachmentUiError::Presentation(error.to_string()))?;
-        let (name, preview, pdf, excel) = self.thumbnail_data()?;
+        let (name, preview, pdf, excel) = thumbnail_data(&self.attachment)?;
         let (_, rect) = ui.allocate_space(egui::vec2(64., 64.));
         let badge = (pdf && preview.is_some()).then_some(rect.with_min_y(rect.bottom() - 19.));
         let image = badge.map_or(rect, |badge| rect.with_max_y(badge.top()));
@@ -129,30 +133,6 @@ impl AttachmentTile {
         Ok((response.clicked() && !removed).then(|| {
             AttachmentOverlay::open(Arc::clone(&self.attachment), None, Rc::clone(&self.host))
         }))
-    }
-    /// Copy only operands needed outside the record borrow.
-    fn thumbnail_data(&self) -> Result<(String, Option<String>, bool, bool), AttachmentUiError> {
-        let a = self
-            .attachment
-            .try_read()
-            .map_err(|_| AttachmentUiError::BorrowConflict)?;
-        let mime = if a.r#type == AttachmentType::Image {
-            a.mime_type.as_str()
-        } else {
-            "image/png"
-        };
-        Ok((
-            a.file_name.clone(),
-            a.preview
-                .as_ref()
-                .filter(|s| !s.is_empty())
-                .map(|s| format!("data:{mime};base64,{s}")),
-            a.mime_type == "application/pdf",
-            a.mime_type.contains("spreadsheetml")
-                || [".xlsx", ".xls"]
-                    .iter()
-                    .any(|s| a.file_name.to_ascii_lowercase().ends_with(s)),
-        ))
     }
     /// Keep the remove target allocated while its paint is hidden.
     fn delete<F: ?Sized>(
@@ -232,11 +212,7 @@ fn fallback(
         if excel { "FileSpreadsheet" } else { "FileText" },
         tint,
     )?;
-    let label = if name.encode_utf16().count() > 10 {
-        format!("{}...", truncate_utf16(name, 8))
-    } else {
-        name.to_owned()
-    };
+    let label = filename_label(name);
     let bounds = rect.shrink(8.);
     let mut job = egui::text::LayoutJob::simple(label, caption(ui), tint, bounds.width());
     job.wrap.max_rows = 1;
@@ -273,4 +249,39 @@ fn pdf_badge<F: ?Sized>(
         color(p, "muted").map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
     );
     Ok(())
+}
+
+/// Copy only operands needed outside the record borrow.
+fn thumbnail_data(
+    attachment: &crate::SharedAttachment,
+) -> Result<(String, Option<String>, bool, bool), AttachmentUiError> {
+    let a = attachment
+        .try_read()
+        .map_err(|_| AttachmentUiError::BorrowConflict)?;
+    let mime = if a.r#type == AttachmentType::Image {
+        a.mime_type.as_str()
+    } else {
+        "image/png"
+    };
+    Ok((
+        a.file_name.clone(),
+        a.preview
+            .as_ref()
+            .filter(|s| !s.is_empty())
+            .map(|s| format!("data:{mime};base64,{s}")),
+        a.mime_type == "application/pdf",
+        a.mime_type.contains("spreadsheetml")
+            || [".xlsx", ".xls"]
+                .iter()
+                .any(|s| a.file_name.to_ascii_lowercase().ends_with(s)),
+    ))
+}
+
+/// Keep whole characters within the shortened filename prefix.
+fn filename_label(name: &str) -> String {
+    if name.encode_utf16().count() > 10 {
+        format!("{}...", truncate_utf16(name, 8))
+    } else {
+        name.to_owned()
+    }
 }

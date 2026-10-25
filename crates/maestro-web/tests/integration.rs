@@ -58,6 +58,7 @@ mod native_attachment_browser;
 mod native_console_browser;
 mod native_document_artifacts_browser;
 mod native_markdown_browser;
+mod native_messages_browser;
 mod native_simple_artifacts_browser;
 mod native_thinking_browser;
 mod pdf_views;

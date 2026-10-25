@@ -1,5 +1,15 @@
 # Browser transcript
 
+## Native user rows
+
+`components::messages::dom::UserMessage<C>` mounts through `DomContent` with no
+attachment host. `Default` leaves its required `message` unset; mounting that row
+returns an error. Set `message` to the original application message before mounting.
+The row selects the first text block without trimming its source. Only the
+attachment-bearing user branch emits tiles, in original order, retaining the
+original shared handles. Candidate children are prepared before replacing the
+contents of the containing root, so a failed preparation preserves its last content.
+
 ## Retained message rows
 
 `UserMessage`, `AssistantMessage`, `ToolMessage`, `ToolMessageDebugView`,

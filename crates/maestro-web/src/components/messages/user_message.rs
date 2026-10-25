@@ -12,6 +12,10 @@ use crate::{
 use maestro_app::{UserBlock, UserContent};
 use std::rc::Rc;
 
+/// Native user rows with owned message operands.
+#[doc(hidden)]
+pub mod dom;
+
 /// Borrow existing user content without creating another storage record.
 #[derive(Clone, Copy)]
 pub enum UserMessageInput<'a> {
@@ -78,16 +82,7 @@ impl UserMessage {
                 attachments,
             } => (content, attachments.unwrap_or_default()),
         };
-        let source = match content {
-            UserContent::Text(text) => text.as_str(),
-            UserContent::Blocks(blocks) => blocks
-                .iter()
-                .find_map(|block| match block {
-                    UserBlock::Text(text) => Some(text.text.as_str()),
-                    UserBlock::Image(_) => None,
-                })
-                .unwrap_or_default(),
-        };
+        let source = user_source(content);
         self.text.content.clear();
         self.text.content.push_str(source);
         self.tiles.truncate(attachments.len());
@@ -208,4 +203,18 @@ fn decoration() -> Rc<ReadingContent> {
             })
         }),
     })
+}
+
+/// Select the first text block without trimming or consulting later blocks.
+fn user_source(content: &UserContent) -> &str {
+    match content {
+        UserContent::Text(text) => text.as_str(),
+        UserContent::Blocks(blocks) => blocks
+            .iter()
+            .find_map(|block| match block {
+                UserBlock::Text(text) => Some(text.text.as_str()),
+                UserBlock::Image(_) => None,
+            })
+            .unwrap_or_default(),
+    }
 }

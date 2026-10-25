@@ -1,6 +1,6 @@
 //! Native attachment controls exercised through their registered page elements.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{body, host, view};
+use crate::contributions_support::{body, host, select, text, view};
 use js_sys::{Array, Function, Reflect};
 use maestro_web::dom::DomContent as _;
 use std::{cell::RefCell, rc::Rc};
@@ -868,4 +868,150 @@ async fn refused_overlay_open(
             0
         );
     }
+}
+
+/// Every thumbnail branch preserves the original URL and literal filename.
+#[wasm_bindgen]
+pub async fn tile_dom_preview_fallback_badge_and_utf16_names(import_module: &Function) {
+    let view = view();
+    crate::attachment_tiles::native_cases(&view);
+    tile_hover(&view, import_module).await;
+}
+
+/// Removal uses the latest callback and never reaches the opening listener.
+#[wasm_bindgen]
+pub async fn tile_dom_remove_does_not_open_and_uses_current_callback() {
+    use maestro_web::components::attachment_tile::dom::AttachmentTile;
+    let view = view();
+    let mut tile = AttachmentTile::from(crate::attachment_support::attachment());
+    let root = tile.mount(&view).unwrap();
+    body().append_child(&root.node).unwrap();
+    let node: Element = root.node.clone().unchecked_into();
+    assert!(node.query_selector("[data-remove]").unwrap().is_none());
+    tile.show_delete = true;
+    tile.update(&root, &view).unwrap();
+    control(&node, "[data-remove]");
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let old = Rc::clone(&calls);
+    tile.on_delete = Some(Rc::new(move || old.set(old.get() + 100)));
+    tile.update(&root, &view).unwrap();
+    let current = Rc::clone(&calls);
+    tile.on_delete = Some(Rc::new(move || current.set(current.get() + 1)));
+    tile.update(&root, &view).unwrap();
+    let remove: HtmlElement = node
+        .query_selector("[data-remove]")
+        .unwrap()
+        .unwrap()
+        .unchecked_into();
+    assert_eq!(
+        crate::contributions_support::computed(remove.as_ref(), "opacity"),
+        "1"
+    );
+    remove.focus().unwrap();
+    assert!(
+        view.document
+            .active_element()
+            .unwrap()
+            .is_same_node(Some(&remove))
+    );
+    crate::contributions_support::driver("driverPress", "Enter").await;
+    assert_eq!(calls.get(), 1);
+    crate::contributions_support::driver("driverPress", "Space").await;
+    assert_eq!(calls.get(), 2);
+    assert_eq!(
+        view.document
+            .query_selector_all("attachment-overlay")
+            .unwrap()
+            .length(),
+        0
+    );
+    node.remove();
+}
+
+/// Opened overlays retain the original record after their originating tile is gone.
+#[wasm_bindgen]
+pub fn tile_dom_opened_overlays_outlive_tiles() {
+    use maestro_web::components::attachment_tile::dom::AttachmentTile;
+    let view = view();
+    let attachment = crate::attachment_support::attachment();
+    attachment.write().unwrap().mime_type = "image/png".into();
+    attachment.write().unwrap().r#type =
+        maestro_app::browser::utils::attachment_utils::AttachmentType::Image;
+    attachment.write().unwrap().content = "YQ==".into();
+    attachment.write().unwrap().preview = None;
+    let mut tile = AttachmentTile::from(std::sync::Arc::clone(&attachment));
+    let root = tile.mount(&view).unwrap();
+    body().append_child(&root.node).unwrap();
+    let node: Element = root.node.clone().unchecked_into();
+    attachment.write().unwrap().content = "Zmlyc3Q=".into();
+    control(&node, "[data-open]");
+    let first = view
+        .document
+        .query_selector("attachment-overlay")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        select(first.as_ref(), "img").get_attribute("src").unwrap(),
+        "data:image/png;base64,Zmlyc3Q="
+    );
+    tile.attachment = crate::attachment_support::attachment();
+    let attachment = std::sync::Arc::clone(&tile.attachment);
+    attachment.write().unwrap().mime_type = "image/png".into();
+    attachment.write().unwrap().r#type =
+        maestro_app::browser::utils::attachment_utils::AttachmentType::Image;
+    attachment.write().unwrap().content = "c2Vjb25k".into();
+    attachment.write().unwrap().file_name = "changed.txt".into();
+    attachment.write().unwrap().preview = Some("PNG".into());
+    tile.update(&root, &view).unwrap();
+    control(&node, "[data-open]");
+    let second = view
+        .document
+        .query_selector_all("attachment-overlay")
+        .unwrap()
+        .item(1)
+        .unwrap()
+        .unchecked_into::<Element>();
+    assert_eq!(
+        select(second.as_ref(), "img").get_attribute("src").unwrap(),
+        "data:image/png;base64,c2Vjb25k"
+    );
+    assert_eq!(
+        text(&select(second.as_ref(), ".maestro-attachment-name")),
+        "changed.txt"
+    );
+    node.remove();
+    drop((tile, root));
+    assert!(first.is_connected());
+    assert!(second.is_connected());
+    close(&first);
+    assert!(second.is_connected());
+    close(&second);
+}
+
+/// Hover-capable paint and focused removal remain visible through native pointer input.
+async fn tile_hover(view: &maestro_web::dom::DomView, import_module: &Function) {
+    use crate::contributions_support::{call, computed, driver, page_module};
+    let page = page_module(import_module).await;
+    let mut tile = maestro_web::components::attachment_tile::dom::AttachmentTile::from(
+        crate::attachment_support::attachment(),
+    );
+    tile.show_delete = true;
+    let root = tile.mount(view).unwrap();
+    body().append_child(&root.node).unwrap();
+    let remove = select(&root.node, "[data-remove]");
+    assert_eq!(computed(&remove, "opacity"), "0");
+    let rect = select(&root.node, "[data-open]").get_bounding_client_rect();
+    driver(
+        "driverPointer",
+        &format!("[{}, {}, false]", rect.x() + 10., rect.y() + 10.),
+    )
+    .await;
+    call(&page, "finish", &Array::of1(&remove)).await;
+    assert_eq!(computed(&remove, "opacity"), "1");
+    driver("driverPointer", "[700, 500, false]").await;
+    call(&page, "finish", &Array::of1(&remove)).await;
+    remove.unchecked_ref::<HtmlElement>().focus().unwrap();
+    call(&page, "finish", &Array::of1(&remove)).await;
+    assert_eq!(computed(&remove, "opacity"), "1");
+    root.node.unchecked_ref::<Element>().remove();
 }

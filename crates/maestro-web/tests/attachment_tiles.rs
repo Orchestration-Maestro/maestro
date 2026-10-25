@@ -386,3 +386,77 @@ fn user_attachment_tiles_wrap_as_single_fixed_items() {
     output.response.unwrap();
     assert_eq!(output.overlays.len(), 1);
 }
+
+/// Replay the tile corpus through native controls rather than drawing placements.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn native_cases(view: &maestro_web::dom::DomView) {
+    use maestro_web::dom::DomContent as _;
+    use wasm_bindgen::JsCast as _;
+    for case in cases() {
+        let attachment = case.input.record();
+        let name = attachment.read().unwrap().file_name.clone();
+        let mut tile =
+            maestro_web::components::attachment_tile::dom::AttachmentTile::from(attachment);
+        tile.show_delete = case.show_delete;
+        let root = tile.mount(view).unwrap();
+        let node: web_sys::Element = root.node.clone().unchecked_into();
+        assert_eq!(
+            node.query_selector("[data-remove]").unwrap().is_some(),
+            case.expected.remove,
+            "{}",
+            case.name
+        );
+        let target = node.query_selector("[data-open]").unwrap().unwrap();
+        assert_eq!(
+            target.get_attribute("title").as_deref(),
+            Some(name.as_str()),
+            "{}",
+            case.name
+        );
+        if let Some(expected) = case.expected.preview {
+            let image = node.query_selector("img").unwrap().unwrap();
+            assert_eq!(
+                image.get_attribute("src").unwrap(),
+                expected,
+                "{}",
+                case.name
+            );
+            assert_eq!(image.get_attribute("alt").unwrap(), name, "{}", case.name);
+        } else {
+            assert_eq!(
+                node.query_selector(".maestro-tile-label")
+                    .unwrap()
+                    .unwrap()
+                    .text_content()
+                    .unwrap(),
+                case.expected.label.unwrap(),
+                "{}",
+                case.name
+            );
+            native_glyph(&node, case.expected.icon.as_ref().unwrap());
+        }
+        assert_eq!(
+            node.query_selector(".maestro-tile-badge")
+                .unwrap()
+                .is_some(),
+            case.expected.pdf_badge,
+            "{}",
+            case.name
+        );
+    }
+}
+
+/// Native geometry follows the same catalog glyph as the retained corpus.
+#[cfg(target_arch = "wasm32")]
+fn native_glyph(node: &web_sys::Element, icon: &str) {
+    let expected = maestro_web::icons::icons()
+        .unwrap()
+        .swap_remove(icon)
+        .unwrap();
+    let expected =
+        maestro_web::icons::icon_dom(&expected, maestro_web::icons::IconSize::Md, None).unwrap();
+    assert_eq!(
+        node.query_selector("svg").unwrap().unwrap().inner_html(),
+        expected.inner_html()
+    );
+}

@@ -23,10 +23,8 @@
   to { background-position: 200% 0; }
 }
 
-.maestro-user-decoration {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+.maestro-user-decoration { position: absolute; inset: 0; pointer-events: none; }
+.maestro-user-decoration, .maestro-user-bubble {
   box-sizing: border-box;
   border-radius: 0.75rem;
   background: linear-gradient(135deg, color-mix(in srgb, var(--maestro-color-accent) 12%, transparent), color-mix(in srgb, var(--maestro-color-live) 12%, transparent), color-mix(in srgb, var(--maestro-color-warning) 12%, transparent));
@@ -49,3 +47,7 @@
 }
 .maestro-artifact-pill.maestro-text-action:hover { background: var(--maestro-color-panel); }
 .maestro-artifact-pill svg { flex-shrink: 0; }
+
+.maestro-user-row { display: flex; justify-content: flex-start; margin: 0 1rem; }
+.maestro-user-bubble { position: relative; max-width: 100%; padding: .5rem 1rem; backdrop-filter: blur(10px); }
+.maestro-user-attachments { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }

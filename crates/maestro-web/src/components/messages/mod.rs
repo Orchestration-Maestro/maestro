@@ -32,3 +32,12 @@ fn color(view: ToolRenderView<'_>, role: &str) -> Result<egui::Color32, ToolUiEr
     crate::browser::attachment_content::color(view.presentation, role)
         .map_err(|error| ToolUiError::Presentation(error.to_string()))
 }
+
+#[cfg(test)]
+mod tests;
+
+/// Native page message rows.
+#[doc(hidden)]
+pub mod dom {
+    pub use super::user_message::dom::UserMessage;
+}

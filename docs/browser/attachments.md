@@ -53,6 +53,15 @@ with centered, selectable native error text while leaving download and close
 available. A nonempty overlay failure stays dominant through record edits until
 a mode change clears it; an empty host-presentation diagnostic stays suppressed.
 
+## Native page tiles
+
+On WebAssembly, `components::attachment_tile::dom::AttachmentTile::from(attachment)`
+mounts through `DomContent` without an attachment host. The tile keeps the original
+shared attachment, including when its operand is replaced. Its optional removal
+button uses the current callback after an update; removal never opens a preview.
+Hover-capable pointers reveal the button on hover, and keyboard focus reveals it
+too. Other pointer types keep it visible. Opened overlays outlive their tiles.
+
 ## Native page overlay
 
 On WebAssembly, `AttachmentOverlay::open_native(&view, attachment, on_close)`
