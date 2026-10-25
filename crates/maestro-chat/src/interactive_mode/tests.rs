@@ -7,6 +7,7 @@ mod debug;
 mod events;
 mod extension_ui;
 mod extension_widgets;
+mod extensions;
 mod info;
 mod lifecycle;
 mod models;
@@ -466,6 +467,8 @@ pub(super) struct Setup {
     pub(super) session_history: Option<std::path::PathBuf>,
     /// The directories the theme registry reads, when it records themes on disk.
     pub(super) directories: Option<maestro_theme::ThemeDirectories>,
+    /// Further inline extensions beside `extension`, each under the path given.
+    pub(super) further: Vec<(String, ExtensionFactory<Local>)>,
     /// The loaded themes the loader answers before the dark and light palettes.
     pub(super) themes: Vec<Rc<Theme>>,
     /// The loaded extensions by path and provenance; the default loader's when these,
@@ -501,6 +504,7 @@ impl Default for Setup {
             create: None,
             replacing: false,
             session_history: None,
+            further: Vec::new(),
             themes: Vec::new(),
             extensions: Vec::new(),
             errors: Vec::new(),
@@ -512,33 +516,47 @@ impl Default for Setup {
     }
 }
 
-/// Loads `factory` as the session's only extension; its initialization must finish at once.
-fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResult<Local>> {
+/// Loads `factory` and then `further` as the session's extensions; their initialization
+/// must finish at once.
+fn loaded(
+    cwd: &str,
+    factory: ExtensionFactory<Local>,
+    further: Vec<(String, ExtensionFactory<Local>)>,
+) -> Rc<LoadExtensionsResult<Local>> {
     let local = Rc::new(tokio::task::LocalSet::new());
     let bus = <Local as DefaultEventBus>::default_event_bus(&local);
-    loaded_on_bus(cwd, factory, bus.for_extension())
+    loaded_on_bus(cwd, factory, &bus.for_extension(), further)
 }
 
-/// Loads one synchronous-ready extension on the supplied shared event bus.
+/// Loads synchronous-ready extensions on the supplied shared event bus.
 fn loaded_on_bus(
     cwd: &str,
     factory: ExtensionFactory<Local>,
-    bus: maestro_app::EventBus<Local>,
+    bus: &maestro_app::EventBus<Local>,
+    further: Vec<(String, ExtensionFactory<Local>)>,
 ) -> Rc<LoadExtensionsResult<Local>> {
     let runtime = create_extension_runtime::<Local>();
-    let loading = std::pin::pin!(load_extension_from_factory(
-        factory,
-        cwd.to_owned(),
-        bus,
-        Rc::clone(&runtime),
-        None,
-    ));
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
-        panic!("the inline extension initializes at once");
-    };
+    let mut extensions = Vec::new();
+    for (path, factory) in std::iter::once((None, factory)).chain(
+        further
+            .into_iter()
+            .map(|(path, factory)| (Some(path), factory)),
+    ) {
+        let loading = std::pin::pin!(load_extension_from_factory(
+            factory,
+            cwd.to_owned(),
+            bus.clone(),
+            Rc::clone(&runtime),
+            path,
+        ));
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
+            panic!("the inline extension initializes at once");
+        };
+        extensions.push(owner.unwrap());
+    }
     Rc::new(LoadExtensionsResult {
-        extensions: vec![owner.unwrap()],
+        extensions,
         errors: Vec::new(),
         runtime,
     })
@@ -562,7 +580,7 @@ impl Setup {
             commands: self.commands,
             diagnostics: self.diagnostics,
         };
-        let extensions = self.extension.map(|factory| loaded(&cwd, factory));
+        let extensions = self.extension.map(|init| loaded(&cwd, init, self.further));
         let history = self
             .session_history
             .as_ref()

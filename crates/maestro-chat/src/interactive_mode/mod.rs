@@ -26,6 +26,7 @@ mod compaction_queue;
 mod debug;
 mod dispatch;
 mod events;
+mod extensions;
 mod info;
 mod key_display;
 mod lifecycle;
@@ -96,6 +97,8 @@ pub struct InteractiveMode {
     editor_container: Rc<Container>,
     /// The input editor.
     editor: Rc<CustomEditor>,
+    /// The keybindings the editor reads, and the configured keys extension shortcuts use.
+    keybindings: KeybindingsManager,
     /// The footer.
     footer: Rc<FooterComponent>,
     /// The footer metadata and its branch watch.
@@ -165,12 +168,7 @@ impl InteractiveMode {
         let session = runtime_host.session();
         let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
-        let keys = KeybindingsManager::create(None)?;
-        maestro_tui::set_keybindings((*keys).clone());
-        let settings = session.settings_manager();
-        let editor = create_editor(&ui, themes.theme(), (*keys).clone(), settings);
-        let editor_container = Rc::new(Container::new());
-        editor_container.add_child(editor.clone());
+        let (keys, editor, editor_container) = create_input(&session, &ui, themes.theme())?;
         let footer_data_provider = FooterDataProvider::new(
             session.session_manager().borrow().get_cwd().to_owned(),
             operations.clone(),
@@ -196,6 +194,7 @@ impl InteractiveMode {
             widget_container_below: Rc::new(Container::new()),
             editor_container,
             editor,
+            keybindings: keys,
             footer,
             footer_data_provider,
             operations,
@@ -270,6 +269,8 @@ impl InteractiveMode {
         self.is_initialized.set(true);
         self.subscribe_to_agent();
         self.update_terminal_title()?;
+        let runner = self.runtime_host.session().extension_runner();
+        self.setup_extension_shortcuts(&runner);
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
@@ -359,6 +360,26 @@ fn create_ui(
     );
     ui.set_clear_on_shrink(settings.get_clear_on_shrink());
     Rc::new(ui)
+}
+
+/// The configured keybindings, input editor and its presentation container.
+type ConfiguredInput = (KeybindingsManager, Rc<CustomEditor>, Rc<Container>);
+
+/// Builds the configured input editor and its container over the same keybindings.
+///
+/// # Errors
+/// Returns a failure to read the keybinding configuration.
+fn create_input(
+    session: &AgentSession,
+    ui: &TUI,
+    theme: LiveTheme,
+) -> Result<ConfiguredInput, Box<dyn Error>> {
+    let keys = KeybindingsManager::create(None)?;
+    maestro_tui::set_keybindings((*keys).clone());
+    let editor = create_editor(ui, theme, (*keys).clone(), session.settings_manager());
+    let container = Rc::new(Container::new());
+    container.add_child(editor.clone());
+    Ok((keys, editor, container))
 }
 
 /// Builds the editor with the configured padding and completion limit.

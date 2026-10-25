@@ -434,7 +434,8 @@ fn widget_factory_callbacks_retain_origin_and_release_the_last_owner() {
             let loaded = super::loaded_on_bus(
                 directory.to_str().unwrap(),
                 origin_factory(trace.clone(), stored.clone(), released, operands.clone()),
-                controller.for_extension(),
+                &controller.for_extension(),
+                Vec::new(),
             );
             let callback = stored.take().unwrap();
             let retained_factory = callback.clone();

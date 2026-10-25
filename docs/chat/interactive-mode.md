@@ -44,7 +44,9 @@ one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
 editor submission and the global debug key, and starts the terminal. A terminal
 start failure is returned and leaves the mode uninitialized. Once started, it
-subscribes to the session events and sets the window title. A theme change then
+subscribes to the session events and sets the window title. It installs the
+[extension shortcut interceptor](extension-ui.md#shortcuts) using the current runner.
+A theme change then
 invalidates the presentation, recolours the editor border and requests a frame,
 and a branch change requests a frame. Neither callback keeps the mode alive. Last,
 it lists the loaded resources and their diagnostics in the transcript, shows the
@@ -512,6 +514,9 @@ a row a renderer appends during the walk is reached, and a row it removes is not
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
 replays the transcript, puts a streaming row back after it with the new visibility
 and shows `Thinking blocks: hidden` or `Thinking blocks: visible`. A shortcut's failure goes to the terminal runtime's error route.
+
+Extension shortcuts run before these actions; [extension UI](extension-ui.md#shortcuts)
+covers their selection, dispatch and failure notice.
 
 ## Thinking and model cycling
 
