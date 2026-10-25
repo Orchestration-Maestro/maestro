@@ -312,3 +312,255 @@ fn operation(tokens: &[&str], here: (&str, &str, &str)) -> SessionOperation {
         other => panic!("{tokens:?} selected {other:?}"),
     }
 }
+
+#[test]
+fn confirmation_keeps_untrimmed_answers_and_eof() {
+    use maestro_cli::startup::main::inputs::prompt_confirm;
+    for (bytes, expected) in [
+        (&b"Y\n"[..], Some(true)),
+        (&b"YeS\r\n"[..], Some(true)),
+        (&b"yes\r"[..], Some(true)),
+        (&b" yes\n"[..], Some(false)),
+        (&b"yes \n"[..], Some(false)),
+        (&b"no\n"[..], Some(false)),
+        (&b"\n"[..], Some(false)),
+        (&b"yes"[..], None),
+        (&b""[..], None),
+    ] {
+        let mut input = bytes;
+        let mut output = Vec::new();
+        assert_eq!(
+            startup::runtime()
+                .block_on(prompt_confirm("Fork?", &mut input, &mut output))
+                .unwrap(),
+            expected
+        );
+        assert_eq!(output, b"Fork? [y/N] ");
+    }
+    for (refusal, expected) in [(Some(false), 5), (Some(true), 6), (None, 7)] {
+        let flushed = std::rc::Rc::new(std::cell::Cell::new(false));
+        let mut reader = QuestionInput(std::rc::Rc::clone(&flushed));
+        let mut writer = QuestionOutput {
+            bytes: Vec::new(),
+            flushed,
+            refusal,
+        };
+        let error = startup::runtime()
+            .block_on(prompt_confirm("Fork?", &mut reader, &mut writer))
+            .unwrap_err();
+        assert_eq!(error.raw_os_error(), Some(expected));
+    }
+}
+
+/// Output that records flushing and can refuse either output phase.
+struct QuestionOutput {
+    bytes: Vec<u8>,
+    flushed: std::rc::Rc<std::cell::Cell<bool>>,
+    refusal: Option<bool>,
+}
+impl std::io::Write for QuestionOutput {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        if self.refusal == Some(false) {
+            return Err(std::io::Error::from_raw_os_error(5));
+        }
+        self.bytes.extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        if self.refusal == Some(true) {
+            return Err(std::io::Error::from_raw_os_error(6));
+        }
+        self.flushed.set(true);
+        Ok(())
+    }
+}
+
+/// Input checking that the question was flushed before reading.
+struct QuestionInput(std::rc::Rc<std::cell::Cell<bool>>);
+impl tokio::io::AsyncRead for QuestionInput {
+    fn poll_read(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+        _: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        unreachable!("confirmation uses buffered input")
+    }
+}
+impl tokio::io::AsyncBufRead for QuestionInput {
+    fn poll_fill_buf(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<&[u8]>> {
+        assert!(self.0.get(), "the question must be visible before reading");
+        std::task::Poll::Ready(Err(std::io::Error::from_raw_os_error(7)))
+    }
+    fn consume(self: std::pin::Pin<&mut Self>, _: usize) {
+        unreachable!("refused input has no bytes");
+    }
+}
+
+#[test]
+fn missing_cwd_continue_cancel_and_repeat_settle_once() {
+    use crate::support::missing_cwd::{Dialog, isolated};
+    use maestro_cli::startup::main::presentation::prompt_for_missing_session_cwd;
+    use std::{
+        rc::Rc,
+        task::{Context, Waker},
+    };
+    if isolated("missing_cwd_continue_cancel_and_repeat_settle_once") {
+        return;
+    }
+    for selected in [Some("Continue"), Some("Cancel"), Some("other"), None] {
+        let dialog = Dialog::new();
+        let issue = Dialog::issue();
+        let mut operation = Box::pin(prompt_for_missing_session_cwd(
+            &issue,
+            Rc::clone(&dialog.settings),
+            dialog.presentation(),
+        ));
+        let mut cx = Context::from_waker(Waker::noop());
+        assert!(operation.as_mut().poll(&mut cx).is_pending());
+        let request = dialog.captured.borrow_mut().take().unwrap();
+        if let Some(selected) = selected {
+            (request.on_select)(selected);
+        } else {
+            (request.on_cancel)();
+        }
+        (request.on_select)("Continue");
+        (request.on_cancel)();
+        let result = match operation.as_mut().poll(&mut cx) {
+            std::task::Poll::Ready(result) => result.unwrap(),
+            std::task::Poll::Pending => panic!("settled dialog"),
+        };
+        assert_eq!(
+            result.as_deref(),
+            (selected == Some("Continue")).then_some("/fallback")
+        );
+        assert_eq!(dialog.harness.terminal.events(), ["start", "stop"]);
+    }
+    let dialog = Dialog::new();
+    let issue = Dialog::issue();
+    let mut operation = Box::pin(prompt_for_missing_session_cwd(
+        &issue,
+        Rc::clone(&dialog.settings),
+        dialog.presentation(),
+    ));
+    assert!(
+        operation
+            .as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()))
+            .is_pending()
+    );
+    let cancel = dialog.captured.borrow_mut().take().unwrap().on_cancel;
+    drop(operation);
+    cancel();
+    assert_eq!(dialog.harness.terminal.events(), ["start", "stop"]);
+}
+
+#[test]
+fn missing_cwd_focus_cursor_cleanup_follow_real_writer() {
+    use crate::support::missing_cwd::{Dialog, isolated};
+    use maestro_cli::startup::main::presentation::prompt_for_missing_session_cwd;
+    use maestro_tui::Component;
+    use std::{
+        rc::Rc,
+        task::{Context, Poll, Waker},
+    };
+    if isolated("missing_cwd_focus_cursor_cleanup_follow_real_writer") {
+        return;
+    }
+    for (hardware, clear) in [(false, false), (false, true), (true, true), (true, false)] {
+        let dialog = Dialog::new();
+        let issue = Dialog::issue();
+        let mut operation = Box::pin(prompt_for_missing_session_cwd(
+            &issue,
+            Rc::clone(&dialog.settings),
+            dialog.policy_presentation((hardware, clear)),
+        ));
+        let mut cx = Context::from_waker(Waker::noop());
+        assert!(operation.as_mut().poll(&mut cx).is_pending());
+        dialog.harness.frames();
+        let presented_ui = dialog.captured.borrow().as_ref().unwrap().tui.clone();
+        assert_eq!(
+            presented_ui.render(80).len(),
+            1,
+            "the supplied writer contains the presented component"
+        );
+        assert_eq!(
+            dialog.frames.borrow().first().map(String::as_str),
+            Some("render:true")
+        );
+        let cancel = dialog.captured.borrow().as_ref().unwrap().on_cancel.clone();
+        cancel();
+        cancel();
+        assert!(matches!(
+            operation.as_mut().poll(&mut cx),
+            Poll::Ready(Ok(None))
+        ));
+        assert_eq!(dialog.harness.terminal.events(), ["start", "stop"]);
+    }
+}
+
+#[test]
+fn missing_cwd_failures_release_created_writer() {
+    use crate::support::missing_cwd::{Dialog, isolated};
+    use maestro_cli::startup::main::presentation::prompt_for_missing_session_cwd;
+    use std::{
+        io,
+        rc::Rc,
+        task::{Context, Poll, Waker},
+    };
+    if isolated("missing_cwd_failures_release_created_writer") {
+        return;
+    }
+    for phase in ["theme", "writer", "component", "start"] {
+        let (dialog, issue) = (Dialog::new(), Dialog::issue());
+        let mut presentation = dialog.presentation();
+        match phase {
+            "theme" => {
+                presentation.theme = Rc::new(maestro_theme::ThemeState::new(
+                    maestro_theme::ThemeDirectories {
+                        themes_dir: "/nonexistent-themes".into(),
+                        custom_themes_dir: "/nonexistent-custom".into(),
+                    },
+                ));
+            }
+            "writer" => presentation.create_ui = Rc::new(|_| Err(io::Error::from_raw_os_error(5))),
+            "component" => {
+                presentation.presenter = Rc::new(|_| Err(io::Error::from_raw_os_error(5)));
+            }
+            "start" => dialog
+                .harness
+                .terminal
+                .set_hide_error(Some(io::ErrorKind::PermissionDenied)),
+            _ => unreachable!(),
+        }
+        let mut operation = Box::pin(prompt_for_missing_session_cwd(
+            &issue,
+            Rc::clone(&dialog.settings),
+            presentation,
+        ));
+        let Poll::Ready(Err(error)) = operation
+            .as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()))
+        else {
+            panic!("the phase must fail");
+        };
+        if phase == "start" {
+            assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+        } else if phase != "theme" {
+            assert_eq!(error.raw_os_error(), Some(5));
+        }
+        assert!(
+            dialog
+                .harness
+                .terminal
+                .events()
+                .iter()
+                .filter(|event| **event == "stop")
+                .count()
+                <= 1
+        );
+    }
+    crate::support::missing_cwd::keybinding_defaults();
+}
