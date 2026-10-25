@@ -1023,7 +1023,7 @@ const AUTO_COMPACTION_FAILURE: &str =
 
 /// Runs `action` from the start notification of a compaction of `world`'s session, while
 /// the session compacts, then lets the compaction end.
-fn during_compaction(world: &World, action: impl Fn(&Rc<InteractiveMode>) + 'static) {
+pub(super) fn during_compaction(world: &World, action: impl Fn(&Rc<InteractiveMode>) + 'static) {
     let session = world.mode.runtime_host.session();
     let mode = Rc::downgrade(&world.mode);
     let compacting = Rc::clone(&session);

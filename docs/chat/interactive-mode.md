@@ -34,7 +34,7 @@ fallback theme is returned.
 ## Startup
 
 `init` does nothing while the mode is initialized. After `stop`, it runs again.
-Before building the header, it installs termination and output-error handlers. Native
+Before building the header, it installs termination and output-error handlers. Unix
 initialization runs on a caller-driven Tokio local executor with signal delivery
 enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
 upper widget, editor and lower widget containers and the footer, in that order. The upper widget container starts with
@@ -74,7 +74,12 @@ initialized; only a successful UI stop clears that flag. Reinitialization does
 not restore cleared extension callbacks. The original I/O error is returned.
 Repeating a successful stop does not stop the
 absent loader or UI again. This operation does not dispose the application
-runtime, terminate the process or kill detached children. Key-triggered shutdown is not connected yet.
+runtime, terminate the process or kill detached children. The registered `app.clear` action clears the editor and requests a frame. A second
+press less than 500 ms after the last clear starts graceful shutdown; exactly
+500 ms clears again. Only the clear branch updates that wall-clock timestamp.
+`app.exit` starts the same shutdown only when the editor is empty. Both actions
+honor configured bindings (by default Ctrl+C and Ctrl+D), preserve editor history
+and do not add signal-only detached-child cleanup.
 
 ## Native shutdown
 
@@ -251,7 +256,7 @@ fails after the prompt was accepted stays a session event; the mode adds no noti
 for it.
 
 Still to come: rendering the session's events in the transcript, queued input,
-commands, rebinding the presentation to a replaced session, shutdown, update
+commands, rebinding the presentation to a replaced session, update
 notices and the startup check of subscription-based credentials.
 
 ## Session replay

@@ -41,8 +41,13 @@ impl Output {
     }
 }
 
+/// A live observation at owned-drain creation.
+pub(super) type DrainObservation = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
+
 /// The recording terminal with one controlled drain failure and output producer.
 pub(super) struct TerminalPort {
+    /// An observation at owned-drain creation, before any asynchronous polling.
+    pub(super) before_drain: DrainObservation,
     /// The real recording port whose remaining effects are preserved.
     pub(super) inner: Box<dyn Terminal>,
     /// The stdout failure callback installed by initialization.
@@ -66,6 +71,10 @@ impl Terminal for TerminalPort {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = io::Result<()>>>> {
         assert_eq!(max, Some(Duration::from_millis(1000)));
         assert_eq!(idle, None);
+        let observe = self.before_drain.borrow().clone();
+        if let Some(observe) = observe {
+            observe();
+        }
         self.events.borrow_mut().push("drain".into());
         match self.drain_error.get() {
             Some(kind) => Box::pin(async move { Err(io::Error::from(kind)) }),

@@ -6,7 +6,8 @@ use super::extension_ui::{RecordingWatcher, with_custom_theme};
 use super::{Setup, World, isolated};
 use crate::InteractiveMode;
 use maestro_app::presentation_data::footer_data_provider::FooterOperations;
-use maestro_tui::Component;
+use maestro_tui::tui::InputHandler;
+use maestro_tui::{Component, EditorComponent};
 use std::{
     cell::{Cell, RefCell},
     path::Path,
@@ -336,8 +337,9 @@ pub(super) fn replace_effects(
 type Signals = (Rc<dyn Fn()>, Rc<dyn Fn()>);
 
 /// Observable process effects without touching the real process.
-#[derive(Default)]
 pub(super) struct Effects {
+    /// Wall time the clear action observes.
+    now: Cell<i64>,
     /// Effects in invocation order.
     pub(super) events: Rc<RefCell<Vec<String>>>,
     /// The currently registered callbacks, shared with their remover.
@@ -346,7 +348,21 @@ pub(super) struct Effects {
     fail_registration: Cell<bool>,
 }
 
+impl Default for Effects {
+    fn default() -> Self {
+        Self {
+            now: Cell::new(10000),
+            events: Rc::default(),
+            signals: Rc::default(),
+            fail_registration: Cell::new(false),
+        }
+    }
+}
+
 impl super::super::lifecycle::LifecycleEffects for Effects {
+    fn now_ms(&self) -> i64 {
+        self.now.get()
+    }
     fn register_signals(
         &self,
         terminate: Rc<dyn Fn()>,
@@ -378,6 +394,8 @@ impl super::super::lifecycle::LifecycleEffects for Effects {
 
 /// One mode over observed terminal, runtime and process ports.
 struct Rig {
+    /// Observes the current mode exactly when its owned drain is created.
+    before_drain: ports::DrainObservation,
     /// The actual presentation and application runtime.
     world: World,
     /// Controlled process effects.
@@ -395,9 +413,11 @@ impl Rig {
         let effects = Rc::new(Effects::default());
         let outputs = [ports::Output::default(), ports::Output::default()];
         let drain_error = Rc::new(Cell::new(None));
+        let before_drain = Rc::default();
         setup.lifecycle = effects.clone();
         setup.terminal = Some((
             Rc::new(RefCell::new(ports::TerminalPort {
+                before_drain: Rc::clone(&before_drain),
                 inner: Box::new(terminal.clone()),
                 output: outputs[0].clone(),
                 drain_error: Rc::clone(&drain_error),
@@ -412,6 +432,7 @@ impl Rig {
         world.terminal = terminal;
         world.runtime = runtime;
         Self {
+            before_drain,
             world,
             effects,
             outputs,
@@ -656,6 +677,13 @@ fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
         );
     }
     super::events::stale(&rig.world, "pending");
+    let observed = Rc::downgrade(mode);
+    rig.before_drain.replace(Some(Rc::new(move || {
+        let mode = observed.upgrade().unwrap();
+        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.streaming.borrow().is_none());
+        assert!(mode.pending_tools.borrow().values().next().is_none());
+    })));
     mode.shutdown_requested.set(requested);
     let ended = maestro_app::AgentEvent::AgentEnd {
         messages: Vec::new(),
@@ -670,6 +698,14 @@ fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
             .join("\n")
             .contains("completed")
     );
+    if requested {
+        super::events::dispatch(
+            &rig.world,
+            maestro_app::AgentEvent::AgentEnd {
+                messages: Vec::new(),
+            },
+        );
+    }
     requested_result(&rig, requested);
 }
 
@@ -826,4 +862,257 @@ fn graceful_expected(branches: (bool, bool)) -> Vec<&'static str> {
             "register", "remove", "progress", "stop", "dispose", "exit:0",
         ],
     }
+}
+
+#[test]
+fn clear_action_first_press_clears_and_redraws() {
+    isolated("clear_action_first_press_clears_and_redraws", |directory| {
+        let rig = Rig::new(directory, Setup::default());
+        rig.start();
+        rig.world.mode.editor.add_to_history("kept history");
+        rig.world.mode.editor.set_text("unsubmitted");
+        rig.world.runtime.settle().unwrap();
+        rig.world.mode.editor.handle_input("\x03");
+        assert_eq!(rig.world.mode.editor.get_text(), "");
+        assert_eq!(rig.world.runtime.pending(), 1);
+        assert_eq!(rig.world.mode.lifecycle.last_sigint_time.get(), 10000);
+        assert_eq!(*rig.effects.events.borrow(), ["register"]);
+        assert_eq!(
+            super::typed::recalled(&rig.world.mode.editor),
+            ["kept history"]
+        );
+        assert_eq!(rig.world.runtime.futures(), 0);
+    });
+}
+
+#[test]
+fn clear_action_uses_strict_double_press_boundary() {
+    isolated(
+        "clear_action_uses_strict_double_press_boundary",
+        |directory| {
+            for delta in [-1000, 0, 1, 498, 499, 500, 501, 1000] {
+                let rig = Rig::new(directory, Setup::default());
+                rig.start();
+                rig.world.mode.editor.handle_input("\x03");
+                rig.world.mode.editor.set_text("second draft");
+                rig.world.runtime.settle().unwrap();
+                rig.effects.now.set(10000 + delta);
+                rig.world.mode.editor.handle_input("\x03");
+                let exits = delta < 500;
+                assert_eq!(
+                    rig.world.runtime.futures(),
+                    usize::from(exits),
+                    "delta {delta}"
+                );
+                assert_eq!(
+                    rig.world.mode.lifecycle.last_sigint_time.get(),
+                    if exits { 10000 } else { 10000 + delta }
+                );
+                assert_eq!(
+                    rig.world.mode.editor.get_text(),
+                    if exits { "second draft" } else { "" }
+                );
+                finish_work(&rig.world);
+                assert_eq!(
+                    rig.effects
+                        .events
+                        .borrow()
+                        .iter()
+                        .filter(|effect| *effect == "exit:0")
+                        .count(),
+                    usize::from(exits)
+                );
+            }
+        },
+    );
+}
+
+/// Completes every admitted controlled operation and checks its real result.
+fn finish_work(world: &World) {
+    for mut future in world.runtime.take_futures() {
+        assert!(matches!(super::typed::poll(&mut future), Some(Ok(()))));
+    }
+}
+
+#[test]
+fn remapped_clear_and_exit_actions_keep_empty_editor_admission() {
+    isolated(
+        "remapped_clear_and_exit_actions_keep_empty_editor_admission",
+        |directory| {
+            for remapped in [false, true] {
+                remapped_case(directory, remapped);
+            }
+        },
+    );
+}
+
+/// Drives both registered actions through the editor's real empty-text interception.
+fn remapped_case(directory: &Path, remapped: bool) {
+    let bindings = if remapped {
+        serde_json::json!({"app.clear":"ctrl+y", "app.exit":"ctrl+x"})
+    } else {
+        serde_json::json!({})
+    };
+    std::fs::write(
+        directory.join("keybindings.json"),
+        serde_json::to_string_pretty(&bindings).unwrap(),
+    )
+    .unwrap();
+    let rig = Rig::new(directory, Setup::default());
+    rig.start();
+    let clear = if remapped { "\x19" } else { "\x03" };
+    let exit = if remapped { "\x18" } else { "\x04" };
+    rig.world.mode.editor.set_text("clear this");
+    rig.world.mode.editor.handle_input(clear);
+    assert_eq!(rig.world.mode.editor.get_text(), "");
+    rig.world.mode.editor.set_text("nonempty");
+    rig.world.mode.editor.handle_input(exit);
+    assert_eq!(
+        rig.world.runtime.futures(),
+        0,
+        "nonempty editor refuses exit"
+    );
+    assert_eq!(*rig.effects.events.borrow(), ["register"]);
+    rig.world.mode.editor.set_text("");
+    rig.world.mode.editor.handle_input(exit);
+    assert_eq!(rig.world.runtime.futures(), 1, "empty editor admits exit");
+    assert_eq!(
+        *rig.effects.events.borrow(),
+        ["register", "remove", "drain"]
+    );
+    finish_work(&rig.world);
+    assert_eq!(
+        *rig.effects.events.borrow(),
+        ["register", "remove", "drain", "exit:0"]
+    );
+}
+
+/// The existing submit admission chosen by one literal input.
+#[derive(Clone, Copy)]
+enum QuitOutcome {
+    /// Exact quit, after the shared whitespace trim.
+    Quit,
+    /// Ordinary input delivered and recorded as this text.
+    Input(&'static str),
+    /// Empty input does nothing.
+    Empty,
+}
+
+#[test]
+fn quit_command_exits_before_input_delivery_or_history() {
+    isolated(
+        "quit_command_exits_before_input_delivery_or_history",
+        |directory| {
+            for (text, outcome) in [
+                ("/quit", QuitOutcome::Quit),
+                (" \t/quit\t ", QuitOutcome::Quit),
+                ("\u{feff}/quit\u{feff}", QuitOutcome::Quit),
+                ("/quit extra", QuitOutcome::Input("/quit extra")),
+                ("/QUIT", QuitOutcome::Input("/QUIT")),
+                ("/quit\u{85}", QuitOutcome::Input("/quit\u{85}")),
+                ("", QuitOutcome::Empty),
+                (" \t\u{feff}", QuitOutcome::Empty),
+            ] {
+                quit_case(directory, text, outcome);
+            }
+            for compacting in [false, true] {
+                quit_busy_case(directory, compacting);
+            }
+        },
+    );
+}
+
+/// Checks the actual installed submit handler, its waiter, history and frame boundary.
+fn quit_case(directory: &Path, text: &str, outcome: QuitOutcome) {
+    let rig = Rig::new(directory, Setup::default());
+    rig.start();
+    rig.world.mode.editor.add_to_history("kept");
+    rig.world.mode.editor.set_text("draft");
+    rig.world.runtime.settle().unwrap();
+    let mut waiter = super::typed::waiting(&rig.world.mode);
+    super::typed::submit(&rig.world.mode, text);
+    match outcome {
+        QuitOutcome::Quit => {
+            assert_eq!(rig.world.mode.editor.get_text(), "");
+            assert_eq!(
+                rig.world.runtime.pending(),
+                0,
+                "quit adds no clear-render frame"
+            );
+            assert_eq!(rig.world.runtime.futures(), 1);
+            assert_eq!(
+                *rig.effects.events.borrow(),
+                ["register", "remove", "drain"]
+            );
+            assert!(super::typed::poll(&mut waiter).is_none());
+            finish_work(&rig.world);
+            assert_eq!(super::typed::recalled(&rig.world.mode.editor), ["kept"]);
+        }
+        QuitOutcome::Input(expected) => {
+            assert_eq!(super::typed::poll(&mut waiter).as_deref(), Some(expected));
+            assert_eq!(
+                super::typed::recalled(&rig.world.mode.editor),
+                [expected, "kept"]
+            );
+            assert_eq!(*rig.effects.events.borrow(), ["register"]);
+        }
+        QuitOutcome::Empty => {
+            assert!(super::typed::poll(&mut waiter).is_none());
+            assert_eq!(rig.world.mode.editor.get_text(), "draft");
+            assert_eq!(super::typed::recalled(&rig.world.mode.editor), ["kept"]);
+            assert_eq!(*rig.effects.events.borrow(), ["register"]);
+        }
+    }
+}
+
+/// Keeps quit admission ahead of both real busy-session queue branches.
+fn quit_busy_case(directory: &Path, compacting: bool) {
+    let rig = Rig::new(directory, Setup::default());
+    rig.start();
+    rig.world.mode.editor.add_to_history("kept");
+    let mut waiter = super::typed::waiting(&rig.world.mode);
+    let seen = Rc::new(Cell::new(false));
+    let observed = Rc::clone(&seen);
+    let submit = move |mode: &Rc<InteractiveMode>| {
+        assert!(
+            mode.runtime_host.session().is_streaming()
+                || mode.runtime_host.session().is_compacting()
+        );
+        mode.editor.set_text("draft");
+        super::typed::submit(mode, "/quit");
+        assert_eq!(mode.editor.get_text(), "");
+        assert!(mode.compaction_queued_messages.borrow().is_empty());
+        assert!(
+            mode.runtime_host
+                .session()
+                .get_steering_messages()
+                .is_empty()
+        );
+        observed.set(true);
+    };
+    if compacting {
+        super::queues::during_compaction(&rig.world, submit);
+    } else {
+        super::streaming(&rig.world, |world, _| submit(&world.mode));
+    }
+    assert!(seen.get());
+    assert!(super::typed::poll(&mut waiter).is_none());
+    assert_eq!(super::typed::recalled(&rig.world.mode.editor), ["kept"]);
+    finish_work(&rig.world);
+    assert_eq!(
+        rig.effects
+            .events
+            .borrow()
+            .iter()
+            .filter(|event| *event == "exit:0")
+            .count(),
+        1
+    );
+    assert!(
+        !rig.effects
+            .events
+            .borrow()
+            .iter()
+            .any(|event| event == "kill")
+    );
 }

@@ -161,8 +161,17 @@ fn reopen_and_independent_registrations_remain_live() {
             assert_eq!(first.received.recv().await, Some(signal));
             assert_eq!(second.received.recv().await, Some(signal));
         }
+        raise(TerminationSignal::Terminate);
         (first.remove)();
         (first.remove)();
+        assert_eq!(
+            second.received.recv().await,
+            Some(TerminationSignal::Terminate)
+        );
+        assert!(
+            first.received.try_recv().is_err(),
+            "removal cancels already-ready delivery"
+        );
         for signal in signals_for_host() {
             raise(signal);
             assert_eq!(second.received.recv().await, Some(signal));

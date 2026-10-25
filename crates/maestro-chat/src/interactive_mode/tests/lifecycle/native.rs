@@ -21,6 +21,9 @@ struct Native {
     log: std::path::PathBuf,
 }
 impl LifecycleEffects for Native {
+    fn now_ms(&self) -> i64 {
+        self.inner.now_ms()
+    }
     fn register_signals(&self, term: Rc<dyn Fn()>, hup: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
         let remove = self.inner.register_signals(term, hup)?;
         self.events.borrow_mut().push("register".into());
@@ -94,6 +97,7 @@ fn child(directory: &Path, case: &str) {
             }),
             terminal: Some((
                 Rc::new(RefCell::new(ports::TerminalPort {
+                    before_drain: Rc::default(),
                     inner: terminal,
                     output: ports::Output::default(),
                     drain_error: Rc::new(Cell::new(None)),
@@ -106,13 +110,12 @@ fn child(directory: &Path, case: &str) {
         }
         .build(directory);
         world.mode.init().unwrap();
-        let task = tracked(&world, directory).await;
+        tracked(&world, directory).await;
         ready(directory, case);
         if matches!(case, "stdout" | "stderr") {
             break_output(&world.mode, &host, case);
         }
         std::future::pending::<()>().await;
-        task.await.unwrap().unwrap();
     });
 }
 
@@ -217,10 +220,7 @@ async fn wait_disposal(
 }
 
 /// Starts a tracked detached child and waits for its actual output before readiness.
-async fn tracked(
-    world: &super::super::World,
-    directory: &Path,
-) -> tokio::task::JoinHandle<Result<maestro_app::BashResult, maestro_app::DiagnosticErrorInfo>> {
+async fn tracked(world: &super::super::World, directory: &Path) {
     let (sent, mut chunks) = tokio::sync::mpsc::unbounded_channel();
     let bash = world.host.session().execute_bash(
         "echo $$; exec python3 -c 'import signal; signal.pause()'",
@@ -229,10 +229,9 @@ async fn tracked(
         })),
         maestro_app::agent_session::BashRunOptions::default(),
     );
-    let task = tokio::task::spawn_local(bash);
+    drop(bash);
     let pid = chunks.recv().await.unwrap();
     std::fs::write(directory.join("tracked"), pid.trim()).unwrap();
-    task
 }
 
 /// Verifies the native exit and the final tracked-child observation.

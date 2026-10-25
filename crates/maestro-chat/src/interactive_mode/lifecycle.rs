@@ -9,6 +9,8 @@ use std::{
 
 /// Host process effects that the presentation selects a policy for.
 pub(super) trait LifecycleEffects {
+    /// Current wall-clock milliseconds, independent of the frame scheduler.
+    fn now_ms(&self) -> i64;
     /// Delivers termination signals until removal.
     ///
     /// # Errors
@@ -26,6 +28,9 @@ pub(super) trait LifecycleEffects {
 /// Native process effects; native default ownership stays in the process owner.
 struct NativeLifecycle;
 impl LifecycleEffects for NativeLifecycle {
+    fn now_ms(&self) -> i64 {
+        chrono::Utc::now().timestamp_millis()
+    }
     #[cfg(not(target_arch = "wasm32"))]
     fn register_signals(
         &self,
@@ -59,6 +64,8 @@ impl LifecycleEffects for NativeLifecycle {
 }
 /// Retained state of the mode's exit handlers.
 pub(super) struct LifecycleState {
+    /// Wall time of the most recent clear branch.
+    pub(super) last_sigint_time: Cell<i64>,
     /// Whether graceful or emergency exit already owns the mode.
     is_shutting_down: Cell<bool>,
     /// Removal operations independent of a terminal borrow.
@@ -69,6 +76,7 @@ pub(super) struct LifecycleState {
 impl Default for LifecycleState {
     fn default() -> Self {
         Self {
+            last_sigint_time: Cell::new(0),
             is_shutting_down: Cell::new(false),
             signal_cleanup_handlers: RefCell::default(),
             effects: Rc::new(NativeLifecycle),
@@ -97,6 +105,20 @@ impl InteractiveMode {
             self.is_initialized.set(false);
         }
         Ok(())
+    }
+    /// Clears the editor unless a second clear falls inside the strict exit window.
+    pub(super) fn handle_ctrl_c(self: &Rc<Self>) {
+        let now = self.lifecycle.effects.now_ms();
+        if i128::from(now) - i128::from(self.lifecycle.last_sigint_time.get()) < 500 {
+            self.spawn_shutdown();
+        } else {
+            self.clear_editor();
+            self.lifecycle.last_sigint_time.set(now);
+        }
+    }
+    /// Requests exit after the editor has enforced empty input.
+    pub(super) fn handle_ctrl_d(self: &Rc<Self>) {
+        self.spawn_shutdown();
     }
     /// Admits shutdown before deferring the owned drain and disposal.
     pub(super) fn spawn_shutdown(self: &Rc<Self>) {

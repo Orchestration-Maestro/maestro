@@ -240,7 +240,7 @@ impl InteractiveMode {
     /// changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.
-    /// Native initialization needs a caller-driven Tokio local executor with signals enabled.
+    /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
