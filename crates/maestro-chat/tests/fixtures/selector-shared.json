@@ -1188,5 +1188,145 @@
     "expected": {
       "path": "relative/project"
     }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/",
+      "path": "/tmp/supplied-home/file"
+    },
+    "expected": {
+      "path": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/",
+      "path": "/"
+    },
+    "expected": {
+      "path": "/"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/",
+      "path": "//server/share"
+    },
+    "expected": {
+      "path": "//server/share"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/",
+      "path": "relative/file"
+    },
+    "expected": {
+      "path": "relative/file"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/",
+      "path": ""
+    },
+    "expected": {
+      "path": ""
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "",
+      "path": "/tmp/supplied-home/file"
+    },
+    "expected": {
+      "path": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/home/user",
+      "path": "/home/user/file"
+    },
+    "expected": {
+      "path": "~/file"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/home/user",
+      "path": "/home/user"
+    },
+    "expected": {
+      "path": "~"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/home/user",
+      "path": "/home/username/file"
+    },
+    "expected": {
+      "path": "~name/file"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/home/user",
+      "path": "/tmp/file"
+    },
+    "expected": {
+      "path": "/tmp/file"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/home/user",
+      "path": "relative/file"
+    },
+    "expected": {
+      "path": "relative/file"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/home/user",
+      "path": ""
+    },
+    "expected": {
+      "path": ""
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/home/élève",
+      "path": "/home/élève/文書"
+    },
+    "expected": {
+      "path": "~/文書"
+    }
+  },
+  {
+    "test": "existing_home_prefix_regression",
+    "input": {
+      "home": "/home/user/",
+      "path": "/home/user/file"
+    },
+    "expected": {
+      "path": "~file"
+    }
   }
 ]

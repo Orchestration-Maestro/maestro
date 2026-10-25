@@ -56,7 +56,7 @@ local midnight tomorrow, so it follows daylight-saving changes rather than a
 fixed number of hours. A message's own timestamp wins over the entry's, and a
 present `null` timestamp is epoch zero rather than a fallback. Reported token
 and cost members are summed as recorded; `totalTokens` and `cost.total` are
-never recomputed from their components. Session counts are distinct journal
+never recomputed from their components, and a missing total counts as zero. Session counts are distinct journal
 names.
 
 Counts are rounded to the nearest integer, a half toward positive infinity, and

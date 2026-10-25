@@ -5,8 +5,37 @@ Text it recognizes as a command runs in the mode and answers on the transcript;
 every other submission reaches the [typed input](interactive-mode.md#typed-input)
 and the editor history as before.
 
-Today the mode handles one command, `/export`. Import, the offline viewer and
-packaged asset injection are not delivered yet (see [what is missing](#what-is-missing)).
+Today the mode handles shell input and two slash commands, `/export` and `/changelog`.
+Import, the offline viewer and packaged asset injection are not delivered yet (see
+[what is missing](#what-is-missing)).
+
+## Shell input
+
+Text starting with `!` runs a shell command instead of sending a prompt.
+
+- `!command` runs `command` and keeps its output in the model's context.
+- `!!command` runs the same way and records the output as excluded from the context.
+
+Boundaries around the prefix and the command are whitespace: `! ls ` runs `ls`. The
+shapes the editor accepts as whitespace are the ones the rest of the mode uses, so a
+non-breaking space or a byte-order mark next to the prefix counts as a boundary, while
+the next-line and zero-width-space characters do not.
+
+A submission that holds only the prefix, `!` or `!!`, has no command to run and is
+delivered as ordinary input instead.
+
+While a shell command from the same session is still running, a new submission does not
+start a second one. The editor shows
+`A bash command is already running. Press Esc to cancel it first.` as a warning, keeps the
+typed text in the editor so nothing is lost, and records no history entry.
+
+An accepted shell command is recorded in the editor's history. When an agent response is
+streaming, the command's row appears in the pending area and moves into the transcript
+with the next ordinary submission; otherwise the row appears in the transcript at once.
+
+Extensions can answer a shell command through the `user_bash` event: returning a full
+result shows it without running a process and records it once, and returning operations
+runs the command through them instead of the local shell.
 
 ## `/export`
 
@@ -34,6 +63,23 @@ A recoverable failure shows `Failed to export session: <diagnostic>` in the
 transcript's error colour, with the diagnostic the export owner produced. A
 failure to render that notice goes to the terminal runtime's error route, which
 is the route the mode's shortcuts already use.
+
+## `/changelog`
+
+`/changelog` prints the whole changelog, not only the sections added since the
+last run. It reads the changelog beside the running package and appends a
+bordered "What's New" card holding every section, in reverse file order.
+
+```text
+/changelog
+```
+
+The card reuses the [changelog utility](startup.md) for the file read and the
+Markdown renderer for the body, so the mode adds no parser and no renderer of its
+own. A package whose changelog holds no section shows
+`No changelog entries found.` inside the same card. The submission must be
+exactly `/changelog`; `/changelogs`, `/changelog extra` and `/CHANGELOG` are
+prompt text.
 
 ## How the path is read
 

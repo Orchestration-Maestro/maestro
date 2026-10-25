@@ -47,7 +47,8 @@ assert_eq!(serialize_conversation(&messages)?, "[User]: earlier");
 `DEFAULT_COMPACTION_SETTINGS` enables compaction, reserves 16384 tokens and keeps
 20000 recent tokens. `should_compact` requires usage strictly greater than the context
 window minus reserve; disabled settings never trigger it. `calculate_context_tokens`
-uses a nonzero reported total or adds input, output, cache-read and cache-write counts.
+uses a nonzero reported total, treating an omitted or null total as absent, or
+adds input, output, cache-read and cache-write counts.
 `estimate_context_tokens` selects the latest successful assistant usage, ignoring
 error/aborted attempts, and estimates subsequent messages; without usage it estimates
 all supplied messages.
