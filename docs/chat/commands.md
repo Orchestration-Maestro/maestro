@@ -32,9 +32,14 @@ start a second one. The editor shows
 `A bash command is already running. Press Esc to cancel it first.` as a warning, keeps the
 typed text in the editor so nothing is lost, and records no history entry.
 
+The interrupt key cancels a running shell command when no response streams, and a
+streaming response keeps precedence over it: with both running, the key restores the
+queued text and stops the response, leaving the shell command to finish on its own.
+
 An accepted shell command is recorded in the editor's history. When an agent response is
 streaming, the command's row appears in the pending area and moves into the transcript
 with the next ordinary submission; otherwise the row appears in the transcript at once.
+The row keeps its place above the queued messages while a refresh rebuilds them.
 
 Extensions can answer a shell command through the `user_bash` event: returning a full
 result shows it without running a process and records it once, and returning operations
