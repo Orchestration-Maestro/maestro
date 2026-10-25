@@ -3,8 +3,8 @@
 use serde_json::{Map, Value};
 
 /// Serialize original arguments with canonical keys and binary64 number spelling.
-pub(super) fn pretty(value: &Map<String, Value>) -> Result<String, serde_json::Error> {
-    maestro_json::pretty_object(value)
+pub(super) fn pretty(value: &Value) -> Result<String, serde_json::Error> {
+    maestro_json::pretty_json(value)
 }
 
 /// Enumerate numeric-index keys first while preserving other insertion order.

@@ -294,7 +294,7 @@ async fn emit_untracked_event(
             let mut start = ToolExecutionStartEvent {
                 tool_call_id: tool_call.id,
                 tool_name: tool_call.name,
-                args: serde_json::Value::Object(tool_call.arguments),
+                args: tool_call.arguments,
             };
             runner.emit(&mut start).await
         }
@@ -305,7 +305,7 @@ async fn emit_untracked_event(
             let mut update = ToolExecutionUpdateEvent {
                 tool_call_id: tool_call.id,
                 tool_name: tool_call.name,
-                args: serde_json::Value::Object(tool_call.arguments),
+                args: tool_call.arguments,
                 partial_result: serde_json::to_value(partial_result).map_err(thrown)?,
             };
             runner.emit(&mut update).await

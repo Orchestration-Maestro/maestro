@@ -613,7 +613,7 @@ fn response(input: &Input, turn: usize) -> maestro_models::SharedAssistantMessag
                 AssistantContent::ToolCall(maestro_models::ToolCall {
                     id: id.into(),
                     name: "echo".into(),
-                    arguments: maestro_models::JsonObject::new(),
+                    arguments: maestro_models::JsonObject::new().into(),
                     thought_signature: None,
                 })
             })

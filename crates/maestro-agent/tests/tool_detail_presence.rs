@@ -163,7 +163,7 @@ fn calls(ids: &[&str]) -> maestro_models::SharedAssistantMessage {
             AssistantContent::ToolCall(ToolCall {
                 id: (*id).into(),
                 name: "echo".into(),
-                arguments: maestro_models::JsonObject::new(),
+                arguments: maestro_models::JsonObject::new().into(),
                 thought_signature: None,
             })
         })
