@@ -45,7 +45,7 @@ use std::{
     cell::{Cell, RefCell},
     future::Future,
     pin::Pin,
-    rc::Rc,
+    rc::{Rc, Weak},
     sync::{Arc, RwLock},
 };
 use tokio::sync::oneshot;
@@ -298,6 +298,15 @@ fn replacement_context_reads_its_own_runner(
     assert_eq!(ui.get_editor_text().unwrap(), "replacement");
 }
 
+/// An acquired handle's aliases keep its host until the last one drops.
+fn last_alias_releases_host(handle: Ui, released: &Weak<Named>) {
+    let alias = handle.clone();
+    drop(handle);
+    assert!(released.upgrade().is_some());
+    drop(alias);
+    assert!(released.upgrade().is_none());
+}
+
 /// A borrowed binding serves its host only while another owner retains it.
 fn borrowed_binding_does_not_retain_its_host(runner: &ExtensionRunner<Local>) {
     let (installed, host) = Named::install("c");
@@ -312,11 +321,7 @@ fn borrowed_binding_does_not_retain_its_host(runner: &ExtensionRunner<Local>) {
         runner.get_ui_context().get_editor_text().unwrap(),
         "borrowed"
     );
-    let alias = acquired.clone();
-    drop(acquired);
-    assert!(released.upgrade().is_some());
-    drop(alias);
-    assert!(released.upgrade().is_none());
+    last_alias_releases_host(acquired, &released);
     assert!(!runner.has_ui());
     assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "");
 }
@@ -351,11 +356,7 @@ fn retained_ui_handles_keep_old_hosts_after_rebinding() {
         assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "");
         assert_eq!(old.get_editor_text().unwrap(), "first");
         drop(old_command);
-        let alias = old.clone();
-        drop(old);
-        assert!(released.upgrade().is_some());
-        drop(alias);
-        assert!(released.upgrade().is_none());
+        last_alias_releases_host(old, &released);
         borrowed_binding_does_not_retain_its_host(&runner);
     });
 }
