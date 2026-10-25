@@ -16,6 +16,7 @@ mod models;
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
 mod notices;
+mod progress;
 mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]

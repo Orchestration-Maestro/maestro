@@ -26,6 +26,7 @@ mod info;
 mod key_display;
 mod models;
 mod notices;
+mod progress;
 mod queues;
 mod replay;
 mod resources;
@@ -130,6 +131,8 @@ pub struct InteractiveMode {
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The progress presentation's loaders, countdown and interrupt callbacks.
+    progress: progress::Retained,
     /// The session subscription that delivers agent and session events.
     unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
     /// The working row and its extension-controlled presentation.
@@ -175,7 +178,6 @@ impl InteractiveMode {
         let settings = session.settings_manager();
         let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
-        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new_cyclic(|this| Self {
             this: this.clone(),
             extension_widgets_above: maestro_app::Live::new(),
@@ -199,7 +201,7 @@ impl InteractiveMode {
             built_in_header: RefCell::default(),
             tool_environment,
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(hide_thinking_block),
+            hide_thinking_block: Cell::new(settings.borrow().get_hide_thinking_block()),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
@@ -208,6 +210,7 @@ impl InteractiveMode {
             on_input_callback: Rc::default(),
             anthropic_subscription_warning_shown: Cell::new(false),
             compaction_queued_messages: RefCell::default(),
+            progress: progress::Retained::default(),
             unsubscribe: RefCell::default(),
             working: working::WorkingState::default(),
             streaming: RefCell::default(),

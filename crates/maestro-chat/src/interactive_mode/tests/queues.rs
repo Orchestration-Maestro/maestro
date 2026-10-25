@@ -977,6 +977,38 @@ fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
     (world, heard)
 }
 
+/// The failure the harness's own compaction always ends with.
+const COMPACTION_FAILURE: &str = "Compaction failed: Nothing to compact (session too small)";
+
+/// Appends a notice the mode shows for a compaction that failed, painted and padded.
+fn with_notice(mut observed: Observed, world: &World, text: &str) -> Observed {
+    let painted_row = painted(
+        &world.themes.theme().get().unwrap(),
+        &[format!(" @error@{text}\x1b[39m")],
+    )
+    .remove(0);
+    let pad = 80usize.saturating_sub(text.chars().count() + 1);
+    observed
+        .chat
+        .extend([String::new(), format!("{painted_row}{}", " ".repeat(pad))]);
+    observed
+}
+
+/// Appends the notice the harness's failing compaction ends with, which the mode shows for a
+/// manual compaction.
+fn with_compaction_notice(observed: Observed, world: &World) -> Observed {
+    let named = format!("Error: {COMPACTION_FAILURE}");
+    let mut observed = with_notice(observed, world, &named);
+    observed
+        .errors
+        .push(format!("{COMPACTION_FAILURE}\x1b[39m"));
+    observed
+}
+
+/// The notice the automatic compaction attempt ends with when no provider is registered.
+const AUTO_COMPACTION_FAILURE: &str =
+    "Auto-compaction failed: No API provider registered for api: unknown";
+
 /// Runs `action` from the start notification of a compaction of `world`'s session, while
 /// the session compacts, then lets the compaction end.
 fn during_compaction(world: &World, action: impl Fn(&Rc<InteractiveMode>) + 'static) {
@@ -1242,7 +1274,13 @@ fn follow_case(directory: &Path, input: FollowOp, expected: Value, rows: &Single
             observe(&world, &heard, 0)
         }
     };
-    assert_eq!(observed, Observed::expected(&world, expected));
+    let expected = Observed::expected(&world, expected);
+    let expected = if matches!(state, State::Compact) {
+        with_compaction_notice(expected, &world)
+    } else {
+        expected
+    };
+    assert_eq!(observed, expected);
 }
 
 #[test]
@@ -1310,7 +1348,13 @@ fn submit_case(directory: &Path, input: SubmitOp, expected: Value, rows: &Single
     };
     let still_waiting = super::typed::poll(&mut waiter).is_none();
     assert!(still_waiting, "the typed input still waits");
-    assert_eq!(observed, Observed::expected(&world, expected));
+    let expected = Observed::expected(&world, expected);
+    let expected = if compacting {
+        with_compaction_notice(expected, &world)
+    } else {
+        expected
+    };
+    assert_eq!(observed, expected);
 }
 
 #[test]
@@ -1371,6 +1415,7 @@ fn rejection_case(directory: &Path, operation: Operation, expected: Value) {
             }
         }
     });
+    let expected = with_notice(expected, &world, AUTO_COMPACTION_FAILURE);
     assert_eq!(observe(&world, &heard, 0), expected);
 }
 
@@ -2302,7 +2347,7 @@ fn admission_case(
         mode.editor.on_submit().unwrap()(&submitted);
     };
     let route = producer.route(text, exclusion);
-    let expected = Expected {
+    let mut expected = Expected {
         route,
         text,
         baseline,
@@ -2328,15 +2373,16 @@ fn admission_case(
             .await
         }),
         Producer::Compacting => {
+            let notice = with_compaction_notice(observe(&world, &Heard::default(), 0), &world);
             heard.borrow_mut().clear();
             during_compaction(&world, press);
-            on_tasks(async {
-                let ((), errors) = driving(&world, async {
-                    settle(&world, route).await;
-                })
-                .await;
-                errors
-            })
+            let chat = world.mode.chat_container.render(80);
+            assert!(
+                chat.windows(notice.chat.len())
+                    .any(|rows| rows == notice.chat)
+            );
+            expected.baseline.0 += notice.chat.len();
+            on_tasks(driving(&world, settle(&world, route))).1
         }
         Producer::Idle => on_tasks(async {
             let ((), errors) = driving(&world, async {

@@ -2,6 +2,7 @@
 //! assistant and tool rows it keeps.
 
 use super::InteractiveMode;
+use super::progress::{CompactionOutcome, RetryEnd, RetryStart};
 use super::replay::{aborted_notice, error_notice, failure_result};
 use crate::{AssistantMessageComponent, ToolExecutionComponent, ToolExecutionResult};
 use maestro_app::configuration::config::APP_TITLE;
@@ -62,22 +63,66 @@ impl InteractiveMode {
                 self.ui.request_render(false);
             }
             AgentSessionEvent::ThinkingLevelChanged { .. } => self.update_editor_border_color()?,
+            AgentSessionEvent::CompactionStart { reason } => self.start_compaction(*reason)?,
+            // The captured input and the end's retry choice arrive with their own owner.
+            AgentSessionEvent::CompactionEnd {
+                reason,
+                result,
+                aborted,
+                error_message,
+                ..
+            } => self.end_compaction(&CompactionOutcome {
+                reason: *reason,
+                result: result.as_ref(),
+                aborted: *aborted,
+                error_message: error_message.as_deref(),
+            })?,
+            AgentSessionEvent::AutoRetryStart {
+                attempt,
+                max_attempts,
+                delay_ms,
+                ..
+            } => self.start_retry(&RetryStart {
+                attempt: *attempt,
+                max_attempts: *max_attempts,
+                delay_ms: *delay_ms,
+            }),
+            AgentSessionEvent::AutoRetryEnd {
+                success,
+                attempt,
+                final_error,
+            } => self.end_retry(&RetryEnd {
+                success: *success,
+                attempt: *attempt,
+                final_error: final_error.as_deref(),
+            })?,
             AgentSessionEvent::Agent(event) => {
                 let event = event.read().unwrap_or_else(PoisonError::into_inner);
-                match &*event {
-                    AgentEvent::MessageStart {
-                        message: AgentMessage::ToolResult(_),
-                    }
-                    | AgentEvent::MessageEnd {
-                        message: AgentMessage::User(_),
-                    } => {}
-                    AgentEvent::MessageEnd {
-                        message: AgentMessage::Custom(_) | AgentMessage::ToolResult(_),
-                    } => self.ui.request_render(false),
-                    _ => self.handle_agent_event(event)?,
-                }
+                self.dispatch_agent_event(event)?;
             }
-            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Routes a live agent event, leaving nonvisual boundaries without a frame.
+    ///
+    /// # Errors
+    /// Returns the failure of the agent event's presentation.
+    fn dispatch_agent_event(
+        &self,
+        event: RwLockReadGuard<'_, AgentEvent<CustomAgentMessages>>,
+    ) -> Result<(), Box<dyn Error>> {
+        match &*event {
+            AgentEvent::MessageStart {
+                message: AgentMessage::ToolResult(_),
+            }
+            | AgentEvent::MessageEnd {
+                message: AgentMessage::User(_),
+            } => {}
+            AgentEvent::MessageEnd {
+                message: AgentMessage::Custom(_) | AgentMessage::ToolResult(_),
+            } => self.ui.request_render(false),
+            _ => self.handle_agent_event(event)?,
         }
         Ok(())
     }
@@ -95,6 +140,7 @@ impl InteractiveMode {
         match &*event {
             AgentEvent::AgentStart => {
                 drop(event);
+                self.start_agent_progress();
                 self.handle_agent_start()?;
             }
             AgentEvent::MessageStart { message } => {
@@ -384,7 +430,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the terminal's progress-writing failure.
-    fn set_terminal_progress(&self, active: bool) -> io::Result<()> {
+    pub(super) fn set_terminal_progress(&self, active: bool) -> io::Result<()> {
         let session = self.runtime_host.session();
         if session
             .settings_manager()
