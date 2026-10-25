@@ -237,13 +237,11 @@ impl InteractiveMode {
         ))
     }
 
-    /// Folds registered wrappers over a fresh base and installs the final provider.
-    ///
-    /// Registrations appended during a factory call participate in this same rebuild.
-    /// The installed provider changes only after every factory succeeds.
+    /// Folds live registered wrappers over a fresh base, then installs the final provider
+    /// on the default editor and a distinct current editor.
     ///
     /// # Errors
-    /// Returns the original factory failure, leaving the installed provider unchanged.
+    /// Returns the original wrapper or current-editor failure.
     pub(super) fn setup_autocomplete_provider(&self) -> Result<(), maestro_app::EventError> {
         let extensions = self
             .runtime_host
@@ -262,8 +260,16 @@ impl InteractiveMode {
             provider = factory.call(provider)?;
             index += 1;
         }
-        self.editor.set_autocomplete_provider(provider.clone());
-        drop(self.autocomplete_provider.replace(Some(provider)));
+        drop(
+            self.editor_state
+                .autocomplete
+                .replace(Some(Rc::clone(&provider))),
+        );
+        self.editor.set_autocomplete_provider(Rc::clone(&provider));
+        if self.custom_editor_current() {
+            self.current_editor()
+                .try_set_autocomplete_provider(provider)?;
+        }
         Ok(())
     }
 

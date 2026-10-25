@@ -196,7 +196,10 @@ fn transcript_expansion_reaches_active_header_and_expandable_rows() {
                 )
                 .unwrap(),
             );
-            world.mode.built_in_header.replace(Some(header.clone()));
+            world
+                .mode
+                .built_in_header
+                .replace(Some(header.clone() as Rc<dyn Component>));
             let chat = &world.mode.chat_container;
             chat.add_child(Rc::new(Spacer::new(1)));
             chat.add_child(Rc::new(BranchSummaryMessageComponent::new(

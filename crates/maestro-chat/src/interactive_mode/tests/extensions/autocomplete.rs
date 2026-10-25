@@ -144,7 +144,13 @@ fn autocomplete_wrappers_stack_over_fresh_base_and_share_the_installed_handle() 
                 "B wraps A's exact result"
             );
             assert!(Rc::ptr_eq(
-                world.mode.autocomplete_provider.borrow().as_ref().unwrap(),
+                world
+                    .mode
+                    .editor_state
+                    .autocomplete
+                    .borrow()
+                    .as_ref()
+                    .unwrap(),
                 &handles[2].1
             ));
             trigger(&handles[2].1);

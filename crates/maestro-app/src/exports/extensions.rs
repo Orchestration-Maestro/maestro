@@ -50,7 +50,11 @@ pub use maestro_extensions::{
 pub use maestro_extensions::discover_and_load_extensions;
 
 pub use maestro_extensions::footer_data_provider::live::Live;
-pub use maestro_extensions::types::{ExtensionComponent, WidgetContent};
+pub use maestro_extensions::types::{
+    ActionHandlers, ComponentFactory, CustomClose, CustomComponentFactory, CustomEditorComponent,
+    CustomFactoryOutcome, CustomUIOptions, EditorFactory, EditorFactoryOutcome, ExtensionComponent,
+    ExtensionShortcutCallback, FooterFactory, OverlayOptionsSource, WidgetContent,
+};
 
 /// Shared identity-preserving callback storage for application consumers.
 pub use maestro_listeners::Listeners;

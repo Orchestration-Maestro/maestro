@@ -7,8 +7,8 @@ use crate::ui_toolkit::{Keyboard, Metadata, Words, screen};
 use maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider;
 use maestro_extensions::types::{
     AutocompleteProviderFactory, ComponentDisposer, ComponentFactory, CustomClose,
-    CustomComponentFactory, CustomDone, CustomFactory, CustomFactoryOutcome, ExtensionComponent,
-    FooterFactory, OverlayHandleCallback, OverlayOptionsResolver,
+    CustomComponentFactory, CustomDone, CustomFactory, CustomFactoryOutcome, EditorFactoryOutcome,
+    ExtensionComponent, FooterFactory, OverlayHandleCallback, OverlayOptionsResolver,
 };
 use maestro_extensions::{
     CallbackEmitter, EventBus, EventListener, ExtensionAPI, ExtensionExecution, ExtensionUIContext,
@@ -114,6 +114,8 @@ fn widget_families<E: ExtensionExecution>(
                 Ok(ExtensionComponent {
                     component: input,
                     dispose: None,
+                    set_expanded: None,
+                    width: None,
                 })
             })
         },
@@ -126,6 +128,8 @@ fn widget_families<E: ExtensionExecution>(
                     Ok(ExtensionComponent {
                         component: Rc::new(Input::new()),
                         dispose: None,
+                        set_expanded: None,
+                        width: None,
                     })
                 },
             )
@@ -159,7 +163,7 @@ fn families<E: ExtensionExecution>(api: &ExtensionAPI<E>, operands: &Operands) -
                     let editor: Rc<dyn EditorComponent<Signal = Cancellation>> =
                         Rc::new(Editor::new(&tui, theme, EditorOptions::default()));
                     mark(&seen, "editor");
-                    Ok(editor)
+                    Ok(EditorFactoryOutcome::Editor(editor))
                 },
             )
         },
@@ -203,6 +207,8 @@ fn custom_families<E: ExtensionExecution>(
                     Ok(CustomFactoryOutcome::Ready(ExtensionComponent {
                         component: Rc::new(Input::new()),
                         dispose: None,
+                        set_expanded: None,
+                        width: None,
                     }))
                 },
             )
@@ -215,6 +221,8 @@ fn custom_families<E: ExtensionExecution>(
                     Ok(CustomFactoryOutcome::Ready(ExtensionComponent {
                         component: Rc::new(Input::new()),
                         dispose: None,
+                        set_expanded: None,
+                        width: None,
                     }))
                 },
             )

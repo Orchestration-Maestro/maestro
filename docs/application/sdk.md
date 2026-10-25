@@ -120,6 +120,11 @@ to that replacement even if another operation changes the current session while
 a callback is suspended. The start event carries the previous session file.
 A failure after the teardown restores nothing.
 
+`set_before_session_invalidate` takes a `BeforeSessionInvalidate` callback that
+returns a `Result`. When it fails, the operation returns that failure through the
+runtime's error type and stops: the session is neither disposed nor replaced, and
+the callback's earlier effects stay in place.
+
 - `new_session` starts a history in the same directory, optionally recording a
   parent session, and runs `setup` on it before the agent reloads its messages.
 - `switch_session` resumes another file, optionally in another directory, and
