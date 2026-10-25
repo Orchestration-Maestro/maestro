@@ -208,6 +208,8 @@ fn traced(
         Ok(ExtensionComponent {
             component: Rc::new(Text::new(label.into(), 0, 0, None)),
             dispose: Some(dispose.clone()),
+            set_expanded: None,
+            width: None,
         })
     }))
 }
@@ -301,6 +303,8 @@ fn failing_factories(
         Ok(ExtensionComponent {
             component: Rc::new(Text::new("OLD".into(), 0, 0, None)),
             dispose: Some(dispose.clone()),
+            set_expanded: None,
+            width: None,
         })
     });
     let called = recorded.clone();
@@ -410,6 +414,8 @@ fn origin_factory(
                 Ok(ExtensionComponent {
                     component: Rc::new(Text::new("bound".into(), 0, 0, None)),
                     dispose: Some(dispose.clone()),
+                    set_expanded: None,
+                    width: None,
                 })
             },
         ))));

@@ -59,6 +59,8 @@ impl InteractiveMode {
                 ExtensionComponent {
                     component: container,
                     dispose: None,
+                    set_expanded: None,
+                    width: None,
                 }
             }
         };
