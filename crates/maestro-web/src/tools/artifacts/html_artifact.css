@@ -1,0 +1,19 @@
+.maestro-html-artifact {
+  position: relative;
+  display: block;
+  height: 100%;
+  overflow: hidden;
+}
+.maestro-html-preview,
+.maestro-html-source {
+  position: absolute;
+  inset: 0;
+}
+.maestro-html-preview {
+  display: flex;
+  flex-direction: column;
+}
+.maestro-html-source {
+  overflow: auto;
+  background: var(--maestro-color-background);
+}
