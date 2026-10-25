@@ -511,9 +511,11 @@ fn resource_diagnostics_remain_visible_when_quiet() {
         listing.diagnostics = false;
         let (world, _) = world(directory, listing);
         world.mode.init().await.unwrap();
+        // Binding publishes the loaded themes before the listing reads its resources.
         assert_eq!(
             *world.loader.calls.borrow(),
             [
+                "themes",
                 "prompts",
                 "skills",
                 "skills",

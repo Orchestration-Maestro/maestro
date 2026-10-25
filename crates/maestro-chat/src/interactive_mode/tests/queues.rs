@@ -1446,6 +1446,18 @@ async fn rejection_case(directory: &Path, operation: Operation, expected: Value)
         }
     })
     .await;
+    // The bound error listener shows the input handler's failure first, attributed to its
+    // extension.
+    let heading = "Extension \"<inline>\" error: refused input";
+    let shown = painted(
+        &world.themes.theme().get().unwrap(),
+        &[format!(" @error@{heading}\x1b[39m")],
+    )
+    .remove(0);
+    expected.chat.insert(
+        0,
+        format!("{shown}{}", " ".repeat(80 - heading.chars().count() - 1)),
+    );
     let expected = with_notice(expected, &world, AUTO_COMPACTION_FAILURE);
     assert_eq!(observe(&world, &heard, 0), expected);
 }
