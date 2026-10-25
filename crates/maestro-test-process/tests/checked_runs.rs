@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
 
 use maestro_test_directory::Scratch;
@@ -1027,7 +1027,7 @@ const SHELL_ROOT: &str = "MTP_SHELL_ROOT";
 /// the child's own `body` the disposable root. The parent asserts the child passed.
 #[cfg(unix)]
 fn in_shell_child(command: impl FnOnce(&Scratch) -> Command, body: impl FnOnce(&Path)) {
-    let Some(root) = std::env::var_os(SHELL_ROOT).map(PathBuf::from) else {
+    let Some(root) = std::env::var_os(SHELL_ROOT).map(std::path::PathBuf::from) else {
         let scratch = Scratch::new().unwrap();
         let output = command(&scratch)
             .env(SHELL_ROOT, scratch.path())

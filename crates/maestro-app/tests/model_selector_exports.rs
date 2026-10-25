@@ -56,6 +56,45 @@ fn application_exports_share_model_catalog_settings_and_locale_owners() {
 }
 
 #[test]
+fn model_frontend_exports_reuse_catalog_owners() {
+    let auth = SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect()));
+    auth.set_runtime_api_key("anthropic", "fixture");
+    let registry = ModelRegistry::in_memory(auth, no_commands()).unwrap();
+    let available = registry.get_available().unwrap();
+    let sonnet = registry.find("anthropic", "claude-sonnet-4-5").unwrap();
+    let found = find_exact_model_reference_match(" ANTHROPIC / claude-sonnet-4-5 ", &available);
+    assert!(Arc::ptr_eq(&found.unwrap(), &sonnet));
+    assert!(find_exact_model_reference_match("claude-sonnet", &available).is_none());
+    let compare = model_id_comparator(&|_| None).unwrap();
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    let patterns = ["anthropic/claude-sonnet-4-5:high", "missing/none"].map(String::from);
+    let scope = resolve_model_scope(
+        &patterns,
+        &registry,
+        &compare,
+        &mut ModelResolverOutput {
+            stdout: &mut stdout,
+            stderr: &mut stderr,
+            color: false,
+        },
+    )
+    .unwrap();
+    let [
+        ScopedModel {
+            model,
+            thinking_level,
+        },
+    ] = <[_; 1]>::try_from(scope).ok().unwrap();
+    assert!(Arc::ptr_eq(&model, &sonnet));
+    assert_eq!(thinking_level, Some(ThinkingLevel::High));
+    assert!(stdout.is_empty());
+    assert_eq!(
+        String::from_utf8(stderr).unwrap(),
+        "Warning: No models match pattern \"missing/none\"\n"
+    );
+}
+
+#[test]
 fn authentication_frontend_exports_share_existing_owners() {
     let expected: AuthenticationMetadata =
         serde_json::from_str(include_str!("fixtures/authentication_metadata.json")).unwrap();
@@ -135,44 +174,5 @@ fn assert_supplied_prompt_retains_option_order() {
             ("unnamed", ""),
             ("intl", "Ünïcøde 說明"),
         ]
-    );
-}
-
-#[test]
-fn model_frontend_exports_reuse_catalog_owners() {
-    let auth = SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect()));
-    auth.set_runtime_api_key("anthropic", "fixture");
-    let registry = ModelRegistry::in_memory(auth, no_commands()).unwrap();
-    let available = registry.get_available().unwrap();
-    let sonnet = registry.find("anthropic", "claude-sonnet-4-5").unwrap();
-    let found = find_exact_model_reference_match(" ANTHROPIC / claude-sonnet-4-5 ", &available);
-    assert!(Arc::ptr_eq(&found.unwrap(), &sonnet));
-    assert!(find_exact_model_reference_match("claude-sonnet", &available).is_none());
-    let compare = model_id_comparator(&|_| None).unwrap();
-    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-    let patterns = ["anthropic/claude-sonnet-4-5:high", "missing/none"].map(String::from);
-    let scope = resolve_model_scope(
-        &patterns,
-        &registry,
-        &compare,
-        &mut ModelResolverOutput {
-            stdout: &mut stdout,
-            stderr: &mut stderr,
-            color: false,
-        },
-    )
-    .unwrap();
-    let [
-        ScopedModel {
-            model,
-            thinking_level,
-        },
-    ] = <[_; 1]>::try_from(scope).ok().unwrap();
-    assert!(Arc::ptr_eq(&model, &sonnet));
-    assert_eq!(thinking_level, Some(ThinkingLevel::High));
-    assert!(stdout.is_empty());
-    assert_eq!(
-        String::from_utf8(stderr).unwrap(),
-        "Warning: No models match pattern \"missing/none\"\n"
     );
 }

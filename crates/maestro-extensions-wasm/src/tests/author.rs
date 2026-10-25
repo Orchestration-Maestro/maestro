@@ -39,6 +39,10 @@ mod replacement_author;
 mod setup_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
+#[path = "nested_schema_fixture.rs"]
+pub(crate) mod nested_schema_fixture;
+#[path = "schema_author.rs"]
+mod schema_author;
 #[path = "shell_author.rs"]
 mod shell_author;
 #[path = "tool_author.rs"]
@@ -754,7 +758,7 @@ fn write_number(event: &mut ExtensionEvent, bits: &str, field: Option<&str>) -> 
                 .write()
                 .map_err(|e| e.to_string())?
                 .usage
-                .total_tokens = value;
+                .total_tokens = maestro_request::presence::Presence::Present(value);
         }
         ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => match field {
             Some("reserveTokens") => compact.preparation.settings.reserve_tokens = value,

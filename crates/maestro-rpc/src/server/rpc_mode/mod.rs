@@ -5,10 +5,10 @@ pub use native::NativeRpcProcess;
 
 use maestro_app::output_guard::take_over_stdout;
 use maestro_app::rpc_mode::{JsonlLineReader, stdout_output};
-use maestro_app::{AgentSessionRuntime, RpcModeOptions, run_rpc_connection};
-use std::{convert::Infallible, io, rc::Rc};
+use maestro_app::{RpcModeOptions, run_rpc_connection};
+use std::{convert::Infallible, io};
 
-/// Serves `runtime_host` over standard input and output until the input ends, an extension
+/// Serves the optional session over standard input and output until the input ends, an extension
 /// requests shutdown or a termination signal arrives, then exits the process with the
 /// connection's exit code: 0, or 128 plus the signal's number.
 ///
@@ -17,12 +17,9 @@ use std::{convert::Infallible, io, rc::Rc};
 ///
 /// # Errors
 /// Returns an input or output failure, or the failure of binding or disposing the session.
-pub async fn run_rpc_mode(
-    runtime_host: Rc<AgentSessionRuntime>,
-    options: RpcModeOptions,
-) -> io::Result<Infallible> {
+pub async fn run_rpc_mode(options: RpcModeOptions) -> io::Result<Infallible> {
     take_over_stdout();
     let input = Box::new(JsonlLineReader::new(tokio::io::stdin()));
-    let outcome = run_rpc_connection(runtime_host, input, stdout_output(), options).await?;
+    let outcome = run_rpc_connection(input, stdout_output(), options).await?;
     std::process::exit(outcome.exit_code())
 }

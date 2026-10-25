@@ -6,7 +6,7 @@ use super::scenario::{Driver, ToolRun};
 /// Registration data with opaque schema and independently optional output.
 pub(super) fn configuration() -> Value {
     json!({"metadata":{
-        "name":"echo", "label":"Echo Ω", "description":"Carries values", "parameters":" {\"x\":0,\"x\":1} "
+        "name":"echo", "label":"Echo Ω", "description":"Carries values", "parameters":{"x":1}
     }, "result":{"content":[],"details":"false","terminate":false}})
 }
 
@@ -325,9 +325,11 @@ async fn accepted_registration(driver: &mut impl Driver, prepare: bool) -> Resul
     driver
         .run_plain_command("capture", &format!("tools {config}"))
         .await?;
+    let mut expected = config["metadata"].clone();
+    expected["schemaKinds"] = json!({});
     assert_eq!(
         serde_json::from_str::<Value>(driver.tools().last().unwrap()).unwrap(),
-        config["metadata"]
+        expected
     );
     let name = config["metadata"]["name"].as_str().unwrap();
     assert_eq!(driver.identity(&format!("prepare {name}")).is_ok(), prepare);
@@ -370,9 +372,11 @@ async fn metadata_classes(driver: &mut impl Driver) -> Result<(), String> {
         driver
             .run_plain_command("capture", &format!("tools {config}"))
             .await?;
+        let mut expected = config["metadata"].clone();
+        expected["schemaKinds"] = json!({});
         assert_eq!(
             serde_json::from_str::<Value>(driver.tools().last().unwrap()).unwrap(),
-            config["metadata"]
+            expected
         );
         assert!(driver.release("prepare echo").await);
         assert!(driver.release("tool echo").await);

@@ -29,20 +29,29 @@ pub(super) struct RestoreQueuedMessagesOptions<'a> {
 
 impl InteractiveMode {
     /// Installs the queue actions on the editor without keeping the mode alive: the
-    /// interrupt key restores the queued text and stops a streaming response, the
-    /// follow-up key sends the editor's text as a follow-up, and the dequeue key restores
-    /// the queued text.
+    /// interrupt key restores the queued text and stops a streaming response, cancels a
+    /// running shell, or else clears a shell command from the editor and restores the
+    /// thinking border; the follow-up key sends the editor's text as a follow-up, and the
+    /// dequeue key restores the queued text.
     pub(super) fn setup_queue_key_handlers(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_escape(Some(Rc::new(move || {
-            if let Some(mode) = mode.upgrade()
-                && mode.runtime_host.session().is_streaming()
-            {
+            let Some(mode) = mode.upgrade() else {
+                return;
+            };
+            let session = mode.runtime_host.session();
+            if session.is_streaming() {
                 let options = RestoreQueuedMessagesOptions {
                     abort: true,
                     current_text: None,
                 };
                 mode.report(mode.restore_queued_messages_to_editor(options).map(drop));
+            } else if session.is_bash_running() {
+                session.abort_bash();
+            } else if mode.is_bash_mode.get() {
+                mode.editor.set_text("");
+                mode.is_bash_mode.set(false);
+                mode.report(mode.update_editor_border_color().map_err(Into::into));
             }
         })));
         let mode = Rc::downgrade(self);
@@ -155,6 +164,7 @@ impl InteractiveMode {
         self.editor.set_text("");
         self.update_pending_messages_display()?;
         self.show_status("Queued message for after compaction")
+            .map_err(Into::into)
     }
 
     /// Whether `text` starts with `/` and names a registered command, up to its first space.
@@ -179,6 +189,7 @@ impl InteractiveMode {
             1 => "Restored 1 queued message to editor".to_owned(),
             count => format!("Restored {count} queued messages to editor"),
         })
+        .map_err(Into::into)
     }
 
     /// The session's queued steering and follow-up texts, each followed by the messages
@@ -203,14 +214,18 @@ impl InteractiveMode {
         queued
     }
 
-    /// Rebuilds the pending rows: one dim row per steering message, then per follow-up
-    /// message, then the dequeue hint with the keys bound now; nothing when no message is
-    /// queued.
+    /// Rebuilds the pending rows: the shell rows still shown there, then one dim row per
+    /// steering message, then per follow-up message, then the dequeue hint with the keys
+    /// bound now; without queued messages only the shell rows remain.
     ///
     /// # Errors
     /// Returns the failure of the published theme's dim colour.
     pub(super) fn update_pending_messages_display(&self) -> Result<(), Box<dyn Error>> {
         self.pending_messages_container.clear();
+        for shell in self.pending_shells.borrow().iter() {
+            let row = Rc::clone(shell);
+            self.pending_messages_container.add_child(row);
+        }
         let QueueTexts {
             steering,
             follow_up,
@@ -274,6 +289,14 @@ impl InteractiveMode {
             self.runtime_host.session().agent().abort();
         }
         shown.map(|()| queued.len())
+    }
+
+    /// Hands the failure of a key action to the terminal host, which reports it.
+    pub(super) fn report(&self, result: Result<(), Box<dyn Error>>) {
+        if result.is_err() {
+            let runtime = &self.tool_environment.runtime;
+            runtime.spawn_local(Box::pin(std::future::ready(result)));
+        }
     }
 }
 

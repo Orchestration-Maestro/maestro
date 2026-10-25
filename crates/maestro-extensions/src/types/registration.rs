@@ -275,7 +275,7 @@ impl<P, D: DeserializeOwned + 'static, S: Default + 'static, E: ExtensionExecuti
     From<Definition<P, D, S, E>> for RegisteredToolInput<P, D, S, E>
 {
     fn from(definition: Definition<P, D, S, E>) -> Self {
-        Self::from(ToolDefinitionInput::Owned(definition))
+        Self::from(ToolDefinitionInput::Owned(Box::new(definition)))
     }
 }
 
@@ -321,7 +321,7 @@ impl<E: ExtensionExecution> Clone for RegisteredTool<E> {
 ///
 /// let tool: ToolDefinition<Value, Value, ()> = define_tool(ToolDefinition {
 ///     definition: Tool { name: "echo".into(), description: "Echo arguments".into(),
-///         parameters: json!({"type":"object"}) },
+///         parameters: json!({"type":"object"}).into() },
 ///     label: "Echo".into(), prompt_snippet: None, prompt_guidelines: None,
 ///     render_shell: None, prepare_arguments: None, execution_mode: None,
 ///     execute: Arc::new(|_, params, _, _, context| Box::pin(async move {

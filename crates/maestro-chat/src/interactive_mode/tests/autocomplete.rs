@@ -1,6 +1,6 @@
 //! Completion witnesses through the interactive mode's own provider.
 
-use super::{Setup, World, complete, isolated, isolated_case, start};
+use super::{Setup, World, isolated, isolated_case, start};
 use crate::interactive_mode::autocomplete::{
     get_autocomplete_source_tag, prefix_autocomplete_description,
 };
@@ -315,7 +315,7 @@ fn provider(
 }
 
 /// The suggestion set one authored line produces.
-fn suggested(
+async fn suggested(
     provider: &Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
     line: &str,
 ) -> Result<Option<AutocompleteSuggestions>, maestro_tui::autocomplete::CompletionError> {
@@ -325,14 +325,16 @@ fn suggested(
         line: 0,
         col: line.len(),
     };
-    complete(provider.get_suggestions(
-        &lines,
-        cursor,
-        CompletionOptions {
-            signal: &signal,
-            force: None,
-        },
-    ))
+    provider
+        .get_suggestions(
+            &lines,
+            cursor,
+            CompletionOptions {
+                signal: &signal,
+                force: None,
+            },
+        )
+        .await
 }
 
 /// Asserts one observed candidate set against its recorded candidates.
@@ -484,11 +486,11 @@ fn case_provider(
 }
 
 /// Asserts every recorded base case of `test` against its own provider.
-fn assert_base_cases(test: &str, directory: &Path) {
+async fn assert_base_cases(test: &str, directory: &Path) {
     for (input, expected) in cases(test, "base") {
         let (_, completer) = case_provider(directory, &input);
         recorded(
-            suggested(&completer, "/").unwrap(),
+            suggested(&completer, "/").await.unwrap(),
             expected.suggestions.as_ref(),
         );
     }
@@ -534,17 +536,19 @@ fn autocomplete_descriptions_preserve_missing_source_and_empty_description() {
 #[test]
 fn autocomplete_builds_ordered_builtin_template_extension_and_enabled_skill_commands() {
     let test = "autocomplete_builds_ordered_builtin_template_extension_and_enabled_skill_commands";
-    isolated(test, |directory| assert_base_cases(test, directory));
+    isolated(test, async |directory| {
+        assert_base_cases(test, directory).await;
+    });
 }
 
 #[test]
 fn autocomplete_skill_map_rebuild_discards_disabled_and_missing_entries() {
     let test = "autocomplete_skill_map_rebuild_discards_disabled_and_missing_entries";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let (input, expected) = case(test, "base");
         let (world, completer) = case_provider(directory, &input);
         recorded(
-            suggested(&completer, "/").unwrap(),
+            suggested(&completer, "/").await.unwrap(),
             expected.suggestions.as_ref(),
         );
         world
@@ -555,7 +559,7 @@ fn autocomplete_skill_map_rebuild_discards_disabled_and_missing_entries() {
             .borrow_mut()
             .set_enable_skill_commands(false);
         let rebuilt = provider(&world, &base_records(&input));
-        let values = values(suggested(&rebuilt, "/").unwrap().as_ref());
+        let values = values(suggested(&rebuilt, "/").await.unwrap().as_ref());
         assert!(
             values.iter().all(|value| !value.starts_with("skill:")),
             "{values:?}"
@@ -566,26 +570,30 @@ fn autocomplete_skill_map_rebuild_discards_disabled_and_missing_entries() {
 #[test]
 fn autocomplete_command_sources_preserve_duplicate_entries() {
     let test = "autocomplete_command_sources_preserve_duplicate_entries";
-    isolated(test, |directory| assert_base_cases(test, directory));
+    isolated(test, async |directory| {
+        assert_base_cases(test, directory).await;
+    });
 }
 
 #[test]
 fn autocomplete_empty_resources_keep_builtin_commands() {
     let test = "autocomplete_empty_resources_keep_builtin_commands";
-    isolated(test, |directory| assert_base_cases(test, directory));
+    isolated(test, async |directory| {
+        assert_base_cases(test, directory).await;
+    });
 }
 
 #[test]
 fn model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id() {
     let test = "model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(test, "model") {
             let query = input.query.clone().unwrap_or_default();
             let world = model_world(directory, &input);
             let provider = provider(&world, &[]);
             let line = format!("/model {query}");
             recorded(
-                suggested(&provider, &line).unwrap(),
+                suggested(&provider, &line).await.unwrap(),
                 expected.suggestions.as_ref(),
             );
         }
@@ -595,7 +603,7 @@ fn model_arguments_use_live_scoped_or_registry_candidates_and_fuzzy_provider_id(
 #[test]
 fn extension_argument_callback_receives_the_typed_prefix() {
     let test = "extension_argument_callback_receives_the_typed_prefix";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(test, "extension-argument") {
             let outcome = input
                 .outcome
@@ -605,7 +613,7 @@ fn extension_argument_callback_receives_the_typed_prefix() {
             let record = output_record(&called, &outcome);
             let world = Setup::default().build(directory);
             let provider = provider(&world, &[record]);
-            let result = suggested(&provider, "/addon value");
+            let result = suggested(&provider, "/addon value").await;
             assert_eq!(
                 called.borrow().as_slice(),
                 [expected.called.clone().unwrap()]
@@ -650,7 +658,7 @@ fn output_record(called: &Rc<RefCell<Vec<String>>>, outcome: &str) -> ResolvedCo
 #[test]
 fn model_completion_propagates_catalog_credential_failure() {
     let test = "model_completion_propagates_catalog_credential_failure";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let world = Setup::default().build(directory);
         let descriptor = Descriptor {
             id: "unreachable".to_owned(),
@@ -662,7 +670,7 @@ fn model_completion_propagates_catalog_credential_failure() {
             Err(DiagnosticErrorInfo::new(None, "Credential fallback failed").into())
         });
         let provider = provider(&world, &[]);
-        let observed = suggested(&provider, "/model unreachable");
+        let observed = suggested(&provider, "/model unreachable").await;
         assert!(
             observed
                 .as_ref()
@@ -675,7 +683,7 @@ fn model_completion_propagates_catalog_credential_failure() {
 #[test]
 fn model_completion_reads_the_session_at_request_time() {
     let test = "model_completion_reads_the_session_at_request_time";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let (input, expected) = case(test, "live-model");
         let world = Setup::default().build(directory);
         let before = Descriptor {
@@ -706,7 +714,7 @@ fn model_completion_reads_the_session_at_request_time() {
         let query = input.query.unwrap_or_else(|| "after".to_owned());
         let line = format!("/model {query}");
         recorded(
-            suggested(&provider, &line).unwrap(),
+            suggested(&provider, &line).await.unwrap(),
             expected.suggestions.as_ref(),
         );
     });
@@ -715,7 +723,7 @@ fn model_completion_reads_the_session_at_request_time() {
 #[test]
 fn autocomplete_handles_survive_mode_release_without_retaining_mode_cycles() {
     let test = "autocomplete_handles_survive_mode_release_without_retaining_mode_cycles";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let world = Setup::default().build(directory);
         let descriptor = Descriptor {
             id: "kept".to_owned(),
@@ -741,7 +749,7 @@ fn autocomplete_handles_survive_mode_release_without_retaining_mode_cycles() {
         } = world;
         drop(mode);
         assert!(weak.upgrade().is_none(), "the provider retains the mode");
-        let observed = suggested(&provider, "/model kept").unwrap();
+        let observed = suggested(&provider, "/model kept").await.unwrap();
         assert_eq!(values(observed.as_ref()), ["alpha/kept"]);
         drop((terminal, runtime, themes, host, loader, provider));
     });
@@ -749,7 +757,7 @@ fn autocomplete_handles_survive_mode_release_without_retaining_mode_cycles() {
 
 /// Installs `text` as an executable through a child process, never in-process.
 ///
-/// The probe's `PATH` holds no system programs, so the installing child receives the
+/// The probe commands precede the shell commands; the installing child receives the
 /// path the parent inherited under its own name.
 fn script(path: &Path, text: &str) {
     let tool_path = std::env::var("MAESTRO_TEST_TOOL_PATH").unwrap_or_default();
@@ -784,13 +792,13 @@ fn interactive_initialization_prepares_search_tools_before_first_completion() {
         test,
         "managed",
         &[
-            ("PATH", "probes"),
+            ("PATH", "probes:/bin"),
             ("MAESTRO_OFFLINE", "1"),
             ("MAESTRO_TEST_TOOL_PATH", &tool_path),
         ],
-        |directory| {
+        async |directory| {
             let managed = directory.join("bin");
-            std::fs::create_dir(&managed).unwrap();
+            std::fs::create_dir_all(&managed).unwrap();
             script(&managed.join("fd"), "#!/bin/sh\nexit 0\n");
             let elsewhere = directory.join("elsewhere");
             std::fs::create_dir(&elsewhere).unwrap();
@@ -801,14 +809,14 @@ fn interactive_initialization_prepares_search_tools_before_first_completion() {
                 ..Setup::default()
             }
             .build(directory);
-            start(&world);
+            start(&world).await;
             assert_eq!(
                 world.mode.fd_path.borrow().as_deref(),
                 Some(managed.join("fd").to_str().unwrap()),
                 "the managed binary directory supplies the search program"
             );
             std::fs::remove_file(managed.join("fd")).unwrap();
-            start(&world);
+            start(&world).await;
             assert!(
                 world.mode.fd_path.borrow().is_some(),
                 "a repeated initialization keeps the prepared program"
@@ -825,11 +833,11 @@ fn interactive_initialization_starts_both_search_programs_before_either_finishes
         test,
         "child",
         &[
-            ("PATH", "probes"),
+            ("PATH", "probes:/bin"),
             ("MAESTRO_OFFLINE", "1"),
             ("MAESTRO_TEST_TOOL_PATH", &tool_path),
         ],
-        |directory| {
+        async |directory| {
             let probes = directory.join("probes");
             std::fs::create_dir(&probes).unwrap();
             let marker = directory.join("markers");
@@ -843,7 +851,7 @@ fn interactive_initialization_starts_both_search_programs_before_either_finishes
                 &handshake(&marker, "rg.started", "fd.started"),
             );
             let world = Setup::default().build(directory);
-            start(&world);
+            start(&world).await;
             assert!(marker.join("fd.started").exists());
             assert!(marker.join("rg.started").exists());
             assert_eq!(world.mode.fd_path.borrow().as_deref(), Some("fd"));
@@ -859,27 +867,27 @@ fn file_completion_consumes_the_search_owner_fd_path() {
         test,
         "child",
         &[
-            ("PATH", "probes"),
+            ("PATH", "probes:/bin"),
             ("MAESTRO_OFFLINE", "1"),
             ("MAESTRO_TEST_TOOL_PATH", &tool_path),
         ],
-        |directory| {
+        async |directory| {
             let (input, expected) = case(test, "fd-route");
             let query = input.query.unwrap();
             let managed = directory.join("bin");
-            std::fs::create_dir(&managed).unwrap();
+            std::fs::create_dir_all(&managed).unwrap();
             script(
                 &managed.join("fd"),
                 "#!/bin/sh\nprintf 'target-unique.rs\\000'\n",
             );
             let world = Setup::default().build(directory);
-            start(&world);
+            start(&world).await;
             assert!(
                 world.mode.fd_path.borrow().is_some(),
                 "the managed program is prepared"
             );
             let completer = provider(&world, &[]);
-            let observed = suggested(&completer, &query).unwrap();
+            let observed = suggested(&completer, &query).await.unwrap();
             recorded(observed.clone(), expected.suggestions.as_ref());
             let item = &observed.unwrap().items[0];
             let applied = completer.apply_completion(
@@ -894,9 +902,9 @@ fn file_completion_consumes_the_search_owner_fd_path() {
             assert_eq!(applied.lines, ["@target-unique.rs "]);
             std::fs::remove_file(managed.join("fd")).unwrap();
             let world = Setup::default().build(directory);
-            start(&world);
+            start(&world).await;
             let completer = provider(&world, &[]);
-            let without = suggested(&completer, &query).unwrap();
+            let without = suggested(&completer, &query).await.unwrap();
             recorded(without, expected.without_selected_executable.as_ref());
         },
     );

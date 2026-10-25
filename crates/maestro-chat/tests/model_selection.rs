@@ -526,6 +526,63 @@ fn model_render_wraps_metadata_badges_and_unicode() {
     replay("model_render_wraps_metadata_badges_and_unicode");
 }
 
+/// Linux refuses new readers once a writer queues behind an existing reader.
+#[cfg(target_os = "linux")]
+#[test]
+fn shared_current_filtering_finishes_with_a_queued_writer() {
+    if isolate("model_selection::shared_current_filtering_finishes_with_a_queued_writer") {
+        return;
+    }
+    let mut query: Query = serde_json::from_value(serde_json::json!({
+        "available": [],
+        "scoped": [{"provider": "missing", "id": "fallback", "name": "Fallback"}],
+        "currentShared": true,
+        "readFailure": {"path": "<models-file>", "message": "controlled read failure"}
+    }))
+    .unwrap();
+    let fixture = Fixture::new(&mut query);
+    let before = frame(
+        &fixture.selector,
+        &fixture.observed.events,
+        query.width,
+        false,
+    );
+    assert!(
+        before
+            .lines
+            .iter()
+            .any(|line| line.contains("\x1b[38;5;34m ✓\x1b[39m"))
+    );
+    let model = &fixture.scoped[0];
+    let reader = model.read().unwrap();
+    let writer_model = model.clone();
+    let writer = std::thread::spawn(move || {
+        writer_model.write().unwrap().name = "Edited".into();
+    });
+    loop {
+        match model.try_read() {
+            Err(std::sync::TryLockError::WouldBlock) => break,
+            Err(std::sync::TryLockError::Poisoned(_)) => panic!("descriptor poisoned"),
+            Ok(guard) => drop(guard),
+        }
+        std::thread::yield_now();
+    }
+    eprintln!("writer admission established with reader retained; rebuilding current row");
+    fixture.selector.handle_input("");
+    assert_eq!(
+        frame(
+            &fixture.selector,
+            &fixture.observed.events,
+            query.width,
+            false
+        ),
+        before
+    );
+    drop(reader);
+    writer.join().unwrap();
+    assert_eq!(model.read().unwrap().name, "Edited");
+}
+
 #[test]
 fn shared_selected_model_metadata_is_read_at_confirmation() {
     replay("shared_selected_model_metadata_is_read_at_confirmation");

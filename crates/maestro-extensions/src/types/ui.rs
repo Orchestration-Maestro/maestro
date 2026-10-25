@@ -405,6 +405,52 @@ fn committing_done<T: 'static>(close: CustomClose, slot: Rc<Cell<Option<T>>>) ->
     })
 }
 
+/// How an installed UI host is retained by a session and its runner.
+#[derive(Clone)]
+pub enum ExtensionUIContextBinding {
+    /// An independently retained SDK host.
+    Owned(ExtensionUIContext),
+    /// A host whose containing owner already retains the session.
+    Borrowed {
+        /// The non-owning host reference.
+        port: std::rc::Weak<dyn ExtensionUIContextPort>,
+        /// Whether this was the headless fallback.
+        fallback: bool,
+    },
+}
+impl ExtensionUIContextBinding {
+    /// Borrows a host without retaining its containing owner.
+    #[must_use]
+    pub fn borrowed(context: &ExtensionUIContext) -> Self {
+        Self::Borrowed {
+            port: Rc::downgrade(&context.port),
+            fallback: context.fallback,
+        }
+    }
+    /// Obtains an independently retained context while its host is still live.
+    pub(crate) fn get(&self) -> Option<ExtensionUIContext> {
+        match self {
+            Self::Owned(context) => Some(context.clone()),
+            Self::Borrowed { port, fallback } => port.upgrade().map(|port| ExtensionUIContext {
+                port,
+                fallback: *fallback,
+            }),
+        }
+    }
+    /// Whether the installed host is live and is not a headless fallback.
+    pub(crate) fn has_ui(&self) -> bool {
+        match self {
+            Self::Owned(context) => !context.fallback,
+            Self::Borrowed { port, fallback } => !fallback && port.strong_count() != 0,
+        }
+    }
+}
+impl From<ExtensionUIContext> for ExtensionUIContextBinding {
+    fn from(context: ExtensionUIContext) -> Self {
+        Self::Owned(context)
+    }
+}
+
 /// An owned handle to the UI host that was current when it was obtained.
 #[derive(Clone)]
 pub struct ExtensionUIContext {

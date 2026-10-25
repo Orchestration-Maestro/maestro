@@ -110,8 +110,9 @@ impl RpcUi {
     }
 
     /// Writes `method` and settles with the picked answer, or with `default` once `signal`
-    /// aborts, `timeout` milliseconds pass or the client dismisses it. It settles with
-    /// `default` without asking when no answer can arrive.
+    /// aborts, `timeout` milliseconds pass or the client dismisses it. While an ending
+    /// connection still waits for its initial binding, it settles with `default` without
+    /// asking.
     fn dialog<T: 'static>(
         &self,
         method: RpcExtensionUIMethod,

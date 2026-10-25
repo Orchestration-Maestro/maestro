@@ -95,6 +95,19 @@ code-block, markdown-block, thinking-block {
   background: var(--maestro-color-panel);
   color: var(--maestro-color-text);
 }
+.maestro-button.maestro-button-compact {
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+.maestro-button-ghost.maestro-button-compact {
+  color: var(--maestro-color-muted);
+}
+.maestro-button-ghost.maestro-button-compact:hover {
+  background: var(--maestro-color-accent);
+  color: var(--maestro-color-on-accent);
+}
 .maestro-button-link {
   background: transparent;
   color: var(--maestro-color-accent);
@@ -195,4 +208,50 @@ code-block, markdown-block, thinking-block {
 .maestro-toggle-selected, .maestro-toggle-selected:hover {
   background: var(--maestro-color-background);
   color: var(--maestro-color-text);
+}
+.maestro-provider-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-panel);
+  padding: 1rem;
+  font-family: var(--maestro-type-body-font);
+}
+.maestro-provider-content {
+  flex: 1 1 0%;
+}
+.maestro-provider-name {
+  color: var(--maestro-color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+.maestro-provider-details, .maestro-provider-status {
+  margin-top: 0.25rem;
+  color: var(--maestro-color-muted);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+.maestro-provider-type {
+  text-transform: capitalize;
+}
+.maestro-provider-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.maestro-provider-connected {
+  color: var(--maestro-color-success);
+}
+.maestro-provider-checking {
+  color: var(--maestro-color-warning);
+}
+.maestro-provider-disconnected {
+  color: var(--maestro-color-error);
+}
+.maestro-provider-status:has(.maestro-provider-connected, .maestro-provider-checking, .maestro-provider-disconnected) {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }

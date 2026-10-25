@@ -88,7 +88,7 @@ pub fn definition<C, P, D, S>() -> ToolDefinition<C, P, D, S> {
         definition: Tool {
             name: "custom".into(),
             description: String::new(),
-            parameters: json!({}),
+            parameters: json!({}).into(),
         },
         label: "custom".into(),
         prompt_snippet: None,

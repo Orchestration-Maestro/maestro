@@ -3,8 +3,12 @@
 A program embeds Maestro through `maestro_app`. The crate root re-exports the
 session, its creation and replacement operations, and the records of the
 compaction, history, resource, settings, tool and theme owners they use. Frontend
-modes, the RPC client and the interactive components stay with their own
-crates.
+modes and the interactive components stay with their own crates; the RPC client,
+which drives Maestro as a child process, lives here in `rpc_client`
+([RPC client](../client.md)).
+
+[Session observations](lifecycle.md) describes name publication and finalized
+message replacements.
 
 ## Creating a session
 
@@ -22,6 +26,10 @@ input with its default:
   the working and agent directories from the given `ResourceLoaderOptions` and
   loads it first. A caller that supplied no loader passes its task set and
   extension module loader there.
+- `offline` is the session's own offline selection for search programs. It is
+  separate from `ResourceLoaderOptions::offline`, which stays with configured
+  packages; neither overwrites the other. Sessions created from retained
+  [`AgentSessionServices`] inherit the selection those services were created with.
 - A catalog created here runs the commands that configured credentials name as
   child processes; a supplied catalog keeps its own handle. `theme` is the
   published theme extensions see while no user interface is bound; the default
@@ -81,7 +89,10 @@ The session builds its extension runner when it is created and installs its tool
 hooks once. The hooks read the runner in effect when they run, so a rebuilt
 runtime needs no new hooks. Extensions receive `session_start` only when
 `bind_extensions` runs. Each field of `ExtensionBindings` that is present
-replaces the bound operation; an absent field leaves it as it was. Binding then
+replaces the bound operation; an absent field leaves it as it was. The UI field
+is an `ExtensionUIContextBinding`: an SDK host converted with `.into()` stays
+owned by the session, while a host that owns the session supplies
+`ExtensionUIContextBinding::borrowed`. Binding then
 sends the start event and hands the skill, prompt and theme paths extensions
 discover to the loader. An inline extension `<name>` labels them
 `extension:name`; a file extension labels them `extension:` and its file name
@@ -104,8 +115,10 @@ extensions may cancel through `session_before_switch` or `session_before_fork`;
 the target history is prepared; the current session shuts down with its reason,
 the before-invalidate callback runs, and the session is disposed; the factory
 creates the next session, the rebind callback runs, and `with_session` continues
-with the replacement's context. The start event carries the previous session
-file. A failure after the teardown restores nothing.
+with the replacement's context. Setup, message reload and continuation stay bound
+to that replacement even if another operation changes the current session while
+a callback is suspended. The start event carries the previous session file.
+A failure after the teardown restores nothing.
 
 - `new_session` starts a history in the same directory, optionally recording a
   parent session, and runs `setup` on it before the agent reloads its messages.

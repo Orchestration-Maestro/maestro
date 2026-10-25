@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 use std::sync::{Arc, PoisonError};
 
+use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::wire::{appended, arguments, joined, kind, last, signature};
@@ -14,6 +15,7 @@ use crate::{
     AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject, Model, SharedAssistantMessage,
     StopReason, TextContent, ThinkingContent, ToolCall, Usage, calculate_cost,
 };
+use maestro_request::presence::Presence;
 
 /// The open item and the block position captured when it started.
 enum Current {
@@ -156,7 +158,7 @@ impl<'a> Reducer<'a> {
 
     /// Store the arguments parsed so far on the captured block, a tool call, and announce `delta`
     /// when there is one.
-    fn set_arguments(&self, arguments: JsonObject, delta: Option<String>) {
+    fn set_arguments(&self, arguments: Value, delta: Option<String>) {
         self.publish(|block, content_index, partial| {
             let Block::ToolCall(call) = block else {
                 return None;
@@ -263,7 +265,7 @@ impl<'a> Reducer<'a> {
                 )
             }
             "function_call" => {
-                let call = call(raw, JsonObject::new())?;
+                let call = call(raw, JsonObject::new().into())?;
                 let scratch = arguments(raw)?;
                 Current::Function(self.open(Block::ToolCall(call)), scratch)
             }
@@ -375,7 +377,7 @@ impl<'a> Reducer<'a> {
     }
 
     /// Set the final arguments of the captured block, a tool call, and announce its end.
-    fn end_call(&self, arguments: JsonObject) {
+    fn end_call(&self, arguments: Value) {
         self.publish(|block, content_index, partial| {
             let Block::ToolCall(call) = block else {
                 return None;
@@ -413,7 +415,7 @@ impl<'a> Reducer<'a> {
             usage.output = count(reported, "output_tokens")?;
             usage.cache_read = cached;
             usage.cache_write = 0.0;
-            usage.total_tokens = count(reported, "total_tokens")?;
+            usage.total_tokens = Presence::Present(count(reported, "total_tokens")?);
         }
         calculate_cost(self.model, &mut usage);
         self.change(|message| message.usage = usage.clone());
@@ -466,7 +468,7 @@ fn argument_update(
     scratch: &mut String,
     raw: &RawValue,
     event_kind: &str,
-) -> Result<(JsonObject, Option<String>), DiagnosticErrorInfo> {
+) -> Result<(Value, Option<String>), DiagnosticErrorInfo> {
     let delta = if event_kind == "response.function_call_arguments.delta" {
         let delta = string(member(raw, "delta"))?;
         scratch.push_str(&delta);
@@ -484,7 +486,7 @@ fn argument_update(
 }
 
 /// Build a final call from the selected identity and already-parsed arguments.
-fn call(raw: &RawValue, arguments: JsonObject) -> Result<ToolCall, DiagnosticErrorInfo> {
+fn call(raw: &RawValue, arguments: Value) -> Result<ToolCall, DiagnosticErrorInfo> {
     let mut id = string(member(raw, "call_id"))?;
     if id.contains('|') {
         return Err(DiagnosticErrorInfo::new(

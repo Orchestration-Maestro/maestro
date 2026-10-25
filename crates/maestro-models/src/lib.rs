@@ -132,3 +132,9 @@ pub use providers::content::google_vertex::{
 
 /// Shared extension events and assembled prompt records.
 pub use maestro_request::{extension_events, system_prompt};
+
+/// Shared parameter-schema records and their declared node kinds.
+pub use maestro_request::parameter_schema::{
+    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaKind,
+    SchemaNode,
+};

@@ -171,9 +171,7 @@ impl InteractiveMode {
     /// Publishes a theme under the supplied watch effects; committing also saves the
     /// requested name.
     fn settings_theme(&self, name: &str, preview: bool) -> Result<(), Box<dyn Error>> {
-        let result = self
-            .themes
-            .set_theme(name, Some(self.settings_theme_watch.clone()))?;
+        let result = self.themes.set_theme(name, Some(self.operations.clone()))?;
         if preview {
             if matches!(result, ThemeChangeResult::Success) {
                 self.ui.invalidate();

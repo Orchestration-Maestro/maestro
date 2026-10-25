@@ -8,9 +8,9 @@ pub use maestro_tools::{SearchTool, ToolsManagerOutput};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
-    BashOperations, BashRenderState, BashSpawnContext, BashSpawnHook, BashToolDetails,
-    BashToolInput, BashToolOptions, create_bash_tool, create_bash_tool_definition,
-    create_local_bash_operations, utils::shell::get_shell_config,
+    BashError, BashExecOptions, BashExecResult, BashOperations, BashRenderState, BashSpawnContext,
+    BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions, create_bash_tool,
+    create_bash_tool_definition, create_local_bash_operations, utils::shell::get_shell_config,
 };
 
 pub use maestro_tools::output::render_utils::{
@@ -43,6 +43,10 @@ pub use maestro_tools::{VisualTruncateResult, truncate_to_visual_lines};
 pub use maestro_tools::output::render_utils::strip_ansi;
 
 pub use maestro_tools::utils::shell::sanitize_binary_output;
+
+/// Kills every tracked detached child, for a frontend ending the process.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::utils::shell::kill_tracked_detached_children;
 
 pub use maestro_tools::{TruncationOptions, TruncationResult, truncate_tail};
 

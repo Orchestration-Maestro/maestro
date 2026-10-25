@@ -28,7 +28,7 @@ macro_rules! on_both_adapters {
 pub(crate) mod action_host;
 mod agent_events;
 mod application_messages;
-mod author;
+pub(crate) mod author;
 mod basic_ui;
 mod bookmark_example;
 mod build;
@@ -53,6 +53,7 @@ pub(crate) mod host;
 mod host_family;
 mod join;
 mod observed;
+mod parameter_schemas;
 mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;
@@ -67,10 +68,13 @@ pub(crate) mod renderer_host;
 mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
+pub(crate) mod schema_host;
 mod selection_events;
+mod send_user_message_example;
 mod session_actions;
 mod session_corpus;
 mod session_events;
+mod session_name_example;
 mod session_reader;
 mod session_records;
 mod session_summary;
@@ -82,6 +86,7 @@ mod shell_callbacks;
 pub(crate) mod shell_host;
 mod shutdown_example;
 mod stream_events;
+mod system_prompt_header_example;
 mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;
@@ -541,12 +546,15 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]component-view.invalidate",
             "[method]component-view.render",
             "[method]component-view.wants-key-release",
+            "describe-schema",
             "invoke-compaction-complete",
             "invoke-compaction-error",
             "invoke-listener",
             "invoke-prepare",
             "invoke-renderer",
-            "release"
+            "invoke-schema",
+            "release",
+            "retain-schema"
         ],
         "component methods, preparation and release stay synchronous"
     );
@@ -574,6 +582,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]replaced-session-context.send-user-message",
             "callback-emit",
             "event-emit",
+            "get-all-tools",
             "set-model",
         ]
     );
@@ -724,7 +733,6 @@ fn assert_action_contract(contract: &Contract) {
         "get-session-name",
         "set-label",
         "get-active-tools",
-        "get-all-tools",
         "set-active-tools",
         "get-commands",
         "get-thinking-level",

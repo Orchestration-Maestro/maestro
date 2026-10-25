@@ -2,11 +2,8 @@
 //! re-checked switch, forks before and at an entry, imports and the final shutdown,
 //! compared with the recorded runtime cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::runtime_fixtures::{Recorded, Resources, factory, runtime_for, stored_in};
-use crate::support::session_harness::{
-    Harness, HarnessOptions, answer, create_test_extensions_result, harness, on_task_set,
-    script_responses,
-};
+use crate::support::runtime_fixtures::{Recorded, runtime_for, stored_in};
+use crate::support::session_harness::{Harness, answer, on_task_set, script_responses};
 use maestro_app::{
     AgentSessionRuntime, AgentSessionRuntimeError, CreateAgentSessionRuntimeOptions, PromptOptions,
     create_agent_session_runtime,
@@ -85,35 +82,42 @@ fn creates_the_first_runtime_after_the_working_directory_check() {
 #[test]
 fn refuses_a_first_runtime_whose_stored_directory_is_gone() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("faux-1", true)],
-            ..HarnessOptions::default()
-        })
-        .await;
-        let root = h.scratch.path().display().to_string();
-        let manager = stored_elsewhere(&root, "sessions");
-        let manager =
-            SessionManager::open(manager.get_session_file().unwrap(), None, None).unwrap();
-        let recorded = Recorded::default();
-        let extensions = Rc::new(create_test_extensions_result(Vec::new(), &root).await);
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path().display().to_string();
+        let cwd = format!("{root}/missing-cwd");
+        std::fs::create_dir_all(&cwd).unwrap();
+        let manager = stored_in(&cwd, &format!("{root}/sessions"), &root);
+        let file = manager.get_session_file().unwrap().to_owned();
+        std::fs::remove_dir_all(&cwd).unwrap();
+        let manager = SessionManager::open(&file, None, None).unwrap();
+        let calls = Rc::new(std::cell::Cell::new(0));
+        let counted = Rc::clone(&calls);
         let created = create_agent_session_runtime(
-            factory(&h, &Resources::of(&extensions), &recorded),
+            Rc::new(move |_| {
+                counted.set(counted.get() + 1);
+                Box::pin(std::future::ready(Err(
+                    maestro_models::DiagnosticErrorInfo::error("factory must not run"),
+                )))
+            }),
             CreateAgentSessionRuntimeOptions {
                 cwd: root.clone(),
-                agent_dir: root,
+                agent_dir: root.clone(),
                 session_manager: Rc::new(RefCell::new(manager)),
                 session_start_event: None,
             },
         )
         .await;
-        assert!(matches!(
-            created,
-            Err(AgentSessionRuntimeError::MissingSessionCwd(_))
-        ));
-        assert!(
-            recorded.factory_calls.borrow().is_empty(),
-            "the factory never ran"
-        );
+        let Err(AgentSessionRuntimeError::MissingSessionCwd(error)) = created else {
+            panic!("runtime must reject the missing working directory before construction");
+        };
+        let expected = crate::support::session_harness::corpus("replacement");
+        assert_eq!(json!(calls.get()), expected["missing_cwd"]["called"]);
+        assert_eq!(json!(error.name()), expected["missing_cwd"]["name"]);
+        let message = error
+            .to_string()
+            .replace(&file, "$ROOT/missing.jsonl")
+            .replace(&root, "$ROOT");
+        assert_eq!(json!(message), expected["missing_cwd"]["message"]);
     });
 }
 
@@ -166,6 +170,110 @@ fn custom_types(session: &maestro_app::AgentSession<Local>) -> Vec<Value> {
         .filter(|entry| entry["type"] == "custom_message")
         .map(|entry| entry["customType"].clone())
         .collect()
+}
+
+#[test]
+fn suspended_rebind_keeps_its_continuation_on_the_rebound_session() {
+    on_task_set(|_| async {
+        let (_h, runtime, _recorded) = runtime_for("suspended-rebind", Vec::new()).await;
+        let (release, resume) = tokio::sync::oneshot::channel::<()>();
+        let resume = Rc::new(RefCell::new(Some(resume)));
+        let target = Rc::new(RefCell::new(None));
+        let rebound = Rc::clone(&target);
+        runtime.set_rebind_session(Some(Rc::new(move |session| {
+            let Some(resume) = resume.borrow_mut().take() else {
+                return Box::pin(std::future::ready(Ok(())));
+            };
+            *rebound.borrow_mut() = Some(session);
+            Box::pin(async move {
+                resume.await.unwrap();
+                Ok(())
+            })
+        })));
+        let options = NewSessionCommandOptions {
+            with_session: Some(Rc::new(|context| {
+                Box::pin(async move { context.send_message(probe_message(), None).await })
+            })),
+            ..NewSessionCommandOptions::default()
+        };
+        let mut operation = std::pin::pin!(runtime.new_session(options));
+        assert!(
+            std::future::Future::poll(
+                operation.as_mut(),
+                &mut std::task::Context::from_waker(std::task::Waker::noop()),
+            )
+            .is_pending()
+        );
+        let target = target.borrow().as_ref().cloned().unwrap();
+        runtime
+            .new_session(NewSessionCommandOptions::default())
+            .await
+            .unwrap();
+        let current = runtime.session();
+        assert!(!Rc::ptr_eq(&target, &current));
+        release.send(()).unwrap();
+        operation.await.unwrap();
+        assert_eq!(custom_types(&target), ["probe"]);
+        assert!(custom_types(&current).is_empty());
+        assert!(Rc::ptr_eq(&current, &runtime.session()));
+    });
+}
+
+#[test]
+fn suspended_setup_keeps_reload_and_continuation_on_the_created_session() {
+    on_task_set(|_| async {
+        let (_h, runtime, _recorded) = runtime_for("suspended-setup", Vec::new()).await;
+        let (release, resume) = tokio::sync::oneshot::channel::<()>();
+        let resume = Rc::new(RefCell::new(Some(resume)));
+        let options = NewSessionCommandOptions {
+            setup: Some(Rc::new(move |manager| {
+                let resume = resume.borrow_mut().take().unwrap();
+                Box::pin(async move {
+                    resume.await.unwrap();
+                    manager
+                        .borrow_mut()
+                        .append_message(json!({
+                            "role": "user", "content": "setup history", "timestamp": 0
+                        }))
+                        .unwrap();
+                    Ok(())
+                })
+            })),
+            with_session: Some(Rc::new(|context| {
+                Box::pin(async move { context.send_message(probe_message(), None).await })
+            })),
+            ..NewSessionCommandOptions::default()
+        };
+        let mut operation = std::pin::pin!(runtime.new_session(options));
+        assert!(
+            std::future::Future::poll(
+                operation.as_mut(),
+                &mut std::task::Context::from_waker(std::task::Waker::noop()),
+            )
+            .is_pending()
+        );
+        let target = runtime.session();
+        assert!(target.messages().read().unwrap().is_empty());
+        runtime
+            .new_session(NewSessionCommandOptions::default())
+            .await
+            .unwrap();
+        let current = runtime.session();
+        assert!(!Rc::ptr_eq(&target, &current));
+        release.send(()).unwrap();
+        operation.await.unwrap();
+        assert_eq!(custom_types(&target), ["probe"]);
+        let messages = target.messages();
+        let messages = messages.read().unwrap();
+        assert_eq!(messages.len(), 2);
+        assert_eq!(
+            serde_json::to_value(&messages[0]).unwrap()["content"],
+            "setup history"
+        );
+        assert!(current.messages().read().unwrap().is_empty());
+        assert!(custom_types(&current).is_empty());
+        assert!(Rc::ptr_eq(&current, &runtime.session()));
+    });
 }
 
 #[test]
@@ -322,6 +430,108 @@ fn reports_a_vetoed_switch_to_a_stored_session() {
             1,
             "nothing was created"
         );
+    });
+}
+
+#[test]
+fn command_actions_forward_to_the_current_session_and_runtime() {
+    on_task_set(|_| async {
+        let (h, runtime, recorded) = runtime_for("commands", Vec::new()).await;
+        drop(script_responses(&h, vec![answer("answer", None, None)]));
+        let session = runtime.session();
+        session
+            .prompt("question", PromptOptions::default())
+            .await
+            .unwrap();
+        let user_entry = {
+            let manager = session.session_manager().borrow();
+            let users: Vec<&Value> = manager
+                .get_entries()
+                .into_iter()
+                .filter(|entry| entry["type"] == "message" && entry["message"]["role"] == "user")
+                .collect();
+            users.last().unwrap()["id"].as_str().unwrap().to_owned()
+        };
+        let runtime = Rc::new(runtime);
+        let actions = runtime.command_context_actions();
+        (actions.operations().wait_for_idle)().await.unwrap();
+        (actions.operations().reload)().await.unwrap();
+        let leaf = runtime
+            .session()
+            .session_manager()
+            .borrow()
+            .get_leaf_id()
+            .map(str::to_owned)
+            .unwrap();
+        let navigated = (actions.operations().navigate_tree)(leaf, None)
+            .await
+            .unwrap();
+        assert!(!navigated.cancelled);
+        let forked = (actions.operations().fork)(user_entry, None).await.unwrap();
+        assert!(!forked.cancelled);
+        let created_at = recorded.factory_calls.borrow().len();
+        let created = (actions.operations().new_session)(None).await.unwrap();
+        assert!(!created.cancelled);
+        assert_eq!(recorded.factory_calls.borrow().len(), created_at + 1);
+        let cwd = runtime
+            .session()
+            .session_manager()
+            .borrow()
+            .get_cwd()
+            .to_owned();
+        let target = stored_file(&h, &cwd);
+        let switched = (actions.operations().switch_session)(target.clone(), None)
+            .await
+            .unwrap();
+        assert!(!switched.cancelled);
+        assert_eq!(runtime.session().session_file().unwrap(), target);
+        assert_eq!(
+            recorded.factory_calls.borrow().len(),
+            created_at + 2,
+            "the switch created the replacement session"
+        );
+    });
+}
+
+#[test]
+fn command_actions_project_cancelled_session_changes() {
+    on_task_set(|_| async {
+        let (h, runtime, _recorded) = runtime_for("commands-vetoed", vec![(None, vetoing())]).await;
+        let first = runtime.session();
+        let cwd = first.session_manager().borrow().get_cwd().to_owned();
+        let target = stored_file(&h, &cwd);
+        let runtime = Rc::new(runtime);
+        let actions = runtime.command_context_actions();
+        assert!(
+            (actions.operations().new_session)(None)
+                .await
+                .unwrap()
+                .cancelled
+        );
+        assert!(
+            (actions.operations().switch_session)(target, None)
+                .await
+                .unwrap()
+                .cancelled
+        );
+        assert!(
+            Rc::ptr_eq(&first, &runtime.session()),
+            "a cancelled change leaves the current session in place"
+        );
+    });
+}
+
+#[test]
+fn held_command_actions_report_the_ended_runtime() {
+    on_task_set(|_| async {
+        let (_h, runtime, _recorded) = runtime_for("commands-ended", Vec::new()).await;
+        let runtime = Rc::new(runtime);
+        let actions = runtime.command_context_actions();
+        drop(runtime);
+        let error = (actions.operations().wait_for_idle)()
+            .await
+            .expect_err("the runtime has ended");
+        assert_eq!(error.to_string(), "the session runtime has ended");
     });
 }
 
@@ -535,7 +745,7 @@ fn costed(message: &NativeAgentMessage) -> Option<MessageEndEventResult<NativeAg
 fn probe_call() -> maestro_models::AssistantMessage {
     let call = maestro_models::faux_tool_call(
         "probe",
-        serde_json::Map::new(),
+        serde_json::Map::new().into(),
         maestro_models::FauxToolCallOptions::default(),
     );
     maestro_models::faux_assistant_message(

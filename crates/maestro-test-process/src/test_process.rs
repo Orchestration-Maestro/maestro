@@ -478,7 +478,6 @@ impl TestProcess {
     /// process's `PATH` nor the child's decides which shell runs. A path that cannot run
     /// fails at launch with the operating system's error.
     fn command(&mut self, executable: PathBuf) -> Result<Command, TestProcessError> {
-        #[cfg(unix)]
         if let Some((program, setup)) = self.shell.take() {
             if !program.is_absolute() {
                 return Err(self.failure("the setup interpreter path is not absolute"));

@@ -6,8 +6,11 @@ way: prompts, models, queues, compaction, shell commands, session files and exte
 dialogs.
 
 The protocol has one connection runner, `maestro_app::run_rpc_connection`. It serves a
-local session runtime over a caller's line reader and writer and returns how the
-connection ended; it never exits the process. The writer receives each record as an
+workspace command handler and an optional local session over a caller's line reader
+and writer and returns how the connection ended; it never exits the process.
+`RpcModeOptions::session` groups the runtime, signal registration, theme and export
+facilities. Without a session, workspace commands still run and session commands return
+a correlated refusal asking the caller to open in a session. The writer receives each record as an
 `RpcLine`, already framed, and `rpc_mode::stdout_output` writes those lines to standard
 output. `maestro_rpc::run_rpc_mode` is its
 standard-stream adapter: it reserves standard output for protocol records, serves the
@@ -195,3 +198,10 @@ shutdown has started, a second signal kills the process by that signal; once the
 is disposing, the end of input exits 0 at once. A failed read, or a failed write of any
 record, also disposes the session, and the connection returns that first failure however
 it then ends.
+
+## Startup handoff
+
+The application-owned `presentation_data::mode_dispatch::RpcModeRunner` accepts
+the prepared session runtime. A native adapter supplies `RpcModeOptions` and
+calls `run_rpc_mode`; the runner retains its standard-stream framing and exit
+policy. Executable composition is not provided by this contract.

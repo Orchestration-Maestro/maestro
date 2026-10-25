@@ -349,6 +349,31 @@ fn a_pending_frame_is_drawn_on_request_and_nothing_after_a_stop() {
     );
 }
 
+#[test]
+fn a_pending_frame_is_drawn_while_output_is_backed_up() {
+    let (tui, terminal, runtime) = writer(None);
+    let probe = Probe::shared(&["first"]);
+    tui.add_child(probe.clone());
+    succeeds(tui.start());
+    succeeds(runtime.settle());
+    let drawn = probe.renders.get();
+    terminal.clear_writes();
+    terminal.set_pending_output_bytes(262_145);
+    probe.set_lines(&["notice".to_owned()]);
+    tui.request_render(false);
+    let due = runtime.next_deadline().expect("a frame is due");
+    runtime.advance_to(due).into_iter().for_each(Result::unwrap);
+    assert_eq!(probe.renders.get(), drawn, "an ordinary frame is deferred");
+    assert!(terminal.writes().is_empty());
+    succeeds(tui.render_pending_frame());
+    assert_eq!(probe.renders.get(), drawn + 1, "the final frame is drawn");
+    assert!(
+        terminal.writes().concat().contains("notice"),
+        "the final frame reaches the terminal: {:?}",
+        terminal.writes()
+    );
+}
+
 /// Which walk over the children a component edits the list during.
 #[derive(Clone, Copy, Debug)]
 enum Walk {
@@ -495,4 +520,46 @@ fn assert_invalidation_while_rendering_reaches_later_siblings_in_the_same_frame(
         "the frame replaces the cached text: {drawn:?}"
     );
     trigger.clear_callbacks();
+}
+
+#[test]
+fn drain_future_releases_terminal_before_scheduled_work() {
+    use std::task::{Context, Waker};
+
+    let (tui, terminal, runtime) = writer(None);
+    let probe = Probe::shared(&["frame"]);
+    tui.add_child(probe.clone());
+    tui.start().unwrap();
+    runtime.settle().unwrap();
+    assert_eq!(probe.renders.get(), 1, "the first frame renders");
+    terminal.clear_writes();
+    terminal.hold_drain();
+    let mut drain = tui.terminal().borrow_mut().drain_input(None, None);
+    let mut context = Context::from_waker(Waker::noop());
+    assert!(
+        drain.as_mut().poll(&mut context).is_pending(),
+        "the shutdown drain waits for the terminal"
+    );
+    probe.set_lines(&["frame-2".to_owned()]);
+    tui.request_render(false);
+    runtime.settle().unwrap();
+    assert_eq!(
+        probe.renders.get(),
+        2,
+        "a scheduled frame renders while the drain is pending"
+    );
+    assert!(
+        terminal.writes().concat().contains("frame-2"),
+        "the frame reached the terminal the drain holds: {:?}",
+        terminal.writes()
+    );
+    assert!(
+        drain.as_mut().poll(&mut context).is_pending(),
+        "the frame rendered without releasing the drain"
+    );
+    terminal.release_drain();
+    assert!(
+        drain.as_mut().poll(&mut context).is_ready(),
+        "the drain completes once the terminal releases it"
+    );
 }

@@ -26,6 +26,8 @@ The default deadline is 10,000 milliseconds for headers plus body together.
 `VersionCheckOptions` can supply a different deadline (including zero) or the
 shared HTTP transport override. Nonempty `MAESTRO_SKIP_VERSION_CHECK` or
 `MAESTRO_OFFLINE` skips requests; telemetry preference does not affect checks.
+Its `skip_version_check` and `offline` selections replace those two reads, and an
+absent selection keeps reading the flag.
 
 ## Install reporting
 
@@ -36,7 +38,8 @@ values disable it, without trimming.
 
 Native `report_install_telemetry` captures settings and `MAESTRO_TELEMETRY` at
 invocation. Nonempty `MAESTRO_OFFLINE` prevents a request;
-`MAESTRO_SKIP_VERSION_CHECK` does not. The returned owned future retains no
+`MAESTRO_SKIP_VERSION_CHECK` does not. Its `offline` argument replaces that read,
+and `None` keeps reading the flag. The returned owned future retains no
 borrow of the settings, version or origin and spawns nothing. Its caller owns
 execution and trigger timing.
 

@@ -88,9 +88,7 @@ impl MountedContent {
             Some((.., old)) => parent.replace_child(&root.node, &old.node),
             None => parent.append_child(&root.node),
         }
-        .map_err(|e| {
-            ToolUiError::Host(crate::browser::attachment_content::browser::host_error(&e))
-        })?;
+        .map_err(|error| ToolUiError::native(&error))?;
         self.active = Some((kind, content.key().map(str::to_owned), root));
         Ok(())
     }
@@ -202,6 +200,10 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(&maestro_theme::highlight_css().map_err(|error| failure(&error))?);
     css.push_str(include_str!("components/markdown_block/markdown.css"));
     css.push_str(include_str!("components/messages.css"));
+    css.push_str(include_str!("tools/artifacts/artifact_element.css"));
+    css.push_str(include_str!("tools/artifacts/generic_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/docx_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/console.css"));
     css.push_str(include_str!("dom.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))

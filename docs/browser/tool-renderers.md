@@ -116,6 +116,13 @@ Both use direct native clipboard writing. Message links retain
 their separate fallback policy. Actual console updates scroll the local body to
 its bottom; unchanged frames and presentation-only changes do not reset scroll.
 
+A console built with [`ConsoleBlock::default`](../../crates/maestro-web/src/components/console_block.rs)
+mounts as native page content: its header label and copy control sit outside a
+scrolling body holding the literal output, so the header never scrolls away. The
+first update of a root that is not on the page yet scrolls on the next frame.
+Native page content supplies no canvas host, so only a console constructed
+with a host draws on a canvas.
+
 ## Opened attachments
 
 User, tool and assistant rows, rich headers and expandable children return

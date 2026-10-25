@@ -2,7 +2,12 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
-    use host.{theme};
+    use host.{theme, json-node, schema-shape, schema-operation, diagnostic-error-info};
+    invoke-schema: func(handler: borrow<callback>, operation: schema-operation, node: borrow<json-node>, emitter: borrow<callback-emitter>) -> result<string, diagnostic-error-info>;
+    /// Read callbacks retained at this originating node.
+    describe-schema: func(handler: borrow<callback>) -> result<schema-shape, diagnostic-error-info>;
+    /// Retain the originating callbacks under a fresh host-supplied identity.
+    retain-schema: func(handler: borrow<callback>, retained: callback) -> result<_, diagnostic-error-info>;
     /// Renderer input with owned theme and complete message document.
     record render-request { message: string, expanded: bool, theme: theme }
     /// Retained authored component, owned by the receiving host.

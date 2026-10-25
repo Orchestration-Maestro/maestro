@@ -82,7 +82,7 @@ fn expected_text(case: &Recorded, root: &std::path::Path) -> String {
 }
 
 /// The recorded attachments as their shared records.
-fn expected_images(case: &Recorded) -> Vec<ImageContent> {
+pub(crate) fn expected_images(case: &Recorded) -> Vec<ImageContent> {
     case.expected["images"]
         .as_array()
         .unwrap()
@@ -107,16 +107,16 @@ fn assert_prepared(
 }
 
 /// A supplied operation route that delegates to the native one and records its calls.
-struct SuppliedFileOperations {
+pub(crate) struct SuppliedFileOperations {
     /// The operation names in their call order.
-    calls: RefCell<Vec<&'static str>>,
+    pub(crate) calls: RefCell<Vec<&'static str>>,
     /// The native route the supplied one delegates to.
     native: NativeFileArgumentOperations,
 }
 
 impl SuppliedFileOperations {
     /// A supplied route recording its calls with unstyled diagnostics.
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             calls: RefCell::new(Vec::new()),
             native: NativeFileArgumentOperations::new(false),
@@ -162,7 +162,7 @@ impl FileArgumentOperations for SuppliedFileOperations {
 
 /// The file effect one supplied route refuses.
 #[derive(Clone, Copy)]
-enum Refusal {
+pub(crate) enum Refusal {
     /// Report the path length.
     Size,
     /// Report the supported image MIME type.
@@ -174,18 +174,18 @@ enum Refusal {
 }
 
 /// A file-effect route that refuses one operation and delegates the rest.
-struct RefusingOperations {
+pub(crate) struct RefusingOperations {
     /// The operation that refuses.
     refusal: Refusal,
     /// The operation names in their call order.
-    calls: RefCell<Vec<&'static str>>,
+    pub(crate) calls: RefCell<Vec<&'static str>>,
     /// The native route the other operations delegate to.
     native: NativeFileArgumentOperations,
 }
 
 impl RefusingOperations {
     /// A supplied route refusing `refusal` with unstyled diagnostics.
-    fn new(refusal: Refusal) -> Self {
+    pub(crate) fn new(refusal: Refusal) -> Self {
         Self {
             refusal,
             calls: RefCell::new(Vec::new()),

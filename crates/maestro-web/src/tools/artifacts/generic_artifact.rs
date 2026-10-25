@@ -77,16 +77,17 @@ impl GenericArtifact {
             _ => "application/octet-stream",
         }
     }
+    /// Filename followed by the two localized guidance sentences.
+    fn text_values(&self, i18n: &crate::I18n) -> Result<[String; 3], crate::I18nError> {
+        Ok([
+            self.filename.clone(),
+            i18n.text("Preview not available for this file type.")?,
+            i18n.text("Click the download button above to view it on your computer.")?,
+        ])
+    }
     /// Update owned text operands and only the changed native nodes.
     fn update_text(&self, view: ArtifactView<'_>) -> Result<(), crate::I18nError> {
-        let values = [
-            self.filename.clone(),
-            view.i18n
-                .text("Preview not available for this file type.")?,
-            view.i18n
-                .text("Click the download button above to view it on your computer.")?,
-        ];
-        self.text.borrow_mut().values = values;
+        self.text.borrow_mut().values = self.text_values(view.i18n)?;
         #[cfg(target_arch = "wasm32")]
         {
             let text = self.text.borrow();
@@ -166,3 +167,5 @@ impl ArtifactElement for GenericArtifact {
 }
 #[cfg(target_arch = "wasm32")]
 mod browser;
+#[cfg(target_arch = "wasm32")]
+mod dom;

@@ -24,8 +24,10 @@ impl InteractiveMode {
             self.export_to_html(output_path)
         };
         match exported {
-            Ok(path) => self.show_status(&format!("Session exported to: {path}")),
-            Err(error) => self.show_error(&format!("Failed to export session: {error}")),
+            Ok(path) => self
+                .show_status(&format!("Session exported to: {path}"))
+                .map_err(Into::into),
+            Err(error) => Ok(self.show_error(&format!("Failed to export session: {error}"))?),
         }
     }
 

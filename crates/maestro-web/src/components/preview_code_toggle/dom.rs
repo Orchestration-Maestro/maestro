@@ -1,10 +1,7 @@
 //! Native preview/source control group and its page element.
 use super::{PreviewCodeToggle, ViewMode};
 use crate::{
-    browser::{
-        attachment_content::{AttachmentHostError, browser::host_error},
-        event_subscription::EventSubscription,
-    },
+    browser::{attachment_content::AttachmentHostError, event_subscription::EventSubscription},
     dom::{self, DomContent, DomRoot, DomView, Getter, Link, Setter},
     icons,
     tools::types::ToolUiError,
@@ -62,18 +59,18 @@ impl Mounted {
             button.set_title(&view.i18n.text(key).map_err(ToolUiError::I18n)?);
             button
                 .append_child(&glyph(icon)?)
-                .map_err(|error| failed(&error))?;
+                .map_err(|error| ToolUiError::native(&error))?;
             let (selection, watched, target) = (Rc::clone(&shared), group.clone(), host.clone());
             let click = Closure::<dyn Fn()>::new(move || {
                 choose(&selection, &watched, &target, mode);
             });
             clicks.push(
                 EventSubscription::new(button.clone().into(), "click", click)
-                    .map_err(|error| failed(&error))?,
+                    .map_err(|error| ToolUiError::native(&error))?,
             );
             group
                 .append_child(&button)
-                .map_err(|error| failed(&error))?;
+                .map_err(|error| ToolUiError::native(&error))?;
         }
         Ok(Self {
             group,
@@ -121,19 +118,19 @@ fn classes(mode: ViewMode, selected: ViewMode) -> String {
 /// One glyph at the control's fixed extent.
 fn glyph(icon: &str) -> Result<Node, ToolUiError> {
     let node = icons::icon_node(icon)
-        .map_err(|error| failed(&JsValue::from_str(&error.to_string())))?
-        .ok_or_else(|| failed(&JsValue::from_str("Missing icon")))?;
+        .map_err(|error| ToolUiError::native(&JsValue::from_str(&error.to_string())))?
+        .ok_or_else(|| ToolUiError::native(&JsValue::from_str("Missing icon")))?;
     icons::icon_dom(&node, icons::IconSize::Sm, None)
         .map(Into::into)
-        .map_err(|error| failed(&error))
+        .map_err(|error| ToolUiError::native(&error))
 }
 /// A new element of `name` in the page.
 fn element(view: &DomView, name: &str) -> Result<HtmlElement, ToolUiError> {
     view.document
         .create_element(name)
-        .map_err(|error| failed(&error))?
+        .map_err(|error| ToolUiError::native(&error))?
         .dyn_into()
-        .map_err(|error| failed(&error))
+        .map_err(|error| ToolUiError::native(&error))
 }
 /// The group's buttons in native order with their mode, glyph and message key.
 fn buttons(
@@ -193,10 +190,6 @@ fn name(mode: ViewMode) -> &'static str {
         ViewMode::Preview => "preview",
         ViewMode::Code => "code",
     }
-}
-/// Report a native failure as the control's own failure.
-fn failed(error: &JsValue) -> ToolUiError {
-    ToolUiError::Host(host_error(error))
 }
 /// Report an update of a root this control does not own.
 fn missing_group() -> ToolUiError {

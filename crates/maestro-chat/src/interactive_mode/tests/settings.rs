@@ -2,7 +2,7 @@
 use super::models::model_input;
 use super::transcript;
 use super::typed::{poll, recalled, submit};
-use super::{Setup, World, complete, isolated, start};
+use super::{Setup, World, isolated, start};
 use crate::SettingsSelectorComponent;
 use maestro_app::presentation_data::footer_data_provider::FooterOperations;
 use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting, strip_ansi};
@@ -29,7 +29,7 @@ fn registry(directory: &Path) -> ThemeDirectories {
 }
 
 /// A started mode whose panel reads a real theme inventory.
-fn settings_world(
+async fn settings_world(
     directory: &Path,
     configure: impl FnOnce(&mut SettingsManager) + 'static,
 ) -> World {
@@ -39,13 +39,13 @@ fn settings_world(
         ..Setup::default()
     }
     .build(directory);
-    start(&world);
+    start(&world).await;
     world
 }
 
 /// A default started mode whose panel reads a real theme inventory.
-fn started_settings(directory: &Path) -> World {
-    settings_world(directory, |_| {})
+async fn started_settings(directory: &Path) -> World {
+    settings_world(directory, |_| {}).await
 }
 
 /// The settings panel the editor container shows, if it shows one.
@@ -126,12 +126,13 @@ fn shows_value(world: &World, label: &str, value: &str) -> bool {
 fn settings_snapshot_reads_live_session_and_preferences() {
     isolated(
         "settings_snapshot_reads_live_session_and_preferences",
-        |directory| {
+        async |directory| {
             let world = settings_world(directory, |settings| {
                 settings.set_show_images(false);
                 settings.set_image_width_cells(80.0);
                 settings.set_theme("light".to_owned());
-            });
+            })
+            .await;
             let session = world.host.session();
             session.set_auto_compaction_enabled(true);
             session.set_steering_mode(maestro_app::QueueMode::All);
@@ -174,29 +175,32 @@ fn settings_snapshot_reads_live_session_and_preferences() {
 
 #[test]
 fn settings_snapshot_covers_every_source_field() {
-    isolated("settings_snapshot_covers_every_source_field", |directory| {
-        // A terminal that reports image support admits the inline image rows; a plain
-        // one leaves them out.
-        let world = started_settings(directory);
-        world
-            .mode
-            .tool_environment
-            .terminal_image
-            .set_capabilities(TerminalCapabilities::default());
-        open(&world);
-        let rows = rows(&world);
-        assert!(rows.iter().any(|row| row.contains("resize")));
-        assert!(!rows.iter().any(|row| row.contains("Show images")));
-        drop(world.runtime.settle());
-    });
+    isolated(
+        "settings_snapshot_covers_every_source_field",
+        async |directory| {
+            // A terminal that reports image support admits the inline image rows; a plain
+            // one leaves them out.
+            let world = started_settings(directory).await;
+            world
+                .mode
+                .tool_environment
+                .terminal_image
+                .set_capabilities(TerminalCapabilities::default());
+            open(&world);
+            let rows = rows(&world);
+            assert!(rows.iter().any(|row| row.contains("resize")));
+            assert!(!rows.iter().any(|row| row.contains("Show images")));
+            drop(world.runtime.settle());
+        },
+    );
 }
 
 #[test]
 fn settings_cancel_requests_a_frame_after_restoring_editor() {
     isolated(
         "settings_cancel_requests_a_frame_after_restoring_editor",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let list = open(&world);
             assert!(panel(&world).is_some());
             press(&list, "\x1b");
@@ -220,8 +224,8 @@ fn settings_cancel_requests_a_frame_after_restoring_editor() {
 fn settings_command_uses_trimmed_exact_token_and_clears_editor() {
     isolated(
         "settings_command_uses_trimmed_exact_token_and_clears_editor",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             for text in ["/settings", " /settings\t", "\u{feff}/settings "] {
                 world.mode.editor.set_text(text);
                 submit(&world.mode, text);
@@ -255,8 +259,8 @@ fn settings_command_uses_trimmed_exact_token_and_clears_editor() {
 fn settings_changes_preserve_each_callback_effect() {
     isolated(
         "settings_changes_preserve_each_callback_effect",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let list = open(&world);
             let session = world.host.session();
             assert!(footer_shows(&world, "(auto)"));
@@ -294,8 +298,8 @@ fn settings_changes_preserve_each_callback_effect() {
 fn settings_remaining_changes_preserve_each_callback_effect() {
     isolated(
         "settings_remaining_changes_preserve_each_callback_effect",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let list = open(&world);
             let session = world.host.session();
             choose(&list, "Escape", 0);
@@ -345,8 +349,8 @@ fn settings_remaining_changes_preserve_each_callback_effect() {
 fn settings_session_modes_use_distinct_live_policies() {
     isolated(
         "settings_session_modes_use_distinct_live_policies",
-        |directory| {
-            let world = settings_world(directory, |_| {});
+        async |directory| {
+            let world = settings_world(directory, |_| {}).await;
             let session = world.host.session();
             session.set_steering_mode(maestro_app::QueueMode::All);
             session.set_follow_up_mode(maestro_app::QueueMode::OneAtATime);
@@ -378,8 +382,8 @@ fn settings_session_modes_use_distinct_live_policies() {
 fn settings_transport_change_reaches_the_live_agent() {
     isolated(
         "settings_transport_change_reaches_the_live_agent",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let list = open(&world);
             let session = world.host.session();
             for transport in [
@@ -466,8 +470,8 @@ fn tool_rows(tool: &crate::ToolExecutionComponent, width: usize) -> Vec<String> 
 fn settings_image_changes_reach_each_retained_tool_only() {
     isolated(
         "settings_image_changes_reach_each_retained_tool_only",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             world
                 .mode
                 .tool_environment
@@ -510,8 +514,8 @@ fn settings_image_changes_reach_each_retained_tool_only() {
 fn settings_editor_options_reach_retained_default_editor() {
     isolated(
         "settings_editor_options_reach_retained_default_editor",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let list = open(&world);
             let editor = Rc::clone(&world.mode.editor);
             for padding in ["1", "2", "3", "0"] {
@@ -558,8 +562,8 @@ fn settings_editor_options_reach_retained_default_editor() {
 fn settings_command_does_not_consume_waiter_or_history() {
     isolated(
         "settings_command_does_not_consume_waiter_or_history",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let mut waiter = Box::pin(world.mode.get_user_input());
             assert_eq!(poll(&mut waiter), None);
             submit(&world.mode, "/settings");
@@ -581,8 +585,8 @@ fn settings_command_does_not_consume_waiter_or_history() {
 fn settings_changes_flush_and_reopen_from_saved_preferences() {
     isolated(
         "settings_changes_flush_and_reopen_from_saved_preferences",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let list = open(&world);
             let settings = Rc::clone(world.host.session().settings_manager());
             choose(&list, "block", 0);
@@ -610,7 +614,7 @@ fn settings_changes_flush_and_reopen_from_saved_preferences() {
 }
 
 /// Registers a reasoning model of `provider` and makes it the session's model.
-fn use_reasoning_model(world: &World, provider: &str, id: &str) {
+async fn use_reasoning_model(world: &World, provider: &str, id: &str) {
     let session = world.host.session();
     session
         .model_registry()
@@ -631,16 +635,16 @@ fn use_reasoning_model(world: &World, provider: &str, id: &str) {
         )
         .unwrap();
     let model = session.model_registry().find(provider, id).unwrap();
-    complete(session.set_model(model)).unwrap();
+    session.set_model(model).await.unwrap();
 }
 
 #[test]
 fn settings_thinking_updates_session_footer_and_editor_border() {
     isolated(
         "settings_thinking_updates_session_footer_and_editor_border",
-        |directory| {
-            let world = started_settings(directory);
-            use_reasoning_model(&world, "reasoning", "deep");
+        async |directory| {
+            let world = started_settings(directory).await;
+            use_reasoning_model(&world, "reasoning", "deep").await;
             let session = world.host.session();
             let levels = session.get_available_thinking_levels();
             assert!(levels.len() > 1, "the model admits reasoning levels");
@@ -681,8 +685,8 @@ fn settings_thinking_updates_session_footer_and_editor_border() {
 fn settings_thinking_visibility_rebuilds_retained_transcript() {
     isolated(
         "settings_thinking_visibility_rebuilds_retained_transcript",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let content = serde_json::json!([
                 {"type": "thinking", "thinking": "CONSIDERED"},
                 {"type": "text", "text": "ANSWER"}
@@ -735,14 +739,14 @@ fn append_messages(world: &World, messages: Vec<serde_json::Value>) {
 fn settings_skill_commands_refresh_registered_autocomplete() {
     isolated(
         "settings_skill_commands_refresh_registered_autocomplete",
-        |directory| {
+        async |directory| {
             let world = Setup {
                 directories: Some(registry(directory)),
                 skills: vec![skill("helper")],
                 ..Setup::default()
             }
             .build(directory);
-            start(&world);
+            start(&world).await;
             let list = open(&world);
             choose(&list, "skill", 0);
             let session = world.host.session();
@@ -752,7 +756,11 @@ fn settings_skill_commands_refresh_registered_autocomplete() {
                     .borrow()
                     .get_enable_skill_commands()
             );
-            assert!(!skill_candidates(&world).contains(&"skill:helper".to_owned()));
+            assert!(
+                !skill_candidates(&world)
+                    .await
+                    .contains(&"skill:helper".to_owned())
+            );
             choose(&list, "skill", 0);
             assert!(
                 session
@@ -761,7 +769,9 @@ fn settings_skill_commands_refresh_registered_autocomplete() {
                     .get_enable_skill_commands()
             );
             assert!(
-                skill_candidates(&world).contains(&"skill:helper".to_owned()),
+                skill_candidates(&world)
+                    .await
+                    .contains(&"skill:helper".to_owned()),
                 "the rebuilt provider offers the loaded skill command again"
             );
             drop(world.runtime.settle());
@@ -771,7 +781,7 @@ fn settings_skill_commands_refresh_registered_autocomplete() {
 
 /// The command candidates the base provider offers for `/skill:helper`, which the mode
 /// installs on its editor.
-fn skill_candidates(world: &World) -> Vec<String> {
+async fn skill_candidates(world: &World) -> Vec<String> {
     let commands = world
         .host
         .session()
@@ -780,18 +790,20 @@ fn skill_candidates(world: &World) -> Vec<String> {
     let provider = world.mode.create_base_autocomplete_provider(&commands);
     let line = "/skill:helper";
     let signal = maestro_tui::Cancellation::new();
-    let suggestions = complete(provider.get_suggestions(
-        &[line.to_owned()],
-        CursorPosition {
-            line: 0,
-            col: line.len(),
-        },
-        CompletionOptions {
-            signal: &signal,
-            force: None,
-        },
-    ))
-    .unwrap();
+    let suggestions = provider
+        .get_suggestions(
+            &[line.to_owned()],
+            CursorPosition {
+                line: 0,
+                col: line.len(),
+            },
+            CompletionOptions {
+                signal: &signal,
+                force: None,
+            },
+        )
+        .await
+        .unwrap();
     suggestions.map_or_else(Vec::new, |suggestions| {
         suggestions
             .items
@@ -821,23 +833,26 @@ fn skill(name: &str) -> maestro_app::Skill {
 
 #[test]
 fn settings_callback_teardown_releases_mode() {
-    isolated("settings_callback_teardown_releases_mode", |directory| {
-        let (weak, list, callbacks) = {
-            let world = started_settings(directory);
-            let list = open(&world);
-            let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
-            (Rc::downgrade(&world.mode), list, callbacks)
-        };
-        assert!(weak.upgrade().is_none(), "the retained list keeps no mode");
-        (callbacks.on_show_images_change)(true);
-        (callbacks.on_cancel)();
-        assert!(
-            weak.upgrade().is_none(),
-            "released callbacks resurrect nothing"
-        );
-        drop(list);
-        drop(callbacks);
-    });
+    isolated(
+        "settings_callback_teardown_releases_mode",
+        async |directory| {
+            let (weak, list, callbacks) = {
+                let world = started_settings(directory).await;
+                let list = open(&world);
+                let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
+                (Rc::downgrade(&world.mode), list, callbacks)
+            };
+            assert!(weak.upgrade().is_none(), "the retained list keeps no mode");
+            (callbacks.on_show_images_change)(true);
+            (callbacks.on_cancel)();
+            assert!(
+                weak.upgrade().is_none(),
+                "released callbacks resurrect nothing"
+            );
+            drop(list);
+            drop(callbacks);
+        },
+    );
 }
 
 /// Every typed preference the panel reads, as text.
@@ -866,12 +881,18 @@ fn typed_preferences(world: &World) -> Vec<String> {
     ]
 }
 
-/// A world whose supplied settings document is `raw`.
-fn typed_world(directory: &Path, raw: serde_json::Value) -> World {
+/// A started world whose supplied settings document is `raw`, applied after startup so
+/// the startup changelog save cannot discard it.
+async fn typed_world(directory: &Path, raw: serde_json::Value) -> World {
     let supplied: maestro_app::Settings = serde_json::from_value(raw).unwrap();
-    settings_world(directory, move |settings| {
-        settings.apply_overrides(supplied);
-    })
+    let world = started_settings(directory).await;
+    world
+        .host
+        .session()
+        .settings_manager()
+        .borrow_mut()
+        .apply_overrides(supplied);
+    world
 }
 
 /// Every read that keeps its stored form regardless of the class, for equality checks.
@@ -916,13 +937,13 @@ fn assert_boolean_class(raw: &serde_json::Value, read: &[String], defaults: &[St
 }
 
 /// Asserts one supplied JSON document against the typed reads it produces.
-fn assert_class(
+async fn assert_class(
     directory: &Path,
     raw: &serde_json::Value,
     defaults: &[String],
     stored: &serde_json::Map<String, serde_json::Value>,
 ) {
-    let world = typed_world(directory, raw.clone());
+    let world = typed_world(directory, raw.clone()).await;
     let read = typed_preferences(&world);
     assert_boolean_class(raw, &read, defaults);
     let transport = match raw.get("transport") {
@@ -1019,21 +1040,22 @@ fn supplied_classes() -> Vec<serde_json::Value> {
 fn settings_snapshot_uses_typed_preferences_without_rewriting_raw_settings() {
     isolated(
         "settings_snapshot_uses_typed_preferences_without_rewriting_raw_settings",
-        |directory| {
-            let baseline = started_settings(directory);
+        async |directory| {
+            let baseline = started_settings(directory).await;
             let defaults = typed_preferences(&baseline);
             let stored = Rc::clone(baseline.host.session().settings_manager())
                 .borrow()
                 .get_global_settings()
                 .0;
             for raw in supplied_classes() {
-                assert_class(directory, &raw, &defaults, &stored);
+                assert_class(directory, &raw, &defaults, &stored).await;
             }
             for width in [-1.0, 0.75] {
                 let world = typed_world(
                     directory,
                     serde_json::json!({"terminal": {"imageWidthCells": width}}),
-                );
+                )
+                .await;
                 let read = Rc::clone(world.host.session().settings_manager())
                     .borrow()
                     .get_image_width_cells();
@@ -1047,8 +1069,8 @@ fn settings_snapshot_uses_typed_preferences_without_rewriting_raw_settings() {
 fn settings_infallible_callbacks_report_original_failures() {
     isolated(
         "settings_infallible_callbacks_report_original_failures",
-        |directory| {
-            let world = started_settings(directory);
+        async |directory| {
+            let world = started_settings(directory).await;
             let list = open(&world);
             let settings = Rc::clone(world.host.session().settings_manager());
             assert!(
@@ -1107,9 +1129,9 @@ fn custom_theme(directory: &Path, name: &str, document: &str) {
 fn settings_theme_preview_commit_and_failure_keep_distinct_effects() {
     isolated(
         "settings_theme_preview_commit_and_failure_keep_distinct_effects",
-        |directory| {
+        async |directory| {
             custom_theme(directory, "broken", "{ not json");
-            let world = started_settings(directory);
+            let world = started_settings(directory).await;
             let settings = Rc::clone(world.host.session().settings_manager());
             let names = world.themes.get_available_themes().unwrap();
             assert!(names.contains(&"broken".to_owned()), "{names:?}");
@@ -1158,14 +1180,14 @@ fn theme_document(name: &str, accent: &str) -> String {
 }
 
 /// A started mode whose panel reads the theme inventory and whose watches reach `watched`.
-fn watching_settings(directory: &Path, watched: &Rc<super::Watched>) -> World {
+async fn watching_settings(directory: &Path, watched: &Rc<super::Watched>) -> World {
     let world = Setup {
         directories: Some(registry(directory)),
-        operations: Some(Rc::clone(watched) as Rc<dyn FooterOperations>),
+        watcher: Some(Rc::clone(watched) as Rc<dyn FooterOperations>),
         ..Setup::default()
     }
     .build(directory);
-    start(&world);
+    start(&world).await;
     world.runtime.settle().unwrap();
     world
 }
@@ -1212,10 +1234,10 @@ fn reloaded_frame(world: &World) {
 fn settings_theme_preview_reloads_the_edited_file() {
     isolated(
         "settings_theme_preview_reloads_the_edited_file",
-        |directory| {
+        async |directory| {
             custom_theme(directory, "watched", &theme_document("watched", "#010203"));
             let watched = Rc::new(super::Watched::default());
-            let world = watching_settings(directory, &watched);
+            let world = watching_settings(directory, &watched).await;
             let settings = Rc::clone(world.host.session().settings_manager());
             let list = open(&world);
             preview_watched(&world, &list);
@@ -1243,45 +1265,49 @@ fn settings_theme_preview_reloads_the_edited_file() {
 
 #[test]
 fn settings_theme_commit_reloads_a_later_edit() {
-    isolated("settings_theme_commit_reloads_a_later_edit", |directory| {
-        custom_theme(directory, "watched", &theme_document("watched", "#010203"));
-        let watched = Rc::new(super::Watched::default());
-        let world = watching_settings(directory, &watched);
-        let settings = Rc::clone(world.host.session().settings_manager());
-        let list = open(&world);
-        preview_watched(&world, &list);
-        press(&list, "\r");
-        assert_eq!(settings.borrow().get_theme().as_deref(), Some("watched"));
-        world.runtime.settle().unwrap();
-        assert_eq!(
-            watched.open.borrow().len(),
-            2,
-            "the committed selection starts its own watch"
-        );
-        assert!(watched.open.borrow()[0].get(), "the preview watch closed");
-        assert!(
-            !watched.open.borrow()[1].get(),
-            "the latest watch waits for its edit"
-        );
-        edit_watched_theme(directory, &watched, "edited-after-commit", "#406080");
-        assert_eq!(published(&world).as_deref(), Some("edited-after-commit"));
-        assert_eq!(
-            settings.borrow().get_theme().as_deref(),
-            Some("watched"),
-            "the committed preference stays saved"
-        );
-        reloaded_frame(&world);
-    });
+    isolated(
+        "settings_theme_commit_reloads_a_later_edit",
+        async |directory| {
+            custom_theme(directory, "watched", &theme_document("watched", "#010203"));
+            let watched = Rc::new(super::Watched::default());
+            let world = watching_settings(directory, &watched).await;
+            let settings = Rc::clone(world.host.session().settings_manager());
+            let list = open(&world);
+            preview_watched(&world, &list);
+            press(&list, "\r");
+            assert_eq!(settings.borrow().get_theme().as_deref(), Some("watched"));
+            world.runtime.settle().unwrap();
+            assert_eq!(
+                watched.open.borrow().len(),
+                2,
+                "the committed selection starts its own watch"
+            );
+            assert!(watched.open.borrow()[0].get(), "the preview watch closed");
+            assert!(
+                !watched.open.borrow()[1].get(),
+                "the latest watch waits for its edit"
+            );
+            edit_watched_theme(directory, &watched, "edited-after-commit", "#406080");
+            assert_eq!(published(&world).as_deref(), Some("edited-after-commit"));
+            assert_eq!(
+                settings.borrow().get_theme().as_deref(),
+                Some("watched"),
+                "the committed preference stays saved"
+            );
+            reloaded_frame(&world);
+        },
+    );
 }
 
 #[test]
 fn settings_theme_cancel_replays_the_saved_theme_without_persisting() {
     isolated(
         "settings_theme_cancel_replays_the_saved_theme_without_persisting",
-        |directory| {
+        async |directory| {
             let world = settings_world(directory, |settings| {
                 settings.set_theme("light".to_owned());
-            });
+            })
+            .await;
             let settings = Rc::clone(world.host.session().settings_manager());
             assert_eq!(published(&world).as_deref(), Some("light"));
             let list = open(&world);

@@ -35,6 +35,7 @@
   "maestro-terminal": "core",
   "maestro-test-conventions": "dedicated",
   "maestro-test-directory": "dedicated",
+  "maestro-test-fixtures": "dedicated",
   "maestro-test-process": "dedicated",
   "maestro-test-terminal": "dedicated",
   "maestro-test-tracing": "dedicated",

@@ -409,10 +409,12 @@ viewer bundle rather than building it.
 
 ## Debugging
 
-The hidden `/debug` command is unavailable until the interactive front end is
-delivered. Its output belongs under
-`~/.maestro/agent/maestro-debug.log`. It contains rendered terminal lines with ANSI
-sequences and the last model messages. The interactive owner supplies this
+In the interactive mode, Shift+Ctrl+D writes a debug capture to
+`~/.maestro/agent/maestro-debug.log`, or to `maestro-debug.log` in the directory
+`MAESTRO_CODING_AGENT_DIR` names. The capture holds the terminal size, every
+rendered line with its visible width and escaped ANSI sequences, and the session's
+messages as JSON lines. Submitting `/debug` writes the same capture. See
+[debug capture](chat/commands.md#debug-capture). The interactive owner supplies this
 behavior; development commands do not create a replacement logger.
 
 ## Tests

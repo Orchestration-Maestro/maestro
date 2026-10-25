@@ -40,8 +40,10 @@ errors. One sheet omits the tab strip. Each multi-sheet body retains its own scr
 offsets; ordinary repaints retain the table and error nodes.
 The registry owns position and scaling, while the spreadsheet root keeps its
 bounded height during measurement. Selecting text, replacing content or closing
-releases that workbook view. Word rendering remains pending in
-[#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761); no extracted-text
+releases that workbook view. Word attachment-overlay rendering remains pending in
+[#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761); the independent
+[native Word artifact body](artifacts.md#native-word-body) does not change overlay
+placement. No extracted-text
 fallback is substituted for it. Legacy spreadsheet reading remains in
 [#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046). A file-presentation failure replaces the body
 with centered, selectable native error text while leaving download and close
@@ -104,6 +106,14 @@ and the factory never retains it. Root teardown attempts detachment through the
 shared subscription owner; a failed native removal may retain the callable, but
 its expired weak capture cannot change released feature state. It is not a
 raw-markup or template interface. The host retains the complete returned owner.
+
+A feature whose nodes do not need the canvas can build them once and mount them
+both ways. The generic file artifact constructs its glyph, filename and guidance
+nodes in one builder: the retained factory wraps them in a `ReadingRoot` for the
+overlay, and `DomContent` places them directly on a page. The overlay keeps
+placement, measurement and clipping; the direct mount keeps only its own nodes and
+reaches no host surface. Features that stay retained until their own delivery keep
+using the factory alone.
 
 An optional `ReadingRoot::commit` callback reconciles a staged update into the
 previous root only after placement succeeds. This infallible callback preserves
@@ -169,3 +179,7 @@ through `std::error::Error::source`. The overlay catches native Presentation onl
 at its body boundary; downloads and outer drawing failures do not select a file
 error view. Rust callers must use the operation's error path and nested Host
 payload; these source-interface changes preserve existing messages and recovery.
+
+The independent native Word artifact also uses the error panel's node builder.
+The shared builder creates literal heading/detail nodes; each caller keeps its
+own failure, retry and placement policy.
