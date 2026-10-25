@@ -32,8 +32,9 @@ component-owned native controls: `components::download_button::dom::download_but
 and `DomContent for PreviewCodeToggle` publish them as page content. The generic
 file body also mounts natively through `DomContent for GenericArtifact`, and its
 independent header is `GenericArtifact::get_header_buttons(view: &DomView)`. The
-other artifact bodies, the panel and the Chat integration still use their
-retained canvas owners until their own deliveries mount those controls.
+Word body and artifact console have separate native interfaces described below.
+The remaining bodies, the panel and the Chat integration still use their retained
+canvas owners until their own deliveries mount those controls.
 
 A mounted native body owns its `<section class="maestro-generic-artifact">` nodes,
 so an update rewrites only the changed filename and guidance text. The header owns
@@ -273,3 +274,33 @@ pending shape sizing; replacement or root release drops those resources without
 affecting siblings. Errors share the attachment preview's literal node builder.
 The [shared Word renderer](../application/document-formats.md#word-page-rendering)
 still owns document parsing and safe link output.
+
+## Native artifact console
+
+On browser targets, `tools::artifacts::console::Console` mounts directly through
+`DomContent`. Create it with `new` or `default`, append `LogEntry` records to its
+shared `logs` collection, then call `update` after changing the collection.
+`LogType::Log` and `LogType::Error` select the label and text role;
+`BrowserSandboxValue` retains each native operand without a JSON conversion.
+
+The console starts collapsed with following enabled. Its summary counts errors
+when any are present, otherwise all lines. Expanded rows are selectable literal
+text in a viewport bounded by 12rem. Arrays and other native iterables paint their
+children in order; null and undefined paint no value. Ordinary objects are text,
+never host templates. An active iterable cycle contributes no further text, while
+a completed shared iterable contributes again at its next occurrence.
+
+Copy uses whole-value native String conversion, not the flattened painted text.
+It writes ordered `[log] value` and `[error] value` lines separated by newlines,
+through the [shared copy control](transcript.md). That control owns clipboard
+writes and two-second icon-only success feedback. Following scrolls every expanded
+update to the bottom, including unchanged updates; disabling it preserves manual
+scroll. Collapse removes the auxiliary controls without resetting the following
+selection.
+
+An update may replace the log handle or use another console and localization.
+Subsequent controls use those current operands, and unchanged positional rows,
+selection and keyboard focus survive. Each mounted root owns its subscriptions;
+releasing one does not release a sibling. This direct body does not register an
+`artifact-console` tag or install the HTML body, panel or Chat integration.
+Those integrations remain in [#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761).

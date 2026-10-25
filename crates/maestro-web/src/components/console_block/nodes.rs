@@ -68,6 +68,6 @@ impl Nodes {
 }
 
 /// Bring `scroll` to its bottom.
-pub(super) fn scroll_bottom(scroll: &Element) {
+pub(crate) fn scroll_bottom(scroll: &Element) {
     scroll.set_scroll_top(scroll.scroll_height());
 }
