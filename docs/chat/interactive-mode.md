@@ -3,7 +3,7 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, the export, share, copy and changelog commands, the prompt loop, session replay, the
+input, queued input, the export, import, share, copy and changelog commands, the prompt loop, session replay, the
 session events with the working row and the streamed transcript rows, the window
 title, the extension controls of that row and of the hidden-thinking label, the
 expansion and thinking shortcuts, thinking and model cycling, model selection and
@@ -273,15 +273,19 @@ polled, and the replaced future stays pending.
 The waiting input receives the text before the editor's history records it, so
 code that runs when the input completes can already wait for the next one. Every
 submission delivered as prompt text enters the history, whether or not an input
-was waiting. Submission does not keep the mode alive.
+was waiting. A prompt submission does not keep the mode alive. An admitted
+asynchronous command retains it until that operation settles.
 
 Submission offers the text to the mode's commands first. Text recognized as one of
 the commands runs that command instead of becoming prompt text: the command reports
 on the transcript, completes no waiting input and enters no history. `/export`,
-`/changelog` and `/hotkeys` answer before the editor hands the text back; `/share`
-and `/copy` are admitted on the terminal runtime and clear the editor once they settle. Near spellings are
-prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`
-and `/copyx` reach the input. See [interactive commands](commands.md).
+`/changelog` and `/hotkeys` answer before the editor hands the text back; `/import`,
+`/share` and `/copy` are admitted on the terminal runtime. Import clears the editor
+only on normal completion, leaving text written during a rejected operation intact.
+Import confirmation and directory retry reuse the native dialogs, and its
+replacement is [bound](#session-binding) before the replay. Near spellings are
+prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`,
+`/important`, `/import` followed by a tab and `/copyx` reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 

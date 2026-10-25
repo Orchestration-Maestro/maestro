@@ -86,6 +86,18 @@ impl InteractiveMode {
     /// Runs the session command `text` names, handing a failure beyond the transcript to
     /// the terminal runtime, and says whether `text` was handled as a command.
     fn runs_command(self: &Rc<Self>, text: &str) -> bool {
+        if text == "/import" || text.starts_with("/import ") {
+            let mode = Rc::clone(self);
+            let text = text.to_owned();
+            self.tool_environment
+                .runtime
+                .spawn_local(Box::pin(async move {
+                    mode.handle_import_command(&text).await?;
+                    mode.clear_editor();
+                    Ok(())
+                }));
+            return true;
+        }
         let share = text == "/share";
         if !share && text != "/copy" {
             let result = if text == "/name" || text.starts_with("/name ") {
