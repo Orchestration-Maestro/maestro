@@ -17,6 +17,10 @@ path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "context_bridge"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "hello"
 path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
@@ -79,10 +83,6 @@ crate-type = ["cdylib"]
 [[example]]
 name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
-crate-type = ["cdylib"]
-
-[[example]]
-name = "context_bridge"
 crate-type = ["cdylib"]
 
 [dependencies]
