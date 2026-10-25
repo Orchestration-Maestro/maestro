@@ -36,6 +36,8 @@ pub(crate) mod host_side {
             "maestro:extension/host.subscription": crate::tests::bus_host::Subscription,
             "maestro:extension/host.callback-emitter": crate::tests::bus_host::Emitter,
             "maestro:extension/host.tool-update": crate::tests::host::Update,
+            "maestro:extension/host.import-route": crate::tests::host::Route,
+            "maestro:extension/host.local-settlement": crate::tests::host::Settlement,
             "maestro:extension/host.callback": crate::tests::host::Identity,
             "maestro:extension/host.abort-signal": crate::tests::host::Flag,
             "maestro:extension/host.context": crate::tests::host::Ordinary,

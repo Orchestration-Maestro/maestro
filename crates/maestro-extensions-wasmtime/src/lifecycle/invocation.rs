@@ -7,14 +7,14 @@ use crate::{
     guest_exports::Exports,
 };
 use std::sync::Arc;
-use wasmtime::component::{Accessor, ResourceAny};
+use wasmtime::component::Accessor;
 
 /// An admitted export call, never a native request poller.
 pub(super) struct Invocation {
     /// Original canonical exports from this instance.
     pub(super) exports: Arc<Exports>,
     /// Actual operands and lifecycle-owned reply token.
-    pub(super) call: Call<Callback, ResourceAny>,
+    pub(super) call: Call<Callback>,
     /// Marks completion even when an export escapes before settlement.
     pub(super) completion: Completion,
 }
@@ -29,7 +29,7 @@ impl Invocation {
 
 impl Call {
     /// Attaches completion to every reply before the driver starts guest work.
-    pub(super) fn before(&self, completion: &Completion) {
+    pub(crate) fn before(&self, completion: &Completion) {
         match self {
             Self::Start(reply)
             | Self::Setup(_, _, reply)
@@ -58,7 +58,7 @@ impl Call {
                     attach(reply, completion);
                 }
             }
-            Self::ReleaseResource(_) | Self::Finished => {}
+            Self::Finished => {}
         }
     }
 }

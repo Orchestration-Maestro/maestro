@@ -244,9 +244,10 @@ impl host::HostToolUpdate for State {
         &mut self,
         _this: Resource<Update>,
         partial: String,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let value: serde_json::Value = serde_json::from_str(&partial)?;
-        Ok(self.observed.update(&partial, &value["details"]))
+        let result = self.observed.update(&partial, &value["details"]);
+        self.routed(result)
     }
     fn drop(&mut self, this: Resource<Update>) -> wasmtime::Result<()> {
         self.release(this)
@@ -336,13 +337,13 @@ macro_rules! context_methods {
             let flag = self.observed.catalog.flag.clone();
             Ok(Ok(flag.map(|flag| self.push(Flag(flag))).transpose()?))
         }
-        fn abort(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<(), String>> {
+        fn abort(&mut self, this: Resource<$kind>) -> wasmtime::Result<Resource<Route>> {
             let _ = &this;
             if let Err(e) = self.observed.catalog.check() {
-                return Ok(Err(e));
+                return self.routed(Err(e));
             }
             self.observed.log("context abort");
-            Ok(Ok(()))
+            self.routed(Ok(()))
         }
         fn has_pending_messages(
             &mut self,
@@ -354,13 +355,13 @@ macro_rules! context_methods {
             }
             Ok(Ok(self.observed.catalog.data.queued))
         }
-        fn shutdown(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<(), String>> {
+        fn shutdown(&mut self, this: Resource<$kind>) -> wasmtime::Result<Resource<Route>> {
             let _ = &this;
             if let Err(e) = self.observed.catalog.check() {
-                return Ok(Err(e));
+                return self.routed(Err(e));
             }
             self.observed.log("context shutdown");
-            Ok(Ok(()))
+            self.routed(Ok(()))
         }
         fn get_context_usage(
             &mut self,
@@ -395,16 +396,16 @@ macro_rules! context_methods {
             instructions: Option<host::CompactionData>,
             complete: Option<Resource<Identity>>,
             error: Option<Resource<Identity>>,
-        ) -> wasmtime::Result<Result<(), String>> {
+        ) -> wasmtime::Result<Resource<Route>> {
             if let Err(error) = self.observed.actions.check() {
-                return Ok(Err(error));
+                return self.routed(Err(error));
             }
             let cwd = match self.table.get(&this)?.0.cwd() {
                 Ok(cwd) => cwd,
-                Err(error) => return Ok(Err(error)),
+                Err(error) => return self.routed(Err(error)),
             };
             self.observed.log(format!("compact binding {cwd}"));
-            Ok(super::action_host::compact(
+            let result = super::action_host::compact(
                 &mut self.observed,
                 instructions
                     .as_ref()
@@ -412,7 +413,8 @@ macro_rules! context_methods {
                 complete.map(|c| c.rep()),
                 error.map(|c| c.rep()),
                 instructions.is_some(),
-            ))
+            );
+            self.routed(result)
         }
         fn cwd(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<String, String>> {
             Ok(self.table.get(&this)?.0.cwd())
@@ -509,6 +511,47 @@ impl host::HostCallbackEmitter for State {
         Ok(())
     }
 }
+/// A host operation the test host completed before returning it; it makes no nested call.
+pub struct Route(Option<Result<(), String>>);
+
+/// A deferred nested call; the test host never makes one.
+pub struct Settlement;
+
+impl host::HostLocalSettlement for State {
+    fn finish(&mut self, _: Resource<Settlement>, _: host::LocalResult) -> wasmtime::Result<()> {
+        Ok(())
+    }
+    fn drop(&mut self, this: Resource<Settlement>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
+impl State {
+    /// Returns a routed import's result through its completed route.
+    pub(super) fn routed(
+        &mut self,
+        result: Result<(), String>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.push(Route(Some(result)))
+    }
+}
+
+impl host::HostImportRoute for State {
+    fn next(&mut self, this: Resource<Route>) -> wasmtime::Result<host::RouteStep> {
+        let result = self.table.get_mut(&this)?.0.take();
+        Ok(host::RouteStep::Done(result.unwrap_or(Ok(()))))
+    }
+    fn resume(&mut self, _: Resource<Route>, _: host::LocalResult) -> wasmtime::Result<()> {
+        Ok(())
+    }
+    fn defer(&mut self, _: Resource<Route>) -> wasmtime::Result<Resource<Settlement>> {
+        self.push(Settlement)
+    }
+    fn drop(&mut self, this: Resource<Route>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
 impl host::Host for State {
     fn callback_emit(
         &mut self,
@@ -530,11 +573,11 @@ impl host::Host for State {
         &mut self,
         _: Resource<super::bus_host::Emitter>,
         error: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         if let Some(error) = error {
             self.observed.log(format!("listener error: {error}"));
         }
-        Ok(Ok(()))
+        self.routed(Ok(()))
     }
     fn callback_segment(
         &mut self,
@@ -542,12 +585,11 @@ impl host::Host for State {
         _: u32,
         start: u32,
         end: u32,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(if start == end {
-            Ok(())
-        } else {
-            Err("author fixture has only guest-local listeners".into())
-        })
+    ) -> wasmtime::Result<Resource<Route>> {
+        if start == end {
+            return self.routed(Ok(()));
+        }
+        self.routed(Err("author fixture has only guest-local listeners".into()))
     }
     fn callback_end_snapshot(
         &mut self,
@@ -584,43 +626,46 @@ impl host::Host for State {
         &mut self,
         message: String,
         options: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "sendMessage",
             &serde_json::json!([
                 super::action_host::document(Some(&message)),
                 super::action_host::document(options.as_deref())
             ]),
-        ))
+        );
+        self.routed(result)
     }
     fn send_user_message(
         &mut self,
         content: String,
         options: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "sendUserMessage",
             &serde_json::json!([
                 super::action_host::document(Some(&content)),
                 super::action_host::document(options.as_deref())
             ]),
-        ))
+        );
+        self.routed(result)
     }
-    fn set_session_name(&mut self, name: String) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    fn set_session_name(&mut self, name: String) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "setSessionName",
             &serde_json::json!([name]),
-        ))
+        );
+        self.routed(result)
     }
     fn set_label(
         &mut self,
         entry_id: String,
         label: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "setLabel",
             &serde_json::json!([
@@ -630,24 +675,24 @@ impl host::Host for State {
                     |v| serde_json::json!({"present":true,"value":v})
                 )
             ]),
-        ))
+        );
+        self.routed(result)
     }
-    fn set_active_tools(
-        &mut self,
-        tool_names: Vec<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    fn set_active_tools(&mut self, tool_names: Vec<String>) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "setActiveTools",
             &serde_json::json!([tool_names]),
-        ))
+        );
+        self.routed(result)
     }
-    fn set_thinking_level(&mut self, level: String) -> wasmtime::Result<Result<(), String>> {
-        Ok(super::action_host::action(
+    fn set_thinking_level(&mut self, level: String) -> wasmtime::Result<Resource<Route>> {
+        let result = super::action_host::action(
             &mut self.observed,
             "setThinkingLevel",
             &serde_json::json!([serde_json::from_str::<serde_json::Value>(&level).unwrap()]),
-        ))
+        );
+        self.routed(result)
     }
     fn get_session_name(&mut self) -> wasmtime::Result<Result<Option<String>, String>> {
         Ok(self
@@ -783,24 +828,25 @@ impl host::Host for State {
         metadata: String,
         prepare: Option<Resource<Identity>>,
         execute: Resource<Identity>,
-    ) -> wasmtime::Result<Result<(), String>> {
-        Ok(self
-            .observed
-            .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep()))
+    ) -> wasmtime::Result<Resource<Route>> {
+        let result =
+            self.observed
+                .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep());
+        self.routed(result)
     }
 
     fn append_entry(
         &mut self,
         custom_type: String,
         data: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         if custom_type == "state Ω"
             && let Err(error) = self.observed.actions.check()
         {
-            return Ok(Err(error));
+            return self.routed(Err(error));
         }
         self.observed.entry(&custom_type, data.as_deref());
-        Ok(Ok(()))
+        self.routed(Ok(()))
     }
 }
 

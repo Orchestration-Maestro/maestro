@@ -10,13 +10,16 @@ contexts, UI and session owners stay on their original thread. Typed requests
 connect those owners to the Store; synchronous callbacks use that same receiver.
 Retained UI and history resources keep their original owners when bindings change.
 
-A component that waits for a synchronous host call cannot run again until that
-call returns. A native call into that same component in the meantime, such as its
-message renderer, a retained component, tool argument preparation, a compaction
-notification or a listener, fails at once with `extension cannot be re-entered
-while it waits for a synchronous host call`. Calls into other components still
-complete. Asynchronous host calls leave the component free, so native work they
-start can call back into it.
+A component can wait in a synchronous host call while that call's native code
+calls back into the same component: its message renderer, a retained component,
+tool argument preparation, a compaction notification or a listener. The callback
+runs inside the waiting component, and its result reaches the native caller
+before the host call returns, as it would for an idle component. Host calls whose
+native code may call back return a route that the component drives until the
+call's own result arrives. Asynchronous callbacks run through their first suspension
+before the native caller continues; their tails settle afterward without blocking
+that caller. A callback that does not suspend returns its result immediately.
+Calls into other components are unaffected.
 
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,

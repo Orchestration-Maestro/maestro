@@ -52,6 +52,19 @@ pub(crate) fn retain<T: CallbackView>(
         .map_err(wasmtime::Error::msg)
 }
 
+/// Takes ownership of an authored object the guest returned under a fresh identity.
+pub(crate) fn transferred<T: CallbackView>(
+    store: &mut T,
+    object: Resource<Callback>,
+) -> wasmtime::Result<Handle> {
+    let id = store.ctx().table.delete(object)?.id;
+    let admission = store.api().admission();
+    store
+        .callbacks()
+        .retain_object(id, admission)
+        .map_err(wasmtime::Error::msg)
+}
+
 /// Preserves an absent callback rather than manufacturing an empty closure.
 pub(crate) fn optional<T: CallbackView>(
     store: &mut T,

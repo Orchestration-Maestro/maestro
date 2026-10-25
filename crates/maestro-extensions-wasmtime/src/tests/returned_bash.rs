@@ -1,28 +1,27 @@
 //! Native returned operations forward exact operands and separate borrowed output sinks.
 use crate::lifecycle::replies::Replies;
 use crate::{
-    guest_calls::{Call, Callbacks},
-    local_resources::Pump,
+    guest_calls::{Call, Callbacks, Handle, bash::ReturnedBash},
+    local_resources::{Admission, Pump},
 };
 use maestro_extensions::{BashExecOptions, BashOperations, Cancellation};
 use std::ffi::OsString;
-use wasmtime::{
-    Engine, Store,
-    component::{Resource, ResourceAny},
-};
 
-/// Real Wasmtime host resource identity used only to inspect native endpoint transfers.
-struct Identity {
-    /// Stable identity, unrelated to a native request lease.
-    _id: u32,
+/// Retains returned operations under a fresh authored-object identity of this Store.
+pub(super) fn operations(callbacks: &mut Callbacks, admission: Admission) -> (u32, Handle) {
+    let id = callbacks.allocate().unwrap().id;
+    (id, callbacks.retain_object(id, admission).unwrap())
 }
 
-/// Allocates a Wasmtime resource without claiming this endpoint test invokes a guest method.
-pub(super) fn resource() -> (Store<u32>, ResourceAny) {
-    let mut store = Store::new(&Engine::default(), 71);
-    let resource =
-        ResourceAny::try_from_resource(Resource::<Identity>::new_own(71), &mut store).unwrap();
-    (store, resource)
+/// Takes the final release of returned operations from the original Store queue.
+fn object_release(call: Option<Call>) {
+    let Some(Call::Release(release)) = call else {
+        panic!("not final release")
+    };
+    assert!(
+        release.object,
+        "operations are destroyed as an authored object"
+    );
 }
 
 #[test]
@@ -32,20 +31,16 @@ fn returned_operations_overlap_with_exact_operands_and_independent_sinks() {
         .unwrap()
         .block_on(async {
             let (pump, admission) = Pump::new();
-            let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
+            let (calls, incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
-            let id = callbacks.allocate().unwrap().id;
-            let handle = callbacks.retain(id, admission.clone()).unwrap();
-            let (mut store, resource) = resource();
-            let operations = handle.bash(resource, pump.registry());
-            drop(handle);
-            assert!(matches!(incoming.try_recv().unwrap(), Call::Release(_)));
+            let (id, owner) = operations(&mut callbacks, admission.clone());
+            let operations = ReturnedBash::new(owner, pump.registry());
             let signal = Cancellation::new();
             signal.abort();
             let env = [(OsString::from("雪"), OsString::from("literal=\0value"))]
                 .into_iter()
                 .collect();
-            let worker = std::thread::spawn(move || serve(incoming, resource));
+            let worker = std::thread::spawn(move || serve(incoming, id));
             let client = async {
                 let (mut first, mut second) = (Vec::new(), Vec::new());
                 let mut sink1 = |bytes: &[u8]| first.push(bytes.to_vec());
@@ -79,8 +74,7 @@ fn returned_operations_overlap_with_exact_operands_and_independent_sinks() {
             drop(admission);
             let ((), (one, two, first, second)) =
                 futures_util::future::join(pump.serve(), client).await;
-            let released = worker.join().unwrap();
-            released.resource_drop_async(&mut store).await.unwrap();
+            worker.join().unwrap();
             assert_eq!(one.unwrap().exit_code, Some(7.5));
             assert_eq!(two.unwrap_err().to_string(), "");
             assert_eq!(first, [vec![0, 255], vec![0xf0, 0x9f], vec![0x92, 0xa9]]);
@@ -88,18 +82,15 @@ fn returned_operations_overlap_with_exact_operands_and_independent_sinks() {
         });
 }
 
-/// Inspects native operands, delivers exact chunks and returns the final release.
-fn serve(
-    mut incoming: tokio::sync::mpsc::UnboundedReceiver<Call>,
-    resource: ResourceAny,
-) -> ResourceAny {
+/// Inspects native operands, delivers exact chunks and observes the final release.
+fn serve(mut incoming: tokio::sync::mpsc::UnboundedReceiver<Call>, id: u32) {
     let one = incoming.blocking_recv().unwrap();
     let two = incoming.blocking_recv().unwrap();
     let (Call::Bash(one), Call::Bash(two)) = (one, two) else {
         panic!("not executions")
     };
-    assert_eq!(one.owner.resource, resource);
-    assert_eq!(two.owner.resource, resource);
+    assert_eq!(one.owner.id(), id);
+    assert_eq!(two.owner.id(), id);
     assert_eq!(one.request.command, "raw $command\n");
     assert_eq!(one.request.cwd, "./unresolved/../雪");
     assert_eq!(one.request.timeout, Some(-2.5));
@@ -123,12 +114,8 @@ fn serve(
     drop((
         one.owner, two.owner, one.output, two.output, one.signal, two.signal,
     ));
-    let Call::ReleaseResource(released) = incoming.blocking_recv().unwrap() else {
-        panic!("not final release")
-    };
-    assert_eq!(released, resource);
+    object_release(incoming.blocking_recv());
     assert!(incoming.try_recv().is_err());
-    released
 }
 
 #[cfg(unix)]
@@ -142,10 +129,8 @@ fn nonunicode_environment_is_rejected_before_guest_admission_without_lossy_conve
             let (pump, admission) = Pump::new();
             let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
-            let id = callbacks.allocate().unwrap().id;
-            let handle = callbacks.retain(id, admission.clone()).unwrap();
-            let (mut store, resource) = resource();
-            let operations = handle.bash(resource, pump.registry());
+            let (_, owner) = operations(&mut callbacks, admission.clone());
+            let operations = ReturnedBash::new(owner, pump.registry());
             let client = async {
                 let invalid = OsString::from_vec(vec![255]);
                 for (key, value, expected) in [
@@ -173,11 +158,7 @@ fn nonunicode_environment_is_rejected_before_guest_admission_without_lossy_conve
                     assert!(incoming.try_recv().is_err());
                 }
                 drop(operations);
-                let Call::ReleaseResource(released) = incoming.recv().await.unwrap() else {
-                    panic!("not release")
-                };
-                released.resource_drop_async(&mut store).await.unwrap();
-                drop(handle);
+                object_release(incoming.recv().await);
             };
             drop(admission);
             futures_util::future::join(pump.serve(), client).await;

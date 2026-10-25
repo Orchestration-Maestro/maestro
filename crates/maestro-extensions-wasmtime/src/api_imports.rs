@@ -1,7 +1,7 @@
 //! Canonical API imports use the original facade through the single local pump.
 use crate::api_reads::{Endpoint, Request};
 use crate::read_imports::ReadEndpoint;
-use crate::read_imports::{add_operand, add_read};
+use crate::read_imports::{add_read, add_routed_operand};
 use maestro_extensions::types;
 use wasmtime::{
     StoreContextMut,
@@ -28,11 +28,12 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
     ] {
         host.func_wrap(
             name,
-            move |store: StoreContextMut<'_, T>, (value, options): (String, Option<String>)| {
-                Ok((store
+            move |mut store: StoreContextMut<'_, T>, (value, options): (String, Option<String>)| {
+                let route = store
                     .data()
                     .api()
-                    .read(|reply| request(value, options, reply)),))
+                    .route(|reply| request(value, options, reply));
+                Ok((crate::import_route::push(store.data_mut(), route)?,))
             },
         )?;
     }
@@ -94,19 +95,19 @@ fn add_values<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
         Request::Thinking,
         |store, ()| Ok(store.api().clone()),
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "set-session-name",
         Request::SetSessionName,
         |store, (value,)| Ok((store.api().clone(), value)),
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "set-active-tools",
         Request::SetActiveTools,
         |store, (value,)| Ok((store.api().clone(), value)),
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "set-thinking-level",
         Request::SetThinking,

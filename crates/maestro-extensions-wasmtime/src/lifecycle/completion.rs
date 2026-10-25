@@ -1,11 +1,7 @@
 //! Once-only completion releases invocation admissions before native settlement.
-use crate::{
-    guest_calls::{Call, Callback, Handle},
-    lifecycle::GuestResource,
-};
+use crate::guest_calls::{Call, Callback, Handle};
 use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::mpsc::UnboundedSender;
-use wasmtime::component::ResourceAny;
 
 /// One active Store invocation, shared only with its lifecycle reply token.
 #[derive(Clone)]
@@ -13,7 +9,7 @@ pub(crate) struct Completion(Arc<Mutex<Option<Operands>>>);
 /// Strong operands are releasable even if Wasmtime retains the invocation future.
 struct Operands {
     /// Original Store receiver, not a second release dispatcher.
-    calls: UnboundedSender<Call>,
+    calls: Option<UnboundedSender<Call>>,
     /// Native owners remain admitted until completion, including cancelled callers.
     retained: Vec<Box<dyn Send>>,
 }
@@ -21,7 +17,14 @@ impl Completion {
     /// Retains admission only until the once-only completion operation.
     pub(crate) fn new(calls: UnboundedSender<Call>) -> Self {
         Self(Arc::new(Mutex::new(Some(Operands {
-            calls,
+            calls: Some(calls),
+            retained: Vec::new(),
+        }))))
+    }
+    /// Releases operands without announcing activity the Store driver never admitted.
+    pub(crate) fn local() -> Self {
+        Self(Arc::new(Mutex::new(Some(Operands {
+            calls: None,
             retained: Vec::new(),
         }))))
     }
@@ -37,12 +40,6 @@ impl Completion {
         self.retain(handle);
         callback
     }
-    /// Moves resource strength out of the task's actual invocation operands.
-    pub(super) fn resource(&self, resource: Arc<GuestResource>) -> ResourceAny {
-        let operand = resource.resource;
-        self.retain(resource);
-        operand
-    }
     /// Retains a live call operand in the same once-only release set.
     pub(super) fn retain(&self, operand: impl Send + 'static) {
         if let Some(operands) = self.operands().as_mut() {
@@ -54,7 +51,9 @@ impl Completion {
         let operands = self.operands().take();
         if let Some(Operands { calls, retained }) = operands {
             drop(retained);
-            let _ = calls.send(Call::Finished);
+            if let Some(calls) = calls {
+                let _ = calls.send(Call::Finished);
+            }
         }
     }
 }

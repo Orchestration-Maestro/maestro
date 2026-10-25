@@ -31,8 +31,8 @@ pub(super) struct State {
     pub(super) waker: RefCell<std::task::Waker>,
     /// Typed completion storage for active synchronous guest invocations.
     pub(super) synchronous: super::synchronous::Returns,
-    /// Set while answering a request its Store thread waits for, when it cannot enter the guest.
-    pub(super) store_blocked: std::cell::Cell<bool>,
+    /// Native operations in progress, innermost last, whose nested targets their guest runs.
+    pub(super) routes: RefCell<Vec<std::sync::mpsc::Sender<crate::import_route::Nested>>>,
 }
 
 impl Pump {
@@ -50,7 +50,7 @@ impl Pump {
             staging: RefCell::default(),
             waker: RefCell::new(std::task::Waker::noop().clone()),
             synchronous: super::synchronous::Returns::default(),
-            store_blocked: std::cell::Cell::default(),
+            routes: RefCell::default(),
         });
         (
             Self { state },
@@ -84,7 +84,7 @@ impl State {
             let message = self.requests.borrow_mut().poll_recv(context);
             match message {
                 Poll::Ready(Some(message)) => {
-                    self.answer(message);
+                    self.dispatch(message);
                     self.poll_pending(context);
                     return Poll::Ready(true);
                 }
@@ -116,17 +116,10 @@ impl State {
         }
     }
 
-    /// Dispatches a consumed request outside capability-table borrows.
-    fn answer(&self, message: Message) {
-        let blocked = self.store_blocked.get();
-        self.store_blocked.set(blocked || message.blocks_store());
-        self.dispatch(message);
-        self.store_blocked.set(blocked);
-    }
-
     /// Answers one request with the native owner it names.
     fn dispatch(&self, message: Message) {
         match message {
+            Message::Routed(message, route) => self.routed(*message, route),
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.read_api(id, request),
@@ -185,6 +178,17 @@ impl State {
                 drop(removed);
             }
         }
+    }
+
+    /// Answers a request while its native code owns the route into this instance.
+    fn routed(
+        &self,
+        message: Message,
+        route: std::sync::mpsc::Sender<crate::import_route::Nested>,
+    ) {
+        self.routes.borrow_mut().push(route);
+        self.dispatch(message);
+        self.routes.borrow_mut().pop();
     }
 
     /// Starts the original creating session's operation outside the registry borrow.

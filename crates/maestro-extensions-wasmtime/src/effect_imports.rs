@@ -32,7 +32,10 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
         "[method]tool-update.update",
         |mut store: StoreContextMut<'_, T>, (resource, partial): (Resource<ToolUpdate>, String)| {
             let update = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((update.update(partial),))
+            Ok((crate::import_route::push(
+                store.data_mut(),
+                update.update(partial),
+            )?,))
         },
     )?;
     host.func_wrap(

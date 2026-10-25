@@ -49,6 +49,31 @@ impl<I: Imports> Exports<I> {
         })
     }
 }
+#[cfg(target_arch = "wasm32")]
+impl<I: Imports> Exports<I> {
+    /// Runs one method of the authored component retained under a shared identity.
+    pub(crate) fn invoke_component<R>(
+        &self,
+        id: u32,
+        emitter: &I::Emitter,
+        method: impl FnOnce(&Component, CallbackEmitter<'_>) -> ExtensionResult<R>,
+    ) -> ExtensionResult<R> {
+        let component = callbacks::find::<Component>(id)?;
+        with_emitter(&self.imports, emitter, |emitter| {
+            method(&component, emitter)
+        })
+    }
+}
+
+/// Transfers an authored object to the host through the shared identity table.
+#[cfg(target_arch = "wasm32")]
+pub(super) fn retain<I: Imports, O: callbacks::Stored>(
+    imports: &I,
+    object: Option<O>,
+) -> Option<I::Callback> {
+    object.map(|object| callbacks::Identity::<I>::new(imports).transfer(object))
+}
+
 /// Lends the existing callback emission port for one synchronous call.
 pub(crate) fn with_emitter<I: Imports, R>(
     imports: &I,

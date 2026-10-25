@@ -75,12 +75,6 @@ impl Registry {
             .pump
             .upgrade()
             .ok_or_else(|| "extension resource owner ended".to_owned())?;
-        if pump.store_blocked.get() {
-            return Err(
-                "extension cannot be re-entered while it waits for a synchronous host call"
-                    .to_owned(),
-            );
-        }
         let requests = self
             .requests
             .upgrade()
