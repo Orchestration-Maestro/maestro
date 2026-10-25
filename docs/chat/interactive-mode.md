@@ -86,6 +86,14 @@ Binding the current session runs these phases in order:
 Binding returns the first failing phase's error. The phases before it stay
 applied, nothing is rolled back and no later phase runs.
 
+The mode registers this binding with the runtime when it is built. Each time the
+runtime replaces its session (new session, resume, fork or import), it binds the
+mode to the new session before the operation's continuation runs. The continuation
+therefore sees the new session's UI, resources, footer and window title. The next
+shortcut reads the new runner, and events from the replaced session no longer reach
+the mode. The runtime holds the mode weakly: once the mode is gone, replacement skips
+the binding. A binding failure is returned to the caller of the runtime operation.
+
 The runtime settings give the footer the current session, its automatic-compaction
 marker and its working directory. They then set the thinking visibility, the hardware
 cursor, clear-on-shrink, and the editor's padding and visible completion rows, in
@@ -306,8 +314,7 @@ fails after the prompt was accepted stays a session event; the mode adds no noti
 for it.
 
 Still to come: rendering the session's events in the transcript, queued input,
-commands, rebinding the presentation to a replaced session, update
-notices and the startup check of subscription-based credentials.
+commands, update notices and the startup check of subscription-based credentials.
 
 ## Session replay
 

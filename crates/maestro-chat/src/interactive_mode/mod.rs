@@ -179,7 +179,7 @@ impl InteractiveMode {
         );
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
         let hide_thinking = init_theme(&session, &themes, &operations)?;
-        Ok(Rc::new_cyclic(|this| Self {
+        let mode = Rc::new_cyclic(|this| Self {
             shutdown_requested: Cell::new(false),
             this: this.clone(),
             lifecycle: lifecycle::LifecycleState::default(),
@@ -224,7 +224,10 @@ impl InteractiveMode {
             unsubscribe: RefCell::default(),
             working: working::WorkingState::default(),
             streaming: RefCell::default(),
-        }))
+        });
+        let rebind = extensions::rebind_callback(Rc::downgrade(&mode));
+        mode.runtime_host.set_rebind_session(Some(rebind));
+        Ok(mode)
     }
 
     /// Installs lifecycle handlers, selects unseen release history, prepares search
