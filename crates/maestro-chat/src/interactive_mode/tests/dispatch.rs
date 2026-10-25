@@ -17,10 +17,12 @@ fn interactive_contract_benchmark_uses_retained_mode() {
             assert!(world.mode.is_initialized.get());
             mode.stop().unwrap();
             assert!(!world.mode.is_initialized.get());
+            assert_eq!(world.terminal.events(), ["start", "stop"]);
             Rc::clone(&mode).init().unwrap();
             assert!(world.mode.is_initialized.get());
             mode.stop().unwrap();
             assert!(!world.mode.is_initialized.get());
+            assert_eq!(world.terminal.events(), ["start", "stop", "start", "stop"]);
         },
     );
 }
