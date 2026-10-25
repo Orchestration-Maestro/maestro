@@ -1410,8 +1410,10 @@ fn interactive_session_setup_rejects_bypasses() {
     for relative in [
         "tests/footer_support/mod.rs",
         "tests/footer_support/corpus.rs",
+        "tests/session_picker_support/mod.rs",
         "src/interactive_mode/tests.rs",
         "src/interactive_mode/startup/tests.rs",
+        "src/components/tree_selector/tests.rs",
     ] {
         let path = source(&workspace, "maestro-chat", relative, DUPLICATE_SETUP);
         assert_setup_rejected(&workspace, &path, relative);
@@ -1438,13 +1440,6 @@ fn interactive_session_setup_rejects_bypasses() {
         );
         assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{accepted}");
     }
-    source(
-        &workspace,
-        "maestro-chat",
-        "tests/session_picker_support/mod.rs",
-        DUPLICATE_SETUP,
-    );
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 /// Assert the checker names `path` and the shared owner when it rejects a second setup.

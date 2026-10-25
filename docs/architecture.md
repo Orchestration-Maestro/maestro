@@ -268,11 +268,11 @@ scratch workspaces, not certified as delivered capabilities.
 
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in
-`crates/maestro-chat/tests/footer_support/session.rs`. A second construction of the
-session configuration in these test sources is rejected with its file and line, so
-they share one setup, which returns a session with its services. The rule covers the
-footer support tree, except the setup itself, and the test modules below
-`crates/maestro-chat/src/interactive_mode/`. Paths compare by component, so a native
+`crates/maestro-chat/tests/footer_support/session.rs`. The conventions check rejects
+a second construction of the session configuration anywhere in the chat crate's
+test code, naming its file and line, so every chat test shares one setup, which
+returns a session with its services. The rule covers every chat test source in any
+directory, except the setup itself. Paths compare by component, so a native
 separator changes nothing, and the shared token walk includes macro arguments,
 closures and impl bodies.
 
