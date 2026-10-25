@@ -13,6 +13,7 @@ use serde_json::{Value, json};
 use super::host::State;
 use super::observed::Observed;
 use super::renderer_host::Theme;
+use super::ui_host::{Receipt, receipts_on};
 use crate::bindings::host_side::maestro::extension::host;
 use wasmtime::component::Resource;
 
@@ -151,31 +152,9 @@ pub fn source_info(observed: &mut Observed, key: &str) -> Result<Option<String>,
     Ok((!value.is_null()).then(|| value.to_string()))
 }
 
-/// One theme request the host recorded.
-pub struct Receipt {
-    /// Key of the theme the request was made on.
-    pub key: String,
-    /// Method the host reached.
-    pub method: String,
-    /// Operands the host received.
-    pub operands: Value,
-}
-
 /// The theme requests recorded in `lines`, in time order.
-pub fn receipts(lines: &[String]) -> Vec<Receipt> {
-    lines
-        .iter()
-        .filter_map(|line| {
-            let rest = line.strip_prefix("theme ")?;
-            let (key, rest) = rest.split_once(' ')?;
-            let (method, operands) = rest.split_once(' ')?;
-            Some(Receipt {
-                key: key.to_owned(),
-                method: method.to_owned(),
-                operands: serde_json::from_str(operands).ok()?,
-            })
-        })
-        .collect()
+pub fn receipts(lines: &[String]) -> Vec<Receipt<String>> {
+    receipts_on("theme", lines)
 }
 
 /// The color depth named by its literal spelling.
