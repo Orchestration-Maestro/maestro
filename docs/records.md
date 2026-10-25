@@ -301,6 +301,14 @@ explicit null is retained for supported thinking/routing fields and open tool
 details. Signature
 strings remain opaque; the separate signature metadata record accepts version 1.
 
+`Usage::total_tokens` keeps the presence of the saved count. An omitted total
+decodes, is never computed from the categories and is omitted again when the record
+is written; an explicit null stays null, and a supplied number, including its sign
+and fractional part, survives unchanged. `Usage::default` reports an explicit zero.
+Readers keep their own rules: current context falls back to the category counts when
+the total is missing or falsy, session statistics always sum the categories, and
+file reports add a missing total as zero.
+
 Model compatibility is one ordered open object, independent of the protocol identifier.
 `ModelCompat` retains mixed-family and custom members and allows ordinary map edits.
 The typed completion, response and message compatibility records convert into it with
@@ -369,13 +377,15 @@ the [tree guide](tree.md). Branch extraction and forking are described in
 [the extraction guide](sessions/session_manager.md#branch-extraction-and-forking).
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
-session listeners and extension error delivery reuse it. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
-registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+Native callers use its default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
+listeners, extension error delivery and terminal input listeners reuse it. For
+shared `Rc` callbacks it also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 
 ## Extension event records

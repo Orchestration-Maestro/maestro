@@ -14,6 +14,7 @@ use maestro_app::{
     ScopedModel, SessionManager, Settings, SettingsListEntry, SettingsManager, SharedHandle,
     ThinkingLevel, WarningSettings,
 };
+use maestro_test_process::TestProcess;
 use maestro_tui::{Component, Input, Text, tui::InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
 use std::{
@@ -1517,11 +1518,13 @@ struct Submission {
     text: String,
 }
 
-/// Submits `text` exactly through the editor's installed submission, with the editor
-/// holding it, and runs the work it hands over; typed text would have its tabs widened.
+/// Submits `text` exactly through the editor's installed submission, after the editor
+/// empties itself as it does before calling back, and runs the work it hands over; typed
+/// text would have its tabs widened.
 pub(super) fn submit_held(world: &World, text: &str) {
     world.mode.editor.set_text(text);
-    submit(world, text);
+    world.mode.editor.set_text("");
+    submit(&world.mode, text);
     assert!(world.runtime.drain_futures().is_empty());
 }
 
@@ -2055,4 +2058,53 @@ fn model_scope_persistence_flushes_and_reopens_in_order() {
             bulk_saves_reopen_and_cancel_saves_nothing(&world, directory);
         },
     );
+}
+
+#[test]
+fn scope_resolution_warnings_reach_standard_error() {
+    let test = "scope_resolution_warnings_reach_standard_error";
+    // A further child opens the panel, so its standard error reaches this parent unmixed.
+    if maestro_test_process::selection().is_child() {
+        super::isolated_case(test, "warning", &[], |directory| {
+            let world = started(directory);
+            catalog(&world);
+            enabled_models_setting(&world, serde_json::json!(["missing/none", "a/alpha:bogus"]));
+            submit_held(&world, "/scoped-models");
+            assert!(scope_panel(&world).is_some());
+        });
+    }
+    let lines = [
+        "Warning: No models match pattern \"missing/none\"",
+        "Warning: Invalid thinking level \"bogus\" in pattern \"a/alpha:bogus\". \
+         Using default instead.",
+    ];
+    // Captured streams: only a forced colour level styles the warnings.
+    let rows: [(&[(&str, &str)], bool); 4] = [
+        (&[], false),
+        (&[("FORCE_COLOR", "1")], true),
+        (&[("FORCE_COLOR", "0")], false),
+        (&[("TERM", "dumb")], false),
+    ];
+    isolated(test, |_| {
+        for (envs, yellow) in rows {
+            let output = TestProcess::current(test)
+                .unwrap()
+                .case("warning")
+                .envs(envs.iter().copied())
+                .output()
+                .unwrap();
+            let stderr = String::from_utf8(output.stderr).unwrap();
+            assert!(output.status.success(), "{stderr}");
+            let (open, close) = if yellow {
+                ("\u{1b}[33m", "\u{1b}[39m")
+            } else {
+                ("", "")
+            };
+            let expected: String = lines
+                .iter()
+                .map(|line| [open, line, close, "\n"].concat())
+                .collect();
+            assert_eq!(stderr, expected, "{envs:?}");
+        }
+    });
 }

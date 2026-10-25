@@ -1,5 +1,6 @@
 //! Filesystem local sockets with caller-owned names and cleanup identity.
 
+use rustix::io::Errno;
 use std::fs;
 use std::io;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
@@ -44,7 +45,9 @@ pub fn bind_local_listener(path: &Path) -> io::Result<LocalListener> {
 ///
 /// # Errors
 /// Returns address-in-use with caller text, already-exists for a non-socket entry
-/// reached after a stale connection failure, or the underlying filesystem/socket error.
+/// reached after a stale connection failure or a native not-a-socket failure, the
+/// native connection failure for a real socket that failed otherwise, or the
+/// underlying filesystem/socket error.
 pub fn prepare_socket_path(
     path: &Path,
     busy_message: impl FnOnce(&Path) -> String,
@@ -55,10 +58,13 @@ pub fn prepare_socket_path(
     if !path.exists() && !path.is_symlink() {
         return Ok(());
     }
-    match connect_local_stream(path) {
-        Ok(_) => return Err(io::Error::new(io::ErrorKind::AddrInUse, busy_message(path))),
-        Err(error) if stale_socket_connect_error(error.kind()) => {}
-        Err(error) => return Err(error),
+    let Err(connection_error) = connect_local_stream(path) else {
+        return Err(io::Error::new(io::ErrorKind::AddrInUse, busy_message(path)));
+    };
+    let stale = stale_socket_connect_error(connection_error.kind());
+    let not_a_socket = connection_error.raw_os_error() == Some(Errno::NOTSOCK.raw_os_error());
+    if !stale && !not_a_socket {
+        return Err(connection_error);
     }
     let entry = match fs::symlink_metadata(path) {
         Ok(entry) => entry,
@@ -67,6 +73,9 @@ pub fn prepare_socket_path(
     };
     if !entry.file_type().is_socket() {
         return Err(io::ErrorKind::AlreadyExists.into());
+    }
+    if !stale {
+        return Err(connection_error);
     }
     match fs::remove_file(path) {
         Ok(()) => Ok(()),

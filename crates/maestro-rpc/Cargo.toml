@@ -1,0 +1,30 @@
+[package]
+name = "maestro-rpc"
+version = "0.1.0"
+edition.workspace = true
+autotests = false
+license = "Apache-2.0"
+repository.workspace = true
+
+[dependencies]
+maestro-app = { path = "../maestro-app" }
+tokio = { version = "=1.53.3", default-features = false, features = ["io-std", "rt", "signal"] }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
+maestro-theme = { path = "../maestro-theme" }
+maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
+
+[lints]
+workspace = true

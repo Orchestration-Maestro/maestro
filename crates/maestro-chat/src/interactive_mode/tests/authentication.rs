@@ -436,7 +436,7 @@ fn saved_credential(world: &World) {
 fn admit(world: &World, input: &Submission, expected: &Admitted) {
     let mut waiter = waiting(&world.mode);
     world.mode.editor.set_text(&input.text);
-    submit(world, &input.text);
+    submit(&world.mode, &input.text);
     if let Some(ordinary) = &expected.ordinary {
         assert_eq!(poll(&mut waiter), Some(ordinary.clone()), "{}", input.case);
         assert_eq!(recalled(&world.mode.editor), std::slice::from_ref(ordinary));

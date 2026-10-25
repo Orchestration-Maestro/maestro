@@ -27,9 +27,17 @@ called.
 
 Before binding, preparation creates parents, rejects a live listener with
 `maestro server is already running (socket busy at {path})`, and removes stale
-socket entries. A stale connection failure does not authorize deletion of a
-regular file, directory or symlink: preparation preserves that entry and returns
-`AlreadyExists`. A link to a live listener takes the live-listener branch.
+socket entries. A connection failure that is not stale does not authorize
+unlinking: preparation reads the entry's type without following a link, and when
+that entry is not a socket it preserves the entry and returns `AlreadyExists`. A
+link to a live listener takes the live-listener branch.
+
+The not-a-socket test follows the native error, because the general error kind does
+not separate these cases. An ordinary file reports a native not-a-socket failure,
+which admits the entry inspection; a datagram socket reports a native
+wrong-protocol failure with that same general kind, and preparation keeps its
+exact native error and socket identity. A real socket that fails any other way
+keeps that failure too. Only a stale connection failure removes a socket.
 Unclassified errors propagate unchanged.
 
 Binding disables automatic pathname removal on listener drop. The caller records

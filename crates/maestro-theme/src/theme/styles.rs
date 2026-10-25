@@ -79,6 +79,24 @@ impl Theme {
         decorate(text, enabled, Style::new().yellow(), "\x1b[39m")
     }
 
+    /// Apply a green foreground when `enabled`; text that is empty or not enabled is unchanged.
+    #[must_use]
+    pub fn green(text: &str, enabled: bool) -> String {
+        decorate(text, enabled, Style::new().green(), "\x1b[39m")
+    }
+
+    /// Apply dimmed output when `enabled`; text that is empty or not enabled is unchanged.
+    #[must_use]
+    pub fn dim(text: &str, enabled: bool) -> String {
+        decorate(text, enabled, Style::new().dimmed(), "\x1b[22m")
+    }
+
+    /// Apply a bright-black foreground when `enabled`; empty or disabled text is unchanged.
+    #[must_use]
+    pub fn gray(text: &str, enabled: bool) -> String {
+        decorate(text, enabled, Style::new().bright_black(), "\x1b[39m")
+    }
+
     /// Return a callback coloring text with the thinking key of `level`.
     ///
     /// An unknown level uses `thinkingOff`. The callback keeps this instance, whatever

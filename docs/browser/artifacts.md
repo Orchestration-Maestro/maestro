@@ -27,6 +27,23 @@ the body. MIME selection uses the last literal dot-delimited segment with Unicod
 lowercase, not path normalization or a MIME database. The native byte operation
 preserves the literal name and selected bytes.
 
+The header's download control and the preview/source selection are also
+component-owned native controls: `components::download_button::dom::download_button`
+and `DomContent for PreviewCodeToggle` publish them as page content. The generic
+file body also mounts natively through `DomContent for GenericArtifact`, and its
+independent header is `GenericArtifact::get_header_buttons(view: &DomView)`. The
+remaining artifact bodies, the panel and the Chat integration still use their
+retained canvas owners until their own deliveries mount those controls.
+
+A mounted native body owns its `<section class="maestro-generic-artifact">` nodes,
+so an update rewrites only the changed filename and guidance text. The header owns
+only its controlled row and the download activation behind it: dropping the
+returned root detaches that activation even while the caller keeps the node in the
+document. Both roots take their nodes from `dom::DomView` and reach no host
+surface, so mounting them publishes nothing and draws nothing through the retained
+canvas. `dom.rs` installs the artifact header row and generic body rules with the
+page stylesheet for mounted page content.
+
 `GenericArtifact` is also available through its module for direct construction.
 Its initial filename and content are empty. Caller-supplied packs and localization
 apply on each draw; there is no global theme or new runtime.

@@ -4,6 +4,7 @@
 use indexmap::IndexMap;
 use maestro_agent::{Agent, AgentInitialState, AgentOptions};
 use maestro_app::agent_session::CompactionReason;
+use maestro_app::agent_session::ExtensionRunnerRef;
 use maestro_app::agent_session::ToolDefinitionHandle;
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::resources::resource_loader::{
@@ -14,9 +15,10 @@ use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput, Sc
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
 use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
-    BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionContext, ExtensionExecution,
-    ExtensionFactory, ExtensionRunner, InputEvent, InputEventResult, LoadExtensionsResult,
-    RegisteredToolInput, create_event_bus_for, create_extension_runtime,
+    BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionAPI, ExtensionContext,
+    ExtensionExecution, ExtensionFactory, ExtensionRunner, InputEvent, InputEventResult,
+    LoadExtensionsResult, RegisteredToolInput, SessionBeforeCompactEvent,
+    SessionBeforeCompactResult, create_event_bus_for, create_extension_runtime,
     load_extension_from_factory,
 };
 use maestro_models::system_prompt::ContextFile;
@@ -38,6 +40,36 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex, RwLock},
 };
+
+/// An extension that summarizes every compaction as `summary` instead of calling a provider.
+pub fn summary_provider(summary: &'static str) -> ExtensionFactory<Local> {
+    Rc::new(move |api: ExtensionAPI<Local>| {
+        let registered = api.on::<SessionBeforeCompactEvent, SessionBeforeCompactResult>(
+            "session_before_compact".into(),
+            Rc::new(move |event, _| {
+                Box::pin(std::future::ready(Ok(Some(summary_result(event, summary)))))
+            }),
+        );
+        drop(registered);
+        Box::pin(std::future::ready(Ok(())))
+    })
+}
+
+/// A supplied summary retaining the compaction preparation's boundary and token count.
+pub fn summary_result(
+    event: &SessionBeforeCompactEvent,
+    summary: &str,
+) -> SessionBeforeCompactResult {
+    SessionBeforeCompactResult {
+        cancel: Presence::Missing,
+        compaction: Presence::Present(CompactionResult {
+            summary: summary.to_owned(),
+            first_kept_entry_id: event.data.preparation.first_kept_entry_id.clone(),
+            tokens_before: event.data.preparation.tokens_before,
+            details: Presence::Present(json!({})),
+        }),
+    }
+}
 
 /// The recorded corpus file `name`.
 pub fn corpus(name: &str) -> Value {
@@ -64,6 +96,15 @@ pub fn case(file: &str, name: &str) -> Value {
 /// The recorded prompt and queue case `name`.
 pub fn expected(name: &str) -> Value {
     corpus("prompt_queue")[name].clone()
+}
+
+/// The recorded case `name` of the keyed corpus file `file`.
+pub fn recorded(file: &str, name: &str) -> Value {
+    let cases = corpus(file);
+    cases
+        .get(name)
+        .unwrap_or_else(|| panic!("no recorded case {name}"))
+        .clone()
 }
 
 /// How the scripted provider's credentials are configured.
@@ -392,7 +433,7 @@ pub fn tool_definition(
         definition: Tool {
             name: name.into(),
             description: format!("{name} tool"),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         label: name.into(),
         prompt_snippet: snippet.map(str::to_owned),
@@ -516,30 +557,76 @@ pub fn build_tree(manager: &mut SessionManager) -> Names {
     names
 }
 
-/// A local agent on the first scripted model, with the window replaced when given and the
-/// stream replaced when given.
-fn agent(
-    model: &Model,
+/// What a scripted agent is built over.
+struct AgentSetup<'a> {
+    /// The scripted model the session starts on.
+    model: &'a Model,
+    /// The context window replacing the scripted one.
     window: Option<f64>,
+    /// The agent's own task facility.
     spawn: Option<maestro_agent::AgentSpawner<Local>>,
-    stream_fn: Option<maestro_agent::StreamFn<Local>>,
-) -> Rc<Agent<CustomAgentMessages, Local>> {
-    let mut initial = model.clone();
-    initial.context_window = window.unwrap_or(initial.context_window);
+    /// The stream replacing the scripted provider.
+    stream: Option<maestro_agent::StreamFn<Local>>,
+    /// The slot always holding the runner currently in effect.
+    runner_ref: &'a ExtensionRunnerRef<Local>,
+    /// The preferences the message conversion reads.
+    settings_manager: &'a Rc<RefCell<SettingsManager>>,
+}
+
+/// A local agent on the first scripted model, running the application's own message
+/// conversion and context hook.
+fn agent(setup: AgentSetup<'_>) -> Rc<Agent<CustomAgentMessages, Local>> {
+    let mut initial = setup.model.clone();
+    initial.context_window = setup.window.unwrap_or(initial.context_window);
+    let runner = Rc::clone(setup.runner_ref);
+    let converting = Rc::clone(setup.settings_manager);
     Rc::new(Agent::new_local(AgentOptions {
-        spawn,
-        stream_fn,
-        convert_to_llm: Some(Rc::new(|history| {
-            let messages = maestro_session::convert_to_llm(&history.read().unwrap());
-            Box::pin(std::future::ready(Ok(messages)))
-        })),
+        spawn: setup.spawn,
+        stream_fn: setup.stream,
         initial_state: AgentInitialState {
             model: Some(Arc::new(RwLock::new(initial))),
             system_prompt: Some("base".into()),
             ..AgentInitialState::default()
         },
+        convert_to_llm: Some(Rc::new(move |history| {
+            let block_images = converting.borrow().get_block_images();
+            let messages = maestro_app::sdk::convert_to_llm_with_block_images(
+                &history.read().unwrap(),
+                block_images,
+            );
+            Box::pin(std::future::ready(Ok(messages)))
+        })),
+        transform_context: Some(maestro_app::sdk::transform_context(&runner)),
         ..AgentOptions::default()
     }))
+}
+
+/// The scripted agent of `options`, its runner slot and its preferences.
+type ScriptedAgent = (
+    ExtensionRunnerRef<Local>,
+    Rc<RefCell<SettingsManager>>,
+    Rc<Agent<CustomAgentMessages, Local>>,
+);
+
+/// The scripted agent of `options`, its runner slot and its preferences.
+fn scripted_agent(
+    options: &mut HarnessOptions,
+    faux: &FauxProviderRegistration,
+    stream: Option<maestro_agent::StreamFn<Local>>,
+) -> ScriptedAgent {
+    let runner_ref: ExtensionRunnerRef<Local> = Rc::new(RefCell::new(None));
+    let settings: maestro_settings::Settings =
+        serde_json::from_value(std::mem::take(&mut options.settings)).unwrap();
+    let settings_manager = Rc::new(RefCell::new(SettingsManager::in_memory(settings)));
+    let agent = agent(AgentSetup {
+        model: &faux.models[0],
+        window: options.context_window,
+        spawn: options.spawn.take(),
+        stream,
+        runner_ref: &runner_ref,
+        settings_manager: &settings_manager,
+    });
+    (runner_ref, settings_manager, agent)
 }
 
 /// The scripted provider serving `models` as identity and reasoning support.
@@ -598,24 +685,18 @@ pub async fn harness(mut options: HarnessOptions) -> Harness {
         .responses
         .take()
         .map(|responses| scripted_stream(responses, requests.clone()));
-    let agent = agent(
-        &faux.models[0],
-        options.context_window,
-        options.spawn.take(),
-        stream,
-    );
+    let (runner_ref, settings_manager, agent) = scripted_agent(&mut options, &faux, stream);
     let session_manager = options
         .session_manager
         .take()
         .unwrap_or_else(|| SessionManager::in_memory(Some(&cwd)).unwrap());
     let loader = harness_loader(&cwd, &mut options).await;
     let extended = Rc::clone(&loader.extended);
-    let settings: maestro_settings::Settings = serde_json::from_value(options.settings).unwrap();
     let bin_dir = format!("{}/bin", scratch.path().display());
     let session = AgentSession::new(AgentSessionConfig {
         agent,
         session_manager: Rc::new(RefCell::new(session_manager)),
-        settings_manager: Rc::new(RefCell::new(SettingsManager::in_memory(settings))),
+        settings_manager,
         cwd: cwd.clone(),
         bin_dir: bin_dir.clone(),
         scoped_models: Vec::new(),
@@ -625,7 +706,7 @@ pub async fn harness(mut options: HarnessOptions) -> Harness {
         initial_active_tool_names: options.initial_active_tool_names,
         allowed_tool_names: options.allowed_tool_names,
         base_tools_override: options.base_tools_override,
-        extension_runner_ref: None,
+        extension_runner_ref: Some(runner_ref),
         session_start_event: None,
         tools_manager: Arc::new(maestro_tools::ToolsManager::new(bin_dir, None)),
         theme: maestro_theme::LiveTheme::default(),
@@ -775,6 +856,12 @@ pub fn on_paused_task_set<F: std::future::Future>(
         .build()
         .unwrap();
     runtime.block_on(local.run_until(body(Rc::clone(&local))))
+}
+
+/// Returns once every task of an [`on_paused_task_set`] runtime waits: the paused clock
+/// moves only then.
+pub async fn until_idle() {
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 }
 
 /// The text of a message record: plain content, joined text blocks, or its summary.
@@ -1936,7 +2023,7 @@ pub fn waiting_tool(
         definition: Tool {
             name: "wait".into(),
             description: "Wait for release".into(),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         description: None,
         label: "Wait".into(),
@@ -1960,6 +2047,18 @@ pub fn waiting_tool(
     Rc::new(RwLock::new(tool))
 }
 
+/// Prompts `text` and waits until the session has delivered the run's end.
+pub async fn prompt_to_end(
+    h: &Harness,
+    text: &str,
+    options: maestro_app::agent_session::PromptOptions,
+) {
+    let ended = session_run_ended(h);
+    h.session.prompt(text, options).await.unwrap();
+    h.session.agent().wait_for_idle().await;
+    ended.notified().await;
+}
+
 /// The echo tool, in place of the built-in tools: it marks `executed` and answers `echoed`.
 pub fn echo_tools(
     executed: Rc<RefCell<bool>>,
@@ -1968,7 +2067,8 @@ pub fn echo_tools(
         definition: Tool {
             name: "echo".into(),
             description: "Echo back".into(),
-            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}})
+                .into(),
         },
         description: None,
         label: "Echo".into(),
@@ -1985,4 +2085,22 @@ pub fn echo_tools(
         execution_mode: None,
     };
     IndexMap::from([("echo".to_owned(), Rc::new(RwLock::new(tool)))])
+}
+
+/// The extension whose input handler answers every input with `answer`.
+pub fn input_extension(
+    answer: impl Fn(&InputEvent) -> Result<Option<InputEventResult>, &'static str> + 'static,
+) -> ExtensionFactory<Local> {
+    let answer = Rc::new(answer);
+    Rc::new(move |api| {
+        let answer = Rc::clone(&answer);
+        let registered = api.on::<InputEvent, InputEventResult>(
+            "input".into(),
+            Rc::new(move |event, _| {
+                let result = answer(event).map_err(Into::into);
+                Box::pin(std::future::ready(result))
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
 }

@@ -8,8 +8,8 @@ use maestro_web::{
     tools::types::ToolUiError,
 };
 use serde_json::Value;
-use std::rc::Rc;
-use wasm_bindgen::{JsCast as _, JsValue};
+use std::{cell::RefCell, rc::Rc};
+use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Document, Element, HtmlElement, Node};
 
@@ -156,4 +156,88 @@ impl DomContent for Text {
         root.node.set_text_content(Some(self.0));
         Ok(())
     }
+}
+/// A CSS `rgb(...)` value for a `#rrggbb` brand color.
+pub(crate) fn rgb(hex: &str) -> String {
+    let channel = |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).unwrap();
+    format!("rgb({}, {}, {})", channel(1), channel(3), channel(5))
+}
+/// One computed style property of an element.
+pub(crate) fn computed(element: &Element, property: &str) -> String {
+    web_sys::window()
+        .unwrap()
+        .get_computed_style(element)
+        .unwrap()
+        .unwrap()
+        .get_property_value(property)
+        .unwrap()
+}
+
+/// Outcome of a stubbed clipboard write.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Clipboard {
+    /// The write succeeds at once.
+    Accept,
+    /// The page refuses the write.
+    Refuse,
+    /// The write succeeds when the test settles it.
+    Defer,
+}
+/// A stubbed page clipboard recording each written text.
+pub(crate) struct Recorded {
+    /// Texts written so far.
+    texts: Rc<RefCell<Vec<String>>>,
+    /// Settlements of deferred writes, oldest last.
+    settlements: Rc<RefCell<Vec<js_sys::Function>>>,
+    /// The installed write, which stays reachable while this recorder lives.
+    _write: Closure<dyn Fn(String) -> js_sys::Promise>,
+}
+impl Recorded {
+    /// Replace the page clipboard with a recorder settling each write by `outcome`.
+    pub(crate) fn install(outcome: Clipboard) -> Self {
+        let texts: Rc<RefCell<Vec<String>>> = Rc::default();
+        let settlements: Rc<RefCell<Vec<js_sys::Function>>> = Rc::default();
+        let (recorded, deferred) = (Rc::clone(&texts), Rc::clone(&settlements));
+        let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(move |text: String| {
+            recorded.borrow_mut().push(text);
+            match outcome {
+                Clipboard::Accept => js_sys::Promise::resolve(&JsValue::UNDEFINED),
+                Clipboard::Refuse => js_sys::Promise::reject(&JsValue::from_str("refused")),
+                Clipboard::Defer => js_sys::Promise::new(&mut |resolve, _reject| {
+                    deferred.borrow_mut().push(resolve);
+                }),
+            }
+        });
+        let navigator = web_sys::window().unwrap().navigator();
+        let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
+        js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
+        Self {
+            texts,
+            settlements,
+            _write: write,
+        }
+    }
+    /// The texts written so far.
+    pub(crate) fn texts(&self) -> Vec<String> {
+        self.texts.borrow().clone()
+    }
+    /// Settle the oldest deferred write.
+    pub(crate) fn settle(&self) {
+        let next = self.settlements.borrow_mut().pop();
+        if let Some(resolve) = next {
+            resolve.call0(&JsValue::UNDEFINED).unwrap();
+        }
+    }
+}
+/// Wait for `count` animation frames.
+pub(crate) async fn frames(page: &JsValue, count: u32) {
+    call(page, "frames", &js_sys::Array::of1(&JsValue::from(count))).await;
+}
+/// The selected text and whether `root` holds the selection.
+pub(crate) async fn selection(page: &JsValue, root: &Element) -> (String, bool) {
+    let pair = js_sys::Array::from(&call(page, "selection", &js_sys::Array::of1(root)).await);
+    (
+        pair.get(0).as_string().unwrap(),
+        pair.get(1).as_bool().unwrap(),
+    )
 }

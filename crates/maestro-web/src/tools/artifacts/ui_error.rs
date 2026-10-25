@@ -34,6 +34,17 @@ impl From<AttachmentHostError> for ArtifactUiError {
         Self::Host(error)
     }
 }
+impl From<ArtifactUiError> for crate::tools::types::ToolUiError {
+    fn from(error: ArtifactUiError) -> Self {
+        match error {
+            ArtifactUiError::I18n(error) => Self::I18n(error),
+            ArtifactUiError::Control(error) => Self::Control(error),
+            ArtifactUiError::Host(error) => Self::Host(error),
+            ArtifactUiError::Presentation(error) => Self::Presentation(error.to_string()),
+            error @ ArtifactUiError::BorrowConflict => Self::Presentation(error.to_string()),
+        }
+    }
+}
 
 impl ArtifactUiError {
     /// Preserve native and leaf phases while retaining typed reading preparation causes.

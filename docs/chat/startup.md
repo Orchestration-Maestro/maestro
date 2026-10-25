@@ -2,7 +2,8 @@
 
 The application holds the changelog utility in `maestro_app::utils::changelog` and
 re-exports its items at the crate root. It is available on native targets. The
-startup notices that read it and the command that prints it are not wired yet.
+[`/changelog` command](commands.md#changelog) reads it; the startup notice that
+reads it is not wired yet.
 
 `parse_changelog` reads a supplied path once and returns the sections in file order.
 A path that names no file yields no sections and writes nothing. A path that exists

@@ -23,10 +23,14 @@ pub use maestro_session::session_manager::SessionListProgress;
 pub use maestro_session::export_html;
 
 #[cfg(not(target_arch = "wasm32"))]
+pub use maestro_export::{ExportOperations, NativeExportOperations};
+
+pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
+
+#[cfg(not(target_arch = "wasm32"))]
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
-    ExtensionBindings, ModelCycleResult, ParsedSkillBlock, PromptOptions, SessionStats,
-    parse_skill_block,
+    ExtensionBindings, ModelCycleResult, NavigateTreeResult, PromptOptions, SessionStats,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -56,6 +60,8 @@ pub use maestro_session::compaction::{
 };
 
 pub use maestro_session::convert_to_llm;
+
+pub use maestro_session::session_manager::NavigateTreeOptions;
 
 pub use maestro_session::session_manager::{
     CURRENT_SESSION_VERSION, FileEntry, NewSessionOptions, SessionContext, SessionHeader,

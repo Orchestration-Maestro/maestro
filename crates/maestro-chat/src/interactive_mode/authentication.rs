@@ -81,7 +81,7 @@ impl InteractiveMode {
     ) -> Result<(), Box<dyn Error>> {
         match self.apply_logout(option) {
             Ok(()) => Ok(()),
-            Err(error) => self.show_error(&format!("Logout failed: {error}")),
+            Err(error) => Ok(self.show_error(&format!("Logout failed: {error}"))?),
         }
     }
 

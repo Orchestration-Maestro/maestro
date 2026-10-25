@@ -20,7 +20,7 @@ fn custom(name: &str) -> ToolDefinition<Value> {
         definition: Tool {
             name: name.into(),
             description: "D".into(),
-            parameters: json!({"type":"object"}),
+            parameters: json!({"type":"object"}).into(),
         },
         label: "L".into(),
         prompt_snippet: None,

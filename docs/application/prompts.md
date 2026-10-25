@@ -24,9 +24,11 @@ ends the prompt:
    becomes the expanded template. The skill block is
    `<skill name="<name>" location="<file>">`, the line
    `References are relative to <directory>.`, a blank line, the skill body without
-   its frontmatter and trimmed, and `</skill>`. An unknown skill keeps the text. A
-   skill file that cannot be read is reported with the file as its path and event
-   `skill_expansion`, and the text is kept.
+   its frontmatter and trimmed, and `</skill>`. The block is read back by the
+   application's `parse_skill_block`, which native frontends and browser builds
+   both use, so a transcript and a rendered document share one parser. An unknown
+   skill keeps the text. A skill file that cannot be read is reported with the file
+   as its path and event `skill_expansion`, and the text is kept.
 4. While a response streams, the session queues the prompt instead, as a steering
    message or a follow-up, whichever `streaming_behavior` asks for. Without a choice
    it refuses the prompt with
@@ -44,8 +46,11 @@ ends the prompt:
 `preflight_result` hears once whether the prompt was accepted: `true` when a
 command ran, a handler handled the input, the prompt was queued or the agent is
 about to be prompted, and `false` when a step failed. `prompt` returns after the
-agent and any retry settle. Once started, a prompt belongs to the session: dropping
-the returned future leaves it running to the end.
+agent and any retry settle. The prompt starts when `prompt` is called, so its
+steps up to the first wait (a command, the input handlers, queueing while a response
+streams, a refusal) have already run before the returned future is first polled.
+The prompt belongs to the session: the future only observes the result, and
+dropping it leaves the prompt running to the end.
 
 The base prompt is the system prompt construction built, or the one
 `set_active_tools_by_name` last built for the active tools.
@@ -90,9 +95,10 @@ under the command as given. A configured command prefix goes on its own line bef
 the command that runs. A configured shell path runs it unless the options supply
 the shell operations. Progress chunks reach the caller in arrival order.
 `abort_bash` stops the running command, which is then recorded as cancelled without
-an exit status. `is_bash_running` is true while a command runs. Once started, a
-command belongs to the session: dropping the returned future leaves it running and
-its result is still recorded.
+an exit status. `is_bash_running` is true while a command runs. Calling
+`execute_bash` starts the command and installs its cancellation signal before the
+returned future is polled. The command belongs to the session: dropping even a
+never-polled result future leaves it running and its result is still recorded.
 
 `record_bash_result` records a result. While the agent is idle the record is
 appended to the history and the session at once. While a response streams it waits

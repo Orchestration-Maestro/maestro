@@ -12,8 +12,8 @@ use wit::{ScanContext, WitInputs};
 /// Single-owner rule for retained message renderer calls.
 mod message_renderers;
 
-/// Single-owner rule for temporary files and editor launches in the chat frontend.
-mod editor_effects;
+/// Single-owner rule for work polled once before a task facility takes it.
+mod inline_polls;
 
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
@@ -49,12 +49,15 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         }
     }
     message_renderers::check(members)?;
-    editor_effects::check(members)?;
+    inline_polls::check(members)?;
     wit.finish()
 }
 
 /// Rust declaration keywords whose following identifiers are inspected.
 const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type", "mod"];
+
+/// Shared protocol functions whose declarations have one owner.
+const OWNED_FUNCTIONS: &[&str] = &["serialize_json_line", "serialize_rpc_response"];
 
 /// Session configuration record that only the shared interactive test setup constructs.
 const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
@@ -77,6 +80,8 @@ struct Records {
     declarations: Vec<(String, String, usize)>,
     /// Interface-generation macro arguments paired with their source lines.
     inputs: Vec<(usize, proc_macro2::TokenStream)>,
+    /// Declared name, source line and head tokens of every struct, up to its body.
+    struct_heads: Vec<(String, usize, proc_macro2::TokenStream)>,
 }
 
 impl Records {
@@ -110,17 +115,29 @@ impl Records {
     /// Record a recognized declaration with its unescaped name.
     fn declaration(&mut self, keyword: &proc_macro2::Ident, following: &[TokenTree]) {
         let kind = keyword.to_string();
-        if !DECLARATION_KINDS.contains(&kind.as_str()) {
-            return;
-        }
         let Some(TokenTree::Ident(name)) = following.first() else {
             return;
         };
+        let owned_function =
+            kind == "fn" && OWNED_FUNCTIONS.contains(&name.unraw().to_string().as_str());
+        if !DECLARATION_KINDS.contains(&kind.as_str()) && !owned_function {
+            return;
+        }
         if kind == "union" && !union_body(following.get(1)) {
             return;
         }
+        let line = keyword.span().start().line;
+        if kind == "struct" {
+            let head: TokenStream = following
+                .iter()
+                .take_while(|token| !matches!(token, TokenTree::Group(_)))
+                .cloned()
+                .collect();
+            self.struct_heads
+                .push((name.unraw().to_string(), line, head));
+        }
         self.declarations
-            .push((name.unraw().to_string(), kind, keyword.span().start().line));
+            .push((name.unraw().to_string(), kind, line));
     }
 
     /// Record supported interface-generation macro inputs.
@@ -249,6 +266,7 @@ fn check_declarations(
     declarations: &mut BTreeSet<String>,
 ) -> Result<(), String> {
     for (name, kind, line) in &records.declarations {
+        foreign_rpc_record(member, source, name, *line)?;
         let Some(owner) = declaration_owner(name, kind) else {
             continue;
         };
@@ -273,7 +291,11 @@ fn check_declarations(
         }
         if matches!(
             owner,
-            "maestro-tools" | "maestro-request" | "maestro-entry" | "maestro-app"
+            "maestro-tools"
+                | "maestro-request"
+                | "maestro-entry"
+                | "maestro-app"
+                | "maestro-listeners"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
@@ -281,6 +303,26 @@ fn check_declarations(
                 source.path.display()
             ));
         }
+    }
+    Ok(())
+}
+
+/// Rejects a protocol record declared outside the application and the protocol crate.
+fn foreign_rpc_record(
+    member: &Member,
+    source: &Source,
+    name: &str,
+    line: usize,
+) -> Result<(), String> {
+    let record = name
+        .strip_prefix("Rpc")
+        .is_some_and(|rest| rest.starts_with(char::is_uppercase));
+    if record && !["maestro-app", "maestro-protocol"].contains(&member.name.as_str()) {
+        return Err(format!(
+            "{}:{line}: {name} declaration belongs to maestro-app or maestro-protocol, not {}",
+            source.path.display(),
+            member.name
+        ));
     }
     Ok(())
 }
@@ -297,6 +339,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     } else if matches!(
         name,
         "ToolInfo"
+            | "ParameterSchema"
+            | "SchemaKind"
             | "SlashCommandInfo"
             | "SlashCommandSource"
             | "MessageRenderOptions"
@@ -309,10 +353,16 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-request"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
         "maestro-entry"
+    } else if name == "Listeners" {
+        "maestro-listeners"
     } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
         "maestro-test-terminal"
     } else if input_presenter_record(name) {
         "maestro-app"
+    } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {
+        "maestro-json"
+    } else if name == "serialize_rpc_response" {
+        "maestro-protocol"
     } else {
         return None;
     };

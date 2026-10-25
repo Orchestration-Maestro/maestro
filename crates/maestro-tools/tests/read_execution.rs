@@ -79,7 +79,7 @@ fn read_declaration_has_exact_schema_and_prompt_text() {
             "limit": {"type": "number", "description": "Maximum number of lines to read"},
         },
     });
-    assert_eq!(tool.definition.parameters, expected);
+    assert_eq!(*tool.definition.parameters, expected);
     let keys: Vec<_> = tool.definition.parameters["properties"]
         .as_object()
         .unwrap()

@@ -4,8 +4,8 @@ use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::example_support::{
-    decoded, invoke_command_on_component, invoke_tool_on_component, release_all, result_value,
-    start,
+    Command, Observation, assert_registered_command, invoke_command_on_component,
+    invoke_tool_on_component, registered_metadata, release_all, result_value, start,
 };
 use super::host::Harness;
 use super::host_family::guest::ToolCapabilities as ComponentCapabilities;
@@ -179,11 +179,7 @@ struct ComponentHost {
 impl ComponentHost {
     /// Instantiates the built example and looks up both registrations.
     fn new() -> Result<Self, String> {
-        let path = super::build::example_component("reload_runtime")?;
-        let (engine, component) =
-            super::build::compile(&path).map_err(|error| error.to_string())?;
-        let harness = super::block_on(Harness::from_compiled(&engine, &component))
-            .map_err(|error| error.to_string())?;
+        let harness = super::host::Harness::example("reload_runtime")?;
         let command = harness
             .callback("command reload-runtime")
             .map_err(|error| error.to_string())?;
@@ -256,21 +252,14 @@ fn reload_runtime_registers_command_and_tool() -> Result<(), String> {
 
 /// Assert the recorded command and tool records against what the host received.
 fn assert_metadata(observed: &super::observed::Observed, expected: &Metadata) {
-    assert_eq!(
-        observed.registrations.commands,
-        [(
-            expected.command.name.clone(),
-            Some(expected.command.description.clone()),
-            expected.command.completions
-        )]
-    );
+    assert_registered_command(observed, &expected.command);
     assert_eq!(observed.tools.len(), 1);
     assert_eq!(tool_metadata(&observed.tools[0]), expected.tool);
 }
 
-/// The registered metadata with its schema decoded from the guest's parameter text.
+/// The registered metadata without the transport's declared-kinds member.
 fn tool_metadata(registered: &str) -> Tool {
-    serde_json::from_value(decoded(registered, "parameters")).expect("the registered tool metadata")
+    serde_json::from_value(registered_metadata(registered)).expect("the registered tool metadata")
 }
 
 /// The registration order the corpus records, in the host's own names.
@@ -439,15 +428,11 @@ fn calls(lines: &[String]) -> Vec<String> {
 
 /// The messages the host admitted, with the content and options each carried.
 fn deliveries(lines: &[String]) -> Vec<(Option<Value>, Option<Value>)> {
-    lines
-        .iter()
-        .filter_map(|line| line.strip_prefix("action sendUserMessage "))
-        .map(|rest| {
-            let arguments: [Value; 2] = serde_json::from_str(rest).expect("delivery arguments");
-            (
-                arguments[0].get("value").cloned(),
-                arguments[1].get("value").cloned(),
-            )
+    super::example_support::observations(lines)
+        .into_iter()
+        .filter_map(|observation| match observation {
+            Observation::Delivery { content, options } => Some((content, options)),
+            Observation::Notify { .. } => None,
         })
         .collect()
 }
@@ -521,18 +506,6 @@ struct Registration {
     operation: Operation,
     /// The name it registered.
     name: String,
-}
-
-/// The registered command's name, description and absent argument completions.
-#[derive(Debug, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-struct Command {
-    /// The command name.
-    name: String,
-    /// The command description.
-    description: String,
-    /// Whether the factory registers argument completions.
-    completions: bool,
 }
 
 /// The registered tool's metadata.

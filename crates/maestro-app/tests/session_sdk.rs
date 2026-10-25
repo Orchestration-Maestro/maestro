@@ -3,8 +3,9 @@
 //! hooks, withheld images and both resource routes, compared with the recorded SDK cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, TestResourceLoader, create_test_extensions_result,
-    create_test_resource_loader, harness, on_task_set, recorded_number,
+    Auth, Harness, HarnessOptions, TestResourceLoader, answer, assistant,
+    create_test_extensions_result, create_test_resource_loader, harness, on_task_set,
+    recorded_number, script_responses, summary_provider, usage,
 };
 use maestro_app::{
     CreateAgentSessionOptions, CreateAgentSessionResult, PromptOptions, ResourceLoaderOptions,
@@ -20,7 +21,7 @@ use maestro_models::{
     StreamOptionsInput,
 };
 use maestro_session::SessionManager;
-use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_settings::SettingsManager;
 use serde_json::{Value, json};
 use std::{
@@ -66,6 +67,7 @@ fn options(h: &Harness, settings: Value) -> CreateAgentSessionOptions {
         settings_manager: Some(Rc::new(RefCell::new(SettingsManager::in_memory(settings)))),
         session_start_event: None,
         theme: maestro_theme::LiveTheme::default(),
+        offline: None,
     }
 }
 
@@ -357,6 +359,210 @@ fn restores_stored_messages_into_agent_state() {
             entry_types(&created),
             expected("thinking_recorded_entry")["entry_types"]
         );
+    });
+}
+
+/// A harness serving `faux-1` whose model reports `window` context tokens.
+async fn windowed_fixture(window: f64) -> Harness {
+    harness(HarnessOptions {
+        models: vec![("faux-1", true)],
+        auth: Auth::Key,
+        context_window: Some(window),
+        ..HarnessOptions::default()
+    })
+    .await
+}
+
+/// A stored history with one answered question whose usage is `usage` and, when asked, a
+/// compaction keeping that answer.
+fn saved_history(cwd: &str, usage: &Value, compaction: bool) -> SessionManager {
+    let mut manager = SessionManager::in_memory(Some(cwd)).unwrap();
+    manager
+        .append_message(json!({"role": "user", "content": "saved question", "timestamp": 0}))
+        .unwrap();
+    let answer = manager
+        .append_message(assistant(
+            "saved answer",
+            0,
+            &json!({"model": "faux-1", "usage": usage}),
+        ))
+        .unwrap();
+    manager.append_model_change("faux", "faux-1").unwrap();
+    if compaction {
+        manager.branch(&answer).unwrap();
+        manager
+            .append_compaction("Saved summary", &answer, 13.0, CompactionOptions::default())
+            .unwrap();
+    }
+    manager
+}
+
+/// Creates the session over `manager` with default preferences.
+async fn open(h: &Harness, manager: SessionManager) -> CreateAgentSessionResult {
+    let mut options = options(h, json!({}));
+    options.session_manager = Some(Rc::new(RefCell::new(manager)));
+    create(options).await
+}
+
+/// The live messages as stored JSON records.
+fn live_records(created: &CreateAgentSessionResult) -> Vec<Value> {
+    let messages = created.session.messages();
+    let messages = messages.read().unwrap();
+    messages
+        .iter()
+        .map(|message| serde_json::to_value(message).unwrap())
+        .collect()
+}
+
+/// The session's context tokens and percentage.
+fn context(created: &CreateAgentSessionResult) -> (Option<f64>, Option<f64>) {
+    let usage = created.session.get_context_usage().unwrap();
+    let usage = usage.expect("a context window");
+    (usage.tokens, usage.percent)
+}
+
+/// A saved history whose compaction is followed by one answer carrying `extra`.
+fn after_compaction(cwd: &str, extra: &Value) -> SessionManager {
+    let mut manager = saved_history(cwd, &usage([7, 3, 2, 1], 1.0, None), true);
+    manager
+        .append_message(json!({"role": "user", "content": "later question", "timestamp": 1000}))
+        .unwrap();
+    manager
+        .append_message(assistant("later answer", 1000, extra))
+        .unwrap();
+    manager
+}
+
+#[test]
+fn saved_history_readers_keep_missing_totals() {
+    on_task_set(|_| async {
+        let h = windowed_fixture(100.0).await;
+        saved_totals(&h).await;
+        answers_after_compaction(&h).await;
+    });
+}
+
+/// Restoring a saved answer without a total keeps the live record absent and reports the
+/// category totals to the context, statistics and stored history readers.
+async fn saved_totals(h: &Harness) {
+    let missing = usage([7, 3, 2, 1], 1.0, None);
+    let created = open(h, saved_history(&h.cwd, &missing, false)).await;
+    let records = live_records(&created);
+    assert_eq!(
+        records[1]["usage"].get("totalTokens"),
+        None,
+        "{}",
+        records[1]
+    );
+    assert_eq!(context(&created), (Some(13.0), Some(13.0)));
+    let stats = created.session.get_session_stats().unwrap();
+    assert_eq!(
+        (
+            stats.user_messages,
+            stats.assistant_messages,
+            stats.total_messages
+        ),
+        (1, 1, 2)
+    );
+    let tokens = &stats.tokens;
+    assert_eq!(
+        (
+            tokens.input,
+            tokens.output,
+            tokens.cache_read,
+            tokens.cache_write,
+            tokens.total,
+            stats.cost
+        ),
+        (7.0, 3.0, 2.0, 1.0, 13.0, 1.0)
+    );
+
+    let supplied = open(
+        h,
+        saved_history(&h.cwd, &usage([7, 3, 2, 1], 1.0, Some(97)), false),
+    )
+    .await;
+    assert_eq!(context(&supplied), (Some(97.0), Some(97.0)));
+    assert_eq!(
+        supplied
+            .session
+            .get_session_stats()
+            .unwrap()
+            .tokens
+            .total
+            .to_bits(),
+        13.0_f64.to_bits()
+    );
+
+    let compacted = open(h, saved_history(&h.cwd, &missing, true)).await;
+    assert_eq!(context(&compacted), (None, None));
+}
+
+/// A stored compaction hides the usage of the answer it kept until a later answer reports
+/// its own; a zero, aborted or failed answer leaves it unknown.
+async fn answers_after_compaction(h: &Harness) {
+    let answered = after_compaction(
+        &h.cwd,
+        &json!({"stopReason": "stop", "usage": usage([13, 0, 0, 0], 1.0, None)}),
+    );
+    assert_eq!(context(&open(h, answered).await), (Some(13.0), Some(13.0)));
+    for (stop, usage, error) in [
+        ("stop", usage([0, 0, 0, 0], 0.0, None), None),
+        ("aborted", usage([0, 0, 0, 0], 0.0, None), None),
+        ("error", usage([0, 0, 0, 0], 0.0, None), Some("failed")),
+    ] {
+        let mut extra = json!({"stopReason": stop, "usage": usage});
+        if let Some(error) = error {
+            extra["errorMessage"] = json!(error);
+        }
+        let created = open(h, after_compaction(&h.cwd, &extra)).await;
+        assert_eq!(context(&created), (None, None), "{stop}");
+    }
+}
+
+#[test]
+fn saved_large_history_compacts_with_recorded_tail() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            models: vec![("faux-1", true)],
+            auth: Auth::Key,
+            context_window: Some(200_000.0),
+            ..HarnessOptions::default()
+        })
+        .await;
+        let fixture = format!(
+            "{}/../maestro-session/tests/fixtures/session_history_large.jsonl",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let path = h.scratch.path().join("saved.jsonl");
+        std::fs::copy(&fixture, &path).unwrap();
+        let manager = SessionManager::open(path.to_str().unwrap(), None, None).unwrap();
+        let extensions =
+            create_test_extensions_result(vec![(None, summary_provider("compacted"))], &h.cwd)
+                .await;
+        let mut options = options(
+            &h,
+            json!({"compaction": {"reserveTokens": 16384, "keepRecentTokens": 20000}}),
+        );
+        options.resources =
+            SessionResources::Loader(Rc::new(create_test_resource_loader(Some(extensions))));
+        options.session_manager = Some(Rc::new(RefCell::new(manager)));
+        let created = create(options).await;
+        let before = live_records(&created);
+        assert_eq!(before.len(), 914);
+        let omitted = before
+            .iter()
+            .filter(|record| {
+                record["role"] == "assistant" && record["usage"].get("totalTokens").is_none()
+            })
+            .count();
+        assert_eq!(omitted, 453);
+        let _answered = script_responses(&h, vec![answer("prefix summary", None, None)]);
+        let result = created.session.compact(None).await.unwrap();
+        assert_eq!(result.tokens_before.to_bits(), 177_657.0_f64.to_bits());
+        let after = live_records(&created);
+        assert_eq!(after.len(), 182);
+        assert_eq!(after[1..], before[before.len() - 181..]);
     });
 }
 

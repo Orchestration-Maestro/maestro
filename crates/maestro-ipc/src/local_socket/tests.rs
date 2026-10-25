@@ -21,6 +21,10 @@ fn socket_stale_errors_exclude_would_block() {
     ] {
         assert!(!stale_socket_connect_error(kind), "{kind:?}");
     }
+    for errno in [rustix::io::Errno::NOTSOCK, rustix::io::Errno::PROTOTYPE] {
+        let error = io::Error::from_raw_os_error(errno.raw_os_error());
+        assert!(!stale_socket_connect_error(error.kind()), "{error:?}");
+    }
 }
 
 #[test]

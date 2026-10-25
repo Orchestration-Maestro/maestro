@@ -142,7 +142,7 @@ impl InteractiveMode {
         if self.anthropic_subscription_warning_shown.replace(true) {
             return Ok(());
         }
-        self.show_warning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING)
+        Ok(self.show_warning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING)?)
     }
 
     /// Selects `model` on the current session. On success it refreshes the footer and
@@ -167,7 +167,7 @@ impl InteractiveMode {
             done();
         }
         if let Some(error) = refused {
-            return self.show_error(&error.message);
+            return Ok(self.show_error(&error.message)?);
         }
         let id = model
             .read()
@@ -298,22 +298,23 @@ impl InteractiveMode {
         ))
     }
 
-    /// Resolves `patterns` against the current catalog in order; the resolver's progress
-    /// and warning lines are not shown.
+    /// Resolves `patterns` against the current catalog in order, writing each pattern
+    /// warning to standard error, in yellow when the terminal takes colour.
     ///
     /// # Errors
     /// Returns the locale, availability or pattern failure.
     fn resolve_scope(&self, patterns: &[String]) -> Result<Vec<ScopedModel>, Box<dyn Error>> {
         let compare = model_id_comparator(&|key| std::env::var(key).ok())?;
         let session = self.runtime_host.session();
+        let mut stderr = io::stderr();
         Ok(resolve_model_scope(
             patterns,
             session.model_registry(),
             &compare,
             &mut ModelResolverOutput {
                 stdout: &mut io::sink(),
-                stderr: &mut io::sink(),
-                color: false,
+                color: maestro_theme::supports_color(),
+                stderr: &mut stderr,
             },
         )?)
     }
