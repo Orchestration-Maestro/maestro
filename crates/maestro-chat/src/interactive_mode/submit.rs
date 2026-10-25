@@ -93,6 +93,8 @@ impl InteractiveMode {
         if !share && text != "/copy" {
             let result = if text == "/name" || text.starts_with("/name ") {
                 self.handle_name_command(text)
+            } else if text == "/settings" {
+                self.show_settings_selector()
             } else if text == "/session" {
                 self.handle_session_command()
             } else if text == "/debug" {
