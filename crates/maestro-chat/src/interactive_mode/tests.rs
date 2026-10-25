@@ -576,10 +576,9 @@ impl Setup {
         let settings = Rc::clone(result.session.settings_manager());
         prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
-        let services = Rc::clone(&result.services);
         let create = self
             .create
-            .unwrap_or_else(|| create(services, self.replacing));
+            .unwrap_or_else(|| create(Rc::clone(&result.services), self.replacing));
         let host = Rc::new(AgentSessionRuntime::new(result, create));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
