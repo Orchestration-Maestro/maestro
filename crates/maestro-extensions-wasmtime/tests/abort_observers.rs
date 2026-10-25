@@ -8,10 +8,10 @@ use std::{cell::RefCell, rc::Rc, thread::ThreadId};
 use tokio::sync::mpsc;
 
 /// Each observed listener label with the thread it ran on.
-type Observations = Rc<RefCell<Vec<(String, ThreadId)>>>;
+pub(super) type Observations = Rc<RefCell<Vec<(String, ThreadId)>>>;
 
 /// Supplies `signal` as the context signal of every later command.
-fn bind(runner: &ExtensionRunner<Local>, signal: &Cancellation) {
+pub(super) fn bind(runner: &ExtensionRunner<Local>, signal: &Cancellation) {
     let signal = signal.clone();
     runner
         .bind_core(
@@ -26,7 +26,7 @@ fn bind(runner: &ExtensionRunner<Local>, signal: &Cancellation) {
 }
 
 /// Runs one signal request of the bridge command and returns its reported outcome.
-async fn signal_command(runner: &ExtensionRunner<Local>, request: &str) -> String {
+pub(super) async fn signal_command(runner: &ExtensionRunner<Local>, request: &str) -> String {
     let command = runner
         .get_command("bridge-observe")
         .unwrap()
@@ -39,7 +39,7 @@ async fn signal_command(runner: &ExtensionRunner<Local>, request: &str) -> Strin
 }
 
 /// Records every observed listener and announces each one on `seen`.
-fn observe(events: &EventBus<Local>) -> (Observations, mpsc::UnboundedReceiver<()>) {
+pub(super) fn observe(events: &EventBus<Local>) -> (Observations, mpsc::UnboundedReceiver<()>) {
     let observations = Observations::default();
     let (announce, seen) = mpsc::unbounded_channel();
     let record = observations.clone();
@@ -61,7 +61,7 @@ fn observe(events: &EventBus<Local>) -> (Observations, mpsc::UnboundedReceiver<(
 fn send_sync<T: Send + Sync>(_: &T) {}
 
 /// The labels observed so far, each on the calling thread.
-fn labels(observations: &Observations) -> Vec<String> {
+pub(super) fn labels(observations: &Observations) -> Vec<String> {
     let here = std::thread::current().id();
     observations
         .borrow()
@@ -160,7 +160,10 @@ fn dropped_signal_remover_keeps_foreign_abort_observation() {
 }
 
 /// Whether the component registered the flag naming a released listener capture.
-fn released(owner: &maestro_extensions::types::ExtensionHandle<Local>, label: &str) -> bool {
+pub(super) fn released(
+    owner: &maestro_extensions::types::ExtensionHandle<Local>,
+    label: &str,
+) -> bool {
     owner
         .read()
         .unwrap()

@@ -568,6 +568,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]model-registry.get-api-key-and-headers",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
+            "call",
             "event-emit",
             "set-model",
         ]

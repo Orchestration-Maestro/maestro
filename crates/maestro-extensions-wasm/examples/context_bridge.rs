@@ -19,6 +19,9 @@ mod api;
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/exec.rs"]
+mod exec;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
@@ -157,6 +160,9 @@ fn command(
         }
         if args == "healthy-admitted" {
             return retained::healthy(context).await;
+        }
+        if let Some(request) = args.strip_prefix("exec imports:") {
+            return Err(exec::observe(&api, &context, request).await?);
         }
         if let Some(root) = args.strip_prefix("api imports:") {
             return Err(api::observe(&api, &context, root).await?.to_string());

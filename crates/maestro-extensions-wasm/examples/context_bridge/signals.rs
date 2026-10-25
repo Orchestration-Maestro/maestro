@@ -16,7 +16,7 @@ thread_local! {
 }
 
 /// Registers a flag named after its label when the listener's captures are released.
-struct Released(ExtensionAPI, String);
+pub(super) struct Released(pub(super) ExtensionAPI, pub(super) String);
 impl Drop for Released {
     fn drop(&mut self) {
         let options = FlagOptions {

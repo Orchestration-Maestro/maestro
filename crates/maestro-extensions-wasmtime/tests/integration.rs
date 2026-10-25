@@ -8,6 +8,7 @@ mod canonical_commands;
 mod canonical_json;
 mod canonical_schema;
 mod canonical_ui;
+mod exec_io;
 mod execution_bridge;
 mod lifetimes;
 mod listener_prefixes;

@@ -611,6 +611,22 @@ impl Imports for Controlled {
     fn get_thinking_level(&self) -> ExtensionResult<String> {
         self.observed.borrow().actions.record()
     }
+    fn call<'a>(
+        &'a self,
+        operation: &'a str,
+        data: String,
+        _signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(async move {
+            let data: serde_json::Value =
+                serde_json::from_str(&data).map_err(|error| error.to_string())?;
+            super::action_host::action(&mut self.observed.borrow_mut(), operation, &data)?;
+            let hold = self.observed.borrow_mut().take_hold();
+            pause(hold).await;
+            self.observed.borrow().actions.record()
+        })
+    }
+
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
         Box::pin(async move {
             self.observed.borrow_mut().log("model selection started");
@@ -1424,6 +1440,14 @@ impl Imports for Controlled {
         }
         self.observed.borrow_mut().entry(custom_type, data);
         Ok(())
+    }
+
+    fn new_signal(&self) -> ExtensionResult<Signal> {
+        Ok(self.signal(&Flag::default()))
+    }
+
+    fn signal_abort(&self, signal: &Signal) -> ExtensionResult<()> {
+        self.abort(&signal.flag).into_iter().collect()
     }
 
     fn aborted(&self, signal: &Signal) -> bool {

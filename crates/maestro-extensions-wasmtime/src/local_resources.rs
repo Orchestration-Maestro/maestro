@@ -36,8 +36,17 @@ pub(crate) enum Message {
         tokio::sync::oneshot::Sender<Result<bool, String>>,
         Admission,
     ),
+    /// Starts explicit execution through its original facade and signal.
+    Exec(
+        u64,
+        crate::exec::Request,
+        tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
     /// Starts an admitted command operation without blocking request consumption.
     Command(u64, crate::command_reads::Request, Admission),
+    /// Creates one independently owned cancellation on this local owner.
+    NewSignal(std::sync::mpsc::Sender<Result<SignalEndpoint, String>>),
     /// Uses the original retained cancellation, not the current context signal.
     Signal(u64, signals::Request),
     /// Reads the original live history independently of guarded contexts.
@@ -82,6 +91,7 @@ impl Message {
             Self::Completed(..)
                 | Self::Events(_, crate::event_reads::Request::Emit(..))
                 | Self::ApiModel(..)
+                | Self::Exec(..)
                 | Self::Command(..)
                 | Self::Auth(..)
                 | Self::Replaced(..)
@@ -271,6 +281,14 @@ impl Registry {
     /// Retains the UI returned by the guarded read at consumption time.
     pub(crate) fn ui(&self, ui: ExtensionUIContext) -> Result<UiEndpoint, String> {
         self.insert(Capability::Ui(ui)).map(UiEndpoint)
+    }
+
+    /// Resolves an original cancellation without retaining the capability table borrow.
+    fn cancellation(&self, signal: &SignalEndpoint) -> Result<Cancellation, String> {
+        match self.capability(signal.0.id).as_deref() {
+            Some(Capability::Signal(signal)) => Ok(signal.clone()),
+            _ => Err("extension signal resource ended".to_owned()),
+        }
     }
 
     /// Retains the cancellation selected by the context read.

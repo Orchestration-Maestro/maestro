@@ -13,6 +13,8 @@ mod effect_imports;
 mod event_imports;
 mod event_reads;
 mod event_registration;
+mod exec;
+mod exec_imports;
 mod factory;
 pub use factory::artifact_factory;
 mod guest_calls;

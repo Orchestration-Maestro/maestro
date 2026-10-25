@@ -21,14 +21,14 @@ macro_rules! port {
                 fn $method:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;
             )*
         }
-        $(asynchronous { $( $(#[$async_meta:meta])* fn $async_method:ident($($async_arg:ident: $async_ty:ty),*) -> $async_ret:ty; )* })?
+        $(asynchronous { $( $(#[$async_meta:meta])* fn $async_method:ident<$lifetime:lifetime>($($async_arg:ident: $async_ty:ty),*) -> $async_ret:ty; )* })?
         $(infallible {
             $( $(#[$infallible_meta:meta])* fn $infallible:ident() -> $value:ty; )*
         })?
     ) => {
         $(#[$port_meta])*
         pub trait $port {
-            $($( $(#[$async_meta])* fn $async_method(&self $(, $async_arg: $async_ty)*) -> ExtensionFuture<'_, $async_ret>; )*)?
+            $($( $(#[$async_meta])* fn $async_method<$lifetime>(&$lifetime self $(, $async_arg: $async_ty)*) -> ExtensionFuture<$lifetime, $async_ret>; )*)?
             $($( $(#[$infallible_meta])* fn $infallible(&self) -> $value; )*)?
             $(
                 $(#[$meta])*

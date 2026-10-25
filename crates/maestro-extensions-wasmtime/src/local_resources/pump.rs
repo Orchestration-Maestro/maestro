@@ -2,7 +2,7 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::{Endpoint, Owner, Request};
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Model, ReadonlySessionManager, ResolvedRequestAuth};
+use maestro_extensions::{Cancellation, Model, ReadonlySessionManager, ResolvedRequestAuth};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -135,9 +135,15 @@ impl State {
             Message::ApiModel(id, model, reply, admission) => {
                 self.start_api_model(id, *model, reply, admission);
             }
+            Message::Exec(id, request, reply, admission) => {
+                self.start_exec(id, request, reply, admission);
+            }
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
             Message::Auth(id, model, reply, admission) => {
                 self.start_auth(id, *model, reply, admission);
+            }
+            Message::NewSignal(reply) => {
+                let _ = reply.send(self.registry.signal(Cancellation::new()));
             }
             Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => {
@@ -236,6 +242,35 @@ impl State {
             }
         } else {
             request.reject("extension API resource ended");
+        }
+    }
+
+    /// Selects the original facade and cancellation before starting admitted execution.
+    fn start_exec(
+        &self,
+        id: u64,
+        request: crate::exec::Request,
+        reply: tokio::sync::oneshot::Sender<Result<String, String>>,
+        admission: Admission,
+    ) {
+        let capability = self.registry.capability(id);
+        let Some(Capability::Api(api)) = capability.as_deref() else {
+            let _ = reply.send(Err("extension API resource ended".to_owned()));
+            return;
+        };
+        let signal = request
+            .signal
+            .as_ref()
+            .map(|signal| self.registry.cancellation(signal))
+            .transpose();
+        match signal {
+            Ok(signal) => self.admit(
+                crate::exec::start(request.data, api.clone(), signal, reply),
+                admission,
+            ),
+            Err(error) => {
+                let _ = reply.send(Err(error));
+            }
         }
     }
 

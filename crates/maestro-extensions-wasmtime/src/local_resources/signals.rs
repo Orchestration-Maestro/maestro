@@ -11,6 +11,8 @@ type Reply<T> = mpsc::Sender<Result<T, String>>;
 pub(crate) enum Request {
     /// Reads whether the signal was aborted.
     Aborted(Reply<bool>),
+    /// Aborts this original cancellation.
+    Abort(Reply<()>),
     /// Registers a guest listener with the original extension's bus for its callback frame.
     Subscribe(
         Observer,
@@ -28,6 +30,12 @@ impl SignalEndpoint {
     pub(crate) fn aborted(&self) -> Result<bool, String> {
         self.0
             .request(|id, reply| Message::Signal(id, Request::Aborted(reply)))
+    }
+
+    /// Aborts on the original local owner through the same request pump.
+    pub(crate) fn abort(&self) -> Result<(), String> {
+        self.0
+            .request(|id, reply| Message::Signal(id, Request::Abort(reply)))
     }
 
     /// Registers `listener` to run once, through its synchronous export, when aborted.
@@ -53,6 +61,9 @@ impl State {
         match request {
             Request::Aborted(reply) => {
                 let _ = reply.send(signal.map(Cancellation::is_aborted).ok_or_else(ended));
+            }
+            Request::Abort(reply) => {
+                let _ = reply.send(signal.map(Cancellation::abort).ok_or_else(ended));
             }
             Request::Subscribe(listener, api, reply) => {
                 let result = signal

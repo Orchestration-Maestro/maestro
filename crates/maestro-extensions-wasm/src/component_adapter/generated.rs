@@ -47,6 +47,7 @@ impl Imports for Generated {
         set_thinking_level(level: &str) -> ExtensionResult<()> => host::set_thinking_level;
         event_on(channel: &str, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::event_on;
         signal_subscribe(signal: &Self::Signal, listener: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::signal_subscribe;
+        new_signal() -> ExtensionResult<Self::Signal> => host::new_signal;
         start_event_tail(emitter: &Self::Emitter, tail: &Self::Callback) -> ExtensionResult<()> => host::start_event_tail;
         register_message_renderer(custom_type: &str, handler: &host::Callback) -> ExtensionResult<()> => host::register_message_renderer;
         on(event: &str, handler: &host::Callback) -> ExtensionResult<()> => host::on;
@@ -64,6 +65,7 @@ impl Imports for Generated {
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
         tool_update(update: &host::ToolUpdate, partial: &str) -> ExtensionResult<()> => update(partial);
         aborted(signal: &host::AbortSignal) -> bool => aborted();
+        signal_abort(signal: &Self::Signal) -> ExtensionResult<()> => abort();
         writer_reader(resource: &Self::Writer) -> Self::Reader => reader();
         writer_set_session_file(resource: &Self::Writer, path: &str) -> ExtensionResult<()> => set_session_file(path);
         writer_new_session(resource: &Self::Writer, options: Option<&str>) -> ExtensionResult<Option<String>> => new_session(options);
@@ -188,6 +190,15 @@ impl Imports for Generated {
     }
 
     type Writer = host::SessionManager;
+
+    fn call<'a>(
+        &'a self,
+        operation: &'a str,
+        data: String,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(host::call(operation.to_owned(), data, signal))
+    }
 
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
         Box::pin(host::set_model(model))

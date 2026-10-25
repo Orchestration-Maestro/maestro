@@ -165,6 +165,18 @@ impl Endpoint {
         self.0.admission()
     }
 
+    /// Allocates an operation's signal through the original local owner.
+    pub(crate) fn new_signal(&self) -> Result<crate::local_resources::SignalEndpoint, String> {
+        self.0.request(|_, reply| Message::NewSignal(reply))
+    }
+
+    /// Admits explicit execution on the original local runtime.
+    pub(crate) async fn exec(&self, request: crate::exec::Request) -> Result<String, String> {
+        self.0
+            .request_async(|id, reply, admission| Message::Exec(id, request, reply, admission))
+            .await
+    }
+
     /// Admits the selected model operation on the original local runtime.
     pub(crate) async fn set_model(&self, model: maestro_extensions::Model) -> Result<bool, String> {
         self.0

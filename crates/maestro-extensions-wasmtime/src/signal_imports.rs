@@ -11,6 +11,20 @@ use wasmtime::{
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
+    host.func_wrap("new-signal", |mut store: StoreContextMut<'_, T>, (): ()| {
+        let result = match store.data().api().new_signal() {
+            Ok(signal) => Ok(store.data_mut().ctx().table.push(signal)?),
+            Err(error) => Err(error),
+        };
+        Ok((result,))
+    })?;
+    host.func_wrap(
+        "[method]abort-signal.abort",
+        |mut store: StoreContextMut<'_, T>, (signal,): (Resource<SignalEndpoint>,)| {
+            let signal = store.data_mut().ctx().table.get(&signal)?.clone();
+            Ok((signal.abort(),))
+        },
+    )?;
     host.func_wrap(
         "signal-subscribe",
         |mut store: StoreContextMut<'_, T>,

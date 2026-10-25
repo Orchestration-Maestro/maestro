@@ -254,6 +254,10 @@ impl host::HostToolUpdate for State {
 }
 
 impl host::HostAbortSignal for State {
+    fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Result<(), String>> {
+        Ok(self.abort(this.rep()).map_err(|error| error.to_string()))
+    }
+
     fn aborted(&mut self, this: Resource<Flag>) -> wasmtime::Result<bool> {
         Ok(self
             .table
@@ -686,6 +690,10 @@ impl host::Host for State {
             Err(error) => Ok(Err(error)),
         }
     }
+    fn new_signal(&mut self) -> wasmtime::Result<Result<Resource<Flag>, String>> {
+        Ok(Ok(self.push(Flag(Arc::default()))?))
+    }
+
     fn signal_subscribe(
         &mut self,
         signal: Resource<Flag>,
@@ -1252,6 +1260,24 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    async fn call(
+        accessor: &Accessor<State, Self>,
+        operation: String,
+        data: String,
+        _signal: Option<Resource<Flag>>,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let data: serde_json::Value = serde_json::from_str(&data)?;
+        let started = accessor.with(|mut access| {
+            super::action_host::action(&mut access.get().observed, &operation, &data)
+        });
+        if let Err(error) = started {
+            return Ok(Err(error));
+        }
+        let hold = accessor.with(|mut access| access.get().observed.take_hold());
+        pause(hold).await;
+        Ok(accessor.with(|mut access| access.get().observed.actions.record()))
+    }
+
     async fn set_model(
         accessor: &Accessor<State, Self>,
         model: String,
