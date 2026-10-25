@@ -41,7 +41,7 @@ fn ls_definition_keeps_schema_metadata_and_optional_inputs() {
         tool.prompt_snippet.as_deref(),
         expected["promptSnippet"].as_str()
     );
-    assert_eq!(tool.definition.parameters, expected["parameters"]);
+    assert_eq!(*tool.definition.parameters, expected["parameters"]);
     assert!(tool.prompt_guidelines.is_none() && tool.prepare_arguments.is_none());
     assert!(tool.execution_mode.is_none() && tool.render_shell.is_none());
 

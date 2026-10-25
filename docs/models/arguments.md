@@ -54,9 +54,9 @@ Deeper values fail strict parsing and yield `{}` during streaming, rather than a
 truncated container prefix. The bound counts consumed containers, not sibling
 width, quoted delimiters or unconsumed trailing text.
 
-`parsed_arguments(&str) -> JsonObject` delegates to `parse_streaming_json` and
-keeps only an object result; every other root becomes an empty object. It is
-available at the crate root, `arguments` and `arguments::json_parse` paths.
+`parsed_arguments(&str) -> serde_json::Value` delegates to `parse_streaming_json`
+and keeps whatever root the text spells, an object included. It is available at
+the crate root, `arguments` and `arguments::json_parse` paths.
 
 `sanitize_surrogates(&[u16]) -> String` preserves BMP text and valid UTF-16 pairs,
 removing unmatched surrogate units. Ordinary Rust strings need no cleanup.
@@ -72,6 +72,18 @@ assert_eq!(completed, json!({"label":"ready\n"}));
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
+## Replay defaults
+
+A provider that replays an earlier call applies its own default to the argument root.
+A nullish default replaces only null with an empty object. A truthy default replaces
+every falsy root, so null, `false`, zero and the empty string all become one. A
+supplied empty array or object is truthy and stays as recorded, and every nonempty
+root of any kind is replayed unchanged. The same default decides the argument value of
+a call whose service data carries none or carries null.
+
+The replay default is one shared operation rather than a rule per provider, so the two
+policies differ only in which roots they replace.
+
 ## Checking without conversion
 
 `maestro_models::arguments::validation::validate_schema` checks an original JSON
@@ -85,8 +97,32 @@ received-arguments rendering.
 
 `validate_tool_call` selects the first declaration with the invocation's exact
 name. `validate_tool_arguments` checks one supplied declaration independently of
-its name. Both return an owned argument object and leave the invocation and schema
-unchanged.
+its name. Both return the owned validated argument value, whatever its root kind,
+and leave the invocation and schema unchanged.
+
+A declaration whose schema was built by a schema builder carries the kind of each node
+its author declared, beside the ordinary JSON Schema value. Preparation converts those
+authored nodes first, as the builder declared them, and then runs the same
+primitive conversion over the plain schema. A schema supplied as ordinary JSON carries
+no declared kinds, so only the primitive conversion applies: `null` for a required
+string member stays `""` there, while the same member of an authored schema becomes
+`"null"`. The authored pass keeps in-place container edits but discards a returned
+root replacement. Tuple conversion assigns positions in place; array conversion
+returns a mapped copy while retaining nested container edits. Schema text never
+implies author intent; rebuilding it needs the builder.
+A cyclic node's definitions are visible only while its reference converts, so a
+sibling member sees the enclosing definitions again. A reference names the innermost
+definition visible at the point where conversion reaches it. Union alternatives are
+checked against those same definitions, and a composed alternative keeps the constraints
+and optional members its author declared.
+
+Two authored nodes are compared by what each kind accepts. An alternative set never
+stands in for a sequence or an intersection of the same members, so its alternatives keep
+their own conversions. A member an object leaves optional never satisfies a member the
+compared object requires. Each object reads its required names once when its members are
+projected, so construction work grows with the member count rather than with its square.
+An authored kind is looked up by the identity of the schema node it describes, resolved
+once from the pointer the builder recorded.
 
 Checking converts declared primitive values before evaluating the original schema.
 Objects and arrays are traversed only when their type is explicitly declared.
@@ -112,8 +148,10 @@ without crossing a nested `$id`. Following a reference keeps the caller's live
 anchors, enters the target's enclosing resources that are not yet entered, then
 enters the target. The outermost binding of a name wins, a sibling property
 never sees bindings added for another, and a pointer fragment never takes a
-dynamic binding. Array pointer segments use exact unsigned index names: `0` and
-`1` resolve, while `+0`, `+1` and `01` do not.
+dynamic binding. A pointer fragment resolves at the resource root first; when
+that root does not hold it, the child subtrees answer in declaration order and
+the last one that declares the pointer wins. Array pointer segments use exact
+unsigned index names: `0` and `1` resolve, while `+0`, `+1` and `01` do not.
 Known string formats are asserted, unknown format names remain annotations, and
 string lengths count extended grapheme clusters.
 
@@ -147,7 +185,7 @@ keys precede ordinary insertion-ordered keys. Returned diagnostics have an error
 stack or code.
 
 ```rust
-use maestro_models::{JsonObject, Tool, ToolCall, validate_tool_arguments};
+use maestro_models::{Tool, ToolCall, validate_tool_arguments};
 use serde_json::json;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -158,19 +196,20 @@ let tool = Tool {
         "type": "object",
         "properties": {"count": {"type": "integer", "minimum": 1}},
         "required": ["count"]
-    }),
+    })
+    .into(),
 };
 let mut call = ToolCall {
     id: "call-1".into(),
     name: "count".into(),
-    arguments: JsonObject::from_iter([("count".into(), json!("42"))]),
+    arguments: json!({"count": "42"}),
     thought_signature: None,
 };
 let checked = validate_tool_arguments(&tool, &call)?;
 assert_eq!(checked["count"].as_f64(), Some(42.0));
 assert_eq!(call.arguments["count"], "42");
 
-call.arguments.remove("count");
+call.arguments = json!({});
 let error = validate_tool_arguments(&tool, &call).unwrap_err();
 assert_eq!(error.message,
     "Validation failed for tool \"count\":\n  - count: must have required properties count\n\nReceived arguments:\n{}");

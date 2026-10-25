@@ -103,7 +103,7 @@ fn snapshot(message: &SharedAssistantMessage) -> TestResult<AssistantMessage> {
 /// The arguments of the only tool call of a shared message.
 fn tool_arguments(message: &SharedAssistantMessage) -> TestResult<Value> {
     match snapshot(message)?.content.first() {
-        Some(AssistantContent::ToolCall(call)) => Ok(Value::Object(call.arguments.clone())),
+        Some(AssistantContent::ToolCall(call)) => Ok(call.arguments.clone()),
         other => Err(format!("expected a tool call, found {other:?}").into()),
     }
 }
@@ -175,7 +175,7 @@ async fn arguments_at_end(stream: &AssistantMessageEventStream, feed: &Feed) -> 
     else {
         return Err("expected the end of the tool call".into());
     };
-    Ok(Value::Object(tool_call.arguments))
+    Ok(tool_call.arguments)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -260,11 +260,12 @@ async fn streamed_arguments_follow_the_shared_reader() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn messages_keep_initial_tool_arguments() -> TestResult {
+fn message_arguments_keep_nonnull_roots_and_stream_replacements() -> TestResult {
     crate::runtime::run(async {
-        rows_of("messages_keep_initial_tool_arguments").await?;
+        rows_of("message_arguments_keep_nonnull_roots_and_stream_replacements").await?;
         if maestro_test_process::selection().is_child()
-            && maestro_test_process::selection().runs_group("messages_keep_initial_tool_arguments")
+            && maestro_test_process::selection()
+                .runs_group("message_arguments_keep_nonnull_roots_and_stream_replacements")
         {
             streamed_arguments_follow_the_shared_reader().await?;
         }
@@ -472,7 +473,10 @@ async fn counts_are_doubles() -> TestResult {
         usage.cache_read.to_bits(),
         9_007_199_254_740_992.0_f64.to_bits()
     );
-    assert_eq!(usage.total_tokens.to_bits(), f64::INFINITY.to_bits());
+    assert_eq!(
+        usage.total_tokens,
+        maestro_request::presence::Presence::Present(f64::INFINITY)
+    );
     assert_eq!(usage.cost.input.to_bits(), f64::INFINITY.to_bits());
     assert_eq!(usage.cost.total.to_bits(), f64::INFINITY.to_bits());
     Ok(())

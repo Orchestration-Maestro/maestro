@@ -1,7 +1,7 @@
 //! Extension shortcut selection, dispatch and ownership through the editor's first
 //! interceptor.
 
-use super::{Setup, World, complete, isolated};
+use super::{Setup, World, isolated};
 use maestro_app::{
     Extension, ExtensionFactory, ExtensionShortcut, Local, ReadonlySessionManager, strip_ansi,
 };
@@ -27,8 +27,8 @@ fn idle() -> ExtensionFactory<Local> {
 }
 
 /// Starts `world` and settles the frame it draws while starting.
-fn started(world: World) -> World {
-    complete(world.mode.init()).unwrap();
+async fn started(world: World) -> World {
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
 }
@@ -38,7 +38,7 @@ fn started(world: World) -> World {
 fn built(directory: &Path, further: Vec<(String, ExtensionFactory<Local>)>) -> World {
     Setup {
         extension: Some(idle()),
-        further_extensions: further,
+        further,
         ..Setup::default()
     }
     .build(directory)
@@ -129,9 +129,9 @@ fn notices(world: &World) -> Vec<String> {
 fn extension_shortcut_selection_reuses_reserved_and_ordered_conflict_diagnostics() {
     isolated(
         "extension_shortcut_selection_reuses_reserved_and_ordered_conflict_diagnostics",
-        |directory| {
+        async |directory| {
             // An empty registration set installs no interceptor at all.
-            let empty = started(built(directory, Vec::new()));
+            let empty = started(built(directory, Vec::new())).await;
             assert!(empty.mode.editor.on_extension_shortcut().is_none());
             assert!(diagnostics(&empty).is_empty());
             empty.mode.editor.handle_input("\x11");
@@ -145,7 +145,7 @@ fn extension_shortcut_selection_reuses_reserved_and_ordered_conflict_diagnostics
             register(&owners[0], shortcut("ctrl+r", &runs, json!("first"), None));
             register(&owners[0], shortcut("CTRL+Q", &runs, json!("first"), None));
             register(&owners[1], shortcut("ctrl+q", &runs, json!("second"), None));
-            let world = started(world);
+            let world = started(world).await;
             assert_eq!(
                 diagnostics(&world),
                 [
@@ -172,7 +172,7 @@ fn extension_shortcut_selection_reuses_reserved_and_ordered_conflict_diagnostics
 fn extension_shortcuts_never_replace_reserved_keys() {
     isolated(
         "extension_shortcuts_never_replace_reserved_keys",
-        |directory| {
+        async |directory| {
             // A configured reserved action claims the key, whatever order the two actions
             // are configured in, so the extension is skipped either way.
             for config in [
@@ -185,7 +185,7 @@ fn extension_shortcuts_never_replace_reserved_keys() {
                 let world = built(directory, Vec::new());
                 let owners = owners(&world);
                 register(&owners[0], shortcut("ctrl+q", &runs, json!("ran"), None));
-                let world = started(world);
+                let world = started(world).await;
                 assert_eq!(
                     diagnostics(&world),
                     [
@@ -209,7 +209,7 @@ fn extension_shortcuts_never_replace_reserved_keys() {
             let world = built(directory, Vec::new());
             let owners = owners(&world);
             register(&owners[0], shortcut("ctrl+q", &runs, json!("ran"), None));
-            let world = started(world);
+            let world = started(world).await;
             assert_eq!(
                 diagnostics(&world),
                 [
@@ -228,7 +228,7 @@ fn extension_shortcuts_never_replace_reserved_keys() {
 fn extension_shortcut_input_consumes_only_the_first_match() {
     isolated(
         "extension_shortcut_input_consumes_only_the_first_match",
-        |directory| {
+        async |directory| {
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
@@ -236,7 +236,7 @@ fn extension_shortcut_input_consumes_only_the_first_match() {
                 &owners[0],
                 shortcut("ctrl+q", &runs, json!("matched"), None),
             );
-            let world = started(world);
+            let world = started(world).await;
             let editor = Rc::clone(&world.mode.editor);
             assert!(editor.on_extension_shortcut().is_some());
 
@@ -274,7 +274,7 @@ fn extension_shortcut_input_consumes_only_the_first_match() {
 fn shortcut_context_rejects_stale_handles_and_uses_the_current_runner() {
     isolated(
         "shortcut_context_rejects_stale_handles_and_uses_the_current_runner",
-        |directory| {
+        async |directory| {
             let log: Rc<RefCell<Vec<Value>>> = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
@@ -297,12 +297,12 @@ fn shortcut_context_rejects_stale_handles_and_uses_the_current_runner() {
                 extension_path: String::new(),
             };
             register(&owners[0], handler);
-            let world = started(world);
+            let world = started(world).await;
 
             let session = world.mode.runtime_host.session();
             let installed = session.extension_runner();
             let retained = installed.create_context();
-            complete(session.reload()).unwrap();
+            session.reload().await.unwrap();
             let current = session.extension_runner();
             assert!(
                 !Rc::ptr_eq(&installed, &current),
@@ -339,7 +339,7 @@ fn shortcut_context_rejects_stale_handles_and_uses_the_current_runner() {
 fn extension_shortcut_rejection_keeps_its_error_notice() {
     isolated(
         "extension_shortcut_rejection_keeps_its_error_notice",
-        |directory| {
+        async |directory| {
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
@@ -347,7 +347,7 @@ fn extension_shortcut_rejection_keeps_its_error_notice() {
                 &owners[0],
                 shortcut("ctrl+q", &runs, json!("rejected"), Some("rejected")),
             );
-            let world = started(world);
+            let world = started(world).await;
             press(&world, "\x11");
             assert_eq!(notices(&world), ["Shortcut handler error: rejected"]);
             let editor = Rc::clone(&world.mode.editor);
@@ -361,12 +361,12 @@ fn extension_shortcut_rejection_keeps_its_error_notice() {
 fn empty_shortcut_rebinding_removes_the_previous_input_interceptor() {
     isolated(
         "empty_shortcut_rebinding_removes_the_previous_input_interceptor",
-        |directory| {
+        async |directory| {
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
             register(&owners[0], shortcut("ctrl+w", &runs, json!("ran"), None));
-            let world = started(world);
+            let world = started(world).await;
             let editor = Rc::clone(&world.mode.editor);
 
             editor.set_text("ab cd");
@@ -402,12 +402,12 @@ fn empty_shortcut_rebinding_removes_the_previous_input_interceptor() {
 fn shortcut_callbacks_release_the_mode_after_work_settles() {
     isolated(
         "shortcut_callbacks_release_the_mode_after_work_settles",
-        |directory| {
+        async |directory| {
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
             register(&owners[0], shortcut("ctrl+q", &runs, json!("ran"), None));
-            let world = started(world);
+            let world = started(world).await;
 
             let World {
                 mode,

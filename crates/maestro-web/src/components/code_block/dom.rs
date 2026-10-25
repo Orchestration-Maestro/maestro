@@ -6,9 +6,8 @@ use crate::{
         browser::{append, host_error},
     },
     components::copy_button::dom::{self as copy_button, Localization},
-    dom::{DomView, Property, Reflected},
+    dom::{DomView, Link, Property, Reflected},
 };
-use js_sys::WeakRef;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 use web_sys::{Element, HtmlElement};
@@ -23,7 +22,7 @@ const PROPERTIES: &[Property] = &[
 /// One code listing; its `code` (base64 or literal) and `language` attributes are observed.
 struct CodeElement {
     /// Element owning this state.
-    root: WeakRef,
+    root: Link,
     /// Page operands.
     view: Rc<DomView>,
     /// The built listing, changed in place on later renders.
@@ -90,8 +89,8 @@ impl Listing {
     ) -> Result<(Element, Self), AttachmentHostError> {
         let built = browser::build(&view.document, prepared)?;
         let i18n = Rc::new(RefCell::new(Rc::clone(&view.i18n)));
-        let copy =
-            copy_button::create(&view.document, &i18n).map_err(|error| host_error(&error))?;
+        let copy = copy_button::create(&view.document, &i18n, copy_button::FEEDBACK_MS, None)
+            .map_err(|error| host_error(&error))?;
         for (name, value) in [
             ("text", prepared.text.as_str()),
             ("title", title),
@@ -137,7 +136,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let observed = vec!["code".into(), "language".into()];
     crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
         CodeElement {
-            root: WeakRef::new(&root),
+            root: Link::new(&root),
             view: Rc::clone(&view),
             shown: None,
             _properties: properties,

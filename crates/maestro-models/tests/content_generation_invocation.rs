@@ -468,7 +468,10 @@ fn root_and_registered_entries_invoke_the_content_provider() -> TestResult {
         let captured = Arc::new(Mutex::new(Vec::new()));
         let requests = Arc::clone(&captured);
         let fetch: Fetch = Arc::new(move |request| {
-            requests.lock().unwrap().push(request);
+            requests
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(request);
             Box::pin(async { Ok(empty_response()) })
         });
         for route in 0..6 {
@@ -494,6 +497,62 @@ fn root_and_registered_entries_invoke_the_content_provider() -> TestResult {
         assert_eq!(bundled::registered(), bundled::registered_apis());
         Ok(())
     })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn history_argument_defaults_reach_the_transport() -> TestResult {
+    crate::runtime::run(async {
+        assert_eq!(
+            sent_call_args(serde_json::Value::Null).await?,
+            json!({"name": "inspect", "args": {}})
+        );
+        assert_eq!(
+            sent_call_args(json!([])).await?,
+            json!({"name": "inspect", "args": []})
+        );
+        Ok(())
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The `functionCall` node of one outgoing request carrying a replayed call.
+async fn sent_call_args(authored: serde_json::Value) -> TestResult<serde_json::Value> {
+    let captured = Arc::new(Mutex::new(Vec::new()));
+    let requests = Arc::clone(&captured);
+    let fetch: Fetch = Arc::new(move |request| {
+        requests
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(request);
+        Box::pin(async { Ok(empty_response()) })
+    });
+    let (model, _) = native_input()?;
+    let context = chat::context(&json!({"messages":[
+        {"role":"assistant", "content":[
+            {"type":"toolCall", "id":"call-a", "name":"inspect", "arguments":authored}
+        ]},
+        {"role":"toolResult", "toolCallId":"call-a", "toolName":"inspect",
+         "content":[{"type":"text", "text":"ok"}], "isError":false}
+    ]}))?;
+    let common = StreamOptions {
+        fetch: Some(Arc::clone(&fetch)),
+        api_key: Some("fixture-key".into()),
+        ..Default::default()
+    };
+    let output = native::route_output(0, model, context, common).await?;
+    assert_eq!(
+        output
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .stop_reason,
+        StopReason::Stop
+    );
+    let requests = captured
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let body: serde_json::Value = serde_json::from_slice(&requests[0].body)?;
+    Ok(body["contents"][0]["parts"][0]["functionCall"].clone())
 }
 
 #[cfg(not(target_arch = "wasm32"))]

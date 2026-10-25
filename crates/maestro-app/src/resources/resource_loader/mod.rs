@@ -156,6 +156,8 @@ pub struct ResourceLoaderOptions<E: ExtensionExecution = Threaded> {
     pub system_prompt_override: Option<ResourceOverride<Option<String>>>,
     /// Replaces the appended texts.
     pub append_system_prompt_override: Option<ResourceOverride<Vec<String>>>,
+    /// A caller's offline selection for configured packages, or the ambient flag.
+    pub offline: Option<bool>,
 }
 
 impl<E: ExtensionExecution> ResourceLoaderOptions<E> {
@@ -181,6 +183,7 @@ impl<E: ExtensionExecution> ResourceLoaderOptions<E> {
             agents_files_override: None,
             system_prompt_override: None,
             append_system_prompt_override: None,
+            offline: None,
         }
     }
 }
@@ -316,7 +319,8 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
                 Rc::new(crate::output_guard::is_stdout_taken_over),
                 &resources.local,
             ),
-        );
+        )
+        .with_offline(resources.offline);
         let state = RefCell::new(LoaderState {
             extensions: Rc::new(LoadExtensionsResult {
                 extensions: Vec::new(),

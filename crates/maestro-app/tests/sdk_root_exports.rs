@@ -32,6 +32,7 @@ fn creates_a_session_over_existing_services() {
             model_registry: Arc::clone(&h.registry),
             resource_loader: Rc::new(create_test_resource_loader(None)),
             diagnostics: Vec::new(),
+            offline: None,
         });
         let manager = maestro_app::SessionManager::in_memory(Some("/elsewhere")).unwrap();
         let created = create_agent_session_from_services(CreateAgentSessionFromServicesOptions {

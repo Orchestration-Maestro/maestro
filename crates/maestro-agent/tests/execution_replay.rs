@@ -185,7 +185,7 @@ macro_rules! replay {
                     maestro_models::Tool {
                         name: "echo".into(),
                         description: "Echo".into(),
-                        parameters: json!({"type":"object","properties":{"value":{"type":"number"}},"required":["value"]}),
+                        parameters: json!({"type":"object","properties":{"value":{"type":"number"}},"required":["value"]}).into(),
                     },
                     "Echo".into(),
                     Owner::new(move |id, args: Value, seen_signal, update| {
@@ -364,7 +364,7 @@ macro_rules! replay {
                     maestro_models::Tool {
                         name: "echo".into(),
                         description: "Echo".into(),
-                        parameters: json!({"type":"object","properties":{"value":{"type":"number"}},"required":["value"]}),
+                        parameters: json!({"type":"object","properties":{"value":{"type":"number"}},"required":["value"]}).into(),
                     },
                     "Echo".into(),
                     Owner::new(move |id, args, _, update| {
@@ -911,7 +911,7 @@ macro_rules! replay {
                     maestro_models::Tool {
                         name: "echo".into(),
                         description: "Echo".into(),
-                        parameters: json!({"type":"object","properties":{}}),
+                        parameters: json!({"type":"object","properties":{}}).into(),
                     },
                     "Echo".into(),
                     Owner::new(|_, _: Value, _, _| {

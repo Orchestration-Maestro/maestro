@@ -258,8 +258,12 @@ fn maestro_public_routes_reach_real_adapters() -> TestResult {
                 assert_eq!(seen.hooks, expected_hooks(protocol), "{label}");
                 let usage = seen.result.read().map_err(|_| "poisoned")?.usage.clone();
                 assert_eq!(
-                    (usage.input, usage.output, usage.total_tokens),
-                    (3.0, 2.0, 5.0),
+                    (
+                        usage.input,
+                        usage.output,
+                        usage.total_tokens.present().copied()
+                    ),
+                    (3.0, 2.0, Some(5.0)),
                     "{label}"
                 );
             }
@@ -1354,8 +1358,12 @@ async fn assert_session_response_retry() -> TestResult {
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 2);
     let usage = &result.read().map_err(|_| "poisoned")?.usage;
     assert_eq!(
-        (usage.input, usage.output, usage.total_tokens),
-        (3.0, 2.0, 5.0)
+        (
+            usage.input,
+            usage.output,
+            usage.total_tokens.present().copied()
+        ),
+        (3.0, 2.0, Some(5.0))
     );
     Ok(())
 }

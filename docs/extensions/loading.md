@@ -33,9 +33,13 @@ Each path is resolved before its module loads:
 So a file whose real name holds a no-break space loads under that name, and a
 typed name whose Unicode spaces stand for plain spaces still finds its file.
 
+The module loader receives the selected path normalized lexically to an absolute
+path: `/a/../b` becomes `/b`, and `/a/./b` becomes `/a/b`. This does not
+canonicalize the filesystem path, so directory-symlink spelling is preserved.
+
 A loaded extension keeps the supplied spelling as its path, and the resolved
-path as its resolved path. Its source is `local` and its base directory is the
-parent of the resolved path.
+path as its resolved path, without this final normalization. Its source is
+`local` and its base directory is the parent of the resolved path.
 
 The result records a failed path with its supplied spelling, and loading
 continues with the next path. The error is one of two messages:

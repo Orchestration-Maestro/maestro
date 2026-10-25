@@ -1,5 +1,7 @@
 //! Shared support compiled only for library tests.
 
+#[path = "../tests/support/ftp_server.rs"]
+pub(crate) mod ftp_server;
 #[path = "../tests/support/loopback.rs"]
 pub mod loopback;
 #[path = "../tests/support/runtime.rs"]

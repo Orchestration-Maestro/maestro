@@ -6,10 +6,9 @@ use crate::{
         browser::{append, element, host_error},
     },
     components::code_block::{Prepared as Code, dom::Listing},
-    dom::{DomContent, DomRoot, DomView, MountedContent, Property, Reflected},
+    dom::{DomContent, DomRoot, DomView, Link, MountedContent, Property, Reflected},
     tools::types::ToolUiError,
 };
-use js_sys::WeakRef;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 use web_sys::Element;
@@ -117,7 +116,7 @@ impl MarkdownBlock {
         let observed = ["content", "is-thinking", "unescaped-html"].map(String::from);
         crate::dom::define_element(TAG, observed.into(), PROPERTIES, move |root, properties| {
             MarkdownElement {
-                root: WeakRef::new(&root),
+                root: Link::new(&root),
                 view: Rc::clone(&view),
                 shown: MountedContent::default(),
                 _properties: properties,
@@ -146,7 +145,7 @@ fn refresh(shown: &mut Shown, view: &DomView, title: &str) -> Result<(), ToolUiE
 /// One `markdown-block` element showing its attributes' document.
 struct MarkdownElement {
     /// Element owning this state.
-    root: WeakRef,
+    root: Link,
     /// Page operands.
     view: Rc<DomView>,
     /// The mounted document.

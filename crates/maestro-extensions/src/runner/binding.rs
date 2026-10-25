@@ -108,7 +108,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         drop(
             self.binding
                 .command_actions
-                .replace(actions.unwrap_or_default()),
+                .replace(actions.unwrap_or_else(ExtensionCommandContextActions::unbound)),
         );
     }
 }

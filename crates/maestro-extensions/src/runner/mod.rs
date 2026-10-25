@@ -16,11 +16,12 @@ mod tool_hooks;
 mod transforms;
 mod ui;
 use crate::{
-    ErrorReporter, ExtensionExecution,
+    ErrorReporter, ExtensionCommandContextActions, ExtensionExecution,
     types::{ExtensionCollection, ExtensionRuntime, ExtensionUIContext, read},
 };
 pub(crate) use binding::ContextBinding;
 pub use binding::ExtensionRunnerSession;
+use maestro_listeners::Listeners;
 use maestro_models::Threaded;
 use maestro_resources::ResourceDiagnostic;
 use maestro_theme::LiveTheme;
@@ -35,11 +36,7 @@ pub struct ExtensionRunner<E: ExtensionExecution = Threaded> {
     /// Shared action runtime.
     runtime: E::Shared<ExtensionRuntime<E>>,
     /// Live attributed error observers.
-    error_listeners: Rc<
-        RefCell<
-            maestro_models::records::listeners::Listeners<crate::types::ExtensionErrorListener>,
-        >,
-    >,
+    error_listeners: Rc<RefCell<Listeners<crate::types::ExtensionErrorListener>>>,
     /// Current extension load order.
     extensions: ExtensionCollection<E>,
     /// State shared with this runner's contexts.
@@ -73,7 +70,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 runtime: state,
                 session,
                 actions: RefCell::default(),
-                command_actions: RefCell::default(),
+                command_actions: RefCell::new(ExtensionCommandContextActions::unbound()),
                 ui: RefCell::new(no_ui.clone()),
                 no_ui,
             }),
