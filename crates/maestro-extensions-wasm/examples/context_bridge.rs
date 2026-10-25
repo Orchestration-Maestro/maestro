@@ -22,6 +22,9 @@ mod commands;
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/ordering.rs"]
+mod ordering;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
 #[cfg(target_arch = "wasm32")]
@@ -58,6 +61,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             return Err("guest startup failure".into());
         }
         register_listeners(&api)?;
+        ordering::register(&api)?;
         let renderer_api = api.clone();
         api.register_message_renderer(
             "bridge-view",
