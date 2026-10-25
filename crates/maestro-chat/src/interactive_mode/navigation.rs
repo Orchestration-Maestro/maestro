@@ -1,11 +1,13 @@
-//! Forking from an earlier user message and cloning the current leaf.
+//! Forking from an earlier user message, cloning the current leaf and the double interrupt
+//! that opens the configured navigation.
+mod resume;
 mod tree;
 
 use super::InteractiveMode;
 use crate::components::user_message_selector::{
     UserMessageItem, UserMessageSelectorComponent, UserMessageSelectorOptions,
 };
-use maestro_app::{ForkOptions, ForkPosition, ReadonlySessionManager};
+use maestro_app::{DoubleEscapeAction, ForkOptions, ForkPosition, ReadonlySessionManager};
 use maestro_tui::Component;
 use std::{error::Error, rc::Rc};
 
@@ -101,6 +103,30 @@ impl InteractiveMode {
         self.editor.set_text("");
         self.show_status("Cloned to new session")
             .map_err(Into::into)
+    }
+
+    /// Opens the tree or the fork panel, as configured, when a second interrupt press on
+    /// the empty editor comes strictly within 500 ms of the unpaired first.
+    pub(super) fn handle_double_escape(self: &Rc<Self>) {
+        let session = self.runtime_host.session();
+        let action = session
+            .settings_manager()
+            .borrow()
+            .get_double_escape_action();
+        if action == DoubleEscapeAction::None {
+            return;
+        }
+        let now = self.lifecycle.effects.now_ms();
+        if i128::from(now) - i128::from(self.last_escape_time.get()) < 500 {
+            self.report(if action == DoubleEscapeAction::Tree {
+                self.show_tree_selector(None)
+            } else {
+                self.show_user_message_selector()
+            });
+            self.last_escape_time.set(0);
+        } else {
+            self.last_escape_time.set(now);
+        }
     }
 }
 

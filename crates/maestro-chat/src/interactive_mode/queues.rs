@@ -31,7 +31,8 @@ impl InteractiveMode {
     /// Installs the queue actions on the editor without keeping the mode alive: the
     /// interrupt key restores the queued text and stops a streaming response, cancels a
     /// running shell, or else clears a shell command from the editor and restores the
-    /// thinking border; the follow-up key sends the editor's text as a follow-up, and the
+    /// thinking border, or on the empty editor opens the configured navigation after a
+    /// second press; the follow-up key sends the editor's text as a follow-up, and the
     /// dequeue key restores the queued text.
     pub(super) fn setup_queue_key_handlers(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
@@ -52,6 +53,13 @@ impl InteractiveMode {
                 mode.editor.set_text("");
                 mode.is_bash_mode.set(false);
                 mode.report(mode.update_editor_border_color().map_err(Into::into));
+            } else if mode
+                .editor
+                .get_text()
+                .trim_matches(is_whitespace_scalar)
+                .is_empty()
+            {
+                mode.handle_double_escape();
             }
         })));
         let mode = Rc::downgrade(self);

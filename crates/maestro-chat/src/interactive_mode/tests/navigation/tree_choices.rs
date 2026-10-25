@@ -49,7 +49,7 @@ fn open(world: &World, target: &str) {
 }
 
 /// Chooses the indexed summary option.
-fn choose(world: &World, index: usize) {
+pub(super) fn choose(world: &World, index: usize) {
     let choices = panel::<ExtensionSelectorComponent>(world).unwrap();
     let input = choices.input_handler().unwrap();
     for _ in 0..index {

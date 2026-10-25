@@ -10,8 +10,9 @@ expansion and thinking shortcuts, thinking and model cycling, model selection an
 scopes, the editor border, external editing, image paste, compaction and retry
 progress and native shutdown. Installed custom headers and the other integrations
 are still to come.
-[Interactive commands](commands.md) describes the session command methods and
-[session-tree navigation](commands.md#session-tree).
+[Interactive commands](commands.md) describes the session command methods,
+[session-tree navigation](commands.md#session-tree) and
+[resuming a session](commands.md#resuming-a-session).
 
 ## Construction
 

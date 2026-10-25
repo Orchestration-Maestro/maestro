@@ -128,11 +128,13 @@ impl InteractiveMode {
         true
     }
 
-    /// Opens the fork panel or starts a clone without delivering a prompt.
+    /// Opens the fork, tree or saved-session panel, or starts a clone, without delivering a
+    /// prompt.
     fn runs_navigation_command(self: &Rc<Self>, text: &str) -> bool {
         match text {
             "/fork" => self.report(self.show_user_message_selector()),
             "/tree" => self.report(self.show_tree_selector(None)),
+            "/resume" => self.report(self.show_session_selector()),
             "/clone" => {
                 self.editor.set_text("");
                 let mode = Rc::clone(self);

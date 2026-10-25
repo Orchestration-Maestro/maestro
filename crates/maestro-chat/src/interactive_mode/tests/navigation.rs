@@ -1,6 +1,9 @@
 //! Forking from an earlier user message and cloning the current leaf.
+mod escape;
 mod flush;
 mod replacement;
+mod resume;
+mod resume_options;
 mod tree;
 mod tree_choices;
 

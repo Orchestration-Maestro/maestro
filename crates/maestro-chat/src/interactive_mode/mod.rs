@@ -133,6 +133,8 @@ pub struct InteractiveMode {
     pending_tools: RefCell<replay::PendingTools>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// Wall time of the latest unpaired interrupt press on the empty editor.
+    last_escape_time: Cell<i64>,
     /// The shell row that is still producing output, when one is attached.
     active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
     /// Shell rows shown in the pending area until the next ordinary submission.
@@ -215,6 +217,7 @@ impl InteractiveMode {
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            last_escape_time: Cell::new(0),
             active_shell: RefCell::default(),
             pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
