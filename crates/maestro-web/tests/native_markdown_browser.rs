@@ -8,7 +8,6 @@ use crate::markdown_support::{
     walk::{self, Mounter as _},
 };
 use maestro_web::{
-    I18n,
     components::markdown_block::MarkdownBlock,
     contributions::ContributionHost,
     dom::{DomView, MountedContent},
@@ -250,15 +249,7 @@ async fn supplied_adapters_reach_updates(
     copy: &Element,
 ) {
     let view = Rc::clone(&fixture.view);
-    let german = I18n::new(Rc::new(crate::support::Host {
-        stored: Some("de".to_owned()).into(),
-        ..crate::support::Host::default()
-    }))
-    .unwrap();
-    fixture.view = Rc::new(DomView {
-        i18n: Rc::new(german),
-        ..(*view).clone()
-    });
+    fixture.view = crate::contributions_support::localized_view(&view, "de");
     fixture.show(block);
     assert_eq!(
         copy.get_attribute("title").as_deref(),

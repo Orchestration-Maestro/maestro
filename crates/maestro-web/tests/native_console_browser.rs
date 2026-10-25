@@ -5,7 +5,7 @@ use crate::contributions_support::{
     rgb, selection, text, until, view,
 };
 use maestro_web::{
-    ConsoleBlock, I18n,
+    ConsoleBlock,
     components::console_block::ConsoleVariant,
     dom::{DomView, MountedContent},
 };
@@ -126,15 +126,7 @@ fn copy_button(root: &Element) -> HtmlElement {
 }
 /// A view whose labels come from the German localization.
 fn german(view: &DomView) -> Rc<DomView> {
-    let i18n = I18n::new(Rc::new(crate::support::Host {
-        stored: Some("de".to_owned()).into(),
-        ..crate::support::Host::default()
-    }))
-    .unwrap();
-    Rc::new(DomView {
-        i18n: Rc::new(i18n),
-        ..(*view).clone()
-    })
+    crate::contributions_support::localized_view(view, "de")
 }
 /// Page content placed in one container, removed when dropped.
 struct Placed {

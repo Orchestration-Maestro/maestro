@@ -201,14 +201,5 @@ impl Provider {
 }
 /// A view with the selected language and the ordinary supplied pack.
 pub(super) fn localized(language: &str) -> Rc<DomView> {
-    let view = crate::contributions_support::view();
-    let i18n = maestro_web::I18n::new(Rc::new(crate::support::Host {
-        stored: Some(language.to_owned()).into(),
-        ..crate::support::Host::default()
-    }))
-    .unwrap();
-    Rc::new(DomView {
-        i18n: Rc::new(i18n),
-        ..(*view).clone()
-    })
+    crate::contributions_support::localized_view(&crate::contributions_support::view(), language)
 }
