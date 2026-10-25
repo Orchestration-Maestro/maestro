@@ -82,7 +82,7 @@ fn expected_text(case: &Recorded, root: &std::path::Path) -> String {
 }
 
 /// The recorded attachments as their shared records.
-fn expected_images(case: &Recorded) -> Vec<ImageContent> {
+pub(crate) fn expected_images(case: &Recorded) -> Vec<ImageContent> {
     case.expected["images"]
         .as_array()
         .unwrap()

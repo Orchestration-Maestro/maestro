@@ -87,7 +87,7 @@ pub struct SessionSelectorRequest {
 pub type SessionSelectorFactory =
     Rc<dyn Fn(SessionSelectorRequest, SessionSelectorCallbacks) -> io::Result<PresentedSelector>>;
 
-/// Supplied content, notifications and containing writer of an extension selector.
+/// Supplied content, notifications and frame writer for an extension selector.
 pub struct ExtensionSelectorRequest {
     /// Prompt displayed above the choices.
     pub title: String,
@@ -97,7 +97,7 @@ pub struct ExtensionSelectorRequest {
     pub on_select: Rc<dyn Fn(&str)>,
     /// Cancellation notification.
     pub on_cancel: Rc<dyn Fn()>,
-    /// Writer containing the presented component.
+    /// Supplied frame writer.
     pub tui: maestro_tui::TUI,
 }
 

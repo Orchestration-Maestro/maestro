@@ -117,10 +117,11 @@ fn file_preparation_forwards_resize_order_and_failures() {
     std::fs::write(&text, "one").unwrap();
     std::fs::write(&second, "two").unwrap();
     let image = fixture.join("tiny.png");
+    let wide = fixture.join("wide.png");
     for resize in [false, true] {
         let operations = crate::file_inputs::SuppliedFileOperations::new();
         let mut parsed = startup::args(&["first", "second"]);
-        parsed.file_args = [&text, &image, &second, &image]
+        parsed.file_args = [&text, &image, &second, &wide]
             .map(|path| path.to_str().unwrap().to_owned())
             .to_vec();
         let result =
@@ -132,7 +133,7 @@ fn file_preparation_forwards_resize_order_and_failures() {
         )));
         assert!(message.ends_with("first"));
         assert!(message.find("\none\n").unwrap() < message.find("\ntwo\n").unwrap());
-        assert_eq!(result.initial_images.unwrap().len(), 2);
+        assert_eq!(result.initial_images, Some(image_expectations(resize)));
         assert_eq!(
             parsed
                 .messages
@@ -166,4 +167,19 @@ fn file_preparation_forwards_resize_order_and_failures() {
             .collect::<Vec<_>>(),
         ["first", "second"]
     );
+}
+
+/// Recorded, distinct attachments in the authored order under each resize policy.
+fn image_expectations(resize: bool) -> Vec<maestro_app::ImageContent> {
+    let cases = if resize {
+        ["files-182", "files-190"]
+    } else {
+        ["files-183", "files-191"]
+    };
+    cases
+        .into_iter()
+        .flat_map(|name| {
+            crate::file_inputs::expected_images(&crate::support::case_by_title("files", name))
+        })
+        .collect()
 }

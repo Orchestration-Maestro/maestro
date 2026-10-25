@@ -13,9 +13,9 @@ use std::{cell::RefCell, io, rc::Rc};
 pub struct MissingSessionCwdPresentation {
     /// Creates the writer with the supplied hardware-cursor policy.
     pub create_ui: Rc<dyn Fn(bool) -> io::Result<maestro_tui::TUI>>,
-    /// The published theme used by the component.
+    /// Theme state initialized before presentation.
     pub theme: Rc<ThemeState>,
-    /// Builds the actual selection component.
+    /// Supplied selection-component factory.
     pub presenter: ExtensionSelectorFactory,
 }
 

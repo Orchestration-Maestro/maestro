@@ -138,21 +138,13 @@ impl Dialog {
             .set_show_hardware_cursor(hardware);
         self.settings.borrow_mut().set_clear_on_shrink(clear);
         let mut presentation = self.presentation();
-        let (terminal, runtime) = (self.harness.terminal.clone(), self.harness.runtime.clone());
+        let create_ui = Rc::clone(&presentation.create_ui);
         presentation.create_ui = Rc::new(move |selected| {
             assert_eq!(selected, hardware);
-            Ok(maestro_tui::TUI::new(
-                terminal.handle(),
-                runtime.handle(),
-                maestro_tui::TerminalImage::default(),
-                Some(selected),
-            ))
+            create_ui(selected)
         });
-        let (captured, frames, terminal) = (
-            Rc::clone(&self.captured),
-            Rc::clone(&self.frames),
-            self.harness.terminal.clone(),
-        );
+        let presenter = Rc::clone(&presentation.presenter);
+        let terminal = self.harness.terminal.clone();
         presentation.presenter = Rc::new(move |request| {
             assert_eq!(
                 request.title,
@@ -167,8 +159,7 @@ impl Dialog {
                 terminal.writes().is_empty(),
                 "construction must not call a cursor setter"
             );
-            *captured.borrow_mut() = Some(request);
-            Ok(view(&frames))
+            presenter(request)
         });
         presentation
     }

@@ -268,6 +268,10 @@ fn api_key_requires_a_selected_cli_or_scoped_model() {
                     false,
                 ),
             ] {
+                fixture
+                    .services
+                    .auth_storage
+                    .remove_runtime_api_key("startup");
                 let (created, _) = fixture.create(&tokens).await;
                 assert_eq!(created.diagnostics.iter().any(|d| d.message == "--api-key requires a model to be specified via --model, --provider/--model, or --models"),diagnostic);
                 if tokens.contains(&"--model") || tokens.contains(&"--models") {

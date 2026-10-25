@@ -125,6 +125,8 @@ run from a source checkout reads the shipped themes from
 executable reads them from the `theme` folder in the package directory. See
 [application configuration](configuration.md#installation-paths).
 
+## Startup session construction
+
 The command-line `startup::main::runtime::create_runtime` constructs a selected
 session over already-created services. It collects service, settings and
 extension diagnostics before applying model, thinking and tool selections. An

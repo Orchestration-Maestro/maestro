@@ -461,6 +461,7 @@ fn missing_cwd_continue_cancel_and_repeat_settle_once() {
 fn missing_cwd_focus_cursor_cleanup_follow_real_writer() {
     use crate::support::missing_cwd::{Dialog, isolated};
     use maestro_cli::startup::main::presentation::prompt_for_missing_session_cwd;
+    use maestro_tui::Component;
     use std::{
         rc::Rc,
         task::{Context, Poll, Waker},
@@ -479,6 +480,12 @@ fn missing_cwd_focus_cursor_cleanup_follow_real_writer() {
         let mut cx = Context::from_waker(Waker::noop());
         assert!(operation.as_mut().poll(&mut cx).is_pending());
         dialog.harness.frames();
+        let presented_ui = dialog.captured.borrow().as_ref().unwrap().tui.clone();
+        assert_eq!(
+            presented_ui.render(80).len(),
+            1,
+            "the supplied writer contains the presented component"
+        );
         assert_eq!(
             dialog.frames.borrow().first().map(String::as_str),
             Some("render:true")

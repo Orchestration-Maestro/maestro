@@ -15,13 +15,13 @@ use std::{borrow::Cow, cell::RefCell, rc::Rc};
 
 /// The retained owners one startup session is created over.
 pub struct RuntimeCreation {
-    /// Directory-bound services already reloaded by the application.
+    /// Services to use without reloading.
     pub services: Rc<AgentSessionServices<Local>>,
     /// The chosen history owner.
     pub session_manager: Rc<RefCell<SessionManager>>,
     /// The event used when this session starts.
     pub session_start_event: Option<SessionStartEvent>,
-    /// The published theme exposed to extensions.
+    /// The theme view exposed to extensions.
     pub theme: LiveTheme,
     /// The locale comparator prepared for this startup.
     pub model_id_collator: Rc<Collator>,
