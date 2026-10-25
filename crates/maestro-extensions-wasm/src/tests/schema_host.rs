@@ -184,7 +184,14 @@ impl host::HostJsonNode for State {
         node: Resource<JsonNode>,
         path: String,
     ) -> wasmtime::Result<Result<Option<String>, String>> {
-        Ok(self.table.get(&node)?.read(&path))
+        self.observed.schema_request_bytes += 12 + path.len();
+        let result = self.table.get(&node)?.read(&path);
+        self.observed.schema_response_bytes += match &result {
+            Ok(Some(value)) => 10 + value.len(),
+            Ok(None) => 2,
+            Err(error) => 9 + error.len(),
+        };
+        Ok(result)
     }
     fn keys(
         &mut self,

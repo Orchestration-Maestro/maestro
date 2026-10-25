@@ -233,3 +233,7 @@ assert_eq!(error.message,
 # Ok(())
 # }
 ```
+
+The agent's local tool records retain schema callbacks through preparation and typed
+execution. Model requests use `Tool::data()` to copy the schema without its executable
+annotations; projecting a request never calls those annotations.

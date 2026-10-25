@@ -438,3 +438,280 @@ fn guest_base_defaults_keep_every_json_kind() {
     }
     release(&mut driver, retained);
 }
+
+/// An invocation owns the driver only while calling the actual generated resource.
+type SchemaDriver = std::rc::Rc<std::cell::RefCell<Option<ComponentDriver>>>;
+/// Return a driver before caller code can reenter the native checker.
+fn with_driver<T>(owner: &SchemaDriver, run: impl FnOnce(&mut ComponentDriver) -> T) -> T {
+    let mut driver = owner.borrow_mut().take().unwrap();
+    let result = run(&mut driver);
+    *owner.borrow_mut() = Some(driver);
+    result
+}
+/// Recorded setup and invocation controls, with no ignored fixture fields.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CheckerCases {
+    /// Nested resource growth observations.
+    growth: Vec<GrowthCase>,
+    /// A later branch reads the earlier edit.
+    mutation: CheckerCase,
+    /// A collection rule resumes after an edit.
+    #[serde(rename = "phaseMutation")]
+    phase_mutation: CheckerCase,
+    /// First, later and minimum-zero contains branches.
+    contains: Vec<CheckerCase>,
+}
+/// One setup size and its complete ordered output.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GrowthCase {
+    /// Number of nested schema nodes.
+    n: usize,
+    /// Authored schema protocol text.
+    schema: String,
+    /// Original invocation protocol text.
+    input: String,
+    /// Complete ordered result protocol text.
+    result: String,
+}
+/// One complete callback result recorded from the source.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CheckerCase {
+    /// Authored schema protocol text.
+    schema: String,
+    /// Original invocation protocol text.
+    input: String,
+    /// Complete returned value.
+    result: Value,
+}
+/// Decode the shared recorder without accepting unused fixture fields.
+fn checker_cases() -> CheckerCases {
+    serde_json::from_str(include_str!("schema_checker_cases.json")).unwrap()
+}
+/// Invoke one generated schema method and decode its actual result.
+fn native_callback<R: serde::de::DeserializeOwned + 'static>(
+    owner: &SchemaDriver,
+    handler: u32,
+    operation: SchemaOperation,
+) -> maestro_models::SchemaCallback<R> {
+    let owner = std::rc::Rc::clone(owner);
+    maestro_models::SchemaCallback::new(move |value| {
+        let answer = with_driver(&owner, |driver| {
+            driver
+                .harness
+                .as_mut()
+                .unwrap()
+                .observed()
+                .schema_request_bytes += 13;
+            let answer = callback(driver, handler, operation, value);
+            if let Ok(value) = &answer {
+                driver
+                    .harness
+                    .as_mut()
+                    .unwrap()
+                    .observed()
+                    .schema_response_bytes += 9 + value.to_string().len();
+            }
+            answer
+        })?;
+        serde_json::from_value(answer)
+            .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))
+    })
+}
+/// Project the retained resource's complete layout, never a replacement checker.
+fn native_node(owner: &SchemaDriver, handler: u32) -> maestro_models::SchemaNode {
+    let shape = with_driver(owner, |driver| shape(driver, handler));
+    maestro_models::SchemaNode {
+        base: shape.base.then(|| maestro_models::Base {
+            convert: native_callback(owner, handler, SchemaOperation::Convert),
+            check: native_callback(owner, handler, SchemaOperation::Check),
+            errors: native_callback(owner, handler, SchemaOperation::Errors),
+        }),
+        refinements: (0..shape.refinements)
+            .map(|index| maestro_models::Refinement {
+                check: native_callback(owner, handler, SchemaOperation::Refine(index)),
+                error: native_callback(owner, handler, SchemaOperation::Message(index)),
+            })
+            .collect(),
+    }
+}
+/// Register, enumerate and re-register a real guest declaration, then release the originals.
+fn checker_driver(schema: &Value, kinds: &Value) -> SchemaDriver {
+    let mut driver = start();
+    register(
+        &mut driver,
+        &json!({"metadata":{"name":"original","label":"Original","description":"","parameters":schema,"schemaKinds":kinds},"schemaCode":true,"prepare":false,"result":{"content":[]}}),
+    );
+    let handles = driver
+        .harness
+        .as_ref()
+        .unwrap()
+        .store
+        .data()
+        .observed
+        .schemas
+        .clone();
+    let listed =
+        crate::tests::author::nested_schema_fixture::value(driver.tools().last().unwrap()).unwrap();
+    listing(&mut driver, vec![listed]);
+    register(
+        &mut driver,
+        &json!({"metadata":{"name":"relayed","label":"Relayed","description":"","parameters":{}},"relay":true,"prepare":false,"result":{"content":[]}}),
+    );
+    for (_, _, handle) in handles {
+        release(&mut driver, handle);
+    }
+    assert!(block_on(driver.release("tool original")));
+    std::rc::Rc::new(std::cell::RefCell::new(Some(driver)))
+}
+/// Consume only the enumerated and re-registered declaration in the one native validator.
+fn checker_validate(owner: &SchemaDriver, args: &Value) -> Value {
+    let (metadata, handles) = with_driver(owner, |driver| {
+        (
+            crate::tests::author::nested_schema_fixture::value(driver.tools().last().unwrap())
+                .unwrap(),
+            driver
+                .harness
+                .as_ref()
+                .unwrap()
+                .store
+                .data()
+                .observed
+                .schemas
+                .clone(),
+        )
+    });
+    let code: maestro_models::SchemaCode = handles
+        .into_iter()
+        .filter(|(tool, _, _)| tool == "relayed")
+        .map(|(_, pointer, handler)| (pointer, native_node(owner, handler)))
+        .collect();
+    let kinds: std::collections::HashMap<String, maestro_models::SchemaKind> =
+        serde_json::from_value(metadata["schemaKinds"].clone()).unwrap();
+    let tool = maestro_models::Tool {
+        name: "relayed".into(),
+        description: String::new(),
+        parameters: maestro_models::ParameterSchema::<()>::authored(
+            metadata["parameters"].clone(),
+            kinds,
+        )
+        .with_code(code),
+    };
+    maestro_models::validate_tool_arguments(
+        &tool,
+        &maestro_models::ToolCall {
+            id: "qualified".into(),
+            name: "relayed".into(),
+            arguments: args.clone(),
+            thought_signature: None,
+        },
+    )
+    .unwrap()
+}
+/// Execution must consume exactly the native checker's value, not the original arguments.
+fn checker_execute(owner: &SchemaDriver, value: &Value) {
+    with_driver(owner, |driver| {
+        let before = driver.transcript().len();
+        block_on(driver.tool(crate::tests::scenario::ToolRun {
+            name: "relayed",
+            id: "qualified",
+            params: &value.to_string(),
+            signal: None,
+            update: false,
+            held: false,
+        }))
+        .unwrap();
+        let lines = driver.transcript();
+        let execution = lines[before..]
+            .iter()
+            .find_map(|line| line.strip_prefix("entry execution "))
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<Value>(execution).unwrap()["args"],
+            *value
+        );
+    });
+}
+/// Read source-recorded protocol values with the same admitted nesting as the author.
+fn recorded_value(value: &str) -> Value {
+    crate::tests::author::nested_schema_fixture::value(value).unwrap()
+}
+#[test]
+fn schema_actual_route_accounts_for_setup_payload_and_invocations() {
+    let cases = checker_cases();
+    let mut costs = Vec::new();
+    for row in &cases.growth {
+        let n = row.n;
+        let schema = recorded_value(&row.schema);
+        let args = recorded_value(&row.input);
+        let kinds: Value = (0..n)
+            .map(|index| ("/properties/next".repeat(index), json!("Object")))
+            .collect::<serde_json::Map<_, _>>()
+            .into();
+        let driver = checker_driver(&schema, &kinds);
+        let first = checker_validate(&driver, &args);
+        assert_eq!(first.to_string(), row.result);
+        let second = checker_validate(&driver, &args);
+        assert_eq!(second.to_string(), row.result);
+        assert_eq!(args, recorded_value(&row.input));
+        checker_execute(&driver, &second);
+        with_driver(&driver, |driver| {
+            let registrations = driver.tools();
+            let observed = &driver.harness.as_ref().unwrap().store.data().observed;
+            assert_eq!(registrations.len(), 2);
+            assert_eq!(observed.schema_checks, 2 * n);
+            println!(
+                "SCHEMA-COST nodes={n} registration={} reregistration={} kinds={} requests={} responses={}",
+                registrations[0].len(),
+                registrations[1].len(),
+                kinds.to_string().len(),
+                observed.schema_request_bytes,
+                observed.schema_response_bytes
+            );
+            costs.push((
+                observed.schema_request_bytes,
+                observed.schema_response_bytes,
+            ));
+        });
+    }
+    for pair in costs.windows(2) {
+        assert!(pair[1].0 <= 2 * pair[0].0);
+        assert!(pair[1].1 <= 2 * pair[0].1);
+    }
+}
+/// Compare one complete live-edit result through validation and execution.
+fn checker_case(row: &CheckerCase, kinds: &Value) {
+    let schema = recorded_value(&row.schema);
+    let args = recorded_value(&row.input);
+    let driver = checker_driver(&schema, kinds);
+    let result = checker_validate(&driver, &args);
+    assert_eq!(result, row.result);
+    assert_eq!(args, recorded_value(&row.input));
+    checker_execute(&driver, &result);
+}
+#[test]
+fn schema_actual_route_reads_edits_before_a_later_branch() {
+    checker_case(&checker_cases().mutation, &json!({"/allOf/0":"Object"}));
+}
+#[test]
+fn schema_actual_route_resumes_collection_rules_after_a_guest_edit() {
+    checker_case(
+        &checker_cases().phase_mutation,
+        &json!({"/dependentSchemas/trigger":"Object"}),
+    );
+}
+#[test]
+fn schema_actual_route_stops_contains_after_the_first_accepted_member() {
+    checker_case(
+        &checker_cases().contains[0],
+        &json!({"":"Array","/contains":"Object"}),
+    );
+}
+#[test]
+fn schema_actual_route_contains_keeps_later_match_and_disabled_controls() {
+    for row in &checker_cases().contains[1..] {
+        checker_case(row, &json!({"":"Array","/contains":"Object"}));
+    }
+}
