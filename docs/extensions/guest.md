@@ -423,9 +423,10 @@ rejects is an error, as are host and stale-context rejections.
 The host keeps validation, process supervision and termination escalation: a
 program that ignores termination is killed five seconds later. The guest bridges a
 supplied signal to the host for each run and removes its listener when the run
-settles, whatever the outcome, so other listeners on the same signal and later runs
-keep working. Returned shell operations can pass their supplied signal to `exec`
-and still observe an abort after their event handler returned.
+settles, whatever the outcome, or when the run's future is dropped, so other
+listeners on the same signal and later runs keep working. Returned shell operations
+can pass their supplied signal to `exec` and still observe an abort after their event
+handler returned.
 
 ## Compaction admission and notifications
 

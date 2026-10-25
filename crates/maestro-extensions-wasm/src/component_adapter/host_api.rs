@@ -10,6 +10,24 @@ use std::rc::Rc;
 /// The host imports behind the facade.
 pub(super) struct Host<I: Imports>(pub(super) I);
 
+/// An execution's caller-signal listener, removed when the execution settles or is dropped.
+struct Listening(Option<crate::Subscription>);
+
+impl Listening {
+    /// Removes the listener once, returning the host's rejection.
+    fn remove(&mut self) -> ExtensionResult<()> {
+        self.0
+            .take()
+            .map_or(Ok(()), |subscription| subscription.unsubscribe())
+    }
+}
+
+impl Drop for Listening {
+    fn drop(&mut self) {
+        let _ = self.remove();
+    }
+}
+
 impl<I: Imports> ExtensionHost for Host<I> {
     fn exec<'a>(
         &'a self,
@@ -25,14 +43,16 @@ impl<I: Imports> ExtensionHost for Host<I> {
                 .map(|_| self.0.new_signal())
                 .transpose()?
                 .map(Rc::new);
-            let subscription = caller
-                .as_ref()
-                .zip(native.as_ref())
-                .map(|(caller, native)| {
-                    let (imports, native) = (self.0.clone(), Rc::clone(native));
-                    caller.subscribe(Rc::new(move |_| imports.signal_abort(&native)))
-                })
-                .transpose()?;
+            let mut listening = Listening(
+                caller
+                    .as_ref()
+                    .zip(native.as_ref())
+                    .map(|(caller, native)| {
+                        let (imports, native) = (self.0.clone(), Rc::clone(native));
+                        caller.subscribe(Rc::new(move |_| imports.signal_abort(&native)))
+                    })
+                    .transpose()?,
+            );
             let aborted = caller.as_ref().is_some_and(crate::AbortSignal::aborted);
             let notified = native
                 .as_deref()
@@ -43,10 +63,7 @@ impl<I: Imports> ExtensionHost for Host<I> {
                 Ok(_) => self.0.call("exec", data, native.as_deref()).await,
                 Err(error) => Err(error),
             };
-            let removed = subscription
-                .as_ref()
-                .map(crate::Subscription::unsubscribe)
-                .transpose();
+            let removed = listening.remove();
             result.and_then(|data| {
                 removed?;
                 super::session::decode(&data)

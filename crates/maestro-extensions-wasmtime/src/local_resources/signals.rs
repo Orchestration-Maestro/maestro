@@ -1,8 +1,10 @@
 //! The original cancellation's reads and abort observers on the local owner.
 use super::{Capability, Lease, Message, effects::SubscriptionEndpoint, pump::State};
 use crate::guest_calls::{Observer, SynchronousKind};
+use futures_util::future::{Either, select};
 use maestro_extensions::Cancellation;
-use std::{rc::Rc, sync::Arc, sync::mpsc};
+use std::{convert::Infallible, rc::Rc, sync::Arc, sync::mpsc};
+use tokio::sync::oneshot;
 
 /// Catchable results returned to the waiting Store thread.
 type Reply<T> = mpsc::Sender<Result<T, String>>;
@@ -79,7 +81,8 @@ impl State {
     /// The observer keeps the listener without keeping the Store, this pump or the bus alive,
     /// so a signal that outlives the extension retains none of them. An abort on another thread wakes
     /// the retained waiter, which aborts the signal again here so the observer runs on this
-    /// owner. A failed guest listener is not reported yet; abort still returns and later
+    /// owner; the waiter ends when the observer is released, by removal or after it ran.
+    /// A failed guest listener is not reported yet; abort still returns and later
     /// observers still run.
     fn subscribe(
         &self,
@@ -89,7 +92,9 @@ impl State {
     ) -> Result<SubscriptionEndpoint, String> {
         self.registry.events(api)?;
         let (pump, api) = (self.registry.pump.clone(), api.0.id);
+        let (registered, released) = oneshot::channel::<Infallible>();
         let remove: Rc<dyn Fn()> = Rc::from(signal.subscribe(Rc::new(move || {
+            let _ = &registered;
             if let Some(state) = pump.upgrade() {
                 let _ = state.notify_abort(&listener, api);
             }
@@ -102,7 +107,7 @@ impl State {
                 return Err(error);
             }
         };
-        self.stage(waiter(signal));
+        self.stage(waiter(signal, released));
         Ok(SubscriptionEndpoint(lease))
     }
 }
@@ -128,12 +133,14 @@ impl State {
     }
 }
 
-/// Delivers a foreign-thread abort here even after the explicit remover was dropped.
-fn waiter(signal: &Cancellation) -> super::Work {
+/// Delivers a foreign-thread abort here while the observer stays registered, even after its
+/// explicit remover was dropped; `released` ends it once the observer is gone.
+fn waiter(signal: &Cancellation, released: oneshot::Receiver<Infallible>) -> super::Work {
     let aborted = signal.cancelled();
     let signal = signal.clone();
     Box::pin(async move {
-        aborted.await;
-        signal.abort();
+        if let Either::Left(_) = select(Box::pin(aborted), released).await {
+            signal.abort();
+        }
     })
 }

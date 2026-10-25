@@ -303,6 +303,35 @@ fn exec_caller_signal_cancels_pending_child() {
     });
 }
 
+#[test]
+fn finished_executions_release_their_context_signals() {
+    run(async {
+        let runner = loaded().await;
+        let mut releases = Vec::new();
+        for _ in 0..3 {
+            let signal = Cancellation::new();
+            releases.push(super::abort_observers::signal_release(&signal));
+            super::abort_observers::bind(&runner, &signal);
+            let result = execute(
+                &runner,
+                json!({"command":"python3", "args":["-c", ""], "options":{"cwd":""}, "signal":"relay"}),
+            )
+            .await;
+            assert_eq!(
+                result,
+                json!({"stdout":"", "stderr":"", "code":0, "killed":false, "before":false, "notified":0, "after":false})
+            );
+        }
+        super::abort_observers::bind(&runner, &Cancellation::new());
+        super::abort_observers::signal_command(&runner, "barrier").await;
+        assert_eq!(
+            super::abort_observers::retained(&mut releases),
+            0,
+            "finished executions kept their context signals"
+        );
+    });
+}
+
 /// Runs [`PENDING`] with `options`, releasing the child if it reports READY.
 async fn released_with(runner: &ExtensionRunner<Local>, options: Value) -> String {
     pending(runner, json!({"options":options}), release).await

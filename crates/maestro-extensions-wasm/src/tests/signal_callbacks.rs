@@ -4,14 +4,16 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use super::bus_callbacks::Reenter;
+use super::bus_callbacks::{Reenter, captured_api};
 use super::bus_host::Emitter;
 use super::controlled::{Controlled, Flag};
+use super::observed::gate;
 use crate::component_adapter::{Exports, events, signal};
-use crate::{AbortListener, AbortSignal, ExtensionResult};
+use crate::{AbortListener, AbortSignal, ExecOptions, ExtensionResult};
 use serde_json::Value;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::task::{Context, Waker};
 
 /// A host signal reading `flag`.
 fn host_signal(host: &Controlled, flag: &Flag) -> AbortSignal {
@@ -96,6 +98,28 @@ fn signal_removal_prevents_later_notification() -> ExtensionResult<()> {
 
     assert_eq!(host.abort(&flag), [Ok(())]);
     assert_eq!((removed.get(), kept.get()), (0, 1));
+    Ok(())
+}
+
+#[test]
+fn dropped_execution_removes_its_signal_listener() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let api = captured_api(&host)?;
+    let (hold, _started, _open) = gate();
+    host.observe().hold_next_idle(hold);
+    let options = ExecOptions {
+        signal: Some(host_signal(&host, &Flag::default())),
+        ..ExecOptions::default()
+    };
+    let mut execution = api.exec("held", &[], Some(options));
+    let mut context = Context::from_waker(Waker::noop());
+    assert!(execution.as_mut().poll(&mut context).is_pending());
+    assert_eq!(host.observed().bus.listeners.len(), 1);
+    drop(execution);
+    assert!(
+        host.observed().bus.listeners.is_empty(),
+        "the dropped execution kept its signal listener"
+    );
     Ok(())
 }
 

@@ -57,6 +57,26 @@ pub(super) fn observe(events: &EventBus<Local>) -> (Observations, mpsc::Unbounde
     (observations, seen)
 }
 
+/// Completes once every clone of `signal` is gone: a kept native observer of it is released
+/// with its last clone on this thread.
+pub(super) fn signal_release(signal: &Cancellation) -> tokio::sync::oneshot::Receiver<()> {
+    let (released, release) = tokio::sync::oneshot::channel();
+    let released = super::lifetimes::Released(Some(released));
+    drop(signal.subscribe(Rc::new(move || {
+        let _retained = &released;
+    })));
+    release
+}
+
+/// How many of the observed signals some owner still retains.
+pub(super) fn retained(releases: &mut [tokio::sync::oneshot::Receiver<()>]) -> usize {
+    releases
+        .iter_mut()
+        .map(tokio::sync::oneshot::Receiver::try_recv)
+        .filter(Result::is_err)
+        .count()
+}
+
 /// Requires the signal to stay shareable across threads.
 fn send_sync<T: Send + Sync>(_: &T) {}
 
@@ -156,6 +176,39 @@ fn dropped_signal_remover_keeps_foreign_abort_observation() {
         let mut observed = labels(&observations);
         observed.sort();
         assert_eq!(observed, ["barrier", "foreign", "local"]);
+    });
+}
+
+#[test]
+fn removed_abort_observers_release_their_signals() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let bus = create_event_bus_for::<Local>(
+            Rc::new(|_| panic!("no tails")),
+            Rc::new(|_| panic!("no errors")),
+        );
+        let (_owner, runner, _events) =
+            super::retained_components::loaded_on(bus.for_extension()).await;
+        let mut releases = Vec::new();
+        for label in ["first", "second", "third"] {
+            let signal = Cancellation::new();
+            releases.push(signal_release(&signal));
+            bind(&runner, &signal);
+            signal_command(&runner, &format!("subscribe {label}")).await;
+            assert_eq!(
+                signal_command(&runner, &format!("unsubscribe {label}")).await,
+                format!("unsubscribed {label}")
+            );
+        }
+        bind(&runner, &Cancellation::new());
+        signal_command(&runner, "barrier").await;
+        assert_eq!(
+            retained(&mut releases),
+            0,
+            "removed observers kept their signals"
+        );
     });
 }
 
