@@ -43,6 +43,7 @@ mod documents;
 mod event_transport;
 mod event_values;
 mod example_support;
+mod exec_records;
 mod finite_records;
 #[macro_use]
 mod fixtures;
