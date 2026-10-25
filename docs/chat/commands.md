@@ -10,9 +10,9 @@ waiting input and never enters the editor history. Any other text, including
 
 The mode handles shell input and the slash commands `/export`, `/changelog`,
 `/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
-`/debug`,
-`/hotkeys`, `/share`, `/copy` and `/quit`. Import, the offline viewer and packaged
-asset injection are not delivered yet (see [what is missing](#what-is-missing)).
+`/debug`, `/hotkeys`, `/share`, `/copy`, `/new` and `/quit`. Import, the offline
+viewer and packaged asset injection are not delivered yet (see
+[what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
 methods. Each method reads the runtime's current session when it is called, so it
@@ -28,6 +28,28 @@ After the shared trim, exact `/quit` clears the editor and starts graceful
 shutdown before input, queue or history delivery, without requesting an extra
 frame. It also works while a response streams or the session compacts. `/QUIT`,
 `/quit extra` and `/quit` followed by U+0085 remain ordinary input.
+
+## `/new`
+
+After the shared trim, exact `/new` clears the editor and starts a new session.
+The `app.session.new` editor action does the same but leaves the editor's text
+alone. It has no default key: bind one in `keybindings.json`, and a live
+remapping takes effect at once. `/NEW`, `/new extra` and `/newer` remain
+ordinary input.
+
+The command first stops working progress and empties the status rows. An
+extension can veto the switch through `session_before_switch`. A vetoed request
+keeps the session, its transcript, its queued input and its pending shell rows,
+and shows nothing.
+
+Once the new session starts, the mode clears the transcript, the pending area,
+the input queued during a compaction and the shell rows still waiting to move.
+It then replays the new session and shows `✓ New session started` in the accent
+colour. A shell command from the old session never reappears later.
+
+If the session cannot be created or replayed, the mode shows
+`Error: Failed to create session: <failure>`, stops the terminal and exits with
+status 1.
 
 ## Shell input
 

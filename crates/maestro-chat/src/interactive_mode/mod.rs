@@ -22,6 +22,7 @@ mod actions;
 mod authentication;
 mod autocomplete;
 mod bash;
+mod commands;
 mod compaction_queue;
 mod debug;
 mod dispatch;
@@ -286,8 +287,9 @@ impl InteractiveMode {
         self.update_available_provider_count()
     }
 
-    /// Clears the transcript and the pending-message rows, then replays the current session
-    /// with the initial replay's footer, history and compaction effects.
+    /// Clears the transcript, the pending-message rows and the shell rows waiting there, then
+    /// replays the current session with the initial replay's footer, history and compaction
+    /// effects.
     ///
     /// # Errors
     /// Returns the failure of reading the session context, of a stored record, of a row's
@@ -296,6 +298,8 @@ impl InteractiveMode {
         self.chat_container.clear();
         self.pending_messages_container.clear();
         self.compaction_queued_messages.borrow_mut().clear();
+        self.pending_shells.borrow_mut().clear();
+        drop(self.active_shell.take());
         drop(self.streaming.take());
         self.render_initial_messages()
     }

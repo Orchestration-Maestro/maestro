@@ -4,6 +4,7 @@ mod authentication;
 mod autocomplete;
 mod bash;
 mod bindings;
+mod commands;
 mod debug;
 mod events;
 mod extension_ui;
@@ -1775,14 +1776,28 @@ fn current_session_state_rendering_clears_stale_rows_and_replays_the_session() {
                 .unwrap();
             drop(manager);
             seed_replaced_session(&world);
+            let shell = Rc::new(BashExecutionComponent::new(
+                "old".to_owned(),
+                maestro_tui::TUI::clone(&world.mode.ui),
+                world.themes.theme(),
+                false,
+            ));
+            world
+                .mode
+                .pending_shells
+                .borrow_mut()
+                .push(Rc::clone(&shell));
+            *world.mode.active_shell.borrow_mut() = Some(shell);
             world.mode.render_current_session_state().unwrap();
             assert_eq!(
                 (
                     world.mode.compaction_queued_messages.borrow().is_empty(),
                     world.mode.streaming.borrow().is_none(),
+                    world.mode.pending_shells.borrow().is_empty(),
+                    active(&world).is_none(),
                 ),
-                (true, true),
-                "the replaced session's queued input and active stream are discarded"
+                (true, true, true, true),
+                "the replaced session's queued input, stream and shell rows are discarded"
             );
             let rows = world.mode.chat_container.render(100);
             assert!(!rows.iter().any(|row| row.contains("STALE")), "{rows:?}");

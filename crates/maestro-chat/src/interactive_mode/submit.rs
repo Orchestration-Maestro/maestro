@@ -87,6 +87,12 @@ impl InteractiveMode {
     /// the terminal runtime, and says whether `text` was handled as a command.
     fn runs_command(self: &Rc<Self>, text: &str) -> bool {
         let share = text == "/share";
+        if text == "/new" {
+            self.editor.set_text("");
+            let work = Box::pin(Rc::clone(self).handle_clear_command());
+            self.tool_environment.runtime.spawn_local(work);
+            return true;
+        }
         if !share && text != "/copy" {
             let result = if text == "/name" || text.starts_with("/name ") {
                 self.handle_name_command(text)

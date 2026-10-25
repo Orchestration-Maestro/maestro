@@ -1,0 +1,184 @@
+[
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/NEW"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/NEW"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new"
+    },
+    "expected": {
+      "route": "new"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": " /new "
+    },
+    "expected": {
+      "route": "new"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "﻿/new﻿"
+    },
+    "expected": {
+      "route": "new"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new arg"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/new arg"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new\targ"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/new\targ"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/newer"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/newer"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "ordinary"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "ordinary"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/new"
+    }
+  },
+  {
+    "test": "command_submission_selects_new_and_compact_with_exact_whitespace",
+    "input": {
+      "text": "/new​"
+    },
+    "expected": {
+      "route": "input",
+      "delivered": "/new​"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "success",
+      "loader": false
+    },
+    "expected": {
+      "outcome": "notice",
+      "chat": [
+        "",
+        "                                                                                ",
+        " @accent@✓ New session started\u001b[39m                                                          ",
+        "                                                                                "
+      ]
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "success",
+      "loader": true
+    },
+    "expected": {
+      "outcome": "notice",
+      "chat": [
+        "",
+        "                                                                                ",
+        " @accent@✓ New session started\u001b[39m                                                          ",
+        "                                                                                "
+      ]
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "veto",
+      "loader": false
+    },
+    "expected": {
+      "outcome": "kept"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "veto",
+      "loader": true
+    },
+    "expected": {
+      "outcome": "kept"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "reject",
+      "loader": false
+    },
+    "expected": {
+      "outcome": "fatal",
+      "line": "Error: Failed to create session: controlled replacement failure"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "reject",
+      "loader": true
+    },
+    "expected": {
+      "outcome": "fatal",
+      "line": "Error: Failed to create session: controlled replacement failure"
+    }
+  },
+  {
+    "test": "new_session_stops_progress_honors_veto_and_uses_runtime_failure_route",
+    "input": {
+      "outcome": "replay-failure",
+      "loader": false
+    },
+    "expected": {
+      "outcome": "fatal",
+      "line": "Error: Failed to create session: tool call id is not a string"
+    }
+  }
+]

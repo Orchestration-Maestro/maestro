@@ -2,6 +2,7 @@
 mod lifecycle;
 
 use super::super::bash::component_address;
+use super::commands::until_shown;
 use super::typed::{recalled, submit};
 use super::{
     Setup, ShellOperations, World, active, driving, echoing_shell, holding, isolated, scripted,
@@ -922,6 +923,13 @@ fn recorded_in(session: &Rc<maestro_app::AgentSession>) -> Vec<String> {
         .collect()
 }
 
+/// Yields until `session` runs no shell command.
+async fn until_idle(session: &maestro_app::AgentSession) {
+    while session.is_bash_running() {
+        tokio::task::yield_now().await;
+    }
+}
+
 #[test]
 fn shell_completion_from_replaced_session_is_retired() {
     isolated(
@@ -954,6 +962,29 @@ fn shell_completion_from_replaced_session_is_retired() {
                         ["old output\n"],
                         "the old command recorded into its own session"
                     );
+                    // A new session typed in the editor disposes the running command's session
+                    // and resets: neither its row nor its output survives the release.
+                    submit(
+                        &world.mode,
+                        "!: > second-started; while [ ! -e second-release ]; do :; done; \
+                         printf 'second output\\n'",
+                    );
+                    until_exists(&directory.join("second-started")).await;
+                    let second_session = world.host.session();
+                    submit(&world.mode, "/new");
+                    until_shown(&world, "New session started").await;
+                    std::fs::write(directory.join("second-release"), "").unwrap();
+                    until_idle(&second_session).await;
+                    assert!(active(&world).is_none());
+                    submit(&world.mode, "later");
+                    let rows = transcript(&world).join("\n");
+                    assert!(!rows.contains("output"), "nothing old survives: {rows}");
+                    assert!(recorded_in(&world.host.session()).is_empty());
+                    submit(&world.mode, "!printf 'third output\\n'");
+                    until_command_settles(&world).await;
+                    let rows = transcript(&world).join("\n");
+                    assert!(rows.contains("third output"), "{rows}");
+                    assert_eq!(recorded_in(&world.host.session()), ["third output\n"]);
                 })
                 .await;
                 assert!(errors.is_empty(), "{errors:?}");
