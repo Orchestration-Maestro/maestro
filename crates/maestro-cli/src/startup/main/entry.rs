@@ -514,12 +514,13 @@ fn report_runtime(
         return Ok(true);
     }
     timings.time("createAgentSession", host.now);
-    if app_mode.is_interactive() || runtime.model_fallback_message().is_none() {
+    let fallback = runtime.model_fallback_message();
+    if app_mode.is_interactive() || fallback.is_none() {
         return Ok(false);
     }
     let docs = config::get_docs_path()?;
     let message = maestro_app::format_no_models_available_message(&docs);
-    if runtime.model_fallback_message().as_deref() != Some(message.as_str()) {
+    if fallback.as_deref() != Some(message.as_str()) {
         return Ok(false);
     }
     line(&host.package.stderr, &Theme::red(&message, styles))?;
