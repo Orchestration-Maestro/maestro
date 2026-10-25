@@ -133,11 +133,16 @@ async fn turn(
                 call.before(&completion);
                 let call = call.admitted(&completion);
                 activity.active += 1;
-                accessor.spawn(invocation::Invocation {
+                let invocation = invocation::Invocation {
                     exports: exports.clone(),
                     call,
                     completion,
-                })?;
+                };
+                accessor.spawn(
+                    async move |accessor: &wasmtime::component::Accessor<State>| {
+                        invocation.run(accessor).await
+                    },
+                )?;
             }
         }
         if activity.active == 0 && !activity.releases.is_empty() {

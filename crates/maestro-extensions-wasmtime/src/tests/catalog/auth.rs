@@ -91,6 +91,6 @@ fn check_auth(resolved: maestro_catalog::ResolvedRequestAuth) {
     let maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } = resolved else {
         panic!("expected controlled credential success");
     };
-    assert!(api_key.as_deref().eq(&Some(" caller key ")), "selected key");
+    assert!(api_key.as_deref().eq(&Some("caller key")), "selected key");
     assert!(headers.is_none());
 }

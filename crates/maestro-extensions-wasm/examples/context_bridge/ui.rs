@@ -28,7 +28,7 @@ pub(super) fn observe(context: &ExtensionContext, clear: bool) -> ExtensionResul
         interval_ms: Some(2.5),
     }))?;
     ui.set_hidden_thinking_label((!clear).then_some(" literal hidden "))?;
-    let lines = vec![" literal line ".into(), "".into()];
+    let lines = vec![" literal line ".into(), String::new()];
     ui.set_widget(
         " literal widget ",
         (!clear).then_some(lines.as_slice()),

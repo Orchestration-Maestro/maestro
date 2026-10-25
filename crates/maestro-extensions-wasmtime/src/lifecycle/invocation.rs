@@ -7,7 +7,7 @@ use crate::{
     guest_exports::Exports,
 };
 use std::sync::Arc;
-use wasmtime::component::{Accessor, AccessorTask, ResourceAny};
+use wasmtime::component::{Accessor, ResourceAny};
 
 /// An admitted export call, never a native request poller.
 pub(super) struct Invocation {
@@ -18,8 +18,9 @@ pub(super) struct Invocation {
     /// Marks completion even when an export escapes before settlement.
     pub(super) completion: Completion,
 }
-impl AccessorTask<super::State> for Invocation {
-    async fn run(self, accessor: &Accessor<super::State>) -> wasmtime::Result<()> {
+impl Invocation {
+    /// Runs the admitted call before publishing its completion.
+    pub(super) async fn run(self, accessor: &Accessor<super::State>) -> wasmtime::Result<()> {
         self.exports.invoke(accessor, self.call).await?;
         self.completion.finish();
         Ok(())
