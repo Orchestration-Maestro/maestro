@@ -38,6 +38,7 @@ mod queues;
 mod replay;
 mod resources;
 mod selectors;
+mod settings;
 mod share;
 mod startup;
 mod submit;

@@ -9,7 +9,8 @@ waiting input and never enters the editor history. Any other text, including
 `/logout extra`, is ordinary input.
 
 The mode handles shell input and the slash commands `/export`, `/changelog`,
-`/model`, `/scoped-models`, `/login`, `/logout`, `/name`, `/session`, `/debug`,
+`/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
+`/debug`,
 `/hotkeys`, `/share`, `/copy` and `/quit`. Import, the offline viewer and packaged
 asset injection are not delivered yet (see [what is missing](#what-is-missing)).
 
@@ -318,6 +319,37 @@ and shows `Model selection saved to settings`; the panel stays open. Saving with
 every model enabled, or as many as the panel opened with, removes the setting.
 An empty or other explicit selection is saved as it is. Escape closes the panel,
 keeping the session's edits and leaving the setting as it was.
+
+## Changing settings
+
+`/settings` opens the settings panel in place of the editor over the current
+session and preferences: the panel reads the live session's compaction and queue
+policies, the model's own thinking levels, the registered and discovered theme
+inventory, and the typed preference values. A stored value of the wrong JSON type
+counts as unset and the getter's default applies; the stored settings are never
+rewritten by a read.
+
+Choosing a value applies it at once and saves it through the settings owner:
+session policies go to the session, which saves them, and the rest are written to
+the settings file. Image visibility and width, padding, completion height,
+thinking, the hardware cursor and the shrink policy update the retained rows,
+editor and terminal straight away. Turning skill commands on or off saves the
+choice and then installs a rebuilt completion provider on the editor, so the next
+completion there offers `/skill:` commands or leaves them out. Thinking visibility
+also rebuilds the transcript from the session's messages. Themes publish
+immediately; a preview never saves, a commit saves the requested name, and a
+theme that fails to load falls back to `dark` with:
+
+```text
+Failed to load theme "<name>": <error>
+Fell back to dark theme.
+```
+
+Every theme choice keeps the supplied watch effects, so a selected custom theme
+is watched again after a preview or a commit. Escape closes the panel, restores
+the editor with its focus and requests a frame. Padding and completion height
+reach the default editor only; an installed custom editor does not receive them
+yet.
 
 ## Providers offered for API-key sign-in
 
