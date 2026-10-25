@@ -76,6 +76,19 @@ impl MountedContent {
         parent: &Node,
         view: &DomView,
     ) -> Result<(), ToolUiError> {
+        self.show_before(content, parent, None, view)
+    }
+    /// Like [`Self::show`], but a first root is placed before `before` instead of last.
+    /// # Errors
+    /// Returns the content's failure; a failed replacement keeps the previous root.
+    #[cfg(target_arch = "wasm32")]
+    pub fn show_before(
+        &mut self,
+        content: &dyn DomContent,
+        parent: &Node,
+        before: Option<&Node>,
+        view: &DomView,
+    ) -> Result<(), ToolUiError> {
         let kind = (content as &dyn Any).type_id();
         if let Some((active, key, root)) = &self.active
             && *active == kind
@@ -86,11 +99,19 @@ impl MountedContent {
         let root = content.mount(view)?;
         match &self.active {
             Some((.., old)) => parent.replace_child(&root.node, &old.node),
-            None => parent.append_child(&root.node),
+            None => parent.insert_before(&root.node, before),
         }
         .map_err(|error| ToolUiError::native(&error))?;
         self.active = Some((kind, content.key().map(str::to_owned), root));
         Ok(())
+    }
+    /// Remove the root element from its parent and release its resources.
+    #[cfg(target_arch = "wasm32")]
+    pub fn clear(&mut self) {
+        use wasm_bindgen::JsCast as _;
+        if let Some((.., root)) = self.active.take() {
+            root.node.unchecked_ref::<web_sys::Element>().remove();
+        }
     }
 }
 /// An element property reflected onto one of its attributes.

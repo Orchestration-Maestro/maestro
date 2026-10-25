@@ -102,18 +102,38 @@ fn find(root: &Element, name: &str) -> Result<Option<Element>, ToolUiError> {
     root.query_selector(&format!(":scope > [data-section={name}]"))
         .map_err(|error| ToolUiError::native(&error))
 }
-/// Point a section's listing at `listing`, encoded so its text always shows literally.
+/// Point a section's listing at `listing`.
 fn show_listing(section: &Element, listing: &Listing) -> Result<(), ToolUiError> {
     let code = section
         .query_selector(crate::components::code_block::dom::TAG)
         .map_err(|error| host_error(&error))?
         .ok_or_else(|| ToolUiError::Presentation("Missing listing".into()))?;
-    let encoded = base64::engine::general_purpose::STANDARD.encode(&listing.code);
-    for (name, value) in [("code", encoded.as_str()), ("language", listing.language)] {
-        code.set_attribute(name, value)
-            .map_err(|error| host_error(&error))?;
+    listing.show(&code)
+}
+impl Listing {
+    /// Point a listing element at this text, encoded so it always shows literally.
+    fn show(&self, code: &Element) -> Result<(), ToolUiError> {
+        let encoded = base64::engine::general_purpose::STANDARD.encode(&self.code);
+        for (name, value) in [("code", encoded.as_str()), ("language", self.language)] {
+            code.set_attribute(name, value)
+                .map_err(|error| host_error(&error))?;
+        }
+        Ok(())
     }
-    Ok(())
+}
+/// A standalone literal listing, retained while its text changes.
+impl DomContent for Listing {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
+        let code = view
+            .document
+            .create_element(crate::components::code_block::dom::TAG)
+            .map_err(|error| host_error(&error))?;
+        self.show(&code)?;
+        Ok(DomRoot::new(code))
+    }
+    fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
+        self.show(root.node.unchecked_ref())
+    }
 }
 /// One labelled listing section.
 fn section(

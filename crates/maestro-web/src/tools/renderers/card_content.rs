@@ -1,4 +1,5 @@
 //! Owned card captions and mutually exclusive retained bodies.
+use super::collapsible_card::{CollapsibleCard, Content};
 use crate::components::native_text::{NativeText, TextKind};
 use crate::tools::{
     renderer_registry::{ToolHeaderState, ToolHeaderText, render_header},
@@ -30,7 +31,7 @@ impl Caption {
     }
 }
 /// One mutually exclusive below-header branch.
-pub(super) enum Body {
+pub(in crate::tools) enum Body {
     /// Header only.
     Empty,
     /// Literal command and output delegated to the console owner.
@@ -39,15 +40,15 @@ pub(super) enum Body {
     Error(String),
 }
 /// One owned drawing recipe shared by the three stateless renderer modules.
-pub(super) struct CardContent {
+pub(in crate::tools) struct CardContent {
     /// Result status, independent of argument streaming.
-    pub(super) state: ToolHeaderState,
+    pub(in crate::tools) state: ToolHeaderState,
     /// Tool glyph catalog name.
-    pub(super) glyph: &'static str,
+    pub(in crate::tools) glyph: &'static str,
     /// Owned literal or localized caption.
-    pub(super) caption: Caption,
+    pub(in crate::tools) caption: Caption,
     /// Selected below-header branch.
-    pub(super) body: Body,
+    pub(in crate::tools) body: Body,
 }
 /// Per-row owners are separate from immutable recipes.
 #[derive(Default)]
@@ -205,14 +206,19 @@ impl ArtifactCaption {
 }
 
 /// Content construction shared by branch-selecting renderer implementations.
-pub(super) trait CardOutput: Sized {
+pub(in crate::tools) trait CardOutput: Sized {
     /// Retain the selected branch in this representation.
     fn card(card: CardContent) -> Self;
+    /// Retain renderer `R`'s selected disclosure branch in this representation.
+    fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self;
 }
 impl CardOutput for Box<dyn ToolContent> {
     fn card(card: CardContent) -> Self {
         Box::new(card)
     }
+    fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self {
+        Box::new(Content::<R, Self>::from(card))
+    }
 }
 #[cfg(target_arch = "wasm32")]
-mod dom;
+pub(super) mod dom;

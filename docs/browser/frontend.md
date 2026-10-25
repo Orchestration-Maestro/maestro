@@ -116,7 +116,8 @@ page operands once (document, localization, syntax engine, brand pack and mode).
 updates the root in place. Content of another type, or of another key (module
 elements use their tag), mounts a new root in place of the old one and releases
 the old root's owner. A failed mount returns its error and keeps the
-previous root.
+previous root. `show_before` places a first root before a given sibling instead
+of last, and `clear` removes the root and releases its owner.
 
 `ContributionHost::new` defines the built-in `copy-button`, `code-block`,
 `markdown-block`, `thinking-block` and `maestro-slot` elements once per page and

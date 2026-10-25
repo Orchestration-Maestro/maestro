@@ -501,3 +501,370 @@ fn explicit_parent_and_bubbling_toggle_twice(
         "native bubbling alone toggles once"
     );
 }
+
+/// One corrected document-tool record projected onto the fields native cards consume.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DocumentCase {
+    /// Recorded tool family.
+    tool: String,
+    /// Original argument, result and streaming inputs.
+    input: crate::support::tool_input::Input,
+    /// Visible branches, or absence when the reached metadata is malformed.
+    expected: Option<crate::document_card_support::Expected>,
+}
+/// Prepare one recorded document card for page content.
+fn document_card(
+    case: &DocumentCase,
+) -> Result<ToolRenderResult<Box<dyn DomContent>>, ToolUiError> {
+    use maestro_web::tools::{
+        extract_document::ExtractDocumentRenderer, javascript_repl::JavaScriptReplRenderer,
+    };
+    let (params, streaming) = (case.input.params.as_ref(), case.input.is_streaming);
+    let result = case.input.result.as_ref().map(Into::into);
+    match case.tool.as_str() {
+        "repl" => JavaScriptReplRenderer.render(params, result, streaming),
+        "extract" => ExtractDocumentRenderer.render(params, result, streaming),
+        other => panic!("unknown document tool {other}"),
+    }
+}
+/// Every recorded execution and extraction branch keeps captions, literal listings, output,
+/// URLs and returned files.
+#[wasm_bindgen]
+pub fn document_tools_dom_preserve_captions_code_output_and_files(
+    import_module: &js_sys::Function,
+) {
+    let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
+    let cases: Vec<DocumentCase> =
+        serde_json::from_str(include_str!("fixtures/native_document_cards.json")).unwrap();
+    for (tool, count) in [("repl", 60), ("extract", 82)] {
+        assert_eq!(cases.iter().filter(|case| case.tool == tool).count(), count);
+    }
+    for (index, case) in cases.iter().enumerate() {
+        let shown = document_card(case);
+        let Some(expected) = &case.expected else {
+            assert!(
+                matches!(shown, Err(ToolUiError::Presentation(_))),
+                "{index}"
+            );
+            continue;
+        };
+        let shown = shown.unwrap();
+        assert!(!shown.is_custom, "{index}");
+        let root = shown.content.mount(&view).unwrap();
+        body().append_child(&root.node).unwrap();
+        observe_document_card(root.node.unchecked_ref(), expected, index);
+        root.node.unchecked_ref::<web_sys::Element>().remove();
+    }
+}
+/// Compare a mounted document card with its recorded visible fields.
+fn observe_document_card(
+    card: &web_sys::Element,
+    expected: &crate::document_card_support::Expected,
+    index: usize,
+) {
+    use crate::contributions_support::select;
+    let header = card.first_element_child().unwrap();
+    assert_eq!(
+        header.tag_name() == "BUTTON",
+        expected.collapsible,
+        "{index}"
+    );
+    assert_eq!(
+        text(&select(&header, ".maestro-tool-caption")),
+        expected.caption,
+        "{index}"
+    );
+    let count = |selector: &str| card.query_selector_all(selector).unwrap().length() as usize;
+    assert_eq!(count(".maestro-tool-spinner"), expected.spinner, "{index}");
+    for status in ["complete", "error"] {
+        assert_eq!(
+            count(&format!(".maestro-tool-{status}")),
+            usize::from(expected.status == status),
+            "{index}"
+        );
+    }
+    let url = card
+        .query_selector(".maestro-tool-body > .maestro-tool-url")
+        .unwrap();
+    assert_eq!(
+        url.map(|url| text(&url)),
+        expected.url.as_ref().map(|url| format!("URL: {url}")),
+        "{index}"
+    );
+    let listings: Vec<_> = all(card, ".maestro-tool-body > code-block")
+        .iter()
+        .map(|shown| {
+            let language = shown.get_attribute("language").unwrap();
+            (text(&select(shown, "pre code")), language)
+        })
+        .collect();
+    let blocks: Vec<_> = (expected.blocks.iter())
+        .map(|block| (block.code.clone(), block.language.clone()))
+        .collect();
+    assert_eq!(listings, blocks, "{index}");
+    let consoles: Vec<_> = all(card, ".maestro-tool-body > .maestro-console")
+        .iter()
+        .map(|shown| {
+            let error = shown.query_selector(".maestro-console-error").unwrap();
+            (text(&select(shown, "pre")), error.is_some())
+        })
+        .collect();
+    let outputs: Vec<_> = (expected.console.iter())
+        .map(|console| (console.content.clone(), console.variant == "error"))
+        .collect();
+    assert_eq!(consoles, outputs, "{index}");
+    observe_files(card, &expected.attachments, index);
+}
+/// Every element below `root` matching `selector`, in document order.
+fn all(root: &web_sys::Element, selector: &str) -> Vec<web_sys::Element> {
+    let list = root.query_selector_all(selector).unwrap();
+    (0..list.length())
+        .map(|position| list.item(position).unwrap().unchecked_into())
+        .collect()
+}
+/// Tiles sit outside the body, in order and with their names and image previews.
+fn observe_files(
+    card: &web_sys::Element,
+    expected: &[crate::document_card_support::DownloadExpectation],
+    index: usize,
+) {
+    assert!(
+        card.query_selector(".maestro-tool-body .maestro-attachment-tile")
+            .unwrap()
+            .is_none()
+    );
+    let tiles = all(
+        card,
+        ":scope > .maestro-tool-files > .maestro-attachment-tile",
+    );
+    assert_eq!(tiles.len(), expected.len(), "{index}");
+    for (tile, file) in tiles.iter().zip(expected) {
+        let open = crate::contributions_support::select(tile, ".maestro-tile-open");
+        assert_eq!(
+            open.get_attribute("title").unwrap(),
+            file.file_name,
+            "{index}"
+        );
+        let image = open.query_selector("img").unwrap();
+        assert_eq!(image.is_some(), file.preview.is_some(), "{index}");
+        if let (Some(image), Some(preview)) = (image, &file.preview) {
+            assert!(
+                image
+                    .get_attribute("src")
+                    .unwrap()
+                    .ends_with(preview.as_str()),
+                "{index}"
+            );
+        }
+    }
+}
+
+/// A rendered execution card for page content.
+fn execution_card(
+    code: &str,
+    result: Option<&maestro_app::ToolResultMessage<serde_json::Value>>,
+) -> Box<dyn DomContent> {
+    use maestro_web::tools::javascript_repl::JavaScriptReplRenderer;
+    let params = serde_json::json!({"title": "Run", "code": code});
+    let shown: ToolRenderResult<Box<dyn DomContent>> = JavaScriptReplRenderer
+        .render(params.as_object(), result.map(Into::into), true)
+        .unwrap();
+    shown.content
+}
+/// Pending expansion, motion, same-branch updates, branch replacement, independent instances
+/// and released roots each keep the disclosure's children where the template keeps them.
+#[wasm_bindgen]
+pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
+    import_module: &js_sys::Function,
+) {
+    use crate::contributions_support::{container, driver, host, page_module, select};
+    use maestro_web::dom::MountedContent;
+    let view = view();
+    let _elements = host(&view, import_module);
+    let page = page_module(import_module).await;
+    let parent = container();
+    let mut slot = MountedContent::default();
+    slot.show(execution_card("a", None).as_ref(), &parent, &view)
+        .unwrap();
+    let card: web_sys::Element = slot.root().unwrap().clone().unchecked_into();
+    let header: HtmlElement = card.first_element_child().unwrap().unchecked_into();
+    let pending = select(&card, ".maestro-tool-body");
+    assert_collapsed(&header, &pending);
+    header.focus().unwrap();
+    driver("driverPress", "Enter").await;
+    assert!(header.is_same_node(view.document.active_element().as_deref()));
+    assert_motion(&page, &header, &pending).await;
+    let code = select(&pending, "code-block");
+    slot.show(execution_card("b", None).as_ref(), &parent, &view)
+        .unwrap();
+    assert!(select(&card, ".maestro-tool-body").is_same_node(Some(&pending)));
+    assert!(select(&pending, "code-block").is_same_node(Some(&code)));
+    assert_eq!(text(&select(&code, "pre code")), "b");
+    assert!(
+        pending.class_list().contains("max-h-[2000px]"),
+        "same template keeps expansion"
+    );
+    let files = serde_json::json!({"files": [{"fileName": "a.txt", "mimeType": "text/plain", "contentBase64": "YQ==", "size": 1}]});
+    let result = maestro_app::ToolResultMessage {
+        details: Some(files),
+        ..crate::contributions_support::result("out", false)
+    };
+    slot.show(execution_card("b", Some(&result)).as_ref(), &parent, &view)
+        .unwrap();
+    let finished = select(&card, ".maestro-tool-body");
+    assert!(
+        !finished.is_same_node(Some(&pending)),
+        "a result is a new template"
+    );
+    assert!(!select(&finished, "code-block").is_same_node(Some(&code)));
+    assert_collapsed(&header_of(&card), &finished);
+    assert_result_branch_retains(&page, (&mut slot, &parent), &view, &result).await;
+    assert_instances_and_release(slot, &card, &parent, &view);
+}
+/// The card's current header.
+fn header_of(card: &web_sys::Element) -> HtmlElement {
+    card.first_element_child().unwrap().unchecked_into()
+}
+/// A collapsed body paints no height and shows the expand chevron.
+fn assert_collapsed(header: &HtmlElement, body: &web_sys::Element) {
+    use crate::contributions_support::{computed, select};
+    assert!(body.class_list().contains("max-h-0"));
+    assert!(body.get_bounding_client_rect().height() < 0.5);
+    assert_eq!(computed(&select(header, ".chevron-up"), "display"), "none");
+    assert_ne!(
+        computed(&select(header, ".chevrons-up-down"), "display"),
+        "none"
+    );
+}
+/// Pause `body`'s height transition at `time` milliseconds, returning its duration when one runs.
+async fn seek_height(
+    page: &wasm_bindgen::JsValue,
+    body: &web_sys::Element,
+    time: f64,
+) -> Option<f64> {
+    let arguments = js_sys::Array::of3(body, &"max-height".into(), &time.into());
+    crate::contributions_support::call(page, "seek", &arguments)
+        .await
+        .as_f64()
+}
+/// Expansion animates over 300 ms, reverses from its partial height and settles collapsed.
+async fn assert_motion(
+    page: &wasm_bindgen::JsValue,
+    header: &HtmlElement,
+    body: &web_sys::Element,
+) {
+    use crate::contributions_support::{computed, select};
+    let seek = |time| seek_height(page, body, time);
+    assert!(body.class_list().contains("max-h-[2000px]") && body.class_list().contains("mt-3"));
+    assert_ne!(computed(&select(header, ".chevron-up"), "display"), "none");
+    assert_eq!(seek(10.).await, Some(300.));
+    let partial = body.get_bounding_client_rect().height();
+    assert!(
+        partial > 0. && partial < f64::from(body.scroll_height()),
+        "{partial}"
+    );
+    header.click();
+    assert!(seek(0.).await.is_some());
+    let reversed = body.get_bounding_client_rect().height();
+    assert!(
+        (reversed - partial).abs() < 1.,
+        "collapse starts from the partial height: {reversed} {partial}"
+    );
+    seek(300.).await;
+    assert_collapsed(header, body);
+    header.click();
+    seek(300.).await;
+    let height = body.get_bounding_client_rect().height();
+    assert!(
+        (height - f64::from(body.scroll_height())).abs() < 1.,
+        "{height}"
+    );
+}
+/// Within the result template, listing, console, copy feedback and unchanged tiles stay mounted.
+async fn assert_result_branch_retains(
+    page: &wasm_bindgen::JsValue,
+    (slot, parent): (&mut maestro_web::dom::MountedContent, &web_sys::Element),
+    view: &maestro_web::dom::DomView,
+    result: &maestro_app::ToolResultMessage<serde_json::Value>,
+) {
+    use crate::contributions_support::{Clipboard, Recorded, select, until};
+    let card = slot.root().unwrap().clone();
+    let body = select(&card, ".maestro-tool-body");
+    let tile = select(
+        &card,
+        ":scope > .maestro-tool-files > .maestro-attachment-tile",
+    );
+    assert!(
+        tile.get_bounding_client_rect().height() > 0.,
+        "files stay outside the collapsed body"
+    );
+    let (code, console) = (
+        select(&body, "code-block"),
+        select(&body, ".maestro-console"),
+    );
+    let clipboard = Recorded::install(Clipboard::Accept);
+    let control = select(&console, "copy-button");
+    select(&control, "button")
+        .unchecked_into::<HtmlElement>()
+        .click();
+    until(page, &control, || text(&control).contains("Copied!")).await;
+    assert_eq!(clipboard.texts(), ["out"]);
+    slot.show(execution_card("c", Some(result)).as_ref(), parent, view)
+        .unwrap();
+    assert!(select(&card, ".maestro-tool-body").is_same_node(Some(&body)));
+    assert!(select(&body, "code-block").is_same_node(Some(&code)));
+    assert_eq!(text(&select(&code, "pre code")), "c");
+    assert!(select(&body, ".maestro-console").is_same_node(Some(&console)));
+    assert!(
+        text(&control).contains("Copied!"),
+        "copy feedback survives the update"
+    );
+    assert!(select(&card, ".maestro-attachment-tile").is_same_node(Some(&tile)));
+    let without = crate::contributions_support::result("out", false);
+    slot.show(execution_card("c", Some(&without)).as_ref(), parent, view)
+        .unwrap();
+    assert!(
+        card.unchecked_ref::<web_sys::Element>()
+            .query_selector(".maestro-tool-files")
+            .unwrap()
+            .is_none()
+    );
+}
+/// Instances toggle independently; a reconnected root keeps its activation and a released one
+/// loses it.
+fn assert_instances_and_release(
+    slot: maestro_web::dom::MountedContent,
+    card: &web_sys::Element,
+    parent: &web_sys::Element,
+    view: &maestro_web::dom::DomView,
+) {
+    use crate::contributions_support::select;
+    let mut other = maestro_web::dom::MountedContent::default();
+    other
+        .show(execution_card("z", None).as_ref(), parent, view)
+        .unwrap();
+    let other_body = select(other.root().unwrap(), ".maestro-tool-body");
+    let body = select(card, ".maestro-tool-body");
+    header_of(card).click();
+    assert!(!body.class_list().contains("max-h-0"));
+    assert!(other_body.class_list().contains("max-h-0"));
+    card.remove();
+    parent.append_child(card).unwrap();
+    header_of(card).click();
+    assert!(
+        body.class_list().contains("max-h-0"),
+        "reconnected root keeps its activation"
+    );
+    drop(slot);
+    header_of(card).click();
+    assert!(
+        body.class_list().contains("max-h-0"),
+        "released root no longer toggles"
+    );
+    header_of(other.root().unwrap().unchecked_ref()).click();
+    assert!(!other_body.class_list().contains("max-h-0"));
+    card.remove();
+    parent.remove();
+}

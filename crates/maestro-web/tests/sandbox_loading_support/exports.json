@@ -150,7 +150,9 @@
     "native_header_targets_and_pill_bubbling_follow_current_elements",
     "bash_dom_matches_all_command_result_branches",
     "native_binding_keeps_typed_json_and_details_agnostic_views",
-    "native_binding_reentrant_replacement_and_retained_handle"
+    "native_binding_reentrant_replacement_and_retained_handle",
+    "document_tools_dom_preserve_captions_code_output_and_files",
+    "tool_disclosure_dom_retains_children_across_toggles_and_retargets"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

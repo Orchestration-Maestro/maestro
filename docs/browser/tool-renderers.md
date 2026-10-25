@@ -164,6 +164,14 @@ code blocks, without encoded-input detection. Returned text files decode UTF-8
 for preview while downloads preserve the original base64; malformed base64 keeps
 the download without extracted text.
 
+Both renderers also prepare native page content from the same branch selection;
+select `Box<dyn DomContent>` explicitly when calling them directly. The native
+card puts its header first, then a body that starts collapsed and animates its
+height over 300 ms when the header toggles it, then returned files. Updates within
+the same pending or result branch keep the body, its expansion, the listing, the
+console with its copy feedback and unchanged file tiles. Moving from pending to a
+result starts a new collapsed body, as a new branch does.
+
 ## Operation errors
 
 Preparation returns `tools::types::ToolUiError`; drawing carries it in

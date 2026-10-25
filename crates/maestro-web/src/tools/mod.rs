@@ -13,6 +13,8 @@ pub mod types;
 
 /// Browser tool renderer implementations.
 pub mod renderers;
+#[cfg(test)]
+mod tests;
 
 pub use renderer_registry::{get_tool_renderer, register_tool_renderer};
 use renderers::default_renderer::{DefaultRenderer, status};

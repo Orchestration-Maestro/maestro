@@ -1,7 +1,7 @@
 //! Retained document-card disclosures and independently owned file tiles.
-use super::card_content::Caption;
+use super::card_content::{Caption, CardOutput};
 use crate::{
-    Attachment, AttachmentTile,
+    Attachment, AttachmentTile, I18n,
     browser::{
         attachment_content,
         transition::{Transition, TransitionStyle},
@@ -57,8 +57,8 @@ pub(in crate::tools) enum ArtifactTemplate {
     /// All other failures.
     ErrorPlain,
 }
-/// Owned body operands, independent of the preparation call.
-pub(in crate::tools) struct Body {
+/// Owned body operands, independent of the preparation call; `C` is the retained child representation.
+pub(in crate::tools) struct Body<C = Box<dyn ToolContent>> {
     /// Pending or completed subtree.
     pub(in crate::tools) phase: Phase,
     /// Literal URL value, including a present empty pending URL.
@@ -68,14 +68,14 @@ pub(in crate::tools) struct Body {
     /// Optional nonempty console output.
     pub(in crate::tools) console: Option<(String, ConsoleVariant)>,
     /// Selected line difference recipe.
-    pub(in crate::tools) diff: Option<Box<dyn ToolContent>>,
+    pub(in crate::tools) diff: Option<C>,
     /// Plain destructive text inside the disclosure.
     pub(in crate::tools) error: Option<String>,
     /// Localized replacement for an empty selected output.
     pub(in crate::tools) fallback: Option<&'static str>,
 }
 /// One immutable card recipe shared by document tools.
-pub(in crate::tools) struct CollapsibleCard {
+pub(in crate::tools) struct CollapsibleCard<C = Box<dyn ToolContent>> {
     /// Result status takes precedence over streaming.
     pub(in crate::tools) state: ToolHeaderState,
     /// Catalog glyph.
@@ -83,7 +83,7 @@ pub(in crate::tools) struct CollapsibleCard {
     /// Literal or localized caption.
     pub(in crate::tools) caption: Caption,
     /// Absent until parameters arrive.
-    pub(in crate::tools) body: Option<Body>,
+    pub(in crate::tools) body: Option<Body<C>>,
     /// Ordered downloadable file records.
     pub(in crate::tools) attachments: Vec<Download>,
     /// Template identity when no disclosure exists.
@@ -91,12 +91,20 @@ pub(in crate::tools) struct CollapsibleCard {
     /// Plain destructive output outside any disclosure.
     pub(in crate::tools) error: Option<String>,
 }
-/// Renderer-specific erased identity for one shared drawing implementation.
-struct Content<R> {
+/// Renderer-specific erased identity for one shared implementation per representation.
+pub(super) struct Content<R, C = Box<dyn ToolContent>> {
     /// Owned selected card operands.
-    card: CollapsibleCard,
+    card: CollapsibleCard<C>,
     /// Nominal renderer identity used by retained row erasure.
     renderer: std::marker::PhantomData<fn() -> R>,
+}
+impl<R, C> From<CollapsibleCard<C>> for Content<R, C> {
+    fn from(card: CollapsibleCard<C>) -> Self {
+        Self {
+            card,
+            renderer: std::marker::PhantomData,
+        }
+    }
 }
 /// Mounted children retain their own native roots across disclosure changes.
 struct BodyState {
@@ -141,7 +149,7 @@ pub(in crate::tools) struct Download {
 }
 impl Download {
     /// Decode only when the retained tile first observes changed original bytes.
-    fn record(&self) -> Attachment {
+    pub(in crate::tools) fn record(&self) -> Attachment {
         let mut record = self.attachment.clone();
         if self.text && !record.content.is_empty() {
             record.extracted_text = crate::utils::base64::decode(&record.content)
@@ -192,17 +200,16 @@ impl<R: 'static> ToolContent for Content<R> {
         })
     }
 }
-impl CollapsibleCard {
-    /// Prepare an ordinary outer tool card.
-    pub(in crate::tools) fn result<R: 'static>(self) -> ToolRenderResult {
+impl<C: CardOutput> CollapsibleCard<C> {
+    /// Prepare renderer `R`'s ordinary outer tool card.
+    pub(in crate::tools) fn result<R: 'static>(self) -> ToolRenderResult<C> {
         ToolRenderResult {
-            content: Box::new(Content::<R> {
-                card: self,
-                renderer: std::marker::PhantomData,
-            }),
+            content: C::collapsible::<R>(self),
             is_custom: false,
         }
     }
+}
+impl CollapsibleCard {
     /// Reconcile the selected subtree without replacing continuously mounted children.
     fn draw(
         &self,
@@ -238,7 +245,7 @@ impl CollapsibleCard {
             }
             if let Some(error) = &self.error {
                 ui.add_space(12.);
-                let text = output(error, Some("An error occurred"), view)?;
+                let text = output(error, Some("An error occurred"), view.i18n)?;
                 retained
                     .error
                     .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)))
@@ -359,7 +366,7 @@ impl Body {
             let code = state
                 .code
                 .get_or_insert_with(|| CodeBlock::new_literal(Rc::clone(view.host)));
-            code.code = output(source, self.fallback, view)?;
+            code.code = output(source, self.fallback, view.i18n)?;
             (*language).clone_into(&mut code.language);
             code.render(
                 ui,
@@ -397,7 +404,7 @@ impl Body {
             let console = state
                 .console
                 .get_or_insert_with(|| crate::ConsoleBlock::new(Rc::clone(view.host)));
-            console.content = output(content, self.fallback, view)?;
+            console.content = output(content, self.fallback, view.i18n)?;
             console.variant = *variant;
             console
                 .render(ui, view.i18n, view.presentation, view.modal)
@@ -406,7 +413,7 @@ impl Body {
             state.console = None;
         }
         if let Some(error) = &self.error {
-            let text = output(error, self.fallback, view)?;
+            let text = output(error, self.fallback, view.i18n)?;
             state
                 .error
                 .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)))
@@ -419,15 +426,13 @@ impl Body {
 }
 
 /// Translate only a selected empty-output fallback, never caller text.
-fn output(
-    text: &str,
-    fallback: Option<&'static str>,
-    view: ToolRenderView<'_>,
-) -> Result<String, ToolUiError> {
+fn output(text: &str, fallback: Option<&'static str>, i18n: &I18n) -> Result<String, ToolUiError> {
     if text.is_empty()
         && let Some(key) = fallback
     {
-        return Ok(view.i18n.text(key)?);
+        return Ok(i18n.text(key)?);
     }
     Ok(text.into())
 }
+#[cfg(target_arch = "wasm32")]
+mod dom;

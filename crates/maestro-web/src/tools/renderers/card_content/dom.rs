@@ -1,21 +1,54 @@
 //! Page-mounted card bodies share the existing branch preparation and native child owners.
-use super::{Body, CardContent, CardOutput};
+use super::{Body, Caption, CardContent, CardOutput, CollapsibleCard, Content};
 use crate::{
+    ConsoleBlock,
     browser::attachment_content::browser::element,
+    components::console_block::ConsoleVariant,
     dom::{DomContent, DomRoot, DomView, MountedContent},
     tools::{
-        renderer_registry::{ToolHeaderText, header::dom::render_header},
+        renderer_registry::{
+            ToolHeaderState, ToolHeaderText,
+            header::dom::{ToolHeaderRefs, glyph, render_collapsible_header, render_header},
+        },
         types::ToolUiError,
     },
 };
 use std::cell::RefCell;
-use wasm_bindgen::JsCast as _;
-use web_sys::Element;
 
 impl CardOutput for Box<dyn DomContent> {
     fn card(card: CardContent) -> Self {
         Box::new(card)
     }
+    fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self {
+        Box::new(Content::<R, Self>::from(card))
+    }
+}
+/// Prepare a card's status header from its glyph and caption, toggling `refs` when a body exists.
+/// # Errors
+/// Returns a missing glyph or localization failure.
+pub(in crate::tools::renderers) fn header(
+    state: ToolHeaderState,
+    tool_icon: &str,
+    caption: &Caption,
+    view: &DomView,
+    refs: Option<ToolHeaderRefs>,
+) -> Result<Box<dyn DomContent>, ToolUiError> {
+    let tool_icon = glyph(tool_icon)?;
+    let text = ToolHeaderText::Text(caption.resolve(&view.i18n)?);
+    Ok(match refs {
+        Some(refs) => render_collapsible_header(state, tool_icon, text, refs, false),
+        None => render_header(state, tool_icon, text),
+    })
+}
+/// Literal console output in its semantic color.
+pub(in crate::tools::renderers) fn console(
+    content: String,
+    variant: ConsoleVariant,
+) -> ConsoleBlock {
+    let mut console = ConsoleBlock::default();
+    console.content = content;
+    console.variant = variant;
+    console
 }
 /// Independent header and selected body lifetimes.
 #[derive(Default)]
@@ -40,22 +73,10 @@ impl DomContent for CardContent {
             .as_ref()
             .and_then(|owner| owner.downcast_ref::<RefCell<MountedCard>>())
             .ok_or_else(|| ToolUiError::Presentation("Missing card state".into()))?;
-        let glyph = crate::icons::icon_node(self.glyph)
-            .map_err(|error| ToolUiError::Presentation(error.to_string()))?
-            .ok_or_else(|| ToolUiError::Presentation(format!("Missing icon {}", self.glyph)))?;
-        let header = render_header(
-            self.state,
-            glyph,
-            ToolHeaderText::Text(self.caption.resolve(&view.i18n)?),
-        );
+        let header = header(self.state, self.glyph, &self.caption, view, None)?;
         let body: Option<Box<dyn DomContent>> = match &self.body {
             Body::Empty => None,
-            Body::Console(content, variant) => {
-                let mut console = crate::ConsoleBlock::default();
-                console.content.clone_from(content);
-                console.variant = *variant;
-                Some(Box::new(console))
-            }
+            Body::Console(content, variant) => Some(Box::new(console(content.clone(), *variant))),
             Body::Error(text) => Some(Box::new(ErrorText(text.clone()))),
         };
         let mut mounted = owner.take();
@@ -64,7 +85,7 @@ impl DomContent for CardContent {
             if let Some(body) = body {
                 mounted.body.show(body.as_ref(), &root.node, view)?;
             } else {
-                mounted.clear_body();
+                mounted.body.clear();
             }
             Ok(())
         })();
@@ -73,8 +94,8 @@ impl DomContent for CardContent {
         result
     }
 }
-/// Literal destructive output selected by calculation and clock recipes.
-struct ErrorText(String);
+/// Literal destructive output selected by calculation, clock and artifact recipes.
+pub(in crate::tools::renderers) struct ErrorText(pub(in crate::tools::renderers) String);
 impl DomContent for ErrorText {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let root = DomRoot::new(element(&view.document, "div", "maestro-tool-error")?);
@@ -84,15 +105,5 @@ impl DomContent for ErrorText {
     fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
         root.node.set_text_content(Some(&self.0));
         Ok(())
-    }
-}
-
-impl MountedCard {
-    /// Release the deselected child and its native subscriptions.
-    fn clear_body(&mut self) {
-        if let Some(node) = self.body.root() {
-            node.unchecked_ref::<Element>().remove();
-        }
-        self.body = MountedContent::default();
     }
 }

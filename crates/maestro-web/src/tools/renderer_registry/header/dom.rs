@@ -14,17 +14,21 @@ pub(crate) fn render_header_element(
     tool_icon: &str,
     text: &str,
 ) -> Result<Element, ToolUiError> {
-    let glyph = crate::icons::icon_node(tool_icon)
-        .map_err(|error| ToolUiError::Presentation(error.to_string()))?
-        .ok_or_else(|| ToolUiError::Presentation(format!("Missing icon {tool_icon}")))?;
-    let root = render_header(state, glyph, ToolHeaderText::Text(text.into())).mount(view)?;
+    let root =
+        render_header(state, glyph(tool_icon)?, ToolHeaderText::Text(text.into())).mount(view)?;
     Ok(root.node.unchecked_into())
+}
+/// The catalog icon named `name`.
+/// # Errors
+/// Returns a catalog failure or a missing icon.
+pub(crate) fn glyph(name: &str) -> Result<IconNode, ToolUiError> {
+    crate::icons::icon_node(name)
+        .map_err(|error| ToolUiError::Presentation(error.to_string()))?
+        .ok_or_else(|| ToolUiError::Presentation(format!("Missing icon {name}")))
 }
 /// One small icon in a classed span.
 pub(super) fn icon(document: &Document, name: &str, class: &str) -> Result<Element, ToolUiError> {
-    let node = crate::icons::icon_node(name)
-        .map_err(|error| ToolUiError::Presentation(error.to_string()))?
-        .ok_or_else(|| ToolUiError::Presentation(format!("Missing icon {name}")))?;
+    let node = glyph(name)?;
     let span = element(document, "span", class)?;
     let svg = crate::icons::icon_dom(&node, crate::icons::IconSize::Sm, None)
         .map_err(|error| host_error(&error))?;
