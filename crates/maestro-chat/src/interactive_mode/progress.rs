@@ -160,9 +160,6 @@ impl InteractiveMode {
 
     /// Shows the retry label with its countdown to the next attempt, which the interrupt key
     /// aborts; each tick reads the keys bound then.
-    ///
-    /// # Errors
-    /// Returns the failure of the theme's colours.
     pub(super) fn start_retry(&self, retry: &RetryStart) {
         self.progress
             .retry_escape

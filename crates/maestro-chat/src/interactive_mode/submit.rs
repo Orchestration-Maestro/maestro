@@ -91,6 +91,8 @@ impl InteractiveMode {
                 self.handle_session_command()
             } else if text == "/debug" {
                 self.handle_debug_command()
+            } else if text == "/hotkeys" {
+                self.handle_hotkeys_command()
             } else if text == "/changelog" {
                 self.handle_changelog_command()
             } else if text == "/export" || text.starts_with("/export ") {

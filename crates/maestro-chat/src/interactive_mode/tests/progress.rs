@@ -4,14 +4,17 @@
 use super::super::queues::CompactionQueuedMessage;
 use super::queues::{Kept, Mode};
 use super::session;
-use super::{CommandHandler, Setup, World, answer, cases, isolated, painted, started};
-use maestro_app::agent_session::CompactionReason;
+use super::transcript::{append, recorded, user_record};
+use super::{
+    CommandHandler, Setup, World, answer, cases, held_response, isolated, painted, started,
+};
+use maestro_app::agent_session::{CompactionReason, PromptOptions};
 use maestro_app::messages::{CustomAgentMessages, UserMessageDelivery};
 use maestro_app::{
     AgentSession, AgentSessionEvent, AssistantMessageEventStream, CompactionResult,
     DiagnosticErrorInfo, Extension, ExtensionBindings, ExtensionCommandContext, ExtensionFactory,
     InputEvent, InputEventResult, Local, RegisteredCommand, ResourceLoader, Skill, SourceInfo,
-    SourceOrigin, SourceScope,
+    SourceOrigin, SourceScope, StopReason,
 };
 use maestro_tui::Component;
 use maestro_tui::tui::InputHandler;
@@ -25,7 +28,7 @@ use std::{
     time::Duration,
 };
 
-/// The recorded progress cases every witness drives.
+/// The recorded progress cases the fixture-driven witnesses read.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_progress.json");
 
 /// One presentation the progress events leave behind.
@@ -45,7 +48,7 @@ struct Snapshot {
 }
 
 impl Snapshot {
-    /// Asserts the presentation and returns the progress requests it recorded.
+    /// Asserts the presentation, including the progress requests `effects` recorded.
     fn assert(&self, world: &World, effects: &Effects) {
         let theme = world.themes.theme().get().unwrap();
         assert_eq!(
@@ -97,9 +100,6 @@ struct StartEnd {
 struct Outcome {
     /// The transcript's rows at width 100.
     chat: Vec<String>,
-    /// Text the transcript must contain.
-    #[serde(rename = "chatContains")]
-    chat_contains: Option<String>,
     /// The terminal's progress requests.
     progress: Vec<bool>,
     /// The scheduled intervals in milliseconds.
@@ -179,7 +179,7 @@ fn result(summary: &str, tokens_before: f64) -> CompactionResult {
     .unwrap()
 }
 
-/// Starts one compaction, runs `during` before its end, and ends it as aborted.
+/// Starts one compaction of `reason`.
 fn start_compaction(world: &World, reason: CompactionReason) {
     world
         .mode
@@ -431,9 +431,39 @@ enum CompletionInput {
     CompactionEmptySummaryZeroTokens,
 }
 
+impl CompletionInput {
+    /// Whether the compaction ends with a stored result, which replays the history.
+    fn succeeds(&self) -> bool {
+        match self {
+            Self::CompactionOutcome { outcome, .. } => outcome == "result",
+            Self::CompactionEmptySummaryZeroTokens => true,
+        }
+    }
+}
+
+/// The first user record of the seeded history.
+const HISTORY_ALPHA: &str = "HISTORY_ALPHA";
+/// The second user record of the seeded history.
+const HISTORY_BETA: &str = "HISTORY_BETA";
+/// A displayed row the session's history lacks, which the replay removes.
+const STALE_TRANSCRIPT: &str = "STALE_TRANSCRIPT";
+
+/// Seeds the session's history with two distinct user records, shows a row the history
+/// lacks and expands summaries, so the replay and the whole summary are observable.
+fn seed_history(world: &World) {
+    append(
+        world,
+        vec![user_record(HISTORY_ALPHA), user_record(HISTORY_BETA)],
+    );
+    world.mode.show_status(STALE_TRANSCRIPT).unwrap();
+    let rows = world.mode.chat_container.render(100);
+    assert!(rows.iter().any(|row| row.contains(STALE_TRANSCRIPT)));
+    world.mode.tool_output_expanded.set(true);
+}
+
 #[test]
-fn compaction_completion_replays_then_appends_summary() {
-    const TEST: &str = "compaction_completion_replays_then_appends_summary";
+fn compaction_completion_keeps_seeded_replay_and_one_summary() {
+    const TEST: &str = "compaction_completion_keeps_seeded_replay_and_one_summary";
     isolated(TEST, async |directory| {
         for (input, expected) in cases::<CompletionInput, Outcome>(FIXTURES, TEST) {
             completion_case(directory, input, &expected).await;
@@ -443,8 +473,13 @@ fn compaction_completion_replays_then_appends_summary() {
 
 /// Drives one recorded compaction end and asserts what it left.
 async fn completion_case(directory: &Path, input: CompletionInput, expected: &Outcome) {
-    let world = started(directory).await;
+    let world = recorded(directory, Setup::default());
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
     draft(&world);
+    if input.succeeds() {
+        seed_history(&world);
+    }
     let effects = tap(&world);
     match input {
         CompletionInput::CompactionOutcome {
@@ -459,14 +494,10 @@ async fn completion_case(directory: &Path, input: CompletionInput, expected: &Ou
     }
     world.runtime.settle().unwrap();
     let theme = world.themes.theme().get().unwrap();
-    let rows = world.mode.chat_container.render(100);
-    match &expected.chat_contains {
-        Some(text) => {
-            let joined = rows.join("\n");
-            assert!(joined.contains(text.as_str()), "{joined:?} lacks {text:?}");
-        }
-        None => assert_eq!(rows, painted(&theme, &expected.chat)),
-    }
+    assert_eq!(
+        world.mode.chat_container.render(100),
+        painted(&theme, &expected.chat)
+    );
     assert_eq!(progress(&effects), expected.progress);
     assert_eq!(timers(&world), expected.timers);
     assert_eq!(world.mode.editor.get_text(), expected.editor);
@@ -514,6 +545,52 @@ fn spinner_frames(rows: &[String]) -> Vec<String> {
                 .fold(row.clone(), |row, frame| row.replace(frame, "⠋"))
         })
         .collect()
+}
+
+/// The default interrupt key.
+const INTERRUPT: &str = "\x1b";
+
+/// An interrupt callback installed before a progress state, counting its own runs.
+struct PreviousAction {
+    /// The installed callback.
+    action: Rc<dyn Fn()>,
+    /// How many times the callback ran.
+    runs: Rc<Cell<usize>>,
+}
+
+impl PreviousAction {
+    /// Installs a counting callback as the editor's interrupt action.
+    fn install(world: &World) -> Self {
+        let runs = Rc::new(Cell::new(0));
+        let count = Rc::clone(&runs);
+        let action: Rc<dyn Fn()> = Rc::new(move || count.set(count.get() + 1));
+        world.mode.editor.set_on_escape(Some(Rc::clone(&action)));
+        Self { action, runs }
+    }
+
+    /// Presses the interrupt key `key` and checks that it did not reach this callback.
+    fn assert_replaced(&self, world: &World, key: &str) {
+        let runs = self.runs.get();
+        world.mode.editor.handle_input(key);
+        assert_eq!(
+            self.runs.get(),
+            runs,
+            "the interrupt reached the replaced callback"
+        );
+    }
+
+    /// Checks that the editor's interrupt action is this callback again and that the
+    /// interrupt key `key` runs it.
+    fn assert_restored(&self, world: &World, key: &str) {
+        let restored = world.mode.editor.on_escape().unwrap();
+        assert!(
+            Rc::ptr_eq(&restored, &self.action),
+            "another interrupt action"
+        );
+        let runs = self.runs.get();
+        world.mode.editor.handle_input(key);
+        assert_eq!(self.runs.get(), runs + 1);
+    }
 }
 
 /// Starts a retry with the recorded numbers.
@@ -600,8 +677,8 @@ struct RetryStartEnd {
 }
 
 #[test]
-fn retry_countdown_uses_ceiling_and_live_cancel_keys() {
-    const TEST: &str = "retry_countdown_uses_ceiling_and_live_cancel_keys";
+fn retry_countdown_interrupts_then_restores_previous_action() {
+    const TEST: &str = "retry_countdown_interrupts_then_restores_previous_action";
     isolated(TEST, async |directory| {
         for (input, expected) in cases::<RetryInput, Value>(FIXTURES, TEST) {
             match input {
@@ -616,11 +693,14 @@ fn retry_countdown_uses_ceiling_and_live_cancel_keys() {
                     let expected: RetryStartEnd = serde_json::from_value(expected).unwrap();
                     let world = started(directory).await;
                     draft(&world);
+                    let previous = PreviousAction::install(&world);
                     let effects = tap(&world);
                     start_retry(&world, 1, max_attempts, delay_ms);
                     expected.start.assert(&world, &effects);
+                    previous.assert_replaced(&world, INTERRUPT);
                     end_retry(&world, true, 1, None);
                     expected.end.assert(&world, &effects);
+                    previous.assert_restored(&world, INTERRUPT);
                 }
             }
         }
@@ -631,6 +711,7 @@ fn retry_countdown_uses_ceiling_and_live_cancel_keys() {
 async fn countdown_case(directory: &Path, delay_ms: f64, success: bool, recorded: &Countdown) {
     let world = started(directory).await;
     draft(&world);
+    let previous = PreviousAction::install(&world);
     let effects = tap(&world);
     start_retry(&world, 2, 3.0, delay_ms);
     let mut frames = vec![describe(&world, &effects)];
@@ -662,8 +743,10 @@ async fn countdown_case(directory: &Path, delay_ms: f64, success: bool, recorded
         })
         .collect();
     assert_eq!(frames, expected, "{delay_ms} ms");
+    previous.assert_replaced(&world, INTERRUPT);
     end_retry(&world, success, 2, Some("last failure"));
     recorded.end.assert(&world, &effects);
+    previous.assert_restored(&world, INTERRUPT);
 }
 
 /// Reads the presentation as a comparable snapshot.
@@ -692,8 +775,8 @@ enum RetryEndInput {
 }
 
 #[test]
-fn retry_completion_disposes_progress_and_selects_failure_text() {
-    const TEST: &str = "retry_completion_disposes_progress_and_selects_failure_text";
+fn retry_completion_cancels_wait_and_restores_previous_action() {
+    const TEST: &str = "retry_completion_cancels_wait_and_restores_previous_action";
     isolated(TEST, async |directory| {
         for (input, expected) in cases::<RetryEndInput, Snapshot>(FIXTURES, TEST) {
             let RetryEndInput::RetryEnd {
@@ -702,12 +785,145 @@ fn retry_completion_disposes_progress_and_selects_failure_text() {
             } = input;
             let world = started(directory).await;
             draft(&world);
+            let previous = PreviousAction::install(&world);
             let effects = tap(&world);
+            start_retry(&world, 3, 3.0, 1000.0);
+            previous.assert_replaced(&world, INTERRUPT);
             end_retry(&world, success, 3, final_error.as_deref());
             expected.assert(&world, &effects);
             assert!(world.mode.status_container.render(100).is_empty());
+            previous.assert_restored(&world, INTERRUPT);
         }
+        interrupted_wait_case(directory).await;
     });
+}
+
+/// The notice an interrupted first retry leaves at the end of the transcript.
+const RETRY_CANCELLED: [&str; 2] = [
+    "",
+    " @error@Error: Retry failed after 1 attempts: Retry cancelled\u{1b}[39m                                              ",
+];
+
+/// Makes every provider request of `world`'s session count itself before the installed
+/// provider answers it.
+fn count_requests(world: &World) -> Rc<Cell<usize>> {
+    let session = world.mode.runtime_host.session();
+    let provider = session.agent().stream_fn.read().unwrap().clone().unwrap();
+    let requests = Rc::new(Cell::new(0));
+    let count = Rc::clone(&requests);
+    *session.agent().stream_fn.write().unwrap() =
+        Some(Rc::new(move |model, context, options, extra| {
+            count.set(count.get() + 1);
+            provider(model, context, options, extra)
+        }));
+    requests
+}
+
+/// The retry events a session publishes, in order with their payloads, and a notification
+/// for each start and each end.
+struct RetryWatch {
+    /// Each start and end with its payload.
+    events: Rc<RefCell<Vec<String>>>,
+    /// Notified once a retry's start listeners have returned.
+    started: Rc<tokio::sync::Notify>,
+    /// Notified once a retry's end listeners have returned.
+    ended: Rc<tokio::sync::Notify>,
+    /// Ends the subscription.
+    removal: Box<dyn Fn()>,
+}
+
+impl RetryWatch {
+    /// Subscribes to the retry events of `session`.
+    fn subscribe(session: &AgentSession) -> Self {
+        let events: Rc<RefCell<Vec<String>>> = Rc::default();
+        let (started, ended): (Rc<tokio::sync::Notify>, Rc<tokio::sync::Notify>) =
+            Default::default();
+        let (log, start, end) = (Rc::clone(&events), Rc::clone(&started), Rc::clone(&ended));
+        let removal = session.subscribe(Rc::new(move |event| match event {
+            AgentSessionEvent::AutoRetryStart {
+                attempt,
+                max_attempts,
+                delay_ms,
+                error_message,
+            } => {
+                let text = format!("start {attempt}/{max_attempts} {delay_ms} {error_message}");
+                log.borrow_mut().push(text);
+                start.notify_one();
+            }
+            AgentSessionEvent::AutoRetryEnd {
+                success,
+                attempt,
+                final_error,
+            } => {
+                let text = format!("end {success} {attempt} {final_error:?}");
+                log.borrow_mut().push(text);
+                end.notify_one();
+            }
+            _ => {}
+        }));
+        Self {
+            events,
+            started,
+            ended,
+            removal: Box::new(removal),
+        }
+    }
+}
+
+/// Fails the held response of a real prompt with a retryable error, presses the interrupt
+/// key while the retry waits under a paused clock, and checks that the wait ends cancelled
+/// without another request and restores the replaced callback.
+async fn interrupted_wait_case(directory: &Path) {
+    let world = started(directory).await;
+    draft(&world);
+    let session = world.mode.runtime_host.session();
+    session
+        .settings_manager()
+        .borrow_mut()
+        .set_global_key("retry", "baseDelayMs", 100);
+    let previous = PreviousAction::install(&world);
+    let held = held_response(&world);
+    let requests = count_requests(&world);
+    let watch = RetryWatch::subscribe(&session);
+    tokio::time::pause();
+    let prompted = Rc::clone(&session);
+    let run =
+        tokio::task::spawn_local(
+            async move { prompted.prompt("run", PromptOptions::default()).await },
+        );
+    let failure = answer();
+    {
+        let mut message = failure.write().unwrap();
+        message.stop_reason = StopReason::Error;
+        message.error_message = Some("overloaded_error".to_owned());
+    }
+    held.await.unwrap().stream.end(Some(failure));
+    // The start's listener has returned and the producer now waits out its backoff.
+    watch.started.notified().await;
+    previous.assert_replaced(&world, INTERRUPT);
+    assert!(
+        !session.is_retrying(),
+        "the interrupt left the retry waiting"
+    );
+    watch.ended.notified().await;
+    run.await.unwrap().unwrap();
+    tokio::time::resume();
+    (watch.removal)();
+    assert_eq!(requests.get(), 1);
+    assert_eq!(
+        *watch.events.borrow(),
+        [
+            "start 1/3 100 overloaded_error",
+            "end false 1 Some(\"Retry cancelled\")"
+        ]
+    );
+    let theme = world.themes.theme().get().unwrap();
+    let rows = world.mode.chat_container.render(100);
+    let notice = painted(&theme, &RETRY_CANCELLED.map(str::to_owned));
+    assert!(rows.ends_with(&notice), "{rows:?}");
+    let failures = rows.iter().filter(|row| row.contains("Retry failed"));
+    assert_eq!(failures.count(), 1);
+    previous.assert_restored(&world, INTERRUPT);
 }
 
 #[test]
@@ -745,44 +961,56 @@ enum ReplaceInput {
     RetryReplaceAndLiveKeys,
 }
 
-/// The three presentations the replacement case compares.
+/// The four presentations the replacement case compares.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Replacement {
     /// The retry after its first tick with the keys rebound.
     changed: Snapshot,
+    /// The working row the response shows in place of the retry.
+    working: Snapshot,
     /// The second retry's first presentation.
     after: Snapshot,
     /// The presentation after the second retry ends.
     end: Snapshot,
 }
 
+/// The rebound interrupt key `ctrl+q`.
+const CTRL_Q: &str = "\x11";
+
 #[test]
-fn progress_replacement_stops_old_countdown_and_restores_escape() {
-    const TEST: &str = "progress_replacement_stops_old_countdown_and_restores_escape";
+fn retry_replacement_preserves_working_row_and_previous_action() {
+    const TEST: &str = "retry_replacement_preserves_working_row_and_previous_action";
     isolated(TEST, async |directory| {
         let (input, expected) = cases::<ReplaceInput, Replacement>(FIXTURES, TEST).remove(0);
         let ReplaceInput::RetryReplaceAndLiveKeys = input;
         let world = started(directory).await;
         draft(&world);
+        let previous = PreviousAction::install(&world);
         let effects = tap(&world);
         start_retry(&world, 1, 4.0, 2500.0);
         let first_tick = world.runtime.millis() + 1000;
         bind_interrupt(&["ctrl+q".to_owned(), "alt+x".to_owned()], false);
         let _ = world.runtime.advance_to(Duration::from_millis(first_tick));
         expected.changed.assert_animated(&world, &effects);
-        // A response starts: the retry's countdown and row go before the working row does.
+        previous.assert_replaced(&world, CTRL_Q);
+        // A response starts: the retry's countdown, row and callback go before the working
+        // row starts.
         agent_event(&world, maestro_app::AgentEvent::AgentStart);
-        assert_eq!(timers(&world), [80]);
-        let status = world.mode.status_container.render(100);
-        assert_eq!(status.len(), 2);
-        assert!(status[0].is_empty());
-        assert!(status[1].contains("Working..."));
-        assert!(!status[1].contains("Retrying"));
+        let restored = world.mode.editor.on_escape().unwrap();
+        assert!(Rc::ptr_eq(&restored, &previous.action));
+        expected.working.assert(&world, &effects);
+        // A late successful end of the replaced retry leaves the working row alone.
+        end_retry(&world, true, 1, None);
+        expected.working.assert(&world, &effects);
+        let kept = world.mode.editor.on_escape().unwrap();
+        assert!(Rc::ptr_eq(&kept, &previous.action));
         start_retry(&world, 2, 4.0, 1000.0);
         expected.after.assert_animated(&world, &effects);
+        previous.assert_replaced(&world, CTRL_Q);
         end_retry(&world, true, 2, None);
         expected.end.assert(&world, &effects);
+        previous.assert_restored(&world, CTRL_Q);
         bind_interrupt(&[], true);
     });
 }

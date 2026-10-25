@@ -10,9 +10,8 @@ is ordinary input.
 
 The mode handles shell input and the slash commands `/export`, `/changelog`,
 `/model`, `/scoped-models`, `/settings`, `/logout`, `/name`, `/session`, `/debug`,
-`/share` and `/copy` and `/quit`. Import, the offline viewer and packaged asset injection are not delivered
-yet (see
-[what is missing](#what-is-missing)).
+`/hotkeys`, `/share`, `/copy` and `/quit`. Import, the offline viewer and packaged
+asset injection are not delivered yet (see [what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
 methods. Each method reads the runtime's current session when it is called, so it
@@ -159,6 +158,28 @@ own. A package whose changelog holds no section shows
 `No changelog entries found.` inside the same card. The submission must be
 exactly `/changelog`; `/changelogs`, `/changelog extra` and `/CHANGELOG` are
 prompt text.
+
+## `/hotkeys`
+
+`/hotkeys` appends a bordered "Keyboard Shortcuts" card with Navigation, Editing
+and Other tables. The built-in rows read the live display registry when the
+command runs, including alternative bindings in their resolved order and empty
+labels for disabled actions. Windows adds ` (Ctrl+Enter on Windows Terminal)`
+to the New line description.
+
+`handle_hotkeys_command()` uses the same Markdown card renderer as `/changelog`,
+with the current session's code-block indentation. The title captures its theme;
+the Markdown and borders keep reading the live theme. A theme failure returns
+through the existing terminal error route.
+
+After the shared trim, only exact `/hotkeys` is a command. `/hotkey`, `/HOTKEYS`,
+`/hotkeys extra` and `/hotkeys` followed by U+0085 remain ordinary input. The
+command leaves the waiting input pending and adds no editor history.
+
+An Extensions table follows when the current session has selected shortcuts.
+The runner applies the retained key configuration for reservations, independently
+of the display registry. Rows keep selection order and use the description, or
+the extension path when it is absent; an empty description stays empty.
 
 ## How the path is read
 

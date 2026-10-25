@@ -579,3 +579,45 @@ fn debug_submission_records_then_clears_editor() {
         },
     );
 }
+
+#[test]
+fn hotkeys_submission_uses_effective_keys_without_prompt() {
+    isolated(
+        "hotkeys_submission_uses_effective_keys_without_prompt",
+        async |directory| {
+            let world = started(directory).await;
+            for (text, key) in [("/hotkeys", "alt+x"), ("\u{feff}/hotkeys\u{feff}", "alt+y")] {
+                maestro_tui::get_keybindings().set_user_bindings(vec![(
+                    "app.interrupt".to_owned(),
+                    Some(KeybindingKeys::Single(key.to_owned())),
+                )]);
+                let before = world.mode.chat_container.children().borrow().len();
+                consumed(&world, text);
+                let children = world.mode.chat_container.children();
+                let children = children.borrow();
+                assert_eq!(children.len(), before + 6);
+                let panel = children[before..]
+                    .iter()
+                    .flat_map(|child| child.render(200))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                assert!(panel.contains("Keyboard Shortcuts"));
+                let label = if key == "alt+x" { "Alt+X" } else { "Alt+Y" };
+                let cancel = panel
+                    .lines()
+                    .find(|row| row.contains("Cancel autocomplete / abort streaming"))
+                    .unwrap();
+                assert!(cancel.contains(label));
+            }
+            for text in ["/hotkey", "/HOTKEYS", "/hotkeys extra", "/hotkeys\u{85}"] {
+                let before = world.mode.chat_container.children().borrow().len();
+                let mut waiter = waiting(&world.mode);
+                enter(&world, text);
+                assert_eq!(poll(&mut waiter).as_deref(), Some(text));
+                assert_eq!(world.mode.editor.get_text(), "");
+                assert_eq!(recalled(&world.mode.editor)[0], text);
+                assert_eq!(world.mode.chat_container.children().borrow().len(), before);
+            }
+        },
+    );
+}

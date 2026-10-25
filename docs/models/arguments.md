@@ -78,11 +78,30 @@ A provider that replays an earlier call applies its own default to the argument 
 A nullish default replaces only null with an empty object. A truthy default replaces
 every falsy root, so null, `false`, zero and the empty string all become one. A
 supplied empty array or object is truthy and stays as recorded, and every nonempty
-root of any kind is replayed unchanged. The same default decides the argument value of
-a call whose service data carries none or carries null.
+root of any kind is replayed unchanged.
 
 The replay default is one shared operation rather than a rule per provider, so the two
 policies differ only in which roots they replace.
+
+History projection keeps the stored call unchanged. Each protocol applies its own
+wire default:
+
+| Protocol family | Null | False, zero or empty string | Other roots |
+|---|---|---|---|
+| Chat and response | JSON text `null` | JSON text of the value | JSON text of the value |
+| Cloud conversation | null | Unchanged | Unchanged |
+| Message and content generation | `{}` | Unchanged | Unchanged |
+| Conversation | JSON text `{}` | JSON text `{}` | JSON text of the value |
+
+Empty arrays and objects remain arrays and objects in every family. Content
+generation also uses `{}` for missing or null incoming function-call arguments;
+other supplied roots survive through both direct and cloud entries. Conversation
+stream arguments admit encoded JSON text or a dictionary; scalar and array roots
+are supplied as encoded text.
+
+Session tool-start and tool-update events carry the original argument value,
+including null and arrays. Updates also carry the complete progress result;
+progress does not replace the arguments or the retained assistant call.
 
 ## Checking without conversion
 
