@@ -306,6 +306,11 @@ From `docs/specs/tool-additions.md`.
   run alone. Only the callers its [contract](docs/specs/maestro-port.md#test-directory-owner)
   declares may use it, through native development edges.
 
+- **Test fixtures:** The dedicated, unpublished, portable `maestro-test-fixtures`
+  leaf for shared fixture records, header lookup, wire-literal round trips and
+  single-color theme construction. Its eight callers use development edges only;
+  it has no product or utility dependency. See the
+  [contract](docs/specs/maestro-port.md#test-fixture-owner).
 - **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`
   leaf that runs a test action under a scoped tracing subscriber that sees
   every callsite, whichever thread reaches the callsite first. Only daemon,

@@ -41,7 +41,7 @@ fn format_cost_preserves_four_digit_rounding() {
 }
 
 use crate::support;
-use maestro_app::{ModelCost, Usage, UsageCost};
+use maestro_app::{ModelCost, Presence, Usage, UsageCost};
 use maestro_web::{I18n, format_model_cost};
 use std::rc::Rc;
 use support::Host;
@@ -178,7 +178,12 @@ fn usage_record(raw: RawUsage) -> Usage {
         output: raw.output.value(),
         cache_read: raw.cache_read.value(),
         cache_write: raw.cache_write.value(),
-        total_tokens: raw.total_tokens.as_ref().map_or(0.0, Number::value),
+        total_tokens: raw
+            .total_tokens
+            .as_ref()
+            .map_or(Presence::Missing, |number| {
+                Presence::Present(number.value())
+            }),
         cost: UsageCost {
             input: cost.input.as_ref().map_or(0.0, Number::value),
             output: cost.output.as_ref().map_or(0.0, Number::value),

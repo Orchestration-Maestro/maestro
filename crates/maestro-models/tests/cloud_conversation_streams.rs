@@ -321,7 +321,7 @@ fn usage_preserves_reported_totals_and_zero_fallback() -> TestResult {
                 usage.output,
                 usage.cache_read,
                 usage.cache_write,
-                usage.total_tokens,
+                usage.total_tokens.present().copied().unwrap(),
             ],
             &[1e6, 2e6, 3e6, 4e6, 9_999_999.0],
         );
@@ -336,11 +336,23 @@ fn usage_preserves_reported_totals_and_zero_fallback() -> TestResult {
             ],
             &[1.0, 4.0, 9.0, 16.0, 30.0],
         );
-        near(&[usage_after(&reported(0)).await?.total_tokens], &[3e6]);
+        near(
+            &[usage_after(&reported(0))
+                .await?
+                .total_tokens
+                .present()
+                .copied()
+                .unwrap()],
+            &[3e6],
+        );
         let counts_only = json!({"usage": {"inputTokens": 7, "outputTokens": 3, "totalTokens": 0}});
         let usage = usage_after(&counts_only).await?;
         near(
-            &[usage.cache_read, usage.cache_write, usage.total_tokens],
+            &[
+                usage.cache_read,
+                usage.cache_write,
+                usage.total_tokens.present().copied().unwrap(),
+            ],
             &[0.0, 0.0, 10.0],
         );
         Ok(())

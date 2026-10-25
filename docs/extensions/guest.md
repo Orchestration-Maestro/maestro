@@ -770,6 +770,30 @@ nothing and removes no widget the host already accepted. Loading it into an
 application is opt-in, and `examples/extensions/README.md` holds the build and
 controlled-run commands.
 
+### User message delivery
+
+[`examples/extensions/send_user_message.rs`](../../examples/extensions/send_user_message.rs)
+sends user messages the way a user types them. `/ask` sends an ordinary message,
+which starts a turn, and reports `Agent is busy. Use /steer or /followup
+instead.` while the agent is working. `/steer` sends an ordinary message while
+idle and a steering message while the agent is working, so that message reaches
+the request in flight. `/followup` sends an ordinary message while idle and
+otherwise queues a follow-up, reporting `Follow-up queued` once the host admitted
+it. `/askwith` sends two text blocks, `User request: <arguments>` and `Please
+respond concisely.`, so the second instruction arrives with the request.
+
+A command with no message reports its own usage warning before it reads the idle
+flag or sends anything: `Usage: /ask <message>` and its three siblings. Message
+text is sent exactly as it arrived, whitespace included, even
+though the same text decides whether the argument is blank. Each command returns
+a host failure unchanged, and a queued follow-up acknowledges only a send the host
+admitted.
+
+It is opt-in like the other shipped extensions: its crate's tests run the built
+component in a controlled host and `examples/extensions/README.md` holds the build
+and controlled-run commands. Delivering those requests from a running
+application is part of the queue the application owns, not of this controlled run.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes

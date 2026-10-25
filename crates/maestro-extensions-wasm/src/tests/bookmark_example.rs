@@ -5,7 +5,9 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::{invoke_command_on_component, release_all, start};
+use super::example_support::{
+    Command as CommandRecord, Observation, invoke_command_on_component, release_all, start,
+};
 use super::host::Harness;
 use super::reader_host::Reader;
 use crate::component_adapter::Exports;
@@ -617,15 +619,11 @@ fn label_writes(lines: &[String]) -> Vec<Set> {
 
 /// The notifications the host was asked for, with their severity.
 fn notifications(lines: &[String]) -> Vec<Notification> {
-    super::ui_host::receipts(lines)
+    super::example_support::observations(lines)
         .into_iter()
-        .filter(|receipt| receipt.method == "notify")
-        .map(|receipt| Notification {
-            message: receipt.operands[0]
-                .as_str()
-                .expect("a notification message")
-                .to_owned(),
-            kind: receipt.operands[1].as_str().map(str::to_lowercase),
+        .filter_map(|observation| match observation {
+            Observation::Notify { message, kind } => Some(Notification { message, kind }),
+            Observation::Delivery { .. } => None,
         })
         .collect()
 }
@@ -691,18 +689,6 @@ struct Corpus {
     metadata: Vec<CommandRecord>,
     /// The recorded cases.
     rows: Vec<Case>,
-}
-
-/// One recorded command registration.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct CommandRecord {
-    /// The registered name.
-    name: String,
-    /// The registered description.
-    description: String,
-    /// Whether the factory registers argument completions.
-    completions: bool,
 }
 
 /// One recorded case: its inputs and the observations it must produce.
