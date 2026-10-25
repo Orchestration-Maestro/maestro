@@ -1,6 +1,6 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts, editor actions, typed input and queued
-//! input.
+//! resources, notices, transcript shortcuts, editor actions, typed input, queued
+//! input and session commands.
 
 use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
@@ -19,7 +19,9 @@ use std::{
 
 mod actions;
 mod bash;
+mod debug;
 mod events;
+mod info;
 mod key_display;
 mod models;
 mod notices;
@@ -212,11 +214,11 @@ impl InteractiveMode {
     }
 
     /// Builds the header, adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission, starts the terminal, lists the
-    /// loaded resources with their diagnostics and replays the session, once; theme
-    /// changes then refresh the editor border, and theme and branch changes request
-    /// fresh frames. Finally the footer learns how many providers the model candidates
-    /// cover.
+    /// transcript shortcuts, installs editor submission and the global debug key, starts
+    /// the terminal, lists the loaded resources with their diagnostics and replays the
+    /// session, once; theme changes then refresh the editor border, and theme and branch
+    /// changes request fresh frames.
+    /// Finally the footer learns how many providers the model candidates cover.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
@@ -243,6 +245,7 @@ impl InteractiveMode {
         self.setup_key_handlers();
         self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
+        self.setup_debug_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
         self.subscribe_to_agent();

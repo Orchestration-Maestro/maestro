@@ -1,9 +1,11 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
 mod bash;
+mod debug;
 mod events;
 mod extension_ui;
 mod extension_widgets;
+mod info;
 mod models;
 #[allow(
     dead_code,
@@ -616,6 +618,11 @@ fn create(
         } else {
             session::over(&options.cwd, &services)
         };
+        // The replacement serves the session manager the runtime opened for it.
+        std::mem::swap(
+            &mut *replacement.session.session_manager().borrow_mut(),
+            &mut *options.session_manager.borrow_mut(),
+        );
         Box::pin(async { Ok(replacement) })
     })
 }
