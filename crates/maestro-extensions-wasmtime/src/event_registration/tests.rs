@@ -66,6 +66,15 @@ fn provider_response_headers_cross_as_ordered_pairs() {
         encoded,
         serde_json::json!({"status":200.0,"headers":[["a","1"],["b","2"]],"type":"after_provider_response"})
     );
+    let pairs: maestro_extensions::AfterProviderResponseEvent<Vec<(String, String)>> =
+        serde_json::from_value(encoded).unwrap();
+    assert_eq!(
+        pairs.headers,
+        [
+            ("a".to_owned(), "1".to_owned()),
+            ("b".to_owned(), "2".to_owned())
+        ]
+    );
     event
         .apply(
             r#"{"type":"after_provider_response","status":201.0,"headers":[["z","26"],["a","1"]]}"#,
