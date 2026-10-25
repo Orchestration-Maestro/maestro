@@ -1,6 +1,6 @@
 //! Object and array assertions with per-location evaluation evidence.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::HashSet};
 
 use num_traits::ToPrimitive;
 use serde_json::{Map, Value};
@@ -141,12 +141,14 @@ pub(super) fn properties<'a>(
     let Some(properties) = schema_map(job.schema().get("properties")) else {
         return;
     };
-    let names = scalars::required_names(job.schema());
-    let required = |key: &str| names.iter().any(|name| name.as_str() == Some(key));
+    let required: HashSet<&str> = scalars::required_names(job.schema())
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
     let members = diagnostics::entries(properties)
         .into_iter()
         .filter_map(|(key, schema)| {
-            if !(value.contains_key(key) || compiled && required(key)) {
+            if !(value.contains_key(key) || compiled && required.contains(key.as_str())) {
                 return None;
             }
             Some((
@@ -159,7 +161,7 @@ pub(super) fn properties<'a>(
     if compiled {
         for child in &mut batch.jobs {
             if let Instance::Key(key) = &child.value
-                && required(key)
+                && required.contains(key.as_str())
             {
                 child.value = Instance::RequiredKey(key.clone());
             }
