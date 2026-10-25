@@ -1,7 +1,7 @@
 //! The session's extension runtime: tool hooks installed at construction, the definition
 //! registry and its allowlist, partial bindings, the start event, discovered resources and
-//! their sources, every bound capability, provider refreshes and the reload, compared with
-//! the recorded binding and registry cases.
+//! their sources, every bound capability, owned and borrowed UI hosts, provider refreshes
+//! and the reload, compared with the recorded binding and registry cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Harness, HarnessOptions, Scripted, answer, assistant, echo_tools, harness, load_history,
@@ -475,6 +475,76 @@ fn keeps_captured_contexts_usable_across_a_direct_reload() {
             api.get_active_tools().unwrap(),
             h.session.get_active_tool_names()
         );
+    });
+}
+
+/// A UI host whose editor text tells it apart from the headless fallback.
+#[derive(Default)]
+struct Editor(RefCell<String>);
+impl maestro_extensions::types::ExtensionUIContextPort for Editor {
+    fn set_editor_text(&self, text: String) -> Result<(), maestro_extensions::EventError> {
+        *self.0.borrow_mut() = text;
+        Ok(())
+    }
+    fn get_editor_text(&self) -> Result<String, maestro_extensions::EventError> {
+        Ok(self.0.borrow().clone())
+    }
+    fn theme(&self) -> maestro_theme::LiveTheme {
+        maestro_theme::LiveTheme::default()
+    }
+}
+
+#[test]
+fn session_ui_bindings_keep_owned_hosts_and_reapply_borrowed_hosts() {
+    on_task_set(|_| async {
+        let (h, _api) = kept_session().await;
+        let owned = Rc::new(Editor::default());
+        let released = Rc::downgrade(&owned);
+        let ui_context = Some(maestro_app::ExtensionUIContext::new(owned).into());
+        let sdk = ExtensionBindings {
+            ui_context,
+            ..ExtensionBindings::default()
+        };
+        h.session.bind_extensions(sdk).await.unwrap();
+        let context = h.runner().create_context();
+        context
+            .ui()
+            .unwrap()
+            .set_editor_text("owned".into())
+            .unwrap();
+        let host = released.upgrade().expect("the session owns an SDK host");
+        assert_eq!(*host.0.borrow(), "owned");
+        drop(host);
+        let borrowed = Rc::new(Editor::default());
+        let installed = maestro_app::ExtensionUIContext::new(borrowed.clone());
+        let native = ExtensionBindings {
+            ui_context: Some(maestro_app::ExtensionUIContextBinding::borrowed(&installed)),
+            ..ExtensionBindings::default()
+        };
+        drop(installed);
+        h.session.bind_extensions(native).await.unwrap();
+        assert!(
+            released.upgrade().is_none(),
+            "rebinding released the owned host"
+        );
+        h.session
+            .bind_extensions(ExtensionBindings::default())
+            .await
+            .unwrap();
+        h.session.reload().await.unwrap();
+        let reloaded = h.runner().create_context();
+        assert!(reloaded.has_ui().unwrap());
+        reloaded
+            .ui()
+            .unwrap()
+            .set_editor_text("borrowed".into())
+            .unwrap();
+        assert_eq!(*borrowed.0.borrow(), "borrowed");
+        assert_eq!(context.ui().unwrap().get_editor_text().unwrap(), "borrowed");
+        drop(borrowed);
+        assert!(!reloaded.has_ui().unwrap());
+        assert!(!h.runner().has_ui());
+        assert_eq!(reloaded.ui().unwrap().get_editor_text().unwrap(), "");
     });
 }
 

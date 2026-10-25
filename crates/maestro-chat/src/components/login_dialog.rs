@@ -148,13 +148,6 @@ impl LoginDialogComponent {
             completed: Cell::new(false),
             on_complete,
         });
-        let submit = settlement.clone();
-        input.set_on_submit(Some(Rc::new(move |value| {
-            let pending = submit.pending.borrow_mut().take();
-            if let Some(sender) = pending {
-                let _ = sender.send(Ok(value.to_owned()));
-            }
-        })));
         let cancel = settlement.clone();
         input.set_on_escape(Some(Rc::new(move || cancel.cancel())));
         Ok(Self {
@@ -173,7 +166,17 @@ impl LoginDialogComponent {
         &self.settlement.signal
     }
     /// Adds the retained input and help, installing settlement before requesting render.
-    fn input_result(&self, help: &str) -> Result<LoginInputFuture, ThemeError> {
+    fn input_result(&self, help: &str, accept_empty: bool) -> Result<LoginInputFuture, ThemeError> {
+        let submit = self.settlement.clone();
+        self.input.set_on_submit(Some(Rc::new(move |value| {
+            if value.is_empty() && !accept_empty {
+                return;
+            }
+            let pending = submit.pending.borrow_mut().take();
+            if let Some(sender) = pending {
+                let _ = sender.send(Ok(value.to_owned()));
+            }
+        })));
         self.content.add_child(self.input.clone());
         self.text(help, None)?;
         let (sender, receiver) = oneshot::channel();
@@ -195,7 +198,7 @@ impl LoginDialogComponent {
     pub fn show_manual_input(&self, prompt: &str) -> Result<LoginInputFuture, ThemeError> {
         self.content.add_child(Rc::new(Spacer::new(1)));
         self.text(prompt, Some(ThemeColor::Dim))?;
-        self.input_result(&format!("({})", self.cancel_hint("to cancel")?))
+        self.input_result(&format!("({})", self.cancel_hint("to cancel")?), false)
     }
     /// Appends a prompt and clears the retained input before installing its result.
     ///
@@ -217,7 +220,7 @@ impl LoginDialogComponent {
             maestro_app::key_hint("tui.select.confirm", "to submit", &self.options.theme)?
         );
         self.input.set_value(String::new());
-        self.input_result(&help)
+        self.input_result(&help, true)
     }
     /// Replaces visible rows with caller information without discarding pending input.
     ///

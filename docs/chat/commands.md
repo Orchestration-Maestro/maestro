@@ -5,14 +5,13 @@ input. Submitted text is trimmed with the shared whitespace rule first: BOM and
 no-break space count as whitespace, while U+0085 and zero-width space do not. The
 editor empties itself before calling back; a slash command never answers the
 waiting input and never enters the editor history. Any other text, including
-`/Model`, `/models`, `/model<Tab>term`, `/scoped-models extra` and `/logout extra`,
-is ordinary input.
+`/Model`, `/models`, `/model<Tab>term`, `/scoped-models extra`, `/login extra` and
+`/logout extra`, is ordinary input.
 
 The mode handles shell input and the slash commands `/export`, `/changelog`,
-`/model`, `/scoped-models`, `/logout`, `/name`, `/session`, `/debug`, `/share` and
-`/copy` and `/quit`. Import, the offline viewer and packaged asset injection are not delivered
-yet (see
-[what is missing](#what-is-missing)).
+`/model`, `/scoped-models`, `/login`, `/logout`, `/name`, `/session`, `/debug`,
+`/hotkeys`, `/share`, `/copy` and `/quit`. Import, the offline viewer and packaged
+asset injection are not delivered yet (see [what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
 methods. Each method reads the runtime's current session when it is called, so it
@@ -160,6 +159,28 @@ own. A package whose changelog holds no section shows
 exactly `/changelog`; `/changelogs`, `/changelog extra` and `/CHANGELOG` are
 prompt text.
 
+## `/hotkeys`
+
+`/hotkeys` appends a bordered "Keyboard Shortcuts" card with Navigation, Editing
+and Other tables. The built-in rows read the live display registry when the
+command runs, including alternative bindings in their resolved order and empty
+labels for disabled actions. Windows adds ` (Ctrl+Enter on Windows Terminal)`
+to the New line description.
+
+`handle_hotkeys_command()` uses the same Markdown card renderer as `/changelog`,
+with the current session's code-block indentation. The title captures its theme;
+the Markdown and borders keep reading the live theme. A theme failure returns
+through the existing terminal error route.
+
+After the shared trim, only exact `/hotkeys` is a command. `/hotkey`, `/HOTKEYS`,
+`/hotkeys extra` and `/hotkeys` followed by U+0085 remain ordinary input. The
+command leaves the waiting input pending and adds no editor history.
+
+An Extensions table follows when the current session has selected shortcuts.
+The runner applies the retained key configuration for reservations, independently
+of the display registry. Rows keep selection order and use the description, or
+the extension path when it is absent; an empty description stays empty.
+
 ## How the path is read
 
 The reader recognizes the command token, then reads one path. It is token
@@ -297,6 +318,82 @@ and shows `Model selection saved to settings`; the panel stays open. Saving with
 every model enabled, or as many as the panel opened with, removes the setting.
 An empty or other explicit selection is saved as it is. Escape closes the panel,
 keeping the session's edits and leaving the setting as it was.
+
+## Providers offered for API-key sign-in
+
+`maestro_chat::interactive_mode::is_api_key_login_provider` decides whether a
+provider can sign in with an API key. A provider with a nonempty shipped display
+name always can. Otherwise a shipped catalog provider cannot, and neither can a
+provider that signs in only by subscription; any other provider can. A caller may
+pass its own set of shipped providers in place of the catalog's. Identifiers are
+compared exactly, so `Anthropic` and `anthropic` are different providers.
+
+## Signing in
+
+`/login` replaces the editor with `Select authentication method:` and the choices
+`Use a subscription` and `Use an API key`; Escape puts the editor back. A method
+opens the provider picker, `Select provider to configure:`, with every registered
+subscription or every catalog provider that can sign in with a key. Choices are
+ordered by display name under the current locale; equal names keep subscriptions
+first and then the catalog's order. Escape in the picker returns to the method
+choice. A method with no provider shows `No subscription providers available.` or
+`No API key providers available.` instead of an empty picker. Listing the choices
+runs no key command.
+
+### API keys
+
+Choosing a key provider opens a dialog that asks `Enter API key:`. The pasted key
+is trimmed with the shared whitespace rule, so BOM and no-break space are removed
+while U+0085 and zero-width space are kept. An empty key shows
+`Error: Failed to save API key for <name>: API key cannot be empty.` Otherwise the
+key is saved for that provider on the current session, the editor comes back and
+the sign-in completes. Escape cancels without a message. A credential file that
+cannot be written keeps the key in memory and leaves the failure as a store
+diagnostic, as removal does.
+
+Amazon Bedrock reads AWS credentials, so choosing it shows `Amazon Bedrock setup`
+with how to configure them and the path of `providers.md` in the documentation
+directory. Closing the dialog puts the editor back; nothing is saved.
+
+### Subscriptions
+
+Choosing a subscription opens its sign-in dialog and starts the provider's sign-in.
+The dialog shows the authorization link, opens it in the browser and shows the
+provider's instructions when they are not empty. A provider with a callback server
+also accepts a pasted redirect under
+`Paste redirect URL below, or complete login in browser:`; empty text is ignored,
+every request for it sees the same answer, and the provider decides which of the
+two arrives first. After an empty submission, another paste or Escape still works.
+GitHub Copilot shows `Waiting for browser authentication...`
+while it polls. Questions, progress lines and choices appear in the same dialog; a
+choice replaces the dialog until it is answered, then the same dialog comes back
+and the provider receives the identifier of the first option with the chosen label.
+
+Each callback is shown before it returns, so a callback that cannot be shown
+returns that failure to the provider, which ends the sign-in before any credential
+is saved. Callbacks the provider keeps after its sign-in ends are refused. Escape
+cancels without a message; any other failure shows
+`Error: Failed to login to <name>: <error>` after the editor comes back.
+
+### After signing in
+
+The catalog is refreshed. When the session still has no resolved model, the
+provider's configured default model is selected. The footer's provider count and
+the editor border are updated, then one status line reports
+`<action>. Selected <id>. Credentials saved to <path>` or, without a selection,
+`<action>. Credentials saved to <path>`. The action is `Logged in to <name>` or
+`Saved API key for <name>`, and the path is `auth.json` in the agent directory. When
+the default model cannot be selected, an error follows with the reason:
+
+- `<action>, but no default model is configured for provider "<id>". Use /model to select a model.`
+- `<action>, but no models are available for that provider. Use /model to select a model.`
+- `<action>, but its default model "<id>" is not available. Use /model to select a model.`
+- `<action>, but selecting its default model failed: <error>. Use /model to select a model.`
+
+A failed selection keeps whatever the session already changed. Without such an
+error, the [subscription billing notice](#subscription-billing-notice) is checked
+for the selected or current model without holding up the sign-in. A refresh failure ends
+the sign-in with its error instead of a status line.
 
 ## Removing stored credentials
 

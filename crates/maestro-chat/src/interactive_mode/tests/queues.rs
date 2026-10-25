@@ -4,7 +4,7 @@ use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions
 use super::bash::shelling;
 use super::typed::{poll, recalled, submit};
 use super::{
-    Held, Setup, World, border_row, driving, echoing_shell, holding, isolated, on_tasks, painted,
+    Held, Setup, World, border_row, driving, echoing_shell, holding, isolated, painted,
     rendered_border, scripted, select_level, start_shells, started, streaming,
     transcript_positions,
 };
@@ -345,14 +345,14 @@ struct Merged {
 #[test]
 fn queued_texts_merge_by_mode_without_reordering_or_deduplication() {
     const TEST: &str = "queued_texts_merge_by_mode_without_reordering_or_deduplication";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<SnapshotOp, Merged>(TEST) {
             let SnapshotOp::MergeClear {
                 steering,
                 follow_up,
                 local,
             } = input;
-            let world = started(directory);
+            let world = started(directory).await;
             seed(
                 &world,
                 Queues {
@@ -452,9 +452,9 @@ fn pending(mode: &InteractiveMode, width: usize) -> Vec<String> {
 #[test]
 fn pending_rows_keep_labels_live_hint_styles_and_clear_empty() {
     const TEST: &str = "pending_rows_keep_labels_live_hint_styles_and_clear_empty";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<PendingOp, Rows>(TEST) {
-            let world = started(directory);
+            let world = started(directory).await;
             let theme = world.themes.theme().get().unwrap();
             match (input, expected) {
                 (
@@ -596,11 +596,12 @@ fn restore_case(world: &World, held: &Held, input: RestoreOp, expected: Value) {
 #[test]
 fn dequeue_restores_grouped_text_and_preserves_nonblank_draft() {
     const TEST: &str = "dequeue_restores_grouped_text_and_preserves_nonblank_draft";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<RestoreOp, Value>(TEST) {
-            streaming(&started(directory), |world, held| {
+            streaming(&started(directory).await, async |world, held| {
                 restore_case(world, held, input, expected);
-            });
+            })
+            .await;
         }
     });
 }
@@ -619,10 +620,10 @@ enum EmptyOp {
 #[test]
 fn empty_restore_preserves_editor_and_stream_escape_still_aborts() {
     const TEST: &str = "empty_restore_preserves_editor_and_stream_escape_still_aborts";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (EmptyOp::RestoreEmpty { abort }, expected) in cases::<EmptyOp, Value>(TEST) {
             let (count, expected) = counted(expected);
-            streaming(&started(directory), |world, held| {
+            streaming(&started(directory).await, async |world, held| {
                 world.mode.editor.set_text("kept");
                 world
                     .mode
@@ -642,9 +643,10 @@ fn empty_restore_preserves_editor_and_stream_escape_still_aborts() {
                     observe(world, &calls, held.aborts()),
                     Observed::expected(world, expected)
                 );
-            });
+            })
+            .await;
         }
-        streaming(&started(directory), |world, held| {
+        streaming(&started(directory).await, async |world, held| {
             world.mode.editor.set_text("kept");
             world.mode.editor.handle_input("\x1b");
             assert_eq!(world.mode.editor.get_text(), "kept");
@@ -653,7 +655,8 @@ fn empty_restore_preserves_editor_and_stream_escape_still_aborts() {
                 1,
                 "the interrupt key stops an empty-queue turn"
             );
-        });
+        })
+        .await;
     });
 }
 
@@ -671,9 +674,9 @@ enum DequeueOp {
 #[test]
 fn dequeue_status_uses_exact_zero_singular_and_plural_lines() {
     const TEST: &str = "dequeue_status_uses_exact_zero_singular_and_plural_lines";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (DequeueOp::Dequeue { local }, expected) in cases::<DequeueOp, Value>(TEST) {
-            let world = started(directory);
+            let world = started(directory).await;
             seed(
                 &world,
                 Queues {
@@ -761,9 +764,9 @@ fn status_sequence(mode: &InteractiveMode, input: StatusOp) {
 #[test]
 fn status_replaces_only_the_adjacent_retained_pair() {
     const TEST: &str = "status_replaces_only_the_adjacent_retained_pair";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<StatusOp, Transcript>(TEST) {
-            let world = started(directory);
+            let world = started(directory).await;
             status_sequence(&world.mode, input);
             let theme = world.themes.theme().get().unwrap();
             let children = world.mode.chat_container.children().borrow().len();
@@ -801,9 +804,9 @@ fn key_display_capitalizes_each_live_binding_without_reordering() {
     for (KeyName::CapitalizeKey { key }, expected) in cases::<KeyName, Displayed>(TEST) {
         assert_eq!(InteractiveMode::capitalize_key(&key), expected.result);
     }
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         // The mode publishes the application's key registry, which the display reads live.
-        let _world = started(directory);
+        let _world = started(directory).await;
         let keys = maestro_tui::get_keybindings();
         let bind = |keys_bound: Option<&[&str]>| {
             keys.set_user_bindings(vec![(
@@ -852,15 +855,15 @@ fn escape(world: &World, held: Option<&Held>) -> (Heard, Vec<bool>) {
 }
 
 /// Presses the interrupt key in a streaming or idle world and checks what is left.
-fn escape_case(directory: &Path, streams: bool, expected: Value) {
+async fn escape_case(directory: &Path, streams: bool, expected: Value) {
     if !streams {
-        let world = started(directory);
+        let world = started(directory).await;
         let (calls, _) = escape(&world, None);
         let observed = observe(&world, &calls, 0);
         assert_eq!(observed, Observed::expected(&world, expected));
         return;
     }
-    streaming(&started(directory), |world, held| {
+    streaming(&started(directory).await, async |world, held| {
         let (calls, stopped) = escape(world, Some(held));
         assert_eq!(
             stopped,
@@ -869,15 +872,16 @@ fn escape_case(directory: &Path, streams: bool, expected: Value) {
         );
         let observed = observe(world, &calls, held.aborts());
         assert_eq!(observed, Observed::expected(world, expected));
-    });
+    })
+    .await;
 }
 
 #[test]
 fn stream_escape_restores_before_aborting() {
     const TEST: &str = "stream_escape_restores_before_aborting";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (EscapeOp::Escape { streaming }, expected) in cases::<EscapeOp, Value>(TEST) {
-            escape_case(directory, streaming, expected);
+            escape_case(directory, streaming, expected).await;
         }
     });
 }
@@ -937,7 +941,7 @@ fn controlled_factory(heard: &Heard, refuse: bool) -> ExtensionFactory<Local> {
 /// on `selected`; its shell handler records `["execute", command, excluded]` and answers
 /// the command without running one; the command records `["command", arguments]`. Queue
 /// operations are recorded in the same log.
-fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
+async fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
     let heard = Heard::default();
     let factory = controlled_factory(&heard, refuse);
     let world = Setup {
@@ -945,7 +949,7 @@ fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     // The recorded transcripts start after the startup resource listing.
     world.mode.chat_container.clear();
@@ -1023,7 +1027,10 @@ const AUTO_COMPACTION_FAILURE: &str =
 
 /// Runs `action` from the start notification of a compaction of `world`'s session, while
 /// the session compacts, then lets the compaction end.
-pub(super) fn during_compaction(world: &World, action: impl Fn(&Rc<InteractiveMode>) + 'static) {
+pub(super) async fn during_compaction(
+    world: &World,
+    action: impl Fn(&Rc<InteractiveMode>) + 'static,
+) {
     let session = world.mode.runtime_host.session();
     let mode = Rc::downgrade(&world.mode);
     let compacting = Rc::clone(&session);
@@ -1038,11 +1045,7 @@ pub(super) fn during_compaction(world: &World, action: impl Fn(&Rc<InteractiveMo
         .services()
         .auth_storage
         .set_runtime_api_key("unknown", "key");
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    let tasks = tokio::task::LocalSet::new();
-    tasks.block_on(&runtime, async {
+    async {
         let ended = session.compact(None).await;
         assert_eq!(
             ended.unwrap_err().message,
@@ -1050,7 +1053,8 @@ pub(super) fn during_compaction(world: &World, action: impl Fn(&Rc<InteractiveMo
         );
         // The compaction's end delivers the input it captured, on the terminal host.
         super::progress::settle_host(world).await;
-    });
+    }
+    .await;
     unsubscribe();
 }
 
@@ -1158,9 +1162,9 @@ enum EnqueueOp {
 #[test]
 fn compaction_enqueue_keeps_text_mode_history_and_status() {
     const TEST: &str = "compaction_enqueue_keeps_text_mode_history_and_status";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (EnqueueOp::Enqueue { mode }, expected) in cases::<EnqueueOp, Value>(TEST) {
-            let world = started(directory);
+            let world = started(directory).await;
             world.mode.editor.set_text("draft");
             let calls = queue_operations(&world);
             let queued = world
@@ -1195,8 +1199,8 @@ struct Detected {
 #[test]
 fn extension_command_detection_uses_slash_and_first_ascii_space() {
     const TEST: &str = "extension_command_detection_uses_slash_and_first_ascii_space";
-    isolated(TEST, |directory| {
-        let (world, _) = controlled(directory, false);
+    isolated(TEST, async |directory| {
+        let (world, _) = controlled(directory, false).await;
         for (DetectionOp::ExtensionDetection { text }, expected) in
             cases::<DetectionOp, Detected>(TEST)
         {
@@ -1253,8 +1257,8 @@ enum FollowOp {
 }
 
 /// Presses the follow-up key in a world the case's state selects and checks what is left.
-fn follow_case(directory: &Path, input: FollowOp, expected: Value, rows: &SingleRows) {
-    let (world, heard) = controlled(directory, false);
+async fn follow_case(directory: &Path, input: FollowOp, expected: Value, rows: &SingleRows) {
+    let (world, heard) = controlled(directory, false).await;
     let expected = session_effects(expected, false, rows);
     let (state, text, installed) = match input {
         FollowOp::Follow {
@@ -1286,13 +1290,16 @@ fn follow_case(directory: &Path, input: FollowOp, expected: Value, rows: &Single
             press(&world.mode);
             observe(&world, &heard, 0)
         }
-        State::Stream => streaming(&world, |world, _| {
-            heard.borrow_mut().clear();
-            press(&world.mode);
-            observe(world, &heard, 0)
-        }),
+        State::Stream => {
+            streaming(&world, async |world, _| {
+                heard.borrow_mut().clear();
+                press(&world.mode);
+                observe(world, &heard, 0)
+            })
+            .await
+        }
         State::Compact => {
-            during_compaction(&world, press);
+            during_compaction(&world, press).await;
             observe(&world, &heard, 0)
         }
     };
@@ -1308,12 +1315,12 @@ fn follow_case(directory: &Path, input: FollowOp, expected: Value, rows: &Single
 #[test]
 fn follow_up_routes_expanded_input_through_idle_stream_and_compaction() {
     const TEST: &str = "follow_up_routes_expanded_input_through_idle_stream_and_compaction";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         let rows = single_rows(TEST);
         for (input, expected) in cases::<FollowOp, Value>(TEST) {
-            follow_case(directory, input, expected, &rows);
+            follow_case(directory, input, expected, &rows).await;
         }
-        let (world, heard) = controlled(directory, false);
+        let (world, heard) = controlled(directory, false).await;
         record_submission(&world, &heard, true);
         paste(&world, " pasted ");
         world.mode.handle_follow_up().unwrap();
@@ -1338,7 +1345,7 @@ enum SubmitOp {
 
 /// Submits `text` through the editor's installed submission while a response streams or
 /// the session compacts, and checks what is left.
-fn submit_case(directory: &Path, input: SubmitOp, expected: Value, rows: &SingleRows) {
+async fn submit_case(directory: &Path, input: SubmitOp, expected: Value, rows: &SingleRows) {
     let SubmitOp::Submit {
         compacting,
         streaming: streams,
@@ -1348,7 +1355,7 @@ fn submit_case(directory: &Path, input: SubmitOp, expected: Value, rows: &Single
         streams,
         "every recorded Enter arrives while a response streams"
     );
-    let (world, heard) = controlled(directory, false);
+    let (world, heard) = controlled(directory, false).await;
     let expected = session_effects(expected, false, rows);
     let waiter = world.mode.get_user_input();
     let mut waiter = std::pin::pin!(waiter);
@@ -1358,15 +1365,16 @@ fn submit_case(directory: &Path, input: SubmitOp, expected: Value, rows: &Single
     };
     let observed = if compacting {
         // A compaction first stops the response, so the compaction branch runs alone.
-        during_compaction(&world, press);
+        during_compaction(&world, press).await;
         observe(&world, &heard, 0)
     } else {
         // Observed while the response still streams, before its end delivers the message.
-        streaming(&world, |world, _| {
+        streaming(&world, async |world, _| {
             heard.borrow_mut().clear();
             press(&world.mode);
             observe(world, &heard, 0)
         })
+        .await
     };
     let still_waiting = super::typed::poll(&mut waiter).is_none();
     assert!(still_waiting, "the typed input still waits");
@@ -1382,10 +1390,10 @@ fn submit_case(directory: &Path, input: SubmitOp, expected: Value, rows: &Single
 #[test]
 fn enter_steers_during_streaming_and_prioritizes_compaction() {
     const TEST: &str = "enter_steers_during_streaming_and_prioritizes_compaction";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         let rows = single_rows(TEST);
         for (input, expected) in cases::<SubmitOp, Value>(TEST) {
-            submit_case(directory, input, expected, &rows);
+            submit_case(directory, input, expected, &rows).await;
         }
     });
 }
@@ -1414,8 +1422,8 @@ enum Operation {
 /// Sends `selected` while a response streams and the session refuses it, then checks
 /// that the failure reaches the terminal host with the history and editor already
 /// updated and no pending rows refreshed.
-fn rejection_case(directory: &Path, operation: Operation, expected: Value) {
-    let (world, heard) = controlled(directory, true);
+async fn rejection_case(directory: &Path, operation: Operation, expected: Value) {
+    let (world, heard) = controlled(directory, true).await;
     let mut expected = expected;
     let error = expected
         .as_object_mut()
@@ -1424,7 +1432,7 @@ fn rejection_case(directory: &Path, operation: Operation, expected: Value) {
         .unwrap();
     let mut expected = Observed::expected(&world, session_effects(expected, true, &HashMap::new()));
     expected.failures = vec![error.as_str().unwrap().to_owned()];
-    streaming(&world, |world, _| {
+    streaming(&world, async |world, _| {
         heard.borrow_mut().clear();
         match operation {
             Operation::Follow => {
@@ -1436,7 +1444,20 @@ fn rejection_case(directory: &Path, operation: Operation, expected: Value) {
                 world.mode.editor.on_submit().unwrap()("selected");
             }
         }
-    });
+    })
+    .await;
+    // The bound error listener shows the input handler's failure first, attributed to its
+    // extension.
+    let heading = "Extension \"<inline>\" error: refused input";
+    let shown = painted(
+        &world.themes.theme().get().unwrap(),
+        &[format!(" @error@{heading}\x1b[39m")],
+    )
+    .remove(0);
+    expected.chat.insert(
+        0,
+        format!("{shown}{}", " ".repeat(80 - heading.chars().count() - 1)),
+    );
     let expected = with_notice(expected, &world, AUTO_COMPACTION_FAILURE);
     assert_eq!(observe(&world, &heard, 0), expected);
 }
@@ -1444,8 +1465,8 @@ fn rejection_case(directory: &Path, operation: Operation, expected: Value) {
 /// Types `/cmd arg` and an ordinary text with the follow-up key from a compaction's start
 /// notification, checking before the notification returns that the command already ran
 /// and the text is already kept.
-fn compaction_admission(directory: &Path) {
-    let (world, heard) = controlled(directory, false);
+async fn compaction_admission(directory: &Path) {
+    let (world, heard) = controlled(directory, false).await;
     let log = Rc::clone(&heard);
     during_compaction(&world, move |mode| {
         mode.editor.set_text("/cmd arg");
@@ -1458,20 +1479,21 @@ fn compaction_admission(directory: &Path) {
         assert_eq!(kept.len(), 1);
         assert_eq!(kept[0].text, "kept");
         assert!(matches!(kept[0].mode, UserMessageDelivery::FollowUp));
-    });
+    })
+    .await;
     assert_eq!(settled(&world), Vec::<String>::new());
 }
 
 #[test]
 fn queue_actions_use_real_session_compaction_and_prompt_routes() {
     const TEST: &str = "queue_actions_use_real_session_compaction_and_prompt_routes";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (RejectionOp::PromptRejection { operation }, expected) in
             cases::<RejectionOp, Value>(TEST)
         {
-            rejection_case(directory, operation, expected);
+            rejection_case(directory, operation, expected).await;
         }
-        compaction_admission(directory);
+        compaction_admission(directory).await;
     });
 }
 
@@ -1482,8 +1504,8 @@ fn bind(action: &str, keys: Option<&str>) {
 }
 
 /// The dequeue key moved to Ctrl+Q and back: only the bound key restores.
-fn dequeue_binding(directory: &Path) {
-    let world = started(directory);
+async fn dequeue_binding(directory: &Path) {
+    let world = started(directory).await;
     let restore = |key: &str, restored: bool| {
         seed(
             &world,
@@ -1512,8 +1534,8 @@ fn dequeue_binding(directory: &Path) {
 
 /// The follow-up key moved to Alt+X and back, with no response streaming: only the bound
 /// key forwards the text to the submission.
-fn follow_up_binding(directory: &Path) {
-    let (world, heard) = controlled(directory, false);
+async fn follow_up_binding(directory: &Path) {
+    let (world, heard) = controlled(directory, false).await;
     record_submission(&world, &heard, true);
     let forward = |key: &str, forwarded: bool| {
         heard.borrow_mut().clear();
@@ -1537,9 +1559,9 @@ fn follow_up_binding(directory: &Path) {
 
 /// The interrupt key moved to Alt+Z while a response streams with nothing queued: only
 /// the bound key stops the response.
-fn interrupt_binding(directory: &Path) {
-    let world = started(directory);
-    streaming(&world, |world, held| {
+async fn interrupt_binding(directory: &Path) {
+    let world = started(directory).await;
+    streaming(&world, async |world, held| {
         bind("app.interrupt", Some("alt+z"));
         world.mode.editor.handle_input("\x1b");
         world.mode.editor.handle_input("z");
@@ -1547,15 +1569,16 @@ fn interrupt_binding(directory: &Path) {
         world.mode.editor.handle_input("\x1bz");
         assert_eq!(held.aborts(), 1);
         bind("app.interrupt", None);
-    });
+    })
+    .await;
 }
 
 #[test]
 fn queued_actions_follow_live_bindings() {
-    isolated("queued_actions_follow_live_bindings", |directory| {
-        dequeue_binding(directory);
-        follow_up_binding(directory);
-        interrupt_binding(directory);
+    isolated("queued_actions_follow_live_bindings", async |directory| {
+        dequeue_binding(directory).await;
+        follow_up_binding(directory).await;
+        interrupt_binding(directory).await;
     });
 }
 
@@ -1563,13 +1586,14 @@ fn queued_actions_follow_live_bindings() {
 fn queue_callbacks_release_the_mode_after_active_work_settles() {
     isolated(
         "queue_callbacks_release_the_mode_after_active_work_settles",
-        |directory| {
-            let world = started(directory);
-            let (weak, handed) = streaming(&world, |world, _| {
+        async |directory| {
+            let world = started(directory).await;
+            let (weak, handed) = streaming(&world, async |world, _| {
                 world.mode.editor.set_text("later");
                 world.terminal.send_input("\x1b\r");
                 (Rc::downgrade(&world.mode), world.runtime.take_futures())
-            });
+            })
+            .await;
             let World { mode, .. } = world;
             drop(mode);
             assert!(weak.upgrade().is_some(), "the handed prompt keeps the mode");
@@ -1641,7 +1665,7 @@ impl Interrupt {
 const HELD_RELEASE: &str = "held-release";
 
 /// A started mode whose shell waits for the release file.
-fn held_shell(directory: &Path) -> World {
+async fn held_shell(directory: &Path) -> World {
     let release = directory.join(HELD_RELEASE);
     let _ = std::fs::remove_file(&release);
     let script = scripted(
@@ -1652,7 +1676,7 @@ fn held_shell(directory: &Path) -> World {
             release.display()
         ),
     );
-    shelling(directory, &script)
+    shelling(directory, &script).await
 }
 
 /// Submits the held shell command and returns the command it admitted once the session
@@ -1785,19 +1809,17 @@ async fn interrupt_in(
 }
 
 /// Runs one interrupt selection over a fresh mode and checks its outcome.
-fn interrupt_case(directory: &Path, selection: Interrupt) {
-    let world = held_shell(directory);
+async fn interrupt_case(directory: &Path, selection: Interrupt) {
+    let world = held_shell(directory).await;
     select_level(&world, ThinkingLevel::High);
     world.mode.editor.set_text(selection.draft());
     let errors = if selection.streaming {
-        on_tasks(async {
-            holding(&world, |signal| {
-                interrupt_in(&world, directory, selection, Some(signal))
-            })
-            .await
+        holding(&world, |signal| {
+            interrupt_in(&world, directory, selection, Some(signal))
         })
+        .await
     } else {
-        on_tasks(async { interrupt_in(&world, directory, selection, None).await })
+        interrupt_in(&world, directory, selection, None).await
     };
     assert!(errors.is_empty(), "{errors:?}");
 }
@@ -1806,7 +1828,7 @@ fn interrupt_case(directory: &Path, selection: Interrupt) {
 fn shell_escape_keeps_streaming_priority_and_live_mode_border() {
     isolated(
         "shell_escape_keeps_streaming_priority_and_live_mode_border",
-        |directory| {
+        async |directory| {
             for (streaming, running, mode) in [
                 (false, false, false),
                 (false, false, true),
@@ -1824,7 +1846,8 @@ fn shell_escape_keeps_streaming_priority_and_live_mode_border() {
                         running,
                         mode,
                     },
-                );
+                )
+                .await;
             }
         },
     );
@@ -1965,9 +1988,9 @@ fn refresh(world: &World, class: QueueClass, original: &[Rc<BashExecutionCompone
 
 /// One refresh witness: `shells` pending rows under `class`'s queues, refreshed twice, then
 /// once more after a dequeue and after the ordinary-input flush.
-fn refresh_case(directory: &Path, shells: usize, class: QueueClass) {
-    let world = echoing_shell(directory);
-    let errors = on_tasks(async {
+async fn refresh_case(directory: &Path, shells: usize, class: QueueClass) {
+    let world = echoing_shell(directory).await;
+    let errors = async {
         holding(&world, |_| async {
             let ((), errors) = driving(&world, async {
                 start_shells(&world, shells).await;
@@ -2000,24 +2023,28 @@ fn refresh_case(directory: &Path, shells: usize, class: QueueClass) {
             errors
         })
         .await
-    });
+    }
+    .await;
     assert!(errors.is_empty(), "{errors:?}");
 }
 
 #[test]
 fn pending_shell_rows_survive_queue_refresh() {
-    isolated("pending_shell_rows_survive_queue_refresh", |directory| {
-        for shells in [0, 1, 3] {
-            for class in [
-                QueueClass::Empty,
-                QueueClass::Steering,
-                QueueClass::FollowUp,
-                QueueClass::Both,
-            ] {
-                refresh_case(directory, shells, class);
+    isolated(
+        "pending_shell_rows_survive_queue_refresh",
+        async |directory| {
+            for shells in [0, 1, 3] {
+                for class in [
+                    QueueClass::Empty,
+                    QueueClass::Steering,
+                    QueueClass::FollowUp,
+                    QueueClass::Both,
+                ] {
+                    refresh_case(directory, shells, class).await;
+                }
             }
-        }
-    });
+        },
+    );
 }
 
 /// Submits `text` through the installed submission and returns what the waiting input
@@ -2032,7 +2059,7 @@ fn deliver(
 
 /// Produces `count` pending shell rows while a response streams, and returns the world with
 /// the retained rows and the pending area's children.
-fn produce_pending(
+async fn produce_pending(
     directory: &Path,
     count: usize,
 ) -> (
@@ -2040,8 +2067,8 @@ fn produce_pending(
     Vec<Rc<BashExecutionComponent>>,
     Vec<Rc<dyn Component>>,
 ) {
-    let world = echoing_shell(directory);
-    let retained = on_tasks(async {
+    let world = echoing_shell(directory).await;
+    let retained = async {
         holding(&world, |_| async {
             let (rows, errors) = driving(&world, async {
                 start_shells(&world, count).await;
@@ -2052,7 +2079,8 @@ fn produce_pending(
             rows
         })
         .await
-    });
+    }
+    .await;
     seed(
         &world,
         Queues {
@@ -2073,8 +2101,8 @@ fn produce_pending(
 }
 
 /// Ends the response, delivers an ordinary submission and checks where every row went.
-fn movement_case(directory: &Path, count: usize) {
-    let (world, retained, neighbours) = produce_pending(directory, count);
+async fn movement_case(directory: &Path, count: usize) {
+    let (world, retained, neighbours) = produce_pending(directory, count).await;
     let mut waiter = super::typed::waiting(&world.mode);
     assert_eq!(
         world.mode.pending_shells.borrow().len(),
@@ -2121,9 +2149,9 @@ fn movement_case(directory: &Path, count: usize) {
 fn pending_shell_rows_move_once_in_insertion_order_before_input() {
     isolated(
         "pending_shell_rows_move_once_in_insertion_order_before_input",
-        |directory| {
+        async |directory| {
             for count in [0, 1, 3] {
-                movement_case(directory, count);
+                movement_case(directory, count).await;
             }
         },
     );
@@ -2356,7 +2384,7 @@ fn child_counts(world: &World) -> (usize, usize) {
 }
 
 /// Checks an ordinary input's admission before the compaction's end captures it.
-fn observe_compaction_admission(
+async fn observe_compaction_admission(
     world: World,
     heard: Heard,
     waiter: Waiting,
@@ -2374,25 +2402,41 @@ fn observe_compaction_admission(
             baseline,
         };
         assert_route(&observed_world, &heard, &mut waiter.borrow_mut(), &expected);
-    });
+    })
+    .await;
+}
+
+/// Submits input while driving its admitted work to the selected route.
+async fn submit_route(
+    world: &World,
+    heard: &Heard,
+    text: &'static str,
+    route: Route,
+) -> Vec<Box<dyn std::error::Error>> {
+    driving(world, async {
+        heard.borrow_mut().clear();
+        world.mode.editor.on_submit().unwrap()(text);
+        settle(world, route).await;
+    })
+    .await
+    .1
 }
 
 /// Submits `text` in `producer`'s state and checks the route it took.
-fn admission_case(
+async fn admission_case(
     directory: &Path,
     producer: Producer,
     (text, exclusion): (&'static str, Option<bool>),
 ) {
-    let (world, heard) = controlled(directory, false);
+    let (world, heard) = controlled(directory, false).await;
     let mut waiter: Waiting = super::typed::waiting(&world.mode);
     let baseline = child_counts(&world);
     let route = producer.route(text, exclusion);
     if producer == Producer::Compacting && route == Route::Compacted {
-        return observe_compaction_admission(world, heard, waiter, text, baseline);
+        return observe_compaction_admission(world, heard, waiter, text, baseline).await;
     }
-    let submitted = text.to_owned();
     let press = move |mode: &Rc<InteractiveMode>| {
-        mode.editor.on_submit().unwrap()(&submitted);
+        mode.editor.on_submit().unwrap()(text);
     };
     let mut expected = Expected {
         route,
@@ -2402,44 +2446,31 @@ fn admission_case(
     // A streaming response consumes what it steered when it ends, so its route is checked
     // while the response still holds the session.
     let errors = match producer {
-        Producer::Streaming => on_tasks(async {
+        Producer::Streaming => {
             holding(&world, |_| async {
                 let expected = Expected {
                     baseline: child_counts(&world),
                     ..expected
                 };
-                let ((), errors) = driving(&world, async {
-                    heard.borrow_mut().clear();
-                    press(&world.mode);
-                    settle(&world, route).await;
-                })
-                .await;
+                let errors = submit_route(&world, &heard, text, route).await;
                 assert_route(&world, &heard, &mut waiter, &expected);
                 errors
             })
             .await
-        }),
+        }
         Producer::Compacting => {
             let notice = with_compaction_notice(observe(&world, &Heard::default(), 0), &world);
             heard.borrow_mut().clear();
-            during_compaction(&world, press);
+            during_compaction(&world, press).await;
             let chat = world.mode.chat_container.render(80);
             assert!(
                 chat.windows(notice.chat.len())
                     .any(|rows| rows == notice.chat)
             );
             expected.baseline.0 += notice.chat.len();
-            on_tasks(driving(&world, settle(&world, route))).1
+            (driving(&world, settle(&world, route))).await.1
         }
-        Producer::Idle => on_tasks(async {
-            let ((), errors) = driving(&world, async {
-                heard.borrow_mut().clear();
-                press(&world.mode);
-                settle(&world, route).await;
-            })
-            .await;
-            errors
-        }),
+        Producer::Idle => submit_route(&world, &heard, text, route).await,
     };
     assert!(errors.is_empty(), "{errors:?}");
     if producer != Producer::Streaming {
@@ -2451,10 +2482,10 @@ fn admission_case(
 fn shell_dispatch_precedes_streaming_and_compaction_admission() {
     isolated(
         "shell_dispatch_precedes_streaming_and_compaction_admission",
-        |directory| {
+        async |directory| {
             for producer in [Producer::Idle, Producer::Streaming, Producer::Compacting] {
                 for text in TEXTS {
-                    admission_case(directory, producer, text);
+                    admission_case(directory, producer, text).await;
                 }
             }
         },

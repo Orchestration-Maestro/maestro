@@ -83,17 +83,10 @@ impl Registry {
         listener: &maestro_extensions::EventListener<Local>,
         id: u32,
     ) {
-        let mut resources = self.resources.borrow_mut();
-        if resources.listeners.len() >= resources.prune_at {
-            resources.listeners.retain(|_, (listener, _)| {
-                inspect();
-                listener.strong_count() > 0
-            });
-            resources.prune_at = 2 * resources.listeners.len() + 1;
-        }
-        resources
-            .listeners
-            .insert(identity(listener), (std::rc::Rc::downgrade(listener), id));
+        self.resources.borrow_mut().identity(
+            identity(listener),
+            crate::local_resources::Identity::Listener(std::rc::Rc::downgrade(listener), id),
+        );
     }
 }
 impl State {
@@ -158,9 +151,12 @@ impl Registry {
             .map(|entry| {
                 inspect();
                 resources
-                    .listeners
+                    .identities
                     .get(&identity(entry.listener()))
-                    .map(|(_, id)| *id)
+                    .and_then(|identity| match identity {
+                        crate::local_resources::Identity::Listener(_, id) => Some(*id),
+                        crate::local_resources::Identity::Schema(_) => None,
+                    })
             })
             .collect();
         let mut snapshots = frame.snapshots.borrow_mut();
@@ -244,10 +240,12 @@ fn identity(listener: &maestro_extensions::EventListener<Local>) -> usize {
 thread_local! {
     /// Listener identities inspected by registration and snapshot tagging.
     static INSPECTIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Map capacity, empty buckets included, that identity pruning scans.
+    pub(crate) static CAPACITY: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Counts one inspected listener identity.
-fn inspect() {
+pub(crate) fn inspect() {
     #[cfg(test)]
     INSPECTIONS.set(INSPECTIONS.get() + 1);
 }

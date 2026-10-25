@@ -23,7 +23,11 @@ use crate::bindings::host_side::maestro::extension::{host, session};
 type ListenerSnapshot = (u32, Vec<Option<u32>>);
 
 /// Host identity of one guest closure.
-pub struct Identity(u32);
+pub struct Identity(
+    pub(crate) u32,
+    pub(crate) Option<super::schema_host::Origin>,
+);
+pub use super::schema_host::JsonNode;
 /// Cancellation flag.
 pub struct Flag(pub std::sync::Arc<std::sync::atomic::AtomicBool>);
 /// Progress resource owned by one execution.
@@ -96,6 +100,8 @@ pub struct State {
     pub observed: Observed,
     /// The guest, once instantiated, so imports can call back into it.
     pub(super) guest: Option<Guest>,
+    /// The originating instance associated with the current import projection.
+    pub(super) schema_origin: Option<Arc<OnceLock<Guest>>>,
 }
 
 impl WasiView for State {
@@ -178,6 +184,7 @@ impl State {
             table: ResourceTable::new(),
             observed: Observed::default(),
             guest: None,
+            schema_origin: None,
         }
     }
 
@@ -209,7 +216,7 @@ impl session::Host for State {}
 impl host::HostCallback for State {
     fn new(&mut self) -> wasmtime::Result<Resource<Identity>> {
         let identity = self.observed.next_identity();
-        Ok(self.table.push(Identity(identity))?)
+        Ok(self.table.push(Identity(identity, None))?)
     }
 
     fn id(&mut self, this: Resource<Identity>) -> wasmtime::Result<u32> {
@@ -691,9 +698,6 @@ impl host::Host for State {
             serde_json::from_value(self.observed.actions.value.clone()).map_err(|e| e.to_string())
         }))
     }
-    fn get_all_tools(&mut self) -> wasmtime::Result<Result<String, String>> {
-        Ok(self.observed.actions.record())
-    }
     fn get_commands(&mut self) -> wasmtime::Result<Result<String, String>> {
         Ok(self.observed.actions.record())
     }
@@ -806,18 +810,6 @@ impl host::Host for State {
                 crate::FlagValue::String(v) => host::FlagValue::String(v),
             })
         }))
-    }
-
-    fn register_tool(
-        &mut self,
-        metadata: String,
-        prepare: Option<Resource<Identity>>,
-        execute: Resource<Identity>,
-    ) -> wasmtime::Result<Resource<Route>> {
-        let result =
-            self.observed
-                .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep());
-        self.routed(result)
     }
 
     fn append_entry(
@@ -1098,6 +1090,14 @@ pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Compon
         .map_err(|message| wasmtime::format_err!("{message}"))
 }
 
+/// Build the existing test host's import wiring for one component instance.
+fn component_linker(engine: &Engine) -> wasmtime::Result<Linker<State>> {
+    let mut linker = Linker::new(engine);
+    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+    Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
+    Ok(linker)
+}
+
 impl Harness {
     /// Formats the callback-table diagnostic using the resource's logical identity.
     pub fn callback_error(&self, key: u32) -> String {
@@ -1147,12 +1147,13 @@ impl Harness {
         component: &Component,
         state: State,
     ) -> wasmtime::Result<Self> {
-        let mut linker = Linker::new(engine);
-        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
-        Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
+        let origin = Arc::new(OnceLock::new());
+        let linker = component_linker(engine)?;
         let mut store = Store::new(engine, state);
         let extension = Extension::instantiate_async(&mut store, component, &linker).await?;
         let exports = extension.maestro_extension_guest().clone();
+        let _ = origin.set(exports.clone());
+        store.data_mut().schema_origin = Some(origin);
         store.data_mut().guest = Some(exports.clone());
         let started = exports.clone();
         reported(
@@ -1161,6 +1162,24 @@ impl Harness {
                 .await??,
         )?;
         Ok(Self { store, exports })
+    }
+
+    /// Start another author instance using the same host resources and store.
+    pub async fn add_instance(&mut self, path: &Path) -> wasmtime::Result<Guest> {
+        let (_, component) = compiled(path)?;
+        let origin = Arc::new(OnceLock::new());
+        let linker = component_linker(self.store.engine())?;
+        let extension = Extension::instantiate_async(&mut self.store, component, &linker).await?;
+        let exports = extension.maestro_extension_guest().clone();
+        let _ = origin.set(exports.clone());
+        self.store.data_mut().schema_origin = Some(origin);
+        self.store.data_mut().guest = Some(exports.clone());
+        reported(
+            self.store
+                .run_concurrent(async |accessor| exports.call_start(accessor).await)
+                .await??,
+        )?;
+        Ok(exports)
     }
 
     /// The table key a callback was registered under.
@@ -1200,7 +1219,7 @@ impl Harness {
     /// A fresh identity the component never registered. The host keeps it and only lends
     /// borrows of it, so it is not counted as handed to the extension.
     pub fn identity(&mut self, id: u32) -> wasmtime::Result<u32> {
-        Ok(self.store.data_mut().table.push(Identity(id))?.rep())
+        Ok(self.store.data_mut().table.push(Identity(id, None))?.rep())
     }
 
     /// A fresh replacement context in `cwd`.
@@ -1244,10 +1263,23 @@ impl Harness {
 
     /// Asks the component to release the callback at table key `rep`.
     pub async fn release(&mut self, rep: u32) -> wasmtime::Result<()> {
-        self.exports
+        let origin = self.store.data().table.get(&borrow(rep))?.1.clone();
+        let guest = match origin {
+            Some(super::schema_host::Origin::Guest(origin)) => origin
+                .get()
+                .cloned()
+                .ok_or_else(|| wasmtime::format_err!("schema origin is unavailable"))?,
+            None => self.exports.clone(),
+        };
+        let function = guest
             .func_release()
-            .call_async(&mut self.store, (borrow(rep),))
-            .await
+            .func()
+            .typed::<(Resource<Identity>,), ()>(&self.store)?;
+        self.store
+            .run_concurrent(async |accessor| {
+                function.call_concurrent(accessor, (borrow(rep),)).await
+            })
+            .await?
     }
 }
 
@@ -1268,6 +1300,41 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    fn register_tool(
+        accessor: &Accessor<State, Self>,
+        metadata: String,
+        prepare: Option<Resource<Identity>>,
+        execute: Resource<Identity>,
+        schemas: Vec<(String, Resource<Identity>)>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Resource<Route>>> {
+        std::future::ready(accessor.with(|mut access| {
+            let state = access.get();
+            let name = super::schema_host::tool_name(&metadata)?;
+            state.observed.schemas.retain(|(tool, _, _)| tool != &name);
+            for (pointer, handler) in schemas {
+                state.table.get_mut(&handler)?.1 = state
+                    .schema_origin
+                    .clone()
+                    .map(super::schema_host::Origin::Guest);
+                state
+                    .observed
+                    .schemas
+                    .push((name.clone(), pointer, handler.rep()));
+            }
+            let result =
+                state
+                    .observed
+                    .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep());
+            state.routed(result)
+        }))
+    }
+
+    async fn get_all_tools(
+        accessor: &Accessor<State, Self>,
+    ) -> wasmtime::Result<Result<host::ToolListing, String>> {
+        super::schema_host::get_all_tools(accessor).await
+    }
+
     async fn set_model(
         accessor: &Accessor<State, Self>,
         model: String,

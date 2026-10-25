@@ -11,9 +11,9 @@ const SCHEMA_KINDS: &str = "schemaKinds";
 ///
 /// # Errors
 /// Returns serialization failure or an error when metadata is not an object.
-pub fn encode_metadata<T: Serialize>(
+pub fn encode_metadata<T: Serialize, C: Default>(
     metadata: &T,
-    parameters: &ParameterSchema,
+    parameters: &ParameterSchema<C>,
 ) -> Result<String, String> {
     let mut value = serde_json::to_value(metadata).map_err(|error| error.to_string())?;
     let kinds =
@@ -41,12 +41,8 @@ struct CarriedKinds {
 ///
 /// # Errors
 /// Returns invalid metadata or trailing-input errors.
-pub fn decode_tools(text: &str) -> Result<Vec<ToolInfo>, String> {
-    let mut deserializer = serde_json::Deserializer::from_str(text);
-    deserializer.disable_recursion_limit();
-    let tools =
-        Vec::<ToolInfo>::deserialize(&mut deserializer).map_err(|error| error.to_string())?;
-    deserializer.end().map_err(|error| error.to_string())?;
+pub fn decode_tools<C: Default>(text: &str) -> Result<Vec<ToolInfo<ParameterSchema<C>>>, String> {
+    let tools = decode_json::<Vec<ToolInfo<ParameterSchema<C>>>>(text)?;
     let carried = serde_json::from_str::<Vec<CarriedKinds>>(text).unwrap_or_default();
     if carried.len() != tools.len() {
         return Ok(tools);
@@ -64,9 +60,10 @@ pub fn decode_tools(text: &str) -> Result<Vec<ToolInfo>, String> {
 
 /// Metadata fields beside the authored schema, read without a second schema owner.
 #[derive(Deserialize)]
-struct CarriedSchema {
+#[serde(bound(deserialize = "C: Default"))]
+struct CarriedSchema<C: Default> {
     /// Supplied ordinary JSON Schema.
-    parameters: ParameterSchema,
+    parameters: ParameterSchema<C>,
     /// Declared node kinds, independent of ordinary JSON serialization.
     #[serde(flatten)]
     kinds: CarriedKinds,
@@ -76,15 +73,11 @@ struct CarriedSchema {
 ///
 /// # Errors
 /// Returns malformed metadata or trailing-input errors.
-pub fn decode_metadata<T: DeserializeOwned>(text: &str) -> Result<(T, ParameterSchema), String> {
-    let mut deserializer = serde_json::Deserializer::from_str(text);
-    deserializer.disable_recursion_limit();
-    let metadata = T::deserialize(&mut deserializer).map_err(|error| error.to_string())?;
-    deserializer.end().map_err(|error| error.to_string())?;
-    let mut deserializer = serde_json::Deserializer::from_str(text);
-    deserializer.disable_recursion_limit();
-    let schema =
-        CarriedSchema::deserialize(&mut deserializer).map_err(|error| error.to_string())?;
+pub fn decode_metadata<T: DeserializeOwned, C: Default>(
+    text: &str,
+) -> Result<(T, ParameterSchema<C>), String> {
+    let metadata = decode_json::<T>(text)?;
+    let schema = decode_json::<CarriedSchema<C>>(text)?;
     Ok((
         metadata,
         ParameterSchema::authored(schema.parameters.into_json(), schema.kinds.schema_kinds),
@@ -95,10 +88,25 @@ pub fn decode_metadata<T: DeserializeOwned>(text: &str) -> Result<(T, ParameterS
 ///
 /// # Errors
 /// Returns metadata serialization errors.
-pub fn encode_tools(tools: &[ToolInfo]) -> Result<String, String> {
+pub fn encode_tools<C: Default>(tools: &[ToolInfo<ParameterSchema<C>>]) -> Result<String, String> {
     let records = tools
         .iter()
         .map(|tool| encode_metadata(tool, &tool.parameters))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(format!("[{}]", records.join(",")))
 }
+
+/// Decode one complete component JSON document without a fixed nesting limit.
+///
+/// # Errors
+/// Returns malformed JSON or trailing input.
+pub fn decode_json<T: DeserializeOwned>(text: &str) -> Result<T, String> {
+    let mut deserializer = serde_json::Deserializer::from_str(text);
+    deserializer.disable_recursion_limit();
+    let value = T::deserialize(&mut deserializer).map_err(|error| error.to_string())?;
+    deserializer.end().map_err(|error| error.to_string())?;
+    Ok(value)
+}
+
+/// Canonical object traversal used by component JSON views.
+pub use maestro_json::canonical_entries;

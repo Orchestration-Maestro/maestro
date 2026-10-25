@@ -26,6 +26,8 @@ pub(crate) enum Request {
         prepare: Option<Handle>,
         /// Actual execution callback.
         execute: Handle,
+        /// The schema bindings admitted for this declaration.
+        schemas: crate::schema_registration::Schemas,
         /// Catchable native registration result.
         reply: Reply,
     },
@@ -73,12 +75,12 @@ impl Request {
                 metadata,
                 prepare,
                 execute,
+                schemas,
                 reply,
             } => {
                 let result = crate::tool_registration::definition(
                     &metadata,
-                    prepare,
-                    execute,
+                    (prepare, execute, schemas),
                     registry.clone(),
                     api.events.clone(),
                 )

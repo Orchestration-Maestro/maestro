@@ -4,6 +4,7 @@ use crate::{
     chat::{self, TestResult},
     clock::epoch_millis,
     conversation_streams::corpus,
+    root_routes::body_fetch,
 };
 use futures_util::StreamExt;
 use maestro_models::providers::reasoning::mistral::stream_simple_mistral;
@@ -41,19 +42,6 @@ fn options(fetch: Fetch) -> MistralOptions {
 /// Context shared by direct calls.
 fn context() -> TestResult<maestro_models::Context> {
     chat::context(&json!({"messages":[]}))
-}
-/// One-use controlled body transported outside its collection lock.
-fn body_fetch(body: HttpBody) -> Fetch {
-    let slot = Arc::new(Mutex::new(Some(body)));
-    Arc::new(move |_| {
-        let body = slot.lock().unwrap().take().unwrap();
-        Box::pin(std::future::ready(Ok(HttpResponse {
-            status: 200,
-            status_text: String::new(),
-            headers: [("content-type".into(), "text/event-stream".into())].into(),
-            body,
-        })))
-    })
 }
 /// Signals teardown of the response body carrier.
 struct WitnessBody {

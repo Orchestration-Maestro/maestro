@@ -3385,3 +3385,42 @@ fn interactive_native_witness_edge_is_native_development_only() {
         "Cargo refuses an optional development declaration"
     );
 }
+
+/// The guest's checker witness has one native development edge, never a product edge.
+#[test]
+fn guest_schema_validation_edge_is_native_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-models"]);
+    let declaration = "models = { package = \"maestro-models\", path = \"../maestro-models\" }";
+    assert_eq!(
+        caller_declares(
+            &workspace,
+            "maestro-extensions-wasm",
+            &format!("[{NATIVE_DEV}]\n{declaration}")
+        ),
+        Ok(())
+    );
+    for table in [
+        "dependencies",
+        "build-dependencies",
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        assert!(
+            caller_declares(
+                &workspace,
+                "maestro-extensions-wasm",
+                &format!("[{table}]\n{declaration}")
+            )
+            .is_err(),
+            "{table}"
+        );
+    }
+    assert!(caller_declares(&workspace, "maestro-extensions-wasm", &format!("[{NATIVE_DEV}]\nmodels = {{ package = \"maestro-models\", path = \"../maestro-models\", optional = true }}")).is_err());
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-request", "maestro-models"]);
+    assert_eq!(
+        caller_declares(&workspace, "maestro-request", &format!("[{NATIVE_DEV}]\n{declaration}")),
+        Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
+    );
+}

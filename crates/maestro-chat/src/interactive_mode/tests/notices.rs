@@ -58,7 +58,7 @@ enum Expected {
 #[test]
 fn changelog_command_uses_all_entries_and_empty_fallback() {
     const TEST: &str = "changelog_command_uses_all_entries_and_empty_fallback";
-    let stderr = isolated_package(TEST, |directory, package| {
+    let stderr = isolated_package(TEST, async |directory, package| {
         for (input, expected) in cases::<Input, Expected>(FIXTURES, TEST) {
             let (
                 Input::Command {
@@ -91,7 +91,7 @@ fn changelog_command_uses_all_entries_and_empty_fallback() {
                 ..Setup::default()
             }
             .build(directory);
-            world.mode.init().unwrap();
+            world.mode.init().await.unwrap();
             world.runtime.settle().unwrap();
             if unreadable {
                 std::fs::remove_file(&path).unwrap();
@@ -121,7 +121,7 @@ fn changelog_command_uses_all_entries_and_empty_fallback() {
 #[test]
 fn changelog_command_dispatch_is_exact_and_never_prompts() {
     const TEST: &str = "changelog_command_dispatch_is_exact_and_never_prompts";
-    isolated_package(TEST, |directory, _package| {
+    isolated_package(TEST, async |directory, _package| {
         let (_, Expected::Command { lines: fallback, .. }) =
             cases::<Input, Expected>(FIXTURES, "changelog_command_uses_all_entries_and_empty_fallback")
                 .into_iter()
@@ -135,7 +135,7 @@ fn changelog_command_dispatch_is_exact_and_never_prompts() {
                 panic!("a dispatch case and its observation disagree");
             };
             // The package holds no changelog, so the command always appends its fallback card.
-            let world = started(directory);
+            let world = started(directory).await;
             let recorded = submitted(&world, &text);
             let rows = world.mode.chat_container.children().borrow().len();
             assert!(world.mode.editor.get_text().is_empty(), "{text:?}");
@@ -209,12 +209,10 @@ struct SelectionExpected {
 #[test]
 fn changelog_startup_selects_new_entries_and_records_seen_version() {
     const TEST: &str = "changelog_startup_selects_new_entries_and_records_seen_version";
-    isolated_package(TEST, |directory, package| {
-        super::on_tasks(async {
-            for (input, expected) in cases::<SelectionInput, SelectionExpected>(FIXTURES, TEST) {
-                selection_case(directory, package, input, expected).await;
-            }
-        });
+    isolated_package(TEST, async |directory, package| {
+        for (input, expected) in cases::<SelectionInput, SelectionExpected>(FIXTURES, TEST) {
+            selection_case(directory, package, input, expected).await;
+        }
     });
 }
 
@@ -248,7 +246,7 @@ async fn selection_case(
     REPORT_SETTINGS.with(|slot| {
         *slot.borrow_mut() = Some(world.host.session().settings_manager().clone());
     });
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     REPORT_SETTINGS.with(|slot| {
         slot.borrow_mut().take();
     });
@@ -338,7 +336,7 @@ fn changelog_expanded_notice_keeps_markdown_theme_padding_and_borders() {
 
 /// Replays actual startup card observations through retained transcript components.
 fn startup_cards(test: &str) {
-    isolated_package(test, |directory, _| {
+    isolated_package(test, async |directory, _| {
         for (input, expected) in cases::<StartupCard, CardExpected>(FIXTURES, test) {
             assert_eq!(input.op, "startup-card");
             let world = Setup {
@@ -414,7 +412,7 @@ enum SavedExpected {
 #[test]
 fn changelog_saved_settings_keep_typed_fallback_and_raw_values() {
     const TEST: &str = "changelog_saved_settings_keep_typed_fallback_and_raw_values";
-    isolated_package(TEST, |directory, package| {
+    isolated_package(TEST, async |directory, package| {
         let (base, _) = cases::<SelectionInput, SelectionExpected>(
             FIXTURES,
             "changelog_startup_selects_new_entries_and_records_seen_version",
@@ -446,7 +444,7 @@ fn changelog_saved_settings_keep_typed_fallback_and_raw_values() {
             match expected {
                 SavedExpected::Selection { markdown, last } => {
                     assert!(selection && input.width.is_none());
-                    world.mode.init().unwrap();
+                    world.mode.init().await.unwrap();
                     assert_eq!(*world.mode.changelog_markdown.borrow(), markdown);
                     assert_eq!(
                         settings.borrow().get_last_changelog_version(),
@@ -478,7 +476,7 @@ fn changelog_saved_settings_keep_typed_fallback_and_raw_values() {
 #[test]
 fn changelog_startup_is_shown_once_after_resources() {
     const TEST: &str = "changelog_startup_is_shown_once_after_resources";
-    isolated_package(TEST, |directory, package| {
+    isolated_package(TEST, async |directory, package| {
         std::fs::write(package.join("CHANGELOG.md"), "## [3.2.1]\nSELECTED_HISTORY").unwrap();
         let world = Setup {
             configure: Box::new(|settings| settings.set_last_changelog_version("1.0.0".into())),
@@ -498,7 +496,7 @@ fn changelog_startup_is_shown_once_after_resources() {
                 serde_json::json!({"role":"user", "content":"REPLAYED_MESSAGE", "timestamp": 1}),
             )
             .unwrap();
-        world.mode.init().unwrap();
+        world.mode.init().await.unwrap();
         let rows = world.mode.chat_container.render(120);
         let resources = rows
             .iter()
@@ -513,7 +511,7 @@ fn changelog_startup_is_shown_once_after_resources() {
             .position(|row| row.contains("REPLAYED_MESSAGE"))
             .unwrap();
         assert!(resources < history && history < replay);
-        world.mode.init().unwrap();
+        world.mode.init().await.unwrap();
         world.mode.show_startup_notices_if_needed().unwrap();
         assert_eq!(world.mode.chat_container.render(120), rows);
         let empty = Setup::default().build(directory);
@@ -603,10 +601,8 @@ fn changelog_startup_reports_only_recorded_versions() {
         if let Some(value) = &input.override_value {
             env.push(("MAESTRO_TELEMETRY", value.as_str()));
         }
-        super::isolated_case(TEST, &index.to_string(), &env, |directory| {
-            super::on_tasks(async {
-                reporting_case(directory, &input, expected).await;
-            });
+        super::isolated_case(TEST, &index.to_string(), &env, async |directory| {
+            reporting_case(directory, &input, expected).await;
         });
     }
 }
@@ -643,9 +639,9 @@ async fn reporting_case(
         .collect();
     assert_eq!(*requests.lock().unwrap(), expected);
     let before = requests.lock().unwrap().len();
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     assert_eq!(requests.lock().unwrap().len() - before, expected.len());
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     assert_eq!(requests.lock().unwrap().len() - before, expected.len());
     for work in world.runtime.take_futures() {
         work.await.unwrap();
@@ -719,7 +715,7 @@ fn startup_package_notice_keeps_order_duplicates_and_redraw() {
 
 /// Drives both public card operations with the recorded complete inputs.
 fn update_cards(test: &str) {
-    isolated_package(test, |directory, _| {
+    isolated_package(test, async |directory, _| {
         for (input, expected) in cases::<UpdateInput, UpdateExpected>(FIXTURES, test) {
             match (input, expected) {
                 (
@@ -886,12 +882,12 @@ fn startup_package_check_skips_before_observations_when_offline() {
     .into_iter()
     .enumerate()
     {
-        super::isolated_case(TEST, &index.to_string(), &[], |directory| {
+        super::isolated_case(TEST, &index.to_string(), &[], async |directory| {
             let world = native_package_world(directory);
             if let Some(value) = value {
                 world.runtime.set_environment("MAESTRO_OFFLINE", value);
             }
-            super::on_tasks(async {
+            async {
                 let set = value.is_some_and(|value| !value.is_empty());
                 assert_eq!(maestro_app::configuration::flag_is_set(value), set);
                 let (updates, errors) =
@@ -906,7 +902,8 @@ fn startup_package_check_skips_before_observations_when_offline() {
                     }
                 );
                 assert_eq!(directory.join("npm-observed").exists(), !set);
-            });
+            }
+            .await;
         });
     }
 }
@@ -1040,19 +1037,20 @@ fn tmux_warning_selects_first_reachable_policy() {
             TEST,
             &index.to_string(),
             &[("MAESTRO_TMUX_CASE", &encoded)],
-            |directory| {
+            async |directory| {
                 install_command(directory, "tmux", TMUX_SCRIPT);
                 let world = Setup::default().build(directory);
                 assert_eq!(input.op, "tmux");
                 if let Some(value) = &input.tmux {
                     world.runtime.set_environment("TMUX", value);
                 }
-                super::on_tasks(async {
+                async {
                     let (warning, errors) =
                         super::driving(&world, world.mode.check_tmux_keyboard_setup()).await;
                     assert!(errors.is_empty());
                     assert_eq!(warning, expected.warning);
-                });
+                }
+                .await;
             },
         );
     }
@@ -1061,34 +1059,33 @@ fn tmux_warning_selects_first_reachable_policy() {
 #[test]
 fn startup_checks_start_in_order_without_blocking_prompts() {
     const TEST: &str = "startup_checks_start_in_order_without_blocking_prompts";
-    super::isolated_case(TEST, "child", &[], |directory| {
-        super::on_tasks(async {
-            let (fetch, requests) = reporting_transport();
-            let world = Setup {
-                options: crate::InteractiveModeOptions {
-                    service_origin: Some("https://service.invalid".into()),
-                    fetch: Some(fetch),
-                    ..Default::default()
-                },
-                configure: Box::new(|settings| settings.set_enable_install_telemetry(false)),
-                ..Setup::default()
-            }
-            .build(directory);
-            let mut run = Box::pin(world.mode.run());
-            assert!(poll(&mut run).is_none());
-            assert_eq!(
-                *requests.lock().unwrap(),
-                ["https://service.invalid/api/latest-version"]
-            );
-            assert!(world.mode.on_input_callback.borrow().is_some());
-            for work in world.runtime.take_futures() {
-                work.await.unwrap();
-            }
-            drop(run);
-        });
+    super::isolated_case(TEST, "child", &[], async |directory| {
+        let (fetch, requests) = reporting_transport();
+        let world = Setup {
+            options: crate::InteractiveModeOptions {
+                service_origin: Some("https://service.invalid".into()),
+                fetch: Some(fetch),
+                ..Default::default()
+            },
+            configure: Box::new(|settings| settings.set_enable_install_telemetry(false)),
+            ..Setup::default()
+        }
+        .build(directory);
+        let mut run = Box::pin(world.mode.run());
+        assert!(poll(&mut run).is_none());
+        super::prompts::until_waiting(&world.mode, run.as_mut()).await;
+        assert_eq!(
+            *requests.lock().unwrap(),
+            ["https://service.invalid/api/latest-version"]
+        );
+        assert!(world.mode.on_input_callback.borrow().is_some());
+        for work in world.runtime.take_futures() {
+            work.await.unwrap();
+        }
+        drop(run);
     });
-    super::isolated_case(TEST, "ready", &[], |root| {
-        super::on_tasks(ready_completion_order(root));
+    super::isolated_case(TEST, "ready", &[], async |root| {
+        (ready_completion_order(root)).await;
     });
     for (index, order) in [
         [0, 1, 2],
@@ -1105,8 +1102,8 @@ fn startup_checks_start_in_order_without_blocking_prompts() {
             TEST,
             &index.to_string(),
             &[("MAESTRO_NOTICE_INHERITED", "retained")],
-            |root| {
-                super::on_tasks(completion_order(root, order));
+            async |root| {
+                (completion_order(root, order)).await;
             },
         );
     }
@@ -1115,48 +1112,43 @@ fn startup_checks_start_in_order_without_blocking_prompts() {
 #[test]
 fn startup_package_check_uses_current_directories_settings_and_recovers() {
     const TEST: &str = "startup_package_check_uses_current_directories_settings_and_recovers";
-    super::isolated_case(TEST, "child", &[], |directory| {
-        super::on_tasks(async {
-            let world = native_package_world(directory);
-            let (first, errors) =
-                super::driving(&world, world.mode.check_for_package_updates()).await;
-            assert!(errors.is_empty());
-            assert_eq!(first, ["before"]);
-            let session = world.host.session();
-            session
-                .settings_manager()
-                .borrow_mut()
-                .set_project_packages(vec![maestro_app::PackageSource::Source("npm:after".into())]);
-            let (second, errors) =
-                super::driving(&world, world.mode.check_for_package_updates()).await;
-            assert!(errors.is_empty());
-            assert_eq!(second, ["after"]);
-            let observed = std::fs::read_to_string(directory.join("npm-observed")).unwrap();
-            let cwd = directory.join("session").canonicalize().unwrap();
-            assert_eq!(
-                observed,
-                format!(
-                    "{}|view|before|version|--json\n{}|view|after|version|--json\n",
-                    cwd.display(),
-                    cwd.display()
-                )
-            );
-            assert_current_agent_root(&world, directory).await;
-            let observed = std::fs::read_to_string(directory.join("npm-observed")).unwrap();
-            session
-                .settings_manager()
-                .borrow_mut()
-                .set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
-                    "/missing/maestro-command".into(),
-                )]));
-            let (failed, errors) =
-                super::driving(&world, world.mode.check_for_package_updates()).await;
-            assert!(errors.is_empty() && failed.is_empty());
-            assert_eq!(
-                std::fs::read_to_string(directory.join("npm-observed")).unwrap(),
-                observed
-            );
-        });
+    super::isolated_case(TEST, "child", &[], async |directory| {
+        let world = native_package_world(directory);
+        let (first, errors) = super::driving(&world, world.mode.check_for_package_updates()).await;
+        assert!(errors.is_empty());
+        assert_eq!(first, ["before"]);
+        let session = world.host.session();
+        session
+            .settings_manager()
+            .borrow_mut()
+            .set_project_packages(vec![maestro_app::PackageSource::Source("npm:after".into())]);
+        let (second, errors) = super::driving(&world, world.mode.check_for_package_updates()).await;
+        assert!(errors.is_empty());
+        assert_eq!(second, ["after"]);
+        let observed = std::fs::read_to_string(directory.join("npm-observed")).unwrap();
+        let cwd = directory.join("session").canonicalize().unwrap();
+        assert_eq!(
+            observed,
+            format!(
+                "{}|view|before|version|--json\n{}|view|after|version|--json\n",
+                cwd.display(),
+                cwd.display()
+            )
+        );
+        assert_current_agent_root(&world, directory).await;
+        let observed = std::fs::read_to_string(directory.join("npm-observed")).unwrap();
+        session
+            .settings_manager()
+            .borrow_mut()
+            .set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
+                "/missing/maestro-command".into(),
+            )]));
+        let (failed, errors) = super::driving(&world, world.mode.check_for_package_updates()).await;
+        assert!(errors.is_empty() && failed.is_empty());
+        assert_eq!(
+            std::fs::read_to_string(directory.join("npm-observed")).unwrap(),
+            observed
+        );
     });
 }
 
@@ -1190,45 +1182,44 @@ fn changing_packages(slot: &InputSettings) -> maestro_app::ExtensionFactory<maes
 #[test]
 fn startup_checks_snapshot_packages_before_input_hooks() {
     const TEST: &str = "startup_checks_snapshot_packages_before_input_hooks";
-    super::isolated_case(TEST, "child", &[], |directory| {
-        super::on_tasks(async {
-            let slot = InputSettings::default();
-            let world = native_package_world_with(
-                directory,
-                Some(changing_packages(&slot)),
-                crate::InteractiveModeOptions {
-                    initial_message: Some("replace packages".into()),
-                    ..Default::default()
-                },
-                None,
-            );
-            *slot.borrow_mut() = Some(world.host.session().settings_manager().clone());
-            let mut run = Box::pin(world.mode.run());
-            assert!(poll(&mut run).is_none());
-            assert_eq!(
-                world
-                    .host
-                    .session()
-                    .settings_manager()
-                    .borrow()
-                    .get_project_settings()
-                    .0["packages"],
-                serde_json::json!(["npm:after"])
-            );
-            let ((), errors) = super::driving(&world, until_notice(&world, "- before")).await;
-            assert!(errors.is_empty());
-            drop(run);
-            let lazy = world.mode.check_for_package_updates();
+    super::isolated_case(TEST, "child", &[], async |directory| {
+        let slot = InputSettings::default();
+        let world = native_package_world_with(
+            directory,
+            Some(changing_packages(&slot)),
+            crate::InteractiveModeOptions {
+                initial_message: Some("replace packages".into()),
+                ..Default::default()
+            },
+            None,
+        );
+        *slot.borrow_mut() = Some(world.host.session().settings_manager().clone());
+        let mut run = Box::pin(world.mode.run());
+        assert!(poll(&mut run).is_none());
+        super::prompts::until_waiting(&world.mode, run.as_mut()).await;
+        assert_eq!(
             world
                 .host
                 .session()
-                .prompt("same input hook", maestro_app::PromptOptions::default())
-                .await
-                .unwrap();
-            let (result, errors) = super::driving(&world, lazy).await;
-            assert!(errors.is_empty());
-            assert_eq!(result, ["after"]);
-        });
+                .settings_manager()
+                .borrow()
+                .get_project_settings()
+                .0["packages"],
+            serde_json::json!(["npm:after"])
+        );
+        let ((), errors) = super::driving(&world, until_notice(&world, "- before")).await;
+        assert!(errors.is_empty());
+        drop(run);
+        let lazy = world.mode.check_for_package_updates();
+        world
+            .host
+            .session()
+            .prompt("same input hook", maestro_app::PromptOptions::default())
+            .await
+            .unwrap();
+        let (result, errors) = super::driving(&world, lazy).await;
+        assert!(errors.is_empty());
+        assert_eq!(result, ["after"]);
     });
 }
 
@@ -1333,7 +1324,9 @@ impl NativeGates {
     async fn ready(&mut self, root: &std::path::Path) {
         let observed = self.ready.take().unwrap().await.unwrap();
         for (name, row) in self.names.iter().zip(observed) {
-            let (argv, cwd) = if *name == "package" {
+            let (argv, cwd) = if *name == "init" {
+                (serde_json::json!(["--version"]), root.to_owned())
+            } else if *name == "package" {
                 (
                     serde_json::json!(["view", "before", "version", "--json"]),
                     root.join("session"),
@@ -1389,27 +1382,25 @@ fn tmux_probe_uses_both_options_concurrently() {
         TEST,
         "child",
         &[("MAESTRO_NOTICE_INHERITED", "retained")],
-        |root| {
-            super::on_tasks(async {
-                install_command(root, "tmux", GATED_TMUX);
-                let mut gates = NativeGates::new(root);
-                let world = Setup::default().build(root);
-                world.runtime.set_environment("TMUX", "session");
-                let mut query = Box::pin(world.mode.check_tmux_keyboard_setup());
-                assert!(poll(&mut query).is_none());
-                let tasks = capture_tasks(&world);
-                gates.ready(root).await;
-                assert!(poll(&mut query).is_none());
-                gates.release();
-                assert!(
-                    query
-                        .await
-                        .unwrap()
-                        .starts_with("tmux extended-keys is off.")
-                );
-                finish_captures(tasks).await;
-                gates.finish();
-            });
+        async |root| {
+            install_command(root, "tmux", GATED_TMUX);
+            let mut gates = NativeGates::new(root);
+            let world = Setup::default().build(root);
+            world.runtime.set_environment("TMUX", "session");
+            let mut query = Box::pin(world.mode.check_tmux_keyboard_setup());
+            assert!(poll(&mut query).is_none());
+            let tasks = capture_tasks(&world);
+            gates.ready(root).await;
+            assert!(poll(&mut query).is_none());
+            gates.release();
+            assert!(
+                query
+                    .await
+                    .unwrap()
+                    .starts_with("tmux extended-keys is off.")
+            );
+            finish_captures(tasks).await;
+            gates.finish();
         },
     );
 }
@@ -1422,11 +1413,9 @@ fn tmux_query_failures_and_timeout_are_silent() {
         "missing",
         &[],
         "trap '' XFSZ; PATH=/nonexistent/maestro-programs",
-        |root| {
-            super::on_tasks(async {
-                let world = Setup::default().build(root);
-                assert_eq!(world.mode.run_tmux_show("extended-keys").await, None);
-            });
+        async |root| {
+            let world = Setup::default().build(root);
+            assert_eq!(world.mode.run_tmux_show("extended-keys").await, None);
         },
     ) {
         assert!(output.status.success());
@@ -1435,42 +1424,40 @@ fn tmux_query_failures_and_timeout_are_silent() {
         TEST,
         "deadline",
         &[("MAESTRO_NOTICE_INHERITED", "retained")],
-        |root| {
-            super::on_tasks(async {
-                let world = Setup::default().build(root);
-                install_command(root, "tmux", GATED_TMUX);
-                let mut gates = NativeGates::new(root);
-                let mut keys = world.mode.run_tmux_show("extended-keys");
-                let mut format = world.mode.run_tmux_show("extended-keys-format");
-                let tasks = capture_tasks(&world);
-                gates.ready(root).await;
-                let weak = std::rc::Rc::downgrade(&world.mode);
-                drop(world.mode);
-                assert!(weak.upgrade().is_none());
-                tokio::time::pause();
-                assert!(
-                    world
-                        .runtime
-                        .advance_to(std::time::Duration::from_millis(1_999))
-                        .into_iter()
-                        .all(|result| result.is_ok())
-                );
-                assert!(poll(&mut keys).is_none() && poll(&mut format).is_none());
-                tokio::time::advance(std::time::Duration::from_millis(2_000)).await;
-                assert!(tasks.iter().all(|task| !task.is_finished()));
-                assert!(
-                    world
-                        .runtime
-                        .advance_to(std::time::Duration::from_millis(2_000))
-                        .into_iter()
-                        .all(|result| result.is_ok())
-                );
-                assert_eq!(keys.await, None);
-                assert_eq!(format.await, None);
-                gates.release();
-                finish_captures(tasks).await;
-                gates.finish();
-            });
+        async |root| {
+            let world = Setup::default().build(root);
+            install_command(root, "tmux", GATED_TMUX);
+            let mut gates = NativeGates::new(root);
+            let mut keys = world.mode.run_tmux_show("extended-keys");
+            let mut format = world.mode.run_tmux_show("extended-keys-format");
+            let tasks = capture_tasks(&world);
+            gates.ready(root).await;
+            let weak = std::rc::Rc::downgrade(&world.mode);
+            drop(world.mode);
+            assert!(weak.upgrade().is_none());
+            tokio::time::pause();
+            assert!(
+                world
+                    .runtime
+                    .advance_to(std::time::Duration::from_millis(1_999))
+                    .into_iter()
+                    .all(|result| result.is_ok())
+            );
+            assert!(poll(&mut keys).is_none() && poll(&mut format).is_none());
+            tokio::time::advance(std::time::Duration::from_millis(2_000)).await;
+            assert!(tasks.iter().all(|task| !task.is_finished()));
+            assert!(
+                world
+                    .runtime
+                    .advance_to(std::time::Duration::from_millis(2_000))
+                    .into_iter()
+                    .all(|result| result.is_ok())
+            );
+            assert_eq!(keys.await, None);
+            assert_eq!(format.await, None);
+            gates.release();
+            finish_captures(tasks).await;
+            gates.finish();
         },
     );
 }
@@ -1479,8 +1466,11 @@ fn tmux_query_failures_and_timeout_are_silent() {
 fn tmux_capture_uses_raw_status_and_two_second_settlement() {
     const TEST: &str = "tmux_capture_uses_raw_status_and_two_second_settlement";
     let case = serde_json::json!({"ext":{"text":"off\n","signal":true},"format":{"text":"xterm\n","code":0}}).to_string();
-    super::isolated_case(TEST, "signal", &[("MAESTRO_TMUX_CASE", &case)], |root| {
-        super::on_tasks(async {
+    super::isolated_case(
+        TEST,
+        "signal",
+        &[("MAESTRO_TMUX_CASE", &case)],
+        async |root| {
             install_command(root, "tmux", TMUX_SCRIPT);
             let world = Setup::default().build(root);
             let query = world.mode.run_tmux_show("extended-keys");
@@ -1497,52 +1487,51 @@ fn tmux_capture_uses_raw_status_and_two_second_settlement() {
             .unwrap();
             assert_eq!((wrong.code, wrong.killed), (0, false));
             assert_eq!(wrong.stdout, "off\n");
-        });
-    });
+        },
+    );
 }
 
 #[test]
 fn notice_background_work_releases_mode_after_completion() {
     const TEST: &str = "notice_background_work_releases_mode_after_completion";
-    super::isolated_case(TEST, "child", &[], |root| {
-        super::on_tasks(async {
-            let release = std::sync::Arc::new(tokio::sync::Notify::new());
-            let fetch = held_release_fetch(release.clone());
-            let world = Setup {
-                options: crate::InteractiveModeOptions {
-                    service_origin: Some("https://service.invalid".into()),
-                    fetch: Some(fetch),
-                    ..Default::default()
-                },
-                configure: Box::new(|settings| settings.set_enable_install_telemetry(false)),
-                ..Setup::default()
-            }
-            .build(root);
-            let operations = world.mode.native_package_operations();
-            let weak = std::rc::Rc::downgrade(&world.mode);
-            let mut run = Box::pin(world.mode.run());
-            assert!(poll(&mut run).is_none());
-            let tasks = capture_tasks(&world);
-            drop(run);
-            drop(world.mode);
-            assert!(weak.upgrade().is_some());
-            release.notify_one();
-            finish_captures(tasks).await;
-            assert!(weak.upgrade().is_none());
-            assert_eq!(
-                maestro_app::PackageOperations::spawn(&operations, Box::pin(async {}))
-                    .unwrap_err()
-                    .to_string(),
-                "package runtime is no longer available"
-            );
-        });
+    super::isolated_case(TEST, "child", &[], async |root| {
+        let release = std::sync::Arc::new(tokio::sync::Notify::new());
+        let fetch = held_release_fetch(release.clone());
+        let world = Setup {
+            options: crate::InteractiveModeOptions {
+                service_origin: Some("https://service.invalid".into()),
+                fetch: Some(fetch),
+                ..Default::default()
+            },
+            configure: Box::new(|settings| settings.set_enable_install_telemetry(false)),
+            ..Setup::default()
+        }
+        .build(root);
+        let operations = world.mode.native_package_operations();
+        let weak = std::rc::Rc::downgrade(&world.mode);
+        let mut run = Box::pin(world.mode.run());
+        assert!(poll(&mut run).is_none());
+        super::prompts::until_waiting(&world.mode, run.as_mut()).await;
+        let tasks = capture_tasks(&world);
+        drop(run);
+        drop(world.mode);
+        assert!(weak.upgrade().is_some());
+        release.notify_one();
+        finish_captures(tasks).await;
+        assert!(weak.upgrade().is_none());
+        assert_eq!(
+            maestro_app::PackageOperations::spawn(&operations, Box::pin(async {}))
+                .unwrap_err()
+                .to_string(),
+            "package runtime is no longer available"
+        );
     });
 }
 
 #[test]
 fn notice_traversals_consume_each_input_once() {
     const TEST: &str = "notice_traversals_consume_each_input_once";
-    isolated_package(TEST, |root, _| {
+    isolated_package(TEST, async |root, _| {
         for count in [64, 128, 256] {
             let entries: Vec<_> = (0..count)
                 .map(|index| maestro_app::ChangelogEntry {
@@ -1602,8 +1591,8 @@ fn startup_offline_selection_reaches_each_existing_operation() {
                     ("MAESTRO_SKIP_VERSION_CHECK", if skip { "1" } else { "" }),
                     ("MAESTRO_TMUX_CASE", &case),
                 ],
-                |root| {
-                    super::on_tasks(offline_consumers(root, offline, skip));
+                async |root| {
+                    offline_consumers(root, offline, skip).await;
                 },
             );
         }
@@ -1628,6 +1617,7 @@ async fn offline_consumers(root: &std::path::Path, offline: Option<bool>, skip: 
     world.runtime.set_environment("TMUX", "session");
     let mut run = Box::pin(world.mode.run());
     assert!(poll(&mut run).is_none());
+    super::prompts::until_waiting(&world.mode, run.as_mut()).await;
     let online = offline == Some(false);
     let mut expected = Vec::new();
     if online {
@@ -1720,6 +1710,7 @@ async fn completion_order(root: &std::path::Path, order: [usize; 3]) {
     let world = completion_world(root, fetch);
     let mut run = Box::pin(world.mode.run());
     assert!(poll(&mut run).is_none());
+    super::prompts::until_waiting(&world.mode, run.as_mut()).await;
     assert!(world.mode.on_input_callback.borrow().is_some());
     assert_eq!(
         *requests.lock().unwrap(),
@@ -1849,6 +1840,7 @@ async fn ready_completion_order(root: &std::path::Path) {
     .build(root);
     let mut run = Box::pin(world.mode.run());
     assert!(poll(&mut run).is_none());
+    super::prompts::until_waiting(&world.mode, run.as_mut()).await;
     for work in world.runtime.take_futures() {
         work.await.unwrap();
     }
@@ -1901,5 +1893,243 @@ async fn ready_prefix_root(root: &std::path::Path) {
             .render(120)
             .iter()
             .any(|row| row.contains("New version 9.8.7 is available."))
+    );
+}
+
+/// A single search probe paused on the shared native producer gate.
+const INIT_SCRIPT: &str = r"#!/usr/bin/python3
+import json, os, sys
+assert sys.argv[1:] == ['--version']
+root = os.environ['MAESTRO_CODING_AGENT_DIR']
+with open(os.path.join(root, 'init.ready'), 'w') as ready:
+    json.dump({'argv': sys.argv[1:], 'cwd': os.getcwd(), 'inherited': os.environ.get('MAESTRO_NOTICE_INHERITED')}, ready)
+with open(os.path.join(root, 'init.permit')) as permit:
+    assert permit.readline() == 'go\n'
+";
+
+/// Runs one initialization witness with search discovery outside its managed directory.
+fn initialization_case(test: &str, body: impl AsyncFnOnce(&std::path::Path)) {
+    let path = format!("probes/bin:{}", std::env::var("PATH").unwrap());
+    super::isolated_case(
+        test,
+        "child",
+        &[("PATH", &path), ("MAESTRO_NOTICE_INHERITED", "retained")],
+        async |root| {
+            std::fs::create_dir_all(root.join("probes/bin")).unwrap();
+            install_command(&root.join("probes"), "fd", INIT_SCRIPT);
+            super::scripted(&root.join("bin"), "rg", "exit 0");
+            body(root).await;
+        },
+    );
+}
+
+/// Delivers a distinguishable user row through the same synchronous session-event path.
+fn initialization_event(world: &World, text: &str) {
+    super::events::dispatch(
+        world,
+        maestro_app::AgentEvent::MessageStart {
+            message: super::transcript::message(serde_json::json!({
+                "role": "user", "content": text, "timestamp": 0
+            })),
+        },
+    );
+}
+
+/// Holds initialization pending while one or two events arrive, then observes their rows.
+async fn early_events(root: &std::path::Path, texts: &[&str]) {
+    let mut gates = NativeGates::with_names(root, &["init"]);
+    let world = Setup::default().build(root);
+    initialization_event(&world, texts[0]);
+    let mut work = world.runtime.take_futures();
+    assert_eq!(work.len(), 1, "one initialization continuation");
+    let work = tokio::task::spawn_local(work.pop().unwrap());
+    gates.ready(root).await;
+    assert!(!world.mode.is_initialized.get());
+    assert!(world.mode.chat_container.children().borrow().is_empty());
+    for text in &texts[1..] {
+        initialization_event(&world, text);
+    }
+    assert_eq!(world.runtime.futures(), 0, "no second initialization task");
+    assert!(world.mode.chat_container.children().borrow().is_empty());
+    gates.release.send(Some("init".into())).unwrap();
+    work.await.unwrap().unwrap();
+    assert!(world.mode.is_initialized.get());
+    let rows = world.mode.chat_container.render(100).join("\n");
+    let positions: Vec<_> = texts.iter().map(|text| rows.find(text).unwrap()).collect();
+    assert!(positions.windows(2).all(|pair| pair[0] < pair[1]), "{rows}");
+    gates.finish();
+}
+
+#[test]
+fn early_event_waits_for_initialization_to_complete() {
+    initialization_case(
+        "early_event_waits_for_initialization_to_complete",
+        async |root| {
+            early_events(root, &["EARLY_ROW"]).await;
+        },
+    );
+}
+
+#[test]
+fn early_events_keep_their_arrival_order() {
+    initialization_case("early_events_keep_their_arrival_order", async |root| {
+        early_events(root, &["FIRST_ROW", "SECOND_ROW"]).await;
+    });
+}
+
+#[test]
+fn initialized_event_is_handled_synchronously() {
+    super::isolated("initialized_event_is_handled_synchronously", async |root| {
+        let world = super::started(root).await;
+        initialization_event(&world, "IMMEDIATE_ROW");
+        assert!(
+            world
+                .mode
+                .chat_container
+                .render(100)
+                .join("\n")
+                .contains("IMMEDIATE_ROW")
+        );
+        assert_eq!(world.runtime.futures(), 0);
+    });
+}
+
+#[test]
+fn run_awaits_initialization_before_startup_checks() {
+    initialization_case(
+        "run_awaits_initialization_before_startup_checks",
+        async |root| {
+            let mut gates = NativeGates::with_names(root, &["init"]);
+            let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+            let seen = calls.clone();
+            let world = Setup {
+                offline: Some(false),
+                options: crate::InteractiveModeOptions {
+                    service_origin: Some("https://service.invalid".into()),
+                    fetch: Some(std::sync::Arc::new(move |request| {
+                        if request.url.ends_with("/api/latest-version") {
+                            seen.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        }
+                        Box::pin(async { Err(maestro_app::FetchError::Timeout) })
+                    })),
+                    ..Default::default()
+                },
+                ..Setup::default()
+            }
+            .build(root);
+            let prefix_work = world.runtime.futures();
+            let mut run = std::pin::pin!(world.mode.run());
+            tokio::select! {
+                () = gates.ready(root) => {},
+                result = run.as_mut() => panic!("run ended before initialization: {result:?}"),
+            }
+            assert!(!world.mode.is_initialized.get());
+            assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+            assert_eq!(
+                world.runtime.futures(),
+                prefix_work,
+                "startup checks have not started"
+            );
+            gates.release.send(Some("init".into())).unwrap();
+            super::prompts::until_waiting(&world.mode, run.as_mut()).await;
+            assert!(world.mode.is_initialized.get());
+            assert!(calls.load(std::sync::atomic::Ordering::SeqCst) > 0);
+            for work in world.runtime.take_futures() {
+                work.await.unwrap();
+            }
+            gates.finish();
+        },
+    );
+}
+
+#[test]
+fn queued_event_failure_does_not_drop_later_events() {
+    super::isolated(
+        "queued_event_failure_does_not_drop_later_events",
+        async |root| {
+            let world = Setup {
+                configure: Box::new(|settings| settings.set_show_terminal_progress(true)),
+                ..Setup::default()
+            }
+            .build(root);
+            world
+                .terminal
+                .set_progress_error(Some(std::io::ErrorKind::PermissionDenied));
+            super::events::dispatch(&world, maestro_app::AgentEvent::AgentStart);
+            initialization_event(&world, "AFTER_ERROR");
+            let mut work = world.runtime.take_futures();
+            assert_eq!(work.len(), 1);
+            let result = work.pop().unwrap().await;
+            let rows = world.mode.chat_container.render(100).join("\n");
+            assert_eq!((result.is_ok(), rows.contains("AFTER_ERROR")), (true, true));
+            let mut reports = world.runtime.take_futures();
+            assert_eq!(reports.len(), 1);
+            let error = reports.pop().unwrap().await.unwrap_err();
+            assert_eq!(
+                error.downcast_ref::<std::io::Error>().unwrap().kind(),
+                std::io::ErrorKind::PermissionDenied
+            );
+        },
+    );
+}
+
+#[test]
+fn later_event_retries_initialization_after_failure() {
+    super::isolated(
+        "later_event_retries_initialization_after_failure",
+        async |root| {
+            let world = Setup::default().build(root);
+            world
+                .terminal
+                .set_hide_error(Some(std::io::ErrorKind::BrokenPipe));
+            initialization_event(&world, "FAILED_BATCH");
+            let mut work = world.runtime.take_futures();
+            assert_eq!(work.len(), 1);
+            let error = work.pop().unwrap().await.unwrap_err();
+            assert_eq!(
+                error.downcast_ref::<std::io::Error>().unwrap().kind(),
+                std::io::ErrorKind::BrokenPipe
+            );
+            assert!(!world.mode.is_initialized.get());
+            world.terminal.set_hide_error(None);
+            initialization_event(&world, "RETRIED_BATCH");
+            let mut work = world.runtime.take_futures();
+            assert_eq!(work.len(), 1, "a later event starts a fresh continuation");
+            work.pop().unwrap().await.unwrap();
+            assert!(world.mode.is_initialized.get());
+            let rows = world.mode.chat_container.render(100).join("\n");
+            assert!(!rows.contains("FAILED_BATCH"));
+            assert!(rows.contains("RETRIED_BATCH"));
+        },
+    );
+}
+
+#[test]
+fn initialization_registers_signals_before_search_suspends() {
+    initialization_case(
+        "initialization_registers_signals_before_search_suspends",
+        async |root| {
+            let mut gates = NativeGates::with_names(root, &["init"]);
+            let effects = std::rc::Rc::new(super::lifecycle::Effects::default());
+            let world = Setup {
+                lifecycle: effects.clone(),
+                ..Setup::default()
+            }
+            .build(root);
+            initialization_event(&world, "AFTER_SEARCH");
+            let mut work = world.runtime.take_futures();
+            assert_eq!(work.len(), 1);
+            let work = tokio::task::spawn_local(work.pop().unwrap());
+            gates.ready(root).await;
+            let prefix = effects.events.borrow().clone();
+            gates.release.send(Some("init".into())).unwrap();
+            work.await.unwrap().unwrap();
+            gates.finish();
+            assert_eq!(
+                prefix,
+                ["register"],
+                "signals are active while search is pending"
+            );
+        },
     );
 }

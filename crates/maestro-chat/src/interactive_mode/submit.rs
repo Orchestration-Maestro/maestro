@@ -56,6 +56,11 @@ impl InteractiveMode {
                 mode.submit_shell_command(text, command, exclude_from_context);
                 return;
             }
+            if text == "/login" {
+                mode.report(mode.show_login_auth_type_selector());
+                mode.editor.set_text("");
+                return;
+            }
             if text == "/logout" {
                 mode.report(mode.show_logout_selector());
                 mode.editor.set_text("");
@@ -89,6 +94,8 @@ impl InteractiveMode {
                 self.handle_session_command()
             } else if text == "/debug" {
                 self.handle_debug_command()
+            } else if text == "/hotkeys" {
+                self.handle_hotkeys_command()
             } else if text == "/changelog" {
                 self.handle_changelog_command()
             } else if text == "/export" || text.starts_with("/export ") {
@@ -147,7 +154,7 @@ impl InteractiveMode {
     /// # Errors
     /// Returns an initialization or notice-presentation failure.
     pub async fn run(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
-        self.init()?;
+        self.init().await?;
         self.start_startup_checks();
         if !self.options.migrated_providers.is_empty() {
             self.show_warning(&format!(

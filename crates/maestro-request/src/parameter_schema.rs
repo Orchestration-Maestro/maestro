@@ -13,6 +13,8 @@ use std::ops::Deref;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum SchemaKind {
+    /// A node supplying its own conversion and guard.
+    Base,
     /// Accepts every value.
     Any,
     /// Accepts no value.
@@ -61,14 +63,16 @@ pub enum SchemaKind {
 /// entry is plain: it stays whatever the supplied JSON says and is never converted as an
 /// authored node. Equality compares the authored kinds as well as the supplied JSON.
 #[derive(Clone, Debug, PartialEq)]
-pub struct ParameterSchema {
+pub struct ParameterSchema<C = ()> {
+    /// Executable code retained separately from ordinary schema data.
+    code: C,
     /// Supplied JSON Schema value.
     schema: Value,
     /// Authored kinds by JSON pointer, where the empty pointer names the root.
     conversions: HashMap<String, SchemaKind>,
 }
 
-impl ParameterSchema {
+impl<C: Default> ParameterSchema<C> {
     /// Retain a supplied schema and the kinds its author declared for its nodes.
     ///
     /// Each entry pairs a JSON pointer with that node's kind. The empty pointer names the
@@ -80,6 +84,7 @@ impl ParameterSchema {
     ) -> Self {
         Self {
             schema,
+            code: C::default(),
             conversions: conversions.into_iter().collect(),
         }
     }
@@ -109,16 +114,17 @@ impl ParameterSchema {
     }
 }
 
-impl From<Value> for ParameterSchema {
+impl<C: Default> From<Value> for ParameterSchema<C> {
     fn from(schema: Value) -> Self {
         Self {
             schema,
+            code: C::default(),
             conversions: HashMap::new(),
         }
     }
 }
 
-impl Deref for ParameterSchema {
+impl<C> Deref for ParameterSchema<C> {
     type Target = Value;
 
     fn deref(&self) -> &Self::Target {
@@ -126,14 +132,40 @@ impl Deref for ParameterSchema {
     }
 }
 
-impl Serialize for ParameterSchema {
+impl<C> Serialize for ParameterSchema<C> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.schema.serialize(serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for ParameterSchema {
+impl<'de, C: Default> Deserialize<'de> for ParameterSchema<C> {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Value::deserialize(deserializer).map(Self::from)
+    }
+}
+
+/// Executable schema callback records.
+pub mod code;
+pub use code::{Base, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaNode};
+impl<C> ParameterSchema<C> {
+    /// Borrow the code payload.
+    pub fn code(&self) -> &C {
+        &self.code
+    }
+    /// Replace the code payload without changing the supplied schema or declared kinds.
+    pub fn with_code<D>(self, code: D) -> ParameterSchema<D> {
+        ParameterSchema {
+            schema: self.schema,
+            conversions: self.conversions,
+            code,
+        }
+    }
+    /// Copy the data-only projection for a separately owned request.
+    pub fn data(&self) -> ParameterSchema {
+        ParameterSchema {
+            schema: self.schema.clone(),
+            conversions: self.conversions.clone(),
+            code: (),
+        }
     }
 }

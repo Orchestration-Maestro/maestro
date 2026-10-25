@@ -160,7 +160,7 @@ fn drive_emitter(
     let endpoint = registry.emitter(frame).unwrap();
     let mut worker = None;
     registry
-        .invoke_sync(|completion| {
+        .invoke_sync(None, |completion, _| {
             worker = Some(std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()
                     .build()

@@ -63,7 +63,8 @@ mod tests {
             .map(|(pointer, kind)| ((*pointer).to_owned(), kind.clone()))
             .collect();
         let document = Document::new(&schema, &kinds);
-        let converter = Context::new(&document);
+        let code = crate::arguments::validation::check::Code::default();
+        let converter = Context::new(&document, &code);
         let left: Rc<Node<'_>> = instantiate(&converter, converter.document.view(&schema[0]));
         let right: Rc<Node<'_>> = instantiate(&converter, converter.document.view(&schema[1]));
         extends(&left, &right)

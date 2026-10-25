@@ -19,6 +19,7 @@ pub(crate) mod events;
 pub(crate) use events::{EventCall, Outcome};
 pub(crate) mod registrations;
 pub(crate) mod renderers;
+pub(crate) mod schema;
 pub(crate) mod tools;
 pub(crate) use bash::{BashCall, BashRequest};
 pub(crate) use registrations::RegisteredCall;
@@ -54,6 +55,8 @@ pub(crate) enum Call<H = Handle, R = Arc<GuestResource>> {
     Registered(RegisteredCall<H>),
     /// Invokes the real native tool registration callbacks.
     Tool(ToolCall<H>),
+    /// The original weak schema allocation and guest callback admission.
+    Schema(schema::Invocation<H>),
     /// Enters one synchronous prefix through the active Store accessor.
     Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.
@@ -193,6 +196,21 @@ impl Drop for Retained {
 /// Store-safe retained callback ownership; never contains a local domain context.
 #[derive(Clone)]
 pub(crate) struct Handle(Arc<Retained>);
+#[derive(Clone)]
+/// A non-admitting reference to an existing retained callback.
+pub(crate) struct WeakHandle(Weak<Retained>);
+impl WeakHandle {
+    /// Recover a live original admission without manufacturing a callback.
+    pub(crate) fn upgrade(&self) -> Option<Handle> {
+        self.0.upgrade().map(Handle)
+    }
+}
+impl Handle {
+    /// Observe callback lifetime without keeping the Store alive.
+    pub(crate) fn downgrade(&self) -> WeakHandle {
+        WeakHandle(Arc::downgrade(&self.0))
+    }
+}
 
 impl Handle {
     /// Retains an actual guest resource independently of its creating callback.

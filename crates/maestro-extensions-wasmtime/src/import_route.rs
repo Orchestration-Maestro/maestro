@@ -43,6 +43,14 @@ impl Route {
         (send, route)
     }
 
+    /// Returns a catchable failure discovered before native admission.
+    pub(crate) fn failed(error: String) -> Self {
+        let (send, result) = std::sync::mpsc::channel();
+        let (_, route) = Self::new(result);
+        let _ = send.send(Err(error));
+        route
+    }
+
     /// Waits for the next nested call, or for the operation's own result once it returned.
     pub(crate) fn next(&mut self) -> Result<Nested, Result<(), String>> {
         self.nested.recv().map_err(|_| {
@@ -140,6 +148,20 @@ struct LocalSynchronous {
     emitter: Resource<EmitterEndpoint>,
 }
 
+/// Owned operands of one nested schema method on the still-borrowed native operand.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+struct LocalSchema {
+    /// Authored identity of the retained schema node.
+    target: u32,
+    /// Exact author method requested by the checker.
+    operation: crate::schema_wire::Operation,
+    /// Invocation-local borrowed operand capability.
+    node: Resource<crate::schema_reads::Endpoint>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
 #[component(variant)]
@@ -162,6 +184,9 @@ enum LocalCall {
     /// A synchronous callback prefix.
     #[component(name = "synchronous")]
     Synchronous(LocalSynchronous),
+    /// A schema method against the original borrowed operand.
+    #[component(name = "schema")]
+    Schema(LocalSchema),
 }
 
 /// The nested call's own result, returned to the native caller that asked for it.
@@ -186,6 +211,9 @@ enum LocalResult {
     /// Unit result of a synchronous prefix, or the authored error.
     #[component(name = "synchronous")]
     Synchronous(Result<(), String>),
+    /// The schema result with every authored diagnostic field.
+    #[component(name = "schema")]
+    Schema(Result<String, crate::schema_wire::Error>),
 }
 
 /// One step of a native operation, as the guest receives it.
@@ -277,6 +305,9 @@ fn resume<T: crate::callback_imports::CallbackView>(
         (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value)) => {
             let _ = reply.send(value);
         }
+        (Call::Schema(call), LocalResult::Schema(value)) => {
+            let _ = call.reply.send(Ok(value));
+        }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);
         }
@@ -334,6 +365,12 @@ fn local_call(
             target: handler.id,
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
+        }),
+        Call::Schema(call) => LocalCall::Schema(LocalSchema {
+            target: call.handler.id,
+            operation: call.operation.clone(),
+            node: table.push(call.node.clone())?,
+            emitter: table.push(call.emitter.clone())?,
         }),
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,

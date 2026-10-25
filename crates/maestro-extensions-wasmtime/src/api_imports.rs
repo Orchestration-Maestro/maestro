@@ -83,9 +83,6 @@ fn add_values<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
         Request::ActiveTools,
         |store, ()| Ok(store.api().clone()),
     )?;
-    add_read(host, "get-all-tools", Request::AllTools, |store, ()| {
-        Ok(store.api().clone())
-    })?;
     add_read(host, "get-commands", Request::Commands, |store, ()| {
         Ok(store.api().clone())
     })?;

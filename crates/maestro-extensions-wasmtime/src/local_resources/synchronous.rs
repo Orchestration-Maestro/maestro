@@ -69,7 +69,8 @@ impl Registry {
     /// Services reentrant native requests while the active Accessor enters the guest.
     pub(crate) fn invoke_sync(
         &self,
-        start: impl FnOnce(Completion) -> Result<(), String>,
+        value: Option<&mut serde_json::Value>,
+        start: impl FnOnce(Completion, crate::schema_reads::Endpoint) -> Result<(), String>,
     ) -> Result<(), String> {
         let pump = self
             .pump
@@ -85,34 +86,47 @@ impl Registry {
             id.checked_add(1)
                 .ok_or_else(|| "extension invocation identity exhausted".to_owned())?,
         );
-        let started = start(Completion {
+        let endpoint = crate::schema_reads::Endpoint {
             id,
-            requests: Some(requests),
-        });
-        let result = pump.wait(id);
+            requests: requests.clone(),
+        };
+        let started = start(
+            Completion {
+                id,
+                requests: Some(requests),
+            },
+            endpoint,
+        );
+        let result = pump.wait(id, value);
         started.and(result)
     }
 }
 
 impl State {
     /// Borrows the receiver only while polling, never while dispatching native code.
-    fn wait(&self, id: u64) -> Result<(), String> {
+    fn wait(&self, id: u64, value: Option<&mut serde_json::Value>) -> Result<(), String> {
         let waker = Waker::from(Arc::new(ThreadWake(std::thread::current())));
         let previous = self.waker.replace(waker.clone());
-        let result = self.wait_for(id, &waker);
+        let result = self.wait_for(id, &waker, value);
         self.waker.replace(previous.clone());
         previous.wake();
         result
     }
 
     /// Drives the current synchronous waiter without losing the suspended pump task's wakeup.
-    fn wait_for(&self, id: u64, waker: &Waker) -> Result<(), String> {
+    fn wait_for(
+        &self,
+        id: u64,
+        waker: &Waker,
+        mut value: Option<&mut serde_json::Value>,
+    ) -> Result<(), String> {
         let mut context = Context::from_waker(waker);
         loop {
             if let Some(result) = self.synchronous.completed.borrow_mut().remove(&id) {
                 return result;
             }
-            match self.poll_next(&mut context) {
+            match self.poll_next_using(&mut context, &mut |message| scoped(message, id, &mut value))
+            {
                 Poll::Ready(true) => {}
                 Poll::Ready(false) => return Err("extension resource owner ended".to_owned()),
                 Poll::Pending => std::thread::park(),
@@ -142,4 +156,23 @@ impl Registry {
             .send((call.admitted(&completion), completion))
             .map_err(|_| "extension native operation ended".to_owned())
     }
+}
+
+/// Answer only the operand belonging to this stack's synchronous invocation.
+fn scoped(
+    message: Message,
+    id: u64,
+    value: &mut Option<&mut serde_json::Value>,
+) -> Option<Message> {
+    let Message::Json(target, request) = message else {
+        return Some(message);
+    };
+    if target == id
+        && let Some(value) = value.as_deref_mut()
+    {
+        request.answer(value);
+    } else {
+        request.reject();
+    }
+    None
 }

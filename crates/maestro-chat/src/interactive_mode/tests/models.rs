@@ -223,12 +223,12 @@ fn observed(world: &World, panel: &Rc<dyn Component>, focus: &Rc<Input>) -> Effe
 fn selector_completion_restores_editor_and_focus() {
     isolated(
         "selector_completion_restores_editor_and_focus",
-        |directory| {
+        async |directory| {
             for (input, expected) in
                 cases::<HelperClose, HelperEffects>("selector_completion_restores_editor_and_focus")
             {
                 assert_eq!(input.op, "selector-helper-close");
-                let world = started(directory);
+                let world = started(directory).await;
                 let panel: Rc<dyn Component> = Rc::new(Text::new("panel".into(), 0, 0, None));
                 let focus = Rc::new(Input::new());
                 let done = RefCell::new(None);
@@ -291,24 +291,27 @@ struct FailureEffects {
 
 #[test]
 fn selector_factory_failure_keeps_the_editor() {
-    isolated("selector_factory_failure_keeps_the_editor", |directory| {
-        let (input, expected) =
-            cases::<HelperFailure, FailureEffects>("selector_factory_failure_keeps_the_editor")
-                .swap_remove(0);
-        assert_eq!(input.op, "selector-helper-failure");
-        let world = started(directory);
-        let message = expected.error.clone();
-        let error = world
-            .mode
-            .show_selector(move |_| Err(message.into()))
-            .unwrap_err();
-        assert_eq!(error.to_string(), expected.error);
-        let panel: Rc<dyn Component> = Rc::new(Text::new(String::new(), 0, 0, None));
-        assert_eq!(
-            observed(&world, &panel, &Rc::new(Input::new())),
-            effects(&expected.events)
-        );
-    });
+    isolated(
+        "selector_factory_failure_keeps_the_editor",
+        async |directory| {
+            let (input, expected) =
+                cases::<HelperFailure, FailureEffects>("selector_factory_failure_keeps_the_editor")
+                    .swap_remove(0);
+            assert_eq!(input.op, "selector-helper-failure");
+            let world = started(directory).await;
+            let message = expected.error.clone();
+            let error = world
+                .mode
+                .show_selector(move |_| Err(message.into()))
+                .unwrap_err();
+            assert_eq!(error.to_string(), expected.error);
+            let panel: Rc<dyn Component> = Rc::new(Text::new(String::new(), 0, 0, None));
+            assert_eq!(
+                observed(&world, &panel, &Rc::new(Input::new())),
+                effects(&expected.events)
+            );
+        },
+    );
 }
 
 /// Checks the recorded final notice, a status or an error, against the transcript and the
@@ -372,12 +375,12 @@ fn open_panel(world: &World, key: &str) -> Rc<ModelSelectorComponent> {
 fn model_selector_selection_restores_editor_before_its_notice() {
     isolated(
         "model_selector_selection_restores_editor_before_its_notice",
-        |directory| {
+        async |directory| {
             for (input, expected) in cases::<PanelSelect, PanelSelected>(
                 "model_selector_selection_restores_editor_before_its_notice",
             ) {
                 assert_eq!(input.op, "selector-select");
-                let world = started(directory);
+                let world = started(directory).await;
                 register(&world, "a", &["alpha"]);
                 let previous = current(&world);
                 world.mode.editor.set_border_color(Rc::new(str::to_owned));
@@ -442,13 +445,13 @@ struct PanelCancelled {
 fn model_selector_cancel_restores_editor_and_requests_a_frame() {
     isolated(
         "model_selector_cancel_restores_editor_and_requests_a_frame",
-        |directory| {
+        async |directory| {
             let (input, expected) = cases::<PanelCancel, PanelCancelled>(
                 "model_selector_cancel_restores_editor_and_requests_a_frame",
             )
             .swap_remove(0);
             assert_eq!(input.op, "selector-cancel");
-            let world = started(directory);
+            let world = started(directory).await;
             register(&world, "a", &["alpha"]);
             let previous = world.host.session().model();
             open_panel(&world, SELECT_KEY);
@@ -500,7 +503,7 @@ struct SelectActionEffects {
 fn model_select_action_uses_the_registered_binding() {
     isolated(
         "model_select_action_uses_the_registered_binding",
-        |directory| {
+        async |directory| {
             let (input, expected) = cases::<SelectAction, SelectActionEffects>(
                 "model_select_action_uses_the_registered_binding",
             )
@@ -508,14 +511,14 @@ fn model_select_action_uses_the_registered_binding() {
             assert_eq!(input.op, "model-select-action");
             assert_eq!(expected.events, [["opened"]]);
             assert!(expected.scope.is_empty() && expected.count.is_none() && !expected.shown);
-            let world = started(directory);
+            let world = started(directory).await;
             open_panel(&world, SELECT_KEY);
             std::fs::write(
                 directory.join("keybindings.json"),
                 format!(r#"{{"{}": "ctrl+y"}}"#, expected.action),
             )
             .unwrap();
-            let world = started(directory);
+            let world = started(directory).await;
             world.terminal.send_input(SELECT_KEY);
             assert!(model_panel(&world).is_none());
             open_panel(&world, "\x19");
@@ -527,8 +530,8 @@ fn model_select_action_uses_the_registered_binding() {
 fn model_callbacks_read_current_session_and_release_the_mode() {
     isolated(
         "model_callbacks_read_current_session_and_release_the_mode",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             register(&world, "a", &["alpha"]);
             let panel = open_panel(&world, SELECT_KEY);
             let World {
@@ -546,7 +549,7 @@ fn model_callbacks_read_current_session_and_release_the_mode() {
             panel.handle_input("\r");
             assert_eq!(runtime.futures(), 0);
             assert_ne!(host.session().model().read().unwrap().id, "alpha");
-            let world = started(directory);
+            let world = started(directory).await;
             register(&world, "a", &["alpha"]);
             open_panel(&world, SELECT_KEY).handle_input("\r");
             let World {
@@ -564,15 +567,15 @@ fn model_callbacks_read_current_session_and_release_the_mode() {
             assert!(runtime.drain_futures().is_empty());
             assert_eq!(host.session().model().read().unwrap().id, "alpha");
             assert!(weak.upgrade().is_none());
-            scope_callbacks_release_the_mode(directory);
-            model_panel_writes_its_settings_and_selects_on_the_current_session(directory);
+            scope_callbacks_release_the_mode(directory).await;
+            model_panel_writes_its_settings_and_selects_on_the_current_session(directory).await;
         },
     );
 }
 
 /// A shown scope panel does not keep the mode alive; its edits and saves then do nothing.
-fn scope_callbacks_release_the_mode(directory: &Path) {
-    let world = started(directory);
+async fn scope_callbacks_release_the_mode(directory: &Path) {
+    let world = started(directory).await;
     catalog(&world);
     world.mode.show_models_selector().unwrap();
     let panel = scope_panel(&world).unwrap();
@@ -605,8 +608,8 @@ fn scope_callbacks_release_the_mode(directory: &Path) {
 
 /// The model panel saves its default through the settings it was opened with, while the
 /// selection applies to the session current when it is chosen.
-fn model_panel_writes_its_settings_and_selects_on_the_current_session(directory: &Path) {
-    let world = replaceable(directory);
+async fn model_panel_writes_its_settings_and_selects_on_the_current_session(directory: &Path) {
+    let world = replaceable(directory).await;
     register(&world, "a", &["alpha"]);
     let panel = open_panel(&world, SELECT_KEY);
     let opened = world.host.session();
@@ -751,7 +754,7 @@ fn key_command(
 }
 
 /// Stores a sign-in for the subscription provider.
-fn sign_in(world: &World) {
+pub(super) fn sign_in(world: &World) {
     let session = world.host.session();
     session.model_registry().auth_storage().set(
         "anthropic",
@@ -805,9 +808,9 @@ struct Regression {
 }
 
 /// Runs one recorded regression as case `case` and checks its notices and lookups.
-fn regression(directory: &Path, case: usize, input: Regression, expected: &Outcome) {
+async fn regression(directory: &Path, case: usize, input: Regression, expected: &Outcome) {
     assert!(["warning-regression", "provider-case-boundary"].contains(&input.op.as_str()));
-    let world = started(directory);
+    let world = started(directory).await;
     if let Some(settings) = input.settings {
         let warnings = serde_json::from_value(settings["warnings"].clone()).unwrap();
         let session = world.host.session();
@@ -834,10 +837,10 @@ fn regression(directory: &Path, case: usize, input: Regression, expected: &Outco
 
 /// Runs every recorded regression of `test`.
 fn regressions(test: &str) {
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (case, (input, expected)) in cases::<Regression, Outcome>(test).into_iter().enumerate()
         {
-            regression(directory, case, input, &expected);
+            regression(directory, case, input, &expected).await;
         }
     });
 }
@@ -877,10 +880,10 @@ struct PrefixCase {
 #[test]
 fn subscription_warning_checks_only_the_exact_key_prefix() {
     let test = "subscription_warning_checks_only_the_exact_key_prefix";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<PrefixCase, Outcome>(test) {
             assert_eq!(input.op, "warning-prefix");
-            let world = started(directory);
+            let world = started(directory).await;
             if let (false, Some(key)) = (input.missing, input.key.as_str()) {
                 let session = world.host.session();
                 let auth = session.model_registry().auth_storage();
@@ -907,10 +910,10 @@ struct PreferenceCase {
 #[test]
 fn warning_preferences_disable_only_on_false() {
     let test = "warning_preferences_disable_only_on_false";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<PreferenceCase, Outcome>(test) {
             assert_eq!(input.op, "warning-setting");
-            let world = started(directory);
+            let world = started(directory).await;
             let session = world.host.session();
             if !input.missing {
                 let mut warnings = serde_json::Map::new();
@@ -937,10 +940,10 @@ struct Operation {
 #[test]
 fn failed_warning_lookup_leaves_the_check_retryable() {
     let test = "failed_warning_lookup_leaves_the_check_retryable";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let (input, expected) = cases::<Operation, Outcome>(test).swap_remove(0);
         assert_eq!(input.op, "auth-failure-then-success");
-        let world = started(directory);
+        let world = started(directory).await;
         key_command(&world, directory, "anthropic", (0, None));
         check(&world, vec![Some(subscription_model(&world))]);
         assert!(!world.mode.anthropic_subscription_warning_shown.get());
@@ -964,11 +967,11 @@ struct DefaultCase {
 #[test]
 fn warning_uses_the_default_model_only_when_not_supplied() {
     let test = "warning_uses_the_default_model_only_when_not_supplied";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (case, (input, expected)) in cases::<DefaultCase, Outcome>(test).into_iter().enumerate()
         {
             assert_eq!(input.op, "warning-default");
-            let world = started(directory);
+            let world = started(directory).await;
             key_command(
                 &world,
                 directory,
@@ -993,10 +996,10 @@ fn warning_uses_the_default_model_only_when_not_supplied() {
 #[test]
 fn subscription_warning_overlap_is_shown_once() {
     let test = "subscription_warning_overlap_is_shown_once";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let (input, expected) = cases::<Operation, Outcome>(test).swap_remove(0);
         assert_eq!(input.op, "warning-overlap");
-        let world = started(directory);
+        let world = started(directory).await;
         key_command(&world, directory, "anthropic", (0, Some(SUBSCRIPTION_KEY)));
         let model = subscription_model(&world);
         check(&world, vec![Some(Arc::clone(&model)), Some(model)]);
@@ -1020,14 +1023,14 @@ struct CallerCase {
 #[test]
 fn model_cycle_reuses_the_subscription_warning_owner() {
     let test = "model_cycle_reuses_the_subscription_warning_owner";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let (input, expected) = cases::<CallerCase, Outcome>(test).swap_remove(0);
         assert_eq!(
             (input.op.as_str(), input.route.as_str()),
             ("warning-callers", "cycle")
         );
         for (case, key) in [(0, SUBSCRIPTION_KEY), (1, "sk-ant-api03-ordinary")] {
-            let world = started(directory);
+            let world = started(directory).await;
             key_command(&world, directory, "anthropic", (case, Some(key)));
             let session = world.host.session();
             session.agent().state().write().unwrap().model = subscription_model(&world);
@@ -1190,10 +1193,10 @@ fn candidate_catalog(world: &World, kind: &str) -> Option<Arc<RwLock<Model>>> {
 #[test]
 fn model_candidates_keep_scope_order_and_availability_failure_boundary() {
     let test = "model_candidates_keep_scope_order_and_availability_failure_boundary";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<CandidateCase, Candidates>(test) {
             assert_eq!(input.op, "candidates");
-            let world = started(directory);
+            let world = started(directory).await;
             let probe = candidate_catalog(&world, &input.kind);
             let result = world.mode.get_model_candidates();
             if let Some(probe) = probe {
@@ -1251,10 +1254,10 @@ fn provider_badge(world: &World) -> bool {
 #[test]
 fn provider_count_deduplicates_providers_without_reordering_candidates() {
     let test = "provider_count_deduplicates_providers_without_reordering_candidates";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<CountCase, Outcome>(test) {
             assert_eq!(input.op, "provider-count");
-            let world = started(directory);
+            let world = started(directory).await;
             assert!(!provider_badge(&world));
             catalog(&world);
             scope(&world, &input.scope);
@@ -1333,9 +1336,9 @@ struct CommandCase {
 #[test]
 fn model_command_applies_unique_exact_references_or_keeps_the_search() {
     let test = "model_command_applies_unique_exact_references_or_keeps_the_search";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<CommandCase, Outcome>(test) {
-            let world = started(directory);
+            let world = started(directory).await;
             catalog(&world);
             let search = match (input.op.as_str(), input.scope) {
                 ("model-command", None) => {
@@ -1372,7 +1375,7 @@ struct FailureOutcome {
 }
 
 /// Makes every later session recording fail after the session holds a record.
-fn refuse_recording(world: &World, directory: &Path) {
+pub(super) fn refuse_recording(world: &World, directory: &Path) {
     let sessions = directory.join("sessions");
     let cwd = directory.to_str().unwrap();
     let mut manager = SessionManager::create(cwd, sessions.to_str(), cwd).unwrap();
@@ -1385,9 +1388,9 @@ fn refuse_recording(world: &World, directory: &Path) {
 #[test]
 fn model_selection_failure_reports_without_success_effects() {
     let test = "model_selection_failure_reports_without_success_effects";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Operation, FailureOutcome>(test) {
-            let world = started(directory);
+            let world = started(directory).await;
             catalog(&world);
             let previous = current(&world);
             world.mode.editor.set_border_color(Rc::new(str::to_owned));
@@ -1475,7 +1478,7 @@ fn editing(edit: String, replacement: Replacement) -> ExtensionFactory<Local> {
 #[test]
 fn model_selection_observes_the_selected_descriptor_after_listeners() {
     let test = "model_selection_observes_the_selected_descriptor_after_listeners";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (case, (input, expected)) in
             cases::<ListenerCase, Outcome>(test).into_iter().enumerate()
         {
@@ -1486,7 +1489,7 @@ fn model_selection_observes_the_selected_descriptor_after_listeners() {
                 ..Setup::default()
             }
             .build(directory);
-            world.mode.init().unwrap();
+            world.mode.init().await.unwrap();
             let tail = Arc::clone(&catalog(&world)[1]);
             let session = world.host.session();
             *replacement.borrow_mut() = Some(Box::new(move || {
@@ -1568,10 +1571,10 @@ fn submission(world: &World, text: &str, outcome: &Outcome) {
 #[test]
 fn model_commands_use_the_shared_whitespace_and_exact_tokens() {
     let test = "model_commands_use_the_shared_whitespace_and_exact_tokens";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Submission, Outcome>(test) {
             assert_eq!(input.op, "submit");
-            let world = started(directory);
+            let world = started(directory).await;
             catalog(&world);
             submission(&world, &input.text, &expected);
             settled(&world, &expected);
@@ -1583,8 +1586,8 @@ fn model_commands_use_the_shared_whitespace_and_exact_tokens() {
 fn model_commands_leave_waiter_and_history_untouched() {
     isolated(
         "model_commands_leave_waiter_and_history_untouched",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             catalog(&world);
             let mut waiting = waiting(&world.mode);
             for command in ["/model alpha", "/model", "/scoped-models"] {
@@ -1607,7 +1610,7 @@ fn model_commands_leave_waiter_and_history_untouched() {
 }
 
 /// A mode whose session can be replaced by a fresh memory session.
-pub(super) fn replaceable(directory: &Path) -> World {
+pub(super) async fn replaceable(directory: &Path) -> World {
     let world = Setup {
         create: Some(Rc::new(|options| {
             Box::pin(async move { Ok(super::session::session(&options.cwd, None, |inner| inner)) })
@@ -1615,7 +1618,7 @@ pub(super) fn replaceable(directory: &Path) -> World {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
 }
@@ -1639,8 +1642,8 @@ pub(super) fn replace_session(world: &World) {
 fn warning_lifetime_survives_rebinding_but_not_another_mode() {
     isolated(
         "warning_lifetime_survives_rebinding_but_not_another_mode",
-        |directory| {
-            let world = replaceable(directory);
+        async |directory| {
+            let world = replaceable(directory).await;
             key_command(&world, directory, "anthropic", (0, Some(SUBSCRIPTION_KEY)));
             check(&world, vec![Some(subscription_model(&world))]);
             assert!(shows(&world.mode.chat_container, "Warning: "));
@@ -1652,7 +1655,7 @@ fn warning_lifetime_survives_rebinding_but_not_another_mode() {
             check(&world, vec![Some(subscription_model(&world))]);
             assert!(!shows(&world.mode.chat_container, "Warning: "));
             assert_eq!(lookups(directory, 1), 0);
-            let other = started(directory);
+            let other = started(directory).await;
             key_command(&other, directory, "anthropic", (2, Some(SUBSCRIPTION_KEY)));
             check(&other, vec![Some(subscription_model(&other))]);
             assert!(shows(&other.mode.chat_container, "Warning: "));
@@ -1789,10 +1792,10 @@ fn opened(world: &World, result: Result<(), Box<dyn std::error::Error>>, expecte
 #[test]
 fn scope_selector_prefers_session_scope_then_resolved_saved_patterns() {
     let test = "scope_selector_prefers_session_scope_then_resolved_saved_patterns";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<ScopeOpen, Opened>(test) {
             assert_eq!(input.op, "scope-open");
-            let world = started(directory);
+            let world = started(directory).await;
             scope_source(&world, &input.choice, &expected.scope);
             let result = world.mode.show_models_selector();
             opened(&world, result, &expected);
@@ -1815,10 +1818,10 @@ struct FieldDomain {
 #[test]
 fn scope_preferences_reject_unknown_members_and_default_malformed_roots() {
     let test = "scope_preferences_reject_unknown_members_and_default_malformed_roots";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<FieldDomain, Opened>(test) {
             assert_eq!(input.op, "scope-field-domain");
-            let world = started(directory);
+            let world = started(directory).await;
             catalog(&world);
             if !input.missing {
                 enabled_models_setting(&world, input.raw);
@@ -1883,10 +1886,10 @@ fn scope_edit(world: &World, input: &ScopeChange) -> ModelsCallbacks {
 #[test]
 fn scope_changes_apply_live_without_saving_and_refresh_the_footer() {
     let test = "scope_changes_apply_live_without_saving_and_refresh_the_footer";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<ScopeChange, Outcome>(test) {
             assert!(input.op.starts_with("scope-change"));
-            let world = started(directory);
+            let world = started(directory).await;
             scope_edit(&world, &input);
             let [scope] = named(&expected.events, "scope").next().unwrap() else {
                 panic!("one scope edit");
@@ -1928,10 +1931,10 @@ struct SaveOutcome {
 #[test]
 fn scope_save_preserves_order_and_distinguishes_none_from_all() {
     let test = "scope_save_preserves_order_and_distinguishes_none_from_all";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<ScopeChange, SaveOutcome>(test) {
             assert_eq!(input.op, "scope-save");
-            let world = started(directory);
+            let world = started(directory).await;
             let callbacks = scope_edit(&world, &input);
             let [persisted] = named(&expected.events, "persist").next().unwrap() else {
                 panic!("one save");
@@ -1962,10 +1965,10 @@ fn scope_save_preserves_order_and_distinguishes_none_from_all() {
 #[test]
 fn scope_cancel_keeps_live_edits_without_saving() {
     let test = "scope_cancel_keeps_live_edits_without_saving";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let (input, expected) = cases::<Operation, Outcome>(test).swap_remove(0);
         assert_eq!(input.op, "scope-cancel-after-edit");
-        let world = started(directory);
+        let world = started(directory).await;
         let edit = ScopeChange {
             op: "scope-change".into(),
             enabled: Some(vec!["z/tail".into()]),
@@ -1987,32 +1990,29 @@ fn scope_cancel_keeps_live_edits_without_saving() {
 
 /// Clears and enables every model with their keys, saving each; the reopened storage keeps
 /// the empty selection and then has no setting, and cancelling saves nothing.
-fn bulk_saves_reopen_and_cancel_saves_nothing(world: &World, directory: &Path) {
+async fn bulk_saves_reopen_and_cancel_saves_nothing(world: &World, directory: &Path) {
     world.terminal.send_input("\x18");
     assert_eq!(saved_by_panel(world), Some(Vec::new()));
-    assert_eq!(reopened_patterns(directory, world), Some(Vec::new()));
+    assert_eq!(reopened_patterns(directory, world).await, Some(Vec::new()));
     world.terminal.send_input("\x01");
     assert_eq!(saved_by_panel(world), None);
-    assert_eq!(reopened_patterns(directory, world), None);
+    assert_eq!(reopened_patterns(directory, world).await, None);
     world.terminal.send_input("\x18");
     world.terminal.send_input("\x1b");
     assert!(world.runtime.drain_futures().is_empty());
     assert!(shows_only(world, &editor(world)));
     assert_eq!(
-        reopened_patterns(directory, world),
+        reopened_patterns(directory, world).await,
         None,
         "cancelling saves nothing"
     );
 }
 
 /// The patterns a reopened file-backed settings manager in `directory` reads.
-fn reopened_patterns(directory: &Path, world: &World) -> Option<Vec<String>> {
+async fn reopened_patterns(directory: &Path, world: &World) -> Option<Vec<String>> {
     let session = world.host.session();
     let flushed = session.settings_manager().borrow().flush();
-    let waiting = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    waiting.block_on(flushed);
+    flushed.await;
     let root = directory.to_str().unwrap();
     let reopened = SettingsManager::create(root, root, root);
     reopened.get_enabled_models().map(|entries| {
@@ -2030,8 +2030,8 @@ fn reopened_patterns(directory: &Path, world: &World) -> Option<Vec<String>> {
 fn model_scope_persistence_flushes_and_reopens_in_order() {
     isolated(
         "model_scope_persistence_flushes_and_reopens_in_order",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let root = directory.to_str().unwrap();
             *world.host.session().settings_manager().borrow_mut() =
                 SettingsManager::create(root, root, root);
@@ -2044,7 +2044,7 @@ fn model_scope_persistence_flushes_and_reopens_in_order() {
             assert!(world.runtime.drain_futures().is_empty());
             assert_eq!(scope_of(&world).len(), 2);
             assert_eq!(
-                reopened_patterns(directory, &world),
+                reopened_patterns(directory, &world).await,
                 None,
                 "live edits are not saved"
             );
@@ -2054,8 +2054,8 @@ fn model_scope_persistence_flushes_and_reopens_in_order() {
                 ids.iter().filter(|id| saved.contains(id)).eq(saved.iter()),
                 "order kept"
             );
-            assert_eq!(reopened_patterns(directory, &world), Some(saved));
-            bulk_saves_reopen_and_cancel_saves_nothing(&world, directory);
+            assert_eq!(reopened_patterns(directory, &world).await, Some(saved));
+            bulk_saves_reopen_and_cancel_saves_nothing(&world, directory).await;
         },
     );
 }
@@ -2065,8 +2065,8 @@ fn scope_resolution_warnings_reach_standard_error() {
     let test = "scope_resolution_warnings_reach_standard_error";
     // A further child opens the panel, so its standard error reaches this parent unmixed.
     if maestro_test_process::selection().is_child() {
-        super::isolated_case(test, "warning", &[], |directory| {
-            let world = started(directory);
+        super::isolated_case(test, "warning", &[], async |directory| {
+            let world = started(directory).await;
             catalog(&world);
             enabled_models_setting(&world, serde_json::json!(["missing/none", "a/alpha:bogus"]));
             submit_held(&world, "/scoped-models");
@@ -2085,7 +2085,7 @@ fn scope_resolution_warnings_reach_standard_error() {
         (&[("FORCE_COLOR", "0")], false),
         (&[("TERM", "dumb")], false),
     ];
-    isolated(test, |_| {
+    isolated(test, async |_| {
         for (envs, yellow) in rows {
             let output = TestProcess::current(test)
                 .unwrap()

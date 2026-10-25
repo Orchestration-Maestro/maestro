@@ -250,7 +250,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             .lookup(&call.name)
             .ok_or_else(|| failure(format!("Tool {} not found", call.name)))?;
         let prepare = read(&tool).prepare_arguments.clone();
-        let arguments = match prepare {
+        let candidate = match prepare {
             Some(prepare) => {
                 let mut raw = call.arguments.clone();
                 let prepared = prepare(&mut raw);
@@ -261,16 +261,20 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
                     retained.arguments.clone_from(&call.arguments);
                 }
                 let prepared = prepared?;
-                let candidate = ToolCall {
+                Some(ToolCall {
                     id: call.id.clone(),
                     name: call.name.clone(),
                     arguments: prepared,
                     thought_signature: call.thought_signature.clone(),
-                };
-                maestro_models::validate_tool_arguments(&read(&tool).definition, &candidate)?
+                })
             }
-            None => maestro_models::validate_tool_arguments(&read(&tool).definition, call)?,
+            None => None,
         };
+        let definition = read(&tool).definition.clone();
+        let arguments = maestro_models::validate_tool_arguments(
+            &definition,
+            candidate.as_ref().unwrap_or(call),
+        )?;
         Ok(Prepared { tool, arguments })
     }
     /// Await execution-end before assigning the tool artifact timestamp.

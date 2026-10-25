@@ -79,12 +79,25 @@ impl Pump {
 impl State {
     /// Receives one request while servicing every already-ready admitted completion.
     pub(super) fn poll_next(&self, context: &mut Context<'_>) -> Poll<bool> {
+        self.poll_next_using(context, &mut Some)
+    }
+    /// Service scoped operand requests through the original receiver.
+    pub(super) fn poll_next_using(
+        &self,
+        context: &mut Context<'_>,
+        service: &mut dyn FnMut(Message) -> Option<Message>,
+    ) -> Poll<bool> {
         self.waker.borrow_mut().clone_from(context.waker());
+        let mut dispatch = |message| {
+            if let Some(message) = service(message) {
+                self.dispatch(message);
+            }
+        };
         loop {
             let message = self.requests.borrow_mut().poll_recv(context);
             match message {
                 Poll::Ready(Some(message)) => {
-                    self.dispatch(message);
+                    dispatch(message);
                     self.poll_pending(context);
                     return Poll::Ready(true);
                 }
@@ -120,6 +133,10 @@ impl State {
     fn dispatch(&self, message: Message) {
         match message {
             Message::Routed(message, route) => self.routed(*message, route),
+            Message::Json(_, request) => request.reject(),
+            Message::SchemaListing(id, reply) => {
+                let _ = reply.send(self.schema_listing(id));
+            }
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.read_api(id, request),
@@ -133,12 +150,7 @@ impl State {
                 self.start_auth(id, *model, reply, admission);
             }
             Message::Aborted(id, reply) => {
-                let capability = self.registry.capability(id);
-                let result = match capability.as_deref() {
-                    Some(Capability::Signal(signal)) => Ok(signal.is_aborted()),
-                    _ => Err("extension signal resource ended".to_owned()),
-                };
-                let _ = reply.send(result);
+                let _ = reply.send(self.aborted(id));
             }
             Message::History(id, request) => {
                 let capability = self.registry.capability(id);
@@ -189,6 +201,24 @@ impl State {
         self.routes.borrow_mut().push(route);
         self.dispatch(message);
         self.routes.borrow_mut().pop();
+    }
+
+    /// Observe live metadata through its original API capability.
+    fn schema_listing(&self, id: u64) -> Result<crate::schema_registration::ToolListing, String> {
+        let capability = self.registry.capability(id);
+        match capability.as_deref() {
+            Some(Capability::Api(api)) => self.registry.schema_listing(api),
+            _ => Err("extension API resource ended".into()),
+        }
+    }
+
+    /// Observe the original retained cancellation signal.
+    fn aborted(&self, id: u64) -> Result<bool, String> {
+        let capability = self.registry.capability(id);
+        match capability.as_deref() {
+            Some(Capability::Signal(signal)) => Ok(signal.is_aborted()),
+            _ => Err("extension signal resource ended".to_owned()),
+        }
     }
 
     /// Starts the original creating session's operation outside the registry borrow.

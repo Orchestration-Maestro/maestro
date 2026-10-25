@@ -382,7 +382,7 @@ fn tool_metadata_keeps_native_schemas_and_guest_schema_text() {
         serde_json::to_value(&guest).unwrap()["parameters"],
         "{\"type\":\"object\"}"
     );
-    let native: ToolInfo = serde_json::from_value(serde_json::json!({
+    let native: ToolInfo<maestro_models::ParameterSchema<maestro_models::SchemaCode>> = serde_json::from_value(serde_json::json!({
         "name": "read", "description": "Read", "parameters": {"type": "object"}, "sourceInfo": source
     }))
     .unwrap();

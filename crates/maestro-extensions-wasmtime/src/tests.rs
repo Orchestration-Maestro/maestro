@@ -19,6 +19,7 @@ mod history;
 mod registrations;
 mod replaced;
 mod returned_bash;
+mod schema;
 mod tools;
 mod tree;
 mod unknown_events;

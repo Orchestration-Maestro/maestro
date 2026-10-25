@@ -2,6 +2,7 @@
 
 use std::rc::Rc;
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_type::from_type;
@@ -17,7 +18,7 @@ pub(crate) fn from_intersect<'a>(
     converter: &mut Context<'a>,
     members: &[Rc<Node<'a>>],
     value: &mut Value,
-) -> Option<Value> {
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
     let evaluated = evaluate_intersect(members);
     from_type(converter, &evaluate_type(&evaluated), value)
 }
@@ -27,9 +28,11 @@ pub(crate) fn from_intersect_view<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let members: Vec<Rc<Node<'a>>> = view
-        .children("allOf")?
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(children) = view.children("allOf") else {
+        return Ok(None);
+    };
+    let members: Vec<Rc<Node<'a>>> = children
         .into_iter()
         .map(|member| instantiate(converter, member))
         .collect();

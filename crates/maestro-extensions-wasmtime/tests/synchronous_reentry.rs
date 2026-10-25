@@ -435,3 +435,49 @@ fn native_listener_reentry_completes_while_another_component_still_renders() {
         subscription.unsubscribe();
     });
 }
+
+#[test]
+fn native_listener_reentry_checks_a_borrowed_schema_of_the_same_instance() {
+    run(async {
+        let trace = Trace::default();
+        let (owner, runner, events) = loaded_on(bus(&trace)).await;
+        let command = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        assert_eq!(
+            command("schema executable".into(), runner.create_command_context())
+                .await
+                .unwrap_err()
+                .to_string(),
+            "\"registered\""
+        );
+        let tool = owner.read().unwrap().tools["schema-executable"]
+            .metadata()
+            .definition;
+        let seen = trace.clone();
+        during_render(&events, &trace, "outer", move |_| {
+            let call = maestro_models::ToolCall {
+                id: "nested-schema".into(),
+                name: tool.name.clone(),
+                arguments: json!({"remove": 7, "values": [1, 2, 3]}),
+                thought_signature: None,
+            };
+            let checked = maestro_models::validate_tool_arguments(&tool, &call);
+            assert_eq!(checked.unwrap(), json!({"seen": true, "values": [1, 9, 3]}));
+            seen.borrow_mut().push("schema.checked".into());
+        });
+        view(&runner, &events, "outer").unwrap().unwrap();
+        assert_eq!(
+            *trace.borrow(),
+            [
+                "g1:outer",
+                "g2:outer",
+                "native.before",
+                "schema.checked",
+                "native.after",
+            ]
+        );
+    });
+}

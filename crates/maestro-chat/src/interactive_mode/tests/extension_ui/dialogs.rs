@@ -162,8 +162,8 @@ fn settled<T>(future: &mut ExtensionUIFuture<T>) -> Option<T> {
 }
 
 /// A started mode whose editor holds the retained text, with its writes cleared.
-fn retained(directory: &std::path::Path) -> World {
-    let world = started(directory);
+async fn retained(directory: &std::path::Path) -> World {
+    let world = started(directory).await;
     world.mode.editor.set_text(RETAINED);
     world.runtime.settle().unwrap();
     world.terminal.clear_writes();
@@ -286,7 +286,7 @@ fn finish(world: &World, input: &Input, signal: &Cancellation, start: u64) {
 
 /// Opens, observes, ends and observes again every recorded dialog case of `test`.
 fn dialog_group(test: &str) {
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::Dialog {
@@ -304,7 +304,7 @@ fn dialog_group(test: &str) {
             else {
                 panic!("a dialog case");
             };
-            let world = retained(directory);
+            let world = retained(directory).await;
             let signal = Cancellation::new();
             if *scenario == Scenario::Preabort {
                 signal.abort();
@@ -389,7 +389,7 @@ fn multiline_dialog_restores_the_retained_editor() {
 #[test]
 fn missing_directory_confirmation_returns_only_the_offered_fallback() {
     let test = "missing_directory_confirmation_returns_only_the_offered_fallback";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::MissingCwd {
@@ -405,7 +405,7 @@ fn missing_directory_confirmation_returns_only_the_offered_fallback() {
             else {
                 panic!("a missing directory case");
             };
-            let world = retained(directory);
+            let world = retained(directory).await;
             let error = MissingSessionCwdError::new(SessionCwdIssue {
                 session_file: Some("/sessions/a.jsonl".to_owned()),
                 session_cwd: "/missing".to_owned(),
@@ -428,7 +428,7 @@ fn missing_directory_confirmation_returns_only_the_offered_fallback() {
 #[test]
 fn dialog_nonpositive_timeout_and_completed_abort_leave_no_work() {
     let test = "dialog_nonpositive_timeout_and_completed_abort_leave_no_work";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::DialogNoTimeout { kind, timeout },
@@ -441,7 +441,7 @@ fn dialog_nonpositive_timeout_and_completed_abort_leave_no_work() {
             else {
                 panic!("a nonpositive countdown case");
             };
-            let world = retained(directory);
+            let world = retained(directory).await;
             let host = port(&world.mode);
             let signal = Cancellation::new();
             let opts = Some(ExtensionUIDialogOptions {
@@ -473,7 +473,7 @@ fn dialog_nonpositive_timeout_and_completed_abort_leave_no_work() {
 #[test]
 fn dialog_observer_drop_does_not_cancel_host_owned_work() {
     let test = "dialog_observer_drop_does_not_cancel_host_owned_work";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
                 Input::DialogObserverRelease { kind },
@@ -485,7 +485,7 @@ fn dialog_observer_drop_does_not_cancel_host_owned_work() {
             else {
                 panic!("an observer release case");
             };
-            let world = retained(directory);
+            let world = retained(directory).await;
             let host = port(&world.mode);
             let future = match kind {
                 Kind::Selector => host.select("Choose".to_owned(), vec!["answer".to_owned()], None),
@@ -506,7 +506,7 @@ fn dialog_observer_drop_does_not_cancel_host_owned_work() {
 fn ui_context_retains_the_mode_but_completed_dialogs_leave_no_cycle() {
     isolated(
         "ui_context_retains_the_mode_but_completed_dialogs_leave_no_cycle",
-        |directory| {
+        async |directory| {
             let World {
                 mode,
                 terminal,
@@ -514,7 +514,7 @@ fn ui_context_retains_the_mode_but_completed_dialogs_leave_no_cycle() {
                 themes,
                 host,
                 loader,
-            } = started(directory);
+            } = started(directory).await;
             let context = port(&mode);
             let weak = Rc::downgrade(&mode);
             drop(mode);

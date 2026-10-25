@@ -529,7 +529,7 @@ pub(super) fn check_listing(directory: &Path, listing: Listing, expected: Expect
 
 /// Checks every recorded listing case of `test`.
 pub(super) fn listings(test: &str) {
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             let Input::Listing(listing) = input else {
                 panic!("a listing case");

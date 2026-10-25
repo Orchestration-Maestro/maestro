@@ -255,7 +255,8 @@ fn selected(test: &str) -> Vec<Case> {
 /// Assert one recorded case: preserved inputs and the exact prepared outcome.
 #[track_caller]
 fn assert_case(case: &Case) {
-    let schema = ParameterSchema::authored(case.schema.clone(), case.kinds.clone());
+    let schema: ParameterSchema =
+        ParameterSchema::authored(case.schema.clone(), case.kinds.clone());
     let tool = Tool {
         name: "echo".to_owned(),
         description: "Recorded case".to_owned(),

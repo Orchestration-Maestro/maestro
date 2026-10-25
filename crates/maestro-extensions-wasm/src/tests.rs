@@ -69,6 +69,7 @@ pub(crate) mod renderer_host;
 mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
+pub(crate) mod schema_host;
 mod selection_events;
 mod send_user_message_example;
 mod session_actions;
@@ -541,8 +542,8 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_async_exports(&contract);
     assert_eq!(
         names(&contract.exports, false),
-        ["release"],
-        "only closure release remains a synchronous export"
+        ["describe-schema", "release", "retain-schema"],
+        "describe, retain and release only touch guest callback storage"
     );
     assert_shell_contract(&contract);
     assert_renderer_contract(&contract);
@@ -567,6 +568,8 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
             "event-emit",
+            "get-all-tools",
+            "register-tool",
             "set-model",
         ]
     );
@@ -717,7 +720,6 @@ fn assert_action_contract(contract: &Contract) {
         "get-session-name",
         "set-label",
         "get-active-tools",
-        "get-all-tools",
         "set-active-tools",
         "get-commands",
         "get-thinking-level",
@@ -1060,6 +1062,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-listener",
             "invoke-prepare",
             "invoke-renderer",
+            "invoke-schema",
             "invoke-setup",
             "invoke-shortcut",
             "invoke-tail",

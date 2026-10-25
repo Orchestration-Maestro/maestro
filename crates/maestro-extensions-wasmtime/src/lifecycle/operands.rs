@@ -24,6 +24,13 @@ impl Call {
             Self::Tail(handler, reply) => Call::Tail(completion.callback(handler), reply),
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
+            Self::Schema(call) => Call::Schema(crate::guest_calls::schema::Invocation {
+                handler: completion.callback(call.handler),
+                operation: call.operation,
+                node: call.node,
+                emitter: call.emitter,
+                reply: call.reply,
+            }),
             Self::Tool(call) => Call::Tool(tool(call, completion)),
             Self::Release(mut release) => {
                 completion.retain(release.calls.take());

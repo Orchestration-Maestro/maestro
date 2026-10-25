@@ -41,17 +41,8 @@ const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_prompts
 /// The width transcript notices are rendered at.
 const WIDTH: usize = 120;
 
-/// Runs `body` to completion on a current-thread runtime inside a local task set.
-fn on_local<F: Future<Output = ()>>(body: F) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(tokio::task::LocalSet::new().run_until(body));
-}
-
 /// Polls `run` until the mode waits for typed input; the loop never ends on its own.
-async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>>(
+pub(super) async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>>(
     mode: &InteractiveMode,
     mut run: Pin<&mut F>,
 ) {
@@ -703,10 +694,10 @@ async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>
 
 /// Replays every recorded case of `test` in a fresh child.
 fn replay(test: &str) {
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (startup, expected) in cases::<Startup, Vec<Step>>(FIXTURES, test) {
             let case = maestro_test_directory::Scratch::new_in(directory).unwrap();
-            on_local(replay_case(case.path(), startup, expected));
+            (replay_case(case.path(), startup, expected)).await;
         }
     });
 }
@@ -734,8 +725,8 @@ fn typed_submission_follows_the_current_runtime_session() {
 #[test]
 fn prompt_operation_refusal_is_distinct_from_assistant_error_event() {
     const TEST: &str = "prompt_operation_refusal_is_distinct_from_assistant_error_event";
-    isolated(TEST, |directory| {
-        on_local(refusal_then_assistant_error(directory));
+    isolated(TEST, async |directory| {
+        (refusal_then_assistant_error(directory)).await;
     });
 }
 
@@ -848,9 +839,9 @@ fn from_prompts<'a>(
 #[test]
 fn startup_message_traversal_has_linear_work() {
     const TEST: &str = "startup_message_traversal_has_linear_work";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (size, work) in cases::<Size, Work>(FIXTURES, TEST) {
-            on_local(measure(directory, size, work));
+            (measure(directory, size, work)).await;
         }
     });
 }
