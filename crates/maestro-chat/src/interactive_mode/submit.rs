@@ -50,6 +50,11 @@ impl InteractiveMode {
                 mode.submit_shell_command(text, command, exclude_from_context);
                 return;
             }
+            if text == "/logout" {
+                mode.report(mode.show_logout_selector());
+                mode.editor.set_text("");
+                return;
+            }
             if mode.runs_command(text) || mode.runs_model_command(text) {
                 return;
             }

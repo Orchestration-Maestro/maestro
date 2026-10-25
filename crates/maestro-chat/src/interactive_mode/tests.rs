@@ -1,5 +1,6 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
+mod authentication;
 mod bash;
 mod debug;
 mod events;
@@ -39,11 +40,11 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, CreateAgentSessionRuntimeFactory, DefaultEventBus, Extension,
-    ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
-    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
-    RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager,
-    Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
+    AgentSessionRuntime, AuthStorage, ContextFile, CreateAgentSessionRuntimeFactory,
+    DefaultEventBus, Extension, ExtensionCommandContext, ExtensionFactory, ExtensionLoadError,
+    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
+    PromptTemplate, RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader,
+    SettingsManager, Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
     load_extension_from_factory,
 };
 use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
@@ -462,6 +463,8 @@ pub(super) struct Setup {
     pub(super) diagnostics: LoadedDiagnostics,
     /// The watch, timer and Git effects the mode uses; the native ones when absent.
     pub(super) watcher: Option<Rc<dyn FooterOperations>>,
+    /// The stored credentials the session is built over, in memory when absent.
+    pub(super) auth: Option<Arc<AuthStorage>>,
 }
 
 impl Default for Setup {
@@ -485,6 +488,7 @@ impl Default for Setup {
             commands: Vec::new(),
             diagnostics: LoadedDiagnostics::default(),
             watcher: None,
+            auth: None,
         }
     }
 }
@@ -544,9 +548,9 @@ impl Setup {
             .session_history
             .as_ref()
             .map(|d| d.to_str().unwrap().to_owned());
-        let result = session::session_over(
+        let result = session::session_with_auth(
             &cwd,
-            None,
+            self.auth,
             move |inner| {
                 let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
                 *created.borrow_mut() = Some(Rc::clone(&loader));
@@ -630,7 +634,17 @@ fn create(
 
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
 fn started(directory: &Path) -> World {
-    let world = Setup::default().build(directory);
+    started_with(directory, None)
+}
+
+/// Builds a mode over `auth`, or over an empty in-memory store, and initializes it,
+/// settling the first frame.
+pub(super) fn started_with(directory: &Path, auth: Option<Arc<AuthStorage>>) -> World {
+    let world = Setup {
+        auth,
+        ..Setup::default()
+    }
+    .build(directory);
     world.mode.init().unwrap();
     world.runtime.settle().unwrap();
     world

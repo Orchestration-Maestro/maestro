@@ -399,7 +399,7 @@ session error is shown as an error notice instead of the switch message. A faile
 credential lookup leaves the selection as it was; a recording or listener failure
 happens after the new model is selected, so that model stays selected.
 
-`/model`, `/scoped-models` and the model-select key are described in
+`/model`, `/scoped-models`, `/logout` and the model-select key are described in
 [interactive commands](commands.md).
 
 ## Editor border

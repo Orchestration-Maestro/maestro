@@ -18,6 +18,7 @@ use std::{
 };
 
 mod actions;
+mod authentication;
 mod bash;
 mod debug;
 mod events;
