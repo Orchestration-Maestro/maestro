@@ -753,7 +753,7 @@ fn transfer_import_success_stops_progress_then_rebuilds_the_replacement() {
                 ("\u{feff}", "\"", true),
             ] {
                 let path = import_file(directory, name, directory);
-                let world = import_world(directory, None).await;
+                let world = import_observed_world(directory).await;
                 let old = world.host.session();
                 if loader {
                     world.mode.show_working_loader();
@@ -966,6 +966,440 @@ fn transfer_installed_submit_consumes_only_import_commands() {
                     assert_eq!(recalled(&world.mode.editor), [trimmed]);
                 }
             }
+            let world = started(directory).await;
+            submit(&world.mode, "/import");
+            world.mode.editor.set_text("arrived during command");
+            import_settle(&world);
+            assert_eq!(world.mode.editor.get_text(), "");
+            world.mode.editor.set_text("/import absent.jsonl");
+            world.terminal.send_input("\r");
+            assert_eq!(world.mode.editor.get_text(), "");
+            import_settle(&world);
+            world.mode.editor.set_text("arrived during confirmation");
+            import_answer(&world, "\x1b");
+            assert_eq!(world.mode.editor.get_text(), "");
+            import_busy_submission(directory).await;
         },
     );
+}
+
+/// A replacement factory that fails through the application's actual error type.
+fn import_failed_factory() -> maestro_app::CreateAgentSessionRuntimeFactory {
+    Rc::new(|_| {
+        Box::pin(async {
+            Err(maestro_app::DiagnosticErrorInfo::error(
+                "replacement refused",
+            ))
+        })
+    })
+}
+
+#[test]
+fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
+    const TEST: &str = "transfer_import_runtime_failure_reaches_the_existing_fatal_owner";
+    let output = super::isolated_output(TEST, "fatal", &[], ":", async |directory| {
+        let path = import_file(directory, "fatal.jsonl", directory);
+        let world = Setup {
+            create: Some(import_failed_factory()),
+            session_history: Some(directory.join("destination")),
+            ..Setup::default()
+        }
+        .build(directory);
+        world.mode.init().await.unwrap();
+        world.runtime.settle().unwrap();
+        world.terminal.set_tap(|bytes| eprint!("{bytes}"));
+        submit(&world.mode, &format!("/import {}", path.display()));
+        import_settle(&world);
+        import_answer(&world, "\r");
+        panic!("fatal import must exit the child");
+    });
+    if let Some(output) = output {
+        assert_eq!(output.status.code(), Some(1), "{output:?}");
+        let painted = String::from_utf8(output.stderr).unwrap();
+        let text = maestro_app::strip_ansi(&painted).unwrap();
+        assert!(
+            text.contains("Error: Failed to import session: replacement refused"),
+            "{text}"
+        );
+        assert!(
+            painted.contains("\x1b[?25h"),
+            "terminal stopped: {painted:?}"
+        );
+    }
+}
+
+#[test]
+fn transfer_import_retry_failure_is_qualified_at_the_real_submit_caller() {
+    super::isolated(
+        "transfer_import_retry_failure_is_qualified_at_the_real_submit_caller",
+        async |directory| {
+            for failure in ["file", "cwd", "factory"] {
+                import_retry_failure(directory, failure).await;
+            }
+        },
+    );
+}
+
+/// Publishes all shipped roles except the one the reached notice requires.
+fn import_without_role(world: &World, omitted: &str) {
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-theme/assets/theme/dark.json");
+    let document: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let foreground = document["colors"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .filter(|name| name.as_str() != omitted)
+        .map(|name| (ThemeColor::Named(name.clone()), ColorValue::Index(1)));
+    let background = document["colors"].as_object().unwrap().keys().map(|name| {
+        (
+            maestro_theme::ThemeBg::Named(name.clone()),
+            ColorValue::Index(1),
+        )
+    });
+    let theme = Theme::new(
+        foreground,
+        background,
+        ColorMode::Truecolor,
+        ThemeOptions::default(),
+    )
+    .unwrap();
+    world.themes.set_theme_instance(Rc::new(theme)).unwrap();
+}
+
+/// Stores a malformed user message through the session writer to exercise replay failure.
+fn import_invalid_message(path: &Path) {
+    let mut manager = SessionManager::open(path.to_str().unwrap(), None, None).unwrap();
+    manager
+        .append_message(json!({"role":"user", "content":false, "timestamp":3}))
+        .unwrap();
+}
+
+/// Reaches one recoverable branch with its existing notice or replay failure producer.
+async fn import_notice_failure(directory: &Path, branch: &str) {
+    let path = import_file(directory, "notice.jsonl", &directory.join("gone"));
+    if branch == "retry-replay" {
+        import_invalid_message(&path);
+    }
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let extension = (branch == "retry-veto").then(|| import_veto(2, calls));
+    let world = import_world(directory, extension).await;
+    world.mode.editor.set_text("preserved text");
+    import_notice_branch(&world, branch);
+    let errors = world.runtime.drain_futures();
+    assert_eq!(errors.len(), 1, "{branch}: {errors:?}");
+    if branch == "retry-replay" {
+        assert!(errors[0].is::<serde_json::Error>(), "{}", errors[0]);
+    } else {
+        assert!(
+            errors[0].to_string().starts_with("Unknown theme color:"),
+            "{branch}: {}",
+            errors[0]
+        );
+    }
+    assert_eq!(world.mode.editor.get_text(), "preserved text");
+    assert!(!rows(&world).join("\n").contains("Session imported from:"));
+    assert!(path.exists());
+}
+
+/// Positions the existing theme failure at the selected source catch boundary.
+fn import_notice_branch(world: &World, branch: &str) {
+    match branch {
+        "usage" => {
+            import_without_role(world, "error");
+            submit(&world.mode, "/import");
+            return;
+        }
+        "confirmation" => {
+            import_without_role(world, "dim");
+            submit(&world.mode, "/import notice.jsonl");
+            return;
+        }
+        "missing-file" => submit(&world.mode, "/import absent.jsonl"),
+        _ => submit(&world.mode, "/import notice.jsonl"),
+    }
+    import_settle(world);
+    match branch {
+        "decline" => {
+            import_without_role(world, "dim");
+            world.terminal.send_input("\x1b");
+        }
+        "missing-file" => {
+            import_without_role(world, "error");
+            world.terminal.send_input("\r");
+        }
+        "cwd-prompt" => {
+            import_without_role(world, "dim");
+            world.terminal.send_input("\r");
+        }
+        _ => {
+            import_answer(world, "\r");
+            if branch != "retry-replay" {
+                import_without_role(world, "dim");
+            }
+            let key = if branch == "cwd-decline" {
+                "\x1b"
+            } else {
+                "\r"
+            };
+            world.terminal.send_input(key);
+        }
+    }
+}
+
+/// Causes a first-attempt completion failure in a process the real fatal owner ends.
+async fn import_fatal_notice(directory: &Path, branch: &str) {
+    let path = import_file(directory, "first-notice.jsonl", directory);
+    if branch == "first-replay" {
+        import_invalid_message(&path);
+    }
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let extension = (branch == "first-veto").then(|| import_veto(1, calls));
+    let world = import_world(directory, extension).await;
+    world.terminal.set_tap(|bytes| eprint!("{bytes}"));
+    submit(&world.mode, &format!("/import {}", path.display()));
+    import_settle(&world);
+    if branch != "first-replay" {
+        import_without_role(&world, "dim");
+    }
+    world.terminal.send_input("\r");
+    import_settle(&world);
+    panic!("first-attempt notice failure must exit");
+}
+
+#[test]
+fn transfer_import_notice_failures_keep_the_source_catch_boundary() {
+    const TEST: &str = "transfer_import_notice_failures_keep_the_source_catch_boundary";
+    super::isolated(TEST, async |directory| {
+        for branch in [
+            "usage",
+            "confirmation",
+            "decline",
+            "missing-file",
+            "cwd-prompt",
+            "cwd-decline",
+            "retry-status",
+            "retry-veto",
+            "retry-replay",
+        ] {
+            import_notice_failure(directory, branch).await;
+        }
+    });
+    for branch in ["first-status", "first-veto", "first-replay"] {
+        let output = super::isolated_output(TEST, branch, &[], ":", async |directory| {
+            import_fatal_notice(directory, branch).await;
+        });
+        if let Some(output) = output {
+            assert_eq!(output.status.code(), Some(1), "{branch}: {output:?}");
+            let painted = String::from_utf8(output.stderr).unwrap();
+            let text = maestro_app::strip_ansi(&painted).unwrap();
+            assert!(
+                text.contains("Error: Failed to import session:"),
+                "{branch}: {text}"
+            );
+            assert!(painted.contains("\x1b[?25h"));
+        }
+    }
+}
+
+#[test]
+fn transfer_import_retains_mode_only_until_completion() {
+    super::isolated(
+        "transfer_import_retains_mode_only_until_completion",
+        async |directory| {
+            for accepted in [false, true] {
+                let World {
+                    mode,
+                    terminal,
+                    runtime,
+                    themes,
+                    host,
+                    loader,
+                } = import_world(directory, None).await;
+                let weak = Rc::downgrade(&mode);
+                let editor = Rc::clone(&mode.editor);
+                let callback = editor.on_submit().unwrap();
+                callback("/import absent.jsonl");
+                assert!(runtime.drain_futures().is_empty());
+                drop(mode);
+                assert!(
+                    weak.upgrade().is_some(),
+                    "confirmation owns the in-flight mode"
+                );
+                terminal.send_input(if accepted { "\r" } else { "\x1b" });
+                assert!(runtime.drain_futures().is_empty());
+                assert!(weak.upgrade().is_none(), "completed work releases the mode");
+                callback("/import absent.jsonl");
+                assert_eq!(runtime.futures(), 0, "retired callback is weak");
+                drop((terminal, runtime, themes, host, loader));
+            }
+            import_held_factory_lifetime(directory).await;
+        },
+    );
+}
+
+/// Keeps import dispatch ahead of both busy-session queue owners.
+async fn import_busy_submission(directory: &Path) {
+    for compacting in [false, true] {
+        let world = started(directory).await;
+        let mut waiter = waiting(&world.mode);
+        let runtime = world.runtime.clone();
+        let submit_busy = move |mode: &Rc<crate::InteractiveMode>| {
+            submit(mode, "/import");
+            assert!(runtime.drain_futures().is_empty());
+            assert!(mode.compaction_queued_messages.borrow().is_empty());
+            assert!(
+                mode.runtime_host
+                    .session()
+                    .get_steering_messages()
+                    .is_empty()
+            );
+        };
+        if compacting {
+            super::queues::during_compaction(&world, submit_busy).await;
+        } else {
+            super::streaming(&world, async |world, _| submit_busy(&world.mode)).await;
+        }
+        assert_eq!(poll(&mut waiter), None);
+        assert!(recalled(&world.mode.editor).is_empty());
+    }
+}
+
+/// Exercises one real retry producer through the installed submit callback.
+async fn import_retry_failure(directory: &Path, failure: &str) {
+    let offered = directory.join("offered");
+    std::fs::create_dir_all(&offered).unwrap();
+    let path = import_file(directory, "retry-failure.jsonl", &directory.join("gone"));
+    let world = Setup {
+        cwd: Some(offered.to_str().unwrap().to_owned()),
+        create: Some(import_failed_factory()),
+        session_history: Some(directory.join("destination")),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    let mut waiter = waiting(&world.mode);
+    submit(&world.mode, &format!("/import {}", path.display()));
+    import_settle(&world);
+    import_answer(&world, "\r");
+    assert!(
+        world
+            .mode
+            .editor_container
+            .render(WIDTH)
+            .join("\n")
+            .contains("Session cwd not found")
+    );
+    if failure == "file" {
+        std::fs::remove_file(&path).unwrap();
+    }
+    if failure == "cwd" {
+        std::fs::remove_dir(&offered).unwrap();
+    }
+    world.mode.editor.set_text("retained during retry");
+    world.terminal.send_input("\r");
+    let errors = world.runtime.drain_futures();
+    assert_eq!(errors.len(), 1, "{failure}: {errors:?}");
+    assert_import_retry_error(errors[0].as_ref(), failure);
+    assert_eq!(world.mode.editor.get_text(), "retained during retry");
+    assert_eq!(world.runtime.futures(), 0);
+    assert_eq!(poll(&mut waiter), None);
+    let transcript = rows(&world).join("\n");
+    assert!(
+        !transcript.contains("Failed to import session"),
+        "{transcript}"
+    );
+    assert!(!transcript.contains("Session imported from:"));
+    assert!(!transcript.contains("IMPORTED_HISTORY"));
+    submit(&world.mode, "later input");
+    assert_eq!(poll(&mut waiter).as_deref(), Some("later input"));
+}
+
+/// Holds the actual replacement factory while external presentation handles are dropped.
+async fn import_held_factory_lifetime(directory: &Path) {
+    let path = import_file(directory, "held.jsonl", directory);
+    let (release, gate) = tokio::sync::oneshot::channel::<()>();
+    let gate = Rc::new(std::cell::RefCell::new(Some(gate)));
+    let create: maestro_app::CreateAgentSessionRuntimeFactory = Rc::new(move |options| {
+        let gate = gate.borrow_mut().take().unwrap();
+        Box::pin(async move {
+            gate.await.unwrap();
+            let replacement = super::session::session(&options.cwd, None, |inner| inner);
+            std::mem::swap(
+                &mut *replacement.session.session_manager().borrow_mut(),
+                &mut *options.session_manager.borrow_mut(),
+            );
+            Ok(replacement)
+        })
+    });
+    let world = Setup {
+        create: Some(create),
+        session_history: Some(directory.join("destination")),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    submit(&world.mode, &format!("/import {}", path.display()));
+    import_settle(&world);
+    import_answer(&world, "\r");
+    assert_eq!(world.runtime.futures(), 1, "replacement is held");
+    let weak = Rc::downgrade(&world.mode);
+    drop(world.mode);
+    assert!(weak.upgrade().is_some(), "factory wait retains the mode");
+    release.send(()).unwrap();
+    assert!(world.runtime.drain_futures().is_empty());
+    assert!(weak.upgrade().is_none());
+}
+
+/// Checks the existing runtime error type without adding a command-level classification.
+fn assert_import_retry_error(error: &(dyn std::error::Error + 'static), failure: &str) {
+    let error = error
+        .downcast_ref::<maestro_app::AgentSessionRuntimeError>()
+        .unwrap();
+    match failure {
+        "file" => assert!(matches!(
+            error,
+            maestro_app::AgentSessionRuntimeError::SessionImportFileNotFound(_)
+        )),
+        "cwd" => assert!(matches!(
+            error,
+            maestro_app::AgentSessionRuntimeError::MissingSessionCwd(_)
+        )),
+        _ => assert_eq!(error.to_string(), "replacement refused"),
+    }
+}
+
+/// Observes progress at the real replacement factory without substituting session binding.
+async fn import_observed_world(directory: &Path) -> World {
+    let observed = Rc::new(std::cell::RefCell::new(std::rc::Weak::<
+        crate::InteractiveMode,
+    >::new()));
+    let captured = Rc::clone(&observed);
+    let create: maestro_app::CreateAgentSessionRuntimeFactory = Rc::new(move |options| {
+        let mode = captured.borrow().upgrade().unwrap();
+        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.status_container.render(WIDTH).is_empty());
+        super::create(mode.runtime_host.services(), false)(options)
+    });
+    let world = Setup {
+        create: Some(create),
+        session_history: Some(directory.join("destination")),
+        ..Setup::default()
+    }
+    .build(directory);
+    *observed.borrow_mut() = Rc::downgrade(&world.mode);
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    world
+        .mode
+        .status_container
+        .add_child(Rc::new(maestro_tui::Text::new(
+            "prior status".to_owned(),
+            0,
+            0,
+            None,
+        )));
+    world
 }
