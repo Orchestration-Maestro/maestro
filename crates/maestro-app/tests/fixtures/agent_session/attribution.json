@@ -192,5 +192,233 @@
         "X-OpenRouter-Categories": "cli-agent"
       }
     }
+  },
+  {
+    "name": "cloudflare_api_url",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/test/ai"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "User-Agent": "maestro-coding-agent",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "cloudflare_url_substring",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://proxy.example/forward/api.cloudflare.com"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "User-Agent": "maestro-coding-agent",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "cloudflare_gateway_url",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/test"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "User-Agent": "maestro-coding-agent",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "gateway_url_substring",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://proxy.example/forward/gateway.ai.cloudflare.com"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "User-Agent": "maestro-coding-agent",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "unmatched_preserves_headers",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://unrelated.example/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "provider_comparison_is_exact",
+    "model": {
+      "provider": "CLOUDFLARE-WORKERS-AI",
+      "baseUrl": "https://unrelated.example/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "url_comparison_is_case_sensitive",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://API.CLOUDFLARE.COM/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "empty_unmatched_url",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": ""
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "routed_provider_precedes_cloudflare_url",
+    "model": {
+      "provider": "openrouter",
+      "baseUrl": "https://api.cloudflare.com/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": null,
+    "requestHeaders": null,
+    "expected": {
+      "present": true,
+      "headers": {
+        "HTTP-Referer": "https://github.com/Orchestration-Maestro/maestro",
+        "X-OpenRouter-Title": "maestro",
+        "X-OpenRouter-Categories": "cli-agent"
+      }
+    }
+  },
+  {
+    "name": "routed_url_precedes_cloudflare_provider",
+    "model": {
+      "provider": "cloudflare-workers-ai",
+      "baseUrl": "https://openrouter.ai/api/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": null,
+    "requestHeaders": null,
+    "expected": {
+      "present": true,
+      "headers": {
+        "HTTP-Referer": "https://github.com/Orchestration-Maestro/maestro",
+        "X-OpenRouter-Title": "maestro",
+        "X-OpenRouter-Categories": "cli-agent"
+      }
+    }
   }
 ]
