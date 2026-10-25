@@ -22,6 +22,7 @@ impl InteractiveMode {
         self.footer_data_provider.clear_extension_statuses();
         self.footer.invalidate();
         self.set_custom_editor_component(None)?;
+        self.autocomplete_provider_wrappers.borrow_mut().clear();
         self.setup_autocomplete_provider()?;
         self.editor.set_on_extension_shortcut(None);
         self.update_terminal_title()?;

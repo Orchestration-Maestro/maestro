@@ -5,8 +5,9 @@
 use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
-    AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
+    AgentSession, AgentSessionRuntime, AutocompleteProviderFactory, KeybindingsManager,
+    ReadonlyFooterDataProvider, ReadonlySessionManager, SettingsManager, SharedAssistantMessage,
+    ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
@@ -151,6 +152,8 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// The selected search program for file completion, absent until startup prepares it.
     fd_path: RefCell<Option<String>>,
+    /// Bound factories in registration order, including repeated handles.
+    autocomplete_provider_wrappers: RefCell<Vec<AutocompleteProviderFactory>>,
     /// Whether this mode has shown the subscription billing notice.
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
@@ -183,8 +186,7 @@ impl InteractiveMode {
         let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let (keys, editor, editor_container) = create_input(&session, &ui, themes.theme())?;
-        let (footer, footer_data_provider) =
-            create_footer(session.clone(), operations.clone(), themes.theme())?;
+        let (footer, footer_data_provider) = create_footer(&session, &operations, themes.theme())?;
         let hide_thinking = init_theme(&session, &themes, &operations)?;
         let mode = Rc::new_cyclic(|this| Self {
             shutdown_requested: Cell::new(false),
@@ -222,6 +224,7 @@ impl InteractiveMode {
             custom_footer: RefCell::default(),
             tool_environment,
             fd_path: RefCell::default(),
+            autocomplete_provider_wrappers: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking),
             last_status: RefCell::default(),
@@ -421,17 +424,17 @@ fn create_editor(
 /// # Errors
 /// Returns the failure of the collator reading the locale environment.
 fn create_footer(
-    session: Rc<AgentSession>,
-    operations: Rc<dyn FooterOperations>,
+    session: &Rc<AgentSession>,
+    operations: &Rc<dyn FooterOperations>,
     theme: LiveTheme,
 ) -> Result<(Rc<FooterComponent>, FooterDataProvider), Box<dyn Error>> {
     let data = FooterDataProvider::new(
         session.session_manager().borrow().get_cwd().to_owned(),
-        operations,
+        operations.clone(),
     );
     let auto_compact = session.auto_compaction_enabled();
     let footer = Rc::new(FooterComponent::new(
-        session,
+        session.clone(),
         Rc::new(data.clone()),
         theme,
         Rc::new(Collator::new(&|key| std::env::var(key).ok())?),

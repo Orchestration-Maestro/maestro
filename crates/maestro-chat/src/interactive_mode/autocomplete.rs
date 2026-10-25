@@ -237,18 +237,29 @@ impl InteractiveMode {
         ))
     }
 
-    /// Keeps a fresh base provider and installs it on the default editor, then on a distinct
-    /// current editor.
+    /// Folds live registered wrappers over a fresh base, then installs the final provider
+    /// on the default editor and a distinct current editor.
     ///
     /// # Errors
-    /// Returns the current editor's original failure.
+    /// Returns the original wrapper or current-editor failure.
     pub(super) fn setup_autocomplete_provider(&self) -> Result<(), maestro_app::EventError> {
         let extensions = self
             .runtime_host
             .session()
             .extension_runner()
             .get_registered_commands();
-        let provider = self.create_base_autocomplete_provider(&extensions);
+        let mut provider = self.create_base_autocomplete_provider(&extensions);
+        let mut index = 0;
+        loop {
+            let factory = self
+                .autocomplete_provider_wrappers
+                .borrow()
+                .get(index)
+                .cloned();
+            let Some(factory) = factory else { break };
+            provider = factory.call(provider)?;
+            index += 1;
+        }
         drop(
             self.editor_state
                 .autocomplete

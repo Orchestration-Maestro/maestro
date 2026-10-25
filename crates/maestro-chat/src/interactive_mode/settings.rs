@@ -238,7 +238,7 @@ impl InteractiveMode {
     /// Saves skill command admission before rebuilding completion.
     ///
     /// # Errors
-    /// Returns the current editor's original failure.
+    /// Returns the original wrapper or current-editor failure after saving the setting.
     fn settings_skill_commands(&self, enabled: bool) -> Result<(), Box<dyn Error>> {
         self.runtime_host
             .session()

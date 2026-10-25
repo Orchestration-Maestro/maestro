@@ -71,7 +71,7 @@ impl InteractiveMode {
     /// starts the graceful shutdown; while streaming, the agent's end starts it.
     ///
     /// # Errors
-    /// Returns the session start, resource discovery, listing or notice failure.
+    /// Returns the session start, resource discovery, completion, listing or notice failure.
     pub(super) async fn bind_current_session_extensions(
         self: &Rc<Self>,
     ) -> Result<(), Box<dyn std::error::Error>> {

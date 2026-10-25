@@ -173,6 +173,20 @@ An extension command's argument callback receives exactly the typed prefix and k
 its own failure. An absent list, an empty list and a failed callback stay distinct:
 the first two offer nothing, the third reports the failure.
 
+`add_autocomplete_provider` retains the supplied bound factory and rebuilds completion
+before returning. Each rebuild folds all registered factories over a fresh base in
+registration order; the last wrapper receives requests first. Registering the same
+handle twice keeps both registrations. A factory may append another registration
+while rebuilding, and that rebuild sees the append. Factory calls retain their
+originating extension's event capability even when another host receives the handle.
+
+Only a successful rebuild replaces the retained provider and the default editor's
+provider, with the same handle. A failing factory returns its original error, skips
+later factories and leaves the installed provider unchanged. Its registration remains
+for later rebuilds. Settings changes that rebuild completion report failures through
+the terminal runtime after saving the setting. Custom-editor completion forwarding
+is separate from this default-editor behavior.
+
 Typing `@` completes attachments through the search program selected during startup.
 File completion keeps the candidate and applied text of the toolkit's provider. The
 provider asks the search owner for the paths, so removing the selected program leaves
@@ -192,8 +206,8 @@ obtains an event bus.
 
 This section covers the operations that exist today: dialogs, editor access,
 theme queries and selection, the terminal title, tool expansion, notifications,
-terminal input listeners, status text and widgets. Custom headers, footers and
-editors keep their own owners and their published components.
+terminal input listeners, completion wrappers, status text and widgets. Custom headers,
+footers and editors keep their own owners and their published components.
 
 ## Dialogs
 
