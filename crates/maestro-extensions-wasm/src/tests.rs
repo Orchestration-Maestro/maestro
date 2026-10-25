@@ -26,6 +26,7 @@ macro_rules! on_both_adapters {
 }
 
 pub(crate) mod action_host;
+mod advanced_ui;
 mod agent_events;
 mod application_messages;
 pub(crate) mod author;

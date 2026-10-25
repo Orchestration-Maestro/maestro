@@ -1008,6 +1008,20 @@ impl Imports for Controlled {
             &super::ui_host::title(title),
         )
     }
+    fn ui_paste_to_editor(&self, resource: &Ui, text: &str) -> ExtensionResult<()> {
+        ui_call(
+            &self.observed,
+            resource.key,
+            "pasteToEditor",
+            &serde_json::json!([text]),
+        )
+    }
+    fn ui_set_editor_text(&self, resource: &Ui, text: &str) -> ExtensionResult<()> {
+        super::ui_host::set_editor_text(&mut self.observed.borrow_mut(), resource.key, text)
+    }
+    fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
+        super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
+    }
     type Registry = Reader;
     type Reader = Reader;
     type Writer = Reader;

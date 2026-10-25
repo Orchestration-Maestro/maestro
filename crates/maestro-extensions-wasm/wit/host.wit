@@ -145,6 +145,9 @@ interface host {
         set-hidden-thinking-label: func(label: option<string>) -> result<_, string>;
         set-widget: func(key: string, content: option<list<string>>, options: option<extension-widget-options>) -> result<_, string>;
         set-title: func(title: string) -> result<_, string>;
+        paste-to-editor: func(text: string) -> result<_, string>;
+        set-editor-text: func(text: string) -> result<_, string>;
+        get-editor-text: func() -> result<string, string>;
     }
     /// Resolved credentials, retaining key and header presence.
     record request-auth {

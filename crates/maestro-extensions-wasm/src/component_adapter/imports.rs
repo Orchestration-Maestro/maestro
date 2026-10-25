@@ -484,6 +484,12 @@ pub trait Imports: Clone + 'static {
     ) -> ExtensionResult<()>;
     /// Forwards the terminal title.
     fn ui_set_title(&self, resource: &Self::Ui, title: &str) -> ExtensionResult<()>;
+    /// Forwards text the host editor receives as a paste.
+    fn ui_paste_to_editor(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
+    /// Forwards the replacement text of the host editor.
+    fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
+    /// Reads the host editor's current text.
+    fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
     /// Forwards the corresponding host capability call.
     fn has_ui(&self, context: &Self::Context) -> ExtensionResult<bool>;
     /// Forwards the corresponding host capability call.

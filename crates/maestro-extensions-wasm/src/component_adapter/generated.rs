@@ -141,6 +141,9 @@ impl Imports for Generated {
         ui_set_hidden_thinking_label(resource: &Self::Ui, label: Option<&str>) -> ExtensionResult<()> => set_hidden_thinking_label(label);
         ui_set_widget(resource: &Self::Ui, key: &str, content: Option<&[String]>, options: Option<ExtensionWidgetOptions>) -> ExtensionResult<()> => set_widget(key, content, options);
         ui_set_title(resource: &Self::Ui, title: &str) -> ExtensionResult<()> => set_title(title);
+        ui_paste_to_editor(resource: &Self::Ui, text: &str) -> ExtensionResult<()> => paste_to_editor(text);
+        ui_set_editor_text(resource: &Self::Ui, text: &str) -> ExtensionResult<()> => set_editor_text(text);
+        ui_get_editor_text(resource: &Self::Ui) -> ExtensionResult<String> => get_editor_text();
         has_ui(context: &Self::Context) -> ExtensionResult<bool> => has_ui();
         model_registry(context: &Self::Context) -> ExtensionResult<Self::Registry> => model_registry();
         model(context: &Self::Context) -> ExtensionResult<Option<String>> => model();

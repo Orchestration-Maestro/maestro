@@ -344,7 +344,7 @@ usage whose two estimates are unknown.
 
 ## Retained UI requests
 
-`ExtensionUIContext` sends eight synchronous requests to the installed host and
+`ExtensionUIContext` sends these synchronous requests to the installed host and
 returns its rejection as a recoverable `ExtensionResult` error:
 
 | Method | Request |
@@ -357,6 +357,9 @@ returns its rejection as a recoverable `ExtensionResult` error:
 | `set_hidden_thinking_label` | Literal collapsed-thinking text, or the host default. |
 | `set_widget` | Fixed ordered lines for one key with optional `WidgetPlacement`, or that widget's removal. |
 | `set_title` | A literal terminal title. |
+| `paste_to_editor` | Literal text the host editor receives as a paste, through its paste handling. |
+| `set_editor_text` | Literal replacement text for the host editor. |
+| `get_editor_text` | Reads the host editor's current text, returned unchanged. |
 
 The four option types are generated from the same interface file and re-exported at
 the author root. `None` and a present empty value stay different requests. The text
