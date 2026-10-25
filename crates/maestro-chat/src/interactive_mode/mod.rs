@@ -226,22 +226,18 @@ impl InteractiveMode {
     }
 
     /// Installs lifecycle handlers, selects unseen release history, prepares search
-    /// programs and completion, then builds the header,
-    /// adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission and the global debug key, starts
-    /// the terminal, binds the session's extensions to this mode as their user interface
-    /// and waits for their start and resource discovery, lists the loaded resources with
-    /// their diagnostics, shows selected history once and replays the session; theme
-    /// changes then refresh the editor border, and theme and branch changes request fresh
-    /// frames.
+    /// programs, then builds the header, adds every container in order, focuses the
+    /// editor, binds the transcript shortcuts, installs editor submission and the global
+    /// debug key, starts the terminal, binds the current session as `rebind_current_session`
+    /// does and replays the session; theme changes then refresh the editor border, and
+    /// theme and branch changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.
     /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
     /// Returns a failure of lifecycle registration, the managed binary directory, the
-    /// header's theme colours, terminal start, extension binding, resource listing, replay or
-    /// catalog refresh.
+    /// header's theme colours, terminal start, session binding, replay or catalog refresh.
     pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -249,7 +245,6 @@ impl InteractiveMode {
         self.register_signal_handlers()?;
         *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
         self.prepare_search_tools().await?;
-        self.setup_autocomplete_provider();
         self.build_header()?;
         self.render_widgets();
         for child in [
@@ -271,11 +266,8 @@ impl InteractiveMode {
         self.setup_debug_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
-        self.bind_current_session_extensions().await?;
-        self.subscribe_to_agent();
-        self.update_terminal_title()?;
-        let runner = self.runtime_host.session().extension_runner();
-        self.setup_extension_shortcuts(&runner);
+        self.rebind_current_session().await?;
+        self.render_initial_messages()?;
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
@@ -290,12 +282,6 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(resources::ShowLoadedResourcesOptions {
-            show_diagnostics_when_quiet: true,
-            ..resources::ShowLoadedResourcesOptions::default()
-        })?;
-        self.show_startup_notices_if_needed()?;
-        self.render_initial_messages()?;
         self.update_available_provider_count()
     }
 
