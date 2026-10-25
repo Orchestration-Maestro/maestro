@@ -55,7 +55,7 @@ fn bytes(name: &str) -> &'static [u8] {
     }
 }
 /// Preserve the complete original byte input.
-fn encoded(name: &str) -> String {
+pub(crate) fn encoded(name: &str) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(name))
 }

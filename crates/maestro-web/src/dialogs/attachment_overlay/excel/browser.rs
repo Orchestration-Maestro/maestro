@@ -10,11 +10,40 @@ pub(super) fn mount(
     document: &Document,
     sheets: &Sheets,
     surface: (egui::Id, egui::Rect, Option<egui::Id>, bool),
+    selected: usize,
 ) -> Result<ReadingRoot, AttachmentHostError> {
+    let root = root(document, sheets, surface.3, selected)?;
+    let mut slots = Vec::new();
+    if let Some(strip) = root
+        .query_selector(".maestro-excel-tabs")
+        .map_err(|e| host_error(&e))?
+    {
+        for (index, _) in sheets.values.iter().enumerate() {
+            let slot = create(document, "span", "maestro-excel-tab")?;
+            strip.append_child(&slot).map_err(|e| host_error(&e))?;
+            slots.push((surface.0.with(index), slot));
+        }
+    }
+    Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
+        commit: None,
+        owner: None,
+        element: root,
+        slots,
+    })
+}
+/// Build stable table bodies independently of the caller's tab controls.
+pub(super) fn root(
+    document: &Document,
+    sheets: &Sheets,
+    padded: bool,
+    selected: usize,
+) -> Result<web_sys::Element, AttachmentHostError> {
     let root = create(
         document,
         "section",
-        if surface.3 {
+        if padded {
             "maestro-excel maestro-excel-artifact"
         } else {
             "maestro-excel"
@@ -24,14 +53,8 @@ pub(super) fn mount(
     style.set_text_content(Some(include_str!("../excel.css")));
     root.append_child(&style).map_err(|e| host_error(&e))?;
     let multi = sheets.values.len() > 1;
-    let mut slots = Vec::new();
     if multi {
         let strip = create(document, "div", "maestro-excel-tabs")?;
-        for (index, _) in sheets.values.iter().enumerate() {
-            let slot = create(document, "span", "maestro-excel-tab")?;
-            strip.append_child(&slot).map_err(|e| host_error(&e))?;
-            slots.push((surface.0.with(index), slot));
-        }
         root.append_child(&strip).map_err(|e| host_error(&e))?;
     }
     let mut nodes = Vec::new();
@@ -48,9 +71,8 @@ pub(super) fn mount(
         match content {
             Ok(html) => body.set_inner_html(html),
             Err(text) => {
-                let error = super::super::error::mount(document, text, surface.3)?;
-                body.append_child(&error.element)
-                    .map_err(|e| host_error(&e))?;
+                let error = super::super::error::root(document, text, padded)?;
+                body.append_child(&error).map_err(|e| host_error(&e))?;
             }
         }
         root.append_child(&body).map_err(|e| host_error(&e))?;
@@ -60,15 +82,8 @@ pub(super) fn mount(
         .map_err(|e| host_error(&e))?;
     *sheets.root.borrow_mut() = Some(root.clone());
     *sheets.nodes.borrow_mut() = nodes;
-    select(sheets, 0)?;
-    Ok(ReadingRoot {
-        frame_style: "",
-        decoration: None,
-        commit: None,
-        owner: None,
-        element: root,
-        slots,
-    })
+    select(sheets, selected)?;
+    Ok(root)
 }
 /// Hide rather than rebuild bodies, preserving native selection and both offsets.
 pub(super) fn select(sheets: &Sheets, selected: usize) -> Result<(), AttachmentHostError> {

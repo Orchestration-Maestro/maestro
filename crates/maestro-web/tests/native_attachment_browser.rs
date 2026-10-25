@@ -173,3 +173,97 @@ pub fn native_mode_group_updates_labels_selection_and_reentrant_events(import_mo
     );
     element.remove();
 }
+
+/// Shared document factories retain progressive pages and the current worksheet across frames.
+#[wasm_bindgen]
+pub fn shared_document_roots_preserve_progress_and_sheet_selection() {
+    let document = crate::contributions_support::document();
+    let canvas = document.create_element("canvas").unwrap();
+    canvas.set_attribute("id", "canvas").unwrap();
+    canvas.set_attribute("width", "800").unwrap();
+    canvas.set_attribute("height", "600").unwrap();
+    body().append_child(&canvas).unwrap();
+    shared_pdf_pages(&document);
+    shared_sheet_selection(&document);
+    canvas.remove();
+}
+/// Existing artifact factories reuse the native page root while raster work progresses.
+fn shared_pdf_pages(document: &web_sys::Document) {
+    use crate::{pdf_views_browser, reading_browser_support::View};
+    let mut pdf = View::new("shared.pdf", &pdf_views_browser::encoded(true));
+    pdf.draw(false, vec![]);
+    let root = document.query_selector(".maestro-pdf").unwrap().unwrap();
+    let first = root.query_selector("img").unwrap().unwrap();
+    assert_eq!(root.query_selector_all("img").unwrap().length(), 1);
+    for count in 2..=3 {
+        pdf.draw(false, vec![]);
+        assert!(
+            root.is_same_node(
+                document
+                    .query_selector(".maestro-pdf")
+                    .unwrap()
+                    .as_ref()
+                    .map(AsRef::as_ref)
+            )
+        );
+        assert!(
+            first.is_same_node(
+                root.query_selector("img")
+                    .unwrap()
+                    .as_ref()
+                    .map(AsRef::as_ref)
+            )
+        );
+        assert_eq!(root.query_selector_all("img").unwrap().length(), count);
+    }
+    drop(pdf);
+}
+/// The current selected sheet and both native bodies survive another frame.
+fn shared_sheet_selection(document: &web_sys::Document) {
+    use crate::{
+        excel_views_browser,
+        reading_browser_support::{View, click},
+    };
+    let mut excel = View::new("shared.xlsx", &excel_views_browser::encoded("two"));
+    excel.draw(false, vec![]);
+    let root = document.query_selector(".maestro-excel").unwrap().unwrap();
+    let sheets = root.query_selector_all(".maestro-excel-sheet").unwrap();
+    assert_eq!(sheets.length(), 2);
+    let first = sheets.item(0).unwrap().unchecked_into::<Element>();
+    let second = sheets.item(1).unwrap().unchecked_into::<Element>();
+    assert_eq!(first.get_attribute("style").unwrap(), "display:block;");
+    assert_eq!(second.get_attribute("style").unwrap(), "display:none;");
+    let tab = root
+        .query_selector_all(".maestro-excel-tab")
+        .unwrap()
+        .item(1)
+        .unwrap()
+        .unchecked_into::<Element>()
+        .get_bounding_client_rect();
+    let position = egui::pos2(
+        num_traits::cast(tab.x() + tab.width() / 2.).unwrap(),
+        num_traits::cast(tab.y() + tab.height() / 2.).unwrap(),
+    );
+    excel.draw(false, click(position));
+    excel.draw(false, vec![]);
+    assert!(
+        root.is_same_node(
+            document
+                .query_selector(".maestro-excel")
+                .unwrap()
+                .as_ref()
+                .map(AsRef::as_ref)
+        )
+    );
+    assert!(
+        first.is_same_node(
+            root.query_selector(".maestro-excel-sheet")
+                .unwrap()
+                .as_ref()
+                .map(AsRef::as_ref)
+        )
+    );
+    assert_eq!(first.get_attribute("style").unwrap(), "display:none;");
+    assert_eq!(second.get_attribute("style").unwrap(), "display:block;");
+    drop(excel);
+}

@@ -55,28 +55,33 @@ impl Pdf {
             return Ok(());
         }
         self.frame = Some(frame);
+        if self.next_page()? {
+            context.request_repaint();
+        }
+        Ok(())
+    }
+    /// Complete one page, returning whether unfinished pages remain.
+    pub(crate) fn next_page(&mut self) -> Result<bool, String> {
         let Some(document) = &self.document else {
-            return Ok(());
+            return Ok(false);
         };
         let number = self.pages.borrow().values.len() + 1;
         if number > document.num_pages() {
             self.document = None;
-            return Ok(());
+            return Ok(false);
         }
-        let page = document.render_page(number).map_err(|e| e.to_string());
-        match page {
+        match document.render_page(number) {
             Ok(page) => self.pages.borrow_mut().values.push(page),
             Err(error) => {
                 self.document = None;
-                return Err(error);
+                return Err(error.to_string());
             }
         }
-        if number == document.num_pages() {
+        let remains = number < document.num_pages();
+        if !remains {
             self.document = None;
-        } else {
-            context.request_repaint();
         }
-        Ok(())
+        Ok(remains)
     }
     /// Admit stable page nodes without retaining drawing or engine operands.
     pub(crate) fn present(

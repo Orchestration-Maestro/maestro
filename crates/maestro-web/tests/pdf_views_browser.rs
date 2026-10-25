@@ -15,7 +15,7 @@ fn bytes(multi: bool) -> &'static [u8] {
     }
 }
 /// Original encoded bytes for either public consumer.
-fn encoded(multi: bool) -> String {
+pub(crate) fn encoded(multi: bool) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(multi))
 }

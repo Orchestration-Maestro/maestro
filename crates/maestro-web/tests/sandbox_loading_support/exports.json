@@ -136,7 +136,8 @@
     "provider_card_native_focus_layout_and_brand_roles",
     "artifact_console_dom_summaries_and_literal_lines",
     "artifact_console_dom_preserves_raw_value_domains",
-    "artifact_console_dom_expansion_copy_and_follow"
+    "artifact_console_dom_expansion_copy_and_follow",
+    "shared_document_roots_preserve_progress_and_sheet_selection"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",
