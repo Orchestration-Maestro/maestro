@@ -1,12 +1,16 @@
 //! Native component execution and retained context integration tests.
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
+mod callback_lifetimes;
+mod callback_ordering;
+mod callback_results;
 mod canonical_api;
 mod canonical_callbacks;
 mod canonical_commands;
 mod canonical_json;
 mod canonical_schema;
 mod canonical_ui;
+mod component_callbacks;
 mod component_events;
 mod component_loading;
 mod components;

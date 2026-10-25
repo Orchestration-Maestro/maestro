@@ -19,14 +19,26 @@ mod api;
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/components.rs"]
+mod components;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/listeners.rs"]
+mod listeners;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/ordering.rs"]
+mod ordering;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/registrations.rs"]
 mod registrations;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/results.rs"]
+mod results;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/retained.rs"]
 mod retained;
@@ -58,6 +70,8 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             return Err("guest startup failure".into());
         }
         register_listeners(&api)?;
+        ordering::register(&api)?;
+        components::register(&api)?;
         let renderer_api = api.clone();
         api.register_message_renderer(
             "bridge-view",
@@ -147,6 +161,9 @@ fn command(
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
+        }
+        if let Some(ops) = args.strip_prefix("listen:") {
+            return listeners::run(api, ops, context).await;
         }
         if args == "retain-suspended" {
             return retained::observe(api, context).await;

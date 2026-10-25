@@ -30,6 +30,19 @@ while it waits for a synchronous host call`. Calls into other components still
 complete. Asynchronous host calls leave the component free, so native work they
 start can call back into it.
 
+Component callbacks follow the [event bus](event_bus.md) delivery rules. These
+callbacks are a listener prefix, tool argument preparation, a message renderer, a
+retained view's render, input, key-release and invalidate methods, and both
+compaction notifications. While one runs, its own instance's listeners run at once.
+Other instances' listeners run when it returns, before the native caller continues.
+A returned error keeps its exact text and those deliveries. Returned values reach
+their native consumer unchanged; prepared arguments pass the model's argument
+validation before the tool executes. A returned view keeps its own state, outlives
+a replaced renderer and is released by its last owner. Removing a subscription
+leaves an admitted tail and its captures running until the tail settles. Footer,
+header, widget, editor and autocomplete factories and an authored dispose callback
+are not part of the component interface yet.
+
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,
 status, working-row, indicator, hidden-thinking-label, widget and title requests
