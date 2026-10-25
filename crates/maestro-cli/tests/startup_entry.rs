@@ -1080,6 +1080,53 @@ mod entry {
             .collect()
     }
 
+    /// Remove stored credentials exactly when the runtime-factory sample is taken.
+    fn clear_auth_at_factory_sample(path: String) -> Rc<dyn Fn(f64)> {
+        Rc::new(move |sample| {
+            if sample.total_cmp(&6.0).is_eq() {
+                std::fs::write(&path, "{}").unwrap();
+            }
+        })
+    }
+
+    #[test]
+    fn runtime_timing_follows_auth_capture() {
+        cases(
+            "entry::runtime_timing_follows_auth_capture",
+            &[("capture", &[("MAESTRO_TIMING", "1")])],
+            |local, _| async move {
+                let mut e = Entry::new();
+                let auth = format!("{}/auth.json", e.commands.agent_dir);
+                std::fs::write(
+                    &auth,
+                    json!({"timing-probe": {
+                        "type": "api_key", "key": "controlled"
+                    }})
+                    .to_string(),
+                )
+                .unwrap();
+                e.clock_hook = clear_auth_at_factory_sample(auth.clone());
+                assert_eq!(e.run(&local, &[], MainOptions::default()).await.unwrap(), 0);
+                assert_eq!(std::fs::read_to_string(auth).unwrap(), "{}");
+                let runtime = e.recorder.runtime.borrow().clone().unwrap();
+                let captured = runtime
+                    .services()
+                    .auth_storage
+                    .has_auth("timing-probe")
+                    .unwrap();
+                let observations = e
+                    .commands
+                    .state
+                    .steps
+                    .borrow()
+                    .iter()
+                    .filter(|step| **step == "agent")
+                    .count();
+                assert_eq!((captured, observations), (true, 1));
+            },
+        );
+    }
+
     #[test]
     fn timing_markers_keep_order_and_mode_positions() {
         let modes: &[(&str, &[(&str, &str)])] = &[

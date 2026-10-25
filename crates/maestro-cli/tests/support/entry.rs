@@ -81,6 +81,8 @@ pub struct Entry {
     pub module_loader: maestro_app::ModuleLoader<maestro_app::Local>,
     /// The last clock reading.
     pub clock: Cell<f64>,
+    /// A controlled effect at each supplied clock reading.
+    pub clock_hook: Rc<dyn Fn(f64)>,
     /// Whether output is styled.
     pub styles: Cell<bool>,
     /// The ordinary output handle the host receives.
@@ -109,6 +111,7 @@ impl Entry {
             missing: Cell::new("Continue"),
             module_loader: Rc::new(|_| Box::pin(std::future::ready(Ok(None)))),
             clock: Cell::new(0.0),
+            clock_hook: Rc::new(|_| {}),
             styles: Cell::new(false),
         }
     }
@@ -164,6 +167,7 @@ impl Entry {
         };
         let now = || {
             self.clock.set(self.clock.get() + 1.0);
+            (self.clock_hook)(self.clock.get());
             self.clock.get()
         };
         let files = NativeFileArgumentOperations::new(false);

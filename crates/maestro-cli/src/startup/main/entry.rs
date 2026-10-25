@@ -174,14 +174,20 @@ async fn run_entry(
     timings.time("parseArgs", host.now);
     let migrations = migrate(&host)?;
     timings.time("runMigrations", host.now);
-    let (manager, cwd) = match select_session(&startup, &mut host).await? {
+    let (manager, dirs) = match select_session(&startup, &mut host).await? {
         ControlFlow::Continue(selected) => selected,
         ControlFlow::Break(status) => return Ok(status),
     };
     timings.time("createSessionManager", host.now);
     let mut parsed = startup.parsed;
-    timings.time("createRuntime", host.now);
-    let prepared = prepare_runtime(&mut parsed, manager, &cwd, options, (&host, offline)).await?;
+    let prepared = prepare_runtime(
+        &mut parsed,
+        manager,
+        &dirs,
+        options,
+        (&host, offline, &mut timings),
+    )
+    .await?;
     if show_metadata(&prepared, &host)? {
         return Ok(0);
     }
@@ -262,7 +268,7 @@ fn migration_output<'a>(
 async fn select_session(
     startup: &Startup,
     host: &mut MainHost<'_, '_>,
-) -> Phase<(SessionManager, String)> {
+) -> Phase<(SessionManager, SessionDirs)> {
     let cwd = (host.package.cwd)()?;
     let agent_dir = (host.package.agent_dir)()?;
     let settings = (host.package.load_settings)(&cwd, &agent_dir)?;
@@ -310,26 +316,24 @@ async fn select_session(
         effects,
         presentations,
     );
-    Ok(selected
-        .await?
-        .map_continue(|manager| (manager, dirs.cwd.clone())))
+    Ok(selected.await?.map_continue(|manager| (manager, dirs)))
 }
 
 /// Create the runtime over owned startup choices that later replacements reuse.
 async fn prepare_runtime(
     parsed: &mut Args,
     manager: SessionManager,
-    cwd: &str,
+    dirs: &SessionDirs,
     options: MainOptions,
-    (host, offline): (&MainHost<'_, '_>, bool),
+    (host, offline, timings): (&MainHost<'_, '_>, bool, &mut Timings),
 ) -> Result<Prepared, Box<dyn Error>> {
     let initial = Args {
         messages: std::mem::take(&mut parsed.messages),
         file_args: std::mem::take(&mut parsed.file_args),
         ..Args::default()
     };
-    let paths = CliPaths::new(parsed, cwd)?;
-    let agent_dir = (host.package.agent_dir)()?;
+    let paths = CliPaths::new(parsed, &dirs.cwd)?;
+    let agent_dir = dirs.agent_dir.clone();
     let parsed = Rc::new(std::mem::take(parsed));
     let collator = Rc::new(Collator::new(&|key| std::env::var(key).ok())?);
     let inputs = Rc::new(RuntimeInputs {
@@ -348,13 +352,15 @@ async fn prepare_runtime(
         color: host.package.styles_enabled,
         offline,
     });
+    let factory = runtime_factory(inputs);
+    timings.time("createRuntime", host.now);
     let request = CreateAgentSessionRuntimeOptions {
         cwd: manager.get_cwd().to_owned(),
         agent_dir,
         session_manager: Rc::new(RefCell::new(manager)),
         session_start_event: None,
     };
-    let runtime = create_agent_session_runtime(runtime_factory(inputs), request).await?;
+    let runtime = create_agent_session_runtime(factory, request).await?;
     Ok(Prepared {
         runtime: Rc::new(runtime),
         parsed,
