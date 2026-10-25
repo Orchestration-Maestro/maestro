@@ -7,6 +7,7 @@ mod canonical_commands;
 mod canonical_json;
 mod canonical_schema;
 mod canonical_ui;
+mod component_events;
 mod component_loading;
 mod components;
 mod execution_bridge;

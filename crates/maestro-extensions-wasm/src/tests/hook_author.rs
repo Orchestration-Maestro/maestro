@@ -55,8 +55,6 @@ enum Step {
     Observe(Observation),
     /// Waits for idle on the command context of the latest `hooks` invocation.
     Wait,
-    /// Registers another handler for the same event while this one runs.
-    Register(Vec<Step>),
     /// Asks the context to abort.
     Abort,
     /// Replaces one field of the event.
@@ -69,6 +67,15 @@ enum Step {
     Echo,
     /// Returns shell operations that report their invocation.
     Operations,
+    /// Skips the next steps unless the agent start carries this prompt.
+    SkipUnless {
+        /// The prompt that runs the skipped steps.
+        prompt: String,
+        /// How many steps to skip.
+        steps: usize,
+    },
+    /// Returns the event's system prompt followed by this text.
+    Suffix(String),
 }
 
 /// A value a handler reads.
@@ -171,13 +178,12 @@ impl Hooks {
     /// Registers a handler that runs `steps` for `event`.
     fn register(&self, event: &str, steps: Vec<Step>) -> ExtensionResult<()> {
         let hooks = self.clone();
-        let name = event.to_owned();
         let steps: Rc<[Step]> = steps.into();
         self.api.on(
             event,
             Rc::new(move |event, ctx| {
-                let (hooks, name, steps) = (hooks.clone(), name.clone(), Rc::clone(&steps));
-                Box::pin(async move { hooks.run(&name, &steps, event, ctx).await })
+                let (hooks, steps) = (hooks.clone(), Rc::clone(&steps));
+                Box::pin(async move { hooks.run(&steps, event, ctx).await })
             }),
         )
     }
@@ -191,12 +197,16 @@ impl Hooks {
     /// Runs the steps until one ends the handler.
     async fn run(
         &self,
-        name: &str,
         steps: &[Step],
         event: &mut ExtensionEvent,
         ctx: ExtensionContext,
     ) -> ExtensionResult<Option<ExtensionEventResult>> {
+        let mut skipped = 0;
         for step in steps {
+            if skipped > 0 {
+                skipped -= 1;
+                continue;
+            }
             match step {
                 Step::Trace(value) => self.trace(value.clone()).await?,
                 Step::Observe(observation) => {
@@ -206,13 +216,14 @@ impl Hooks {
                     let command = self.captured.borrow().clone();
                     command.ok_or("no command context")?.wait_for_idle().await?;
                 }
-                Step::Register(steps) => self.register(name, steps.clone())?,
                 Step::Abort => ctx.abort()?,
                 Step::Edit(edit) => apply(edit, event)?,
                 Step::Fail(message) => return Err(message.clone()),
                 Step::Return(value) => return result(event, value.clone()).map(Some),
                 Step::Echo => return echo(event).map(Some),
                 Step::Operations => return Ok(Some(self.operations())),
+                Step::SkipUnless { prompt, steps } => skipped = skipping(event, prompt, *steps),
+                Step::Suffix(suffix) => return suffixed(event, suffix).map(Some),
             }
         }
         Ok(None)
@@ -344,6 +355,25 @@ fn result(event: &ExtensionEvent, value: Value) -> ExtensionResult<ExtensionEven
         }
         _ => Result::SessionBeforeSwitch(decoded(value)?),
     })
+}
+
+/// How many steps to skip: none for an agent start carrying `prompt`, else `steps`.
+fn skipping(event: &ExtensionEvent, prompt: &str, steps: usize) -> usize {
+    match event {
+        ExtensionEvent::BeforeAgentStart(start) if start.prompt == prompt => 0,
+        _ => steps,
+    }
+}
+
+/// The agent start's system prompt followed by `suffix`, returned as its result.
+fn suffixed(event: &ExtensionEvent, suffix: &str) -> ExtensionResult<ExtensionEventResult> {
+    let ExtensionEvent::BeforeAgentStart(start) = event else {
+        return Err("only an agent start has a system prompt".into());
+    };
+    let prompt = format!("{}{suffix}", start.system_prompt);
+    Ok(ExtensionEventResult::BeforeAgentStart(decoded(
+        json!({ "systemPrompt": prompt }),
+    )?))
 }
 
 /// The event's own message, payload or messages, returned as its result.

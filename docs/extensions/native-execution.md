@@ -17,6 +17,11 @@ contexts, UI and session owners stay on their original thread. Typed requests
 connect those owners to the Store; synchronous callbacks use that same receiver.
 Retained UI and history resources keep their original owners when bindings change.
 
+Events cross to a component as the records the [guest guide](guest.md) lists.
+The host keeps provider response headers in a map ordered by name; a component
+receives them as name and value pairs in that order, and an edited list goes
+back into the map, where a repeated name keeps its last value.
+
 A component that waits for a synchronous host call cannot run again until that
 call returns. A native call into that same component in the meantime, such as its
 message renderer, a retained component, tool argument preparation, a compaction
