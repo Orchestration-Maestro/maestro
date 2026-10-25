@@ -79,3 +79,6 @@ pub use maestro_extensions::runner::ExtensionRunnerSession;
 pub use maestro_session::session_manager::CompactionOptions;
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_session::session_manager::ReadonlySessionManager;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_session::session_cwd::{SessionCwdIssue, format_missing_session_cwd_prompt};

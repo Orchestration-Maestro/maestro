@@ -109,6 +109,13 @@ flushes its question before reading an untrimmed answer; an unterminated answer
 at EOF supplies no decision. These operations accept caller-owned streams and
 file effects; the startup entry and executable wiring remain separate work.
 
+`presentation::prompt_for_missing_session_cwd` offers Continue and Cancel using
+an application-supplied selection component. It loads the theme and keybindings
+before constructing its frame writer, forwards saved cursor and clear-on-shrink
+policies, and returns the fallback directory only for Continue. Cancellation,
+repeated notifications and dropped operations share the existing selector's
+one-shot cleanup. It does not start a theme watch or bind session services.
+
 ## Print mode
 
 `run_print_mode` runs one session to completion over a caller-owned runtime and
