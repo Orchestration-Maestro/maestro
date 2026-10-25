@@ -5,8 +5,9 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    AbortListener, AbortSignal, ExecOptions, ExtensionAPI, ExtensionCommandContext,
-    ExtensionResult, SignalPort, Subscription, SubscriptionPort,
+    AbortListener, AbortSignal, BashExec, BashExecResult, BashOperations, ExecOptions,
+    ExtensionAPI, ExtensionCommandContext, ExtensionEventResult, ExtensionResult, Presence,
+    SignalPort, Subscription, SubscriptionPort, UserBashEventResult,
 };
 use serde::Deserialize;
 use std::{
@@ -143,4 +144,55 @@ impl SubscriptionPort for AlreadyAborted {
     fn unsubscribe(&self) -> ExtensionResult<()> {
         Ok(())
     }
+}
+
+/// Registers a shell handler returning operations that run each command as a script
+/// through explicit execution with the supplied signal, report both streams and reject an
+/// aborted run.
+pub(super) fn shell(api: &ExtensionAPI) -> ExtensionResult<String> {
+    let owner = api.clone();
+    api.on(
+        "user_bash",
+        Rc::new(move |_, _| {
+            let capture = Rc::new(super::signals::Released(owner.clone(), "shell".into()));
+            let operations = BashOperations {
+                exec: remote(&owner, capture),
+            };
+            Box::pin(async move {
+                Ok(Some(ExtensionEventResult::UserBash(UserBashEventResult {
+                    result: Presence::Missing,
+                    operations: Some(operations),
+                })))
+            })
+        }),
+    )?;
+    Ok("shell registered".into())
+}
+
+/// One returned shell executor, keeping `capture` until the host releases it.
+fn remote(api: &ExtensionAPI, capture: Rc<super::signals::Released>) -> BashExec {
+    let api = api.clone();
+    Rc::new(move |command, cwd, options| {
+        let (api, capture) = (api.clone(), Rc::clone(&capture));
+        Box::pin(async move {
+            let _ = &capture;
+            let signal = options.signal.clone();
+            let exec = ExecOptions {
+                cwd: Some(cwd),
+                timeout: options.timeout.map(|seconds| seconds * 1000.0),
+                signal: options.signal,
+            };
+            let result = api
+                .exec("python3", &["-c".to_owned(), command], Some(exec))
+                .await?;
+            (options.on_data)(result.stdout.as_bytes())?;
+            (options.on_data)(result.stderr.as_bytes())?;
+            if signal.is_some_and(|signal| signal.aborted()) {
+                return Err("aborted".into());
+            }
+            Ok(BashExecResult {
+                exit_code: Some(result.code.into()),
+            })
+        })
+    })
 }

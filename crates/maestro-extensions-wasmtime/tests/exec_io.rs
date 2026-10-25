@@ -639,3 +639,65 @@ fn exec_failures_preserve_messages_and_resource_phase() {
         assert_eq!(super::abort_observers::labels(&observations), ["control"]);
     });
 }
+
+#[test]
+fn returned_shell_abort_survives_event_handler_return() {
+    run(async {
+        let (owner, runner, _events) = observed().await;
+        let command = runner
+            .get_command("bridge-observe")
+            .unwrap()
+            .command
+            .handler;
+        let registered = command("exec shell".into(), runner.create_command_context()).await;
+        assert_eq!(registered.unwrap_err().to_string(), "shell registered");
+        let mut event = maestro_extensions::UserBashEvent {
+            command: "remote".into(),
+            cwd: "/event".into(),
+            exclude_from_context: false,
+        };
+        let returned = runner
+            .emit_user_bash::<Rc<dyn maestro_extensions::BashOperations<Local>>, maestro_extensions::BashResult>(&mut event)
+            .await
+            .unwrap()
+            .unwrap();
+        let operations = returned.operations.unwrap();
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let script = format!(
+            "import os, socket; os.write(1, b'partial-out'); os.write(2, b'partial-err'); s=socket.create_connection(('127.0.0.1', {port})); s.sendall(b'READY'); s.recv(1)"
+        );
+        let signal = Cancellation::new();
+        let mut chunks = Vec::new();
+        let mut sink = |bytes: &[u8]| chunks.push(bytes.to_vec());
+        let (error, mut held) = {
+            let execution = operations.exec(
+                &script,
+                "",
+                maestro_extensions::BashExecOptions {
+                    on_data: &mut sink,
+                    signal: Some(&signal),
+                    timeout: None,
+                    env: None,
+                },
+            );
+            tokio::pin!(execution);
+            let held = tokio::select! {
+                result = &mut execution => panic!("settled before READY: {:?}", result.map(|result| result.exit_code)),
+                socket = ready(&listener) => socket,
+            };
+            signal.abort();
+            (execution.await.unwrap_err().to_string(), held)
+        };
+        assert_eq!(error, "aborted");
+        assert_eq!(held.read(&mut [0; 1]).await.unwrap(), 0, "the child ended");
+        assert_eq!(chunks, [b"partial-out".to_vec(), b"partial-err".to_vec()]);
+        super::abort_observers::signal_command(&runner, "barrier").await;
+        assert!(!super::abort_observers::released(&owner, "shell"));
+        drop(operations);
+        super::abort_observers::signal_command(&runner, "barrier").await;
+        assert!(super::abort_observers::released(&owner, "shell"));
+    });
+}

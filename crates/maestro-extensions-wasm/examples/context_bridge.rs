@@ -161,6 +161,9 @@ fn command(
         if args == "healthy-admitted" {
             return retained::healthy(context).await;
         }
+        if args == "exec shell" {
+            return Err(exec::shell(&api)?);
+        }
         if let Some(request) = args.strip_prefix("exec imports:") {
             return Err(exec::observe(&api, &context, request).await?);
         }

@@ -309,6 +309,13 @@ the delivery is refused.
 contexts inherit these methods. Getter and action failures are recoverable
 `ExtensionResult` errors; the guest does not implement host shutdown or queue policy.
 
+`AbortSignal::subscribe(listener)` registers a listener the host runs once, on the
+thread that owns the extension, when the signal is aborted. An abort that comes before the
+subscription is not replayed, so read `aborted()` as well. The returned `Subscription`
+removes the listener when you call `unsubscribe()`; dropping it does not. The listener
+receives a `CallbackEmitter` and may subscribe or unsubscribe other listeners while it
+runs.
+
 `ExtensionUIContext`, `ModelRegistry` and `AbortSignal` retain their acquired host
 resource independently of the context. Cloning shares the owner; its final alias
 drops that resource. A later acquisition can return a different resource. Whether
@@ -394,6 +401,31 @@ requested level. Authentication, catalog construction, clamping, queues and
 persistence remain host policy. Host rejections, including loading and stale-context
 messages, remain recoverable `ExtensionResult` errors (inside the future for model
 selection).
+
+## Explicit execution
+
+`ExtensionAPI::exec(command, args, options)` runs a program with ordered literal
+arguments. No shell is involved, so quotes, globs, `$` and `;` reach the program
+unchanged, and stdin is closed. The future resolves to an `ExecResult` with separate
+`stdout` and `stderr` text, the exit `code` and `killed`. A program that cannot start
+yields empty streams and code 1. A program ended by a signal it did not get from the
+caller has code 0 and `killed` false. An empty command or an operand the operating system
+rejects is an error, as are host and stale-context rejections.
+
+`ExecOptions` has three optional fields:
+
+| Field | Effect |
+| --- | --- |
+| `cwd` | Working directory. Absent uses the directory the extension was loaded with; an empty string uses the host process directory. |
+| `timeout` | Milliseconds before termination. Zero or a negative value sets no deadline; a value too large for a native duration never expires, and a positive value below one nanosecond expires at once. |
+| `signal` | Any `AbortSignal`, including one backed by your own `SignalPort`. An abort before or during the run terminates the program and sets `killed`. |
+
+The host keeps validation, process supervision and termination escalation: a
+program that ignores termination is killed five seconds later. The guest bridges a
+supplied signal to the host for each run and removes its listener when the run
+settles, whatever the outcome, so other listeners on the same signal and later runs
+keep working. Returned shell operations can pass their supplied signal to `exec`
+and still observe an abort after their event handler returned.
 
 ## Compaction admission and notifications
 
