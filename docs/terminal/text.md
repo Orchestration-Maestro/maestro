@@ -75,9 +75,10 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
 - Lines break at ASCII spaces and fill greedily. A word wider than `width` breaks
   between whole graphemes, and a non-whitespace grapheme wider than `width` is kept
   whole.
-- Escapes stay where they were written. An escape written before a grapheme that
-  starts a new row ends the row it follows, so a reset or a marker before a break
-  stays on the earlier row.
+- Escapes stay where they were written. Inside a word wider than `width`, an escape
+  written before the grapheme that starts a new row ends the row it follows, so a
+  reset or a marker before that cut stays on the earlier row. An escape written
+  before a whole word that moves to the next row starts that row.
 - At a break, a run of plain spaces is dropped instead of starting the next row, and
   so is a run of blanks carrying escapes when none of them is painted. The metadata
   escapes of a dropped run end the earlier row; its style escapes carry over.
@@ -91,15 +92,17 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
   background colour, or an inverse or background style left open that paints the
   cells after it. The metadata escapes of a dropped row move to the next row kept,
   after its inherited style, or to the end of the last row kept, followed by the
-  escapes written after the line's last grapheme.
+  escapes after the line's last grapheme that the dropped rows held. Every escape is
+  written once.
 - Every authored line keeps at least one output row. If all its rows are dropped,
   that row holds only its metadata escapes; style escapes alone give an empty line.
-- A row that has text starts with the style in effect where it starts, also after a
-  literal newline.
+- A row starts only when a grapheme or an escape is written to it, so no row holds
+  only the style it inherits. It starts with the style in effect where it starts,
+  also after a literal newline.
 - A row that has text closes the hyperlink still open at its end, with the
   terminator its opener used. It closes underline only when underline is active and
-  another row of the same literal line follows. It closes no other attribute or
-  colour.
+  the row ends at a break of a wider line, also when nothing after the break is
+  kept. It closes no other attribute or colour.
 
 ```rust
 use maestro_tui::wrap_text_with_ansi;

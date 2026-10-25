@@ -12,8 +12,8 @@ const RED: &str = "\x1b[31m";
 const MARKER: &str = "\x1b_maestro:c\x07";
 const PROMPT: &str = "\x1b]133;A\x07";
 
-/// An input whose escapes sit where a long word breaks, the width it wraps at, the rows it wraps
-/// into and the rows `Text` pads them to.
+/// An input whose escapes sit where a row breaks, the width it wraps at, the rows it wraps into
+/// and the rows `Text` pads them to.
 pub(crate) struct BoundaryCase {
     /// Text to wrap.
     pub text: String,
@@ -64,9 +64,37 @@ pub(crate) fn boundary_cases() -> Vec<BoundaryCase> {
     cases
 }
 
-#[test]
-fn long_word_escapes_precede_the_overflowing_grapheme() {
-    let cases = boundary_cases();
+/// Breaks after which a row would hold only the style it inherits: a background before a long
+/// word, and a foreground blank whose prompt or cursor marker ends the line.
+pub(crate) fn inherited_style_cases() -> Vec<BoundaryCase> {
+    let case = |text: String, wrapped: Vec<String>, rendered: Vec<String>| BoundaryCase {
+        text,
+        width: 2,
+        wrapped,
+        rendered,
+    };
+    let mut cases = Vec::new();
+    for marker in ["", MARKER] {
+        let wrapped = vec![
+            "\x1b[44mab".to_owned(),
+            format!("\x1b[44m{marker}cd"),
+            "\x1b[44me".to_owned(),
+        ];
+        let mut rendered = wrapped.clone();
+        rendered[2].push(' ');
+        cases.push(case(format!("\x1b[44mab {marker}cde"), wrapped, rendered));
+    }
+    for marker in [PROMPT, "\x1b]133;B\x07", MARKER] {
+        let row = vec![format!("ab{marker}")];
+        cases.push(case(format!("ab{RED} {marker}"), row.clone(), row));
+        let row = vec![format!("{RED}ab{marker}")];
+        cases.push(case(format!("{RED}ab {marker}"), row.clone(), row));
+    }
+    cases
+}
+
+/// Asserts the rows each case wraps into, naming every input that differs.
+fn assert_wraps(cases: &[BoundaryCase]) {
     let actual: Vec<_> = cases
         .iter()
         .map(|case| {
@@ -81,6 +109,16 @@ fn long_word_escapes_precede_the_overflowing_grapheme() {
         .map(|case| (case.text.as_str(), case.wrapped.clone()))
         .collect();
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn rows_never_hold_inherited_style_alone() {
+    assert_wraps(&inherited_style_cases());
+}
+
+#[test]
+fn long_word_escapes_precede_the_overflowing_grapheme() {
+    assert_wraps(&boundary_cases());
 }
 
 #[test]

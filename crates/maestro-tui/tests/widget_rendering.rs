@@ -363,9 +363,8 @@ fn text_keeps_metadata_from_discarded_continuations() {
     }
 }
 
-#[test]
-fn text_pads_after_the_authored_boundary_reset() {
-    let cases = crate::ansi_wrapping::boundary_cases();
+/// Asserts the rows `Text` renders for each case, naming every input that differs.
+fn assert_renders(cases: &[crate::ansi_wrapping::BoundaryCase]) {
     let actual: Vec<_> = cases
         .iter()
         .map(|case| {
@@ -378,4 +377,14 @@ fn text_pads_after_the_authored_boundary_reset() {
         .map(|case| (case.text.as_str(), case.rendered.clone()))
         .collect();
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn text_pads_after_the_authored_boundary_reset() {
+    assert_renders(&crate::ansi_wrapping::boundary_cases());
+}
+
+#[test]
+fn text_paints_no_row_of_inherited_style_alone() {
+    assert_renders(&crate::ansi_wrapping::inherited_style_cases());
 }

@@ -11,9 +11,11 @@ use super::render::{Emission, trim_end};
 /// word wider than `width`.
 ///
 /// Escapes are read within a literal line, never across a line feed, and stay where they were
-/// written: an escape before a grapheme that starts a new row ends the row it follows. A row
-/// that has text begins with the style in effect where it starts and closes the hyperlink still
-/// open at its end. A non-whitespace grapheme wider than `width` is kept whole.
+/// written: inside a word wider than `width`, an escape before the grapheme that starts a new
+/// row ends the row it follows, and one before a whole word that moves to a new row starts
+/// that row. A row that has text begins with the style in effect where it starts and closes
+/// the hyperlink still open at its end. A non-whitespace grapheme wider than `width` is kept
+/// whole.
 #[must_use]
 pub fn wrap_text_with_ansi(text: &str, width: usize) -> Vec<String> {
     if text.is_empty() {
@@ -68,7 +70,8 @@ struct Wrap<'p, 'a> {
     width: usize,
     /// Rows finished so far.
     rows: Vec<Candidate>,
-    /// Row being filled; `None` before the first grapheme of the line.
+    /// Row being filled; `None` until a source escape or grapheme is written to it, so no row
+    /// holds only the style it inherits.
     row: Option<Row<'p, 'a>>,
     /// Cells of the row being filled.
     cells: usize,
@@ -92,11 +95,6 @@ impl<'p, 'a> Row<'p, 'a> {
 }
 
 impl<'p, 'a> Wrap<'p, 'a> {
-    /// Opens a row in the style of the source read so far.
-    fn open(&mut self) {
-        self.row = Some(Row::open(self.parsed, self.state, self.cursor));
-    }
-
     /// The row being filled, opened when there is none.
     fn row(&mut self) -> &mut Emission<'p, 'a> {
         let (parsed, state, cursor) = (self.parsed, self.state, self.cursor);
@@ -133,25 +131,16 @@ impl<'p, 'a> Wrap<'p, 'a> {
     /// graphemes, a token that does not fit starts a new row, and whitespace never opens one.
     fn token(&mut self, graphemes: &[Grapheme], token: &Token) {
         if token.cells > self.width && !token.whitespace {
-            if self
-                .row
-                .as_ref()
-                .is_some_and(|row| !row.emission.is_empty())
-            {
-                self.flush(false);
-            }
-            self.open();
+            self.flush(false);
             self.long_token(graphemes, token);
             return;
         }
         if self.cells > 0 && self.cells + token.cells > self.width {
             if token.whitespace || self.paints_nothing(graphemes, token) {
                 self.flush_blank(graphemes, token);
-                self.open();
                 return;
             }
             self.flush(true);
-            self.open();
         }
         self.append(graphemes, token);
     }
@@ -188,7 +177,6 @@ impl<'p, 'a> Wrap<'p, 'a> {
             self.events(self.parsed.leading_events(grapheme));
             if grapheme.cells > 0 && self.cells > 0 && self.cells + grapheme.cells > self.width {
                 self.flush(false);
-                self.open();
             }
             self.content(grapheme);
         }
@@ -214,11 +202,9 @@ impl<'p, 'a> Wrap<'p, 'a> {
         self.cells = 0;
     }
 
-    /// Ends the line with its last row, unless that row is empty, closing only the hyperlink.
+    /// Ends the line with its last row, closing only the hyperlink.
     fn finish(mut self, trim: bool) -> Vec<Candidate> {
-        if let Some(mut row) = self.row.take()
-            && !row.emission.is_empty()
-        {
+        if let Some(mut row) = self.row.take() {
             if trim {
                 row.emission.trim_end();
             }
@@ -304,33 +290,41 @@ fn tokens(parsed: &Parsed<'_>, graphemes: &[Grapheme], events_end: usize) -> Vec
 
 /// Removes the rows of an overflowing line that show nothing.
 ///
-/// The metadata escapes of a removed row move to the next row kept, after its inherited style,
-/// or to the end of the last row kept, followed by the escapes written after the line's last
-/// grapheme. A line left without rows keeps one holding only its metadata escapes.
+/// Each source escape is written once, by the row that holds it. The metadata escapes of a
+/// removed row move to the next row kept, after its inherited style, or to the end of the last
+/// row kept, followed by the escapes after the line's last grapheme that removed rows held. A
+/// line left without rows keeps one holding only its metadata escapes.
 fn select(parsed: &Parsed<'_>, candidates: Vec<Candidate>, trailing: Range<usize>) -> Vec<String> {
     let mut rows: Vec<String> = Vec::new();
     let mut held = String::new();
-    let mut removed_last = false;
-    for candidate in candidates {
-        removed_last = !shows(&candidate.text);
-        if removed_last {
-            let end = candidate.events.end.min(trailing.start);
-            held.push_str(&metadata(parsed, candidate.events.start.min(end)..end));
-        } else {
-            let mut text = candidate.text;
-            text.insert_str(candidate.prefix, &std::mem::take(&mut held));
+    let mut lost = Vec::new();
+    for Candidate {
+        mut text,
+        prefix,
+        events,
+    } in candidates
+    {
+        if shows(&text) {
+            text.insert_str(prefix, &std::mem::take(&mut held));
             rows.push(text);
+        } else {
+            let split = events.end.min(trailing.start).max(events.start);
+            held.push_str(&metadata(parsed, events.start..split));
+            lost.push(split..events.end);
         }
     }
-    match rows.last_mut() {
-        Some(last) if removed_last => {
-            let mut tail = Emission::new(parsed);
-            tail.events(trailing);
-            last.push_str(&held);
-            last.push_str(&tail.into_string());
+    if let Some(last) = rows.last_mut() {
+        let mut tail = Emission::new(parsed);
+        for range in lost {
+            tail.events(range);
         }
-        Some(_) => {}
-        None => rows.push(held + &metadata(parsed, trailing)),
+        last.push_str(&held);
+        last.push_str(&tail.into_string());
+    } else {
+        rows.push(
+            lost.into_iter()
+                .fold(held, |row, range| row + &metadata(parsed, range)),
+        );
     }
     rows
 }

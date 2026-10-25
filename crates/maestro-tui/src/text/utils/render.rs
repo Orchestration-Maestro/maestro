@@ -80,11 +80,6 @@ impl<'p, 'a> Emission<'p, 'a> {
             .push_str(&self.parsed.visible[position..grapheme.range.end]);
     }
 
-    /// Whether nothing has been emitted.
-    pub(super) const fn is_empty(&self) -> bool {
-        self.out.is_empty()
-    }
-
     /// Removes the whitespace at the end of the output; an escape ends the removal.
     pub(super) fn trim_end(&mut self) {
         trim_end(&mut self.out);
