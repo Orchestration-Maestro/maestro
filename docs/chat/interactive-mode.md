@@ -44,7 +44,10 @@ one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
 editor submission and the global debug key, and starts the terminal. A terminal
 start failure is returned and leaves the mode uninitialized. Once started, it
-subscribes to the session events and sets the window title. It installs the
+binds the session's extensions with the mode as their
+[user interface](#extension-ui-host) and waits for their `session_start` handlers
+and resource discovery; a failure there is returned. It then subscribes to the
+session events and sets the window title. It installs the
 [extension shortcut interceptor](extension-ui.md#shortcuts) using the current runner.
 A theme change then
 invalidates the presentation, recolours the editor border and requests a frame,
@@ -197,7 +200,11 @@ frame; the editor's history is kept.
 
 ## Extension UI host
 
-The mode implements the extension UI port. A host retains it with
+The mode implements the extension UI port, and `init` installs it as the
+session's extension UI. The session and its runner only borrow the mode, which
+owns them, so they do not keep it alive; a UI context an extension
+holds keeps the mode alive until it is dropped, and afterwards the session's
+contexts report no UI. Another host retains it with
 `ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
 lists the operations it answers today, which are dialogs, editor access, theme
 queries and selection, the terminal title, tool expansion, status text and keyed

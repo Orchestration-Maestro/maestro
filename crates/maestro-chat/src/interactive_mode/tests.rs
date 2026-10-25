@@ -3,6 +3,7 @@ mod actions;
 mod authentication;
 mod autocomplete;
 mod bash;
+mod bindings;
 mod debug;
 mod events;
 mod extension_ui;

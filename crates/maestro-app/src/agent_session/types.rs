@@ -6,7 +6,7 @@ use maestro_agent::{Agent, AgentEvent};
 use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_extensions::{
     ExtensionCommandContextActions, ExtensionErrorListener, ExtensionExecution, ExtensionRunner,
-    ExtensionUIContext, InputSource, SessionStartEvent, types::ShutdownHandler,
+    ExtensionUIContextBinding, InputSource, SessionStartEvent, types::ShutdownHandler,
 };
 use maestro_models::{ImageContent, Local, Model, ModelThinkingLevel};
 use maestro_session::{
@@ -196,7 +196,7 @@ pub type ToolDefinitionHandle<E = Local> =
 #[derive(Clone, Default)]
 pub struct ExtensionBindings {
     /// The user interface extensions draw on.
-    pub ui_context: Option<ExtensionUIContext>,
+    pub ui_context: Option<ExtensionUIContextBinding>,
     /// The session operations behind command contexts.
     pub command_context_actions: Option<ExtensionCommandContextActions>,
     /// Requests a graceful shutdown.
