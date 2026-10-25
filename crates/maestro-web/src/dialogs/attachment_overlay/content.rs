@@ -1,5 +1,5 @@
 //! Attachment classification and content operands.
-use super::AttachmentOverlay;
+use super::LegacyOverlay;
 use crate::dialogs::attachment_overlay::AttachmentUiError;
 use crate::{
     Attachment, I18n,
@@ -32,7 +32,7 @@ pub(super) fn file_type(a: &Attachment) -> FileType {
         FileType::Text
     }
 }
-impl AttachmentOverlay {
+impl LegacyOverlay {
     /// Copy only the strings needed after releasing the record borrow.
     pub(super) fn body<F: ?Sized>(
         &mut self,

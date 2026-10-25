@@ -10,11 +10,13 @@ use maestro_theme::BrandPresentation;
 use std::rc::Rc;
 pub use ui_error::AttachmentUiError;
 mod content;
+#[cfg(target_arch = "wasm32")]
+mod dom;
 pub(crate) mod error;
 pub(crate) mod excel;
 pub(crate) mod pdf;
 /// A separately owned attachment overlay.
-pub struct AttachmentOverlay {
+struct LegacyOverlay {
     /// Live original record.
     attachment: crate::SharedAttachment,
     /// Platform effects.
@@ -40,7 +42,7 @@ pub struct AttachmentOverlay {
     /// Closed owners render nothing.
     closed: bool,
 }
-impl AttachmentOverlay {
+impl LegacyOverlay {
     /// Retain one independent overlay and its original record.
     #[must_use]
     pub fn open(
@@ -252,7 +254,7 @@ impl AttachmentOverlay {
         Ok(())
     }
 }
-impl Drop for AttachmentOverlay {
+impl Drop for LegacyOverlay {
     fn drop(&mut self) {
         if !self.closed {
             self.host.remove(self.id);
@@ -260,6 +262,50 @@ impl Drop for AttachmentOverlay {
                 .host
                 .set_overlay(self.id, false)
                 .map_err(AttachmentUiError::Host);
+        }
+    }
+}
+
+/// A separately owned attachment overlay.
+pub struct AttachmentOverlay {
+    /// Rendering owner selected at construction.
+    state: Overlay,
+}
+/// Retained presentation selected by the caller.
+enum Overlay {
+    /// Canvas presentation.
+    Legacy(Box<LegacyOverlay>),
+    /// Native document presentation.
+    #[cfg(target_arch = "wasm32")]
+    Native(Rc<dom::State>),
+}
+impl AttachmentOverlay {
+    /// Retain one independent overlay and its original record.
+    #[must_use]
+    pub fn open(
+        attachment: crate::SharedAttachment,
+        on_close: Option<Rc<dyn Fn()>>,
+        host: Rc<dyn AttachmentHost>,
+    ) -> Self {
+        Self {
+            state: Overlay::Legacy(Box::new(LegacyOverlay::open(attachment, on_close, host))),
+        }
+    }
+    /// Draw/process this overlay; false means the caller may release it.
+    /// # Errors
+    /// Propagates localization, glyph, borrow and platform failures.
+    pub fn render<F: ?Sized>(
+        &mut self,
+        context: &egui::Context,
+        i18n: &I18n<F>,
+        p: &BrandPresentation<'_>,
+    ) -> Result<bool, AttachmentUiError> {
+        match &mut self.state {
+            Overlay::Legacy(overlay) => overlay.render(context, i18n, p),
+            #[cfg(target_arch = "wasm32")]
+            Overlay::Native(_) => Err(AttachmentUiError::Presentation(
+                "Native overlay has no canvas rendering".into(),
+            )),
         }
     }
 }

@@ -102,6 +102,24 @@ impl Pdf {
             presentation,
         )
     }
+    /// Mount completed pages directly in the caller's native document.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn mount_root(
+        &self,
+        view: &crate::dom::DomView,
+        padded: bool,
+    ) -> Result<crate::dom::DomRoot, crate::tools::types::ToolUiError> {
+        Ok(crate::dom::DomRoot::new(browser::root(
+            &view.document,
+            &self.pages,
+            padded,
+        )?))
+    }
+    /// Append newly completed pages to the retained native root.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn sync_root(&self) -> Result<(), crate::tools::types::ToolUiError> {
+        browser::sync(&self.pages.borrow()).map_err(Into::into)
+    }
     /// Retain one factory for this completed-page collection.
     fn reading(&mut self, padded: bool) -> Rc<ReadingContent> {
         #[cfg(not(target_arch = "wasm32"))]

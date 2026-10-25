@@ -263,3 +263,118 @@ code-block, markdown-block, thinking-block {
   align-items: center;
   gap: 0.25rem;
 }
+.maestro-attachment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--maestro-color-background) 90%, transparent);
+  color: var(--maestro-color-text);
+  font-family: var(--maestro-type-body-font);
+}
+.maestro-attachment-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--maestro-spacing-sm) var(--maestro-spacing-md);
+  border-bottom: 1px solid var(--maestro-color-border);
+  background: color-mix(in srgb, var(--maestro-color-background) 95%, transparent);
+  backdrop-filter: blur(8px);
+}
+.maestro-attachment-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(var(--maestro-type-body-size) * .875);
+  font-weight: 500;
+}
+.maestro-attachment-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--maestro-spacing-sm);
+}
+.maestro-attachment-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+.maestro-attachment-text, .maestro-attachment-document {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  max-width: 896px;
+  overflow: auto;
+  background: var(--maestro-color-panel);
+  color: var(--maestro-color-text);
+  border: 1px solid var(--maestro-color-border);
+  padding: var(--maestro-spacing-lg);
+}
+.maestro-attachment-text pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--maestro-type-mono-font);
+  font-size: calc(var(--maestro-type-body-size) * .875);
+}
+.maestro-attachment-extracted pre {
+  font-size: calc(var(--maestro-type-body-size) * .75);
+  line-height: 1.625;
+}
+.maestro-attachment-presentation, .maestro-attachment-document {
+  max-width: 1000px;
+}
+.maestro-attachment-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--maestro-radii-panel);
+}
+.maestro-attachment-body > .maestro-pdf {
+  width: 100%;
+  height: 100%;
+  max-width: 1000px;
+  overflow: auto;
+  background: var(--maestro-color-panel);
+  border: 1px solid var(--maestro-color-border);
+}
+.maestro-attachment-body > .maestro-excel {
+  width: 100%;
+  overflow: auto;
+  background: var(--maestro-color-panel);
+}
+.maestro-attachment-body .maestro-excel-tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: var(--maestro-spacing-sm) var(--maestro-spacing-md);
+  color: var(--maestro-color-muted);
+  font: inherit;
+  font-size: calc(var(--maestro-type-body-size) * .875);
+  cursor: pointer;
+}
+.maestro-attachment-body .maestro-excel-tab[aria-selected="true"] {
+  border-bottom-color: var(--maestro-color-accent);
+  color: var(--maestro-color-accent);
+  font-weight: 500;
+}
+.maestro-attachment-body .maestro-excel-tab:hover {
+  color: var(--maestro-color-text);
+}
+.maestro-attachment-body .maestro-excel-tab:focus-visible {
+  outline: 2px solid var(--maestro-color-accent);
+}
+.maestro-attachment-document {
+  padding: 0;
+}
+.maestro-attachment-image,
+.maestro-attachment-presentation,
+.maestro-attachment-document,
+.maestro-attachment-body > .maestro-pdf {
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--maestro-color-text) 10%, transparent),
+    0 4px 6px -4px color-mix(in srgb, var(--maestro-color-text) 10%, transparent);
+}

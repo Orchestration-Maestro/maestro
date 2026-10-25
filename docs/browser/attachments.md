@@ -43,7 +43,7 @@ errors. One sheet omits the tab strip. Each multi-sheet body retains its own scr
 offsets; ordinary repaints retain the table and error nodes.
 The registry owns position and scaling, while the spreadsheet root keeps its
 bounded height during measurement. Selecting text, replacing content or closing
-releases that workbook view. Word attachment-overlay rendering remains pending in
+releases that workbook view. Canvas Word attachment-overlay rendering remains pending in
 [#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761); the independent
 [native Word artifact body](artifacts.md#native-word-body) does not change overlay
 placement. No extracted-text
@@ -52,6 +52,27 @@ fallback is substituted for it. Legacy spreadsheet reading remains in
 with centered, selectable native error text while leaving download and close
 available. A nonempty overlay failure stays dominant through record edits until
 a mode change clears it; an empty host-presentation diagnostic stays suppressed.
+
+## Native page overlay
+
+On WebAssembly, `AttachmentOverlay::open_native(&view, attachment, on_close)`
+opens a native preview in the `DomView` document without an `AttachmentHost`.
+Creation and body-append failures return immediately. Its `DomContent` mount
+exposes that same already-appended root; dropping the returned handle does not
+close the connected element.
+
+The fixed header stays outside the scrolling body. PDF pages use the shared
+progressive raster owner; Word keeps the shared renderer's fonts, page heights,
+headers, footers and notes while ignoring page width. Spreadsheet tabs retain
+sheet nodes and their scroll offsets. File/text selection releases the previous
+document and clears its displayed load error. Downloads keep the original bytes,
+filename and MIME type through the existing scoped download owner.
+
+Close, Escape and backdrop activation cancel pending page work, detach native
+listeners and notify once before removing the element. Header and body clicks do
+not close it. Removing the element directly releases its document resources and
+listeners without synthesizing a close callback. The existing canvas constructors
+and message callers retain their current behavior.
 
 ## Platform ownership
 

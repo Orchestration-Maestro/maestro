@@ -52,7 +52,8 @@
     "docx_artifact_dom_errors_retry_and_keep_download",
     "docx_artifact_dom_retains_and_releases_resources",
     "simple_html_session_replays_existing_browser_owners",
-    "long_session_replays_existing_browser_owners"
+    "long_session_replays_existing_browser_owners",
+    "overlay_dom_documents_keep_resources_and_sheet_state"
   ],
   "contributions": [
     "mounted_content_keeps_one_root_while_its_content_type_stays",
@@ -137,7 +138,10 @@
     "artifact_console_dom_summaries_and_literal_lines",
     "artifact_console_dom_preserves_raw_value_domains",
     "artifact_console_dom_expansion_copy_and_follow",
-    "shared_document_roots_preserve_progress_and_sheet_selection"
+    "shared_document_roots_preserve_progress_and_sheet_selection",
+    "overlay_dom_fixed_chrome_modes_text_and_locales",
+    "overlay_dom_close_reopen_and_pending_document_release",
+    "overlay_dom_downloads_original_bytes_and_reports_failures"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

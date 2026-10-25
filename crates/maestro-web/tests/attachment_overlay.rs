@@ -48,20 +48,20 @@ use serde::Deserialize;
 /// Ordered classification case.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct TypeCase {
+pub(crate) struct TypeCase {
     /// Case identity.
-    name: String,
+    pub(crate) name: String,
     /// Original attachment, absent only before opening.
-    input: Input,
+    pub(crate) input: Input,
     /// Expected selected kind.
-    expected: TypeExpected,
+    pub(crate) expected: TypeExpected,
 }
 /// Classifier output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct TypeExpected {
+pub(crate) struct TypeExpected {
     /// Source kind.
-    r#type: String,
+    pub(crate) r#type: String,
 }
 /// Observe the rendered content kind without using the widget classifier.
 fn kind(content: &Content) -> &str {
@@ -106,24 +106,24 @@ fn overlay_file_detection_preserves_priority_and_case() {
 /// Localized toggle input and complete mode labels.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ToggleCase {
+pub(crate) struct ToggleCase {
     /// Case identity.
-    name: String,
+    pub(crate) name: String,
     /// Original record.
-    input: Input,
+    pub(crate) input: Input,
     /// Selected language.
-    language: String,
+    pub(crate) language: String,
     /// Exact mode labels/index.
-    expected: ToggleExpected,
+    pub(crate) expected: ToggleExpected,
 }
 /// Source toggle output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ToggleExpected {
+pub(crate) struct ToggleExpected {
     /// Preview label followed by text label.
-    modes: Vec<String>,
+    pub(crate) modes: Vec<String>,
     /// Initial selected index, absent with no toggle.
-    selected: Option<usize>,
+    pub(crate) selected: Option<usize>,
 }
 #[test]
 fn overlay_toggle_gates_and_labels_each_supported_view() {
@@ -197,31 +197,31 @@ fn overlay_toggle_clears_errors_without_changing_attachment() {
 /// Source content selection input/output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct ContentCase {
+pub(crate) struct ContentCase {
     /// Case identity.
-    name: String,
+    pub(crate) name: String,
     /// Typed original record.
-    input: Input,
+    pub(crate) input: Input,
     /// Whether text mode was selected.
-    show_text: bool,
+    pub(crate) show_text: bool,
     /// Full expected content projection.
-    expected: ContentExpected,
+    pub(crate) expected: ContentExpected,
 }
 /// Source content result.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ContentExpected {
+pub(crate) struct ContentExpected {
     /// Selected content kind.
-    kind: String,
+    pub(crate) kind: String,
     /// Original image URL.
-    source: Option<String>,
+    pub(crate) source: Option<String>,
     /// Literal text, absent for document containers.
-    text: Option<String>,
+    pub(crate) text: Option<String>,
     /// Extracted-text font/layout selection.
-    small: bool,
+    pub(crate) small: bool,
 }
 /// Source-derived content cases.
-fn content_cases() -> Vec<ContentCase> {
+pub(crate) fn content_cases() -> Vec<ContentCase> {
     serde_json::from_str(include_str!("fixtures/attachment_content.json")).unwrap()
 }
 #[test]

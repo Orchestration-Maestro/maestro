@@ -2,6 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, host, view};
 use js_sys::{Array, Function, Reflect};
+use maestro_web::dom::DomContent as _;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
 use web_sys::{CustomEvent, Element, HtmlElement};
@@ -266,4 +267,605 @@ fn shared_sheet_selection(document: &web_sys::Document) {
     assert_eq!(first.get_attribute("style").unwrap(), "display:none;");
     assert_eq!(second.get_attribute("style").unwrap(), "display:block;");
     drop(excel);
+}
+
+/// Open one overlay and observe its actual already-appended native root.
+fn opened(
+    view: &Rc<maestro_web::dom::DomView>,
+    record: maestro_web::SharedAttachment,
+) -> (maestro_web::AttachmentOverlay, Element) {
+    let overlay = maestro_web::AttachmentOverlay::open_native(view, record, None).unwrap();
+    let mounted = overlay.mount(view).unwrap();
+    let element: Element = mounted.node.unchecked_into();
+    assert!(element.is_connected());
+    (overlay, element)
+}
+/// Activate a named native control.
+fn control(root: &Element, selector: &str) {
+    root.query_selector(selector)
+        .unwrap()
+        .unwrap()
+        .unchecked_into::<HtmlElement>()
+        .click();
+}
+/// Close the actual element through its visible control.
+fn close(root: &Element) {
+    control(root, "[data-close]");
+    assert!(!root.is_connected());
+}
+/// Supply valid existing format fixtures without changing classification operands.
+fn valid_document(record: &maestro_web::SharedAttachment, kind: &str) {
+    use base64::Engine as _;
+    let content = match kind {
+        "pdf" => Some(crate::pdf_views_browser::encoded(true)),
+        "excel" => Some(crate::excel_views_browser::encoded("two")),
+        "docx" => Some(
+            base64::engine::general_purpose::STANDARD.encode(include_bytes!(
+                "../src/docx_preview/fixtures/docx/wrapper-default.docx"
+            )),
+        ),
+        _ => None,
+    };
+    if let Some(content) = content {
+        record.write().unwrap().content = content;
+    }
+}
+/// Observe a content branch through its rendered native body, not a classifier hook.
+fn assert_kind(root: &Element, kind: &str, name: &str) {
+    let selector = match kind {
+        "pdf" => ".maestro-pdf",
+        "excel" => ".maestro-excel",
+        "docx" => ".maestro-docx-container",
+        "pptx" => ".maestro-attachment-presentation",
+        "image" => ".maestro-attachment-image",
+        "text" => "pre",
+        _ => panic!("unknown fixture kind"),
+    };
+    assert!(
+        root.query_selector(selector).unwrap().is_some(),
+        "{name}: {kind}"
+    );
+}
+/// All classification and localized mode fixtures select the original first-match branch.
+fn classification_and_labels(view: &Rc<maestro_web::dom::DomView>) {
+    use crate::attachment_overlay::{ToggleCase, TypeCase};
+    let types: Vec<TypeCase> =
+        serde_json::from_str(include_str!("fixtures/attachment_types.json")).unwrap();
+    assert_eq!(types.len(), 16);
+    for case in types {
+        let record = case.input.record();
+        valid_document(&record, &case.expected.r#type);
+        let (_, root) = opened(view, record);
+        assert_kind(&root, &case.expected.r#type, &case.name);
+        close(&root);
+    }
+    let toggles: Vec<ToggleCase> =
+        serde_json::from_str(include_str!("fixtures/attachment_toggles.json")).unwrap();
+    assert_eq!(toggles.len(), 48);
+    for case in toggles {
+        let localized = crate::contributions_support::localized_view(view, &case.language);
+        let (_, root) = opened(&localized, case.input.record());
+        let buttons = root.query_selector_all(".maestro-toggle button").unwrap();
+        let labels = (0..buttons.length())
+            .map(|i| buttons.item(i).unwrap().text_content().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(labels, case.expected.modes, "{}", case.name);
+        let selected = (0..buttons.length()).find(|&i| {
+            buttons
+                .item(i)
+                .unwrap()
+                .unchecked_into::<Element>()
+                .class_list()
+                .contains("maestro-toggle-selected")
+        });
+        assert_eq!(selected.map(|i| i as usize), case.expected.selected);
+        close(&root);
+    }
+}
+/// Content cases preserve literal text, original image bytes and extracted-text sizing.
+fn content_cases(view: &Rc<maestro_web::dom::DomView>) {
+    let cases = crate::attachment_overlay::content_cases();
+    assert_eq!(cases.len(), 26);
+    for case in cases {
+        let record = case.input.record();
+        valid_document(&record, &case.expected.kind);
+        let (_, root) = opened(view, record);
+        if case.show_text && case.expected.small {
+            control(&root, ".maestro-toggle button:nth-child(2)");
+        }
+        assert_kind(&root, &case.expected.kind, &case.name);
+        if let Some(text) = case.expected.text {
+            let pre = root.query_selector("pre").unwrap().unwrap();
+            assert_eq!(pre.text_content().unwrap(), text, "{}", case.name);
+            assert_eq!(
+                root.query_selector(".maestro-attachment-extracted")
+                    .unwrap()
+                    .is_some(),
+                case.expected.small
+            );
+        }
+        if let Some(source) = case.expected.source {
+            let image = root.query_selector("img").unwrap().unwrap();
+            assert_eq!(image.get_attribute("src").unwrap(), source);
+            assert_eq!(
+                web_sys::window()
+                    .unwrap()
+                    .get_computed_style(&image)
+                    .unwrap()
+                    .unwrap()
+                    .get_property_value("object-fit")
+                    .unwrap(),
+                "contain"
+            );
+        }
+        close(&root);
+    }
+}
+/// A visible file failure stays selected until the existing mode control changes it.
+fn error_modes(view: &Rc<maestro_web::dom::DomView>) {
+    let record = crate::attachment_support::attachment();
+    {
+        let mut a = record.write().unwrap();
+        a.mime_type = "application/pdf".into();
+        a.content = "invalid!".into();
+        a.extracted_text = Some("<literal text>".into());
+    }
+    let (overlay, root) = opened(view, std::sync::Arc::clone(&record));
+    assert!(
+        root.query_selector(".maestro-file-error")
+            .unwrap()
+            .is_some()
+    );
+    assert!(root.query_selector("pre").unwrap().is_none());
+    control(&root, ".maestro-toggle button:nth-child(2)");
+    assert_eq!(
+        root.query_selector("pre")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "<literal text>"
+    );
+    assert!(
+        root.query_selector(".maestro-file-error")
+            .unwrap()
+            .is_none()
+    );
+    control(&root, ".maestro-toggle button:nth-child(1)");
+    let error = root.query_selector(".maestro-file-error").unwrap().unwrap();
+    record.write().unwrap().content = crate::pdf_views_browser::encoded(true);
+    let mounted = overlay.mount(view).unwrap();
+    overlay.update(&mounted, view).unwrap();
+    assert!(
+        error.is_same_node(
+            root.query_selector(".maestro-file-error")
+                .unwrap()
+                .as_ref()
+                .map(AsRef::as_ref)
+        )
+    );
+    control(&root, ".maestro-toggle button:nth-child(2)");
+    control(&root, ".maestro-toggle button:nth-child(1)");
+    assert!(
+        root.query_selector(".maestro-file-error")
+            .unwrap()
+            .is_none()
+    );
+    assert!(root.query_selector(".maestro-pdf").unwrap().is_some());
+    close(&root);
+}
+/// Fixed chrome, classification priority, modes and literal localized fallbacks.
+#[wasm_bindgen]
+pub fn overlay_dom_fixed_chrome_modes_text_and_locales() {
+    let view = view();
+    classification_and_labels(&view);
+    content_cases(&view);
+    let unset = view.document.create_element("attachment-overlay").unwrap();
+    body().append_child(&unset).unwrap();
+    assert!(unset.first_element_child().is_none());
+    unset.remove();
+    error_modes(&view);
+    let (_, root) = opened(&view, crate::attachment_support::attachment());
+    let window = web_sys::window().unwrap();
+    let backdrop = root.first_element_child().unwrap();
+    let css = window.get_computed_style(&backdrop).unwrap().unwrap();
+    assert_eq!(css.get_property_value("position").unwrap(), "fixed");
+    assert_eq!(css.get_property_value("flex-direction").unwrap(), "column");
+    let header = root.query_selector("header").unwrap().unwrap();
+    let body = root
+        .query_selector(".maestro-attachment-body")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        window
+            .get_computed_style(&header)
+            .unwrap()
+            .unwrap()
+            .get_property_value("flex-shrink")
+            .unwrap(),
+        "0"
+    );
+    assert_eq!(
+        window
+            .get_computed_style(&body)
+            .unwrap()
+            .unwrap()
+            .get_property_value("overflow-y")
+            .unwrap(),
+        "auto"
+    );
+    close(&root);
+}
+
+/// Progressive native pages preserve identity and release finished documents.
+async fn overlay_pdf(view: &Rc<maestro_web::dom::DomView>, page: &JsValue) {
+    let record = crate::attachment_support::attachment();
+    {
+        let mut a = record.write().unwrap();
+        a.mime_type = "application/pdf".into();
+        a.content = crate::pdf_views_browser::encoded(true);
+    }
+    let (_, root) = opened(view, record);
+    crate::contributions_support::frames(page, 0).await;
+    let first = root.query_selector(".maestro-pdf img").unwrap().unwrap();
+    assert_eq!(
+        root.query_selector_all(".maestro-pdf img")
+            .unwrap()
+            .length(),
+        1
+    );
+    crate::contributions_support::frames(page, 2).await;
+    let pages = root.query_selector_all(".maestro-pdf img").unwrap();
+    assert_eq!(pages.length(), 3);
+    assert!(first.is_same_node(pages.item(0).as_ref()));
+    assert_eq!(root.query_selector_all("hr").unwrap().length(), 2);
+    let sources = (0..3)
+        .map(|i| {
+            pages
+                .item(i)
+                .unwrap()
+                .unchecked_into::<Element>()
+                .get_attribute("src")
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    assert_ne!(sources[0], sources[1]);
+    assert_eq!(sources[0], sources[2]);
+    close(&root);
+}
+/// Sheet buttons change only visibility, retaining native bodies and scroll positions.
+fn overlay_sheets(view: &Rc<maestro_web::dom::DomView>) {
+    for name in ["two", "scroll"] {
+        let record = crate::attachment_support::attachment();
+        {
+            let mut a = record.write().unwrap();
+            a.file_name = "book.xlsx".into();
+            a.content = crate::excel_views_browser::encoded(name);
+        }
+        let (_, root) = opened(view, record);
+        if name == "scroll" {
+            root.first_element_child()
+                .unwrap()
+                .set_attribute("style", "width:240px;height:140px")
+                .unwrap();
+        }
+        let sheets = root.query_selector_all(".maestro-excel-sheet").unwrap();
+        assert!(sheets.length() >= 2);
+        let first: HtmlElement = sheets.item(0).unwrap().unchecked_into();
+        let second: HtmlElement = sheets.item(1).unwrap().unchecked_into();
+        assert_eq!(
+            first.style().get_property_value("display").unwrap(),
+            "block"
+        );
+        assert_eq!(
+            second.style().get_property_value("display").unwrap(),
+            "none"
+        );
+        first.set_scroll_top(21);
+        first.set_scroll_left(150);
+        let horizontal = first.scroll_left();
+        let scroll = first.scroll_top();
+        if name == "scroll" {
+            assert!(scroll > 0 && horizontal > 0);
+        }
+        control(&root, ".maestro-excel-tab:nth-child(2)");
+        assert_eq!(first.style().get_property_value("display").unwrap(), "none");
+        assert_eq!(
+            second.style().get_property_value("display").unwrap(),
+            "block"
+        );
+        assert!(
+            second.is_same_node(
+                root.query_selector_all(".maestro-excel-sheet")
+                    .unwrap()
+                    .item(1)
+                    .as_ref()
+            )
+        );
+        control(&root, ".maestro-excel-tab:nth-child(1)");
+        assert_eq!(first.scroll_top(), scroll);
+        assert_eq!(first.scroll_left(), horizontal);
+        close(&root);
+    }
+}
+/// Each native Word body keeps only its own live image resources until close.
+async fn overlay_word_resources(view: &Rc<maestro_web::dom::DomView>) {
+    use crate::docx_preview_browser::fetch_bytes;
+    let case = crate::native_document_artifacts_browser::packages()
+        .into_iter()
+        .find(|case| case.name == "image-inline")
+        .unwrap();
+    let record = crate::attachment_support::attachment();
+    {
+        let mut a = record.write().unwrap();
+        a.mime_type =
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document".into();
+        a.content = case.content;
+    }
+    let (_, first) = opened(view, std::sync::Arc::clone(&record));
+    let (_, second) = opened(view, record);
+    let first_url = first
+        .query_selector("img")
+        .unwrap()
+        .unwrap()
+        .get_attribute("src")
+        .unwrap();
+    let second_url = second
+        .query_selector("img")
+        .unwrap()
+        .unwrap()
+        .get_attribute("src")
+        .unwrap();
+    assert_ne!(first_url, second_url);
+    assert!(!fetch_bytes(&first_url).await.is_empty());
+    assert!(!fetch_bytes(&second_url).await.is_empty());
+    close(&first);
+    assert!(fetch_bytes(&first_url).await.is_empty());
+    assert!(!fetch_bytes(&second_url).await.is_empty());
+    close(&second);
+    assert!(fetch_bytes(&second_url).await.is_empty());
+}
+/// Real format fixtures run through the overlay's shared document owners.
+#[wasm_bindgen]
+pub async fn overlay_dom_documents_keep_resources_and_sheet_state(import_module: &Function) {
+    use base64::Engine as _;
+    let view = view();
+    let page = crate::contributions_support::page_module(import_module).await;
+    overlay_pdf(&view, &page).await;
+    overlay_sheets(&view);
+    overlay_word_resources(&view).await;
+    for case in crate::native_document_artifacts_browser::packages() {
+        let record = crate::attachment_support::attachment();
+        {
+            let mut a = record.write().unwrap();
+            a.mime_type =
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document".into();
+            a.content.clone_from(&case.content);
+        }
+        let (_, root) = opened(&view, record);
+        let document = root
+            .query_selector(".maestro-docx-container")
+            .unwrap()
+            .unwrap();
+        crate::native_document_artifacts_browser::assert_document(&document, &case);
+        close(&root);
+    }
+    let record = crate::attachment_support::attachment();
+    {
+        let mut a = record.write().unwrap();
+        a.file_name = "single.xlsx".into();
+        a.content = base64::engine::general_purpose::STANDARD.encode(include_bytes!(
+            "../../maestro-app/tests/fixtures/spreadsheet_html/rich.xlsx"
+        ));
+    }
+    let (_, root) = opened(&view, record);
+    assert!(
+        root.query_selector(".maestro-excel-single table")
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        root.query_selector(".maestro-excel-tabs")
+            .unwrap()
+            .is_none()
+    );
+    close(&root);
+}
+/// Exercise every close route while document work is still pending.
+async fn close_routes(
+    view: &Rc<maestro_web::dom::DomView>,
+    page: &JsValue,
+    native: &crate::browser_fixture_support::FixtureModule,
+    calls: &Rc<std::cell::Cell<u32>>,
+) {
+    for route in ["[data-close]", ".maestro-attachment-overlay", "Escape"] {
+        let record = crate::attachment_support::attachment();
+        {
+            let mut a = record.write().unwrap();
+            a.mime_type = "application/pdf".into();
+            a.content = crate::pdf_views_browser::encoded(true);
+            a.extracted_text = Some("literal text".into());
+        }
+        let seen = Rc::clone(calls);
+        let overlay = maestro_web::AttachmentOverlay::open_native(
+            view,
+            record,
+            Some(Rc::new(move || seen.set(seen.get() + 1))),
+        )
+        .unwrap();
+        let root: Element = overlay.mount(view).unwrap().node.unchecked_into();
+        control(&root, "header");
+        control(&root, ".maestro-attachment-body");
+        assert!(root.is_connected());
+        assert!(root.query_selector(".maestro-pdf").unwrap().is_some());
+        control(&root, ".maestro-toggle button:nth-child(2)");
+        assert_eq!(
+            root.query_selector("pre")
+                .unwrap()
+                .unwrap()
+                .text_content()
+                .unwrap(),
+            "literal text"
+        );
+        control(&root, ".maestro-toggle button:nth-child(1)");
+        let old_body = root.query_selector(".maestro-pdf").unwrap().unwrap();
+        let count = calls.get();
+        if route == "Escape" {
+            native
+                .call("pressKey", &Array::of1(&"Escape".into()))
+                .unwrap();
+        } else {
+            control(&root, route);
+        }
+        assert!(!root.is_connected());
+        assert_eq!(calls.get(), count + 1);
+        control(&root, "[data-close]");
+        assert_eq!(calls.get(), count + 1);
+        crate::contributions_support::frames(page, 3).await;
+        assert_eq!(old_body.query_selector_all("img").unwrap().length(), 0);
+        drop(overlay);
+    }
+}
+/// Click routing, cancellation, independent reopen and one-shot notification.
+#[wasm_bindgen]
+pub async fn overlay_dom_close_reopen_and_pending_document_release(import_module: &Function) {
+    use std::cell::Cell;
+    let view = view();
+    let page = crate::contributions_support::page_module(import_module).await;
+    let native = crate::browser_fixture_support::FixtureModule::import(
+        import_module,
+        &wasm_bindgen::link_to!(module = "/tests/native_attachment_support.js"),
+    )
+    .await
+    .unwrap();
+    let calls = Rc::new(Cell::new(0));
+    native.call("beginKeys", &Array::new()).unwrap();
+    close_routes(&view, &page, &native, &calls).await;
+    native.call("finishKeys", &Array::new()).unwrap();
+    assert_eq!(Rc::strong_count(&calls), 1);
+    assert_eq!(calls.get(), 3);
+    let (_, first) = opened(&view, crate::attachment_support::attachment());
+    let (_, second) = opened(&view, crate::attachment_support::attachment());
+    close(&first);
+    assert!(second.is_connected());
+    close(&second);
+}
+
+/// Exercise original-byte downloads and each reached native refusal independently.
+async fn download_modes(
+    view: &Rc<maestro_web::dom::DomView>,
+    download: &crate::session_download_browser::Fixture,
+    native: &crate::browser_fixture_support::FixtureModule,
+) {
+    for mode in ["ok", "create", "append", "removed"] {
+        let record = crate::attachment_support::attachment();
+        {
+            let mut a = record.write().unwrap();
+            a.content = "QUJD".into();
+            a.file_name = "literal<&>.bin".into();
+            a.mime_type = "application/octet-stream".into();
+        }
+        let (_, root) = opened(view, std::sync::Arc::clone(&record));
+        record.write().unwrap().content = "\t AAH/ \n".into();
+        let pre = root.query_selector("pre").unwrap().unwrap();
+        download.begin(mode);
+        native.call("beginErrors", &Array::new()).unwrap();
+        control(&root, "[data-download]");
+        let success = matches!(mode, "ok" | "removed");
+        native
+            .call("finishErrors", &Array::of1(&u32::from(!success).into()))
+            .unwrap();
+        wasm_bindgen_futures::JsFuture::from(download.finish(
+            &[0, 1, 255],
+            "application/octet-stream",
+            "literal<&>.bin",
+            success,
+        ))
+        .await
+        .unwrap();
+        assert!(
+            pre.is_same_node(
+                root.query_selector("pre")
+                    .unwrap()
+                    .as_ref()
+                    .map(AsRef::as_ref)
+            )
+        );
+        assert!(root.is_connected());
+        close(&root);
+    }
+}
+/// Original bytes, native refusal propagation and synchronous overlay append failure.
+#[wasm_bindgen]
+pub async fn overlay_dom_downloads_original_bytes_and_reports_failures(import_module: &Function) {
+    let view = view();
+    let download = crate::session_download_browser::Fixture::import(import_module).await;
+    let native = crate::browser_fixture_support::FixtureModule::import(
+        import_module,
+        &wasm_bindgen::link_to!(module = "/tests/native_attachment_support.js"),
+    )
+    .await
+    .unwrap();
+    download_modes(&view, &download, &native).await;
+    let record = crate::attachment_support::attachment();
+    record.write().unwrap().content = "invalid!".into();
+    let (_, root) = opened(&view, record);
+    download.begin("ok");
+    native.call("beginErrors", &Array::new()).unwrap();
+    control(&root, "[data-download]");
+    native.call("finishErrors", &Array::of1(&1.into())).unwrap();
+    wasm_bindgen_futures::JsFuture::from(download.finish_none())
+        .await
+        .unwrap();
+    assert!(root.query_selector("pre").unwrap().is_some());
+    close(&root);
+    refused_overlay_open(&view, &download, &native).await;
+    let (_, root) = opened(&view, crate::attachment_support::attachment());
+    close(&root);
+}
+
+/// Overlay construction and publication failures return on the synchronous opening route.
+async fn refused_overlay_open(
+    view: &Rc<maestro_web::dom::DomView>,
+    download: &crate::session_download_browser::Fixture,
+    native: &crate::browser_fixture_support::FixtureModule,
+) {
+    let restore: Function = native
+        .call("refuseCreation", &Array::new())
+        .unwrap()
+        .unchecked_into();
+    let error = maestro_web::AttachmentOverlay::open_native(
+        view,
+        crate::attachment_support::attachment(),
+        None,
+    )
+    .err()
+    .unwrap();
+    restore.call0(&JsValue::UNDEFINED).unwrap();
+    assert!(error.to_string().contains("controlled overlay creation"));
+    for mode in ["append", "body"] {
+        download.begin(mode);
+        let error = maestro_web::AttachmentOverlay::open_native(
+            view,
+            crate::attachment_support::attachment(),
+            None,
+        )
+        .err()
+        .unwrap();
+        assert!(error.to_string().contains(if mode == "append" {
+            "controlled append"
+        } else {
+            "Missing document body"
+        }));
+        wasm_bindgen_futures::JsFuture::from(download.finish_none())
+            .await
+            .unwrap();
+        assert_eq!(
+            view.document
+                .query_selector_all("attachment-overlay")
+                .unwrap()
+                .length(),
+            0
+        );
+    }
 }
