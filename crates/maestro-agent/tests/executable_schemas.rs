@@ -151,15 +151,7 @@ fn configuration() -> AgentLoopConfigRecord<NoCustomMessages, Local> {
         extra: serde_json::Map::default(),
         objects: maestro_models::ProviderObjects::default(),
         thinking_budgets: None,
-        convert_to_llm: Rc::new(|history| {
-            let messages = history
-                .read()
-                .unwrap()
-                .iter()
-                .filter_map(maestro_agent::AgentMessage::to_message)
-                .collect();
-            Box::pin(std::future::ready(Ok(messages)))
-        }),
+        convert_to_llm: <Local as maestro_agent::AgentExecution>::default_converter(),
         transform_context: None,
         get_api_key: None,
         before_tool_call: None,
