@@ -130,18 +130,22 @@ transcript's error notice.
 Each callback receives a context built when the key is pressed, from the runner the
 session has now. It reads the current session's working directory, model, idle state,
 pending messages, context usage and system prompt, and it asks that runner to abort,
-compact or shut down. A context kept from a runner the session has discarded fails as stale
+compact or shut down. Its UI is the mode itself. Shutting down while idle ends the mode at
+once; while a response streams, the agent's end does. A context kept from a runner the
+session has discarded fails as stale
 instead of answering with old state. The interceptor holds the mode weakly, so it never
 keeps the presentation alive; a callback that already started may keep it until it
 finishes.
 
-Rebinding replaces the whole set. An empty selection removes the interceptor, and the
-retired callbacks are released without being invoked.
+Rebinding, at startup and after each session replacement, replaces the whole set.
+An empty selection removes the interceptor, and the retired callbacks are released
+without being invoked.
 
 ## Completion
 
-`InteractiveMode` installs one completion provider on its editor when startup
-succeeds. Each rebuild starts from a fresh base provider over the current session:
+`InteractiveMode` installs one completion provider on its editor each time it
+[binds the current session](interactive-mode.md#session-binding). Each rebuild starts
+from a fresh base provider over the current session:
 
 1. the builtin commands, in the order the workspace's command inventory lists them;
 2. the loaded prompt templates, with their argument hints;

@@ -35,8 +35,7 @@ fallback theme is returned.
 ## Startup
 
 `init` is asynchronous. It installs termination and output-error handlers, selects
-startup history, then prepares both search programs and installs
-[completion](extension-ui.md#completion) before building the presentation.
+startup history, then prepares both search programs before building the presentation.
 It does nothing while the mode is initialized. After `stop`, it runs again.
 Unix initialization runs on a caller-driven Tokio local executor with signal
 delivery enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
@@ -45,18 +44,13 @@ one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
 editor submission and the global debug key, and starts the terminal. A terminal
 start failure is returned and leaves the mode uninitialized. Once started, it
-binds the session's extensions with the mode as their
-[user interface](#extension-ui-host) and waits for their `session_start` handlers
-and resource discovery; a failure there is returned. It then subscribes to the
-session events and sets the window title. It installs the
-[extension shortcut interceptor](extension-ui.md#shortcuts) using the current runner.
-A theme change then
+[binds the current session](#session-binding), so the loaded resources are listed
+before it replays the session (see below). A theme change then
 invalidates the presentation, recolours the editor border and requests a frame,
 and a branch change requests a frame. Neither callback keeps the mode alive. Last,
-it lists the loaded resources and their diagnostics in the transcript, shows the
-[startup history](startup.md#startup-history) once, and replays the session (see
-below). The history selection and version recording happen before building the
-header, even if starting the terminal later fails.
+the footer learns how many providers the model candidates cover. The history
+selection and version recording happen before building the header, even if
+starting the terminal later fails.
 
 The search programs are `fd` and `rg`. Both start before either finishes, so a missing
 program does not delay the other. `fd` stays selected for file completion. The managed
@@ -71,6 +65,53 @@ application name and version, the compact key hints and two onboarding lines. In
 verbose mode it shows the full list of key hints instead. Hints follow the loaded
 bindings: several keys keep their order, and an unbound action shows no key.
 Header text keeps the colours of the theme in effect when it was built.
+
+## Session binding
+
+Binding the current session runs these phases in order:
+
+1. Remove the session subscription, if there is one.
+2. Apply the runtime settings.
+3. Bind the session's extensions, with the mode as their
+   [user interface](#extension-ui-host), and wait for their `session_start`
+   handlers and resource discovery. A `session_start` handler can already open a
+   dialog, because the terminal has started.
+4. Register the loaded themes, rebuild [completion](extension-ui.md#completion) and
+   install the [extension shortcut interceptor](extension-ui.md#shortcuts) from the
+   current runner.
+5. List the loaded resources, with their diagnostics even when startup is quiet,
+   and show the [startup history](startup.md#startup-history) once.
+6. Subscribe to the session events, refresh the footer's provider count, recolour
+   the editor border and set the window title.
+
+Binding returns the first failing phase's error. The phases before it stay
+applied, nothing is rolled back and no later phase runs.
+
+The mode registers this binding with the runtime when it is built. Each time the
+runtime replaces its session (new session, resume, fork or import), it binds the
+mode to the new session before the operation's continuation runs. The continuation
+therefore sees the new session's UI, resources, footer and window title. The next
+shortcut reads the new runner, and events from the replaced session no longer reach
+the mode. The runtime holds the mode weakly: once the mode is gone, replacement skips
+the binding. A binding failure is returned to the caller of the runtime operation.
+
+The runtime settings give the footer the current session, its automatic-compaction
+marker and its working directory. They then set the thinking visibility, the hardware
+cursor, clear-on-shrink, and the editor's padding and visible completion rows, in
+that order. Hiding the hardware cursor writes to the terminal; a failed write is
+returned, and the settings before it stay applied.
+
+The binding also installs the mode's shutdown and error handlers. An extension's
+shutdown request records the request; while the session is idle it starts
+[graceful shutdown](#native-shutdown) at once, and while a response streams the
+agent's end starts it. A shortcut's context reaches the same handler.
+
+Each attributed extension failure the runner reports is appended to the transcript
+as `Extension "<path>" error: <message>` in the error colour. When the failure
+carries a non-empty stack, every stack line after the first follows as one dim
+block. Each line is trimmed of white space and indented by two spaces, and empty
+lines are kept. The mode requests one frame. A colour failure is returned to the
+runner.
 
 ## Stopping the presentation
 
@@ -113,8 +154,8 @@ hangup signal takes its native default action. Windows console-close integration
 is not provided by this mode.
 
 At agent end, a requested shutdown follows transient-row cleanup through this
-same graceful owner instead of requesting a final frame. Extension request
-producers are not connected yet.
+same graceful owner instead of requesting a final frame. Extension requests reach
+it through the [session binding](#session-binding).
 
 ## Loaded resources
 
@@ -274,8 +315,7 @@ fails after the prompt was accepted stays a session event; the mode adds no noti
 for it.
 
 Still to come: rendering the session's events in the transcript, queued input,
-commands, rebinding the presentation to a replaced session, update
-notices and the startup check of subscription-based credentials.
+commands, update notices and the startup check of subscription-based credentials.
 
 ## Session replay
 
