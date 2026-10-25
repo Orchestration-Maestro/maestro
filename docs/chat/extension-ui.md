@@ -226,10 +226,38 @@ returns `None`.
 
 ## Editor access
 
-`set_editor_text` replaces the editor text unchanged, and `get_editor_text`
-returns the expanded text the editor renders. `paste_to_editor` delivers the
-text as a bracketed paste, so the editor applies its own paste rules. Nothing is
-trimmed and no history entry is written.
+`set_editor_text` replaces the current editor's text unchanged, and
+`get_editor_text` returns its expanded text, or its raw text when it does not
+expand. `paste_to_editor` delivers the text to the current editor as a bracketed
+paste, so the editor applies its own paste rules. Nothing is trimmed and no
+history entry is written. An editor's own failure is returned unchanged.
+
+## Custom editors
+
+`set_editor_component` keeps the factory, which `get_editor_component` returns,
+then replaces the current editor with the one the factory builds from the live
+terminal, the editor theme and the application keybindings. `None` restores the
+default editor. The current raw text moves to the new editor and the new editor
+takes focus.
+
+The new editor receives the default editor's submit and change callbacks, its
+border painter when the new editor has a border, its padding and the completion
+provider the mode last installed. An editor that implements the application
+capability also receives every application action in its order, in the map it
+already shares. Its own interrupt, empty-editor exit, image-paste and shortcut
+callbacks stay; each missing one calls the default editor's callback current at
+that moment. Unsupported optional operations stay unsupported.
+
+The mode's own text, history, insertion, completion, border, padding and
+completion-height operations reach the current editor. Application actions and
+callbacks stay on the default editor. Settings, the settings panel and completion
+rebuilds update the default editor first and then a distinct current editor once;
+when the default editor is current it is updated once.
+
+A failure stops at its own phase and returns, or reports, the original error.
+The factory stays kept. A failing factory or new editor leaves the editor
+container empty and the previous editor current; a failing read of the current
+text changes nothing else.
 
 ## Themes
 
@@ -341,5 +369,5 @@ failures return the original error and keep effects already performed. A
 failed disposer stops before removal; a failed factory leaves the old entry
 removed. Neither failure rebuilds the last painted containers.
 
-Custom editors and custom-view installation are separate operations; these
-setters do not implement session replacement or reset.
+Custom-view installation is a separate operation; these setters do not
+implement session replacement or reset.

@@ -3,7 +3,7 @@
 use super::InteractiveMode;
 use maestro_app::configuration::config::{APP_NAME, VERSION};
 use maestro_theme::{Theme, ThemeColor, ThemeError};
-use maestro_tui::{Component, EditorComponent, Spacer, Text};
+use maestro_tui::{Component, Spacer, Text};
 use std::{error::Error, rc::Rc};
 
 #[cfg(test)]
@@ -13,7 +13,7 @@ mod tests;
 impl InteractiveMode {
     /// Empties the editor and schedules a frame.
     pub fn clear_editor(&self) {
-        self.editor.set_text("");
+        self.current_editor().set_text("");
         self.ui.request_render(false);
     }
 

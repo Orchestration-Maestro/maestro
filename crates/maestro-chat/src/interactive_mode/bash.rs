@@ -10,7 +10,7 @@ use maestro_app::{
     AgentSession, BashOperations, BashResult, DiagnosticErrorInfo, Presence, TruncationResult,
     UserBashEvent, UserBashEventResult,
 };
-use maestro_tui::{EditorComponent, TUI};
+use maestro_tui::TUI;
 use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc, sync::Arc};
 
 /// The callable operations an extension supplies for one shell command.
@@ -212,7 +212,7 @@ impl InteractiveMode {
         exclude_from_context: bool,
     ) {
         if self.runtime_host.session().is_bash_running() {
-            self.editor.set_text(text);
+            self.current_editor().set_text(text);
             self.report(
                 self.show_warning(
                     "A bash command is already running. Press Esc to cancel it first.",
@@ -221,7 +221,9 @@ impl InteractiveMode {
             );
             return;
         }
-        self.editor.add_to_history(text);
+        if let Err(error) = self.current_editor().try_add_to_history(text) {
+            return self.report(Err(error));
+        }
         let mode = Rc::clone(self);
         let command = command.to_owned();
         self.tool_environment

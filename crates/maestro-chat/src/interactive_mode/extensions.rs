@@ -25,10 +25,12 @@ impl InteractiveMode {
                 .set_on_extension_shortcut(Some(shortcut_interceptor(self, selected)));
         }
     }
-    /// Applies the current session's footer, thinking, terminal and editor settings.
+    /// Applies the current session's footer, thinking, terminal and editor settings, the
+    /// editor settings to the default editor first and then to a distinct current editor.
     ///
     /// # Errors
-    /// Returns the cursor-hiding failure; the settings before it stay applied.
+    /// Returns the cursor-hiding failure or the current editor's original failure; the
+    /// settings before it stay applied.
     pub(super) fn apply_runtime_settings(&self) -> Result<(), Box<dyn std::error::Error>> {
         let session = self.runtime_host.session();
         self.footer.set_session(Rc::clone(&session));
@@ -42,9 +44,18 @@ impl InteractiveMode {
         self.ui
             .set_show_hardware_cursor(settings.get_show_hardware_cursor())?;
         self.ui.set_clear_on_shrink(settings.get_clear_on_shrink());
-        self.editor.set_padding_x(settings.get_editor_padding_x());
-        self.editor
-            .set_autocomplete_max_visible(settings.get_autocomplete_max_visible());
+        let padding = settings.get_editor_padding_x();
+        let max_visible = settings.get_autocomplete_max_visible();
+        drop(settings);
+        self.editor.set_padding_x(padding);
+        self.editor.set_autocomplete_max_visible(max_visible);
+        if self.custom_editor_current() {
+            let editor = self.current_editor();
+            editor.try_set_padding_x(padding).map_err(erase)?;
+            editor
+                .try_set_autocomplete_max_visible(max_visible)
+                .map_err(erase)?;
+        }
         Ok(())
     }
     /// Installs this mode as the current session's extension user interface, with its
@@ -90,7 +101,7 @@ impl InteractiveMode {
         let session = self.runtime_host.session();
         self.themes
             .set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        self.setup_autocomplete_provider();
+        self.setup_autocomplete_provider().map_err(erase)?;
         self.setup_extension_shortcuts(&session.extension_runner());
         self.show_loaded_resources(super::resources::ShowLoadedResourcesOptions {
             show_diagnostics_when_quiet: true,
@@ -151,6 +162,11 @@ impl InteractiveMode {
         self.ui.request_render(false);
         Ok(())
     }
+}
+
+/// The same failure behind the frontend's error type.
+fn erase(error: maestro_app::EventError) -> Box<dyn std::error::Error> {
+    error
 }
 
 /// The runtime's replacement continuation: rebinds the mode, while it is alive, before

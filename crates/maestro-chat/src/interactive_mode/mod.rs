@@ -99,8 +99,10 @@ pub struct InteractiveMode {
     widget_container_below: Rc<Container>,
     /// The container the editor is added through.
     editor_container: Rc<Container>,
-    /// The input editor.
+    /// The default input editor, which keeps the application's actions and callbacks.
     editor: Rc<CustomEditor>,
+    /// The current editor, the extension editor factory and the completion provider.
+    editor_state: extension_ui::editor::EditorState,
     /// The keybindings the editor reads, and the configured keys extension shortcuts use.
     keybindings: KeybindingsManager,
     /// The footer.
@@ -198,6 +200,7 @@ impl InteractiveMode {
             widget_container_above: Rc::new(Container::new()),
             widget_container_below: Rc::new(Container::new()),
             editor_container,
+            editor_state: extension_ui::editor::EditorState::new(editor.clone()),
             editor,
             keybindings: keys,
             footer,
@@ -267,7 +270,8 @@ impl InteractiveMode {
             self.ui.add_child(child.clone());
         }
         self.ui.add_child(self.footer.clone());
-        self.ui.set_focus(Some(self.editor.clone()));
+        self.ui
+            .set_focus(Some(self.current_editor() as Rc<dyn Component>));
         self.setup_key_handlers();
         self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();

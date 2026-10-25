@@ -9,7 +9,7 @@ use crate::{
 use maestro_app::agent_session::CycleDirection;
 use maestro_app::{EventError, Local};
 use maestro_theme::ThemeError;
-use maestro_tui::{Component, EditorComponent};
+use maestro_tui::Component;
 use std::{any::Any, error::Error, rc::Rc};
 
 /// A mode operation an editor shortcut runs.
@@ -111,7 +111,7 @@ impl InteractiveMode {
             let level = self.runtime_host.session().thinking_level();
             theme.get_thinking_border_color(thinking_text(&level).0)
         };
-        self.editor.set_border_color(color);
+        self.current_editor().set_border_color(color);
         self.ui.request_render(false);
         Ok(())
     }

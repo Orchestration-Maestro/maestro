@@ -766,7 +766,7 @@ fn settings_skill_commands_refresh_registered_autocomplete() {
                 "/skill:helper ",
                 "a provider kept from before the change still completes the skill"
             );
-            world.mode.setup_autocomplete_provider();
+            world.mode.setup_autocomplete_provider().unwrap();
             assert_eq!(completed(&world).await, "/skill:hel");
             choose(&open(&world), "skill", 0);
             press(&open_list(&world), "\x1b");

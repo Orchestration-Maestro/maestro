@@ -6,10 +6,10 @@ use maestro_app::{
     WorkingIndicatorOptions,
 };
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
-use maestro_tui::tui::InputHandler;
 use std::rc::Rc;
 
 mod dialogs;
+pub(super) mod editor;
 pub(super) mod input;
 mod replacements;
 mod widgets;
@@ -129,26 +129,44 @@ impl ExtensionUIContextPort for InteractiveMode {
     /// # Errors
     /// Returns the host's failure; the editor itself cannot fail here.
     fn paste_to_editor(&self, text: String) -> Result<(), EventError> {
-        self.editor
+        self.current_editor()
             .handle_input(&format!("\x1b[200~{text}\x1b[201~"));
         Ok(())
     }
 
-    /// Replaces the editor text with `text`, unchanged.
+    /// Replaces the current editor's text with `text`, unchanged.
     ///
     /// # Errors
-    /// Returns the host's failure; the editor itself cannot fail here.
+    /// Returns the editor's original failure.
     fn set_editor_text(&self, text: String) -> Result<(), EventError> {
-        self.editor.set_text(&text);
-        Ok(())
+        self.current_editor().try_set_text(&text)
     }
 
-    /// Returns the editor's expanded text, or its plain text when it has none.
+    /// Returns the current editor's expanded text, or its raw text when it has none.
     ///
     /// # Errors
-    /// Returns the host's failure; reading the editor cannot fail here.
+    /// Returns the editor's original failure.
     fn get_editor_text(&self) -> Result<String, EventError> {
-        Ok(self.editor.get_expanded_text())
+        self.expanded_editor_text()
+    }
+
+    /// Replaces the editor with the extension's, or restores the default for `None`.
+    ///
+    /// # Errors
+    /// Returns the original text, factory or editor failure.
+    fn set_editor_component(
+        &self,
+        factory: Option<maestro_app::EditorFactory>,
+    ) -> Result<(), EventError> {
+        self.set_custom_editor_component(factory)
+    }
+
+    /// Returns the extension editor factory, if one is set.
+    ///
+    /// # Errors
+    /// This implementation does not return errors.
+    fn get_editor_component(&self) -> Result<Option<maestro_app::EditorFactory>, EventError> {
+        Ok(self.editor_factory())
     }
 
     /// Returns the live view of the published theme.

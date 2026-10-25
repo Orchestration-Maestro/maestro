@@ -1,6 +1,6 @@
 //! Editing text in the user's external editor on the inherited terminal.
 use crate::temporary_file::write_temporary_file;
-use maestro_tui::{Editor, TUI, tui::TuiRuntime};
+use maestro_tui::{TUI, tui::TuiRuntime};
 use std::{fs, io, path::Path};
 
 /// One edit: the configured command, the file it edits and the text written there first.
@@ -21,22 +21,22 @@ pub(crate) fn external_command(runtime: &dyn TuiRuntime) -> Option<String> {
         .find_map(|key| runtime.environment(key).filter(|value| !value.is_empty()))
 }
 
-/// Writes the file, stops the terminal and runs the editor on it; a zero exit replaces
-/// the editor's text with the file's, less one final line feed. After every reached
-/// outcome the created file's removal is attempted, a failed removal ignored, and the
-/// terminal restarted with a full redraw.
+/// Writes the file, stops the terminal and runs the editor on it; a zero exit hands the
+/// file's text, less one final line feed, to `set_text`. After every reached outcome the
+/// created file's removal is attempted, a failed removal ignored, and the terminal
+/// restarted with a full redraw.
 ///
 /// # Errors
-/// Returns the file creation, terminal, read or process-bridge failure; a nonzero exit,
-/// a signal or a refused spawn leave the text unchanged without an error.
-pub(crate) fn edit_external_file(
+/// Returns the file creation, terminal, read, process-bridge or `set_text` failure; a
+/// nonzero exit, a signal or a refused spawn leave the text unchanged without an error.
+pub(crate) fn edit_external_file<E: From<io::Error>>(
     ui: &TUI,
     #[cfg(windows)] runtime: &dyn TuiRuntime,
-    editor: &Editor,
+    set_text: impl FnOnce(&str) -> Result<(), E>,
     file: &ExternalEditorFile<'_>,
-) -> io::Result<()> {
+) -> Result<(), E> {
     let mut owned = false;
-    let result = (|| {
+    let result = (|| -> Result<(), E> {
         write_temporary_file(file.path, file.text.as_bytes())?;
         owned = true;
         ui.stop()?;
@@ -50,18 +50,17 @@ pub(crate) fn edit_external_file(
             Ok(output) if output.status.success() => {
                 let bytes = fs::read(file.path)?;
                 let text = String::from_utf8_lossy(&bytes);
-                editor.set_text(text.strip_suffix('\n').unwrap_or(&text));
+                set_text(text.strip_suffix('\n').unwrap_or(&text))?;
             }
             Ok(_) | Err(maestro_app::SpawnSyncError::Spawn(_)) => {}
             Err(
                 maestro_app::SpawnSyncError::Infrastructure(error)
                 | maestro_app::SpawnSyncError::Wait(error),
-            ) => return Err(error),
+            ) => return Err(error.into()),
             Err(maestro_app::SpawnSyncError::Timeout) => {
-                return Err(io::Error::new(
-                    io::ErrorKind::TimedOut,
-                    "external editor timed out",
-                ));
+                return Err(
+                    io::Error::new(io::ErrorKind::TimedOut, "external editor timed out").into(),
+                );
             }
         }
         Ok(())

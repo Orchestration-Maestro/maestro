@@ -6,7 +6,7 @@ use maestro_app::agent_session::{PromptOptions, QueueTexts};
 use maestro_app::is_whitespace_scalar;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_theme::ThemeColor;
-use maestro_tui::{EditorComponent, Spacer, TruncatedText};
+use maestro_tui::{Spacer, TruncatedText};
 use std::{error::Error, iter, rc::Rc};
 
 /// A message typed while the session compacts, kept until the compaction ends.
@@ -49,7 +49,7 @@ impl InteractiveMode {
             } else if session.is_bash_running() {
                 session.abort_bash();
             } else if mode.is_bash_mode.get() {
-                mode.editor.set_text("");
+                mode.current_editor().set_text("");
                 mode.is_bash_mode.set(false);
                 mode.report(mode.update_editor_border_color().map_err(Into::into));
             }
@@ -81,14 +81,16 @@ impl InteractiveMode {
     /// # Errors
     /// Returns the failure of the published theme's dim colour.
     pub(super) fn handle_follow_up(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
-        let text = EditorComponent::get_expanded_text(&*self.editor)
-            .unwrap_or_else(|| self.editor.get_text());
+        let text = self
+            .expanded_editor_text()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let text = text.trim_matches(is_whitespace_scalar);
         if text.is_empty() || self.submit_queued_input(text, UserMessageDelivery::FollowUp)? {
             return Ok(());
         }
-        if let Some(submit) = self.editor.on_submit() {
-            self.editor.set_text("");
+        let editor = self.current_editor();
+        if let Some(submit) = editor.on_submit() {
+            editor.set_text("");
             submit(text);
         }
         Ok(())
@@ -126,8 +128,10 @@ impl InteractiveMode {
     /// the pending rows are refreshed and a frame requested once it succeeds. Until then
     /// the prompt keeps the mode alive.
     fn start_prompt(self: &Rc<Self>, text: &str, streaming_behavior: Option<UserMessageDelivery>) {
-        self.editor.add_to_history(text);
-        self.editor.set_text("");
+        if let Err(error) = self.current_editor().try_add_to_history(text) {
+            return self.report(Err(error));
+        }
+        self.current_editor().set_text("");
         let refresh = streaming_behavior.is_some();
         let options = PromptOptions {
             streaming_behavior,
@@ -157,11 +161,13 @@ impl InteractiveMode {
         text: String,
         mode: UserMessageDelivery,
     ) -> Result<(), Box<dyn Error>> {
-        self.editor.add_to_history(&text);
+        self.current_editor()
+            .try_add_to_history(&text)
+            .map_err(|error| -> Box<dyn Error> { error })?;
         self.compaction_queued_messages
             .borrow_mut()
             .push(CompactionQueuedMessage { text, mode });
-        self.editor.set_text("");
+        self.current_editor().set_text("");
         self.update_pending_messages_display()?;
         self.show_status("Queued message for after compaction")
             .map_err(Into::into)
@@ -277,12 +283,12 @@ impl InteractiveMode {
             let queued_text = queued.join("\n\n");
             let current_text = options
                 .current_text
-                .map_or_else(|| self.editor.get_text(), str::to_owned);
+                .map_or_else(|| self.current_editor().get_text(), str::to_owned);
             let combined: Vec<&str> = [queued_text.as_str(), current_text.as_str()]
                 .into_iter()
                 .filter(|text| !text.trim_matches(is_whitespace_scalar).is_empty())
                 .collect();
-            self.editor.set_text(&combined.join("\n\n"));
+            self.current_editor().set_text(&combined.join("\n\n"));
         }
         let shown = self.update_pending_messages_display();
         if options.abort {

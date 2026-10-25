@@ -49,7 +49,7 @@ impl InteractiveMode {
                 return;
             };
             if text == "/quit" {
-                mode.editor.set_text("");
+                mode.current_editor().set_text("");
                 mode.spawn_shutdown();
                 return;
             }
@@ -59,12 +59,12 @@ impl InteractiveMode {
             }
             if text == "/login" {
                 mode.report(mode.show_login_auth_type_selector());
-                mode.editor.set_text("");
+                mode.current_editor().set_text("");
                 return;
             }
             if text == "/logout" {
                 mode.report(mode.show_logout_selector());
-                mode.editor.set_text("");
+                mode.current_editor().set_text("");
                 return;
             }
             if mode.runs_command(text)
@@ -83,7 +83,9 @@ impl InteractiveMode {
                 // A dropped waiter no longer wants the text; history still records it.
                 drop(waiting.send(text.to_owned()));
             }
-            mode.editor.add_to_history(text);
+            if let Err(error) = mode.current_editor().try_add_to_history(text) {
+                mode.report(Err(error));
+            }
         })));
     }
 
