@@ -44,7 +44,7 @@ interleaved families; filenames never determine enumeration order.
 
 ```rust
 use maestro_models::{
-    ModelThinkingLevel, Usage, UsageCost, calculate_cost, clamp_thinking_level,
+    ModelThinkingLevel, Usage, calculate_cost, clamp_thinking_level,
     get_model, get_models, get_providers, get_supported_thinking_levels, models_are_equal,
 };
 
@@ -56,12 +56,11 @@ assert_eq!(clamp_thinking_level(&model, ModelThinkingLevel::Xhigh), ModelThinkin
 
 model.name = "My descriptor".into();
 assert_ne!(get_model("google", "gemini-2.5-flash").unwrap().name, model.name);
-let mut usage = Usage {
-    input: 100.0, output: 20.0, cache_read: 0.0, cache_write: 0.0,
-    total_tokens: 120.0,
-    cost: UsageCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 0.0, total: 0.0 },
-};
+let mut usage: Usage = serde_json::from_value(serde_json::json!({
+    "input": 100.0, "output": 20.0, "cacheRead": 0.0, "cacheWrite": 0.0, "totalTokens": 120.0,
+    "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0, "total": 0.0},
+})).unwrap();
 let estimate = calculate_cost(&model, &mut usage);
 assert!(estimate.total > 0.0);
-assert_eq!(usage.total_tokens, 120.0);
+assert_eq!(usage.total_tokens.present(), Some(&120.0));
 ```

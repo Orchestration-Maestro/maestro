@@ -13,8 +13,9 @@ it into costs through [`calculate_cost`](catalog.md#controlled-catalog-example).
   tokens, never below zero. Reasoning tokens are already part of the output.
   Top-level usage wins over a choice's usage, even when empty; a later report
   replaces earlier categories.
-- Response protocols keep the supplied `total_tokens`. A zero or missing total
-  stays zero. Cached tokens are subtracted from the input.
+- Response protocols keep the supplied `total_tokens`, a supplied zero included.
+  A missing total stays missing, and each reader applies its own fallback. Cached
+  tokens are subtracted from the input.
 - Conversation streams keep a nonzero supplied total and otherwise use input
   plus output.
 - Message streams sum their four categories. The start event sets all four; a

@@ -2,12 +2,11 @@
 //! resources, notices, transcript shortcuts, editor actions, typed input, queued
 //! input and session commands.
 
-use crate::{BashExecutionComponent, CustomEditor, FooterComponent, ToolExecutionComponent};
-use indexmap::IndexMap;
+use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, ToolRenderEnvironment,
+    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
@@ -24,6 +23,7 @@ mod debug;
 mod events;
 mod info;
 mod key_display;
+mod notices;
 mod queues;
 mod replay;
 mod resources;
@@ -34,6 +34,7 @@ mod extension_ui;
 mod toggles;
 mod transcript;
 mod transfer;
+mod working;
 
 #[cfg(test)]
 #[cfg(unix)]
@@ -41,6 +42,9 @@ mod tests;
 
 /// The spacer and text of a status line.
 type StatusLine = (Rc<dyn Component>, Rc<Text>);
+
+/// The assistant row a response streams into and the message it shows.
+type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
 /// How the interactive mode starts.
 #[derive(Default)]
@@ -108,7 +112,7 @@ pub struct InteractiveMode {
     /// The spacer and text of the latest status line.
     last_status: RefCell<Option<StatusLine>>,
     /// Tool rows waiting for their results, by call id in call order.
-    pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
+    pending_tools: RefCell<replay::PendingTools>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
     /// The shell row that is still producing output, when one is attached.
@@ -121,6 +125,10 @@ pub struct InteractiveMode {
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
     /// The session subscription that delivers agent and session events.
     unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
+    /// The working row and its extension-controlled presentation.
+    working: working::WorkingState,
+    /// The assistant row of the response streaming now.
+    streaming: RefCell<Option<StreamingMessage>>,
 }
 
 impl InteractiveMode {
@@ -192,6 +200,8 @@ impl InteractiveMode {
             on_input_callback: Rc::default(),
             compaction_queued_messages: RefCell::default(),
             unsubscribe: RefCell::default(),
+            working: working::WorkingState::default(),
+            streaming: RefCell::default(),
         }))
     }
 

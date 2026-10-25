@@ -472,7 +472,10 @@ async fn counts_are_doubles() -> TestResult {
         usage.cache_read.to_bits(),
         9_007_199_254_740_992.0_f64.to_bits()
     );
-    assert_eq!(usage.total_tokens.to_bits(), f64::INFINITY.to_bits());
+    assert_eq!(
+        usage.total_tokens,
+        maestro_request::presence::Presence::Present(f64::INFINITY)
+    );
     assert_eq!(usage.cost.input.to_bits(), f64::INFINITY.to_bits());
     assert_eq!(usage.cost.total.to_bits(), f64::INFINITY.to_bits());
     Ok(())
