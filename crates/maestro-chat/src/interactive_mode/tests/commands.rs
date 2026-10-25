@@ -13,7 +13,7 @@ use maestro_app::{
     SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeSwitchEvent,
     SessionBeforeSwitchResult, SessionManager, SettingsManager, strip_ansi,
 };
-use maestro_tui::{Component, KeybindingKeys};
+use maestro_tui::{Component, KeybindingKeys, tui::LocalFuture};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -574,12 +574,7 @@ fn command_callbacks_release_mode_after_completion() {
         on_submit("/new");
         let admitted = runtime.take_futures();
         assert_eq!(admitted.len(), 1);
-        let weak = Rc::downgrade(&mode);
-        drop(mode);
-        assert!(weak.upgrade().is_some(), "admitted work keeps the mode");
-        for work in admitted {
-            work.await.unwrap();
-        }
+        let weak = settle_dropped(mode, admitted).await;
         assert!(weak.upgrade().is_none(), "settled work releases the mode");
         on_submit("/new");
         maestro_tui::tui::InputHandler::handle_input(editor.as_ref(), "\x1bn");
@@ -602,16 +597,26 @@ fn command_callbacks_release_mode_after_completion() {
         submit(&world.mode, "/compact keep");
         let admitted = world.runtime.take_futures();
         let World { mode, runtime, .. } = world;
-        let weak = Rc::downgrade(&mode);
-        drop(mode);
-        assert!(weak.upgrade().is_some(), "admitted work keeps the mode");
-        for work in admitted {
-            work.await.unwrap();
-        }
+        let weak = settle_dropped(mode, admitted).await;
         drop(runtime.drain_futures());
         assert_eq!(*third.instructions.borrow(), [Some("keep".to_owned())]);
         assert!(weak.upgrade().is_none(), "settled work releases the mode");
     });
+}
+
+/// Drops `mode`, checks that its `admitted` work still keeps it, then awaits that work and
+/// returns the mode's weak handle.
+async fn settle_dropped(
+    mode: Rc<InteractiveMode>,
+    admitted: Vec<LocalFuture>,
+) -> Weak<InteractiveMode> {
+    let weak = Rc::downgrade(&mode);
+    drop(mode);
+    assert!(weak.upgrade().is_some(), "admitted work keeps the mode");
+    for work in admitted {
+        work.await.unwrap();
+    }
+    weak
 }
 
 /// One recorded manual compaction request.
