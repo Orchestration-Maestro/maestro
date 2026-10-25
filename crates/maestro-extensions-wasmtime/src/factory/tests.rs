@@ -40,7 +40,10 @@ async fn observe_faulted_store(release_trap: bool) {
     api.events = bus.for_extension();
     let (pump, admission) = Pump::new();
     let endpoint = pump.registry().api(api).unwrap();
-    let (calls, mut incoming) = mpsc::unbounded_channel();
+    let (calls, incoming) = mpsc::unbounded_channel();
+    let shutdown = Arc::new(tokio::sync::Notify::new());
+    let retirement = Arc::downgrade(&shutdown);
+    let mut incoming = lifecycle::Incoming::new(incoming, shutdown);
     let replies = Replies::default();
     let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
     let weak = calls.downgrade();
@@ -59,6 +62,7 @@ async fn observe_faulted_store(release_trap: bool) {
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let worker =
         std::thread::spawn(move || super::worker(&path, state, &mut incoming, weak, &replies));
+    pump.own_worker(worker, retirement);
     let pump = tokio::task::spawn_local(async move {
         pump.serve().await;
     });
@@ -84,7 +88,6 @@ async fn observe_faulted_store(release_trap: bool) {
     assert_eq!(count.load(Ordering::SeqCst), 0);
     drop(retained);
     observed.await.unwrap();
-    worker.join().unwrap();
     pump.await.unwrap();
     assert_eq!(count.load(Ordering::SeqCst), 1);
 }

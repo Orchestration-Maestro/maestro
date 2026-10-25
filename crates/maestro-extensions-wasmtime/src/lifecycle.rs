@@ -4,8 +4,12 @@ use crate::{
     guest_calls::{Call, Callbacks},
     guest_exports::Exports,
 };
+use futures_util::future::{Either, select};
 use std::sync::Arc;
-use tokio::sync::mpsc::{UnboundedReceiver, WeakUnboundedSender};
+use tokio::sync::{
+    Notify,
+    mpsc::{UnboundedReceiver, WeakUnboundedSender},
+};
 use wasmtime::{
     Store,
     component::{Linker, ResourceTable},
@@ -18,6 +22,52 @@ pub(crate) use endpoint::{Endpoint as StoreEndpoint, GuestResource};
 mod invocation;
 mod operands;
 pub(crate) mod replies;
+
+/// Store calls share their existing receiver with the native owner's retirement signal.
+pub(crate) struct Incoming {
+    /// The sole queue for admitted guest calls and final releases.
+    calls: UnboundedReceiver<Call>,
+    /// The pump holds only a weak notification reference.
+    shutdown: Arc<Notify>,
+    /// Retirement drains queued calls once active work reaches quiescence.
+    ending: bool,
+}
+
+impl Incoming {
+    /// Keeps retirement available even when instantiation fails before creating a Store.
+    pub(crate) fn new(calls: UnboundedReceiver<Call>, shutdown: Arc<Notify>) -> Self {
+        Self {
+            calls,
+            shutdown,
+            ending: false,
+        }
+    }
+
+    /// Receives calls until the native owner retires and admitted work is quiescent.
+    async fn recv(&mut self, active: usize) -> Option<Call> {
+        if self.ending {
+            return self.drain(active).await;
+        }
+        {
+            let next = std::pin::pin!(self.calls.recv());
+            let shutdown = std::pin::pin!(self.shutdown.notified());
+            if let Either::Left((call, _)) = select(next, shutdown).await {
+                return call;
+            }
+        }
+        self.ending = true;
+        self.drain(active).await
+    }
+
+    /// Drains final calls without waiting once active guest work has ended.
+    async fn drain(&mut self, active: usize) -> Option<Call> {
+        if active == 0 {
+            self.calls.try_recv().ok()
+        } else {
+            self.calls.recv().await
+        }
+    }
+}
 
 /// Only Store-safe capabilities cross to the dedicated Store thread.
 pub(crate) struct State {
@@ -85,7 +135,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
 pub(crate) async fn drive(
     store: &mut Store<State>,
     exports: Arc<Exports>,
-    incoming: &mut UnboundedReceiver<Call>,
+    incoming: &mut Incoming,
     calls: WeakUnboundedSender<Call>,
 ) -> wasmtime::Result<()> {
     let mut activity = Activity::default();
@@ -118,11 +168,11 @@ struct Activity {
 async fn turn(
     accessor: &wasmtime::component::Accessor<State>,
     exports: &Arc<Exports>,
-    incoming: &mut UnboundedReceiver<Call>,
+    incoming: &mut Incoming,
     calls: &WeakUnboundedSender<Call>,
     activity: &mut Activity,
 ) -> wasmtime::Result<bool> {
-    while let Some(call) = incoming.recv().await {
+    while let Some(call) = incoming.recv(activity.active).await {
         match call {
             Call::Finished => finished(accessor, exports, calls, activity)?,
             Call::ReleaseResource(resource) => activity.releases.push(resource),
@@ -184,6 +234,6 @@ fn start(
 }
 
 /// After a fault retain registrations, but never enter guest code or guest destructors again.
-pub(crate) async fn faulted(incoming: &mut UnboundedReceiver<Call>) {
-    while incoming.recv().await.is_some() {}
+pub(crate) async fn faulted(incoming: &mut Incoming) {
+    while incoming.recv(0).await.is_some() {}
 }

@@ -8,6 +8,7 @@ mod canonical_json;
 mod canonical_schema;
 mod canonical_ui;
 mod execution_bridge;
+mod factory_shutdown;
 mod lifetimes;
 mod listener_prefixes;
 mod retained_components;

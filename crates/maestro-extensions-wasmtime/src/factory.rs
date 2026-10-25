@@ -23,18 +23,22 @@ pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
         Box::pin(async move {
             let (pump, admission) = Pump::new();
             let endpoint = pump.registry().api(api)?;
-            let (calls, mut incoming) = mpsc::unbounded_channel();
+            let (calls, incoming) = mpsc::unbounded_channel();
+            let shutdown = Arc::new(tokio::sync::Notify::new());
+            let retirement = Arc::downgrade(&shutdown);
+            let mut incoming = lifecycle::Incoming::new(incoming, shutdown);
             let replies = Replies::default();
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
             let state = lifecycle::State::new(endpoint, callbacks);
-            std::thread::Builder::new()
+            let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {
                     worker(&path, state, &mut incoming, weak, &replies);
                 })
                 .map_err(|error| error.to_string())?;
+            pump.own_worker(worker, retirement);
             tokio::task::spawn_local(pump.serve());
             startup.submit(Call::Start).await.map_err(Into::into)
         })
@@ -45,7 +49,7 @@ pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
 fn worker(
     path: &str,
     state: lifecycle::State,
-    incoming: &mut mpsc::UnboundedReceiver<Call>,
+    incoming: &mut lifecycle::Incoming,
     calls: mpsc::WeakUnboundedSender<Call>,
     replies: &Replies,
 ) {
@@ -70,7 +74,7 @@ fn worker(
 async fn execute(
     path: &str,
     state: lifecycle::State,
-    incoming: &mut mpsc::UnboundedReceiver<Call>,
+    incoming: &mut lifecycle::Incoming,
     calls: mpsc::WeakUnboundedSender<Call>,
     replies: &Replies,
 ) -> wasmtime::Result<()> {

@@ -33,6 +33,42 @@ pub(super) struct State {
     pub(super) synchronous: super::synchronous::Returns,
     /// Native operations in progress, innermost last, whose nested targets their guest runs.
     pub(super) routes: RefCell<Vec<std::sync::mpsc::Sender<crate::import_route::Nested>>>,
+    /// Dropped after local requests and pending work release their reply senders.
+    worker: RefCell<Option<Worker>>,
+}
+
+/// The native pump owns joining its Store thread, including thread-local destruction.
+struct Worker {
+    /// Taken once when the pump retires.
+    thread: Option<std::thread::JoinHandle<()>>,
+    /// Wakes the Store without retaining its lifetime.
+    shutdown: std::sync::Weak<tokio::sync::Notify>,
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        if let Some(shutdown) = self.shutdown.upgrade() {
+            shutdown.notify_one();
+        }
+        let thread = JoinGuard(self.thread.take());
+        if let Ok(runtime) = tokio::runtime::Handle::try_current() {
+            // Keeps the local executor running. Shutdown may drop the task unstarted; that joins too.
+            drop(runtime.spawn_blocking(move || drop(thread)));
+        } else {
+            drop(thread);
+        }
+    }
+}
+
+/// Joins its thread when dropped, even when Tokio discards the blocking task holding it.
+struct JoinGuard(Option<std::thread::JoinHandle<()>>);
+
+impl Drop for JoinGuard {
+    fn drop(&mut self) {
+        if let Some(thread) = self.0.take() {
+            let _ = thread.join();
+        }
+    }
 }
 
 impl Pump {
@@ -51,6 +87,7 @@ impl Pump {
             waker: RefCell::new(std::task::Waker::noop().clone()),
             synchronous: super::synchronous::Returns::default(),
             routes: RefCell::default(),
+            worker: RefCell::default(),
         });
         (
             Self { state },
@@ -58,6 +95,18 @@ impl Pump {
                 _requests: requests,
             },
         )
+    }
+
+    /// Retains the Store thread until retirement has disconnected native replies.
+    pub(crate) fn own_worker(
+        &self,
+        thread: std::thread::JoinHandle<()>,
+        shutdown: std::sync::Weak<tokio::sync::Notify>,
+    ) {
+        *self.state.worker.borrow_mut() = Some(Worker {
+            thread: Some(thread),
+            shutdown,
+        });
     }
 
     /// Returns a weak local registration service, not a new admission.
