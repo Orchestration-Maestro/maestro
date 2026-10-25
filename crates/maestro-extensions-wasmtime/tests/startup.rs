@@ -34,10 +34,7 @@ pub(super) async fn failed() {
     .err()
     .unwrap()
     .to_string();
-    assert!(
-        error.contains(&path) && error.ends_with("guest startup failure"),
-        "{error}"
-    );
+    assert_eq!(error, "guest startup failure");
     assert!(runner.get_command("bridge-observe").is_none());
     let (owner, healthy, events) = super::retained_components::loaded_on(bus.for_extension()).await;
     let command = healthy
