@@ -530,7 +530,7 @@ fn streamed(directory: &Path, progress: bool, setup: Setup) -> World {
 }
 
 /// Delivers one agent event to the mode as its session would.
-fn dispatch(world: &World, event: AgentEvent<CustomAgentMessages>) {
+pub(super) fn dispatch(world: &World, event: AgentEvent<CustomAgentMessages>) {
     let event = AgentSessionEvent::Agent(Arc::new(RwLock::new(event)));
     world.mode.handle_event(&event).unwrap();
 }
@@ -551,7 +551,7 @@ fn shared(content: &Value, stop: &str, error: Option<&str>) -> SharedAssistantMe
 }
 
 /// Starts an assistant stream in `world` showing `content`.
-fn start(world: &World, content: &Value) {
+pub(super) fn start(world: &World, content: &Value) {
     dispatch(
         world,
         AgentEvent::MessageStart {
@@ -588,7 +588,7 @@ fn tool_result(text: &str, details: Option<Value>) -> AgentToolResult {
 }
 
 /// Registers a pending call `id` with no transcript row.
-fn stale(world: &World, id: &str) {
+pub(super) fn stale(world: &World, id: &str) {
     let row = ToolExecutionComponent::new(tool_params(world, id)).unwrap();
     world
         .mode

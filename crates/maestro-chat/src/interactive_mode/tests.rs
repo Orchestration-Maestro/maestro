@@ -430,6 +430,13 @@ pub(super) struct World {
 pub(super) struct Setup {
     /// The startup offline selection supplied by session services.
     pub(super) offline: Option<bool>,
+    /// Supplied terminal ports for native or failing producer witnesses.
+    pub(super) terminal: Option<(
+        maestro_tui::tui::TerminalHandle,
+        Rc<dyn maestro_tui::tui::TuiRuntime>,
+    )>,
+    /// Controlled native effects, with no real process exit by default.
+    pub(super) lifecycle: Rc<dyn super::lifecycle::LifecycleEffects>,
     /// The mode options.
     pub(super) options: InteractiveModeOptions,
     /// Changes the settings before construction.
@@ -475,6 +482,8 @@ impl Default for Setup {
     fn default() -> Self {
         Self {
             offline: None,
+            terminal: None,
+            lifecycle: Rc::new(lifecycle::Effects::default()),
             options: InteractiveModeOptions::default(),
             configure: Box::new(|_| {}),
             select: None,
@@ -579,14 +588,15 @@ impl Setup {
         let mode = InteractiveMode::new(
             Rc::clone(&host),
             self.options,
-            (terminal.handle(), runtime.handle()),
+            self.terminal
+                .unwrap_or_else(|| (terminal.handle(), runtime.handle())),
             Rc::clone(&themes),
             self.watcher
                 .unwrap_or_else(|| Rc::new(NativeFooterOperations::new(local))),
         )
         .unwrap();
         World {
-            mode,
+            mode: lifecycle::replace_effects(mode, self.lifecycle),
             terminal,
             runtime,
             themes,

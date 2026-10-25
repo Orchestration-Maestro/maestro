@@ -1,8 +1,8 @@
 //! Termination signal delivery of the running process.
 use maestro_app::TerminationSignal;
-use maestro_app::rpc_mode::RpcProcessPort;
 #[cfg(unix)]
-use maestro_app::{register_signals, signals_for_host};
+use maestro_app::register_signals;
+use maestro_app::rpc_mode::RpcProcessPort;
 use std::{io, rc::Rc};
 
 /// The running process's termination signals: SIGTERM and SIGHUP on Unix, none elsewhere.
@@ -16,13 +16,7 @@ impl RpcProcessPort for NativeRpcProcess {
         &self,
         callback: Rc<dyn Fn(TerminationSignal)>,
     ) -> io::Result<Box<dyn Fn()>> {
-        let defaults = maestro_app::DefaultSignalActions::new(&signals_for_host())?;
-        register_signals(callback).map(|stop| {
-            Box::new(move || {
-                defaults.restore();
-                stop();
-            }) as Box<dyn Fn()>
-        })
+        register_signals(callback)
     }
 }
 

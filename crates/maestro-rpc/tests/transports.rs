@@ -264,3 +264,77 @@ fn framing_reuse_handles_chunks_blanks_and_detach() {
         ]
     );
 }
+
+#[test]
+fn native_process_reopens_and_shares_termination_delivery() {
+    use maestro_app::rpc_mode::RpcProcessPort;
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
+            "native_process_reopens_and_shares_termination_delivery",
+        )
+        .unwrap()
+        .case("child")
+        .nocapture()
+        .output()
+        .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    LocalSet::new().block_on(&runtime, async {
+        let process = maestro_rpc::NativeRpcProcess;
+        let old = process.register_signals(Rc::new(|_| {})).unwrap();
+        old();
+        let (sent, mut received) = tokio::sync::mpsc::unbounded_channel();
+        let rpc = process
+            .register_signals(Rc::new(move |signal| {
+                sent.send(signal).unwrap();
+            }))
+            .unwrap();
+        let (sent, mut print_received) = tokio::sync::mpsc::unbounded_channel();
+        let print = maestro_app::register_signals(Rc::new(move |signal| {
+            sent.send(signal).unwrap();
+        }))
+        .unwrap();
+        old();
+        for signal in [
+            maestro_app::TerminationSignal::Terminate,
+            maestro_app::TerminationSignal::Hangup,
+        ] {
+            raise_termination(signal);
+            assert_eq!(received.recv().await, Some(signal));
+            assert_eq!(print_received.recv().await, Some(signal));
+        }
+        rpc();
+        rpc();
+        raise_termination(maestro_app::TerminationSignal::Terminate);
+        assert_eq!(
+            print_received.recv().await,
+            Some(maestro_app::TerminationSignal::Terminate)
+        );
+        assert!(received.try_recv().is_err());
+        print();
+    });
+}
+
+/// Sends one real native signal to the calling test child.
+fn raise_termination(signal: maestro_app::TerminationSignal) {
+    assert!(
+        std::process::Command::new("kill")
+            .args([
+                "-s",
+                &signal.as_raw().to_string(),
+                &std::process::id().to_string()
+            ])
+            .status()
+            .unwrap()
+            .success()
+    );
+}

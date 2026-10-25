@@ -1,17 +1,89 @@
-//! Cleanup of the interactive presentation's current owners.
-
+//! The interactive mode's stop and exit policy.
 use super::InteractiveMode;
-use std::io;
+use std::{
+    cell::{Cell, RefCell},
+    io,
+    rc::Rc,
+    time::Duration,
+};
 
+/// Host process effects that the presentation selects a policy for.
+pub(super) trait LifecycleEffects {
+    /// Delivers termination signals until removal.
+    ///
+    /// # Errors
+    /// Returns the native registration failure.
+    fn register_signals(
+        &self,
+        terminate: Rc<dyn Fn()>,
+        hangup: Rc<dyn Fn()>,
+    ) -> io::Result<Box<dyn Fn()>>;
+    /// Kills the existing tracked detached children.
+    fn kill_tracked_detached_children(&self);
+    /// Ends the process with the selected status.
+    fn exit(&self, status: i32);
+}
+/// Native process effects; native default ownership stays in the process owner.
+struct NativeLifecycle;
+impl LifecycleEffects for NativeLifecycle {
+    #[cfg(not(target_arch = "wasm32"))]
+    fn register_signals(
+        &self,
+        terminate: Rc<dyn Fn()>,
+        hangup: Rc<dyn Fn()>,
+    ) -> io::Result<Box<dyn Fn()>> {
+        maestro_app::register_signals(Rc::new(move |signal| {
+            if signal == maestro_app::TerminationSignal::Hangup {
+                hangup();
+            } else {
+                terminate();
+            }
+        }))
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn register_signals(
+        &self,
+        terminate: Rc<dyn Fn()>,
+        hangup: Rc<dyn Fn()>,
+    ) -> io::Result<Box<dyn Fn()>> {
+        let _ = (terminate, hangup);
+        Ok(Box::new(|| ()))
+    }
+    fn kill_tracked_detached_children(&self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        maestro_app::kill_tracked_detached_children();
+    }
+    fn exit(&self, status: i32) {
+        std::process::exit(status);
+    }
+}
+/// Retained state of the mode's exit handlers.
+pub(super) struct LifecycleState {
+    /// Whether graceful or emergency exit already owns the mode.
+    is_shutting_down: Cell<bool>,
+    /// Removal operations independent of a terminal borrow.
+    signal_cleanup_handlers: RefCell<Vec<Box<dyn Fn()>>>,
+    /// The process effects, replaced only during private test construction.
+    pub(super) effects: Rc<dyn LifecycleEffects>,
+}
+impl Default for LifecycleState {
+    fn default() -> Self {
+        Self {
+            is_shutting_down: Cell::new(false),
+            signal_cleanup_handlers: RefCell::default(),
+            effects: Rc::new(NativeLifecycle),
+        }
+    }
+}
 impl InteractiveMode {
-    /// Clears configured terminal progress, releases the loader and extension input,
-    /// disposes the footer and session subscription, then stops the initialized UI.
+    /// Removes lifecycle handlers, releases the loader and extension input, then
+    /// disposes footer/subscription owners and stops the initialized UI.
     /// The shared theme watcher and unrelated terminal input listeners stay live.
     ///
     /// # Errors
-    /// Returns the original progress-clearing or UI-stop error. Failed UI stop leaves
-    /// the presentation initialized; earlier cleanup is not undone.
+    /// Returns the original terminal progress or stop failure at its phase.
     pub fn stop(&self) -> io::Result<()> {
+        self.unregister_signal_handlers();
         self.set_terminal_progress(false)?;
         self.release_working_loader();
         self.extension_input.clear();
@@ -25,5 +97,120 @@ impl InteractiveMode {
             self.is_initialized.set(false);
         }
         Ok(())
+    }
+    /// Admits shutdown before deferring the owned drain and disposal.
+    pub(super) fn spawn_shutdown(self: &Rc<Self>) {
+        if !self.lifecycle.is_shutting_down.get() {
+            self.tool_environment.runtime.spawn_local(self.shutdown());
+        }
+    }
+    /// Removes handlers synchronously, then owns the pending drain and disposal.
+    pub(super) fn shutdown(self: &Rc<Self>) -> maestro_tui::tui::LocalFuture {
+        if self.lifecycle.is_shutting_down.replace(true) {
+            return Box::pin(async { Ok(()) });
+        }
+        self.unregister_signal_handlers();
+        let drain = self
+            .ui
+            .terminal()
+            .borrow_mut()
+            .drain_input(Some(Duration::from_millis(1000)), None);
+        let mode = Rc::clone(self);
+        Box::pin(async move {
+            drain.await?;
+            mode.stop()?;
+            mode.runtime_host.dispose().await?;
+            mode.lifecycle.effects.exit(0);
+            Ok(())
+        })
+    }
+    /// Starts the requested graceful operation instead of scheduling a final frame.
+    pub(super) fn check_shutdown_requested(&self) -> bool {
+        if !self.shutdown_requested.get() {
+            return false;
+        }
+        if let Some(mode) = self.this.upgrade() {
+            mode.spawn_shutdown();
+        }
+        true
+    }
+    /// Exits without writing terminal restoration or running runtime disposal.
+    fn emergency_terminal_exit(&self) {
+        self.lifecycle.is_shutting_down.set(true);
+        self.unregister_signal_handlers();
+        self.lifecycle.effects.kill_tracked_detached_children();
+        self.lifecycle.effects.exit(129);
+    }
+    /// Installs weak signal and output callbacks before the UI starts.
+    pub(super) fn register_signal_handlers(self: &Rc<Self>) -> io::Result<()> {
+        self.unregister_signal_handlers();
+        let mode = Rc::downgrade(self);
+        let terminate = Rc::new(move || {
+            if let Some(mode) = mode.upgrade() {
+                mode.lifecycle.effects.kill_tracked_detached_children();
+                mode.spawn_shutdown();
+            }
+        });
+        let mode = Rc::downgrade(self);
+        let hangup = Rc::new(move || {
+            if let Some(mode) = mode.upgrade() {
+                mode.emergency_terminal_exit();
+            }
+        });
+        let remove = self.lifecycle.effects.register_signals(terminate, hangup)?;
+        self.lifecycle
+            .signal_cleanup_handlers
+            .borrow_mut()
+            .push(remove);
+        let mode = Rc::downgrade(self);
+        let handler: maestro_tui::terminal::OutputErrorHandler = Rc::new(move |error| {
+            if is_dead_terminal_error(error)
+                && let Some(mode) = mode.upgrade()
+            {
+                mode.emergency_terminal_exit();
+            }
+        });
+        let stdout = self
+            .ui
+            .terminal()
+            .borrow()
+            .on_output_error(Rc::clone(&handler));
+        let stderr = self.tool_environment.runtime.on_output_error(handler);
+        self.lifecycle
+            .signal_cleanup_handlers
+            .borrow_mut()
+            .extend([stdout, stderr]);
+        Ok(())
+    }
+    /// Runs each remover outside the retained vector's borrow.
+    pub(super) fn unregister_signal_handlers(&self) {
+        let removers = self.lifecycle.signal_cleanup_handlers.take();
+        for remove in removers {
+            remove();
+        }
+    }
+}
+/// Whether the real native error is one of the terminal-disconnection failures.
+fn is_dead_terminal_error(error: &io::Error) -> bool {
+    if matches!(
+        error.kind(),
+        io::ErrorKind::BrokenPipe | io::ErrorKind::NotConnected
+    ) {
+        return true;
+    }
+    #[cfg(unix)]
+    {
+        error.raw_os_error() == Some(rustix::io::Errno::IO.raw_os_error())
+    }
+    #[cfg(not(unix))]
+    {
+        false
+    }
+}
+
+/// Releases native registrations when the Rust presentation owner is released.
+impl Drop for InteractiveMode {
+    fn drop(&mut self) {
+        self.unregister_signal_handlers();
     }
 }
