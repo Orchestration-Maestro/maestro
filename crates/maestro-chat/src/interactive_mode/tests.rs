@@ -9,6 +9,7 @@ mod events;
 mod extension_ui;
 mod extension_widgets;
 mod extensions;
+mod hotkeys;
 mod info;
 mod lifecycle;
 mod models;

@@ -27,6 +27,7 @@ mod debug;
 mod dispatch;
 mod events;
 mod extensions;
+mod hotkeys;
 mod info;
 mod key_display;
 mod lifecycle;
