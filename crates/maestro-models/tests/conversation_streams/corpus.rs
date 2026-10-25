@@ -1,6 +1,6 @@
 //! Byte corpus exercised through the direct conversation operation.
 #![cfg(test)]
-use crate::{chat, chat::TestResult};
+use crate::{chat, chat::TestResult, root_routes::key_order};
 use maestro_models::{
     AssistantMessageEventStream, Fetch, HttpResponse, MistralOptions, Model, StreamOptions,
     stream_mistral,
@@ -63,27 +63,6 @@ fn compare(actual: &Value, expected: &Value, name: &str) {
         _ => assert_eq!(actual, expected, "{name}"),
     }
 }
-/// Prove dictionary key order recursively in retained tool arguments.
-fn key_order(actual: &Value, expected: &Value, name: &str) {
-    match (actual, expected) {
-        (Value::Object(a), Value::Object(e)) => {
-            assert_eq!(
-                a.keys().collect::<Vec<_>>(),
-                e.keys().collect::<Vec<_>>(),
-                "{name}: keys"
-            );
-            for (key, value) in e {
-                key_order(&a[key], value, name);
-            }
-        }
-        (Value::Array(a), Value::Array(e)) => {
-            for (a, e) in a.iter().zip(e) {
-                key_order(a, e, name);
-            }
-        }
-        _ => {}
-    }
-}
 
 /// Run every fixture owned by the named behavior test.
 pub async fn rows(test: &str) -> TestResult {
@@ -143,9 +122,9 @@ pub async fn recorded_roots() -> TestResult {
 }
 
 /// Drive one root through creation, gated deltas and completion.
-async fn recorded_root(row: crate::root_routes::Reasoning) -> TestResult {
+async fn recorded_root(row: crate::root_routes::StreamedRoot) -> TestResult {
     let (mut feed, body) = crate::messages::feed();
-    let stream = invoke(super::lifecycle::body_fetch(body))?;
+    let stream = invoke(crate::root_routes::body_fetch(body))?;
     feed.read_pending().await?;
     let mut identity = None;
     let mut observations = read_fragments(&stream, &mut feed, &row.chunks, &mut identity).await?;
@@ -199,16 +178,5 @@ async fn tool_observation(
             break event;
         }
     };
-    let partial = crate::response_output::handle(&event);
-    if let Some(first) = identity {
-        assert!(Arc::ptr_eq(first, partial));
-    } else {
-        *identity = Some(Arc::clone(partial));
-    }
-    let content = serde_json::to_value(&partial.read().unwrap().content)?;
-    let mut value = serde_json::to_value(&event)?;
-    let object = value.as_object_mut().ok_or("event object")?;
-    object.shift_remove("partial");
-    object.insert("contentState".into(), content);
-    Ok(value)
+    crate::root_routes::observation(&event, identity)
 }
