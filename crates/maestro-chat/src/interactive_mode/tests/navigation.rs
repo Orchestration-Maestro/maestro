@@ -1,5 +1,6 @@
 //! Forking from an earlier user message and cloning the current leaf.
 mod flush;
+mod replacement;
 mod tree;
 mod tree_choices;
 
