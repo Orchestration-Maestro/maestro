@@ -4,8 +4,8 @@
 //! the recorded binding and registry cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, echo_tools, harness, on_task_set, sdk_definition,
-    tool_definition,
+    Harness, HarnessOptions, Scripted, answer, assistant, echo_tools, harness, load_history,
+    on_task_set, script_responses, sdk_definition, tool_definition, user,
 };
 use maestro_app::agent_session::{ExtensionBindings, PromptOptions};
 use maestro_extensions::types::{ExtensionFlagOptions, FlagValue, RegisteredCommandOptions};
@@ -475,6 +475,89 @@ fn keeps_captured_contexts_usable_across_a_direct_reload() {
             api.get_active_tools().unwrap(),
             h.session.get_active_tool_names()
         );
+    });
+}
+
+/// Stores two turns and queues both possible summary requests.
+fn prepare_compaction_history(h: &Harness) {
+    for record in [
+        user(&json!("first"), 1),
+        assistant("answer", 2, &json!({})),
+        user(&json!("second"), 3),
+        assistant("last", 4, &json!({})),
+    ] {
+        h.session
+            .session_manager()
+            .borrow_mut()
+            .append_message(record)
+            .unwrap();
+    }
+    load_history(h);
+    script_responses(
+        h,
+        vec![answer("summary", None, None), answer("summary", None, None)],
+    );
+}
+
+#[test]
+fn compaction_completion_failure_reaches_the_error_callback_unchanged() {
+    on_task_set(|_| async {
+        let tasks = Rc::new(RefCell::new(Vec::new()));
+        let spawned = Rc::clone(&tasks);
+        let h = harness(HarnessOptions {
+            settings: json!({"compaction": {"keepRecentTokens": 1}}),
+            spawn: Some(Rc::new(move |task| {
+                spawned.borrow_mut().push(tokio::task::spawn_local(task));
+            })),
+            ..HarnessOptions::default()
+        })
+        .await;
+        prepare_compaction_history(&h);
+        let failure = RefCell::new(Some(
+            Box::new(std::io::Error::from_raw_os_error(13)) as maestro_extensions::EventError
+        ));
+        let identity = std::ptr::from_ref(failure.borrow().as_ref().unwrap().as_ref()).cast::<()>();
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let completed = Rc::clone(&trace);
+        let failed = Rc::clone(&trace);
+        h.runner()
+            .create_context()
+            .compact(Some(maestro_app::CompactOptions {
+                on_complete: Some(Rc::new(move |result| {
+                    assert!(result.summary.contains("summary"));
+                    completed.borrow_mut().push("complete");
+                    Err(failure.borrow_mut().take().unwrap())
+                })),
+                on_error: Some(Rc::new(move |error| {
+                    assert_eq!(
+                        *failed.borrow(),
+                        ["complete"],
+                        "unexpected compaction failure: {error}"
+                    );
+                    assert_eq!(std::ptr::from_ref(error.as_ref()).cast::<()>(), identity);
+                    assert_eq!(
+                        error
+                            .downcast_ref::<std::io::Error>()
+                            .unwrap()
+                            .raw_os_error(),
+                        Some(13)
+                    );
+                    failed.borrow_mut().push("error");
+                    Ok(())
+                })),
+                ..maestro_app::CompactOptions::default()
+            }))
+            .unwrap();
+        loop {
+            let pending = std::mem::take(&mut *tasks.borrow_mut());
+            if pending.is_empty() {
+                break;
+            }
+            for task in pending {
+                task.await.unwrap();
+            }
+        }
+        assert_eq!(*trace.borrow(), ["complete", "error"]);
     });
 }
 

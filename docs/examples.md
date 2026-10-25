@@ -19,15 +19,17 @@ for collapsed thinking, and `extensions/with-deps/main.rs` builds one that parse
 durations with a regular expression; `extensions/reload_runtime.rs` builds a
 reload command with a tool that queues it as a follow-up message,
 `extensions/pirate.rs` builds a command that toggles a pirate response style in
-the supplied prompt; `extensions/trigger_compact.rs` builds a hook that requests
+the supplied prompt, `extensions/trigger_compact.rs` builds a hook that requests
 compaction above a token threshold and a command that requests compaction
 immediately, `extensions/bookmark.rs` labels the newest assistant message so the
 tree view can show it, `extensions/working_message_test.rs` asks for custom
 working text and an indicator whenever a session starts,
-`extensions/system_prompt_header.rs` reports the current system prompt's length
-as status, and `extensions/model_status.rs` sets the `model` status for each
-selected model and notifies only on an explicit selection or a cycle, never on
-a restore. The
+`extensions/session_name.rs` builds a command that sets or shows the session's
+friendly name, `extensions/system_prompt_header.rs` reports the current system
+prompt's length as status, `extensions/send_user_message.rs` builds commands
+that send ordinary, steering, follow-up and two-block user messages, and
+`extensions/model_status.rs` sets the `model` status for each selected model
+and notifies only on an explicit selection or a cycle, never on a restore. The
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 

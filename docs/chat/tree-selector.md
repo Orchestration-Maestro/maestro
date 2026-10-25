@@ -104,9 +104,10 @@ runtime's nonempty HOME, then USERPROFILE, at each render and shorten a raw pref
 `command`, `path`, `file_path` and `pattern` use their tool defaults for falsy
 values. Before tool-specific formatting, truthy strings supply text and other
 truthy values become compact JSON. Shell summaries still normalize newlines and
-tabs, trim and truncate; paths still shorten a matching home prefix. Numeric
-read ranges have separate formatting rules. Entry text remains strictly
-string-valued. Rendering performs no filesystem or scheduling operations.
+tabs, trim and truncate; paths still shorten a matching home prefix, and an empty
+or `/` home leaves them as written. Numeric read ranges have separate formatting
+rules. Entry text remains strictly string-valued. Rendering performs no
+filesystem or scheduling operations.
 
 The supplied live theme is read on every render. `styles_enabled` controls bold
 selection and italic empty titles; colors remain theme-owned. `invalidate()` is a

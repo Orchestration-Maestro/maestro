@@ -423,7 +423,10 @@ fn nonfinite(usage: &Usage) -> Value {
         ("output", usage.output),
         ("cacheRead", usage.cache_read),
         ("cacheWrite", usage.cache_write),
-        ("totalTokens", usage.total_tokens),
+        (
+            "totalTokens",
+            usage.total_tokens.present().copied().unwrap(),
+        ),
         ("cost.input", cost.input),
         ("cost.output", cost.output),
         ("cost.cacheRead", cost.cache_read),

@@ -1,5 +1,7 @@
-//! Release of a deep container chain built by the parser.
-use super::forget;
+//! Container release and retained quote resumption state.
+use super::{QuoteFrame, Resume, forget};
+use crate::lexer::{BlockTokens, Level, blocks::tests::lexer};
+use crate::source::{Cursor, ScopeSource};
 use crate::tests::{REDUCED_STACK, on_stack};
 use crate::{Kind, MarkedOptions, parse_with_options};
 use std::collections::HashMap;
@@ -20,4 +22,20 @@ fn forget_releases_a_parsed_container_chain_on_a_small_stack() {
         forget(&mut scopes, &document.nodes[0]);
         assert!(scopes.is_empty());
     });
+}
+
+#[test]
+fn quote_reentry_truncates_at_the_authored_container_start() {
+    let source = ScopeSource::identity("lead\n\n> a\n> b");
+    let mut lexer = lexer();
+    let mut frame = QuoteFrame::new(source.clone().into());
+    frame.text = source.into();
+    frame.pending = Cursor::default();
+    frame.output = lexer.append(frame.text.clone(), BlockTokens::default(), Level::Chunk);
+
+    assert!(matches!(
+        lexer.resume_container(&mut frame),
+        Some(Resume::Quote(_))
+    ));
+    assert_eq!(frame.text.mapped().to_owned_string(), "lead\n\n");
 }

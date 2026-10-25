@@ -15,6 +15,7 @@ use crate::{
     SharedAssistantMessage, StopReason, TextContent, ThinkingContent, ToolCall, calculate_cost,
     parsed_arguments,
 };
+use maestro_request::presence::Presence;
 
 /// Failure of a message that opens with a turn other than the assistant's.
 const USER_START_TEXT: &str =
@@ -325,10 +326,10 @@ impl Reducer {
             counts.output = f64::from(usage.output_tokens());
             counts.cache_read = f64::from(usage.cache_read_input_tokens().unwrap_or(0));
             counts.cache_write = f64::from(usage.cache_write_input_tokens().unwrap_or(0));
-            counts.total_tokens = match usage.total_tokens() {
+            counts.total_tokens = Presence::Present(match usage.total_tokens() {
                 0 => counts.input + counts.output,
                 total => f64::from(total),
-            };
+            });
             calculate_cost(&self.model, counts);
         });
     }
