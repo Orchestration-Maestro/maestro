@@ -193,7 +193,8 @@ Its optional error observation is supplied by the rendering host. Conversion fro
 execution result supplies no error flag. `str` returns a borrowed string, an empty string for
 an absent or null value and nothing for any other type. `shorten_path` (native only) shows
 the home directory as `~` for a path equal to it or below it and leaves a sibling whose
-name merely starts with the home path unchanged; it reads the home directory through
+name merely starts with the home path unchanged; a home directory that is empty or `/`
+abbreviates nothing, so the path stays as given. It reads the home directory through
 [`expand_path`](../crates/maestro-tools/src/path_utils.rs) only for a present path.
 `replace_tabs` turns every TAB into three spaces and `normalize_display_text` removes every
 carriage return. The tool paths forward to the [text leaf](text.md)'s terminal cleaners.

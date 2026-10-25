@@ -13,25 +13,27 @@ use maestro_tui::{Component, EditorComponent};
 use std::{any::Any, error::Error, rc::Rc};
 
 /// A mode operation an editor shortcut runs.
-type Operation = fn(&InteractiveMode) -> Result<(), Box<dyn Error>>;
+type Operation = fn(&Rc<InteractiveMode>) -> Result<(), Box<dyn Error>>;
 
 impl InteractiveMode {
     /// Binds the transcript shortcuts and editor actions on the editor, in the order the
     /// editor consults them, then installs its change and image-paste callbacks.
     pub(super) fn setup_key_handlers(self: &Rc<Self>) {
         #[cfg(unix)]
-        self.on_action("app.suspend", Self::handle_ctrl_z);
+        self.on_action("app.suspend", |mode| mode.handle_ctrl_z());
         #[cfg(windows)]
-        self.on_action("app.suspend", Self::show_suspend_unsupported);
-        self.on_action("app.thinking.cycle", Self::cycle_thinking_level);
+        self.on_action("app.suspend", |mode| mode.show_suspend_unsupported());
+        self.on_action("app.thinking.cycle", |mode| mode.cycle_thinking_level());
         self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
         self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
-        self.on_action("app.tools.expand", Self::toggle_tool_output_expansion);
-        self.on_action(
-            "app.thinking.toggle",
-            Self::toggle_thinking_block_visibility,
-        );
-        self.on_action("app.editor.external", Self::open_external_editor);
+        self.on_action("app.model.select", |mode| mode.show_model_selector(None));
+        self.on_action("app.tools.expand", |mode| {
+            mode.toggle_tool_output_expansion()
+        });
+        self.on_action("app.thinking.toggle", |mode| {
+            mode.toggle_thinking_block_visibility()
+        });
+        self.on_action("app.editor.external", |mode| mode.open_external_editor());
         self.setup_editor_callbacks();
     }
 

@@ -1,6 +1,9 @@
 //! Editor actions through the mode's installed callbacks, its rendered editor and the
 //! native editor, clipboard helper and temporary files of an isolated child.
-use super::{World, dark, isolated, light, native, painted, roles, started};
+use super::{
+    World, border_row, dark, isolated, light, native, painted, rendered_border, select_level,
+    started,
+};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_app::utils::clipboard_image::ClipboardImage;
 use maestro_app::{DiagnosticErrorInfo, Model, OAuthError, ScopedModel, ThinkingLevel};
@@ -23,29 +26,6 @@ const WIDTH: usize = 80;
 /// The recorded cases of `test`, typed by that witness.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
     decode_cases(FIXTURES, test)
-}
-
-/// The editor's top border row as the recorder's painted probe glyph describes it.
-fn border_row(world: &World, recorded: &str) -> String {
-    let theme = world.themes.theme().get().unwrap();
-    roles(&theme, &recorded.replace('━', "─")).repeat(WIDTH)
-}
-
-/// The editor's rendered top border row.
-fn rendered_border(world: &World) -> String {
-    world.mode.editor.render(WIDTH).swap_remove(0)
-}
-
-/// Selects `level` on the session as its agent state, whatever the model supports.
-fn select_level(world: &World, level: ThinkingLevel) {
-    world
-        .host
-        .session()
-        .agent()
-        .state()
-        .write()
-        .unwrap()
-        .thinking_level = level;
 }
 
 /// Editor text delivered to the change callback in one shell mode.
@@ -130,7 +110,7 @@ fn border_theme_change_refreshes_the_first_returned_frame() {
 const EDIT_FILE: &str = "maestro-editor-1767323045006.maestro.md";
 
 /// Installs `script` as the executable `name` in the command directory of `directory`.
-fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
+pub(super) fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
     let bin = directory.join("bin");
     let source = bin.join(format!("{name}.source"));
     std::fs::write(&source, script).unwrap();
@@ -141,7 +121,7 @@ fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
 }
 
 /// Runs the editor action the mode registered.
-fn run_action(world: &World, action: &str) {
+pub(super) fn run_action(world: &World, action: &str) {
     let handler = world.mode.editor.action_handlers().borrow()[action].clone();
     handler();
 }
@@ -874,7 +854,7 @@ const NO_EDITOR: &str = "No editor configured";
 const DEFAULT_ASYNCHRONOUS: [&str; 3] = ["\x10", "\x1b[112;6u", "\x16"];
 
 /// Whether the transcript shows `text`.
-fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
+pub(super) fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
     chat.render(WIDTH).concat().contains(text)
 }
 

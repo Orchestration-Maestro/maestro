@@ -1,24 +1,33 @@
 //! Queued steering and follow-up input: snapshots, pending rows, restoration, status lines
 //! and the queue key actions over the mode's real session and editor.
 use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions};
-use super::typed::recalled;
-use super::{Setup, World, isolated, painted, started};
+use super::bash::shelling;
+use super::typed::{poll, recalled, submit};
+use super::{
+    Held, Setup, World, border_row, driving, echoing_shell, holding, isolated, on_tasks, painted,
+    rendered_border, scripted, select_level, start_shells, started, streaming,
+    transcript_positions,
+};
+use crate::BashExecutionComponent;
 use crate::InteractiveMode;
+use crate::interactive_mode::bash::component_address;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{
-    AgentSessionEvent, AssistantMessage, AssistantMessageEventStream, Cancellation,
-    DiagnosticErrorInfo, ExtensionFactory, InputEvent, InputEventResult, Local, PromptOptions,
-    RegisteredCommand, StopReason, Usage, is_whitespace_scalar,
+    AgentSessionEvent, Cancellation, DiagnosticErrorInfo, ExtensionFactory, InputEvent,
+    InputEventResult, Local, RegisteredCommand, ThinkingLevel, is_whitespace_scalar,
 };
+use maestro_theme::ThemeColor;
 use maestro_tui::editor_component::TextCallback;
-use maestro_tui::tui::InputHandler;
+use maestro_tui::tui::{InputHandler, LocalFuture};
 use maestro_tui::{Component, EditorComponent, KeybindingKeys, Spacer, Text};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
     collections::HashMap,
+    future::Future,
     path::Path,
+    pin::Pin,
     rc::Rc,
     sync::{Arc, RwLock},
 };
@@ -277,81 +286,6 @@ fn settled(world: &World) -> Vec<String> {
             }
         })
         .collect()
-}
-
-/// The response the controlled provider holds open, and the cancellation of its turn.
-struct Held {
-    /// The open response.
-    stream: AssistantMessageEventStream,
-    /// The turn's cancellation.
-    signal: Cancellation,
-}
-
-impl Held {
-    /// How many times the turn was stopped.
-    fn aborts(&self) -> usize {
-        usize::from(self.signal.is_aborted())
-    }
-}
-
-/// A finished answer of the controlled provider.
-fn answer() -> Arc<RwLock<AssistantMessage>> {
-    Arc::new(RwLock::new(AssistantMessage {
-        content: Vec::new(),
-        api: "unknown".into(),
-        provider: "unknown".into(),
-        model: "unknown".into(),
-        response_model: None,
-        response_id: None,
-        diagnostics: None,
-        usage: Usage::default(),
-        stop_reason: StopReason::Stop,
-        error_message: None,
-        timestamp: 0.0,
-    }))
-}
-
-/// Runs `body` on the started `world` while its session streams a response the controlled
-/// provider holds open; then ends that response and waits for the prompt to settle.
-fn streaming<T>(world: &World, body: impl FnOnce(&World, &Held) -> T) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    let tasks = tokio::task::LocalSet::new();
-    tasks.block_on(&runtime, async {
-        let session = world.mode.runtime_host.session();
-        world
-            .host
-            .services()
-            .auth_storage
-            .set_runtime_api_key("unknown", "key");
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        let sender = RefCell::new(Some(sender));
-        *session.agent().stream_fn.write().unwrap() = Some(Rc::new(move |_, _, options, _| {
-            let stream = AssistantMessageEventStream::new();
-            match sender.borrow_mut().take() {
-                Some(sender) => drop(sender.send(Held {
-                    stream: stream.clone(),
-                    signal: options.common.signal.unwrap(),
-                })),
-                None => stream.end(Some(answer())),
-            }
-            Box::pin(std::future::ready(Ok(stream)))
-        }));
-        let prompted = Rc::clone(&session);
-        let run = tokio::task::spawn_local(async move {
-            prompted.prompt("run", PromptOptions::default()).await
-        });
-        let held = receiver.await.unwrap();
-        assert!(session.is_streaming());
-        // The recording streams without a prompt; this prompt's own user row is set aside so
-        // the case starts from the recorded empty transcript.
-        world.mode.chat_container.clear();
-        let result = body(world, &held);
-        held.stream.end(Some(answer()));
-        run.await.unwrap().unwrap();
-        result
-    })
 }
 
 /// Queues `s, s`, `f` and the compaction messages `lf`, `ls`.
@@ -944,14 +878,13 @@ fn stream_escape_restores_before_aborting() {
     });
 }
 
-/// A started mode whose session loads the controlled extension and the command `cmd`: the
-/// extension's input handler records `["input", text]` and, when `refuse` is set, fails
-/// on `selected`; the command records `["command", arguments]`. Queue operations are
-/// recorded in the same log.
-fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
-    let heard = Heard::default();
-    let inputs = Rc::clone(&heard);
-    let factory: ExtensionFactory<Local> = Rc::new(move |api| {
+/// The controlled extension: its input handler records `["input", text]` and, when
+/// `refuse` is set, fails on `selected`; its shell handler records
+/// `["execute", command, excluded]` and answers the command without running one.
+fn controlled_factory(heard: &Heard, refuse: bool) -> ExtensionFactory<Local> {
+    let inputs = Rc::clone(heard);
+    let executed = Rc::clone(heard);
+    Rc::new(move |api| {
         let inputs = Rc::clone(&inputs);
         let registered = api.on::<InputEvent, InputEventResult>(
             "input".into(),
@@ -965,8 +898,44 @@ fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
                 Box::pin(std::future::ready(result))
             }),
         );
-        Box::pin(std::future::ready(registered.map(drop)))
-    });
+        let shells = Rc::clone(&executed);
+        let answered = api.on::<maestro_app::UserBashEvent, _>(
+            "user_bash".to_owned(),
+            Rc::new(move |event: &mut maestro_app::UserBashEvent, _| {
+                shells.borrow_mut().push(json!([
+                    "execute",
+                    event.command,
+                    event.exclude_from_context
+                ]));
+                let result = maestro_app::BashResult {
+                    output: String::new(),
+                    exit_code: Some(0.0),
+                    cancelled: false,
+                    truncated: false,
+                    full_output_path: None,
+                };
+                let answer: maestro_app::UserBashEventResult<
+                    super::ShellOperations,
+                    maestro_app::BashResult,
+                > = maestro_app::UserBashEventResult {
+                    operations: None,
+                    result: maestro_app::Presence::Present(result),
+                };
+                Box::pin(std::future::ready(Ok(Some(answer))))
+            }),
+        );
+        Box::pin(std::future::ready(registered.and(answered).map(drop)))
+    })
+}
+
+/// A started mode whose session loads the controlled extension and the command `cmd`: the
+/// extension's input handler records `["input", text]` and, when `refuse` is set, fails
+/// on `selected`; its shell handler records `["execute", command, excluded]` and answers
+/// the command without running one; the command records `["command", arguments]`. Queue
+/// operations are recorded in the same log.
+fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
+    let heard = Heard::default();
+    let factory = controlled_factory(&heard, refuse);
     let world = Setup {
         extension: Some(factory),
         ..Setup::default()
@@ -1543,6 +1512,858 @@ fn queue_callbacks_release_the_mode_after_active_work_settles() {
                 assert!(matches!(polled, std::task::Poll::Ready(Ok(()))));
             }
             assert!(weak.upgrade().is_none(), "settled work releases the mode");
+        },
+    );
+}
+
+/// The draft an interrupt witness holds in the editor.
+const DRAFT: &str = "draft";
+
+/// The draft the interrupt key restores a queued message above.
+const QUEUED_DRAFT: &str = "queued\n\ndraft";
+
+/// The draft that selects shell mode, which the interrupt key can clear.
+const SHELL_DRAFT: &str = "!draft";
+
+/// The shell command that keeps running until its release file appears.
+const HELD: &str = "!hold";
+
+/// The interrupt key's selection: whether a response streams, whether a shell runs and
+/// whether the editor holds a shell command.
+#[derive(Clone, Copy, Debug)]
+struct Interrupt {
+    /// Whether the session streams a held response.
+    streaming: bool,
+    /// Whether a shell command runs.
+    running: bool,
+    /// Whether the editor holds a shell command.
+    mode: bool,
+}
+
+impl Interrupt {
+    /// The editor text this selection starts with.
+    fn draft(self) -> &'static str {
+        if self.mode { SHELL_DRAFT } else { DRAFT }
+    }
+
+    /// The queued text this selection starts with: one steering message where the restore
+    /// is observable and none where it would replace the shell draft.
+    fn queued(self) -> Queues {
+        if !self.streaming || self.mode {
+            return Queues::default();
+        }
+        Queues {
+            steering: vec!["queued".into()],
+            ..Queues::default()
+        }
+    }
+
+    /// The editor text the interrupt key leaves behind.
+    fn text(self) -> &'static str {
+        match (self.streaming, self.running, self.mode) {
+            // A streaming response restores the queued text before the draft.
+            (true, _, false) => QUEUED_DRAFT,
+            (true, _, true) | (false, true, _) => self.draft(),
+            (false, false, true) => "",
+            (false, false, false) => DRAFT,
+        }
+    }
+}
+
+/// The file whose creation lets the held shell end.
+const HELD_RELEASE: &str = "held-release";
+
+/// A started mode whose shell waits for the release file.
+fn held_shell(directory: &Path) -> World {
+    let release = directory.join(HELD_RELEASE);
+    let _ = std::fs::remove_file(&release);
+    let script = scripted(
+        directory,
+        "shell",
+        &format!(
+            "while [ ! -e {} ]; do :; done\nprintf 'held\\n'",
+            release.display()
+        ),
+    );
+    shelling(directory, &script)
+}
+
+/// Submits the held shell command and returns the command it admitted once the session
+/// runs it.
+fn start_held(world: &World) -> LocalFuture {
+    submit(&world.mode, HELD);
+    let mut admitted = world.runtime.take_futures();
+    assert_eq!(admitted.len(), 1, "the submission admits one command");
+    let mut command = admitted.pop().unwrap();
+    assert!(
+        poll(&mut command).is_none(),
+        "the held shell waits for its release"
+    );
+    assert!(
+        world.mode.runtime_host.session().is_bash_running(),
+        "the held shell runs"
+    );
+    command
+}
+
+/// Waits for the held shell's own command to finish, which its release or its cancellation
+/// settles.
+async fn until_settled(command: LocalFuture) {
+    command.await.expect("the held shell settles");
+}
+
+/// Lets the held shell's script end so its command can settle.
+fn release_held(directory: &Path) {
+    std::fs::write(directory.join(HELD_RELEASE), "").unwrap();
+}
+
+/// Presses the interrupt key, recording whether the response was already stopped at each
+/// editor change it made.
+fn press_interrupt(world: &World, signal: Option<&Cancellation>) -> Vec<bool> {
+    let stopped = Rc::new(RefCell::new(Vec::new()));
+    if let Some(signal) = signal {
+        let (seen, signal) = (Rc::clone(&stopped), signal.clone());
+        world.mode.editor.set_on_change(Some(Rc::new(move |_| {
+            seen.borrow_mut().push(signal.is_aborted());
+        })));
+    }
+    world.mode.editor.handle_input("\x1b");
+    world.mode.editor.set_on_change(None);
+    stopped.borrow().clone()
+}
+
+/// Checks what the interrupt key left after running `selection`.
+fn assert_interrupt(
+    world: &World,
+    selection: Interrupt,
+    signal: Option<&Cancellation>,
+    stopped: &[bool],
+) {
+    let session = world.mode.runtime_host.session();
+    // The interrupt key clears shell mode when nothing outranks it; a cancelled shell also
+    // clears it once its submission settles, as the reference's own post-await assignment
+    // does, so only a streaming response leaves the shell draft in shell mode.
+    let shell_mode = selection.mode && selection.streaming;
+    assert_eq!(
+        world.mode.is_bash_mode.get(),
+        shell_mode,
+        "shell mode after {selection:?}"
+    );
+    assert_eq!(
+        world.mode.editor.get_text().as_str(),
+        selection.text(),
+        "editor text after {selection:?}"
+    );
+    assert_eq!(
+        session.is_bash_running(),
+        selection.running && selection.streaming,
+        "shell running after {selection:?}"
+    );
+    if selection.streaming {
+        assert!(
+            signal.unwrap().is_aborted(),
+            "the response is stopped: {selection:?}"
+        );
+        assert!(
+            stopped.iter().all(|stopped| !stopped),
+            "the queued text is restored before the turn stops: {stopped:?}"
+        );
+    }
+}
+
+/// Checks the editor border: clearing shell mode restores the thinking border, and a shell
+/// branch that leaves the shell draft keeps the shell border.
+fn assert_border(world: &World, selection: Interrupt) {
+    let expected = match (selection.streaming, selection.running, selection.mode) {
+        (true, _, true) => Some("@bashMode@━\x1b[39m"),
+        (false, false, true) => Some("@thinkingHigh@━\x1b[39m"),
+        _ => None,
+    };
+    if let Some(expected) = expected {
+        assert_eq!(
+            rendered_border(world),
+            border_row(world, expected),
+            "{selection:?}"
+        );
+    }
+}
+
+/// Runs the interrupt selection in `world`, returning the mode's work failures.
+async fn interrupt_in(
+    world: &World,
+    directory: &Path,
+    selection: Interrupt,
+    signal: Option<Cancellation>,
+) -> Vec<Box<dyn std::error::Error>> {
+    let ((), errors) = driving(world, async {
+        // A queued text is seeded once the response streams, where the restore can take it
+        // back, and before any shell command so both branches see the same queues.
+        seed(world, selection.queued());
+        let mut command = selection.running.then(|| start_held(world));
+        let stopped = press_interrupt(world, signal.as_ref());
+        // A streaming response outranks the shell, so its release settles the command later;
+        // every other interrupt cancels the command itself, which settles before the checks.
+        if selection.running && !selection.streaming {
+            until_settled(command.take().expect("the running shell holds its command")).await;
+        }
+        assert_interrupt(world, selection, signal.as_ref(), &stopped);
+        assert_border(world, selection);
+        if let Some(command) = command {
+            release_held(directory);
+            until_settled(command).await;
+        }
+    })
+    .await;
+    errors
+}
+
+/// Runs one interrupt selection over a fresh mode and checks its outcome.
+fn interrupt_case(directory: &Path, selection: Interrupt) {
+    let world = held_shell(directory);
+    select_level(&world, ThinkingLevel::High);
+    world.mode.editor.set_text(selection.draft());
+    let errors = if selection.streaming {
+        on_tasks(async {
+            holding(&world, |signal| {
+                interrupt_in(&world, directory, selection, Some(signal))
+            })
+            .await
+        })
+    } else {
+        on_tasks(async { interrupt_in(&world, directory, selection, None).await })
+    };
+    assert!(errors.is_empty(), "{errors:?}");
+}
+
+#[test]
+fn shell_escape_keeps_streaming_priority_and_live_mode_border() {
+    isolated(
+        "shell_escape_keeps_streaming_priority_and_live_mode_border",
+        |directory| {
+            for (streaming, running, mode) in [
+                (false, false, false),
+                (false, false, true),
+                (false, true, false),
+                (false, true, true),
+                (true, false, false),
+                (true, false, true),
+                (true, true, false),
+                (true, true, true),
+            ] {
+                interrupt_case(
+                    directory,
+                    Interrupt {
+                        streaming,
+                        running,
+                        mode,
+                    },
+                );
+            }
+        },
+    );
+}
+
+/// The queued texts a refresh witness crosses with the pending shell rows.
+#[derive(Clone, Copy, Debug)]
+enum QueueClass {
+    /// Nothing queued.
+    Empty,
+    /// One steering message.
+    Steering,
+    /// One follow-up message.
+    FollowUp,
+    /// Both queues.
+    Both,
+}
+
+impl QueueClass {
+    /// The queued texts this class starts with.
+    fn queues(self) -> Queues {
+        let (steering, follow_up) = match self {
+            Self::Empty => (vec![], vec![]),
+            Self::Steering => (vec!["s".into()], vec![]),
+            Self::FollowUp => (vec![], vec!["f".into()]),
+            Self::Both => (vec!["s".into()], vec!["f".into()]),
+        };
+        Queues {
+            steering,
+            follow_up,
+            local: Vec::new(),
+        }
+    }
+
+    /// The text rows the display owner paints, before the hint.
+    fn labels(self) -> Vec<&'static str> {
+        match self {
+            Self::Empty => vec![],
+            Self::Steering => vec!["Steering: s"],
+            Self::FollowUp => vec!["Follow-up: f"],
+            Self::Both => vec!["Steering: s", "Follow-up: f"],
+        }
+    }
+}
+
+/// The handles the pending area holds as shell rows, in its own order.
+fn pending_shell_rows(world: &World) -> Vec<Rc<BashExecutionComponent>> {
+    let retained = world.mode.pending_shells.borrow().clone();
+    let children = world.mode.pending_messages_container.children();
+    children
+        .borrow()
+        .iter()
+        .filter_map(|child| {
+            let address = component_address(child);
+            retained
+                .iter()
+                .find(|shell| component_address(*shell) == address)
+                .map(Rc::clone)
+        })
+        .collect()
+}
+
+/// Checks that every shell saved before the refresh, `original`, is still the retained and
+/// shown row at its position, that it paints its output-only marker once, and that
+/// `class`'s text rows follow them.
+fn assert_pending_rows(world: &World, class: QueueClass, original: &[Rc<BashExecutionComponent>]) {
+    let retained = world.mode.pending_shells.borrow();
+    assert_eq!(retained.len(), original.len(), "retained shell rows");
+    for (index, (retained, saved)) in retained.iter().zip(original.iter()).enumerate() {
+        assert!(
+            Rc::ptr_eq(retained, saved),
+            "row {index} stays retained through the refresh"
+        );
+    }
+    let shown = pending_shell_rows(world);
+    assert_eq!(shown.len(), original.len(), "shown shell rows");
+    for (index, (shown, saved)) in shown.iter().zip(original.iter()).enumerate() {
+        assert!(
+            Rc::ptr_eq(shown, saved),
+            "row {index} keeps its identity through the refresh"
+        );
+    }
+    assert_painted_output(world, original.len());
+    let labels = class.labels();
+    let text_rows = pending_text_rows(world, original.len());
+    let expected = if labels.is_empty() {
+        0
+    } else {
+        labels.len() + 1
+    };
+    assert_eq!(text_rows.len(), expected, "text rows for {class:?}");
+    for (row, label) in text_rows.iter().zip(labels.iter()) {
+        assert!(row.contains(label), "{row:?} carries {label:?}");
+    }
+    if !labels.is_empty() {
+        let hint = text_rows.last().unwrap();
+        assert!(hint.contains("to edit all queued messages"), "{hint:?}");
+    }
+    let theme = world.themes.theme().get().unwrap();
+    let dim = theme.get_fg_ansi(&ThemeColor::Dim).unwrap();
+    for row in &text_rows {
+        assert!(row.contains(dim), "{row:?} is painted dim");
+    }
+}
+
+/// Checks that each of `shells` pending rows paints its output-only marker once: the marker
+/// is absent from the command text, so the command header cannot supply it.
+fn assert_painted_output(world: &World, shells: usize) {
+    let rows = world.mode.pending_messages_container.render(80);
+    let painted = rows.join("\n");
+    for index in 0..shells {
+        assert_eq!(
+            painted.matches(&format!("printed mark{index}")).count(),
+            1,
+            "row {index} paints its output once: {painted}"
+        );
+    }
+}
+
+/// The rendered rows of the text children that follow `shells` shell rows.
+fn pending_text_rows(world: &World, shells: usize) -> Vec<String> {
+    let children = world.mode.pending_messages_container.children();
+    let children = children.borrow();
+    let text: Vec<String> = children
+        .iter()
+        .skip(shells)
+        .flat_map(|child| child.render(80))
+        .filter(|row| !row.is_empty())
+        .collect();
+    text
+}
+
+/// Refreshes the pending rows once and checks the shells saved before the first refresh.
+fn refresh(world: &World, class: QueueClass, original: &[Rc<BashExecutionComponent>]) {
+    pending(&world.mode, 80);
+    assert_pending_rows(world, class, original);
+}
+
+/// One refresh witness: `shells` pending rows under `class`'s queues, refreshed twice, then
+/// once more after a dequeue and after the ordinary-input flush.
+fn refresh_case(directory: &Path, shells: usize, class: QueueClass) {
+    let world = echoing_shell(directory);
+    let errors = on_tasks(async {
+        holding(&world, |_| async {
+            let ((), errors) = driving(&world, async {
+                start_shells(&world, shells).await;
+                let original: Vec<Rc<BashExecutionComponent>> =
+                    world.mode.pending_shells.borrow().clone();
+                assert_painted_output(&world, shells);
+                seed(&world, class.queues());
+                refresh(&world, class, &original);
+                refresh(&world, class, &original);
+                seed(
+                    &world,
+                    Queues {
+                        steering: vec!["t".into()],
+                        ..Queues::default()
+                    },
+                );
+                pending(&world.mode, 80);
+                let retained = world.mode.pending_shells.borrow().len();
+                assert_eq!(retained, shells, "a later enqueue keeps the shells");
+                world.mode.clear_all_queues();
+                refresh(&world, QueueClass::Empty, &original);
+                world.mode.flush_pending_bash_components();
+                assert_pending_rows(&world, QueueClass::Empty, &[]);
+                assert!(
+                    world.mode.pending_shells.borrow().is_empty(),
+                    "a flushed shell is not pending"
+                );
+            })
+            .await;
+            errors
+        })
+        .await
+    });
+    assert!(errors.is_empty(), "{errors:?}");
+}
+
+#[test]
+fn pending_shell_rows_survive_queue_refresh() {
+    isolated("pending_shell_rows_survive_queue_refresh", |directory| {
+        for shells in [0, 1, 3] {
+            for class in [
+                QueueClass::Empty,
+                QueueClass::Steering,
+                QueueClass::FollowUp,
+                QueueClass::Both,
+            ] {
+                refresh_case(directory, shells, class);
+            }
+        }
+    });
+}
+
+/// Submits `text` through the installed submission and returns what the waiting input
+/// received, with the pending shell rows reported at the moment it arrived.
+fn deliver(
+    world: &World,
+    waiter: &mut Pin<Box<dyn Future<Output = String>>>,
+) -> Option<(String, usize)> {
+    world.mode.editor.on_submit().unwrap()("ordinary");
+    poll(waiter).map(|text| (text, world.mode.pending_shells.borrow().len()))
+}
+
+/// Produces `count` pending shell rows while a response streams, and returns the world with
+/// the retained rows and the pending area's children.
+fn produce_pending(
+    directory: &Path,
+    count: usize,
+) -> (
+    World,
+    Vec<Rc<BashExecutionComponent>>,
+    Vec<Rc<dyn Component>>,
+) {
+    let world = echoing_shell(directory);
+    let retained = on_tasks(async {
+        holding(&world, |_| async {
+            let (rows, errors) = driving(&world, async {
+                start_shells(&world, count).await;
+                world.mode.pending_shells.borrow().clone()
+            })
+            .await;
+            assert!(errors.is_empty(), "{errors:?}");
+            rows
+        })
+        .await
+    });
+    seed(
+        &world,
+        Queues {
+            steering: vec!["s".into()],
+            follow_up: vec!["f".into()],
+            local: Vec::new(),
+        },
+    );
+    pending(&world.mode, 80);
+    let neighbours = world
+        .mode
+        .pending_messages_container
+        .children()
+        .borrow()
+        .clone();
+    assert_eq!(retained.len(), count, "the response produced the rows");
+    (world, retained, neighbours)
+}
+
+/// Ends the response, delivers an ordinary submission and checks where every row went.
+fn movement_case(directory: &Path, count: usize) {
+    let (world, retained, neighbours) = produce_pending(directory, count);
+    let mut waiter = super::typed::waiting(&world.mode);
+    assert_eq!(
+        world.mode.pending_shells.borrow().len(),
+        count,
+        "ending the response keeps the rows pending"
+    );
+    assert!(
+        transcript_positions(&world, &retained).is_empty(),
+        "ending the response moves nothing"
+    );
+    let (text, pending) = deliver(&world, &mut waiter).expect("the ordinary input arrives");
+    assert_eq!(text, "ordinary");
+    assert_eq!(pending, 0, "the rows moved before the input arrived");
+    let positions = transcript_positions(&world, &retained);
+    assert_eq!(positions.len(), count, "every row moved once");
+    assert!(
+        positions.windows(2).all(|pair| pair[1] == pair[0] + 1),
+        "the rows keep their insertion order: {positions:?}"
+    );
+    let kept = world.mode.pending_messages_container.children();
+    let kept = kept.borrow().clone();
+    assert_eq!(
+        kept.len(),
+        neighbours.len() - count,
+        "the text rows stay behind"
+    );
+    for (kept, neighbour) in kept.iter().zip(neighbours.iter().skip(count)) {
+        assert!(
+            Rc::ptr_eq(kept, neighbour),
+            "the text rows keep their identity and order"
+        );
+    }
+    let transcript = world.mode.chat_container.children().borrow().len();
+    world.mode.flush_pending_bash_components();
+    assert_eq!(
+        world.mode.chat_container.children().borrow().len(),
+        transcript,
+        "a second flush moves nothing"
+    );
+    assert!(recalled(&world.mode.editor).contains(&"ordinary".to_owned()));
+}
+
+#[test]
+fn pending_shell_rows_move_once_in_insertion_order_before_input() {
+    isolated(
+        "pending_shell_rows_move_once_in_insertion_order_before_input",
+        |directory| {
+            for count in [0, 1, 3] {
+                movement_case(directory, count);
+            }
+        },
+    );
+}
+
+/// What a submission did with its text.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Route {
+    /// A shell command ran, its output included or excluded from the context.
+    Shell(bool),
+    /// A registered extension command ran.
+    Command,
+    /// The text was kept until the compaction ends.
+    Compacted,
+    /// The text went to the session as a steering message.
+    Steered,
+    /// The text reached the waiting input.
+    Delivered,
+}
+
+/// The session states a submission starts in.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Producer {
+    /// No response streams and the session does not compact.
+    Idle,
+    /// A held response streams.
+    Streaming,
+    /// The session compacts.
+    Compacting,
+}
+
+impl Producer {
+    /// The route this state gives `text`, given the shell exclusion it selects: a
+    /// registered command runs through a prompt in both busy states.
+    fn route(self, text: &str, exclusion: Option<bool>) -> Route {
+        match (self, exclusion) {
+            (_, Some(exclude)) => Route::Shell(exclude),
+            (Self::Compacting | Self::Streaming, None) if text.starts_with('/') => Route::Command,
+            (Self::Compacting, None) => Route::Compacted,
+            (Self::Streaming, None) => Route::Steered,
+            (Self::Idle, None) => Route::Delivered,
+        }
+    }
+}
+
+/// The texts an ordinary submission offers, with the shell exclusion each selects.
+const TEXTS: [(&str, Option<bool>); 6] = [
+    ("!echo accepted", Some(false)),
+    ("!!echo excluded", Some(true)),
+    ("!", None),
+    ("!!", None),
+    ("ordinary", None),
+    ("/cmd", None),
+];
+
+/// The waiting input a case observes.
+type Waiting = Pin<Box<dyn Future<Output = String>>>;
+
+/// Awaits the work `route`'s submission admitted: each piece completes only once its part
+/// reached the session, and text that changes no queue admits nothing.
+async fn settle(world: &World, route: Route) {
+    if matches!(route, Route::Compacted | Route::Delivered) {
+        return;
+    }
+    loop {
+        let admitted = world.runtime.take_futures();
+        if admitted.is_empty() {
+            return;
+        }
+        for piece in admitted {
+            if let Err(error) = piece.await {
+                panic!("the submission fails: {error}");
+            }
+        }
+    }
+}
+
+/// What one admission case expects to find.
+struct Expected {
+    /// The route the submission takes.
+    route: Route,
+    /// The submitted text.
+    text: &'static str,
+    /// The transcript and pending child counts before the submission.
+    baseline: (usize, usize),
+}
+
+/// What a submission left behind, read once so each route checks its own part.
+struct Observation {
+    /// The route entries the extension recorded.
+    routes: Vec<serde_json::Value>,
+    /// Whether the waiting input received the text.
+    arrived: bool,
+    /// Messages kept until the compaction ends.
+    kept: usize,
+    /// Session steering messages.
+    steering: Vec<String>,
+    /// New transcript children.
+    chat: usize,
+    /// New pending-area children.
+    pending: usize,
+    /// Retained pending shell rows.
+    shells: usize,
+    /// The editor history.
+    history: Vec<String>,
+}
+
+impl Observation {
+    /// Reads what `world` holds after a submission.
+    fn of(world: &World, heard: &Heard, waiter: &mut Waiting, baseline: (usize, usize)) -> Self {
+        let routes = heard
+            .borrow()
+            .iter()
+            .filter(|entry| matches!(entry[0].as_str(), Some("execute" | "input" | "command")))
+            .cloned()
+            .collect();
+        let session = world.mode.runtime_host.session();
+        Self {
+            routes,
+            arrived: poll(waiter).is_some(),
+            kept: world.mode.compaction_queued_messages.borrow().len(),
+            steering: session.get_steering_messages(),
+            chat: world.mode.chat_container.children().borrow().len() - baseline.0,
+            pending: world
+                .mode
+                .pending_messages_container
+                .children()
+                .borrow()
+                .len()
+                - baseline.1,
+            shells: world.mode.pending_shells.borrow().len(),
+            history: recalled(&world.mode.editor),
+        }
+    }
+
+    /// Checks that `expected` is the only route entry the extension recorded.
+    fn only(&self, expected: serde_json::Value, route: &str) {
+        assert_eq!(self.routes, vec![expected], "{route}");
+    }
+
+    /// Checks the single history entry a submission records.
+    fn one_history(&self, text: &str, route: &str) {
+        assert_eq!(
+            self.history,
+            vec![text.to_owned()],
+            "one history entry for {text:?} through {route}"
+        );
+    }
+
+    /// Checks a shell command's route, placement and history entry.
+    fn shell(&self, text: &str, exclusion: bool) {
+        let command = text.trim_start_matches('!');
+        self.only(json!(["execute", command, exclusion]), "shell");
+        assert_eq!(self.kept, 0, "a shell command keeps no message");
+        assert!(self.steering.is_empty(), "a shell command steers nothing");
+        assert_eq!(self.chat + self.pending, 1, "one retained shell row");
+        assert_eq!(
+            self.shells, self.pending,
+            "the pending rows are the retained ones"
+        );
+        self.one_history(text, "shell");
+    }
+
+    /// Checks a steering message's route, queue and history entry.
+    fn steered(&self, text: &str) {
+        self.only(json!(["input", text]), "steer");
+        assert_eq!(
+            self.steering,
+            vec![text.to_owned()],
+            "the message {text:?} is queued"
+        );
+        assert_eq!(self.kept, 0, "a steering message is kept in the session");
+        assert_eq!(self.shells, 0, "no shell row after {text:?}");
+        self.one_history(text, "steer");
+    }
+
+    /// Checks a message kept until the compaction ends.
+    fn compacted(&self, text: &str) {
+        assert!(self.routes.is_empty(), "{:?}", self.routes);
+        assert_eq!(self.kept, 1, "one message waits for the compaction");
+        assert!(self.steering.is_empty());
+        assert_eq!(self.shells, 0, "no shell row after {text:?}");
+        self.one_history(text, "compaction");
+    }
+
+    /// Checks a registered command's route and history entry.
+    fn commanded(&self, text: &str) {
+        self.only(json!(["command", ""]), "command");
+        assert_eq!(self.kept, 0);
+        assert!(self.steering.is_empty());
+        assert_eq!(self.shells, 0, "no shell row after {text:?}");
+        self.one_history(text, "command");
+    }
+
+    /// Checks a text that reached the waiting input and changed no queue.
+    fn plain(&self, text: &str) {
+        assert!(self.routes.is_empty(), "{:?}", self.routes);
+        assert_eq!(self.kept, 0);
+        assert!(self.steering.is_empty());
+        assert_eq!(self.shells, 0, "no shell row after {text:?}");
+        self.one_history(text, "input");
+    }
+}
+
+/// Checks what `expected.route` left.
+fn assert_route(world: &World, heard: &Heard, waiter: &mut Waiting, expected: &Expected) {
+    let observed = Observation::of(world, heard, waiter, expected.baseline);
+    let route = expected.route;
+    assert_eq!(observed.arrived, route == Route::Delivered, "{route:?}");
+    match route {
+        Route::Shell(exclusion) => observed.shell(expected.text, exclusion),
+        Route::Steered => observed.steered(expected.text),
+        Route::Compacted => observed.compacted(expected.text),
+        Route::Command => observed.commanded(expected.text),
+        Route::Delivered => observed.plain(expected.text),
+    }
+}
+
+/// The retained transcript and pending child counts at the observed admission state.
+fn child_counts(world: &World) -> (usize, usize) {
+    (
+        world.mode.chat_container.children().borrow().len(),
+        world
+            .mode
+            .pending_messages_container
+            .children()
+            .borrow()
+            .len(),
+    )
+}
+
+/// Submits `text` in `producer`'s state and checks the route it took.
+fn admission_case(
+    directory: &Path,
+    producer: Producer,
+    (text, exclusion): (&'static str, Option<bool>),
+) {
+    let (world, heard) = controlled(directory, false);
+    let mut waiter: Waiting = super::typed::waiting(&world.mode);
+    let baseline = child_counts(&world);
+    let submitted = text.to_owned();
+    let press = move |mode: &Rc<InteractiveMode>| {
+        mode.editor.on_submit().unwrap()(&submitted);
+    };
+    let route = producer.route(text, exclusion);
+    let expected = Expected {
+        route,
+        text,
+        baseline,
+    };
+    // A streaming response consumes what it steered when it ends, so its route is checked
+    // while the response still holds the session.
+    let errors = match producer {
+        Producer::Streaming => on_tasks(async {
+            holding(&world, |_| async {
+                let expected = Expected {
+                    baseline: child_counts(&world),
+                    ..expected
+                };
+                let ((), errors) = driving(&world, async {
+                    heard.borrow_mut().clear();
+                    press(&world.mode);
+                    settle(&world, route).await;
+                })
+                .await;
+                assert_route(&world, &heard, &mut waiter, &expected);
+                errors
+            })
+            .await
+        }),
+        Producer::Compacting => {
+            heard.borrow_mut().clear();
+            during_compaction(&world, press);
+            on_tasks(async {
+                let ((), errors) = driving(&world, async {
+                    settle(&world, route).await;
+                })
+                .await;
+                errors
+            })
+        }
+        Producer::Idle => on_tasks(async {
+            let ((), errors) = driving(&world, async {
+                heard.borrow_mut().clear();
+                press(&world.mode);
+                settle(&world, route).await;
+            })
+            .await;
+            errors
+        }),
+    };
+    assert!(errors.is_empty(), "{errors:?}");
+    if producer != Producer::Streaming {
+        assert_route(&world, &heard, &mut waiter, &expected);
+    }
+}
+
+#[test]
+fn shell_dispatch_precedes_streaming_and_compaction_admission() {
+    isolated(
+        "shell_dispatch_precedes_streaming_and_compaction_admission",
+        |directory| {
+            for producer in [Producer::Idle, Producer::Streaming, Producer::Compacting] {
+                for text in TEXTS {
+                    admission_case(directory, producer, text);
+                }
+            }
         },
     );
 }
