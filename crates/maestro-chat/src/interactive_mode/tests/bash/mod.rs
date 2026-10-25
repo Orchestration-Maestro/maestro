@@ -2,11 +2,10 @@
 mod lifecycle;
 
 use super::super::bash::component_address;
-use super::commands::until_shown;
 use super::typed::{recalled, submit};
 use super::{
-    Setup, ShellOperations, World, active, driving, echoing_shell, holding, isolated, scripted,
-    start_shells, started, transcript_positions, until_complete, until_exists,
+    Setup, ShellOperations, World, active, admitted, driving, echoing_shell, holding, isolated,
+    scripted, start_shells, started, transcript_positions, until_complete, until_exists,
 };
 use crate::BashExecutionComponent;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
@@ -972,7 +971,9 @@ fn shell_completion_from_replaced_session_is_retired() {
                     until_exists(&directory.join("second-started")).await;
                     let second_session = world.host.session();
                     submit(&world.mode, "/new");
-                    until_shown(&world, "New session started").await;
+                    assert!(admitted(&world.runtime).await.is_empty());
+                    let rows = transcript(&world).join("\n");
+                    assert!(rows.contains("New session started"), "{rows}");
                     std::fs::write(directory.join("second-release"), "").unwrap();
                     until_idle(&second_session).await;
                     assert!(active(&world).is_none());

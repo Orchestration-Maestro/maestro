@@ -1302,6 +1302,19 @@ pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
     mode.editor.on_submit().unwrap()(text);
 }
 
+/// Awaits the work the mode handed `runtime` since it was last taken, returning the failures
+/// that work reported.
+///
+/// Called right after the input that admits the work, it awaits that work even beside a
+/// [`driving`] task, which runs the work it hands over in turn.
+pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+    let mut errors = Vec::new();
+    for work in runtime.take_futures() {
+        errors.extend(work.await.err());
+    }
+    errors
+}
+
 /// Waits until `path` exists, yielding so the work that creates it runs.
 pub(super) async fn until_exists(path: &Path) {
     for _ in 0..10_000 {

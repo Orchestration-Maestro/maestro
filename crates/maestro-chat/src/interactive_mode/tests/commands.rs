@@ -1,19 +1,20 @@
 //! Session commands typed in the editor or bound to its keys: a new session and a manual
 //! compaction, through the real runtime, session and progress subscriber.
 
+use super::super::bash::component_address;
 use super::typed::{poll, recalled, waiting};
 use super::{
-    Setup, World, cases, isolated, isolated_case, isolated_output, painted, scripted, submit,
-    with_held_response,
+    ManualRuntime, Setup, World, admitted, cases, isolated, isolated_case, isolated_output,
+    painted, scripted, submit, with_held_response,
 };
-use crate::{BashExecutionComponent, InteractiveMode};
+use crate::InteractiveMode;
 use maestro_app::{
     AgentSession, AgentSessionEvent, CompactionResult, CreateAgentSessionRuntimeFactory,
     DiagnosticErrorInfo, ExtensionFactory, Local, Presence, ReadonlySessionManager,
     SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeSwitchEvent,
     SessionBeforeSwitchResult, SessionManager, SettingsManager, strip_ansi,
 };
-use maestro_tui::{Component, KeybindingKeys, tui::LocalFuture};
+use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -156,17 +157,6 @@ async fn settled(world: &World) -> Vec<Box<dyn Error>> {
     errors
 }
 
-/// Yields until the transcript shows `text`.
-pub(super) async fn until_shown(world: &World, text: &str) {
-    for _ in 0..10_000 {
-        if shown(&world.mode.chat_container.render(80), text) {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("the transcript shows {text:?}");
-}
-
 /// Whether any of `rows` contains `text` once styling is removed.
 fn shown(rows: &[String], text: &str) -> bool {
     rows.iter()
@@ -176,10 +166,7 @@ fn shown(rows: &[String], text: &str) -> bool {
 /// The addresses of the retained pending shell rows, in order.
 fn pending_shells(world: &World) -> Vec<usize> {
     let pending = world.mode.pending_shells.borrow();
-    pending
-        .iter()
-        .map(|row| std::ptr::from_ref::<BashExecutionComponent>(row.as_ref()) as usize)
-        .collect()
+    pending.iter().map(component_address).collect()
 }
 
 /// Gives the transcript an old row and the compaction queue an old message.
@@ -501,6 +488,37 @@ fn new_session_action_uses_live_bindings() {
     });
 }
 
+#[test]
+fn new_session_shows_later_responses_and_compaction() {
+    const TEST: &str = "new_session_shows_later_responses_and_compaction";
+    isolated(TEST, async |directory| {
+        let guard = Guard::default();
+        let world = commanding(directory, None, &guard, None).await;
+        submit(&world.mode, "/new");
+        assert!(settled(&world).await.is_empty());
+        let session = world.host.session();
+        session
+            .settings_manager()
+            .borrow_mut()
+            .set_compaction_enabled(false);
+        let reply = json!([{"type": "text", "text": "fresh answer"}]);
+        super::events::prompted(&world, move |_, stream| {
+            stream.end(Some(super::events::shared(&reply, "stop", None)));
+        })
+        .await;
+        let rows = world.mode.chat_container.render(80);
+        assert!(shown(&rows, "fresh answer"), "the response shows: {rows:?}");
+        submit(&world.mode, "/compact");
+        assert!(settled(&world).await.is_empty());
+        let rows = world.mode.chat_container.render(80);
+        let failed = "Error: Compaction failed: No API provider registered for api: unknown";
+        assert!(
+            shown(&rows, failed),
+            "the compaction ends in view: {rows:?}"
+        );
+    });
+}
+
 /// Shows `rows` as pending shell rows while a response streams, then resets through a new
 /// session that `veto` decides, and checks that only a kept session keeps them.
 async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
@@ -572,9 +590,8 @@ fn command_callbacks_release_mode_after_completion() {
         let editor = Rc::clone(&mode.editor);
         let on_submit = editor.on_submit().unwrap();
         on_submit("/new");
-        let admitted = runtime.take_futures();
-        assert_eq!(admitted.len(), 1);
-        let weak = settle_dropped(mode, admitted).await;
+        assert_eq!(runtime.futures(), 1);
+        let weak = settle_dropped(mode, &runtime).await;
         assert!(weak.upgrade().is_none(), "settled work releases the mode");
         on_submit("/new");
         maestro_tui::tui::InputHandler::handle_input(editor.as_ref(), "\x1bn");
@@ -595,27 +612,25 @@ fn command_callbacks_release_mode_after_completion() {
         let world = commanding(directory, None, &third, None).await;
         compactable(&world);
         submit(&world.mode, "/compact keep");
-        let admitted = world.runtime.take_futures();
         let World { mode, runtime, .. } = world;
-        let weak = settle_dropped(mode, admitted).await;
+        let weak = settle_dropped(mode, &runtime).await;
         drop(runtime.drain_futures());
         assert_eq!(*third.instructions.borrow(), [Some("keep".to_owned())]);
         assert!(weak.upgrade().is_none(), "settled work releases the mode");
     });
 }
 
-/// Drops `mode`, checks that its `admitted` work still keeps it, then awaits that work and
-/// returns the mode's weak handle.
+/// Drops `mode`, checks that the work it handed `runtime` still keeps it, then awaits that
+/// work and returns the mode's weak handle.
 async fn settle_dropped(
     mode: Rc<InteractiveMode>,
-    admitted: Vec<LocalFuture>,
+    runtime: &ManualRuntime,
 ) -> Weak<InteractiveMode> {
     let weak = Rc::downgrade(&mode);
     drop(mode);
     assert!(weak.upgrade().is_some(), "admitted work keeps the mode");
-    for work in admitted {
-        work.await.unwrap();
-    }
+    let errors = admitted(runtime).await;
+    assert!(errors.is_empty(), "{errors:?}");
     weak
 }
 
