@@ -3,7 +3,7 @@ use super::super::extension_widgets::with_factories;
 use super::super::isolated;
 use super::port;
 use maestro_app::{ExtensionAPI, Local, TerminalInputHandler};
-use maestro_tui::tui::InputListenerResult;
+use maestro_tui::tui::{InputListener, InputListenerResult};
 use std::{cell::Cell, rc::Rc};
 
 #[test]
@@ -96,11 +96,7 @@ fn terminal_input_failure_reports_once_without_forwarding_the_chunk() {
                 .on_terminal_input(handlers.pop().unwrap())
                 .unwrap();
             let later = Rc::new(Cell::new(0));
-            let calls = later.clone();
-            let unrelated = world.mode.ui.add_input_listener(Rc::new(move |_| {
-                calls.set(calls.get() + 1);
-                InputListenerResult::Pass
-            }));
+            let unrelated = world.mode.ui.add_input_listener(observing(later.clone()));
             world.terminal.send_input("refused");
             assert_eq!(later.get(), 0);
             assert_eq!(world.mode.editor.get_text(), "");
@@ -141,11 +137,10 @@ fn terminal_input_cleanup_removes_every_remaining_subscription() {
             let first = host.on_terminal_input(handlers.pop().unwrap()).unwrap();
             let second = host.on_terminal_input(handlers.pop().unwrap()).unwrap();
             let unrelated_calls = Rc::new(Cell::new(0));
-            let seen = unrelated_calls.clone();
-            let unrelated = world.mode.ui.add_input_listener(Rc::new(move |_| {
-                seen.set(seen.get() + 1);
-                InputListenerResult::Pass
-            }));
+            let unrelated = world
+                .mode
+                .ui
+                .add_input_listener(observing(unrelated_calls.clone()));
             first().unwrap();
             first().unwrap();
             world.terminal.send_input("a");
@@ -176,11 +171,7 @@ fn terminal_input_cleanup_has_linear_work() {
             }
             assert!(weak.upgrade().is_some());
             let calls = Rc::new(Cell::new(0));
-            let seen = calls.clone();
-            let unrelated = world.mode.ui.add_input_listener(Rc::new(move |_| {
-                seen.set(seen.get() + 1);
-                InputListenerResult::Pass
-            }));
+            let unrelated = world.mode.ui.add_input_listener(observing(calls.clone()));
             world.mode.extension_input.clear();
             assert!(
                 weak.upgrade().is_none(),
@@ -196,10 +187,8 @@ fn terminal_input_cleanup_has_linear_work() {
 
 /// A bound callback that counts the chunks reaching it.
 fn counting(api: &ExtensionAPI<Local>, calls: Rc<Cell<usize>>) -> TerminalInputHandler {
-    api.ui_callback(move |_, _| {
-        calls.set(calls.get() + 1);
-        Ok(InputListenerResult::Pass)
-    })
+    let listener = observing(calls);
+    api.ui_callback(move |data: String, _| Ok(listener(&data)))
 }
 
 /// A bound callback returning the selected input decision.
@@ -232,11 +221,7 @@ fn terminal_input_mode_drop_removes_only_extension_listeners() {
             let ui = world.mode.ui.clone();
             let mode = Rc::downgrade(&world.mode);
             let seen = Rc::new(Cell::new(0));
-            let output = seen.clone();
-            let unrelated = ui.add_input_listener(Rc::new(move |_| {
-                output.set(output.get() + 1);
-                InputListenerResult::Pass
-            }));
+            let unrelated = ui.add_input_listener(observing(seen.clone()));
             drop(world);
             assert!(mode.upgrade().is_none());
             assert!(weak_capture.upgrade().is_none());
@@ -245,4 +230,12 @@ fn terminal_input_mode_drop_removes_only_extension_listeners() {
             unrelated();
         },
     );
+}
+
+/// An ordinary toolkit listener that counts chunks without changing them.
+fn observing(calls: Rc<Cell<usize>>) -> InputListener {
+    Rc::new(move |_| {
+        calls.set(calls.get() + 1);
+        InputListenerResult::Pass
+    })
 }
