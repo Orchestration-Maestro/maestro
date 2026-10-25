@@ -748,7 +748,7 @@ pub(super) fn replay(world: &World, messages: Vec<Value>) {
 }
 
 /// Appends `messages` to the session of `world`, returning their entry ids.
-fn append(world: &World, messages: Vec<Value>) -> Vec<String> {
+pub(super) fn append(world: &World, messages: Vec<Value>) -> Vec<String> {
     let session = world.host.session();
     let mut manager = session.session_manager().borrow_mut();
     messages
