@@ -163,12 +163,8 @@ impl InteractiveMode {
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
-        let editor = create_editor(
-            &ui,
-            themes.theme(),
-            (*keys).clone(),
-            session.settings_manager(),
-        );
+        let settings = session.settings_manager();
+        let editor = create_editor(&ui, themes.theme(), (*keys).clone(), settings);
         let editor_container = Rc::new(Container::new());
         editor_container.add_child(editor.clone());
         let footer_data_provider = FooterDataProvider::new(
@@ -178,7 +174,6 @@ impl InteractiveMode {
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
         footer.set_auto_compact_enabled(session.auto_compaction_enabled());
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let settings = session.settings_manager();
         let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
         Ok(Rc::new_cyclic(|this| Self {

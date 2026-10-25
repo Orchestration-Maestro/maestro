@@ -20,7 +20,7 @@ impl InteractiveMode {
     pub(super) fn show_logout_selector(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         let options = Rc::new(self.logout_provider_options()?);
         if options.is_empty() {
-            return self.show_status(NO_STORED_CREDENTIALS);
+            return self.show_status(NO_STORED_CREDENTIALS).map_err(Into::into);
         }
         let mode = Rc::downgrade(self);
         self.show_selector(|done| {
@@ -96,6 +96,7 @@ impl InteractiveMode {
         registry.refresh()?;
         self.update_available_provider_count()?;
         self.show_status(&logout_message(option))
+            .map_err(Into::into)
     }
 }
 
