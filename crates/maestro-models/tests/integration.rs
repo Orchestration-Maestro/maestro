@@ -187,6 +187,8 @@ mod response_session_surface;
 #[path = "support/response_support.rs"]
 mod response_support;
 mod response_tool_images;
+#[path = "support/root_routes.rs"]
+mod root_routes;
 mod routed_cache_write;
 #[path = "support/runtime.rs"]
 mod runtime;

@@ -1,0 +1,1385 @@
+{
+  "reasoning": [
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"nu\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"ll\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "nu",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "ll",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": null
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": null
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": null
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": null
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"fa\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"lse\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "fa",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": false
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "lse",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": false
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": false
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": false
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": false
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"tr\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"ue\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "tr",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": true
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "ue",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": true
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": true
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": true
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": true
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"0\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "0",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": 0
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": 0
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": 0
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": 0
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": 0
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"4\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"2\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "4",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": 4
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "2",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": 42
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": 42
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": 42
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": 42
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"-3\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\".5\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "-3",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": -3
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": ".5",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": -3.5
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": -3.5
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": -3.5
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": -3.5
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\\\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\\\"\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "\"",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": ""
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "\"",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": ""
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": ""
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": ""
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": ""
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\\\"te\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"xt\\\"\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "\"te",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": "te"
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "xt\"",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": "text"
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": "text"
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": "text"
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": "text"
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"[\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"]\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "[",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": []
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "]",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": []
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": []
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": []
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": []
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"[1\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\",1]\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "[1",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": [
+                  1
+                ]
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": ",1]",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": [
+                  1,
+                  1
+                ]
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": [
+                1,
+                1
+              ]
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": [
+                  1,
+                  1
+                ]
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": [
+              1,
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"{\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"}\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "{",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "}",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": {}
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": {}
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"{\\\"2\\\":2,\\\"10\\\":10,\\\"z\\\":\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"1,\\\"a\\\":[false,null]}\"}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "{\"2\":2,\"10\":10,\"z\":",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {
+                  "2": 2,
+                  "10": 10
+                }
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "1,\"a\":[false,null]}",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {
+                  "2": 2,
+                  "10": 10,
+                  "z": 1,
+                  "a": [
+                    false,
+                    null
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": {
+                "2": 2,
+                "10": 10,
+                "z": 1,
+                "a": [
+                  false,
+                  null
+                ]
+              }
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {
+                  "2": 2,
+                  "10": 10,
+                  "z": 1,
+                  "a": [
+                    false,
+                    null
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": {
+              "2": 2,
+              "10": 10,
+              "z": 1,
+              "a": [
+                false,
+                null
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "chunks": [
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":\"\"}}]}}]}\n\n",
+        "data: {\"id\":\"response\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"finish_reason\":null,\"delta\":{\"tool_calls\":[{\"id\":\"call12345\",\"index\":0,\"function\":{\"name\":\"inspect\",\"arguments\":{\"2\":2,\"10\":10,\"z\":1,\"a\":[false,null]}}}]}}]}\n\n"
+      ],
+      "expected": {
+        "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
+          {
+            "type": "toolcall_delta",
+            "contentIndex": 0,
+            "delta": "{\"2\":2,\"10\":10,\"z\":1,\"a\":[false,null]}",
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {
+                  "2": 2,
+                  "10": 10,
+                  "z": 1,
+                  "a": [
+                    false,
+                    null
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "type": "toolcall_end",
+            "contentIndex": 0,
+            "toolCall": {
+              "type": "toolCall",
+              "id": "call12345",
+              "name": "inspect",
+              "arguments": {
+                "2": 2,
+                "10": 10,
+                "z": 1,
+                "a": [
+                  false,
+                  null
+                ]
+              }
+            },
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345",
+                "name": "inspect",
+                "arguments": {
+                  "2": 2,
+                  "10": 10,
+                  "z": 1,
+                  "a": [
+                    false,
+                    null
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call12345",
+            "name": "inspect",
+            "arguments": {
+              "2": 2,
+              "10": 10,
+              "z": 1,
+              "a": [
+                false,
+                null
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "history": [
+    {
+      "input": null,
+      "expected": {
+        "chat": "null",
+        "responses": "null",
+        "message": {},
+        "content": {},
+        "cloud": null,
+        "reasoning": "{}"
+      }
+    },
+    {
+      "input": false,
+      "expected": {
+        "chat": "false",
+        "responses": "false",
+        "message": false,
+        "content": false,
+        "cloud": false,
+        "reasoning": "{}"
+      }
+    },
+    {
+      "input": true,
+      "expected": {
+        "chat": "true",
+        "responses": "true",
+        "message": true,
+        "content": true,
+        "cloud": true,
+        "reasoning": "true"
+      }
+    },
+    {
+      "input": 0,
+      "expected": {
+        "chat": "0",
+        "responses": "0",
+        "message": 0,
+        "content": 0,
+        "cloud": 0,
+        "reasoning": "{}"
+      }
+    },
+    {
+      "input": 42,
+      "expected": {
+        "chat": "42",
+        "responses": "42",
+        "message": 42,
+        "content": 42,
+        "cloud": 42,
+        "reasoning": "42"
+      }
+    },
+    {
+      "input": -3.5,
+      "expected": {
+        "chat": "-3.5",
+        "responses": "-3.5",
+        "message": -3.5,
+        "content": -3.5,
+        "cloud": -3.5,
+        "reasoning": "-3.5"
+      }
+    },
+    {
+      "input": "",
+      "expected": {
+        "chat": "\"\"",
+        "responses": "\"\"",
+        "message": "",
+        "content": "",
+        "cloud": "",
+        "reasoning": "{}"
+      }
+    },
+    {
+      "input": "text",
+      "expected": {
+        "chat": "\"text\"",
+        "responses": "\"text\"",
+        "message": "text",
+        "content": "text",
+        "cloud": "text",
+        "reasoning": "\"text\""
+      }
+    },
+    {
+      "input": [],
+      "expected": {
+        "chat": "[]",
+        "responses": "[]",
+        "message": [],
+        "content": [],
+        "cloud": [],
+        "reasoning": "[]"
+      }
+    },
+    {
+      "input": [
+        1,
+        1
+      ],
+      "expected": {
+        "chat": "[1,1]",
+        "responses": "[1,1]",
+        "message": [
+          1,
+          1
+        ],
+        "content": [
+          1,
+          1
+        ],
+        "cloud": [
+          1,
+          1
+        ],
+        "reasoning": "[1,1]"
+      }
+    },
+    {
+      "input": {},
+      "expected": {
+        "chat": "{}",
+        "responses": "{}",
+        "message": {},
+        "content": {},
+        "cloud": {},
+        "reasoning": "{}"
+      }
+    },
+    {
+      "input_json": "{\"z\":1,\"10\":10,\"2\":2,\"a\":[false,null]}",
+      "expected": {
+        "chat": "{\"2\":2,\"10\":10,\"z\":1,\"a\":[false,null]}",
+        "responses": "{\"2\":2,\"10\":10,\"z\":1,\"a\":[false,null]}",
+        "message": {
+          "2": 2,
+          "10": 10,
+          "z": 1,
+          "a": [
+            false,
+            null
+          ]
+        },
+        "content": {
+          "2": 2,
+          "10": 10,
+          "z": 1,
+          "a": [
+            false,
+            null
+          ]
+        },
+        "cloud": {
+          "2": 2,
+          "10": 10,
+          "z": 1,
+          "a": [
+            false,
+            null
+          ]
+        },
+        "reasoning": "{\"2\":2,\"10\":10,\"z\":1,\"a\":[false,null]}"
+      }
+    }
+  ]
+}

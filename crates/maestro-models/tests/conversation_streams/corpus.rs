@@ -133,3 +133,82 @@ pub async fn rows(test: &str) -> TestResult {
     }
     Ok(())
 }
+
+/// Observe each encoded fragment while the producer waits for the next body read.
+pub async fn recorded_roots() -> TestResult {
+    for row in crate::root_routes::recorded()?.reasoning {
+        recorded_root(row).await?;
+    }
+    Ok(())
+}
+
+/// Drive one root through creation, gated deltas and completion.
+async fn recorded_root(row: crate::root_routes::Reasoning) -> TestResult {
+    let (mut feed, body) = crate::messages::feed();
+    let stream = invoke(super::lifecycle::body_fetch(body))?;
+    feed.read_pending().await?;
+    let mut identity = None;
+    let mut observations = read_fragments(&stream, &mut feed, &row.chunks, &mut identity).await?;
+    drop(feed.chunks);
+    feed.released.await?;
+    observations.push(tool_observation(&stream, &mut identity).await?);
+    let final_message = stream.result().await;
+    assert!(Arc::ptr_eq(identity.as_ref().unwrap(), &final_message));
+    assert!(matches!(
+        stream.next().await,
+        Some(maestro_models::AssistantMessageEvent::Done { .. })
+    ));
+    assert!(stream.next().await.is_none());
+    assert_eq!(observations, row.expected.events);
+    let final_value = serde_json::to_value(&*final_message.read().unwrap())?;
+    assert_eq!(final_value["content"], row.expected.content);
+    key_order(
+        &final_value["content"],
+        &row.expected.content,
+        "root routes",
+    );
+    Ok(())
+}
+
+/// Finish each supplied fragment before admitting its successor.
+async fn read_fragments(
+    stream: &AssistantMessageEventStream,
+    feed: &mut crate::messages::Feed,
+    chunks: &[String],
+    identity: &mut Option<maestro_models::SharedAssistantMessage>,
+) -> TestResult<Vec<Value>> {
+    let mut observations = Vec::new();
+    for (index, chunk) in chunks.iter().enumerate() {
+        feed.chunks.send(chunk.as_bytes().to_vec())?;
+        feed.read_pending().await?;
+        for _ in 0..=usize::from(index == 0) {
+            observations.push(tool_observation(stream, identity).await?);
+        }
+    }
+    Ok(observations)
+}
+
+/// Project the actual tool event and its live retained content at the gated phase.
+async fn tool_observation(
+    stream: &AssistantMessageEventStream,
+    identity: &mut Option<maestro_models::SharedAssistantMessage>,
+) -> TestResult<Value> {
+    let event = loop {
+        let event = stream.next().await.ok_or("missing tool event")?;
+        if !matches!(event, maestro_models::AssistantMessageEvent::Start { .. }) {
+            break event;
+        }
+    };
+    let partial = crate::response_output::handle(&event);
+    if let Some(first) = identity {
+        assert!(Arc::ptr_eq(first, partial));
+    } else {
+        *identity = Some(Arc::clone(partial));
+    }
+    let content = serde_json::to_value(&partial.read().unwrap().content)?;
+    let mut value = serde_json::to_value(&event)?;
+    let object = value.as_object_mut().ok_or("event object")?;
+    object.shift_remove("partial");
+    object.insert("contentState".into(), content);
+    Ok(value)
+}

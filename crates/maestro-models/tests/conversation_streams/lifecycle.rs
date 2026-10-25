@@ -43,7 +43,7 @@ fn context() -> TestResult<maestro_models::Context> {
     chat::context(&json!({"messages":[]}))
 }
 /// One-use controlled body transported outside its collection lock.
-fn body_fetch(body: HttpBody) -> Fetch {
+pub(super) fn body_fetch(body: HttpBody) -> Fetch {
     let slot = Arc::new(Mutex::new(Some(body)));
     Arc::new(move |_| {
         let body = slot.lock().unwrap().take().unwrap();
