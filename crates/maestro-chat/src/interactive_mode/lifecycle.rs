@@ -4,8 +4,9 @@ use super::InteractiveMode;
 use std::io;
 
 impl InteractiveMode {
-    /// Clears configured terminal progress, releases the loader, footer and session
-    /// subscription, then stops the initialized UI. The shared theme watcher stays live.
+    /// Clears configured terminal progress, releases the loader and extension input,
+    /// disposes the footer and session subscription, then stops the initialized UI.
+    /// The shared theme watcher and unrelated terminal input listeners stay live.
     ///
     /// # Errors
     /// Returns the original progress-clearing or UI-stop error. Failed UI stop leaves
@@ -13,6 +14,7 @@ impl InteractiveMode {
     pub fn stop(&self) -> io::Result<()> {
         self.set_terminal_progress(false)?;
         self.release_working_loader();
+        self.extension_input.clear();
         self.footer.dispose();
         self.footer_data_provider.dispose();
         if let Some(unsubscribe) = self.unsubscribe.take() {

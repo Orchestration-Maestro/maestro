@@ -202,7 +202,11 @@ terminal runtime; later listeners and the editor do not receive that chunk.
 
 The mode tracks only extension registrations for cleanup, leaving unrelated
 terminal listeners intact. Cleanup is repeatable, and retained removers remain
-safe to call afterwards. Releasing the mode also clears its registrations.
+safe to call afterwards. `stop` clears these registrations after releasing the
+working loader and before disposing the footer or stopping the UI. A terminal
+progress failure leaves them active; a UI-stop failure does not restore them.
+Reinitializing the mode does not restore cleared callbacks. Releasing the mode
+also clears its registrations.
 
 ## Failures
 

@@ -57,14 +57,17 @@ Header text keeps the colours of the theme in effect when it was built.
 ## Stopping the presentation
 
 `stop` clears terminal progress when enabled, stops and releases the working
-loader, disposes the footer and its repository watch, removes the session
-subscription, and stops the UI if initialized. The status container keeps its
+loader, clears extension terminal input listeners, disposes the footer and its
+repository watch, removes the session subscription, and stops the UI if initialized.
+Unrelated terminal listeners stay registered. The status container keeps its
 rows. A later session event no longer restarts this presentation, and the shared
 theme watch stays active.
 
-A progress-clearing failure prevents the remaining cleanup. A UI-stop failure
-leaves the mode initialized; only a successful UI stop clears that flag. The
-original I/O error is returned. Repeating a successful stop does not stop the
+A progress-clearing failure prevents the remaining cleanup, leaving extension
+input listeners active. A UI-stop failure leaves them cleared and the mode
+initialized; only a successful UI stop clears that flag. Reinitialization does
+not restore cleared extension callbacks. The original I/O error is returned.
+Repeating a successful stop does not stop the
 absent loader or UI again. This operation does not dispose the application
 runtime, terminate the process or kill detached children. Signal handling and
 key-triggered shutdown are not connected yet.
