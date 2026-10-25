@@ -14,9 +14,26 @@ pub fn register(
     config: &str,
     captured: Rc<RefCell<Option<ExtensionCommandContext>>>,
 ) -> ExtensionResult<()> {
-    let config: Value = serde_json::from_str(config).map_err(|e| e.to_string())?;
-    let mut metadata: ToolMetadata =
+    let config: Value = super::nested_schema_fixture::value(config)?;
+    let metadata: ToolMetadata =
         serde_json::from_value(config["metadata"].clone()).map_err(|e| e.to_string())?;
+    let metadata = configure_schema(api, &config, metadata)?;
+    let kept: Rc<RefCell<Kept>> = Rc::default();
+    let prepare_arguments = preparation(api, config.clone(), Rc::clone(&kept));
+    let execute = execution(api, config, captured, kept);
+    api.register_tool(ToolDefinition {
+        metadata,
+        prepare_arguments,
+        execute,
+    })
+}
+
+/// Assemble the authored schema using the existing declaration and executable-node owners.
+fn configure_schema(
+    api: &ExtensionAPI,
+    config: &Value,
+    mut metadata: ToolMetadata,
+) -> ExtensionResult<ToolMetadata> {
     if let Some(kinds) = config["metadata"].get("schemaKinds") {
         let kinds: std::collections::HashMap<String, maestro_extensions_wasm::SchemaKind> =
             serde_json::from_value(kinds.clone()).map_err(|e| e.to_string())?;
@@ -26,19 +43,44 @@ pub fn register(
         );
     }
     if let Some(id) = config["corpusCase"].as_str() {
-        metadata.parameters = super::nested_schema_fixture::parameters(id)?;
+        metadata.parameters = super::nested_schema_fixture::parameters(id)?
+            .with_code(std::collections::HashMap::default());
     }
     if config["relay"] == true {
         metadata.parameters = api.get_all_tools()?.remove(0).parameters;
     }
-    let kept: Rc<RefCell<Kept>> = Rc::default();
-    let prepare_arguments = preparation(api, config.clone(), Rc::clone(&kept));
-    let execute = execution(api, config, captured, kept);
-    api.register_tool(ToolDefinition {
-        metadata,
-        prepare_arguments,
-        execute,
-    })
+    if config["schemaCode"] == true {
+        let code = super::schema_author::object_nodes(&metadata.parameters);
+        metadata.parameters = metadata.parameters.with_code(code);
+    }
+    if let Some(program) = config["schemaProgram"].as_str() {
+        let node = if program == "defaults" {
+            maestro_extensions_wasm::schema_code::SchemaNode {
+                base: Some(maestro_extensions_wasm::schema_code::Base::default()),
+                refinements: Vec::new(),
+            }
+        } else if program == "emitting" {
+            super::schema_author::emitting_node(api)?
+        } else if program == "operand" {
+            super::schema_author::operand_node()
+        } else {
+            let error = config
+                .get("schemaFailure")
+                .cloned()
+                .map(serde_json::from_value)
+                .transpose()
+                .map_err(|error| error.to_string())?;
+            super::schema_author::node(
+                api,
+                error.as_ref(),
+                config["schemaPhase"].as_str().unwrap_or(""),
+            )
+        };
+        metadata.parameters = metadata
+            .parameters
+            .with_code(std::collections::HashMap::from([(String::new(), node)]));
+    }
+    Ok(metadata)
 }
 
 /// Synchronous authored preparation with optional retained-resource controls.

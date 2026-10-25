@@ -144,7 +144,7 @@ mod tests {
             let listed =
                 super::decode_tools(&text).unwrap_or_else(|error| panic!("depth {depth}: {error}"));
             assert_eq!(listed.len(), 1);
-            assert_eq!(listed[0].parameters, parameters);
+            assert_eq!(listed[0].parameters.data(), parameters);
         }
     }
 }

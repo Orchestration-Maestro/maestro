@@ -251,3 +251,21 @@ async fn nested_relay(driver: &mut impl Driver) -> Result<(), String> {
 fn nested_declarations_register_and_relay_on_both_adapters() -> Result<(), String> {
     on_both_adapters!(nested_relay)
 }
+
+/// Every Base method survives the generated retention and enumeration route.
+#[test]
+fn guest_base_methods_keep_results_edits_and_errors() {
+    super::component_driver::schema_qualification::base_methods();
+}
+
+/// Stacked checks and their independent message factories retain every slot.
+#[test]
+fn guest_stacked_refinements_keep_each_check_and_error() {
+    super::component_driver::schema_qualification::stacked_refinements();
+}
+
+/// Borrowed JSON operands preserve all value kinds and cleanup on callback failures.
+#[test]
+fn guest_json_operands_cover_values_members_and_failure_cleanup() {
+    super::component_driver::schema_qualification::json_operands();
+}
