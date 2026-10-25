@@ -2,7 +2,7 @@
 #![cfg(test)]
 use maestro_extensions::types::{ExtensionHandle, FlagValue};
 use maestro_extensions::{
-    EventBus, EventBusController, ExtensionRunner, Local, MessageRenderOptions,
+    ErrorReporter, EventBus, EventBusController, ExtensionRunner, Local, MessageRenderOptions,
     create_event_bus_for,
 };
 use serde_json::{Value, json};
@@ -47,11 +47,14 @@ pub(super) struct Pair {
 impl Pair {
     /// Loads both instances; listener errors panic, continuations queue.
     pub(super) async fn new() -> Self {
+        Self::reporting(Rc::new(|error| panic!("{error}"))).await
+    }
+
+    /// Loads both instances with listener diagnostics sent to `report`.
+    pub(super) async fn reporting(report: ErrorReporter<Local>) -> Self {
         let (sender, tails) = mpsc::unbounded_channel();
-        let bus = create_event_bus_for::<Local>(
-            Rc::new(move |tail| sender.send(tail).unwrap()),
-            Rc::new(|error| panic!("{error}")),
-        );
+        let bus =
+            create_event_bus_for::<Local>(Rc::new(move |tail| sender.send(tail).unwrap()), report);
         let (trace, payloads) = (Trace::default(), Payloads::default());
         let a = Instance::labelled(bus.for_extension(), "a").await;
         let b = Instance::labelled(bus.for_extension(), "b").await;

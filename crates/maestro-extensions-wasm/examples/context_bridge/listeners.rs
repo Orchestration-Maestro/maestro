@@ -30,6 +30,16 @@ enum Op {
         /// Subscription to remove.
         id: String,
     },
+    /// Drops a stored subscription handle without removing the subscription.
+    Forget {
+        /// Subscription whose handle is dropped.
+        id: String,
+    },
+    /// Traces, waits for the native caller, then traces its own signal.
+    Root {
+        /// Name of this invocation in trace entries.
+        tag: String,
+    },
     /// Emits ordinarily, then reports that the emit returned.
     Emit {
         /// Literal channel.
@@ -92,6 +102,30 @@ struct Listen {
     /// Whether the prefix traces `<name>:end` after its edits.
     #[serde(default)]
     end: bool,
+    /// Whether the listener and its tail share a capture that flags its release.
+    #[serde(default)]
+    retain: bool,
+}
+
+/// A capture that registers `dropped-<id>` when its last owner releases it.
+struct Release {
+    /// Original API, including during the destructor.
+    api: ExtensionAPI,
+    /// Subscription key in the flag name.
+    id: String,
+}
+
+impl Drop for Release {
+    fn drop(&mut self) {
+        let _ = self.api.register_flag(
+            &format!("dropped-{}", self.id),
+            maestro_extensions_wasm::FlagOptions {
+                description: None,
+                type_: maestro_extensions_wasm::FlagType::Boolean,
+                default: Some(maestro_extensions_wasm::FlagValue::Boolean(true)),
+            },
+        );
+    }
 }
 
 /// What a listener prefix reports.
@@ -190,6 +224,13 @@ pub(super) async fn run(
                 trace(&api.events(), &api, "emitter:resumed").await?;
             }
             Op::Compact { options } => super::results::compact(&api, &context, &options).await?,
+            Op::Root { tag } => {
+                trace(&api.events(), &api, &format!("{tag}:start")).await?;
+                let signal = context.signal()?.ok_or("missing root signal")?;
+                context.wait_for_idle().await?;
+                let done = format!("{tag}:done:{}", signal.aborted());
+                trace(&api.events(), &api, &done).await?;
+            }
             op => step(&api, &programs, op).await?,
         }
     }
@@ -236,6 +277,12 @@ fn edit(api: &ExtensionAPI, programs: &Rc<Programs>, op: Op) -> ExtensionResult<
             programs.subscriptions.borrow_mut().insert(id, subscription);
             Ok(())
         }
+        Op::Forget { id } => {
+            let forgotten = programs.subscriptions.borrow_mut().remove(&id);
+            forgotten
+                .map(drop)
+                .ok_or_else(|| format!("unknown subscription {id}"))
+        }
         Op::Off { id } => {
             let subscription = programs.subscriptions.borrow().get(&id).cloned();
             subscription
@@ -253,6 +300,12 @@ fn listener(
     listen: Listen,
 ) -> maestro_extensions_wasm::EventListener {
     let (api, programs, pending) = (api.clone(), programs.clone(), Cell::new(true));
+    let release = listen.retain.then(|| {
+        Rc::new(Release {
+            api: api.clone(),
+            id: listen.id.clone(),
+        })
+    });
     Rc::new(move |data, emitter| {
         prefix(&api, &listen, data, &emitter)?;
         if pending.replace(false) {
@@ -267,7 +320,14 @@ fn listener(
                 json!(format!("{}:end", listen.name)),
             )?;
         }
-        Ok(continuation(&api, &programs, &listen))
+        let retained = release.clone();
+        Ok(continuation(&api, &programs, &listen).map(|tail| {
+            Box::pin(async move {
+                let result = tail.await;
+                drop(retained);
+                result
+            }) as ExtensionFuture<'static, ()>
+        }))
     })
 }
 
