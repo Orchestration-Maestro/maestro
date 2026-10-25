@@ -31,6 +31,8 @@ pub(super) struct State {
     pub(super) waker: RefCell<std::task::Waker>,
     /// Typed completion storage for active synchronous guest invocations.
     pub(super) synchronous: super::synchronous::Returns,
+    /// Set while answering a request its Store thread waits for, when it cannot enter the guest.
+    pub(super) store_blocked: std::cell::Cell<bool>,
 }
 
 impl Pump {
@@ -48,6 +50,7 @@ impl Pump {
             staging: RefCell::default(),
             waker: RefCell::new(std::task::Waker::noop().clone()),
             synchronous: super::synchronous::Returns::default(),
+            store_blocked: std::cell::Cell::default(),
         });
         (
             Self { state },
@@ -115,6 +118,14 @@ impl State {
 
     /// Dispatches a consumed request outside capability-table borrows.
     fn answer(&self, message: Message) {
+        let blocked = self.store_blocked.get();
+        self.store_blocked.set(blocked || message.blocks_store());
+        self.dispatch(message);
+        self.store_blocked.set(blocked);
+    }
+
+    /// Answers one request with the native owner it names.
+    fn dispatch(&self, message: Message) {
         match message {
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),

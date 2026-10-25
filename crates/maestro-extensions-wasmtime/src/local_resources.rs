@@ -73,6 +73,22 @@ pub(crate) enum Message {
     Release(u64),
 }
 
+impl Message {
+    /// Whether the Store thread waits for this answer; asynchronous requests carry an admission.
+    fn blocks_store(&self) -> bool {
+        !matches!(
+            self,
+            Self::Completed(..)
+                | Self::Events(_, crate::event_reads::Request::Emit(..))
+                | Self::ApiModel(..)
+                | Self::Command(..)
+                | Self::Auth(..)
+                | Self::Replaced(..)
+                | Self::Release(..)
+        )
+    }
+}
+
 /// A startup or callback admission keeping the pump available.
 #[derive(Clone)]
 pub(crate) struct Admission {
@@ -189,13 +205,19 @@ enum Capability {
 struct Resources {
     /// Next identity; released identities are never reused.
     next: u64,
-    /// Weak native callback identities retain no guest admission.
-    listeners: Vec<(
-        std::rc::Weak<
-            <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::Listener,
-        >,
-        u32,
-    )>,
+    /// Weak native callback identities by allocation address; each weak handle keeps its
+    /// address from reuse and retains no guest admission.
+    listeners: std::collections::HashMap<
+        usize,
+        (
+            std::rc::Weak<
+                <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::Listener,
+            >,
+            u32,
+        ),
+    >,
+    /// Identity count at which retired identities are dropped, doubling so the work stays linear.
+    prune_at: usize,
     /// Each entry owns exactly the capability identified by its lease.
     entries: BTreeMap<u64, Rc<Capability>>,
 }

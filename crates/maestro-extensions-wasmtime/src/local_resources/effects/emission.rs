@@ -79,12 +79,16 @@ impl Registry {
         id: u32,
     ) {
         let mut resources = self.resources.borrow_mut();
+        if resources.listeners.len() >= resources.prune_at {
+            resources.listeners.retain(|_, (listener, _)| {
+                inspect();
+                listener.strong_count() > 0
+            });
+            resources.prune_at = 2 * resources.listeners.len() + 1;
+        }
         resources
             .listeners
-            .retain(|(listener, _)| listener.strong_count() > 0);
-        resources
-            .listeners
-            .push((std::rc::Rc::downgrade(listener), id));
+            .insert(identity(listener), (std::rc::Rc::downgrade(listener), id));
     }
 }
 impl State {
@@ -136,7 +140,7 @@ impl Registry {
         }))
         .map(EmitterEndpoint)
     }
-    /// Tags the real bus snapshot by weak native callback identity.
+    /// Tags the real bus snapshot by native callback identity, one lookup per entry.
     fn snapshot(&self, frame: &Frame, channel: &str, data: &str) -> Result<Snapshot, String> {
         let data = crate::writer_reads::decode(data)?;
         let entries = frame
@@ -147,11 +151,11 @@ impl Registry {
         let tags = entries
             .iter()
             .map(|entry| {
-                resources.listeners.iter().find_map(|(weak, id)| {
-                    weak.upgrade()
-                        .filter(|listener| std::rc::Rc::ptr_eq(listener, entry.listener()))
-                        .map(|_| *id)
-                })
+                inspect();
+                resources
+                    .listeners
+                    .get(&identity(entry.listener()))
+                    .map(|(_, id)| *id)
             })
             .collect();
         let mut snapshots = frame.snapshots.borrow_mut();
@@ -225,3 +229,23 @@ impl Frame {
         Ok(())
     }
 }
+
+/// The allocation address identifying one native listener.
+fn identity(listener: &maestro_extensions::EventListener<Local>) -> usize {
+    std::rc::Rc::as_ptr(listener).cast::<()>().addr()
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Listener identities inspected by registration and snapshot tagging.
+    static INSPECTIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Counts one inspected listener identity.
+fn inspect() {
+    #[cfg(test)]
+    INSPECTIONS.set(INSPECTIONS.get() + 1);
+}
+
+#[cfg(test)]
+mod tests;

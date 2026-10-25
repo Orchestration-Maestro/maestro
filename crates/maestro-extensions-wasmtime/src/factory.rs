@@ -49,7 +49,10 @@ fn worker(
     calls: mpsc::WeakUnboundedSender<Call>,
     replies: &Replies,
 ) {
-    let runtime = tokio::runtime::Builder::new_current_thread().build();
+    // WASI clock waits sleep on this runtime's timer.
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build();
     match runtime {
         Ok(runtime) => runtime.block_on(async {
             if let Err(error) = execute(path, state, incoming, calls, replies).await {

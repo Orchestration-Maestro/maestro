@@ -10,66 +10,38 @@ use std::{rc::Rc, sync::mpsc};
 
 #[test]
 fn synchronous_native_callbacks_service_nested_original_context_reads() {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let runner = runner("/synchronous-original");
-            let (pump, admission) = Pump::new();
-            let registry = pump.registry();
-            let context = registry
-                .context(Owner::Base(runner.create_context()))
-                .unwrap();
-            let (first, first_calls) = mpsc::channel::<Completion>();
-            let (second, second_calls) = mpsc::channel::<Completion>();
-            let first_registry = registry.clone();
-            let first_callback: AgentToolUpdateCallback<serde_json::Value, Local> =
-                Rc::new(move |_| {
-                    first_registry
-                        .invoke_sync(|completion| {
-                            first.send(completion).map_err(|error| error.to_string())
-                        })
-                        .unwrap();
-                });
-            let second_registry = registry.clone();
-            let second_callback: AgentToolUpdateCallback<serde_json::Value, Local> =
-                Rc::new(move |_| {
-                    assert_eq!(
-                        second_registry
-                            .invoke_sync(|completion| second
-                                .send(completion)
-                                .map_err(|error| error.to_string()))
-                            .unwrap_err(),
-                        "nested guest failure"
-                    );
-                });
-            let first_update = registry.tool_update(first_callback).unwrap();
-            let second_update = registry.tool_update(second_callback).unwrap();
-            let second_context = context.clone();
-            let nested = std::thread::spawn(move || {
-                let completion = second_calls.recv().unwrap();
-                assert_eq!(
-                    second_context.read(Request::Cwd).unwrap(),
-                    "/synchronous-original"
-                );
-                completion.complete(Err("nested guest failure".into()));
-            });
-            let outer = std::thread::spawn(move || {
-                let completion = first_calls.recv().unwrap();
-                assert_eq!(context.read(Request::Cwd).unwrap(), "/synchronous-original");
-                second_update.update(r#"{"content":[]}"#.into()).unwrap();
-                completion.complete(Ok(()));
-            });
-            let caller = std::thread::spawn(move || {
-                first_update.update(r#"{"content":[]}"#.into()).unwrap();
-            });
-            drop(registry);
-            drop(admission);
-            pump.serve().await;
-            caller.join().unwrap();
-            outer.join().unwrap();
-            nested.join().unwrap();
-        });
+    let runner = runner("/synchronous-original");
+    let (pump, admission) = Pump::new();
+    let registry = pump.registry();
+    let context = registry
+        .context(Owner::Base(runner.create_context()))
+        .unwrap();
+    let (first, first_calls) = mpsc::channel::<Completion>();
+    let (second, second_calls) = mpsc::channel::<Completion>();
+    let second_registry = registry.clone();
+    let second_callback: AgentToolUpdateCallback<serde_json::Value, Local> = Rc::new(move |_| {
+        assert_eq!(
+            second_registry
+                .invoke_sync(|completion| second
+                    .send(completion)
+                    .map_err(|error| error.to_string()))
+                .unwrap_err(),
+            "extension cannot be re-entered while it waits for a synchronous host call"
+        );
+    });
+    let second_update = registry.tool_update(second_callback).unwrap();
+    let guest = std::thread::spawn(move || {
+        let completion = first_calls.recv().unwrap();
+        assert_eq!(context.read(Request::Cwd).unwrap(), "/synchronous-original");
+        second_update.update(r#"{"content":[]}"#.into()).unwrap();
+        assert!(second_calls.try_recv().is_err());
+        completion.complete(Ok(()));
+    });
+    registry
+        .invoke_sync(|completion| first.send(completion).map_err(|error| error.to_string()))
+        .unwrap();
+    guest.join().unwrap();
+    drop((registry, admission, pump));
 }
 
 #[test]
@@ -145,4 +117,52 @@ fn synchronous_wait_returns_receiver_wakeups_to_the_suspended_async_owner() {
         "async owner was not scheduled after synchronous receiver ownership ended"
     );
     drop((pending_owner, registry, admission));
+}
+
+#[test]
+fn same_store_invocation_during_a_blocking_request_reports_instead_of_waiting() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let (mut pump, admission) = Pump::new();
+            let registry = pump.registry();
+            let (started, starts) = mpsc::channel::<Completion>();
+            crate::tests::reports_reentry(&mut pump, move || {
+                registry.invoke_sync(|completion| {
+                    started.send(completion).map_err(|error| error.to_string())
+                })
+            })
+            .await;
+            assert!(
+                starts.try_recv().is_err(),
+                "a blocked Store cannot enter its guest"
+            );
+            drop(admission);
+            pump.serve().await;
+        });
+}
+
+#[test]
+fn other_store_invocation_during_a_blocking_request_completes() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let (mut pump, admission) = Pump::new();
+            let (other, other_admission) = Pump::new();
+            let target = other.registry();
+            let (started, starts) = mpsc::channel::<Completion>();
+            let other_store = std::thread::spawn(move || starts.recv().unwrap().complete(Ok(())));
+            let invoked = crate::tests::during_blocking_request(&mut pump, move || {
+                target.invoke_sync(|completion| {
+                    started.send(completion).map_err(|error| error.to_string())
+                })
+            })
+            .await;
+            assert_eq!(invoked, Ok(()));
+            other_store.join().unwrap();
+            drop((admission, other, other_admission));
+            pump.serve().await;
+        });
 }

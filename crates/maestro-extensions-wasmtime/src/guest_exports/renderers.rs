@@ -48,22 +48,22 @@ impl Exports {
         instance: &Instance,
         guest: &ComponentExportIndex,
     ) -> wasmtime::Result<Self> {
-        let mut index = |name| {
-            instance
-                .get_export_index(&mut *store, Some(guest), name)
-                .ok_or_else(|| wasmtime::format_err!("missing extension guest export {name}"))
-        };
-        let create = index("invoke-renderer")?;
-        let render = index("[method]component-view.render")?;
-        let input = index("[method]component-view.handle-input")?;
-        let invalidate = index("[method]component-view.invalidate")?;
-        let wants_key_release = index("[method]component-view.wants-key-release")?;
         Ok(Self {
-            create: instance.get_typed_func(&mut *store, create)?,
-            render: instance.get_typed_func(&mut *store, render)?,
-            input: instance.get_typed_func(&mut *store, input)?,
-            invalidate: instance.get_typed_func(&mut *store, invalidate)?,
-            wants_key_release: instance.get_typed_func(&mut *store, wants_key_release)?,
+            create: super::typed(store, instance, guest, "invoke-renderer")?,
+            render: super::typed(store, instance, guest, "[method]component-view.render")?,
+            input: super::typed(
+                store,
+                instance,
+                guest,
+                "[method]component-view.handle-input",
+            )?,
+            invalidate: super::typed(store, instance, guest, "[method]component-view.invalidate")?,
+            wants_key_release: super::typed(
+                store,
+                instance,
+                guest,
+                "[method]component-view.wants-key-release",
+            )?,
         })
     }
     /// Transfers the original theme and borrows only the callback and invocation frame.

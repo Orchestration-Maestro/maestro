@@ -2,7 +2,10 @@
 use crate::guest_calls::{Call, Callback, Synchronous, SynchronousKind};
 use wasmtime::{
     Store,
-    component::{Accessor, Instance, Resource, ResourceAny, TypedFunc},
+    component::{
+        Accessor, ComponentExportIndex, ComponentNamedList, Instance, Lift, Lower, Resource,
+        ResourceAny, TypedFunc,
+    },
 };
 use wasmtime_wasi::WasiView;
 
@@ -59,6 +62,23 @@ pub(crate) struct Exports {
     release: Release,
 }
 
+/// Resolves and types one required export of the canonical guest interface.
+fn typed<T: 'static, P, R>(
+    store: &mut Store<T>,
+    instance: &Instance,
+    guest: &ComponentExportIndex,
+    name: &str,
+) -> wasmtime::Result<TypedFunc<P, R>>
+where
+    P: ComponentNamedList + Lower,
+    R: ComponentNamedList + Lift,
+{
+    let index = instance
+        .get_export_index(&mut *store, Some(guest), name)
+        .ok_or_else(|| wasmtime::format_err!("missing extension guest export {name}"))?;
+    instance.get_typed_func(store, index)
+}
+
 impl Exports {
     /// Resolves required exports from the same instantiated canonical component.
     pub(crate) fn new<T: 'static>(
@@ -68,19 +88,6 @@ impl Exports {
         let guest = instance
             .get_export_index(&mut *store, None, "maestro:extension/guest@0.1.0")
             .ok_or_else(|| wasmtime::format_err!("missing extension guest interface"))?;
-        let mut index = |name| {
-            instance
-                .get_export_index(&mut *store, Some(&guest), name)
-                .ok_or_else(|| wasmtime::format_err!("missing extension guest export {name}"))
-        };
-        let start = index("start")?;
-        let setup = index("invoke-setup")?;
-        let with_session = index("invoke-with-session")?;
-        let release = index("release")?;
-        let listener = index("invoke-listener")?;
-        let compaction_complete = index("invoke-compaction-complete")?;
-        let compaction_error = index("invoke-compaction-error")?;
-        let tail = index("invoke-tail")?;
         let registered = registrations::Exports::new(store, instance, &guest)?;
         let tools = tools::Exports::new(store, instance, &guest)?;
         let bash = bash::Exports::new(store, instance, &guest)?;
@@ -88,18 +95,18 @@ impl Exports {
         let renderers = renderers::Exports::new(store, instance, &guest)?;
         Ok(Self {
             renderers,
-            start: instance.get_typed_func(&mut *store, start)?,
+            start: typed(store, instance, &guest, "start")?,
             events,
             bash,
             tools,
             registered,
-            setup: instance.get_typed_func(&mut *store, setup)?,
-            with_session: instance.get_typed_func(&mut *store, with_session)?,
-            release: instance.get_typed_func(&mut *store, release)?,
-            listener: instance.get_typed_func(&mut *store, listener)?,
-            compaction_complete: instance.get_typed_func(&mut *store, compaction_complete)?,
-            compaction_error: instance.get_typed_func(&mut *store, compaction_error)?,
-            tail: instance.get_typed_func(&mut *store, tail)?,
+            setup: typed(store, instance, &guest, "invoke-setup")?,
+            with_session: typed(store, instance, &guest, "invoke-with-session")?,
+            release: typed(store, instance, &guest, "release")?,
+            listener: typed(store, instance, &guest, "invoke-listener")?,
+            compaction_complete: typed(store, instance, &guest, "invoke-compaction-complete")?,
+            compaction_error: typed(store, instance, &guest, "invoke-compaction-error")?,
+            tail: typed(store, instance, &guest, "invoke-tail")?,
         })
     }
 
