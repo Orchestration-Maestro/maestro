@@ -18,3 +18,5 @@ pub use print::print_mode::{PrintMode, PrintModeOptions, run_print_mode};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod startup;
+#[cfg(not(target_arch = "wasm32"))]
+pub use startup::main::{MainOptions, main};

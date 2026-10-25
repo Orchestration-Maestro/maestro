@@ -1499,7 +1499,7 @@ fn broken_skill(directory: &Path) -> Skill {
 
 /// Answers every prompt of `session` with an empty finished message, and configures the
 /// credentials the session's own refusal check reads.
-fn answer_session(session: &Rc<AgentSession>) {
+pub(super) fn answer_session(session: &Rc<AgentSession>) {
     *session.agent().stream_fn.write().unwrap() = Some(Rc::new(|_, _, _, _| {
         let stream = AssistantMessageEventStream::new();
         stream.end(Some(answer()));

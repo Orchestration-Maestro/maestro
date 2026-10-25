@@ -5,6 +5,9 @@
     clippy::excessive_nesting
 )]
 
+use std::collections::HashMap;
+use std::str::FromStr;
+
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -27,6 +30,8 @@ pub struct Bank {
     method: Option<String>,
     /// Message the request of `method` is rejected with.
     message: Option<String>,
+    /// Editor text each binding keeps.
+    editors: HashMap<usize, String>,
 }
 
 /// A supplied refusal and the method it is limited to.
@@ -101,6 +106,19 @@ pub fn call(
     observed.ui.refusal(method).map_or(Ok(()), Err)
 }
 
+/// Records one replacement against the acquisition `key` and keeps its text for that binding.
+pub fn set_editor_text(observed: &mut Observed, key: usize, text: &str) -> Result<(), String> {
+    call(observed, key, "setEditorText", &json!([text]))?;
+    observed.ui.editors.insert(key, text.to_owned());
+    Ok(())
+}
+
+/// Records one read against the acquisition `key` and answers the text its binding keeps.
+pub fn get_editor_text(observed: &mut Observed, key: usize) -> Result<String, String> {
+    call(observed, key, "getEditorText", &json!([]))?;
+    Ok(observed.ui.editors.get(&key).cloned().unwrap_or_default())
+}
+
 /// Supplied widget options; an absent record keeps the host default.
 #[derive(Default)]
 pub struct WidgetOptions {
@@ -169,19 +187,20 @@ pub fn title(title: &str) -> Value {
     json!([title])
 }
 
-/// One UI request the host recorded.
-pub struct Receipt {
-    /// Identity of the acquisition the request was made on.
-    pub key: usize,
+/// One retained-resource request a host recorded; `K` keys the resource, by default the
+/// identity of a UI acquisition.
+pub struct Receipt<K = usize> {
+    /// Key of the resource the request was made on.
+    pub key: K,
     /// Method the host reached.
     pub method: String,
     /// Operands the host received.
     pub operands: Value,
 }
 
-/// The UI request `line` records, if it records one.
-pub fn receipt(line: &str) -> Option<Receipt> {
-    let rest = line.strip_prefix("ui ")?;
+/// The request `line` records on a `kind` resource, its key read as `K`, if it records one.
+fn receipt_on<K: FromStr>(kind: &str, line: &str) -> Option<Receipt<K>> {
+    let rest = line.strip_prefix(kind)?.strip_prefix(' ')?;
     let (key, rest) = rest.split_once(' ')?;
     let (method, operands) = rest.split_once(' ')?;
     Some(Receipt {
@@ -191,9 +210,22 @@ pub fn receipt(line: &str) -> Option<Receipt> {
     })
 }
 
+/// The requests `lines` record on `kind` resources, in time order.
+pub fn receipts_on<K: FromStr>(kind: &str, lines: &[String]) -> Vec<Receipt<K>> {
+    lines
+        .iter()
+        .filter_map(|line| receipt_on(kind, line))
+        .collect()
+}
+
+/// The UI request `line` records, if it records one.
+pub fn receipt(line: &str) -> Option<Receipt> {
+    receipt_on("ui", line)
+}
+
 /// The UI requests recorded in `lines`, in time order.
 pub fn receipts(lines: &[String]) -> Vec<Receipt> {
-    lines.iter().filter_map(|line| receipt(line)).collect()
+    receipts_on("ui", lines)
 }
 
 impl State {
@@ -296,6 +328,28 @@ impl host::HostExtensionUiContext for State {
         title: String,
     ) -> wasmtime::Result<Result<(), String>> {
         self.ui_call(&this, "setTitle", &self::title(&title))
+    }
+
+    fn paste_to_editor(
+        &mut self,
+        this: Resource<Ui>,
+        text: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        self.ui_call(&this, "pasteToEditor", &json!([text]))
+    }
+
+    fn set_editor_text(
+        &mut self,
+        this: Resource<Ui>,
+        text: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let key = self.table.get(&this)?.0;
+        Ok(set_editor_text(&mut self.observed, key, &text))
+    }
+
+    fn get_editor_text(&mut self, this: Resource<Ui>) -> wasmtime::Result<Result<String, String>> {
+        let key = self.table.get(&this)?.0;
+        Ok(get_editor_text(&mut self.observed, key))
     }
 
     fn drop(&mut self, this: Resource<Ui>) -> wasmtime::Result<()> {

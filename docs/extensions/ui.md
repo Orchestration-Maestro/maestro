@@ -17,6 +17,12 @@ runner. A context obtained through a borrowed binding is an owned handle that
 keeps the host alive. Once the host is gone, the runner answers with its
 headless fallback and `has_ui` is false.
 
+Event and command contexts read the runner's current host each time `ui()` is
+called, so they follow later installs. A replacement-session context reads the
+replacement runner's host, not its creator's. Each handle that `ui()` returns
+keeps its own host. When the last handle to a borrowed host is dropped and
+nothing else holds that host, the borrowed binding no longer reaches it.
+
 ```rust
 use maestro_extensions::types::{ExtensionUIContextPort};
 use maestro_extensions::{EventError, ExtensionRunner, ExtensionUIContext};

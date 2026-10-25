@@ -136,6 +136,18 @@ pub enum Call {
         /// Literal title.
         title: String,
     },
+    /// Pastes literal text into the host editor.
+    PasteToEditor {
+        /// Literal pasted text.
+        text: String,
+    },
+    /// Replaces the host editor's text.
+    SetEditorText {
+        /// Literal replacement text.
+        text: String,
+    },
+    /// Reads the host editor's text.
+    GetEditorText,
 }
 
 /// One probe operation around a fresh acquisition and its callbacks.
@@ -170,9 +182,12 @@ enum Operation {
     },
 }
 
-/// Runs one request through the supplied handle.
-pub fn perform(ui: &ExtensionUIContext, call: &Call) -> ExtensionResult<()> {
+/// Runs one request through the supplied handle, returning what a read request answered.
+pub fn perform(ui: &ExtensionUIContext, call: &Call) -> ExtensionResult<Option<Value>> {
     match call {
+        Call::GetEditorText => return ui.get_editor_text().map(|text| Some(json!(text))),
+        Call::PasteToEditor { text } => ui.paste_to_editor(text),
+        Call::SetEditorText { text } => ui.set_editor_text(text),
         Call::Notify { message, kind } => ui.notify(message, kind.map(Into::into)),
         Call::SetStatus { key, text } => ui.set_status(key, text.as_deref()),
         Call::SetWorkingMessage { message } => ui.set_working_message(message.as_deref()),
@@ -197,12 +212,13 @@ pub fn perform(ui: &ExtensionUIContext, call: &Call) -> ExtensionResult<()> {
         ),
         Call::SetTitle { title } => ui.set_title(title),
     }
+    .map(|()| None)
 }
 
 /// Reports a caught host failure without failing the callback.
-fn caught(result: ExtensionResult<()>) -> Value {
+fn caught(result: ExtensionResult<Option<Value>>) -> Value {
     match result {
-        Ok(()) => json!({ "ok": true }),
+        Ok(answer) => json!({ "ok": answer.unwrap_or(json!(true)) }),
         Err(error) => json!({ "error": error }),
     }
 }

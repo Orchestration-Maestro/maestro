@@ -237,15 +237,34 @@ impl InteractiveMode {
         ))
     }
 
-    /// Installs a fresh base provider on the editor.
-    pub(super) fn setup_autocomplete_provider(&self) {
+    /// Folds registered wrappers over a fresh base and installs the final provider.
+    ///
+    /// Registrations appended during a factory call participate in this same rebuild.
+    /// The installed provider changes only after every factory succeeds.
+    ///
+    /// # Errors
+    /// Returns the original factory failure, leaving the installed provider unchanged.
+    pub(super) fn setup_autocomplete_provider(&self) -> Result<(), maestro_app::EventError> {
         let extensions = self
             .runtime_host
             .session()
             .extension_runner()
             .get_registered_commands();
-        self.editor
-            .set_autocomplete_provider(self.create_base_autocomplete_provider(&extensions));
+        let mut provider = self.create_base_autocomplete_provider(&extensions);
+        let mut index = 0;
+        loop {
+            let factory = self
+                .autocomplete_provider_wrappers
+                .borrow()
+                .get(index)
+                .cloned();
+            let Some(factory) = factory else { break };
+            provider = factory.call(provider)?;
+            index += 1;
+        }
+        self.editor.set_autocomplete_provider(provider.clone());
+        drop(self.autocomplete_provider.replace(Some(provider)));
+        Ok(())
     }
 
     /// Ensures `fd` and `rg` are available before the first completion, both started before
