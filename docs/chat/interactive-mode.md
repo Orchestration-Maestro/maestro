@@ -282,8 +282,8 @@ on the transcript, completes no waiting input and enters no history. `/export`,
 `/changelog` and `/hotkeys` answer before the editor hands the text back; `/import`,
 `/share` and `/copy` are admitted on the terminal runtime. Import clears the editor
 only on normal completion, leaving text written during a rejected operation intact.
-Import confirmation and directory retry reuse the native dialogs; its replacement
-UI binding still needs the [shared replacement witness](https://github.com/Orchestration-Maestro/maestro/issues/838). Near spellings are
+Import confirmation and directory retry reuse the native dialogs, and its
+replacement is [bound](#session-binding) before the replay. Near spellings are
 prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`,
 `/important`, `/import` followed by a tab and `/copyx` reach the input. See [interactive commands](commands.md).
 

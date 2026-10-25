@@ -118,9 +118,10 @@ exits with status 1. A retry failure instead reaches the terminal runtime's erro
 reporter; it prints the error and keeps running with the input waiter unresolved.
 A rejected operation does not perform the command's final editor clear.
 
-Native replacement rebinding still needs qualification after
-[#838](https://github.com/Orchestration-Maestro/maestro/issues/838). Import must not
-be treated as complete until the replacement keeps the native UI before replay.
+The runtime [binds the mode](interactive-mode.md#session-binding) to the imported
+session before the replay. When the replay and the status line run, the new
+session's UI, settings, shortcuts, footer and window title are already in place, and
+events from the replaced session no longer reach the mode.
 
 ## `/share`
 
@@ -508,8 +509,6 @@ show it once. Checking at startup comes with the prompt loop.
 
 ## What is missing
 
-- Import replacement rebinding awaits the real native replacement witness in
-  [#838](https://github.com/Orchestration-Maestro/maestro/issues/838).
 - The complete offline viewer is separate work (#1762); the export tests supply a
   controlled bundle, so they prove the serializer wiring and not a shipped viewer.
   Until it ships, a share with no bundle installed follows the export failure path

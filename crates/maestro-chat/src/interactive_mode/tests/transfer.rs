@@ -1,5 +1,6 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
+use super::bindings::{Retiring, installed, renaming_replacements};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, cases as recorded_cases, isolated_package, started};
 use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
@@ -8,7 +9,7 @@ use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, 
 use maestro_tui::Component;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{path::Path, rc::Rc};
+use std::{cell::RefCell, path::Path, rc::Rc};
 
 /// Every recorded argument case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_transfer.json");
@@ -623,7 +624,13 @@ fn import_file(directory: &Path, name: &str, cwd: &Path) -> std::path::PathBuf {
     manager
         .append_message(json!({"role":"user", "content":"IMPORTED_HISTORY", "timestamp":1}))
         .unwrap();
-    manager.append_message(json!({"role":"assistant", "content":[{"type":"text", "text":"IMPORTED_ANSWER"}], "api":"controlled", "provider":"controlled", "model":"controlled", "stopReason":"stop", "timestamp":2})).unwrap();
+    manager
+        .append_message(super::transcript::assistant(
+            &json!([{"type": "text", "text": "IMPORTED_ANSWER"}]),
+            "stop",
+            None,
+        ))
+        .unwrap();
     let path = directory.join(name);
     std::fs::copy(manager.get_session_file().unwrap(), &path).unwrap();
     path
@@ -1402,4 +1409,116 @@ async fn import_observed_world(directory: &Path) -> World {
             None,
         )));
     world
+}
+
+/// What replay reads of the mode while it builds an imported `probe` row.
+type ReplayObserver = Rc<RefCell<Option<Box<dyn Fn() -> Value>>>>;
+
+/// An extension whose `probe` renderer records what `observer` reads, keeping the
+/// default row.
+fn replay_probe(
+    observer: &ReplayObserver,
+    seen: &Rc<RefCell<Vec<Value>>>,
+) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+    let (observer, seen) = (Rc::clone(observer), Rc::clone(seen));
+    Rc::new(move |api| {
+        let (observer, seen) = (Rc::clone(&observer), Rc::clone(&seen));
+        let registered = api.register_message_renderer::<Value>(
+            "probe".to_owned(),
+            Rc::new(move |_, _, _: maestro_theme::LiveTheme, _| {
+                seen.borrow_mut()
+                    .push(observer.borrow().as_ref().unwrap()());
+                Ok(None)
+            }),
+        );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// Points `observer` at the mode's runner UI, thinking visibility, installed footer,
+/// subscription and shortcut, and the titles written since `retiring` was captured.
+fn observe_replay(observer: &ReplayObserver, world: &World, retiring: &Retiring) {
+    let mode = Rc::downgrade(&world.mode);
+    let titles = Rc::clone(&retiring.titles);
+    *observer.borrow_mut() = Some(Box::new(move || {
+        let mode = mode.upgrade().unwrap();
+        json!({
+            "ui": mode.runtime_host.session().extension_runner().has_ui(),
+            "hidden": mode.hide_thinking_block.get(),
+            "installed": installed(&mode),
+            "titled": titles.borrow().len(),
+        })
+    }));
+}
+
+/// Writes an importable session ending with a displayed `probe` message that names it.
+fn import_probe_file(directory: &Path, name: &str) -> std::path::PathBuf {
+    let path = import_file(directory, name, directory);
+    let mut manager = SessionManager::open(path.to_str().unwrap(), None, None).unwrap();
+    manager
+        .append_custom_message_entry(
+            "probe",
+            maestro_app::UserContent::Text(format!("history of {name}")),
+            true,
+            maestro_app::Presence::Missing,
+        )
+        .unwrap();
+    path
+}
+
+#[test]
+fn transfer_import_rebinds_before_replaying_the_new_session() {
+    super::isolated(
+        "transfer_import_rebinds_before_replaying_the_new_session",
+        async |directory| {
+            let log = Rc::new(RefCell::new(Vec::new()));
+            let seen = Rc::new(RefCell::new(Vec::new()));
+            let observer = ReplayObserver::default();
+            let probe = replay_probe(&observer, &seen);
+            let world = Setup {
+                configure: Box::new(|settings| settings.set_hide_thinking_block(true)),
+                create: Some(renaming_replacements(directory, &log, &probe)),
+                session_history: Some(directory.join("destination")),
+                ..Setup::default()
+            }
+            .build(directory);
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            assert!(
+                world.mode.hide_thinking_block.get(),
+                "the first session hides thinking"
+            );
+            for (generation, name) in [(1, "first.jsonl"), (2, "second.jsonl")] {
+                let path = import_probe_file(directory, name);
+                let retiring = Retiring::capture(&world);
+                observe_replay(&observer, &world, &retiring);
+                submit(&world.mode, &format!("/import {}", path.display()));
+                import_settle(&world);
+                import_answer(&world, "\r");
+                assert_eq!(
+                    seen.take(),
+                    [json!({
+                        "ui": true,
+                        "hidden": false,
+                        "installed": {"footer": true, "subscribed": true, "shortcut": true},
+                        "titled": 1,
+                    })],
+                    "{name}: replay sees the completed binding"
+                );
+                assert!(
+                    rows(&world)
+                        .join("\n")
+                        .contains(&format!("history of {name}")),
+                    "{name}: the replay shows the imported history"
+                );
+                assert_last_row(
+                    &world,
+                    &ThemeColor::Dim,
+                    &format!("Session imported from: {}", path.display()),
+                    name,
+                );
+                retiring.assert_replaced(&world, generation, &log);
+            }
+        },
+    );
 }
