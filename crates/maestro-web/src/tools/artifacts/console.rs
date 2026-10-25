@@ -217,7 +217,7 @@ impl Mounted {
         Ok(())
     }
     /// Publish expanded controls through the existing copy element and its feedback owner.
-    fn controls(&self, binding: &Binding) -> Result<(), ToolUiError> {
+    fn controls(self: &Rc<Self>, binding: &Binding) -> Result<(), ToolUiError> {
         let previous = self.i18n.replace(Rc::clone(&binding.view.i18n));
         drop(previous);
         if !binding.console.expanded.get() {
@@ -258,6 +258,7 @@ impl Mounted {
                 &self.i18n,
                 copy_button::FEEDBACK_MS,
                 None,
+                Some(self.copied_text()),
             )
             .map_err(|error| ToolUiError::native(&error))?;
             self.copy.replace(Some(copy.clone()));
@@ -266,11 +267,17 @@ impl Mounted {
                 .map_err(|error| ToolUiError::native(&error))?;
             copy
         };
-        copy.set_attribute("text", &binding.console.get_logs_text()?)
-            .map_err(|error| ToolUiError::native(&error))?;
         copy.set_attribute("title", &binding.view.i18n.text("Copy logs")?)
             .map_err(|error| ToolUiError::native(&error))?;
         Ok(())
+    }
+    /// The current controller's whole logs, formatted only when the copy control is activated.
+    fn copied_text(self: &Rc<Self>) -> copy_button::TextSource {
+        let owner = Rc::downgrade(self);
+        Rc::new(move || {
+            let console = Rc::clone(&owner.upgrade()?.binding.borrow().console);
+            console.get_logs_text().ok()
+        })
     }
     /// Append only the new suffix; collapsed histories need only their new kinds counted.
     fn append(&self) -> Result<(), ToolUiError> {
@@ -285,7 +292,6 @@ impl Mounted {
                 .set(self.errors.get() + usize::from(kind == LogType::Error));
             self.processed.set(index + 1);
             if expanded && let Some(line) = console.line(index) {
-                self.append_copy(&line)?;
                 self.render_row(index, &line, &binding.view.document)?;
             }
             index += 1;
@@ -294,24 +300,8 @@ impl Mounted {
         self.scroll(&binding);
         Ok(())
     }
-    /// Extend the copy operand without converting any previously published value again.
-    fn append_copy(&self, line: &LogEntry) -> Result<(), ToolUiError> {
-        let copy = self.copy.borrow().clone();
-        if let Some(copy) = copy {
-            let line = copy_line(line)?;
-            let previous = copy.get_attribute("text").unwrap_or_default();
-            let text = if previous.is_empty() {
-                line
-            } else {
-                format!("{previous}\n{line}")
-            };
-            copy.set_attribute("text", &text)
-                .map_err(|error| ToolUiError::native(&error))?;
-        }
-        Ok(())
-    }
     /// Reconcile all operands after a replacement or disclosure change.
-    fn render(&self) -> Result<(), ToolUiError> {
+    fn render(self: &Rc<Self>) -> Result<(), ToolUiError> {
         let binding = self.binding.borrow().clone();
         self.controls(&binding)?;
         self.render_rows(&binding)?;

@@ -47,6 +47,7 @@ impl HtmlArtifact {
             &localization,
             copy_button::FEEDBACK_MS,
             None,
+            None,
         )
         .map_err(|error| ToolUiError::native(&error))?;
         let title = view.i18n.text("Copy HTML")?;

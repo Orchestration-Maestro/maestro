@@ -1,8 +1,8 @@
 //! Artifact-console bodies retain literal ordered rows and independent controls.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    Clipboard, Recorded, call, computed, container, driver, frames, host, page_module, rgb, select,
-    selection, text, until, view,
+    Clipboard, Recorded, call, computed, container, driver, frames, host, page_module, published,
+    rgb, select, selection, text, until, view,
 };
 use crate::native_artifact_console_support::{cases, factory, localized, native};
 use maestro_web::{
@@ -566,7 +566,8 @@ async fn growth(
         );
     }
     append_work(view, factory);
-    reentrant_history(view);
+    arrival_bytes(view, page).await;
+    reentrant_history(view, &clipboard);
 }
 
 /// Native row paint and finished control transitions use the selected mode's roles.
@@ -701,7 +702,8 @@ fn assert_disclosure(root: &DomRoot, expanded: bool) {
     }
 }
 
-/// Appending visits each new native value once for rows and once for copy, never old values.
+/// Appending converts each new native value at most once, for its row, and never an old one;
+/// copying converts only when activated.
 fn append_work(view: &DomView, factory: &wasm_bindgen::JsValue) {
     let mut bounded = true;
     for expanded in [false, true] {
@@ -729,30 +731,68 @@ fn append_work(view: &DomView, factory: &wasm_bindgen::JsValue) {
                 .call1(&wasm_bindgen::JsValue::UNDEFINED, &probe)
                 .unwrap()
                 .unchecked_into::<js_sys::Array>();
-            bounded &=
-                stats.get(1).as_f64() == Some(if expanded { f64::from(2 * count) } else { 0.0 });
+            let reads = stats.get(1).as_f64().unwrap();
+            bounded &= reads <= if expanded { f64::from(count) } else { 0.0 };
             parent.remove();
         }
     }
     assert!(bounded, "append revisited accumulated history");
 }
 
-/// Native coercion can append to the live history without keeping a conflicting borrow.
-fn reentrant_history(view: &DomView) {
+/// One arrival publishes the same bytes however long the history, while a deliberately wrong
+/// producer republishing the whole history on each arrival grows with it.
+async fn arrival_bytes(view: &DomView, page: &JsValue) {
+    let mut arrival = Vec::new();
+    let mut control = Vec::new();
+    for count in [16, 32, 64] {
+        let console = Console::new();
+        let (parent, root) = place(view, &console);
+        click(&root, ".maestro-artifact-summary");
+        for _ in 0..count {
+            console.logs.borrow_mut().push(log("x"));
+            console.append(&root, view).unwrap();
+        }
+        let take = published(page, &root.node, "").await;
+        console.logs.borrow_mut().push(log("x"));
+        console.append(&root, view).unwrap();
+        arrival.push(take());
+        control.push(history_copy(page, count).await);
+        parent.remove();
+    }
+    web_sys::console::log_1(
+        &format!("MEASURE console arrival bytes {arrival:?}, history copy {control:?}").into(),
+    );
+    assert!(
+        arrival[1] <= arrival[0] && arrival[2] <= arrival[0],
+        "one arrival republished the history: {arrival:?}"
+    );
+    assert!(
+        control[0] < control[1] && control[1] < control[2],
+        "the meter missed a history copy: {control:?}"
+    );
+}
+/// Bytes the next arrival publishes after `count` lines when every arrival rewrites one
+/// attribute with the whole history.
+async fn history_copy(page: &JsValue, count: usize) -> f64 {
+    let copy = container();
+    let history = vec!["[log] x"; count].join("\n");
+    copy.set_attribute("text", &history).unwrap();
+    let take = published(page, &copy, "").await;
+    copy.set_attribute("text", &format!("{history}\n[log] x"))
+        .unwrap();
+    let bytes = take();
+    copy.remove();
+    bytes
+}
+/// Native coercion while rendering or copying can append to the live history without keeping
+/// a conflicting borrow; copying converts the history it finds when activated.
+fn reentrant_history(view: &DomView, clipboard: &Recorded) {
     for append in [false, true] {
         let console = Console::new();
         let (parent, root) = place(view, &console);
         click(&root, ".maestro-artifact-summary");
-        let logs = Rc::clone(&console.logs);
-        let once = std::cell::Cell::new(false);
-        let callback = wasm_bindgen::closure::Closure::<dyn Fn() -> String>::new(move || {
-            if !once.replace(true) {
-                logs.borrow_mut().push(log("during"));
-            }
-            "value".to_owned()
-        });
-        let value = js_sys::Object::new();
-        js_sys::Reflect::set(&value, &"toString".into(), callback.as_ref()).unwrap();
+        let copying = Rc::new(std::cell::Cell::new(false));
+        let (value, _conversion) = reentrant_value(&console.logs, &copying);
         console.logs.borrow_mut().push(log(value));
         if append {
             console.append(&root, view).unwrap();
@@ -762,18 +802,38 @@ fn reentrant_history(view: &DomView) {
         assert_eq!(console.logs.borrow().len(), 2);
         console.update(&root, view).unwrap();
         assert_eq!(
-            select(&root.node, "copy-button")
-                .get_attribute("text")
-                .as_deref(),
-            Some("[log] value\n[log] during")
-        );
-        assert_eq!(
             select(&root.node, ".maestro-artifact-logs")
                 .child_nodes()
                 .length(),
             2
         );
+        copying.set(true);
+        click(&root, "copy-button button");
+        assert_eq!(
+            clipboard.texts().last().map(String::as_str),
+            Some("[log] value\n[log] during\n[log] copying")
+        );
         console.logs.borrow_mut().clear();
         parent.remove();
     }
+}
+/// A value whose conversion appends `during` once, then `copying` once while `copying` is set.
+fn reentrant_value(
+    logs: &Rc<std::cell::RefCell<Vec<LogEntry>>>,
+    copying: &Rc<std::cell::Cell<bool>>,
+) -> (JsValue, wasm_bindgen::closure::Closure<dyn Fn() -> String>) {
+    let (logs, copying) = (Rc::clone(logs), Rc::clone(copying));
+    let once = std::cell::Cell::new(false);
+    let conversion = wasm_bindgen::closure::Closure::<dyn Fn() -> String>::new(move || {
+        if !once.replace(true) {
+            logs.borrow_mut().push(log("during"));
+        }
+        if copying.replace(false) {
+            logs.borrow_mut().push(log("copying"));
+        }
+        "value".to_owned()
+    });
+    let value = js_sys::Object::new();
+    js_sys::Reflect::set(&value, &"toString".into(), conversion.as_ref()).unwrap();
+    (value.into(), conversion)
 }

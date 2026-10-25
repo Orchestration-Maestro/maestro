@@ -1,7 +1,8 @@
 //! HTML artifact bodies observed through the native document.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    call, container, document, host, localized_view, page_module, select, selection, text, view,
+    Clipboard, Recorded, call, container, document, host, localized_view, page_module, published,
+    select, selection, text, view,
 };
 use crate::native_html_artifact_support::{
     LOGGING, QUIET, before, failing, frame, listed, logged, marker, srcdoc,
@@ -576,20 +577,36 @@ fn expected_lines(
     }
     (returned, painted)
 }
-/// Changed sources reset the logs, and 16, 32 and 64 messages arrive whole and in order.
+/// Changed sources reset the logs; 16, 32 and 64 messages arrive whole and in order, copy as
+/// one text, and twice the messages publish at most twice the bytes outside the frame.
 async fn growth(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mut HtmlArtifact) {
     let view = view();
+    let clipboard = Recorded::install(Clipboard::Accept);
+    let preview = select(&root.node, ".maestro-html-preview");
+    let mut bytes = Vec::new();
     for count in [16, 32, 64] {
+        let take = published(page, &preview, ".maestro-html-frame").await;
         artifact
             .set_content(format!(
                 "<script type=\"module\">for (let i = 0; i < {count}; i++) window.parent.postMessage({{type: 'console', text: 'line-' + i, sandboxId: window.sandboxId}}, '*');</script>"
             ))
             .unwrap();
-        let expected: Vec<_> = (0..count)
+        let expected = (0..count)
             .map(|index| format!("[log] line-{index}"))
-            .collect();
-        logged(page, root, artifact, &view.i18n, &expected.join("\n")).await;
+            .collect::<Vec<_>>()
+            .join("\n");
+        logged(page, root, artifact, &view.i18n, &expected).await;
+        bytes.push(take());
+        select(&root.node, ".maestro-artifact-console copy-button button")
+            .unchecked_ref::<web_sys::HtmlElement>()
+            .click();
+        assert_eq!(clipboard.texts().last(), Some(&expected));
     }
+    web_sys::console::log_1(&format!("MEASURE html log bytes {bytes:?}").into());
+    assert!(
+        bytes[1] <= 2.0 * bytes[0] && bytes[2] <= 4.0 * bytes[0],
+        "messages published superlinear bytes: {bytes:?}"
+    );
 }
 /// Empty logs name the file literally, replacing only the first placeholder, in both languages.
 fn guidance(view: &DomView) {

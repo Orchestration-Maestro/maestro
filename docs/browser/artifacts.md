@@ -278,7 +278,8 @@ still owns document parsing and safe link output.
 
 On browser targets, `tools::artifacts::console::Console` mounts directly through
 `DomContent`. Create it with `new` or `default`, append `LogEntry` records to its
-shared `logs` collection, then call `update` after changing the collection.
+shared `logs` collection, then call `append` to publish the new lines, or `update`
+after any other change.
 `LogType::Log` and `LogType::Error` select the label and text role;
 `BrowserSandboxValue` retains each native operand without a JSON conversion.
 
@@ -291,11 +292,12 @@ a completed shared iterable contributes again at its next occurrence.
 
 Copy uses whole-value native String conversion, not the flattened painted text.
 It writes ordered `[log] value` and `[error] value` lines separated by newlines,
-through the [shared copy control](transcript.md). That control owns clipboard
-writes and two-second icon-only success feedback. Following scrolls every expanded
-update to the bottom, including unchanged updates; disabling it preserves manual
-scroll. Collapse removes the auxiliary controls without resetting the following
-selection.
+through the [shared copy control](transcript.md). The console builds that text
+only when someone activates the control; a new line writes just its own row and
+the summary count. That control owns clipboard writes and two-second icon-only
+success feedback. Following scrolls every expanded update to the bottom, including
+unchanged updates; disabling it preserves manual scroll. Collapse removes the
+auxiliary controls without resetting the following selection.
 
 An update may replace the log handle or use another console and localization.
 Subsequent controls use those current operands, and unchanged positional rows,

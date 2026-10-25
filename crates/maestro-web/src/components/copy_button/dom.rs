@@ -26,6 +26,9 @@ const COMPACT_CLASS: &str = "maestro-button-compact";
 type Feedback = Rc<RefCell<Option<Timer>>>;
 /// Localization a copy control resolves its labels through, replaceable by its creator.
 pub(crate) type Localization = Rc<RefCell<Rc<I18n>>>;
+/// Text a creator produces when its control is activated, read instead of the `text`
+/// attribute; `None` copies nothing.
+pub(crate) type TextSource = Rc<dyn Fn() -> Option<String>>;
 /// Operands [`create`] hands to the constructor through the shared construction channel.
 struct Creating {
     /// Labels' localization.
@@ -34,6 +37,8 @@ struct Creating {
     feedback: i32,
     /// Notification after each feedback change, which a creator's own view follows.
     changed: Option<Rc<dyn Fn()>>,
+    /// Text produced at activation instead of the `text` attribute.
+    text: Option<TextSource>,
 }
 /// One activation's retained operands, reached by the control's click subscription.
 struct Activation {
@@ -49,6 +54,8 @@ struct Activation {
     feedback_ms: i32,
     /// Notification after each feedback change.
     changed: Option<Rc<dyn Fn()>>,
+    /// Text produced at activation instead of the `text` attribute.
+    text: Option<TextSource>,
     /// Connection generations, bumped on every connection and disconnection.
     epoch: Rc<Cell<u64>>,
     /// The generation that admitted this activation, which a later one retires.
@@ -75,6 +82,8 @@ struct CopyElement {
     feedback_ms: i32,
     /// Notification after each feedback change.
     changed: Option<Rc<dyn Fn()>>,
+    /// Text produced at activation instead of the `text` attribute.
+    text: Option<TextSource>,
     /// Connection generations, bumped on every connection and disconnection.
     epoch: Rc<Cell<u64>>,
     /// Accessors of the `text` and `showText` properties.
@@ -101,6 +110,7 @@ impl custom_element::CustomElement for CopyElement {
             feedback: Rc::downgrade(&self.feedback),
             feedback_ms: self.feedback_ms,
             changed: self.changed.clone(),
+            text: self.text.clone(),
             epoch: Rc::clone(&self.epoch),
             admitted: self.epoch.get().wrapping_add(1),
         });
@@ -115,12 +125,19 @@ impl custom_element::CustomElement for CopyElement {
         drop(restoring);
     }
 }
-/// Copy the `text` attribute, then show success until the restoring timer fires.
+/// Copy the creator's text, or else the `text` attribute, then show success until the
+/// restoring timer fires.
 fn copy(activation: &Rc<Activation>) {
     let Some(element) = live(&activation.root) else {
         return;
     };
-    let text = element.get_attribute("text").unwrap_or_default();
+    let text = match &activation.text {
+        Some(text) => text(),
+        None => Some(element.get_attribute("text").unwrap_or_default()),
+    };
+    let Some(text) = text else {
+        return;
+    };
     let work = crate::utils::clipboard::copy_to_clipboard(
         &activation.view.document,
         &text,
@@ -237,6 +254,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
             click: None,
             feedback: Rc::default(),
             feedback_ms: creating.as_ref().map_or(FEEDBACK_MS, |c| c.feedback),
+            text: creating.as_ref().and_then(|creating| creating.text.clone()),
             changed: creating.and_then(|creating| creating.changed),
             epoch: Rc::default(),
             _properties: properties,
@@ -244,7 +262,8 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     })
 }
 /// Create a copy control resolving its labels through `i18n`, restoring after `feedback`
-/// milliseconds and notifying `changed` after each feedback change.
+/// milliseconds, notifying `changed` after each feedback change and copying `text` when one
+/// is supplied.
 /// # Errors
 /// Returns the browser's creation failure.
 pub(crate) fn create(
@@ -252,6 +271,7 @@ pub(crate) fn create(
     i18n: &Localization,
     feedback: i32,
     changed: Option<Rc<dyn Fn()>>,
+    text: Option<TextSource>,
 ) -> Result<web_sys::Element, JsValue> {
     crate::dom::create_with(
         document,
@@ -260,6 +280,7 @@ pub(crate) fn create(
             i18n: Rc::clone(i18n),
             feedback,
             changed,
+            text,
         },
     )
 }
