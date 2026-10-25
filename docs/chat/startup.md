@@ -2,8 +2,7 @@
 
 The application holds the changelog utility in `maestro_app::utils::changelog` and
 re-exports its items at the crate root. It is available on native targets. The
-[`/changelog` command](commands.md#changelog) reads it; the startup notice that
-reads it is not wired yet.
+[`/changelog` command](commands.md#changelog) reads it. Startup uses the same reader to select unseen sections.
 
 `parse_changelog` reads a supplied path once and returns the sections in file order.
 A path that names no file yields no sections and writes nothing. A path that exists
@@ -41,3 +40,22 @@ caller still owns the text.
 
 `get_changelog_path` re-exports the configuration owner's path for a supplied
 package directory; it adds no policy of its own.
+
+## Startup history
+
+Before starting the terminal, a fresh session reads the packaged changelog. A
+session that already has messages skips the read. An unset or empty saved version
+records the installed version without showing history. Otherwise only sections
+newer than the saved version are selected, in file order with duplicates intact.
+The saved version changes only when sections are selected.
+
+Recording a version starts install reporting through the application's existing
+preference, environment and offline policy. `InteractiveModeOptions::service_origin`
+and `fetch` supply the hosted origin and transport; the empty compiled origin
+sends no request. Reporting errors do not interrupt startup.
+
+After the loaded resources and before session replay, the mode shows its selected
+history once. With `collapseChangelog`, it shows an update sentence containing the
+first heading version and a bold `/changelog` hint. Otherwise it shows a bordered
+**What's New** card with Markdown in the current theme. No history adds no card;
+the mode still marks the notice handled.

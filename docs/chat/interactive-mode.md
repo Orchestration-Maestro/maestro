@@ -43,8 +43,10 @@ start failure is returned and leaves the mode uninitialized. Once started, it
 subscribes to the session events and sets the window title. A theme change then
 invalidates the presentation, recolours the editor border and requests a frame,
 and a branch change requests a frame. Neither callback keeps the mode alive. Last,
-it lists the loaded resources and their diagnostics in the transcript and then
-replays the session (see below).
+it lists the loaded resources and their diagnostics in the transcript, shows the
+[startup history](startup.md#startup-history) once, and replays the session (see
+below). The history selection and version recording happen before building the
+header, even if starting the terminal later fails.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the

@@ -377,5 +377,2472 @@
     "expected": {
       "calls": 0
     }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": null,
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "<version>",
+      "reports": [
+        "<version>"
+      ]
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "<version>",
+      "reports": [
+        "<version>"
+      ]
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "   ",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": "## [3.2.1]\nnewest\n\n## [2.1.0]\nolder\n\n## [2.1.0]\nduplicate\n\n## [1.0.0]\nbase",
+      "last": "<version>",
+      "reports": [
+        "<version>"
+      ]
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "\ufeff",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": "## [3.2.1]\nnewest\n\n## [2.1.0]\nolder\n\n## [2.1.0]\nduplicate\n\n## [1.0.0]\nbase",
+      "last": "<version>",
+      "reports": [
+        "<version>"
+      ]
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "0",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": "## [3.2.1]\nnewest\n\n## [2.1.0]\nolder\n\n## [2.1.0]\nduplicate\n\n## [1.0.0]\nbase",
+      "last": "<version>",
+      "reports": [
+        "<version>"
+      ]
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "garbage",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": "## [3.2.1]\nnewest\n\n## [2.1.0]\nolder\n\n## [2.1.0]\nduplicate\n\n## [1.0.0]\nbase",
+      "last": "<version>",
+      "reports": [
+        "<version>"
+      ]
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "1.0.0",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": "## [3.2.1]\nnewest\n\n## [2.1.0]\nolder\n\n## [2.1.0]\nduplicate",
+      "last": "<version>",
+      "reports": [
+        "<version>"
+      ]
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "2.1.0",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": "## [3.2.1]\nnewest",
+      "last": "<version>",
+      "reports": [
+        "<version>"
+      ]
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "3.2.1",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "3.2.1",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 0,
+      "last": "9.0.0",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "9.0.0",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": null,
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": null,
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "   ",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "   ",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "\ufeff",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "\ufeff",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "0",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "0",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "garbage",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "garbage",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "1.0.0",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "1.0.0",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "2.1.0",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "2.1.0",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "3.2.1",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "3.2.1",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_startup_selects_new_entries_and_records_seen_version",
+    "input": {
+      "op": "select",
+      "messages": 1,
+      "last": "9.0.0",
+      "changelog": "## [3.2.1]\nnewest\n## [2.1.0]\nolder\n## [2.1.0]\nduplicate\n## [1.0.0]\nbase"
+    },
+    "expected": {
+      "markdown": null,
+      "last": "9.0.0",
+      "reports": []
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": null,
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": null,
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "  ## [001.02.003]\nbody\ufeff ",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[001.02.003]\u001b[22m\u001b[39m                                                                   ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "  ## [001.02.003]\nbody\ufeff ",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[001.02.003]\u001b[22m\u001b[39m                                                                   ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "not a heading",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " not a heading                                                                  ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "not a heading",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " not a heading                                                                  ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "##\t[4.5.6]\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[4.5.6]\u001b[22m\u001b[39m                                                                        ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "##\t[4.5.6]\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[4.5.6]\u001b[22m\u001b[39m                                                                        ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "## \u00851.2.3\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m\u00851.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "## \u00851.2.3\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m\u00851.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "## R\u00e9lease \u754c ### [01.002.0003]\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1mR\u00e9lease \u754c ### [01.002.0003]\u001b[22m\u001b[39m                                                   ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "## R\u00e9lease \u754c ### [01.002.0003]\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1mR\u00e9lease \u754c ### [01.002.0003]\u001b[22m\u001b[39m                                                   ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": null,
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            "
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": null,
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            "
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            "
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            "
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "  ## [001.02.003]\nbody\ufeff ",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[001.02.003]\u001b[22m\u001b[39m                                                                   ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "  ## [001.02.003]\nbody\ufeff ",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[001.02.003]\u001b[22m\u001b[39m                                                                   ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "not a heading",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " not a heading                                                                  ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "not a heading",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " not a heading                                                                  ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "##\t[4.5.6]\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[4.5.6]\u001b[22m\u001b[39m                                                                        ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "##\t[4.5.6]\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[4.5.6]\u001b[22m\u001b[39m                                                                        ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "## \u00851.2.3\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m\u00851.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "## \u00851.2.3\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m\u00851.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "## R\u00e9lease \u754c ### [01.002.0003]\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1mR\u00e9lease \u754c ### [01.002.0003]\u001b[22m\u001b[39m                                                   ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "prior\ntext",
+      "markdown": "## R\u00e9lease \u754c ### [01.002.0003]\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1mR\u00e9lease \u754c ### [01.002.0003]\u001b[22m\u001b[39m                                                   ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": null,
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": null,
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "  ## [001.02.003]\nbody\ufeff ",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v001.02.003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                 ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "  ## [001.02.003]\nbody\ufeff ",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v001.02.003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                 ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "not a heading",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "not a heading",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "##\t[4.5.6]\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v4.5.6. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "##\t[4.5.6]\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v4.5.6. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## \u00851.2.3\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## \u00851.2.3\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## R\u00e9lease \u754c ### [01.002.0003]\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v01.002.0003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## R\u00e9lease \u754c ### [01.002.0003]\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v01.002.0003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": null,
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            "
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": null,
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            "
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            "
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            "
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "  ## [001.02.003]\nbody\ufeff ",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v001.02.003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                 ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "  ## [001.02.003]\nbody\ufeff ",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v001.02.003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                 ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "not a heading",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "not a heading",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "##\t[4.5.6]\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v4.5.6. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "##\t[4.5.6]\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v4.5.6. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "## \u00851.2.3\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "## \u00851.2.3\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "## R\u00e9lease \u754c ### [01.002.0003]\nbody",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v01.002.0003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "prior\ntext",
+      "markdown": "## R\u00e9lease \u754c ### [01.002.0003]\nbody",
+      "palette": "light",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "prior                                                                           ",
+        "text                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v01.002.0003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "##\ufeff[0001.02.003]",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0001.02.003. Use \u001b[1m/changelog\u001b[22m to view full changelog.                ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## 1.2.3",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v1.2.3. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## [1.2.3",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v1.2.3. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## 1.2.3]",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v1.2.3. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## \uff11\uff12.2.3",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "##1.2.3",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "\u754c prefix ##\n2.03.004 trailing ## 9.9.9",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v2.03.004. Use \u001b[1m/changelog\u001b[22m to view full changelog.                   ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## \u00851.2.3\n## 7.8.9",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v7.8.9. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## [1.2.3.4]",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v1.2.3. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_condensed_notice_keeps_heading_capture_and_fallback",
+    "input": {
+      "op": "startup-card",
+      "collapse": true,
+      "initial": "",
+      "markdown": "## [v1.2.3]",
+      "palette": "dark",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v0.1.0. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "saved-domain",
+      "kind": "missing",
+      "value": null
+    },
+    "expected": {
+      "markdown": null,
+      "last": "<version>"
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "saved-domain",
+      "kind": "null",
+      "value": null
+    },
+    "expected": {
+      "markdown": null,
+      "last": "<version>"
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "saved-domain",
+      "kind": "string",
+      "value": "1.0.0"
+    },
+    "expected": {
+      "markdown": "## [3.2.1]\nnewest\n\n## [2.1.0]\nolder\n\n## [2.1.0]\nduplicate",
+      "last": "<version>"
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "saved-domain",
+      "kind": "number",
+      "value": 7
+    },
+    "expected": {
+      "markdown": null,
+      "last": "<version>"
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "saved-domain",
+      "kind": "boolean",
+      "value": true
+    },
+    "expected": {
+      "markdown": null,
+      "last": "<version>"
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "saved-domain",
+      "kind": "object",
+      "value": {
+        "version": "1.0.0"
+      }
+    },
+    "expected": {
+      "markdown": null,
+      "last": "<version>"
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "saved-domain",
+      "kind": "array",
+      "value": [
+        "1.0.0"
+      ]
+    },
+    "expected": {
+      "markdown": null,
+      "last": "<version>"
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "collapse-domain",
+      "kind": "missing",
+      "value": null,
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m1.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "collapse-domain",
+      "kind": "null",
+      "value": null,
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m1.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "collapse-domain",
+      "kind": "boolean",
+      "value": true,
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " Updated to v1.2.3. Use \u001b[1m/changelog\u001b[22m to view full changelog.                      ",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "collapse-domain",
+      "kind": "string",
+      "value": "false",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m1.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "collapse-domain",
+      "kind": "number",
+      "value": 1,
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m1.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "collapse-domain",
+      "kind": "object",
+      "value": {},
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m1.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_saved_settings_keep_typed_fallback_and_raw_values",
+    "input": {
+      "op": "collapse-domain",
+      "kind": "array",
+      "value": [],
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m1.2.3\u001b[22m\u001b[39m                                                                          ",
+        "                                                                                ",
+        " body                                                                           ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": false,
+      "override": null,
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": false,
+      "override": "",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": false,
+      "override": "false",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": false,
+      "override": "TRUE",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": false,
+      "override": "yes",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": false,
+      "override": " 1 ",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": true,
+      "override": null,
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": true,
+      "override": "",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": true,
+      "override": "false",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": true,
+      "override": "TRUE",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": true,
+      "override": "yes",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": null,
+      "preference": true,
+      "override": " 1 ",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": false,
+      "override": null,
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": false,
+      "override": "",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": false,
+      "override": "false",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": false,
+      "override": "TRUE",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": false,
+      "override": "yes",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": false,
+      "override": " 1 ",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": true,
+      "override": null,
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": true,
+      "override": "",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": true,
+      "override": "false",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": true,
+      "override": "TRUE",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": true,
+      "override": "yes",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": [
+      {
+        "url": "<service-origin>/api/report-install?version=1.2.3%20%2B%E7%95%8C"
+      }
+    ]
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "",
+      "preference": true,
+      "override": " 1 ",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": false,
+      "override": null,
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": false,
+      "override": "",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": false,
+      "override": "false",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": false,
+      "override": "TRUE",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": false,
+      "override": "yes",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": false,
+      "override": " 1 ",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": true,
+      "override": null,
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": true,
+      "override": "",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": true,
+      "override": "false",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": true,
+      "override": "TRUE",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": true,
+      "override": "yes",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "0",
+      "preference": true,
+      "override": " 1 ",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": false,
+      "override": null,
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": false,
+      "override": "",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": false,
+      "override": "false",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": false,
+      "override": "TRUE",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": false,
+      "override": "yes",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": false,
+      "override": " 1 ",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": true,
+      "override": null,
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": true,
+      "override": "",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": true,
+      "override": "false",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": true,
+      "override": "TRUE",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": true,
+      "override": "yes",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
+  },
+  {
+    "test": "changelog_startup_reports_only_recorded_versions",
+    "input": {
+      "op": "report",
+      "offline": "1",
+      "preference": true,
+      "override": " 1 ",
+      "version": "1.2.3 +\u754c"
+    },
+    "expected": []
   }
 ]
