@@ -2,9 +2,13 @@
 use super::super::extension_widgets::with_factories;
 use super::super::isolated;
 use super::port;
-use maestro_app::{ExtensionAPI, Local, TerminalInputHandler};
+use maestro_app::{ExtensionAPI, Local, ReadonlyFooterDataProvider, TerminalInputHandler};
 use maestro_tui::tui::{InputListener, InputListenerResult};
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    path::Path,
+    rc::Rc,
+};
 
 #[test]
 fn terminal_input_reuses_callback_identity_across_repeated_registration() {
@@ -238,4 +242,220 @@ fn observing(calls: Rc<Cell<usize>>) -> InputListener {
         calls.set(calls.get() + 1);
         InputListenerResult::Pass
     })
+}
+
+/// Observes cleanup while the containing mode is still retained.
+struct InputRelease {
+    /// Filled after the callback factory constructs the mode.
+    mode: std::cell::RefCell<std::rc::Weak<crate::InteractiveMode>>,
+    /// The footer subscription must still be retained when input is released.
+    footer: std::rc::Weak<Cell<usize>>,
+    /// The UI must not yet have completed its stop.
+    initialized: bool,
+}
+
+impl Drop for InputRelease {
+    fn drop(&mut self) {
+        let Some(mode) = self.mode.borrow().upgrade() else {
+            return;
+        };
+        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(
+            self.footer.upgrade().is_some(),
+            "input precedes footer disposal"
+        );
+        assert_eq!(mode.is_initialized.get(), self.initialized);
+        if self.initialized {
+            assert!(
+                mode.unsubscribe.borrow().is_some(),
+                "input precedes unsubscribe"
+            );
+        }
+    }
+}
+
+#[test]
+fn stopping_the_mode_clears_only_extension_input_listeners() {
+    isolated(
+        "stopping_the_mode_clears_only_extension_input_listeners",
+        |directory| {
+            for initialized in [false, true] {
+                for count in [0, 3] {
+                    stop_input_case(directory, initialized, count);
+                }
+            }
+        },
+    );
+}
+
+/// Checks capture release between the current loader and footer/UI owners.
+fn stop_input_case(directory: &Path, initialized: bool, count: usize) {
+    let footer = Rc::new(Cell::new(0));
+    let capture = Rc::new(InputRelease {
+        mode: RefCell::default(),
+        initialized,
+        footer: Rc::downgrade(&footer),
+    });
+    let retained = Rc::downgrade(&capture);
+    let (world, mut handlers) = with_factories(directory, move |api| {
+        (0..count)
+            .map(|_| {
+                let capture = capture.clone();
+                api.ui_callback(move |_, _| {
+                    let _ = &capture;
+                    Ok(InputListenerResult::Pass)
+                })
+            })
+            .collect()
+    });
+    if !initialized {
+        world.mode.stop().unwrap();
+    }
+    if let Some(capture) = retained.upgrade() {
+        capture.mode.replace(Rc::downgrade(&world.mode));
+    }
+    drop(
+        world
+            .mode
+            .footer_data_provider
+            .on_branch_change(Rc::new(move || {
+                footer.set(footer.get() + 1);
+            })),
+    );
+    let host = port(&world.mode);
+    if let Some(handler) = handlers.pop() {
+        let remove = host.on_terminal_input(handler.clone()).unwrap();
+        let duplicate = host.on_terminal_input(handler).unwrap();
+        remove().unwrap();
+        duplicate().unwrap();
+    }
+    for handler in handlers {
+        drop(host.on_terminal_input(handler.clone()).unwrap());
+        drop(host.on_terminal_input(handler).unwrap());
+    }
+    let calls = Rc::new(Cell::new(0));
+    let unrelated = world.mode.ui.add_input_listener(observing(calls.clone()));
+    if initialized {
+        world.mode.show_working_loader();
+    }
+    world.mode.stop().unwrap();
+    assert!(
+        retained.upgrade().is_none(),
+        "stop releases extension captures"
+    );
+    world.mode.stop().unwrap();
+    world.mode.init().unwrap();
+    world.terminal.send_input("kept");
+    assert_eq!(calls.get(), 1);
+    assert_eq!(world.mode.editor.get_text(), "kept");
+    unrelated();
+}
+
+#[test]
+fn stopping_the_mode_keeps_input_clear_after_reinitialize() {
+    isolated(
+        "stopping_the_mode_keeps_input_clear_after_reinitialize",
+        |directory| {
+            let calls = Rc::new(Cell::new(0));
+            let seen = calls.clone();
+            let (world, mut handlers) =
+                with_factories(directory, move |api| vec![counting(api, seen.clone())]);
+            let handler = handlers.pop().unwrap();
+            let host = port(&world.mode);
+            let old = host.on_terminal_input(handler.clone()).unwrap();
+            let independent = Rc::new(Cell::new(0));
+            let remove = world
+                .mode
+                .ui
+                .add_input_listener(observing(independent.clone()));
+            world.mode.stop().unwrap();
+            world.mode.init().unwrap();
+            world.terminal.send_input("a");
+            assert_eq!(
+                calls.get(),
+                0,
+                "stopped callback cannot return on reinitialize"
+            );
+            assert_eq!(independent.get(), 1, "unrelated listener survives");
+            assert_eq!(world.mode.editor.get_text(), "a");
+            let current = host.on_terminal_input(handler).unwrap();
+            world.terminal.send_input("b");
+            assert_eq!(calls.get(), 1);
+            old().unwrap();
+            world.terminal.send_input("c");
+            assert_eq!(
+                calls.get(),
+                1,
+                "old remover still removes a current registration"
+            );
+            assert_eq!(world.mode.editor.get_text(), "abc");
+            assert_eq!(independent.get(), 3);
+            current().unwrap();
+            old().unwrap();
+            remove();
+            world.mode.stop().unwrap();
+        },
+    );
+}
+
+#[test]
+fn stopping_the_mode_preserves_input_cleanup_failure_order() {
+    isolated(
+        "stopping_the_mode_preserves_input_cleanup_failure_order",
+        |directory| {
+            for progress_failure in [true, false] {
+                let capture = Rc::new(Cell::new(0));
+                let retained = Rc::downgrade(&capture);
+                let (world, mut handlers) =
+                    with_factories(directory, move |api| vec![counting(api, capture.clone())]);
+                world
+                    .host
+                    .session()
+                    .settings_manager()
+                    .borrow_mut()
+                    .set_show_terminal_progress(true);
+                drop(
+                    port(&world.mode)
+                        .on_terminal_input(handlers.pop().unwrap())
+                        .unwrap(),
+                );
+                let kind = if progress_failure {
+                    world
+                        .terminal
+                        .set_progress_error(Some(std::io::ErrorKind::PermissionDenied));
+                    std::io::ErrorKind::PermissionDenied
+                } else {
+                    world
+                        .terminal
+                        .set_stop_error(Some(std::io::ErrorKind::ConnectionReset));
+                    std::io::ErrorKind::ConnectionReset
+                };
+                for attempt in 1..=2 {
+                    assert_eq!(world.mode.stop().unwrap_err().kind(), kind);
+                    assert_eq!(
+                        retained.upgrade().is_some(),
+                        progress_failure,
+                        "progress failure precedes input clear; UI failure follows it"
+                    );
+                    assert!(world.mode.is_initialized.get());
+                    world.terminal.send_input("x");
+                    assert_eq!(
+                        retained.upgrade().map(|capture| capture.get()),
+                        progress_failure.then_some(attempt)
+                    );
+                }
+                world.terminal.set_progress_error(None);
+                world.terminal.set_stop_error(None);
+                world.mode.stop().unwrap();
+                assert!(retained.upgrade().is_none());
+                world.mode.init().unwrap();
+                world.terminal.send_input("after");
+                assert_eq!(
+                    world.mode.editor.get_text(),
+                    if progress_failure { "xxafter" } else { "after" }
+                );
+                world.mode.stop().unwrap();
+            }
+        },
+    );
 }
