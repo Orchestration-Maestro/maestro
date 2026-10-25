@@ -511,12 +511,12 @@ fn report_runtime(runtime: &AgentSessionRuntime, host: &MainHost<'_, '_>) -> io:
 
 /// Wait for one key after the conversion notices on the native terminal.
 #[cfg(unix)]
-async fn wait_for_input() -> io::Result<()> {
-    maestro_tui_crossterm::terminal::wait_for_input().await
+fn wait_for_input() -> impl Future<Output = io::Result<()>> {
+    maestro_tui_crossterm::terminal::wait_for_input()
 }
 
 /// Continue at once where no native terminal exists to read a key from.
 #[cfg(not(unix))]
-async fn wait_for_input() -> io::Result<()> {
-    Ok(())
+fn wait_for_input() -> impl Future<Output = io::Result<()>> {
+    std::future::ready(Ok(()))
 }
