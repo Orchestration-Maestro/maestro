@@ -132,7 +132,9 @@
     "provider_card_labels_literal_fields_and_locales",
     "provider_card_actions_use_current_provider_and_callbacks",
     "provider_card_updates_reconnect_and_release_bindings",
-    "provider_card_native_focus_layout_and_brand_roles"
+    "provider_card_native_focus_layout_and_brand_roles",
+    "artifact_console_dom_summaries_and_literal_lines",
+    "artifact_console_dom_preserves_raw_value_domains"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",
