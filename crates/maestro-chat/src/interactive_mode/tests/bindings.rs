@@ -2,8 +2,8 @@
 use super::{Setup, World, cases, isolated, roles, started};
 use crate::interactive_mode::InteractiveMode;
 use maestro_app::{
-    DiagnosticErrorInfo, ExtensionError, ExtensionFactory, ExtensionShortcut, Local,
-    ReadonlyFooterDataProvider, ReadonlySessionManager, ResourcesDiscoverEvent,
+    DiagnosticErrorInfo, ExtensionError, ExtensionFactory, ExtensionShortcut, LoadExtensionsResult,
+    Local, ReadonlyFooterDataProvider, ReadonlySessionManager, ResourcesDiscoverEvent,
     ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
 };
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
@@ -740,14 +740,8 @@ async fn discover(
     Ok(None)
 }
 
-/// Registers `shortcut` on the session's first extension under that extension's path.
-fn register_shortcut(world: &World, mut shortcut: ExtensionShortcut<Local>) {
-    let owners = world
-        .mode
-        .runtime_host
-        .session()
-        .resource_loader()
-        .get_extensions();
+/// Registers `shortcut` on the first loaded extension under that extension's path.
+fn register_shortcut(owners: &LoadExtensionsResult<Local>, mut shortcut: ExtensionShortcut<Local>) {
     let owner = &owners.extensions[0];
     shortcut.extension_path = owner.read().unwrap().path.clone();
     owner
@@ -785,10 +779,8 @@ async fn until_logged(log: &Rc<RefCell<Vec<String>>>, entry: &str) {
 }
 
 /// The transcript's plain rows.
-fn transcript(world: &World) -> Vec<String> {
-    world
-        .mode
-        .chat_container
+fn transcript(mode: &InteractiveMode) -> Vec<String> {
+    mode.chat_container
         .render(80)
         .iter()
         .map(|row| strip_ansi(row).unwrap().trim_end().to_owned())
@@ -842,7 +834,15 @@ async fn paused(directory: &Path, quiet: bool) -> Paused {
         ..Setup::default()
     }
     .build(directory);
-    register_shortcut(&world, ctrl_q(|_| Ok(())));
+    register_shortcut(
+        &world
+            .mode
+            .runtime_host
+            .session()
+            .resource_loader()
+            .get_extensions(),
+        ctrl_q(|_| Ok(())),
+    );
     let mode = Rc::clone(&world.mode);
     let started = tokio::task::spawn_local(async move { mode.init().await.err() });
     until_logged(&log, "bind ui=true").await;
@@ -855,7 +855,7 @@ async fn paused(directory: &Path, quiet: bool) -> Paused {
         world.mode.unsubscribe.borrow().is_none(),
         "no subscription yet"
     );
-    let rows = transcript(&world);
+    let rows = transcript(&world.mode);
     assert!(rows.iter().all(String::is_empty), "nothing listed yet");
     Paused {
         world,
@@ -922,7 +922,7 @@ async fn binding_case(directory: &Path, fail: Option<&str>, expected: &Phases) {
         "{fail:?}"
     );
     assert_eq!(world.mode.startup_notices_shown.get(), reached("notices"));
-    let rows = transcript(world);
+    let rows = transcript(&world.mode);
     let listed = rows.iter().position(|row| row.contains("[Context]"));
     let noticed = rows.iter().position(|row| row.contains("What's New"));
     assert_eq!(listed.is_some(), fail.is_none(), "{fail:?}: {rows:?}");
@@ -1010,7 +1010,7 @@ async fn bound_failure(directory: &Path, stack: Option<String>) -> Vec<String> {
     .build(directory);
     world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
-    transcript(&world)
+    transcript(&world.mode)
         .into_iter()
         .filter(|row| !row.is_empty())
         .collect()
@@ -1094,7 +1094,15 @@ async fn shortcut_shutdown(directory: &Path, streaming: bool) {
         ..Setup::default()
     }
     .build(directory);
-    register_shortcut(&world, ctrl_q(|context| context.shutdown()));
+    register_shortcut(
+        &world
+            .mode
+            .runtime_host
+            .session()
+            .resource_loader()
+            .get_extensions(),
+        ctrl_q(|context| context.shutdown()),
+    );
     world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     if streaming {
@@ -1196,7 +1204,7 @@ fn extension_error_stacks_keep_every_frame_at_scale() {
                             (0..frames).map(|frame| format!("   at frame{frame} (a.js:{frame}:1)")),
                         )
                         .collect();
-                assert_eq!(transcript(&world), expected, "{frames} frames");
+                assert_eq!(transcript(&world.mode), expected, "{frames} frames");
             }
         },
     );
@@ -1264,7 +1272,10 @@ fn shortcut_context_exposes_current_runner_capabilities() {
             let log = Rc::new(RefCell::new(Vec::new()));
             let session = world.mode.runtime_host.session();
             let registry = std::sync::Arc::clone(session.model_registry());
-            register_shortcut(&world, capability_shortcut(&log, registry));
+            register_shortcut(
+                &session.resource_loader().get_extensions(),
+                capability_shortcut(&log, registry),
+            );
             world
                 .host
                 .services()
@@ -1370,14 +1381,7 @@ fn renaming_replacements(
     Rc::new(move |options| {
         created.set(created.get() + 1);
         let extensions = super::loaded(&options.cwd, idle(), Vec::new());
-        let owner = &extensions.extensions[0];
-        let mut shortcut = reading_shortcut(&log);
-        shortcut.extension_path = owner.read().unwrap().path.clone();
-        owner
-            .write()
-            .unwrap()
-            .shortcuts
-            .insert(shortcut.shortcut.clone(), Rc::new(RwLock::new(shortcut)));
+        register_shortcut(&extensions, reading_shortcut(&log));
         let resources = super::Resources {
             context: vec![maestro_app::ContextFile {
                 path: context.clone(),
@@ -1440,7 +1444,7 @@ fn continued(
                     .render(200)
                     .iter()
                     .any(|row| row.contains(&model));
-                let listed = transcript_of(&mode)
+                let listed = transcript(&mode)
                     .iter()
                     .filter(|row| row.contains("[Context]"))
                     .count();
@@ -1458,15 +1462,6 @@ fn continued(
         })),
         ..maestro_app::NewSessionCommandOptions::default()
     }
-}
-
-/// The plain transcript rows of `mode`.
-fn transcript_of(mode: &InteractiveMode) -> Vec<String> {
-    mode.chat_container
-        .render(80)
-        .iter()
-        .map(|row| strip_ansi(row).unwrap().trim_end().to_owned())
-        .collect()
 }
 
 /// What the next `ctrl+q` press reads.
@@ -1554,7 +1549,15 @@ fn real_session_replacement_rebinds_shortcuts_before_continuation() {
                 ..Setup::default()
             }
             .build(directory);
-            register_shortcut(&world, reading_shortcut(&log));
+            register_shortcut(
+                &world
+                    .mode
+                    .runtime_host
+                    .session()
+                    .resource_loader()
+                    .get_extensions(),
+                reading_shortcut(&log),
+            );
             world.mode.init().await.unwrap();
             world.runtime.settle().unwrap();
             for generation in 1..=2 {
