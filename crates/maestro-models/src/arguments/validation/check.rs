@@ -1,10 +1,12 @@
 //! Ordered schema evaluation with isolated branch results and location marks.
 
+mod code;
 mod frame;
 mod operand;
 mod program;
 
-pub(super) use frame::check;
+pub(super) use code::Code;
+pub(super) use frame::{candidate, check, check_owned};
 pub(super) use operand::Instance;
 pub(super) use program::Phase;
 
@@ -21,7 +23,7 @@ use super::{
     scalars,
 };
 
-/// Maximum number of distinct corrective messages retained per evaluation.
+/// Maximum number of corrective messages retained per evaluation.
 const ERROR_LIMIT: usize = 8;
 
 #[derive(Default)]
@@ -49,31 +51,56 @@ impl Marks {
     }
 }
 
+/// A corrective line retaining whether its refinement index makes it distinct.
+#[derive(PartialEq)]
+pub(super) enum Failure {
+    /// Ordinary duplicate corrective lines are suppressed.
+    Ordinary(String),
+    /// Separate refinement checks remain separate failures, even with equal text.
+    Refinement(String),
+}
+
+impl From<String> for Failure {
+    fn from(message: String) -> Self {
+        Self::Ordinary(message)
+    }
+}
+
+impl Failure {
+    /// Render a retained failure at the external diagnostic boundary.
+    fn into_message(self) -> String {
+        match self {
+            Self::Ordinary(message) | Self::Refinement(message) => message,
+        }
+    }
+}
+
 /// Completed child application: marks exist only for a valid branch.
 pub(super) enum Outcome {
     /// Every assertion held; the locations the branch evaluated.
     Valid(Marks),
     /// At least one assertion failed; its ordered corrective messages.
-    Invalid(Vec<String>),
+    Invalid(Vec<Failure>),
 }
 
 #[derive(Default)]
 /// Failures and evaluated locations accumulated by one schema application.
 pub(super) struct Evaluation {
     /// Ordered corrective messages accumulated by this evaluation.
-    pub errors: Vec<String>,
+    pub errors: Vec<Failure>,
     /// Locations evaluated so far, visible to later unevaluated checks.
     pub marks: Marks,
 }
 
 impl Evaluation {
-    /// Retain ordered distinct failures within the diagnostic limit.
-    fn add_errors(&mut self, errors: impl IntoIterator<Item = String>) {
+    /// Retain ordered ordinary failures once, without merging indexed refinements.
+    fn add_errors(&mut self, errors: impl IntoIterator<Item = impl Into<Failure>>) {
         for error in errors {
+            let error = error.into();
             if self.errors.len() == ERROR_LIMIT {
                 break;
             }
-            if !self.errors.contains(&error) {
+            if matches!(error, Failure::Refinement(_)) || !self.errors.contains(&error) {
                 self.errors.push(error);
             }
         }
@@ -91,6 +118,8 @@ impl Evaluation {
 
 /// Deferred work preserving keyword order within an evaluation frame.
 pub(super) enum Instruction<'a> {
+    /// Apply an author guard before literals and compositions.
+    Guard,
     /// Resolve a keyword against the live operand when its source phase is reached.
     Phase(Phase),
     /// Admit a dependency only after the preceding dependency has completed.

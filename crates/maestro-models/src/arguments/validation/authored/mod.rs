@@ -14,6 +14,7 @@ use serde_json::Value;
 
 use crate::SchemaKind;
 use context::Context;
+pub(super) use schema_view::index;
 use schema_view::{Document, Node};
 
 /// Convert one argument candidate through the kinds its schema author declared.

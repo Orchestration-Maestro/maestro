@@ -127,8 +127,18 @@ once from the pointer the builder recorded.
 Checking converts declared primitive values before evaluating the original schema.
 Objects and arrays are traversed only when their type is explicitly declared.
 Combinator alternatives use independent candidates; the first valid converted
-alternative wins. Type unions preserve values that already match a member.
-Missing values are not defaulted and unknown fields are not removed.
+alternative wins, including edits made by its custom checks. Rejected candidates lose
+their argument edits, not external callback effects. Type unions preserve values that
+already match a member. Missing values are not defaulted and unknown fields are not removed.
+
+A `ParameterSchema<SchemaCode>` retains local callbacks separately from its JSON.
+The checker runs a supplied Base guard before literals and compositions, even on a
+node without a declared Base kind. Refinements run after that node's ordinary
+assertions succeed. Checking stops at a failed refinement; diagnostic collection
+visits each refinement and requests error text only for failures. Equal messages
+from separate refinements remain separate lines. At most eight lines are retained,
+but later error factories still run and their errors propagate unchanged.
+Ordinary schema JSON never reconstructs these callbacks.
 
 The checker supports object, array, string, number and composition constraints,
 offline schema resources, anchors, recursive and dynamic references, and evaluated
@@ -178,18 +188,19 @@ branch, a negation, a failing `then` or `else`, and the items checked by `contai
 cover nothing, and the properties a nested value evaluated never cover those of
 its parent.
 
-Failures report at most eight distinct field diagnostics in evaluation order,
+Failures report at most eight field diagnostics in evaluation order,
 followed by the original arguments as two-space-indented JSON. Repeated identical
-messages, including missing-dependency messages, appear only once. Numeric-index
+ordinary messages, including missing-dependency messages, appear only once;
+separate refinements may retain equal messages. Numeric-index
 keys precede ordinary insertion-ordered keys. Returned diagnostics have an error name and message, without a manufactured
-stack or code.
+stack or code. A supplied callback error instead retains its original fields.
 
 ```rust
 use maestro_models::{Tool, ToolCall, validate_tool_arguments};
 use serde_json::json;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let tool = Tool {
+let tool: Tool = Tool {
     name: "count".into(),
     description: "Count supplied items".into(),
     parameters: json!({

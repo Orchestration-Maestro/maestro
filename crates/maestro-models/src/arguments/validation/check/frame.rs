@@ -2,6 +2,7 @@
 
 use std::collections::VecDeque;
 
+use crate::DiagnosticErrorInfo;
 use serde_json::{Map, Value};
 
 use super::super::{
@@ -11,7 +12,7 @@ use super::super::{
     scalars,
 };
 use super::{
-    Batch, Evaluation, Instruction, Job, Mode, Outcome, apply,
+    Batch, Code, Evaluation, Failure, Instruction, Job, Mode, Outcome, apply,
     operand::{Instance, Operand},
     program::{instructions, phase_instructions},
 };
@@ -119,15 +120,27 @@ impl<'s, 'v> Frame<'s, 'v> {
     }
 
     /// Resolve the next keyword only after earlier child applications have settled.
-    fn advance(&mut self, root: &Root<'_, 's>, patterns: &Patterns<'_>) -> bool {
+    fn advance(
+        &mut self,
+        root: &Root<'_, 's>,
+        patterns: &Patterns<'_>,
+        code: &Code<'_>,
+    ) -> Result<bool, DiagnosticErrorInfo> {
         if !self.pass.exhaustive() && !self.result.errors.is_empty() {
             self.instructions.clear();
         }
         let Some(instruction) = self.instructions.pop_front() else {
-            return false;
+            return Ok(false);
         };
         let mut work = Vec::new();
         match instruction {
+            Instruction::Guard => super::code::guard(
+                code.node(self.context.location.schema),
+                &mut self.instance,
+                &self.path,
+                self.pass.exhaustive(),
+                &mut self.result,
+            )?,
             Instruction::Phase(phase) => {
                 let job = Job {
                     context: self.context.clone(),
@@ -148,37 +161,55 @@ impl<'s, 'v> Frame<'s, 'v> {
         for instruction in work.into_iter().rev() {
             self.instructions.push_front(instruction);
         }
-        true
-    }
-
-    /// Apply the supplied refinement only after structural success.
-    fn refine(&mut self, effect: &mut Effect<'s>) {
-        if self.result.errors.is_empty()
-            && let Operand::Write(value) = &mut self.instance
-            && let Err(error) = effect(self.context.location.schema, value)
-        {
-            self.result
-                .add_errors([scalars::render(&self.path, &error)]);
-        }
+        Ok(true)
     }
 }
-
-/// Mutable callback boundary used by the same continuation as borrowed checking.
-type Effect<'s> = dyn FnMut(&'s Value, &mut Value) -> Result<(), String> + 's;
 
 /// Check a borrowed operand without copying its tree or changing its contents.
 pub(in super::super) fn check<'s>(
     schema: &'s Value,
     definitions: &[&'s Map<String, Value>],
     value: &Value,
-) -> Result<Vec<String>, regress::Error> {
-    evaluate(
-        schema,
-        definitions,
-        Operand::Read(value),
-        &mut |_, _| Ok(()),
-    )
-    .map(|(_, errors)| errors)
+) -> Result<Vec<String>, DiagnosticErrorInfo> {
+    evaluate(schema, definitions, Operand::Read(value), &Code::default()).map(|(_, errors)| errors)
+}
+
+/// Run only candidate acceptance, without requesting diagnostic factories.
+pub(in super::super) fn candidate(
+    schema: &Value,
+    value: &mut Value,
+    code: &Code<'_>,
+) -> Result<bool, DiagnosticErrorInfo> {
+    let root = Root {
+        location: Location::root(schema),
+        definitions: &[],
+    };
+    let Ok(patterns) = prepare::prepare(&root) else {
+        return Ok(false);
+    };
+    let (result, errors) = run(
+        &root,
+        &patterns,
+        Operand::Write(std::mem::take(value)),
+        code,
+        Pass::Compiled {
+            unevaluated: uses_unevaluated(schema),
+        },
+    )?;
+    if let Operand::Write(result) = result {
+        *value = result;
+    }
+    Ok(errors.is_empty())
+}
+
+/// Check an exclusive argument value through the same continuation as borrowed checking.
+pub(in super::super) fn check_owned(
+    schema: &Value,
+    value: Value,
+    code: &Code<'_>,
+) -> Result<(Value, Vec<String>), DiagnosticErrorInfo> {
+    let (value, errors) = evaluate(schema, &[], Operand::Write(value), code)?;
+    Ok((value.into_owned(), errors))
 }
 
 /// Check once, then collect corrective diagnostics only when checking rejected the value.
@@ -186,21 +217,22 @@ pub(super) fn evaluate<'s, 'v>(
     schema: &'s Value,
     definitions: &[&'s Map<String, Value>],
     value: Operand<'v>,
-    effect: &mut Effect<'s>,
-) -> Result<(Operand<'v>, Vec<String>), regress::Error> {
+    code: &Code<'_>,
+) -> Result<(Operand<'v>, Vec<String>), DiagnosticErrorInfo> {
     let root = Root {
         location: Location::root(schema),
         definitions,
     };
-    let patterns = prepare::prepare(&root)?;
+    let patterns =
+        prepare::prepare(&root).map_err(|error| super::super::diagnostic(error.to_string()))?;
     let pass = Pass::Compiled {
         unevaluated: uses_unevaluated(schema),
     };
-    let (value, check_errors) = run(&root, &patterns, value, effect, pass);
+    let (value, check_errors) = run(&root, &patterns, value, code, pass)?;
     if check_errors.is_empty() {
         return Ok((value, check_errors));
     }
-    let (value, errors) = run(&root, &patterns, value, effect, Pass::Errors);
+    let (value, errors) = run(&root, &patterns, value, code, Pass::Errors)?;
     Ok((
         value,
         if errors.is_empty() {
@@ -232,13 +264,13 @@ fn uses_unevaluated(schema: &Value) -> bool {
 }
 
 /// Execute one requested mode, keeping the current frame separate from suspended parents.
-fn run<'s, 'v>(
-    root: &Root<'_, 's>,
+fn run<'v>(
+    root: &Root<'_, '_>,
     patterns: &Patterns<'_>,
     value: Operand<'v>,
-    effect: &mut Effect<'s>,
+    code: &Code<'_>,
     pass: Pass,
-) -> (Operand<'v>, Vec<String>) {
+) -> Result<(Operand<'v>, Vec<String>), DiagnosticErrorInfo> {
     let job = Job {
         context: Context::root(root.location.clone()),
         value: Instance::Same,
@@ -256,12 +288,28 @@ fn run<'s, 'v>(
             continue;
         }
         active.finish_batch();
-        if active.pending.is_some() || active.advance(root, patterns) {
+        if active.pending.is_some() || active.advance(root, patterns, code)? {
             continue;
         }
-        active.refine(effect);
+        if active.result.errors.is_empty() {
+            super::code::refine(
+                code.node(active.context.location.schema),
+                &mut active.instance,
+                &active.path,
+                active.pass.exhaustive(),
+                &mut active.result,
+            )?;
+        }
         let Some(mut parent) = parents.pop() else {
-            return (active.instance, active.result.errors);
+            return Ok((
+                active.instance,
+                active
+                    .result
+                    .errors
+                    .into_iter()
+                    .map(Failure::into_message)
+                    .collect(),
+            ));
         };
         parent.restore(active);
         active = parent;
@@ -290,10 +338,9 @@ fn admit<'s, 'v>(
     {
         active.instance.restore(&job.value, value);
         if let Some(batch) = &mut active.pending {
-            batch.results.push(Outcome::Invalid(vec![scalars::render(
-                &job.path,
-                "schema is false",
-            )]));
+            batch.results.push(Outcome::Invalid(vec![
+                scalars::render(&job.path, "schema is false").into(),
+            ]));
         }
         return None;
     }

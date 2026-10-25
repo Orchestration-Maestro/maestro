@@ -21,12 +21,7 @@ pub(crate) struct Document<'a> {
 impl<'a> Document<'a> {
     /// Index each authored kind by the node its pointer addresses.
     pub(crate) fn new(root: &'a Value, kinds: &'a HashMap<String, SchemaKind>) -> Self {
-        let indexed = kinds
-            .iter()
-            .filter_map(|(pointer, kind)| {
-                Some((std::ptr::from_ref::<Value>(root.pointer(pointer)?), kind))
-            })
-            .collect();
+        let indexed = index(root, kinds);
         Self {
             root,
             kinds: indexed,
@@ -180,4 +175,15 @@ impl Node<'_> {
             Node::Unknown => Some(SchemaKind::Unknown),
         }
     }
+}
+
+/// Resolve supplied node pointers once, retaining the original schema identities.
+pub(in super::super) fn index<'a, T>(
+    root: &'a Value,
+    entries: &'a HashMap<String, T>,
+) -> HashMap<*const Value, &'a T> {
+    entries
+        .iter()
+        .filter_map(|(pointer, item)| Some((std::ptr::from_ref(root.pointer(pointer)?), item)))
+        .collect()
 }

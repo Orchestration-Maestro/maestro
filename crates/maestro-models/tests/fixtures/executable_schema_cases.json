@@ -1,0 +1,102 @@
+[
+  {
+    "id": "refine-default-message",
+    "test": "refinement_messages_keep_default_static_and_dynamic_text",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: Refine Error\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "refine-static-message",
+    "test": "refinement_messages_keep_default_static_and_dynamic_text",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: not admitted\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "refine-dynamic-message",
+    "test": "refinement_messages_keep_default_static_and_dynamic_text",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: not admitted: 3\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-stack-errors",
+    "test": "stacked_refinements_keep_order_and_all_failures",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: first\n  - n: second\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-stack-first-ok",
+    "test": "stacked_refinements_keep_order_and_all_failures",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: second\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-stack-second-ok",
+    "test": "stacked_refinements_keep_order_and_all_failures",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: first\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-empty-errors",
+    "test": "refinement_messages_keep_default_static_and_dynamic_text",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: \n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "equal-refinement-messages",
+    "test": "refinement_errors_keep_distinct_indices_and_the_error_limit",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: same\n  - n: same\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "many-refinement-messages",
+    "test": "refinement_errors_keep_distinct_indices_and_the_error_limit",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: error 0\n  - n: error 1\n  - n: error 2\n  - n: error 3\n  - n: error 4\n  - n: error 5\n  - n: error 6\n  - n: error 7\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "error-factory-after-limit",
+    "test": "refinement_errors_keep_distinct_indices_and_the_error_limit",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "last factory stopped"
+    }
+  }
+]

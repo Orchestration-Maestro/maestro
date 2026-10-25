@@ -141,7 +141,7 @@ mod tests {
                     .keys()
                     .map(|name| (name.clone(), Value::Null))
                     .collect();
-            let tool = Tool {
+            let tool: Tool = Tool {
                 name: "echo".to_owned(),
                 description: String::new(),
                 parameters: crate::ParameterSchema::authored(schema, kinds),

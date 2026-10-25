@@ -102,7 +102,13 @@ pub(super) fn instructions<'a>(job: &Job<'a>) -> Vec<Instruction<'a>> {
         Phase::AnyOf,
         Phase::OneOf,
     ];
-    let mut work: Vec<_> = phases.into_iter().map(Instruction::Phase).collect();
+    let mut work = Vec::new();
+    for phase in phases {
+        if matches!(phase, Phase::Literal) {
+            work.push(Instruction::Guard);
+        }
+        work.push(Instruction::Phase(phase));
+    }
     work.push(Instruction::Unevaluated(job.clone()));
     work
 }

@@ -29,6 +29,13 @@ impl<'v> Operand<'v> {
             Self::Write(v) => v,
         }
     }
+    /// Return an exclusive value, copying only if this was the borrowed entry.
+    pub(super) fn into_owned(self) -> Value {
+        match self {
+            Self::Read(value) => value.clone(),
+            Self::Write(value) => value,
+        }
+    }
     /// Move a writable child out, or borrow a read-only child.
     pub(super) fn select(&mut self, selector: &Instance) -> Option<Self> {
         match self {
