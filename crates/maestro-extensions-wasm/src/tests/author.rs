@@ -39,6 +39,8 @@ mod replacement_author;
 mod setup_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
+#[path = "nested_schema_fixture.rs"]
+pub(crate) mod nested_schema_fixture;
 #[path = "shell_author.rs"]
 mod shell_author;
 #[path = "tool_author.rs"]
