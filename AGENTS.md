@@ -263,7 +263,7 @@ to `maestro-models` edge for interactive-mode tests that drive a real session
 through the scripted provider, the native-only, non-optional `maestro-cli`
 to `maestro-listeners` development edge for the controlled print adapter,
 and the native, non-optional dev-dependencies
-of the twenty-three declared callers on `maestro-test-process`, the owner of
+of the twenty-five declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
