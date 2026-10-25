@@ -59,3 +59,12 @@ history once. With `collapseChangelog`, it shows an update sentence containing t
 first heading version and a bold `/changelog` hint. Otherwise it shows a bordered
 **What's New** card with Markdown in the current theme. No history adds no card;
 the mode still marks the notice handled.
+
+## Update cards
+
+`show_new_version_notification` appends a warning-bordered card with the supplied
+version, the `maestro update` command and a link to the release history.
+`show_package_update_notification` appends the same framing around the supplied
+package names, preserving their order and duplicates. Both methods accept empty
+values and request a frame. Borders follow later theme changes; the card text
+keeps the theme used when it was created.

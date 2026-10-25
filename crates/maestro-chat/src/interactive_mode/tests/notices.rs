@@ -644,3 +644,221 @@ async fn reporting_case(
         work.await.unwrap();
     }
 }
+
+/// A recorded direct update card or a theme change over a retained card.
+#[derive(Deserialize)]
+#[serde(tag = "op", deny_unknown_fields)]
+enum UpdateInput {
+    /// A release card.
+    #[serde(rename = "showNewVersionNotification")]
+    Version {
+        /// Version text supplied to the card.
+        value: String,
+        /// Selected palette.
+        palette: String,
+        /// Render width.
+        width: usize,
+    },
+    /// A package card.
+    #[serde(rename = "showPackageUpdateNotification")]
+    Packages {
+        /// Names in their supplied order.
+        value: Vec<String>,
+        /// Selected palette.
+        palette: String,
+        /// Render width.
+        width: usize,
+    },
+    /// A previously prepared card after a theme change.
+    #[serde(rename = "retained-update", rename_all = "camelCase")]
+    Retained {
+        /// The public render operation.
+        method: String,
+        /// Palette used while creating the text.
+        before_palette: String,
+        /// Palette used while rendering the live borders again.
+        after_palette: String,
+        /// Render width.
+        width: usize,
+    },
+}
+
+/// Full direct or retained card output.
+#[derive(Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+enum UpdateExpected {
+    /// One direct display.
+    Direct(CardExpected),
+    /// Displays before and after changing the theme.
+    Retained {
+        /// Rows before the theme change.
+        before: Vec<String>,
+        /// Rows after the theme change.
+        after: Vec<String>,
+        /// Frame requests from creating the card.
+        renders: usize,
+    },
+}
+
+#[test]
+fn startup_version_notice_keeps_action_link_roles_and_redraw() {
+    update_cards("startup_version_notice_keeps_action_link_roles_and_redraw");
+}
+
+#[test]
+fn startup_package_notice_keeps_order_duplicates_and_redraw() {
+    update_cards("startup_package_notice_keeps_order_duplicates_and_redraw");
+}
+
+/// Drives both public card operations with the recorded complete inputs.
+fn update_cards(test: &str) {
+    isolated_package(test, |directory, _| {
+        for (input, expected) in cases::<UpdateInput, UpdateExpected>(FIXTURES, test) {
+            match (input, expected) {
+                (
+                    UpdateInput::Version {
+                        value,
+                        palette,
+                        width,
+                    },
+                    UpdateExpected::Direct(expected),
+                ) => {
+                    let world = update_world(directory, palette);
+                    world.mode.show_new_version_notification(&value).unwrap();
+                    assert_card(&world, width, &expected);
+                }
+                (
+                    UpdateInput::Packages {
+                        value,
+                        palette,
+                        width,
+                    },
+                    UpdateExpected::Direct(expected),
+                ) => {
+                    let world = update_world(directory, palette);
+                    world.mode.show_package_update_notification(&value).unwrap();
+                    assert_card(&world, width, &expected);
+                }
+                (
+                    UpdateInput::Retained {
+                        method,
+                        before_palette,
+                        after_palette,
+                        width,
+                    },
+                    UpdateExpected::Retained {
+                        before,
+                        after,
+                        renders,
+                    },
+                ) => {
+                    retained_update(
+                        directory,
+                        (&method, &before_palette, &after_palette),
+                        width,
+                        (&before, &after, renders),
+                    );
+                }
+                _ => panic!("an update operation disagrees with its observation"),
+            }
+        }
+    });
+}
+
+/// Builds the same mode setup used by startup, selecting the recorded theme.
+fn update_world(directory: &std::path::Path, palette: String) -> World {
+    Setup {
+        configure: Box::new(move |settings| {
+            settings.set_theme(palette);
+        }),
+        ..Setup::default()
+    }
+    .build(directory)
+}
+
+/// Checks all transcript rows and the frame request at the consuming boundary.
+fn assert_card(world: &World, width: usize, expected: &CardExpected) {
+    let theme = world.themes.theme().get().unwrap();
+    assert_eq!(
+        world.mode.chat_container.render(width),
+        painted_update(&theme, &expected.lines)
+    );
+    assert_eq!(world.runtime.pending(), expected.renders);
+}
+
+/// Renders one prepared card under both palettes without rebuilding its text.
+fn retained_update(
+    directory: &std::path::Path,
+    input: (&str, &str, &str),
+    width: usize,
+    expected: (&[String], &[String], usize),
+) {
+    let world = update_world(directory, input.1.to_owned());
+    if input.0 == "showNewVersionNotification" {
+        world.mode.show_new_version_notification("9.8.7").unwrap();
+    } else {
+        assert_eq!(input.0, "showPackageUpdateNotification");
+        world
+            .mode
+            .show_package_update_notification(&["zeta".into(), "alpha".into(), "zeta".into()])
+            .unwrap();
+    }
+    let before = world.themes.theme().get().unwrap();
+    let first = expected
+        .0
+        .iter()
+        .map(|row| row.replace("@before.", "@"))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        world.mode.chat_container.render(width),
+        painted(&before, &first)
+    );
+    let next = if input.2 == "light" {
+        super::light()
+    } else {
+        super::dark()
+    };
+    world.themes.set_theme_instance(next).unwrap();
+    world.mode.chat_container.invalidate();
+    let after = world.themes.theme().get().unwrap();
+    let lines = expected
+        .1
+        .iter()
+        .map(|row| {
+            row.replace(
+                "@after.warning@",
+                after
+                    .get_fg_ansi(&maestro_theme::ThemeColor::Warning)
+                    .unwrap(),
+            )
+            .replace("@before.", "@")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        world.mode.chat_container.render(width),
+        painted(&before, &lines)
+    );
+    assert_eq!(world.runtime.pending(), expected.2);
+}
+
+/// Projects semantic foreground colours inside combined SGR re-entry codes.
+fn painted_update(theme: &maestro_theme::Theme, rows: &[String]) -> Vec<String> {
+    let mut rows = rows.to_vec();
+    for (foreground, role) in [
+        ("38;2;255;255;0", maestro_theme::ThemeColor::Warning),
+        ("38;2;154;115;38", maestro_theme::ThemeColor::Warning),
+        ("38;2;128;128;128", maestro_theme::ThemeColor::Muted),
+        ("38;2;108;108;108", maestro_theme::ThemeColor::Muted),
+    ] {
+        let escape = theme.get_fg_ansi(&role).unwrap();
+        let parameters = escape
+            .strip_prefix("\x1b[")
+            .unwrap()
+            .strip_suffix('m')
+            .unwrap();
+        for row in &mut rows {
+            *row = row.replace(foreground, parameters);
+        }
+    }
+    painted(theme, &rows)
+}

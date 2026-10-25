@@ -182,3 +182,79 @@ fn join_changelog<'a>(entries: impl Iterator<Item = &'a ChangelogEntry>) -> Stri
         .collect::<Vec<_>>()
         .join("\n\n")
 }
+
+impl InteractiveMode {
+    /// Appends the available-release card and requests a frame.
+    ///
+    /// # Errors
+    /// Returns a published-theme colour failure.
+    pub fn show_new_version_notification(&self, new_version: &str) -> Result<(), Box<dyn Error>> {
+        let theme = self.themes.theme().get()?;
+        let action = theme.fg(
+            &ThemeColor::Accent,
+            &format!("{} update", maestro_app::configuration::config::APP_NAME),
+        )?;
+        let instruction = theme.fg(
+            &ThemeColor::Muted,
+            &format!("New version {new_version} is available. Run "),
+        )?;
+        let label = theme.fg(&ThemeColor::Muted, "Changelog: ")?;
+        let url = theme.fg(
+            &ThemeColor::Accent,
+            "https://github.com/Orchestration-Maestro/maestro/blob/main/CHANGELOG.md",
+        )?;
+        self.show_update_notification(
+            "Update Available",
+            &format!("{instruction}{action}\n{label}{url}"),
+        )
+    }
+
+    /// Appends the package-update card in supplied order and requests a frame.
+    ///
+    /// # Errors
+    /// Returns a published-theme colour failure.
+    pub fn show_package_update_notification(
+        &self,
+        packages: &[String],
+    ) -> Result<(), Box<dyn Error>> {
+        let theme = self.themes.theme().get()?;
+        let action = theme.fg(
+            &ThemeColor::Accent,
+            &format!("{} update", maestro_app::configuration::config::APP_NAME),
+        )?;
+        let instruction = theme.fg(&ThemeColor::Muted, "Package updates are available. Run ")?;
+        let label = theme.fg(&ThemeColor::Muted, "Packages:")?;
+        let lines = packages
+            .iter()
+            .map(|name| format!("- {name}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        self.show_update_notification(
+            "Package Updates Available",
+            &format!("{instruction}{action}\n{label}\n{lines}"),
+        )
+    }
+
+    /// Frames prepared update text with warning rules that read the live theme.
+    fn show_update_notification(&self, title: &str, body: &str) -> Result<(), Box<dyn Error>> {
+        let live = self.themes.theme();
+        let theme = live.get()?;
+        let title = Theme::bold(&theme.fg(&ThemeColor::Warning, title)?, true);
+        let color: maestro_tui::editor_component::BorderColor = Rc::new(move |text| {
+            maestro_theme::paint(live.get().ok().as_deref(), &ThemeColor::Warning, text)
+        });
+        self.chat_container.add_child(Rc::new(Spacer::new(1)));
+        self.chat_container.add_child(Rc::new(DynamicBorder::new(
+            self.themes.theme(),
+            Some(color.clone()),
+        )));
+        self.chat_container
+            .add_child(Rc::new(Text::new(format!("{title}\n{body}"), 1, 0, None)));
+        self.chat_container.add_child(Rc::new(DynamicBorder::new(
+            self.themes.theme(),
+            Some(color),
+        )));
+        self.ui.request_render(false);
+        Ok(())
+    }
+}
