@@ -1,4 +1,5 @@
-//! Saved provider credentials: the `/logout` command, its picker and its removal effects.
+//! Provider sign-in and saved credentials: the `/login` and `/logout` commands, their
+//! pickers and their effects.
 
 use super::InteractiveMode;
 use crate::{
@@ -8,6 +9,10 @@ use maestro_app::AuthCredential;
 use maestro_theme::Collator;
 use std::{error::Error, rc::Rc, sync::Arc};
 
+mod callbacks;
+mod completion;
+mod dialogs;
+mod login;
 mod providers;
 
 pub use providers::is_api_key_login_provider;
@@ -34,7 +39,7 @@ impl InteractiveMode {
                 storage,
                 options.as_ref().clone(),
                 logout_selection(mode.clone(), Rc::clone(&options), Rc::clone(&done)),
-                logout_cancellation(mode, done),
+                selector_cancellation(mode, done),
                 OAuthSelectorOptions {
                     mode: OAuthSelectorMode::Logout,
                     theme: self.themes.theme(),
@@ -56,7 +61,7 @@ impl InteractiveMode {
         let session = self.runtime_host.session();
         let registry = session.model_registry();
         let storage = registry.auth_storage();
-        let mut options: Vec<_> = storage
+        let options: Vec<_> = storage
             .list()
             .into_iter()
             .filter_map(|id| {
@@ -71,9 +76,7 @@ impl InteractiveMode {
                 })
             })
             .collect();
-        let collator = Collator::new(&|key| std::env::var(key).ok())?;
-        options.sort_by(|left, right| collator.compare(&left.name, &right.name));
-        Ok(options)
+        sorted_by_name(options)
     }
 
     /// Removes the chosen saved credential on the current session, then refreshes the
@@ -127,8 +130,20 @@ fn logout_selection(
     })
 }
 
-/// The picker's cancellation: the editor comes back and a frame is requested.
-fn logout_cancellation(mode: std::rc::Weak<InteractiveMode>, done: Rc<dyn Fn()>) -> Rc<dyn Fn()> {
+/// `options` in a stable order of display names under the current locale.
+///
+/// # Errors
+/// Returns the collator's failure to read the locale environment.
+fn sorted_by_name(
+    mut options: Vec<AuthSelectorProvider>,
+) -> Result<Vec<AuthSelectorProvider>, Box<dyn Error>> {
+    let collator = Collator::new(&|key| std::env::var(key).ok())?;
+    options.sort_by(|left, right| collator.compare(&left.name, &right.name));
+    Ok(options)
+}
+
+/// A picker's cancellation: the editor comes back and a frame is requested.
+fn selector_cancellation(mode: std::rc::Weak<InteractiveMode>, done: Rc<dyn Fn()>) -> Rc<dyn Fn()> {
     Rc::new(move || {
         done();
         if let Some(mode) = mode.upgrade() {
