@@ -177,10 +177,8 @@ fn command(
             return Err(commands::observe(&context, path.into()).await?.to_string());
         }
         if let Some(count) = args.strip_prefix("schema growth:") {
-            return Err(
-                schema::growth(&api, count.parse::<usize>().map_err(|e| e.to_string())?)?
-                    .to_string(),
-            );
+            let count = count.parse::<usize>().map_err(|e| e.to_string())?;
+            return Err(schema::growth(&api, count)?.to_string());
         }
         if args == "schema executable" {
             return Err(schema::executable(&api)?.to_string());
