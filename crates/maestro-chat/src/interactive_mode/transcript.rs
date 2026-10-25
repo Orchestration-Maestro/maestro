@@ -6,13 +6,14 @@ use crate::{
     BranchSummaryMessageComponent, CompactionSummaryMessageComponent, CustomMessageComponent,
     SkillInvocationMessageComponent, UserMessageComponent,
 };
+use maestro_app::EventError;
 use maestro_app::messages::{BashExecutionMessage, CustomAgentMessages};
 use maestro_app::{
     AgentMessage, Local, LocaleNumberFormat, NativeAgentMessage, Presence, SharedAssistantMessage,
     TruncationOptions, UserBlock, UserContent, parse_skill_block, truncate_tail,
 };
 use maestro_theme::{ThemeColor, ThemeError};
-use maestro_tui::{Component, EditorComponent, MarkdownTheme, Spacer, TUI, Text};
+use maestro_tui::{Component, MarkdownTheme, Spacer, TUI, Text};
 use std::{error::Error, rc::Rc, sync::PoisonError};
 
 impl InteractiveMode {
@@ -93,7 +94,8 @@ impl InteractiveMode {
     ) -> Result<(), Box<dyn Error>> {
         match message {
             AgentMessage::User(_) => {
-                self.add_user_message(&Self::get_user_message_text(message), populate_history);
+                self.add_user_message(&Self::get_user_message_text(message), populate_history)
+                    .map_err(|error| -> Box<dyn Error> { error })?;
             }
             AgentMessage::Assistant(message) => {
                 let component = self.assistant_component(message.clone());
@@ -137,9 +139,12 @@ impl InteractiveMode {
 
     /// Appends a nonempty user text, as a skill block with an optional separate user row or
     /// as one user row, after a spacer when the transcript is not empty.
-    fn add_user_message(&self, text: &str, populate_history: bool) {
+    ///
+    /// # Errors
+    /// Returns the current editor's original history failure.
+    fn add_user_message(&self, text: &str, populate_history: bool) -> Result<(), EventError> {
         if text.is_empty() {
-            return;
+            return Ok(());
         }
         if !self.chat_container.children().borrow().is_empty() {
             self.chat_container.add_child(Rc::new(Spacer::new(1)));
@@ -169,8 +174,9 @@ impl InteractiveMode {
             self.chat_container.add_child(user(text.to_owned()));
         }
         if populate_history {
-            self.editor.add_to_history(text);
+            self.current_editor().try_add_to_history(text)?;
         }
+        Ok(())
     }
 
     /// Appends the rows of a shell run, a displayed custom message or a summary.

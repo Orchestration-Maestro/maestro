@@ -100,9 +100,26 @@ impl InteractiveMode {
             return Ok(());
         }
         self.render_current_session_state()?;
-        self.editor.set_text("");
+        self.current_editor()
+            .try_set_text("")
+            .map_err(|error| -> Box<dyn Error> { error })?;
         self.show_status("Cloned to new session")
             .map_err(Into::into)
+    }
+
+    /// Applies double interrupt navigation only when the current editor reports empty text.
+    pub(super) fn handle_empty_editor_escape(self: &Rc<Self>) {
+        match self.current_editor().try_get_text() {
+            Ok(text)
+                if text
+                    .trim_matches(maestro_app::is_whitespace_scalar)
+                    .is_empty() =>
+            {
+                self.handle_double_escape();
+            }
+            Ok(_) => {}
+            Err(error) => self.report(Err(error)),
+        }
     }
 
     /// Opens the tree or the fork panel, as configured, when a second interrupt press on
@@ -172,7 +189,9 @@ fn fork_succeeded(
     selected_text: Option<&str>,
 ) -> Result<(), Box<dyn Error>> {
     mode.render_current_session_state()?;
-    mode.editor.set_text(selected_text.unwrap_or(""));
+    mode.current_editor()
+        .try_set_text(selected_text.unwrap_or(""))
+        .map_err(|error| -> Box<dyn Error> { error })?;
     done();
     mode.show_status("Forked to new session")
         .map_err(Into::into)

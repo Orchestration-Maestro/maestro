@@ -132,7 +132,7 @@ impl InteractiveMode {
                     None,
                 )
                 .await
-                .map_err(|error| -> Box<dyn Error> { error })?;
+                .map_err(|error| error as Box<dyn Error>)?;
             let Some(choice) = choice else {
                 return Ok(None);
             };
@@ -215,12 +215,15 @@ impl InteractiveMode {
                 self.render_initial_messages()?;
                 if let Some(text) = result.editor_text.filter(|text| !text.is_empty())
                     && self
-                        .editor
-                        .get_text()
+                        .current_editor()
+                        .try_get_text()
+                        .map_err(|error| -> Box<dyn Error> { error })?
                         .trim_matches(is_whitespace_scalar)
                         .is_empty()
                 {
-                    self.editor.set_text(&text);
+                    self.current_editor()
+                        .try_set_text(&text)
+                        .map_err(|error| error as Box<dyn Error>)?;
                 }
                 self.show_status("Navigated to selected point")?;
                 self.flush_compaction_queue(false)?;

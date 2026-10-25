@@ -70,8 +70,8 @@ impl TUI {
     /// Shows `component` with caller-editable options. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
     ///
     /// # Errors
-    /// Returns cursor-hiding errors after completed stack and conditional focus changes; no frame is
-    /// requested on that failure.
+    /// Returns the original cursor-hiding error after removing this entry and restoring
+    /// applicable focus. Overlays created by visibility callbacks remain installed.
     pub fn show_overlay(
         &self,
         component: ComponentHandle,
@@ -90,7 +90,11 @@ impl TUI {
         if entry.capturing() && self.focus_available(&entry) {
             self.commit_focus(Focus::Captured(Rc::clone(&entry.capture)));
         }
-        self.shared.terminal.borrow_mut().hide_cursor()?;
+        let hidden = self.shared.terminal.borrow_mut().hide_cursor();
+        if let Err(error) = hidden {
+            drop(self.remove_overlay(&entry));
+            return Err(error);
+        }
         self.request_render(false);
         Ok(Box::new(Handle {
             tui: self.clone(),

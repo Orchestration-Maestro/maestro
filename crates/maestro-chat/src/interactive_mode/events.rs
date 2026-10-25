@@ -90,7 +90,8 @@ impl InteractiveMode {
                 self.ui.request_render(false);
             }
             AgentSessionEvent::SessionInfoChanged { .. } => {
-                self.update_terminal_title()?;
+                self.update_terminal_title()
+                    .map_err(|error| -> Box<dyn Error> { error })?;
                 self.ui.request_render(false);
             }
             AgentSessionEvent::ThinkingLevelChanged { .. } => self.update_editor_border_color()?,
@@ -480,7 +481,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the invalid stored name or the terminal's title-writing failure.
-    pub(super) fn update_terminal_title(&self) -> Result<(), Box<dyn Error>> {
+    pub(super) fn update_terminal_title(&self) -> Result<(), maestro_app::EventError> {
         let title = {
             let session = self.runtime_host.session();
             let manager = session.session_manager().borrow();

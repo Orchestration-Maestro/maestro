@@ -1501,7 +1501,7 @@ fn transfer_import_rebinds_before_replaying_the_new_session() {
                         "ui": true,
                         "hidden": false,
                         "installed": {"footer": true, "subscribed": true, "shortcut": true},
-                        "titled": 1,
+                        "titled": 2,
                     })],
                     "{name}: replay sees the completed binding"
                 );
