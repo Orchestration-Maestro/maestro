@@ -16,9 +16,6 @@ mod tests {
     /// Panics if rendering or a browser observation fails.
     #[wasm_bindgen]
     pub fn user_rows_select_the_first_text_block() {
-        let _ = js(
-            "if (!document.getElementById('canvas')) { const c=document.createElement('canvas'); c.id='canvas'; c.width=800; c.height=600; document.body.appendChild(c); }",
-        );
         let mut surface = Surface::new();
         let host = surface.host();
         let mut row = UserMessage::new(host.clone());
@@ -190,9 +187,6 @@ mod tests {
     /// Panics if dispatch or a composed-row observation fails.
     #[wasm_bindgen]
     pub fn assistant_tool_visibility_covers_each_pending_result_combination() {
-        let _ = js(
-            "if (!document.getElementById('canvas')) { const c=document.createElement('canvas'); c.id='canvas'; c.width=800; c.height=600; document.body.appendChild(c); }",
-        );
         let observed = visibility_renderer();
         let mut surface = Surface::new();
         let host = surface.host();
