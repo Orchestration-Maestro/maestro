@@ -373,3 +373,12 @@ fn truthy_display_borrows_strings_and_formats_other_values_once() {
         );
     }
 }
+
+/// Escaping the tilde first prevents a slash escape from being escaped again.
+#[test]
+fn pointer_tokens_keep_escape_order() {
+    assert_eq!(maestro_json::escape_pointer_token("~/"), "~0~1");
+    assert_eq!(maestro_json::escape_pointer_token("a/~1"), "a~1~01");
+    assert_eq!(maestro_json::escape_pointer_token("plain"), "plain");
+    assert_eq!(maestro_json::escape_pointer_token(""), "");
+}

@@ -142,6 +142,36 @@ intact. Metadata transport does not validate invocation arguments; argument prep
 and validation remain with the model argument validator. Model-server JSON limits do
 not apply to these author-supplied declarations.
 
+### Executable schema nodes
+
+Use `ParameterSchema::with_code` to retain a `schema_code::SchemaCode` beside a
+schema's JSON and declared kinds. Each pointer maps to the shared `SchemaNode`:
+an optional `Base` and refinements in registration order. `Base::default()` leaves
+values unchanged, accepts them and returns no guard errors. Its conversion can
+return a replacement separately from edits to the supplied value. `None` keeps the
+operand; `Some(Value::Null)` replaces a nested member with JSON null.
+
+Guest `SchemaCallback` closures receive a borrowed `JsonView` and a
+`CallbackEmitter`. `kind` and `read` distinguish a missing member from JSON null.
+`read` and removed `splice` values admit the same nesting as tool metadata.
+`member` borrows a child; `keys`, `set`, `delete` and `splice` expose ordered object
+and array operations. An explicit `read` copies only the value the author asks
+for. Starting a callback never serializes its subtree. Dropping a child view,
+including on an error path, leaves it attached to its parent. Reassigning a local
+view does not replace an argument slot.
+
+Schema callbacks return the shared `DiagnosticErrorInfo`, preserving name,
+message, stack and code. Ordinary extension operations still use `ExtensionResult`
+and string errors. Schema code stays out of serialized metadata and provider
+JSON; decoding ordinary JSON produces no callbacks.
+
+Enumerating and re-registering a guest's own schemas keeps their callbacks and
+author captures. Bindings follow each tool, not the first tool in a listing.
+Independent identities release separately; the last holder releases the capture.
+Foreign entries remain data-only. Live foreign schema enumeration, retention,
+re-registration and invocation are tracked together in
+[the foreign schema capability work](https://github.com/Orchestration-Maestro/maestro/issues/2625).
+
 ## Event channels
 
 `api.events()` returns the supplied host's `EventBus`. Ordinary code awaits

@@ -6,7 +6,7 @@ use serde_json::Value;
 use unicode_segmentation::UnicodeSegmentation;
 
 /// Reject false schemas and mismatched admitted type declarations.
-pub(super) fn type_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
+pub(super) fn type_errors(schema: &Value, value: Option<&Value>, path: &str) -> Vec<String> {
     if schema == &Value::Bool(false) {
         return vec![render(path, "schema is false")];
     }
@@ -16,7 +16,12 @@ pub(super) fn type_errors(schema: &Value, value: &Value, path: &str) -> Vec<Stri
         _ => return Vec::new(),
     }
     let kinds = super::coercion::types(schema);
-    if kinds.iter().any(|kind| type_matches(value, *kind)) {
+    if kinds.iter().any(|kind| {
+        value.map_or_else(
+            || matches!(kind, Kind::Unknown(_) | Kind::NonJson("undefined" | "void")),
+            |value| type_matches(value, *kind),
+        )
+    }) {
         return Vec::new();
     }
     let message = if schema.get("type").is_some_and(Value::is_array) {
@@ -43,19 +48,22 @@ fn type_matches(value: &Value, kind: Kind<'_>) -> bool {
     }
 }
 
+/// Read well-formed required names for property admission and diagnostics.
+pub(super) fn required_names(schema: &Value) -> &[Value] {
+    schema
+        .get("required")
+        .and_then(Value::as_array)
+        .filter(|names| names.iter().all(Value::is_string))
+        .map_or(&[], Vec::as_slice)
+}
+
 /// Aggregate absent required names using the shared path policy.
 pub(super) fn required_errors(
     schema: &Value,
     object: &serde_json::Map<String, Value>,
     path: &str,
 ) -> Vec<String> {
-    let Some(required) = schema
-        .get("required")
-        .and_then(Value::as_array)
-        .filter(|names| names.iter().all(Value::is_string))
-    else {
-        return Vec::new();
-    };
+    let required = required_names(schema);
     let missing: Vec<_> = required
         .iter()
         .filter_map(Value::as_str)
@@ -122,15 +130,15 @@ fn multiple_of(dividend: f64, divisor: f64) -> bool {
 }
 
 /// Check structural const and enum equality with their keyword messages.
-pub(super) fn literal_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
+pub(super) fn literal_errors(schema: &Value, value: Option<&Value>, path: &str) -> Vec<String> {
     let mut errors = Vec::new();
     if let Some(constant) = schema.get("const")
-        && !equal(value, constant)
+        && !value.is_some_and(|value| equal(value, constant))
     {
         errors.push(render(path, "must be equal to constant"));
     }
     if let Some(choices) = schema.get("enum").and_then(Value::as_array)
-        && !choices.iter().any(|choice| equal(value, choice))
+        && !value.is_some_and(|value| choices.iter().any(|choice| equal(value, choice)))
     {
         errors.push(render(path, "must be equal to one of the allowed values"));
     }

@@ -41,6 +41,8 @@ mod setup_author;
 use super::registration_fixture;
 #[path = "nested_schema_fixture.rs"]
 pub(crate) mod nested_schema_fixture;
+#[path = "schema_author.rs"]
+mod schema_author;
 #[path = "shell_author.rs"]
 mod shell_author;
 #[path = "tool_author.rs"]

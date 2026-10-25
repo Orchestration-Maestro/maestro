@@ -46,8 +46,43 @@ impl<I: Imports> ExtensionHost for Host<I> {
         Box::pin(async move { self.0.set_model(encode_value(&model)?).await })
     }
     fn get_all_tools(&self) -> ExtensionResult<Vec<crate::ToolInfo>> {
-        super::tools::decode_tools(&self.0.get_all_tools()?)
+        let (text, bindings) = self.0.get_all_tools()?;
+        let handlers = bindings
+            .into_iter()
+            .map(|(index, pointer, handle)| {
+                (
+                    index,
+                    pointer,
+                    super::callbacks::Scoped::from_handle(&self.0, handle),
+                )
+            })
+            .collect::<Vec<_>>();
+        let tools = super::tools::decode_tools(&text)?;
+        let mut codes = std::collections::HashMap::<usize, crate::schema_code::SchemaCode>::new();
+        for (index, pointer, identity) in &handlers {
+            let index = *index as usize;
+            if index >= tools.len() {
+                return Err("schema binding has no matching tool".into());
+            }
+            let id = self.0.callback_id(&identity.handle);
+            let handler = super::callbacks::find::<crate::schema_code::Handler>(id)?;
+            codes
+                .entry(index)
+                .or_default()
+                .insert(pointer.clone(), super::schema::node(&handler));
+        }
+        Ok(tools
+            .into_iter()
+            .enumerate()
+            .map(|(index, mut tool)| {
+                tool.parameters = tool
+                    .parameters
+                    .with_code(codes.remove(&index).unwrap_or_default());
+                tool
+            })
+            .collect())
     }
+
     fn get_commands(&self) -> ExtensionResult<Vec<crate::SlashCommandInfo>> {
         super::session::decode(&self.0.get_commands()?)
     }
@@ -123,6 +158,18 @@ impl<I: Imports> ExtensionHost for Host<I> {
             prepare_arguments,
             execute,
         } = tool;
+        let code = metadata
+            .parameters
+            .code()
+            .iter()
+            .map(|(pointer, node)| {
+                (
+                    pointer.clone(),
+                    Identity::new(&self.0),
+                    super::schema::handler(node.clone()),
+                )
+            })
+            .collect::<Vec<_>>();
         let metadata = super::tools::encode_metadata(&metadata)?;
         let prepare = prepare_arguments.map(|prepare| (Identity::new(&self.0), prepare));
         let identity = Identity::new(&self.0);
@@ -130,7 +177,14 @@ impl<I: Imports> ExtensionHost for Host<I> {
             &metadata,
             prepare.as_ref().map(|(identity, _)| &identity.handle),
             &identity.handle,
+            &code
+                .iter()
+                .map(|(pointer, id, _)| (pointer.clone(), &id.handle))
+                .collect::<Vec<_>>(),
         )?;
+        for (_, identity, handler) in code {
+            identity.keep(handler);
+        }
         if let Some((identity, prepare)) = prepare {
             identity.keep(prepare);
         }

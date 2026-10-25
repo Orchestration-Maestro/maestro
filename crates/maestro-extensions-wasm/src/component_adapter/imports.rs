@@ -6,6 +6,9 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
+/// Per-tool executable annotations returned beside the metadata document.
+pub type ToolListing<C> = (String, Vec<(u32, String, C)>);
+
 /// The host's imports and resources at the wire level: the generated bindings inside a
 /// component, an in-process host where the same logic runs natively.
 ///
@@ -156,7 +159,7 @@ pub trait Imports: Clone + 'static {
     /// Forwards the ordinary action.
     fn get_active_tools(&self) -> ExtensionResult<Vec<String>>;
     /// Forwards the ordinary action.
-    fn get_all_tools(&self) -> ExtensionResult<String>;
+    fn get_all_tools(&self) -> ExtensionResult<ToolListing<Self::Callback>>;
     /// Forwards the ordinary action.
     fn set_active_tools(&self, tool_names: &[String]) -> ExtensionResult<()>;
     /// Forwards the ordinary action.
@@ -188,6 +191,36 @@ pub trait Imports: Clone + 'static {
     type Subscription: 'static;
     /// Callback-scoped emission resource.
     type Emitter: 'static;
+    /// A borrowed, invocation-local JSON value capability.
+    type JsonNode: 'static;
+    /// Inspect the kind without copying the value.
+    fn json_kind(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> ExtensionResult<Option<crate::schema_code::JsonKind>>;
+    /// Read a value explicitly requested by the author.
+    fn json_read(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Option<String>>;
+    /// Enumerate keys without encoding their values.
+    fn json_keys(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Vec<String>>;
+    /// Assign one container member.
+    fn json_set(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        key: &str,
+        value: &str,
+    ) -> ExtensionResult<()>;
+    /// Delete one container member.
+    fn json_delete(&self, node: &Self::JsonNode, path: &str, key: &str) -> ExtensionResult<()>;
+    /// Replace an array range.
+    fn json_splice(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        range: (u32, u32),
+        values: &[String],
+    ) -> ExtensionResult<Vec<String>>;
     /// Registers a bus listener or returns the host rejection.
     fn event_on(
         &self,
@@ -240,6 +273,8 @@ pub trait Imports: Clone + 'static {
     /// Asks the host for a fresh identity: its key, which the owner handle and every borrow
     /// of it share, and the owner handle.
     fn new_callback(&self) -> (u32, Self::Callback);
+    /// Read the stable key of an owned or borrowed callback identity.
+    fn callback_id(&self, callback: &Self::Callback) -> u32;
 
     /// Registers a handler for an event name.
     ///
@@ -279,6 +314,7 @@ pub trait Imports: Clone + 'static {
         metadata: &str,
         prepare: Option<&Self::Callback>,
         execute: &Self::Callback,
+        schemas: &[(String, &Self::Callback)],
     ) -> ExtensionResult<()>;
 
     /// Delivers a partial output to a progress resource.
