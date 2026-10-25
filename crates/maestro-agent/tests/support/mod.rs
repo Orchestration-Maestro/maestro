@@ -106,7 +106,7 @@ pub fn tool_call() -> SharedAssistantMessage {
         maestro_models::ToolCall {
             id: "id".into(),
             name: "echo".into(),
-            arguments: maestro_models::JsonObject::new(),
+            arguments: maestro_models::JsonObject::new().into(),
             thought_signature: None,
         },
     )];

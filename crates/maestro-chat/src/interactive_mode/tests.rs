@@ -1,7 +1,13 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
+mod authentication;
+mod bash;
+mod debug;
 mod events;
 mod extension_ui;
+mod extension_widgets;
+mod info;
+mod models;
 #[allow(
     dead_code,
     unused_imports,
@@ -9,33 +15,39 @@ mod extension_ui;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod notices;
 mod progress;
 mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod suspend;
 mod transcript;
 mod transfer;
 mod typed;
 
-use crate::{InteractiveMode, InteractiveModeOptions};
+use crate::interactive_mode::bash::component_address;
+use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
 // The controlled host, disposable directory and palettes are compiled once in the library tests.
 use crate::components::session_selector::list::tests::session_picker::{
     manual_runtime::ManualRuntime, native_child as child, published,
     recording_terminal::RecordingTerminal,
 };
-use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
+use maestro_app::agent_session::PromptOptions;
+use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, Extension, ExtensionCommandContext,
-    ExtensionFactory, ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, RegisteredCommand,
-    ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
-    SourceOrigin, SourceScope, create_extension_runtime, load_extension_from_factory,
+    AgentSessionRuntime, AuthStorage, ContextFile, CreateAgentSessionRuntimeFactory,
+    DefaultEventBus, Extension, ExtensionCommandContext, ExtensionFactory, ExtensionLoadError,
+    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
+    PromptTemplate, RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader,
+    SettingsManager, Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
+    load_extension_from_factory,
 };
+use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
 use maestro_tui::{
@@ -44,18 +56,52 @@ use maestro_tui::{
 };
 use serde::{Deserialize, de::DeserializeOwned};
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::VecDeque,
+    error::Error,
     future::Future,
     io,
     path::Path,
     pin::Pin,
     rc::Rc,
-    sync::{Arc, RwLock},
+    sync::{Arc, LazyLock, RwLock},
 };
+
+/// The package-directory environment key the installation reads.
+pub(super) static ENV_PACKAGE_DIR: LazyLock<String> =
+    LazyLock::new(|| format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase()));
 
 /// Every recorded presentation case.
 pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
+
+/// Runs `body` in a fresh single-test child whose working directory is a disposable root
+/// and whose package directory is `package` inside it, returning its standard error.
+pub(super) fn isolated_package(test: &str, body: impl FnOnce(&Path, &Path)) -> Vec<u8> {
+    if maestro_test_process::selection().is_child() {
+        let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
+        let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
+        body(Path::new(&directory), Path::new(&package));
+        return Vec::new();
+    }
+    let scratch = child::Scratch::new();
+    let directory = scratch.0.path();
+    let package = directory.join("package");
+    std::fs::create_dir(&package).unwrap();
+    let output = TestProcess::current(test)
+        .unwrap()
+        .case("child")
+        .nocapture()
+        .single_threaded()
+        .current_dir(directory)
+        .envs([
+            (ENV_AGENT_DIR.as_str(), directory.to_str().unwrap()),
+            (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
+        ])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    output.stderr
+}
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
@@ -75,13 +121,32 @@ pub(super) fn isolated_case(
     envs: &[(&str, &str)],
     body: impl FnOnce(&Path),
 ) {
+    if let Some(output) = isolated_output(test, case, envs, "trap '' XFSZ", body) {
+        assert!(
+            output.status.success(),
+            "child probe failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+/// Runs `body` as `case` of `test` in the child [`isolated_case`] describes, after `setup`
+/// runs in the child's shell, and returns that child's output to the parent; the child
+/// itself returns nothing.
+pub(super) fn isolated_output(
+    test: &str,
+    case: &str,
+    envs: &[(&str, &str)],
+    setup: &str,
+    body: impl FnOnce(&Path),
+) -> Option<std::process::Output> {
     let selection = maestro_test_process::selection();
     if selection.is_child() {
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
             body(Path::new(&directory));
         }
-        return;
+        return None;
     }
     let scratch = child::Scratch::new();
     let root = scratch.0.path();
@@ -99,17 +164,19 @@ pub(super) fn isolated_case(
         ("WAYLAND_DISPLAY", "maestro-test"),
     ];
     all.extend_from_slice(envs);
-    child::probe(
-        TestProcess::current(test)
-            .unwrap()
-            .env_clear()
-            .case(case)
-            .shell_setup("trap '' XFSZ")
-            .temp_dir(root.join("tmp")),
-        root,
-        &all,
-        &[],
-    );
+    let output = TestProcess::current(test)
+        .unwrap()
+        .env_clear()
+        .case(case)
+        .shell_setup(setup)
+        .temp_dir(root.join("tmp"))
+        .nocapture()
+        .single_threaded()
+        .current_dir(root)
+        .envs(all)
+        .output()
+        .expect("child starts");
+    Some(output)
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
@@ -361,8 +428,6 @@ pub(super) struct World {
 pub(super) struct Setup {
     /// The mode options.
     pub(super) options: InteractiveModeOptions,
-    /// Creates replacement sessions; the default shares the original services.
-    pub(super) runtime_factory: Option<maestro_app::CreateAgentSessionRuntimeFactory>,
     /// Changes the settings before construction.
     pub(super) configure: Box<dyn FnOnce(&mut SettingsManager)>,
     /// The theme name selected inside the loader's theme getter.
@@ -377,6 +442,12 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// Overrides the default replacement-session factory when supplied.
+    pub(super) create: Option<CreateAgentSessionRuntimeFactory>,
+    /// Starts each replacement with fresh services instead of reusing the current ones.
+    pub(super) replacing: bool,
+    /// Creates the session history under a file in this directory when supplied.
+    pub(super) session_history: Option<std::path::PathBuf>,
     /// The directories the theme registry reads, when it records themes on disk.
     pub(super) directories: Option<maestro_theme::ThemeDirectories>,
     /// The loaded themes the loader answers before the dark and light palettes.
@@ -392,13 +463,14 @@ pub(super) struct Setup {
     pub(super) diagnostics: LoadedDiagnostics,
     /// The watch, timer and Git effects the mode uses; the native ones when absent.
     pub(super) watcher: Option<Rc<dyn FooterOperations>>,
+    /// The stored credentials the session is built over, in memory when absent.
+    pub(super) auth: Option<Arc<AuthStorage>>,
 }
 
 impl Default for Setup {
     fn default() -> Self {
         Self {
             options: InteractiveModeOptions::default(),
-            runtime_factory: None,
             configure: Box::new(|_| {}),
             select: None,
             cwd: None,
@@ -407,12 +479,16 @@ impl Default for Setup {
             prompts: Vec::new(),
             directories: None,
             extension: None,
+            create: None,
+            replacing: false,
+            session_history: None,
             themes: Vec::new(),
             extensions: Vec::new(),
             errors: Vec::new(),
             commands: Vec::new(),
             diagnostics: LoadedDiagnostics::default(),
             watcher: None,
+            auth: None,
         }
     }
 }
@@ -421,11 +497,20 @@ impl Default for Setup {
 fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResult<Local>> {
     let local = Rc::new(tokio::task::LocalSet::new());
     let bus = <Local as DefaultEventBus>::default_event_bus(&local);
+    loaded_on_bus(cwd, factory, bus.for_extension())
+}
+
+/// Loads one synchronous-ready extension on the supplied shared event bus.
+fn loaded_on_bus(
+    cwd: &str,
+    factory: ExtensionFactory<Local>,
+    bus: maestro_app::EventBus<Local>,
+) -> Rc<LoadExtensionsResult<Local>> {
     let runtime = create_extension_runtime::<Local>();
     let loading = std::pin::pin!(load_extension_from_factory(
         factory,
         cwd.to_owned(),
-        bus.for_extension(),
+        bus,
         Rc::clone(&runtime),
         None,
     ));
@@ -459,32 +544,31 @@ impl Setup {
             diagnostics: self.diagnostics,
         };
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
-        let result = session::session(&cwd, None, move |inner| {
-            let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
-            *created.borrow_mut() = Some(Rc::clone(&loader));
-            loader
-        });
+        let history = self
+            .session_history
+            .as_ref()
+            .map(|d| d.to_str().unwrap().to_owned());
+        let result = session::session_with_auth(
+            &cwd,
+            self.auth,
+            move |inner| {
+                let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
+                *created.borrow_mut() = Some(Rc::clone(&loader));
+                loader
+            },
+            history.as_deref(),
+        );
         let settings = Rc::clone(result.session.settings_manager());
-        settings.borrow_mut().set_theme("dark".to_owned());
-        (self.configure)(&mut settings.borrow_mut());
-        if let Some(name) = self.select {
-            *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
-        }
+        prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
         let services = Rc::clone(&result.services);
-        let factory = self.runtime_factory.unwrap_or_else(|| {
-            Rc::new(move |options| {
-                let replacement = session::over(&options.cwd, &services);
-                Box::pin(std::future::ready(Ok(replacement)))
-            })
-        });
-        let host = Rc::new(AgentSessionRuntime::new(result, factory));
+        let create = self
+            .create
+            .unwrap_or_else(|| create(services, self.replacing));
+        let host = Rc::new(AgentSessionRuntime::new(result, create));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(match self.directories {
-            Some(directories) => ThemeState::new(directories),
-            None => published::unpublished(),
-        });
+        let themes = registry(self.directories);
         let local = Rc::new(tokio::task::LocalSet::new());
         let mode = InteractiveMode::new(
             Rc::clone(&host),
@@ -506,9 +590,61 @@ impl Setup {
     }
 }
 
+/// Applies the settings the caller changes and the theme name read while it answers.
+fn prepare_settings(
+    settings: Rc<RefCell<SettingsManager>>,
+    configure: Box<dyn FnOnce(&mut SettingsManager)>,
+    select: Option<String>,
+    loader: &Rc<RefCell<Option<Rc<ForwardingLoader>>>>,
+) {
+    settings.borrow_mut().set_theme("dark".to_owned());
+    (configure)(&mut settings.borrow_mut());
+    if let Some(name) = select {
+        *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
+    }
+}
+
+/// The theme registry the mode selects from, unpublished without supplied directories.
+fn registry(directories: Option<maestro_theme::ThemeDirectories>) -> Rc<ThemeState> {
+    Rc::new(match directories {
+        Some(directories) => ThemeState::new(directories),
+        None => published::unpublished(),
+    })
+}
+
+/// The replacement factory, reusing `services` unless fresh services are selected.
+fn create(
+    services: Rc<maestro_app::AgentSessionServices<Local>>,
+    fresh: bool,
+) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    Rc::new(move |options| {
+        let replacement = if fresh {
+            session::session(&options.cwd, None, |inner| inner)
+        } else {
+            session::over(&options.cwd, &services)
+        };
+        // The replacement serves the session manager the runtime opened for it.
+        std::mem::swap(
+            &mut *replacement.session.session_manager().borrow_mut(),
+            &mut *options.session_manager.borrow_mut(),
+        );
+        Box::pin(async { Ok(replacement) })
+    })
+}
+
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
 fn started(directory: &Path) -> World {
-    let world = Setup::default().build(directory);
+    started_with(directory, None)
+}
+
+/// Builds a mode over `auth`, or over an empty in-memory store, and initializes it,
+/// settling the first frame.
+pub(super) fn started_with(directory: &Path, auth: Option<Arc<AuthStorage>>) -> World {
+    let world = Setup {
+        auth,
+        ..Setup::default()
+    }
+    .build(directory);
     world.mode.init().unwrap();
     world.runtime.settle().unwrap();
     world
@@ -518,7 +654,12 @@ fn started(directory: &Path) -> World {
 pub(super) fn roles(theme: &Theme, text: &str) -> String {
     let mut text = text.replace("<version>", VERSION);
     for (marker, role) in [
+        ("@border@", ThemeColor::Border),
         ("@accent@", ThemeColor::Accent),
+        ("@border@", ThemeColor::Border),
+        ("@borderMuted@", ThemeColor::BorderMuted),
+        ("@text@", ThemeColor::Text),
+        ("@userMessageText@", ThemeColor::UserMessageText),
         ("@dim@", ThemeColor::Dim),
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),
@@ -531,6 +672,8 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@thinkingXhigh@", ThemeColor::ThinkingXhigh),
         ("@bashMode@", ThemeColor::BashMode),
         ("@mdHeading@", ThemeColor::MdHeading),
+        ("@mdCodeBlock@", ThemeColor::MdCodeBlock),
+        ("@mdCodeBlockBorder@", ThemeColor::MdCodeBlockBorder),
         ("@mdLink@", ThemeColor::MdLink),
         ("@success@", ThemeColor::Success),
     ] {
@@ -947,8 +1090,8 @@ fn startup_layout_focus_and_start_happen_once() {
                 })
         };
         assert!(same(&mode.ui.children().borrow()));
-        assert!(mode.widget_container_above.children().borrow().is_empty());
-        assert!(mode.widget_container_below.children().borrow().is_empty());
+        assert_eq!(mode.widget_container_above.render(80), [""]);
+        assert!(mode.widget_container_below.render(80).is_empty());
         world.terminal.send_input("x");
         assert_eq!(mode.editor.get_text(), "x");
         mode.init().unwrap();
@@ -1026,4 +1169,270 @@ fn startup_callback_registration_does_not_retain_the_mode() {
             drop((terminal, host, loader));
         },
     );
+}
+
+/// The operations an extension supplies for a shell command.
+pub(super) type ShellOperations = Arc<dyn maestro_app::BashOperations>;
+
+/// The failures the mode's work reported.
+pub(super) type Failures = Rc<RefCell<Vec<Box<dyn Error>>>>;
+
+/// Runs the work the mode handed its terminal runtime beside `body`, collecting the
+/// failures that work reported.
+pub(super) async fn driving<T>(
+    world: &World,
+    body: impl Future<Output = T>,
+) -> (T, Vec<Box<dyn Error>>) {
+    let runtime = world.runtime.clone();
+    let finished = Rc::new(Cell::new(false));
+    let errors: Failures = Rc::default();
+    let driver = {
+        let finished = Rc::clone(&finished);
+        let errors = Rc::clone(&errors);
+        tokio::task::spawn_local(async move { drive(&runtime, &finished, &errors).await })
+    };
+    let value = body.await;
+    finished.set(true);
+    driver.await.unwrap();
+    let errors = Rc::try_unwrap(errors).unwrap().into_inner();
+    (value, errors)
+}
+
+/// Drives the mode's futures until the caller reports it is done.
+async fn drive(runtime: &ManualRuntime, finished: &Rc<Cell<bool>>, errors: &Failures) {
+    loop {
+        dispatch(runtime, errors);
+        if finished.get() {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+/// Hands every future the mode admitted to the task set running beside the caller.
+fn dispatch(runtime: &ManualRuntime, errors: &Failures) {
+    for future in runtime.take_futures() {
+        let errors = Rc::clone(errors);
+        tokio::task::spawn_local(async move { await_work(future, &errors).await });
+    }
+}
+
+/// Awaits one future the mode admitted, recording its failure.
+async fn await_work(future: maestro_tui::tui::LocalFuture, errors: &Failures) {
+    if let Err(error) = future.await {
+        errors.borrow_mut().push(error);
+    }
+}
+
+/// Runs `body` inside a current-thread runtime and task set, where the mode's work and the
+/// session's own tasks make progress.
+pub(super) fn on_tasks<T>(body: impl Future<Output = T>) -> T {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, body)
+}
+
+/// Submits `text` through the editor's installed submission.
+pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
+    mode.editor.on_submit().unwrap()(text);
+}
+
+/// Waits until `path` exists, yielding so the work that creates it runs.
+pub(super) async fn until_exists(path: &Path) {
+    for _ in 0..10_000 {
+        if path.exists() {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!("{} appeared", path.display());
+}
+
+/// Waits until no shell row is producing output and the transcript holds `rows` children.
+pub(super) async fn until_complete(world: &World, rows: usize) {
+    for _ in 0..10_000 {
+        if active(world).is_none() && world.mode.chat_container.children().borrow().len() == rows {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+    panic!(
+        "the shell command completed: active={} rows={}",
+        active(world).is_some(),
+        world.mode.chat_container.children().borrow().len()
+    );
+}
+
+/// The shell row that is still producing output, when one is attached.
+pub(super) fn active(world: &World) -> Option<Rc<BashExecutionComponent>> {
+    world.mode.active_shell.borrow().clone()
+}
+
+/// Writes an executable shell script answering every command with `body`.
+pub(super) fn scripted(directory: &Path, name: &str, body: &str) -> String {
+    use std::os::unix::fs::PermissionsExt;
+    let path = directory.join(name);
+    std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+    path.to_str().unwrap().to_owned()
+}
+
+/// A response the controlled provider left open.
+pub(super) struct Held {
+    /// The open response.
+    pub(super) stream: AssistantMessageEventStream,
+    /// The turn's cancellation.
+    pub(super) signal: Cancellation,
+}
+
+impl Held {
+    /// How many times the turn was stopped.
+    pub(super) fn aborts(&self) -> usize {
+        usize::from(self.signal.is_aborted())
+    }
+}
+
+/// A finished answer of the controlled provider.
+pub(super) fn answer() -> Arc<RwLock<AssistantMessage>> {
+    Arc::new(RwLock::new(AssistantMessage {
+        content: Vec::new(),
+        api: "unknown".into(),
+        provider: "unknown".into(),
+        model: "unknown".into(),
+        response_model: None,
+        response_id: None,
+        diagnostics: None,
+        usage: Usage::default(),
+        stop_reason: StopReason::Stop,
+        error_message: None,
+        timestamp: 0.0,
+    }))
+}
+
+/// Points the session's provider at an open response: the next prompt receives it and the
+/// receiver yields it with its cancellation; a later prompt answers at once.
+fn held_response(world: &World) -> tokio::sync::oneshot::Receiver<Held> {
+    let session = world.mode.runtime_host.session();
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("unknown", "key");
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    let sender = RefCell::new(Some(sender));
+    *session.agent().stream_fn.write().unwrap() = Some(Rc::new(move |_, _, options, _| {
+        let stream = AssistantMessageEventStream::new();
+        match sender.borrow_mut().take() {
+            Some(sender) => drop(sender.send(Held {
+                stream: stream.clone(),
+                signal: options.common.signal.unwrap(),
+            })),
+            None => stream.end(Some(answer())),
+        }
+        Box::pin(std::future::ready(Ok(stream)))
+    }));
+    receiver
+}
+
+/// Runs `body` on the started `world` while its session streams a response the controlled
+/// provider holds open, giving it that response; then ends the response and waits for the
+/// prompt to settle.
+pub(super) async fn with_held_response<T, F>(world: &World, body: impl FnOnce(&Held) -> F) -> T
+where
+    F: Future<Output = T>,
+{
+    let session = world.mode.runtime_host.session();
+    let receiver = held_response(world);
+    let prompted = Rc::clone(&session);
+    let run =
+        tokio::task::spawn_local(
+            async move { prompted.prompt("run", PromptOptions::default()).await },
+        );
+    let held = receiver.await.unwrap();
+    assert!(session.is_streaming());
+    let value = body(&held).await;
+    held.stream.end(Some(answer()));
+    run.await.unwrap().unwrap();
+    value
+}
+
+/// Runs `body` synchronously on the started `world` while its session streams a response
+/// the controlled provider holds open; the response ends afterwards.
+pub(super) fn streaming<T>(world: &World, body: impl FnOnce(&World, &Held) -> T) -> T {
+    on_tasks(with_held_response(world, |held| {
+        world.mode.chat_container.clear();
+        std::future::ready(body(world, held))
+    }))
+}
+
+/// Runs `body` on the started `world` inside the caller's task set while its session
+/// streams a response the controlled provider holds open, handing `body` the response's
+/// cancellation; the response ends afterwards.
+pub(super) async fn holding<T, F>(world: &World, body: impl FnOnce(Cancellation) -> F) -> T
+where
+    F: Future<Output = T>,
+{
+    with_held_response(world, |held| body(held.signal.clone())).await
+}
+
+/// The editor's top border row as the recorder's painted probe glyph describes it.
+pub(super) fn border_row(world: &World, recorded: &str) -> String {
+    let theme = world.themes.theme().get().unwrap();
+    roles(&theme, &recorded.replace('━', "─")).repeat(80)
+}
+
+/// The editor's rendered top border row.
+pub(super) fn rendered_border(world: &World) -> String {
+    world.mode.editor.render(80).swap_remove(0)
+}
+
+/// Selects `level` on the session as its agent state, whatever the model supports.
+pub(super) fn select_level(world: &World, level: maestro_app::ThinkingLevel) {
+    world
+        .host
+        .session()
+        .agent()
+        .state()
+        .write()
+        .unwrap()
+        .thinking_level = level;
+}
+
+/// A started mode whose shell prints an output-only marker for the command it runs.
+pub(super) fn echoing_shell(directory: &Path) -> World {
+    let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
+    bash::shelling(directory, &script)
+}
+
+/// Submits `count` shell commands while the response streams, awaiting each command it
+/// admits so its row settles.
+pub(super) async fn start_shells(world: &World, count: usize) {
+    for index in 0..count {
+        submit(&world.mode, &format!("!mark{index}"));
+        for command in world.runtime.take_futures() {
+            command.await.expect("the shell command completes");
+        }
+        assert_eq!(
+            world.mode.pending_shells.borrow().len(),
+            index + 1,
+            "shell row {index} settles"
+        );
+    }
+}
+
+/// The positions of `rows` among the transcript's children, in the order they occur.
+pub(super) fn transcript_positions(
+    world: &World,
+    rows: &[Rc<BashExecutionComponent>],
+) -> Vec<usize> {
+    let children = world.mode.chat_container.children();
+    let addresses: Vec<usize> = children.borrow().iter().map(component_address).collect();
+    rows.iter()
+        .filter_map(|row| {
+            let address = component_address(row);
+            addresses.iter().position(|shown| *shown == address)
+        })
+        .collect()
 }

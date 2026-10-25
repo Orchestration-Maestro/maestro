@@ -1,7 +1,10 @@
-//! Editor submission, the single waiting input operation and the prompt loop.
+//! Editor submission, its session commands, the single waiting input operation and
+//! the prompt loop.
 use super::InteractiveMode;
+use super::bash::selected_shell_command;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{ImageContent, PromptOptions, is_whitespace_scalar};
+use maestro_tui::EditorComponent;
 use std::{
     error::Error,
     future::{Future, pending},
@@ -29,10 +32,11 @@ impl InteractiveMode {
         }
     }
 
-    /// Installs submission on the editor without keeping the mode alive: a recognized
-    /// command runs and reports its own outcome, any other trimmed nonempty text is queued
-    /// as steering during a compaction or a response, and otherwise it goes to the waiting
-    /// input, if any, then into the editor's history.
+    /// Installs submission on the editor without keeping the mode alive: a shell command
+    /// runs through the mode, a recognized command runs and reports its own outcome, and
+    /// any other trimmed nonempty text is queued as steering during a compaction or a
+    /// response and otherwise moves the pending shell rows into the transcript, goes to
+    /// the waiting input, if any, then into the editor's history.
     ///
     /// The editor empties itself before calling back, so a command needs no clearing step.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
@@ -42,13 +46,23 @@ impl InteractiveMode {
             let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
                 return;
             };
-            if mode.runs_command(text) {
+            if let Some((command, exclude_from_context)) = selected_shell_command(text) {
+                mode.submit_shell_command(text, command, exclude_from_context);
+                return;
+            }
+            if text == "/logout" {
+                mode.report(mode.show_logout_selector());
+                mode.editor.set_text("");
+                return;
+            }
+            if mode.runs_command(text) || mode.runs_model_command(text) {
                 return;
             }
             match mode.submit_queued_input(text, UserMessageDelivery::Steer) {
                 Ok(false) => {}
                 queued => return mode.report(queued.map(drop)),
             }
+            mode.flush_pending_bash_components();
             let waiting = mode.on_input_callback.borrow_mut().take();
             if let Some(waiting) = waiting {
                 // A dropped waiter no longer wants the text; history still records it.
@@ -58,15 +72,45 @@ impl InteractiveMode {
         })));
     }
 
-    /// Runs the export command when `text` is one, handing a failure beyond the transcript
-    /// to the terminal runtime, and says whether `text` was handled as a command.
+    /// Runs the session command `text` names, handing a failure beyond the transcript to
+    /// the terminal runtime, and says whether `text` was handled as a command.
     fn runs_command(&self, text: &str) -> bool {
-        if text != "/export" && !text.starts_with("/export ") {
+        let result = if text == "/name" || text.starts_with("/name ") {
+            self.handle_name_command(text)
+        } else if text == "/session" {
+            self.handle_session_command()
+        } else if text == "/debug" {
+            self.handle_debug_command()
+        } else if text == "/changelog" {
+            self.handle_changelog_command()
+        } else if text == "/export" || text.starts_with("/export ") {
+            self.handle_export_command(text)
+        } else {
             return false;
-        }
-        if let Err(error) = self.handle_export_command(text) {
+        };
+        if let Err(error) = result {
             self.report(Err(error));
         }
+        true
+    }
+
+    /// Runs `/scoped-models`, or `/model` with its search, when `text` is one of them,
+    /// and says whether `text` was handled as a command.
+    fn runs_model_command(self: &Rc<Self>, text: &str) -> bool {
+        if text == "/scoped-models" {
+            self.report(self.show_models_selector());
+            return true;
+        }
+        if text != "/model" && !text.starts_with("/model ") {
+            return false;
+        }
+        let search = text["/model".len()..].trim_matches(is_whitespace_scalar);
+        let search = Some(search.to_owned()).filter(|search| !search.is_empty());
+        let mode = Rc::clone(self);
+        let runtime = Rc::clone(&self.tool_environment.runtime);
+        runtime.spawn_local(Box::pin(
+            async move { mode.handle_model_command(search).await },
+        ));
         true
     }
 }

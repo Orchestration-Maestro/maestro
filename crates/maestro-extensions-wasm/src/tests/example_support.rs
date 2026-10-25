@@ -59,6 +59,52 @@ pub fn assert_registered_command(observed: &Observed, command: &Command) {
     );
 }
 
+/// One effect a shipped example asked the host for.
+#[derive(Debug, PartialEq)]
+pub enum Observation {
+    /// A notification request, with the message and severity it carries.
+    Notify {
+        /// The message text.
+        message: String,
+        /// The severity, when the request names one.
+        kind: Option<String>,
+    },
+    /// An admitted user-message delivery, with the content and options it carries.
+    Delivery {
+        /// The delivered content.
+        content: Option<Value>,
+        /// The delivery options, absent when the request carries none.
+        options: Option<Value>,
+    },
+}
+
+/// The effects the host recorded in `lines`, in the order it recorded them.
+pub fn observations(lines: &[String]) -> Vec<Observation> {
+    lines
+        .iter()
+        .filter_map(|line| {
+            if let Some(rest) = line.strip_prefix("action sendUserMessage ") {
+                let arguments: [Value; 2] = serde_json::from_str(rest).expect("delivery arguments");
+                return Some(Observation::Delivery {
+                    content: arguments[0].get("value").cloned(),
+                    options: arguments[1].get("value").cloned(),
+                });
+            }
+            let receipt = super::ui_host::receipt(line)?;
+            if receipt.method != "notify" {
+                return None;
+            }
+            Some(Observation::Notify {
+                message: receipt.operands[0]
+                    .as_str()
+                    .expect("a notification message")
+                    .to_owned(),
+                kind: receipt.operands[1].as_str().map(str::to_lowercase),
+            })
+        })
+        .collect()
+}
+
 /// Parses `text` and decodes the JSON document it carries at `member`.
 pub fn decoded(text: &str, member: &str) -> Value {
     let mut value: Value = serde_json::from_str(text).unwrap();

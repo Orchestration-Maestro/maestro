@@ -1194,68 +1194,74 @@ fn standalone_inputs(source: &Path, package: &Path) {
 
 /// The shipped examples and their index page, as authors write them. Keep the list in
 /// file-name order, so a new example inserts at its own place.
-fn shipped_examples() -> &'static [(&'static str, &'static str)] {
-    &[
-        (
-            "examples/extensions/README.md",
-            include_str!("../../../examples/extensions/README.md"),
-        ),
-        (
-            "examples/extensions/bookmark.rs",
-            include_str!("../../../examples/extensions/bookmark.rs"),
-        ),
-        (
-            "examples/extensions/hello.rs",
-            include_str!("../../../examples/extensions/hello.rs"),
-        ),
-        (
-            "examples/extensions/hidden_thinking_label.rs",
-            include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
-        ),
-        (
-            "examples/extensions/pirate.rs",
-            include_str!("../../../examples/extensions/pirate.rs"),
-        ),
-        (
-            "examples/extensions/prompt_customizer.rs",
-            include_str!("../../../examples/extensions/prompt_customizer.rs"),
-        ),
-        (
-            "examples/extensions/protected_paths.rs",
-            include_str!("../../../examples/extensions/protected_paths.rs"),
-        ),
-        (
-            "examples/extensions/reload_runtime.rs",
-            include_str!("../../../examples/extensions/reload_runtime.rs"),
-        ),
-        (
-            "examples/extensions/shutdown_command.rs",
-            include_str!("../../../examples/extensions/shutdown_command.rs"),
-        ),
-        (
-            "examples/extensions/system_prompt_header.rs",
-            include_str!("../../../examples/extensions/system_prompt_header.rs"),
-        ),
-        (
-            "examples/extensions/trigger_compact.rs",
-            include_str!("../../../examples/extensions/trigger_compact.rs"),
-        ),
-        (
-            "examples/extensions/with-deps/main.rs",
-            include_str!("../../../examples/extensions/with-deps/main.rs"),
-        ),
-        (
-            "examples/extensions/working_message_test.rs",
-            include_str!("../../../examples/extensions/working_message_test.rs"),
-        ),
-    ]
-}
+const SHIPPED_EXAMPLES: &[(&str, &str)] = &[
+    (
+        "examples/extensions/README.md",
+        include_str!("../../../examples/extensions/README.md"),
+    ),
+    (
+        "examples/extensions/bookmark.rs",
+        include_str!("../../../examples/extensions/bookmark.rs"),
+    ),
+    (
+        "examples/extensions/hello.rs",
+        include_str!("../../../examples/extensions/hello.rs"),
+    ),
+    (
+        "examples/extensions/hidden_thinking_label.rs",
+        include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
+    ),
+    (
+        "examples/extensions/pirate.rs",
+        include_str!("../../../examples/extensions/pirate.rs"),
+    ),
+    (
+        "examples/extensions/prompt_customizer.rs",
+        include_str!("../../../examples/extensions/prompt_customizer.rs"),
+    ),
+    (
+        "examples/extensions/protected_paths.rs",
+        include_str!("../../../examples/extensions/protected_paths.rs"),
+    ),
+    (
+        "examples/extensions/reload_runtime.rs",
+        include_str!("../../../examples/extensions/reload_runtime.rs"),
+    ),
+    (
+        "examples/extensions/send_user_message.rs",
+        include_str!("../../../examples/extensions/send_user_message.rs"),
+    ),
+    (
+        "examples/extensions/session_name.rs",
+        include_str!("../../../examples/extensions/session_name.rs"),
+    ),
+    (
+        "examples/extensions/shutdown_command.rs",
+        include_str!("../../../examples/extensions/shutdown_command.rs"),
+    ),
+    (
+        "examples/extensions/system_prompt_header.rs",
+        include_str!("../../../examples/extensions/system_prompt_header.rs"),
+    ),
+    (
+        "examples/extensions/trigger_compact.rs",
+        include_str!("../../../examples/extensions/trigger_compact.rs"),
+    ),
+    (
+        "examples/extensions/with-deps/main.rs",
+        include_str!("../../../examples/extensions/with-deps/main.rs"),
+    ),
+    (
+        "examples/extensions/working_message_test.rs",
+        include_str!("../../../examples/extensions/working_message_test.rs"),
+    ),
+];
 
 /// The example lists stay in name order, so a new example inserts at its own place instead of
 /// appending at the end of every list.
 #[test]
 fn shipped_example_lists_stay_in_name_order() {
-    let paths: Vec<&str> = shipped_examples().iter().map(|(path, _)| *path).collect();
+    let paths: Vec<&str> = SHIPPED_EXAMPLES.iter().map(|(path, _)| *path).collect();
     assert!(
         paths.is_sorted(),
         "the shipped examples are not in file-name order: {paths:?}"
@@ -1298,7 +1304,7 @@ fn package_inputs(package: &Path) {
     ] {
         write_input(package, name, bytes);
     }
-    for (name, bytes) in shipped_examples() {
+    for (name, bytes) in SHIPPED_EXAMPLES {
         write_input(package, name, bytes);
     }
 }
@@ -1502,7 +1508,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
     ] {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
-    for (name, bytes) in shipped_examples() {
+    for (name, bytes) in SHIPPED_EXAMPLES {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
     assert_empty_viewer_copy(&fixture, &source, &package);
@@ -1614,6 +1620,11 @@ fn maestro_package_assets_come_from_the_package_directory() {
     );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
+    // The shipped example reaches the standalone copy byte for byte.
+    assert_eq!(
+        fs::read(destination.join("examples/extensions/send_user_message.rs")).unwrap(),
+        include_str!("../../../examples/extensions/send_user_message.rs").as_bytes()
+    );
 }
 
 #[test]

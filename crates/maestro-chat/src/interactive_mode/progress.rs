@@ -222,12 +222,8 @@ impl InteractiveMode {
     }
 
     /// Clears the retry progress when a response starts, so a retry that already ended
-    /// leaves no row behind, and turns the terminal's progress on.
-    ///
-    /// # Errors
-    /// Returns the failure of the terminal's progress.
-    pub(super) fn start_agent_progress(&self) -> Result<(), Box<dyn Error>> {
-        self.set_terminal_progress(true)?;
+    /// leaves no row behind before the working row starts.
+    pub(super) fn start_agent_progress(&self) {
         self.restore_retry_interrupt();
         if let Some(countdown) = self.progress.retry_countdown.take() {
             countdown.dispose();
@@ -237,16 +233,6 @@ impl InteractiveMode {
         }
         self.status_container.clear();
         self.ui.request_render(false);
-        Ok(())
-    }
-
-    /// Clears the terminal's progress when the response ends, so the terminal stops
-    /// showing work it is no longer doing.
-    ///
-    /// # Errors
-    /// Returns the failure of the terminal's progress.
-    pub(super) fn end_agent_progress(&self) -> Result<(), Box<dyn Error>> {
-        self.set_terminal_progress(false)
     }
 
     /// Restores the callback the compaction replaced, or the editor's ordinary action when
@@ -278,26 +264,12 @@ impl InteractiveMode {
     fn progress_loader(&self, message: Option<String>, spinner: ThemeColor) -> Loader {
         let theme = self.themes.theme();
         Loader::new(
-            self.ui.clone(),
+            self.ui.as_ref().clone(),
             colored(theme.clone(), spinner),
             colored(theme, ThemeColor::Muted),
             message,
             None,
         )
-    }
-
-    /// Turns the terminal's indeterminate progress on or off when the setting asks for it.
-    fn set_terminal_progress(&self, active: bool) -> Result<(), Box<dyn Error>> {
-        let shown = self
-            .runtime_host
-            .session()
-            .settings_manager()
-            .borrow()
-            .get_show_terminal_progress();
-        if shown {
-            self.ui.terminal().borrow_mut().set_progress(active)?;
-        }
-        Ok(())
     }
 }
 

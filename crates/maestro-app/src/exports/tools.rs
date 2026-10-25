@@ -4,9 +4,9 @@ pub use maestro_tools::diff::text_diff::{Change, diff_lines};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
-    BashOperations, BashRenderState, BashSpawnContext, BashSpawnHook, BashToolDetails,
-    BashToolInput, BashToolOptions, create_bash_tool, create_bash_tool_definition,
-    create_local_bash_operations, utils::shell::get_shell_config,
+    BashError, BashExecOptions, BashExecResult, BashOperations, BashRenderState, BashSpawnContext,
+    BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions, create_bash_tool,
+    create_bash_tool_definition, create_local_bash_operations, utils::shell::get_shell_config,
 };
 
 pub use maestro_tools::output::render_utils::{

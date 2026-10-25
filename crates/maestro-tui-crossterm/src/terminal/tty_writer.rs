@@ -15,6 +15,7 @@ use tokio::sync::Notify;
 use tokio::task::{JoinHandle, LocalSet};
 
 use super::{Shared, descriptor::Source};
+use crate::output_errors::FailureSource;
 
 /// Largest request sent to a terminal in one syscall.
 const MAX_TTY_WRITE_CHUNK_BYTES: NonZeroUsize = NonZeroUsize::MIN.saturating_add(16_383);
@@ -161,7 +162,7 @@ async fn pump(source: Rc<Source>, inner: Rc<Inner>, shared: Weak<Shared>) {
     if let Err(error) = result {
         inner.fail();
         if let Some(shared) = shared.upgrade() {
-            shared.fail(error);
+            shared.fail(FailureSource::Output, error);
         }
     }
 }

@@ -78,11 +78,11 @@ fn assert_declaration(name: &str, parameters: &ParameterSchema) {
     let call = maestro_models::ToolCall {
         id: "call".to_owned(),
         name: name.to_owned(),
-        arguments: case.arguments.clone(),
+        arguments: Value::Object(case.arguments.clone()),
         thought_signature: None,
     };
     let outcome = match maestro_models::validate_tool_arguments(&tool, &call) {
-        Ok(arguments) => serde_json::json!({"Ok": Value::Object(arguments)}),
+        Ok(arguments) => serde_json::json!({"Ok": arguments}),
         Err(error) => serde_json::json!({"Err": error.message}),
     };
     assert_eq!(outcome, case.expected, "{name} prepared outcome");

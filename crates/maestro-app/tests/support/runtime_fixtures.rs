@@ -1,5 +1,5 @@
 //! A session runtime over the scripted provider: the factory that creates each session of
-//! a runtime, and a runtime over a persisted session with chosen extensions.
+//! a runtime, and a runtime over file-backed or in-memory history with chosen extensions.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Auth, Harness, HarnessOptions, TestResourceLoader, answer, create_test_extensions_result,
@@ -42,6 +42,8 @@ pub fn start_event_view(event: &maestro_extensions::SessionStartEvent) -> Value 
 /// The resources every session of a runtime loads.
 #[derive(Clone)]
 pub struct Resources {
+    /// Whether the caller supplies the first model instead of restoring history.
+    pub bootstrap_model: bool,
     /// The loaded extensions, shared by every session.
     pub extensions: Rc<LoadExtensionsResult<Local>>,
     /// Extensions loaded afresh for each session, as a runtime factory loads them.
@@ -56,6 +58,7 @@ impl Resources {
     /// Only `extensions`.
     pub fn of(extensions: &Rc<LoadExtensionsResult<Local>>) -> Self {
         Self {
+            bootstrap_model: true,
             extensions: Rc::clone(extensions),
             factories: Vec::new(),
             skills: Rc::default(),
@@ -106,7 +109,7 @@ pub fn factory(
                 agent_dir: Some(options.agent_dir.clone()),
                 auth_storage: None,
                 model_registry: Some(Arc::clone(&registry)),
-                model: Some(model),
+                model: resources.bootstrap_model.then_some(model),
                 thinking_level: None,
                 scoped_models: Vec::new(),
                 no_tools: None,
@@ -142,9 +145,13 @@ pub fn factory(
 
 /// What a test runtime loads besides the scripted provider.
 pub struct RuntimeOptions {
+    /// Whether the runtime stores its session in a file.
+    pub persisted: bool,
+    /// Whether the caller supplies the first model instead of restoring history.
+    pub bootstrap_model: bool,
     /// Inline extensions, each at its supplied path or `<inline:N>`.
     pub factories: Vec<(Option<&'static str>, ExtensionFactory<Local>)>,
-    /// Scripted models as identity and reasoning support; `faux-1` is selected.
+    /// Scripted models as identity and reasoning support.
     pub models: Vec<(&'static str, bool)>,
     /// The scripted provider's credentials.
     pub auth: Auth,
@@ -157,6 +164,8 @@ pub struct RuntimeOptions {
 impl Default for RuntimeOptions {
     fn default() -> Self {
         Self {
+            persisted: true,
+            bootstrap_model: true,
             factories: Vec::new(),
             models: vec![("faux-1", true)],
             auth: Auth::Key,
@@ -182,7 +191,7 @@ pub async fn runtime_for(
     .await
 }
 
-/// A runtime over a persisted session at `<root>/<label>` loading `options`, and what it
+/// A runtime over file-backed or in-memory history at `<root>/<label>`, and what it
 /// records.
 pub async fn runtime_with(
     label: &str,
@@ -198,7 +207,7 @@ pub async fn runtime_with(
     let cwd = format!("{root}/{label}");
     std::fs::create_dir_all(&cwd).unwrap();
     let resources = Resources {
-        extensions: Rc::new(create_test_extensions_result(Vec::new(), &cwd).await),
+        bootstrap_model: options.bootstrap_model,
         factories: options.factories,
         skills: Rc::new(LoadSkillsResult {
             skills: options.skills,
@@ -208,9 +217,16 @@ pub async fn runtime_with(
             prompts: options.prompts,
             diagnostics: Vec::new(),
         }),
+        ..Resources::of(&Rc::new(
+            create_test_extensions_result(Vec::new(), &cwd).await,
+        ))
     };
     let recorded = Recorded::default();
-    let manager = SessionManager::create(&cwd, Some(&format!("{cwd}/sessions")), &root).unwrap();
+    let manager = if options.persisted {
+        SessionManager::create(&cwd, Some(&format!("{cwd}/sessions")), &root).unwrap()
+    } else {
+        SessionManager::in_memory(Some(&cwd)).unwrap()
+    };
     let manager = Rc::new(RefCell::new(manager));
     let create = factory(&h, &resources, &recorded);
     let options = |manager: &Rc<RefCell<SessionManager>>| CreateAgentSessionRuntimeOptions {

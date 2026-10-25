@@ -1,5 +1,7 @@
-//! Native termination signals and the default action a second one takes once graceful
-//! shutdown has started.
+//! Native termination signals and the default action a prepared one takes once its
+//! handling ends. Delivery to a shutting-down mode is shared with native callers.
+use std::io;
+use std::rc::Rc;
 #[cfg(unix)]
 use std::sync::{
     Arc,
@@ -13,6 +15,8 @@ pub enum TerminationSignal {
     Terminate,
     /// The controlling connection hung up.
     Hangup,
+    /// An interrupt from the keyboard.
+    Interrupt,
 }
 
 impl TerminationSignal {
@@ -22,7 +26,78 @@ impl TerminationSignal {
         match self {
             Self::Terminate => 15,
             Self::Hangup => 1,
+            Self::Interrupt => 2,
         }
+    }
+}
+
+/// The signals this host delivers: termination everywhere, and a hangup off Windows.
+#[must_use]
+pub fn signals_for_host() -> Vec<TerminationSignal> {
+    #[cfg(unix)]
+    {
+        vec![TerminationSignal::Terminate, TerminationSignal::Hangup]
+    }
+    #[cfg(not(unix))]
+    {
+        vec![TerminationSignal::Terminate]
+    }
+}
+
+/// Delivers each termination signal to `callback`; the returned operation stops the delivery
+/// and is idempotent.
+///
+/// The delivery runs as tasks of the calling thread, so the caller drives it from a Tokio
+/// runtime with the signal driver enabled.
+///
+/// # Errors
+/// Returns the native registration failure.
+#[cfg(unix)]
+pub fn register_signals(callback: Rc<dyn Fn(TerminationSignal)>) -> io::Result<Box<dyn Fn()>> {
+    let mut signals = signals_for_host().into_iter();
+    let last = signals.next_back();
+    let mut deliveries = Vec::new();
+    for signal in signals {
+        deliveries.push(deliver_on(signal, Rc::clone(&callback))?);
+    }
+    if let Some(signal) = last {
+        deliveries.push(deliver_on(signal, callback)?);
+    }
+    Ok(Box::new(move || {
+        deliveries.iter().for_each(tokio::task::JoinHandle::abort);
+    }))
+}
+
+/// Starts delivering one native signal to `callback`, which its task then owns.
+#[cfg(unix)]
+fn deliver_on(
+    signal: TerminationSignal,
+    callback: Rc<dyn Fn(TerminationSignal)>,
+) -> io::Result<tokio::task::JoinHandle<()>> {
+    let stream =
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::from_raw(signal.as_raw()))?;
+    Ok(tokio::task::spawn_local(deliver(stream, signal, callback)))
+}
+
+/// A host without POSIX signal delivery takes no registration and leaves its own console
+/// events alone.
+///
+/// # Errors
+/// Never: this host has no native termination delivery to register.
+#[cfg(not(unix))]
+pub fn register_signals(_callback: Rc<dyn Fn(TerminationSignal)>) -> io::Result<Box<dyn Fn()>> {
+    Ok(Box::new(|| ()))
+}
+
+/// Delivers every signal the stream reports to `callback`.
+#[cfg(unix)]
+async fn deliver(
+    mut stream: tokio::signal::unix::Signal,
+    signal: TerminationSignal,
+    callback: Rc<dyn Fn(TerminationSignal)>,
+) {
+    while stream.recv().await.is_some() {
+        callback(signal);
     }
 }
 
@@ -34,6 +109,7 @@ impl TerminationSignal {
 ///
 /// [`restore`]: DefaultSignalActions::restore
 #[cfg(unix)]
+#[derive(Clone)]
 pub struct DefaultSignalActions {
     /// Set once default termination is restored.
     restored: Arc<AtomicBool>,
@@ -41,7 +117,10 @@ pub struct DefaultSignalActions {
 
 #[cfg(unix)]
 impl DefaultSignalActions {
-    /// Prepares `signals` without changing their current delivery.
+    /// Prepares `signals`; until [`restore`] is called, the prepared handler does nothing,
+    /// so a signal no other handler receives is ignored.
+    ///
+    /// [`restore`]: DefaultSignalActions::restore
     ///
     /// # Errors
     /// Returns the native handler registration failure.
@@ -59,5 +138,12 @@ impl DefaultSignalActions {
     /// Makes every later prepared signal take its native default action.
     pub fn restore(&self) {
         self.restored.store(true, Ordering::SeqCst);
+    }
+
+    /// Makes every later prepared signal do nothing again, until the next [`restore`].
+    ///
+    /// [`restore`]: DefaultSignalActions::restore
+    pub fn defer(&self) {
+        self.restored.store(false, Ordering::SeqCst);
     }
 }

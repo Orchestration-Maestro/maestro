@@ -8,6 +8,10 @@ pub use maestro_session::session_manager::{
 
 pub use maestro_session::{Presence, SessionInfo, SessionManager};
 
+pub use maestro_session::session_cwd::{
+    MissingSessionCwdError, SessionCwdIssue, format_missing_session_cwd_prompt,
+};
+
 /// The session's message records, including the application roles a transcript shows.
 pub use maestro_session::messages;
 

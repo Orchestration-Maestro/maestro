@@ -14,7 +14,6 @@ use crate::JsonObject;
 pub(crate) use crate::arguments::parsed_arguments;
 
 pub use maestro_json::compact_json;
-pub(crate) use maestro_json::compact_object;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use maestro_json::{BorrowedJson, array_index, compact_members};
 

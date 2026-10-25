@@ -1563,7 +1563,11 @@
       "pending": [],
       "chat": [
         "",
-        " @dim@Queued message for after compaction\u001b[39m                                            "
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@\u001b[39m                                                                               ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
       ],
       "pendingSample": {
         "mode": "followUp",
@@ -1605,7 +1609,11 @@
       "pending": [],
       "chat": [
         "",
-        " @dim@Queued message for after compaction\u001b[39m                                            "
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@selected\u001b[39m                                                                       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
       ],
       "pendingSample": {
         "mode": "followUp",
@@ -1678,7 +1686,11 @@
       "pending": [],
       "chat": [
         "",
-        " @dim@Queued message for after compaction\u001b[39m                                            "
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@/unknown\u001b[39m                                                                       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
       ],
       "pendingSample": {
         "mode": "followUp",
@@ -1786,7 +1798,11 @@
       "pending": [],
       "chat": [
         "",
-        " @dim@Queued message for after compaction\u001b[39m                                            "
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@plain\u001b[39m                                                                          ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
       ],
       "pendingSample": {
         "mode": "steer",

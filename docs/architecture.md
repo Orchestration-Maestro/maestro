@@ -60,7 +60,8 @@ these permissions for normal, build, optional and foreign-target declarations.
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.
 The binary composition root, conventions checker, terminal scenario harness,
-checked test-process owner, disposable test-directory owner, test tracing owner, repository tooling and the feature unifier
+checked test-process owner, disposable test-directory owner, test tracing owner,
+portable fixture owner, repository tooling and the feature unifier
 (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility and the native-only
@@ -87,8 +88,9 @@ tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
 child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
-tests that drive a real session through the scripted provider, and the native development
-edges from the twenty-three declared callers to the
+tests that drive a real session through the scripted provider, the native-only
+`maestro-cli` to `maestro-listeners` development edge for the controlled print
+adapter, and the native development edges from the twenty-three declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -104,7 +106,11 @@ follows the same checks with its own five callers; see the
 [tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness's
 recording terminal and manual runtime are the one shared test-effect owner, with
 `maestro-cli` as their only declared caller under the same native development
-rules. Both production
+rules. The portable fixture owner has the eight exact development callers in its
+[fixture contract](specs/maestro-port.md#test-fixture-owner). Its declarations may
+be portable or target-specific; normal/build edges and outgoing domain or utility
+edges are forbidden. The policy admits the owner before its member exists.
+Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
 
@@ -348,8 +354,9 @@ exempt. The scan reads parsed syntax, so it does not expand macros, resolve
 arbitrary re-exports or follow unparsed fragments.
 
 The root manifest must forbid every protected quality lint; member manifests
-are parsed as TOML and must set the boolean `lints.workspace` to `true`,
-except for the guest-authoring manifest below.
+are parsed as TOML and must set the boolean `lints.workspace` to `true`.
+The only exception is the guest-authoring manifest's exact table below;
+missing lint wiring is rejected for every member, including that guest.
 The compiler rejects protected-lint allowances, including attributes emitted by
 macros and conditional attributes. Lint-group allowances fail because the
 workspace also forbids `forbidden_lint_groups`, which ignores warnings denial.
@@ -372,8 +379,8 @@ top-level module, integration test and example restores the groups with
 `forbid`, nested files inherit it from their parent module, and the crate root
 stays wiring-only.
 
-All other members inherit the workspace lint table, including
-`unsafe_code = "forbid"`. The [terminal emulator](terminal-emulator.md) is pure Rust.
+Every member retains `unsafe_code = "forbid"`.
+The [terminal emulator](terminal-emulator.md) is pure Rust.
 
 The workspace daemon is core design: the root always wires the daemon,
 multiplexer. Required direct edges are root → application and multiplexer,
@@ -452,10 +459,12 @@ target at `tests/integration.rs`.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
-keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
-listeners, extension error delivery and terminal input listeners reuse it. For
-shared `Rc` callbacks it also owns subscribing, which returns the removal
+keeps a `ToolInfo` alias over the same owner. Live callback storage
+belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
+default or one per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal
 operation, and the live walk in registration order. What each listener receives
 and when it runs remain with the caller. The collection returns removed ownership
 for release outside guards, and it reclaims retired registrations while no

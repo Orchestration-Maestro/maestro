@@ -27,10 +27,11 @@ impl<'p, 'a> Emission<'p, 'a> {
         }
     }
 
-    /// Establishes the canonical escapes of an inherited style state.
-    pub(super) fn inherit(&mut self, state: usize) {
+    /// Establishes an inherited style and returns the byte position after its escapes.
+    pub(super) fn inherit(&mut self, state: usize) -> usize {
         self.parsed.states[state].write_active(&mut self.out);
         self.state = state;
+        self.out.len()
     }
 
     /// Emits escapes verbatim, in order.
@@ -41,6 +42,11 @@ impl<'p, 'a> Emission<'p, 'a> {
                 self.state = event.state;
             }
         }
+    }
+
+    /// Index of the style state the output leaves the terminal in.
+    pub(super) const fn state(&self) -> usize {
+        self.state
     }
 
     /// Emits only the metadata escapes, leaving style escapes out.
@@ -74,6 +80,11 @@ impl<'p, 'a> Emission<'p, 'a> {
             .push_str(&self.parsed.visible[position..grapheme.range.end]);
     }
 
+    /// Removes the whitespace at the end of the output; an escape ends the removal.
+    pub(super) fn trim_end(&mut self) {
+        trim_end(&mut self.out);
+    }
+
     /// Closes an open hyperlink with its opener's terminator.
     pub(super) fn close_link(&mut self) {
         self.parsed.states[self.state].write_link_close(&mut self.out);
@@ -92,4 +103,10 @@ impl<'p, 'a> Emission<'p, 'a> {
     pub(super) fn into_string(self) -> String {
         self.out
     }
+}
+
+/// Removes the whitespace at the end of `text`; an escape ends the removal.
+pub(super) fn trim_end(text: &mut String) {
+    let kept = text.trim_end_matches(super::is_whitespace_scalar).len();
+    text.truncate(kept);
 }

@@ -1,11 +1,77 @@
 //! The extension UI host over the retained interactive mode.
 use super::InteractiveMode;
-use maestro_app::{EventError, ExtensionUIContextPort, ThemeSelection, ThemeSetResult};
+use maestro_app::{
+    EventError, ExtensionUIContextPort, ExtensionUIDialogOptions, ExtensionUIFuture,
+    ThemeSelection, ThemeSetResult, WorkingIndicatorOptions,
+};
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
 use maestro_tui::tui::InputHandler;
 use std::rc::Rc;
 
+mod dialogs;
+mod widgets;
+
 impl ExtensionUIContextPort for InteractiveMode {
+    /// Shows a selector in place of the editor until it is answered, cancelled, timed
+    /// out or aborted.
+    fn select(
+        &self,
+        title: String,
+        options: Vec<String>,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_selector(title, options, opts)
+    }
+
+    /// Asks `title` and `message` with `Yes` and `No`; only `Yes` is true.
+    fn confirm(
+        &self,
+        title: String,
+        message: String,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<bool> {
+        self.show_extension_confirm(&title, &message, opts)
+    }
+
+    /// Shows a text input in place of the editor until it is submitted, cancelled,
+    /// timed out or aborted.
+    fn input(
+        &self,
+        title: String,
+        placeholder: Option<String>,
+        opts: Option<ExtensionUIDialogOptions>,
+    ) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_input(title, placeholder.as_deref(), opts)
+    }
+
+    /// Shows a multiline editor in place of the editor until it is submitted or
+    /// cancelled.
+    fn editor(&self, title: String, prefill: Option<String>) -> ExtensionUIFuture<Option<String>> {
+        self.show_extension_editor(title, prefill)
+    }
+
+    /// Updates the keyed footer status and requests a frame.
+    ///
+    /// # Errors
+    /// This implementation does not return errors.
+    fn set_status(&self, key: String, text: Option<String>) -> Result<(), EventError> {
+        self.set_extension_status(&key, text.as_deref());
+        Ok(())
+    }
+
+    /// Disposes the previous keyed widget and installs the supplied replacement.
+    ///
+    /// # Errors
+    /// Returns the original disposal, factory or text-theme failure.
+    fn set_widget(
+        &self,
+        key: String,
+        content: Option<maestro_app::WidgetContent>,
+        options: Option<maestro_app::ExtensionWidgetOptions>,
+    ) -> Result<(), EventError> {
+        self.set_extension_widget(key, content, options)
+    }
+
     /// Forwards the supplied text to the terminal's title setter unchanged.
     ///
     /// # Errors
@@ -115,6 +181,45 @@ impl ExtensionUIContextPort for InteractiveMode {
     /// Returns the failure of a tool row's native formatting or of a text rendering.
     fn set_tools_expanded(&self, expanded: bool) -> Result<(), EventError> {
         InteractiveMode::set_tools_expanded(self, expanded)
+    }
+
+    /// Sets the working message, `None` restoring the default.
+    ///
+    /// # Errors
+    /// Returns the host's failure; setting the message cannot fail here.
+    fn set_working_message(&self, message: Option<String>) -> Result<(), EventError> {
+        InteractiveMode::set_working_message(self, message);
+        Ok(())
+    }
+
+    /// Shows or hides the working row.
+    ///
+    /// # Errors
+    /// Returns the host's failure; showing the row cannot fail here.
+    fn set_working_visible(&self, visible: bool) -> Result<(), EventError> {
+        InteractiveMode::set_working_visible(self, visible);
+        Ok(())
+    }
+
+    /// Sets the working indicator, `None` restoring the toolkit's own.
+    ///
+    /// # Errors
+    /// Returns the host's failure; setting the indicator cannot fail here.
+    fn set_working_indicator(
+        &self,
+        options: Option<WorkingIndicatorOptions>,
+    ) -> Result<(), EventError> {
+        InteractiveMode::set_working_indicator(self, options);
+        Ok(())
+    }
+
+    /// Sets the hidden-thinking label, `None` restoring the default.
+    ///
+    /// # Errors
+    /// Returns the host's failure; setting the label cannot fail here.
+    fn set_hidden_thinking_label(&self, label: Option<String>) -> Result<(), EventError> {
+        InteractiveMode::set_hidden_thinking_label(self, label);
+        Ok(())
     }
 }
 

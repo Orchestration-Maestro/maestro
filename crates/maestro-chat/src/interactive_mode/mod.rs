@@ -1,13 +1,12 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts, editor actions, typed input and queued
-//! input.
+//! resources, notices, transcript shortcuts, editor actions, typed input, queued
+//! input and session commands.
 
-use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
-use indexmap::IndexMap;
+use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, ToolRenderEnvironment,
+    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
@@ -15,17 +14,24 @@ use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text}
 use std::{
     cell::{Cell, RefCell},
     error::Error,
-    rc::Rc,
+    rc::{Rc, Weak},
 };
 
 mod actions;
+mod authentication;
+mod bash;
 mod compaction_queue;
+mod debug;
 mod events;
+mod info;
 mod key_display;
+mod models;
+mod notices;
 mod progress;
 mod queues;
 mod replay;
 mod resources;
+mod selectors;
 mod startup;
 mod submit;
 
@@ -33,6 +39,7 @@ mod extension_ui;
 mod toggles;
 mod transcript;
 mod transfer;
+mod working;
 
 #[cfg(test)]
 #[cfg(unix)]
@@ -40,6 +47,9 @@ mod tests;
 
 /// The spacer and text of a status line.
 type StatusLine = (Rc<dyn Component>, Rc<Text>);
+
+/// The assistant row a response streams into and the message it shows.
+type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
 /// How the interactive mode starts.
 #[derive(Default)]
@@ -60,12 +70,18 @@ pub struct InteractiveModeOptions {
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {
+    /// Live keyed widgets above the editor.
+    extension_widgets_above: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    /// Live keyed widgets below the editor.
+    extension_widgets_below: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    /// This mode, for callbacks that must not keep it alive.
+    this: Weak<InteractiveMode>,
     /// The runtime the current session is read from.
     runtime_host: Rc<AgentSessionRuntime>,
     /// How the mode starts.
     options: InteractiveModeOptions,
-    /// The terminal user interface this mode owns.
-    ui: TUI,
+    /// The terminal user interface this mode owns, shared with dialogs that keep it weakly.
+    ui: Rc<TUI>,
     /// The theme registry and its published theme.
     themes: Rc<ThemeState>,
     /// The startup header container.
@@ -103,17 +119,27 @@ pub struct InteractiveMode {
     /// The spacer and text of the latest status line.
     last_status: RefCell<Option<StatusLine>>,
     /// Tool rows waiting for their results, by call id in call order.
-    pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
+    pending_tools: RefCell<replay::PendingTools>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// The shell row that is still producing output, when one is attached.
+    active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
+    /// Shell rows shown in the pending area until the next ordinary submission.
+    pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Whether this mode has shown the subscription billing notice.
+    anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
     /// The progress presentation's loaders, countdown and interrupt callbacks.
     progress: progress::Retained,
     /// The session subscription that delivers agent and session events.
     unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
+    /// The working row and its extension-controlled presentation.
+    working: working::WorkingState,
+    /// The assistant row of the response streaming now.
+    streaming: RefCell<Option<StreamingMessage>>,
 }
 
 impl InteractiveMode {
@@ -153,8 +179,10 @@ impl InteractiveMode {
         let settings = session.settings_manager();
         let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
-        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
-        Ok(Rc::new(Self {
+        Ok(Rc::new_cyclic(|this| Self {
+            this: this.clone(),
+            extension_widgets_above: maestro_app::Live::new(),
+            extension_widgets_below: maestro_app::Live::new(),
             runtime_host,
             options,
             ui,
@@ -174,31 +202,38 @@ impl InteractiveMode {
             built_in_header: RefCell::default(),
             tool_environment,
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(hide_thinking_block),
+            hide_thinking_block: Cell::new(settings.borrow().get_hide_thinking_block()),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            active_shell: RefCell::default(),
+            pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
+            anthropic_subscription_warning_shown: Cell::new(false),
             compaction_queued_messages: RefCell::default(),
             progress: progress::Retained::default(),
             unsubscribe: RefCell::default(),
+            working: working::WorkingState::default(),
+            streaming: RefCell::default(),
         }))
     }
 
     /// Builds the header, adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission, starts the terminal, lists the
-    /// loaded resources with their diagnostics and replays the session, once; theme
-    /// changes then refresh the editor border, and theme and branch changes request
-    /// fresh frames.
+    /// transcript shortcuts, installs editor submission and the global debug key, starts
+    /// the terminal, lists the loaded resources with their diagnostics and replays the
+    /// session, once; theme changes then refresh the editor border, and theme and branch
+    /// changes request fresh frames.
+    /// Finally the footer learns how many providers the model candidates cover.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
-    /// resource listing or of the replay.
+    /// resource listing, of the replay or of the catalog refresh.
     pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
         self.build_header()?;
+        self.render_widgets();
         for child in [
             &self.header_container,
             &self.chat_container,
@@ -215,6 +250,7 @@ impl InteractiveMode {
         self.setup_key_handlers();
         self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
+        self.setup_debug_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
         self.subscribe_to_agent();
@@ -237,7 +273,8 @@ impl InteractiveMode {
             show_diagnostics_when_quiet: true,
             ..resources::ShowLoadedResourcesOptions::default()
         })?;
-        self.render_initial_messages()
+        self.render_initial_messages()?;
+        self.update_available_provider_count()
     }
 }
 
@@ -266,7 +303,7 @@ fn create_ui(
     session: &AgentSession,
     terminal: (TerminalHandle, Rc<dyn TuiRuntime>),
     image: TerminalImage,
-) -> TUI {
+) -> Rc<TUI> {
     let settings = session.settings_manager().borrow();
     let ui = TUI::new(
         terminal.0,
@@ -275,7 +312,7 @@ fn create_ui(
         Some(settings.get_show_hardware_cursor()),
     );
     ui.set_clear_on_shrink(settings.get_clear_on_shrink());
-    ui
+    Rc::new(ui)
 }
 
 /// Builds the editor with the configured padding and completion limit.

@@ -51,7 +51,9 @@ mod message_tool_arguments;
 mod message_visuals_browser;
 mod messages_browser;
 mod native_artifact_controls_browser;
+mod native_console_browser;
 mod native_markdown_browser;
+mod native_simple_artifacts_browser;
 mod native_thinking_browser;
 mod pdf_views;
 mod pdf_views_browser;
@@ -100,6 +102,8 @@ pub mod highlighter_support;
 pub mod input_support;
 pub mod markdown_support;
 pub mod markdown_svg_support;
+#[cfg(target_arch = "wasm32")]
+pub mod native_simple_artifacts_support;
 pub mod panel_browser_support;
 pub mod pdf_support;
 pub mod reading_browser_support;

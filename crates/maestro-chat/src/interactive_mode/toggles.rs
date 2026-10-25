@@ -13,21 +13,27 @@ use maestro_tui::{Component, EditorComponent};
 use std::{any::Any, error::Error, rc::Rc};
 
 /// A mode operation an editor shortcut runs.
-type Operation = fn(&InteractiveMode) -> Result<(), Box<dyn Error>>;
+type Operation = fn(&Rc<InteractiveMode>) -> Result<(), Box<dyn Error>>;
 
 impl InteractiveMode {
     /// Binds the transcript shortcuts and editor actions on the editor, in the order the
     /// editor consults them, then installs its change and image-paste callbacks.
     pub(super) fn setup_key_handlers(self: &Rc<Self>) {
-        self.on_action("app.thinking.cycle", Self::cycle_thinking_level);
+        #[cfg(unix)]
+        self.on_action("app.suspend", |mode| mode.handle_ctrl_z());
+        #[cfg(windows)]
+        self.on_action("app.suspend", |mode| mode.show_suspend_unsupported());
+        self.on_action("app.thinking.cycle", |mode| mode.cycle_thinking_level());
         self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
         self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
-        self.on_action("app.tools.expand", Self::toggle_tool_output_expansion);
-        self.on_action(
-            "app.thinking.toggle",
-            Self::toggle_thinking_block_visibility,
-        );
-        self.on_action("app.editor.external", Self::open_external_editor);
+        self.on_action("app.model.select", |mode| mode.show_model_selector(None));
+        self.on_action("app.tools.expand", |mode| {
+            mode.toggle_tool_output_expansion()
+        });
+        self.on_action("app.thinking.toggle", |mode| {
+            mode.toggle_thinking_block_visibility()
+        });
+        self.on_action("app.editor.external", |mode| mode.open_external_editor());
         self.setup_editor_callbacks();
     }
 
@@ -92,8 +98,8 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// Flips and saves whether thinking is hidden, replays the transcript with it and shows
-    /// the new state.
+    /// Flips and saves whether thinking is hidden, replays the transcript with it, puts the
+    /// streaming row back after it with the new visibility and shows the new state.
     ///
     /// # Errors
     /// Returns the failure of the replay or of the published theme.
@@ -106,6 +112,12 @@ impl InteractiveMode {
             .borrow_mut()
             .set_hide_thinking_block(hide);
         self.rebuild_chat_from_messages()?;
+        let streaming = self.streaming.borrow().clone();
+        if let Some((component, message)) = streaming {
+            component.set_hide_thinking_block(hide);
+            component.update_content(message);
+            self.chat_container.add_child(component);
+        }
         let state = if hide { "hidden" } else { "visible" };
         self.show_status(&format!("Thinking blocks: {state}"))
     }

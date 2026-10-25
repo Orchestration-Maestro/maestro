@@ -1573,6 +1573,7 @@
         "progress": [],
         "timers": [
           80,
+          80,
           1000
         ],
         "editor": "draft"
@@ -1581,7 +1582,9 @@
         "status": [],
         "chat": [],
         "progress": [],
-        "timers": [],
+        "timers": [
+          80
+        ],
         "editor": "draft"
       }
     }
@@ -1830,7 +1833,7 @@
       ],
       "local": [],
       "errors": [],
-      "pending": 4,
+      "pending": 0,
       "editor": "draft"
     }
   },
@@ -2632,7 +2635,7 @@
       ],
       "local": [],
       "errors": [],
-      "pending": 3,
+      "pending": 0,
       "editor": "replaced draft"
     }
   },
@@ -2669,7 +2672,7 @@
       ],
       "local": [],
       "errors": [],
-      "pending": 3,
+      "pending": 0,
       "editor": "draft"
     }
   },
@@ -2706,7 +2709,7 @@
       ],
       "local": [],
       "errors": [],
-      "pending": 4,
+      "pending": 0,
       "editor": "draft"
     }
   },

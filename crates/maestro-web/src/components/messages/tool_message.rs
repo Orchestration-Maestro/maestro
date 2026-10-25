@@ -80,12 +80,20 @@ impl ToolMessage {
             .tool
             .filter(|name| !name.is_empty())
             .unwrap_or(&props.tool_call.name);
-        let rendered = crate::render_tool(
-            name,
-            Some(ToolParams::object(&props.tool_call.arguments)),
-            result,
-            !props.aborted && (props.is_streaming || props.pending),
-        )?;
+        let streaming = !props.aborted && (props.is_streaming || props.pending);
+        // An object root borrows its inner map for existing map registrations; any other root
+        // borrows the whole value through the ordinary JSON route.
+        let rendered = match props.tool_call.arguments.as_object() {
+            Some(members) => {
+                crate::render_tool(name, Some(ToolParams::object(members)), result, streaming)?
+            }
+            None => crate::render_tool(
+                name,
+                Some(ToolParams::json(&props.tool_call.arguments)),
+                result,
+                streaming,
+            )?,
+        };
         if rendered.is_custom {
             return rendered
                 .render(ui, view, &mut self.retained)

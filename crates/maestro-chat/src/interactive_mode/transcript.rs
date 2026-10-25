@@ -8,11 +8,11 @@ use crate::{
 };
 use maestro_app::messages::{BashExecutionMessage, CustomAgentMessages};
 use maestro_app::{
-    AgentMessage, Local, LocaleNumberFormat, NativeAgentMessage, Presence, TruncationOptions,
-    UserBlock, UserContent, parse_skill_block, truncate_tail,
+    AgentMessage, Local, LocaleNumberFormat, NativeAgentMessage, Presence, SharedAssistantMessage,
+    TruncationOptions, UserBlock, UserContent, parse_skill_block, truncate_tail,
 };
 use maestro_theme::ThemeColor;
-use maestro_tui::{Component, EditorComponent, MarkdownTheme, Spacer, Text};
+use maestro_tui::{Component, EditorComponent, MarkdownTheme, Spacer, TUI, Text};
 use std::{error::Error, rc::Rc, sync::PoisonError};
 
 impl InteractiveMode {
@@ -96,14 +96,8 @@ impl InteractiveMode {
                 self.add_user_message(&Self::get_user_message_text(message), populate_history);
             }
             AgentMessage::Assistant(message) => {
-                let component = AssistantMessageComponent::new(
-                    Some(message.clone()),
-                    self.assistant_options(),
-                    self.themes.theme(),
-                    self.get_markdown_theme_with_settings(),
-                    self.tool_environment.terminal_image.clone(),
-                );
-                self.chat_container.add_child(Rc::new(component));
+                let component = self.assistant_component(message.clone());
+                self.chat_container.add_child(component);
             }
             AgentMessage::ToolResult(_) => {}
             AgentMessage::Custom(custom) => {
@@ -118,10 +112,25 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// The assistant rows' current thinking visibility.
+    /// An assistant row showing `message` with the current thinking visibility.
+    pub(super) fn assistant_component(
+        &self,
+        message: SharedAssistantMessage,
+    ) -> Rc<AssistantMessageComponent> {
+        Rc::new(AssistantMessageComponent::new(
+            Some(message),
+            self.assistant_options(),
+            self.themes.theme(),
+            self.get_markdown_theme_with_settings(),
+            self.tool_environment.terminal_image.clone(),
+        ))
+    }
+
+    /// The assistant rows' current thinking visibility and hidden-thinking label.
     pub(super) fn assistant_options(&self) -> AssistantMessageOptions {
         AssistantMessageOptions {
             hide_thinking_block: self.hide_thinking_block.get(),
+            hidden_thinking_label: self.working.hidden_thinking_label.borrow().clone(),
             ..AssistantMessageOptions::default()
         }
     }
@@ -219,7 +228,7 @@ impl InteractiveMode {
     fn add_bash_execution(&self, message: BashExecutionMessage) -> Result<(), Box<dyn Error>> {
         let component = BashExecutionComponent::new(
             message.command,
-            self.ui.clone(),
+            TUI::clone(&self.ui),
             self.themes.theme(),
             matches!(message.exclude_from_context, Presence::Present(true)),
         );

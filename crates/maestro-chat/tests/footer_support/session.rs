@@ -17,7 +17,41 @@ pub fn session(
     oauth_provider: Option<&str>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> CreateAgentSessionRuntimeResult {
-    over(cwd, &services(cwd, oauth_provider, loader))
+    session_over(cwd, oauth_provider, loader, None)
+}
+
+/// The same session, over a history file under `session_dir` when supplied.
+pub fn session_over(
+    cwd: &str,
+    oauth_provider: Option<&str>,
+    loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
+    session_dir: Option<&str>,
+) -> CreateAgentSessionRuntimeResult {
+    session_with_auth(
+        cwd,
+        Some(Arc::new(AuthStorage::in_memory(credentials(
+            oauth_provider,
+        )))),
+        loader,
+        session_dir,
+    )
+}
+
+/// The same session over the supplied credentials, or an empty in-memory store.
+pub fn session_with_auth(
+    cwd: &str,
+    auth: Option<Arc<AuthStorage>>,
+    loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
+    session_dir: Option<&str>,
+) -> CreateAgentSessionRuntimeResult {
+    let auth = auth.unwrap_or_else(|| Arc::new(AuthStorage::in_memory(credentials(None))));
+    let services = services(cwd, auth, loader);
+    let manager = match session_dir {
+        Some(directory) => SessionManager::create(cwd, Some(directory), &services.agent_dir)
+            .expect("a session history file"),
+        None => return over(cwd, &services),
+    };
+    over_manager(cwd, &services, manager)
 }
 
 /// A memory session over existing `services`, as a replacement session is built.
@@ -25,11 +59,19 @@ pub fn over(
     cwd: &str,
     services: &Rc<AgentSessionServices<Local>>,
 ) -> CreateAgentSessionRuntimeResult {
+    let manager = SessionManager::in_memory(Some(cwd)).expect("a memory session");
+    over_manager(cwd, services, manager)
+}
+
+/// A session over `manager` and the services built for `cwd`.
+fn over_manager(
+    cwd: &str,
+    services: &Rc<AgentSessionServices<Local>>,
+    manager: SessionManager,
+) -> CreateAgentSessionRuntimeResult {
     let session = AgentSession::new(AgentSessionConfig {
         agent: Rc::default(),
-        session_manager: Rc::new(RefCell::new(
-            SessionManager::in_memory(Some(cwd)).expect("a memory session"),
-        )),
+        session_manager: Rc::new(RefCell::new(manager)),
         settings_manager: Rc::clone(&services.settings_manager),
         cwd: cwd.to_owned(),
         bin_dir: String::new(),
@@ -62,13 +104,12 @@ pub fn over(
 /// reads `models.json` in `cwd` when present.
 fn services(
     cwd: &str,
-    oauth_provider: Option<&str>,
+    auth: Arc<AuthStorage>,
     wrap: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> Rc<AgentSessionServices<Local>> {
     let settings = Rc::new(RefCell::new(
         SettingsManager::in_memory(Settings::default()),
     ));
-    let auth = Arc::new(AuthStorage::in_memory(credentials(oauth_provider)));
     let commands: ConfigValues = Arc::new(ProcessConfigValueOperations::new(|| {
         Err(std::io::Error::other("not invoked"))
     }));

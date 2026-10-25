@@ -19,6 +19,7 @@ pub use maestro_extensions::types::events::*;
 pub use maestro_extensions::types::SessionChangeResult;
 
 pub use maestro_extensions::types::{ExtensionFlag, FlagType};
+
 /// The option records of the session-changing command operations.
 pub use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 pub use maestro_extensions::{
@@ -45,3 +46,6 @@ pub use maestro_extensions::{
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_extensions::discover_and_load_extensions;
+
+pub use maestro_extensions::footer_data_provider::live::Live;
+pub use maestro_extensions::types::{ExtensionComponent, WidgetContent};

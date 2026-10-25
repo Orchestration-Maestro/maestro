@@ -1,20 +1,26 @@
 //! The prompt loop over a real session answering through the scripted provider: startup
 //! notices and prompts, refused prompts, typed prompts and the current session.
 use super::{Setup, World, cases, isolated};
-use crate::{InteractiveMode, InteractiveModeOptions};
+use crate::{
+    AssistantMessageComponent, InteractiveMode, InteractiveModeOptions, ToolExecutionComponent,
+    UserMessageComponent,
+};
 use maestro_app::{
     AgentMessage, AgentSession, AgentSessionEvent, ExtensionFactory, ExtensionHandler,
-    ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions, StopReason,
-    UserBlock, UserContent,
+    ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions,
+    ProviderConfigInput, StopReason, UserBlock, UserContent,
 };
 use maestro_models::{
-    FauxAssistantMessageOptions, FauxProviderRegistration, FauxProviderState, FauxResponseStep,
-    RegisterFauxProviderOptions, faux_assistant_message, register_faux_provider,
+    ApiProvider, AssistantMessageEventStream, DiagnosticErrorInfo, FauxAssistantMessageOptions,
+    FauxProviderRegistration, FauxProviderState, FauxResponseStep, Invoke, ProviderCall,
+    ProviderExecution, RegisterFauxProviderOptions, StreamOptionsInput, faux_assistant_message,
+    get_api_provider, register_faux_provider,
 };
 use maestro_theme::{Theme, ThemeColor};
-use maestro_tui::{Component, Container, Text};
+use maestro_tui::{Component, Container, Spacer, Text};
 use serde::Deserialize;
 use std::{
+    any::Any,
     cell::{Cell, RefCell},
     collections::BTreeMap,
     error::Error,
@@ -94,6 +100,33 @@ fn input_hook(seen: &HookLog) -> ExtensionFactory<Local> {
     })
 }
 
+/// Keeps the scripted callback available when the model catalog refreshes its registrations.
+struct RetainedProvider(ApiProvider);
+
+impl<E: ProviderExecution> Invoke<E, ProviderCall<E, StreamOptionsInput<E>>> for RetainedProvider {
+    type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+
+    fn invoke(&self, input: ProviderCall<E, StreamOptionsInput<E>>) -> Self::Return {
+        match input.options {
+            Some(StreamOptionsInput::Raw(options)) => self.0.stream.call(
+                input.model,
+                input.context,
+                E::submission(Some(options), input.submit),
+            ),
+            Some(StreamOptionsInput::Simple(options)) => self.0.stream_simple.call(
+                input.model,
+                input.context,
+                E::submission(Some(options), input.submit),
+            ),
+            None => self.0.stream_simple.call(
+                input.model,
+                input.context,
+                E::submission(None, input.submit),
+            ),
+        }
+    }
+}
+
 impl Scripted {
     /// Builds a mode with `options` in `directory`; its key comes from the fallback resolver.
     fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
@@ -105,14 +138,32 @@ impl Scripted {
         }
         .build(directory);
         let provider = register_faux_provider(RegisterFauxProviderOptions::default());
+        let callback = get_api_provider(&provider.api).unwrap();
+        world
+            .host
+            .session()
+            .model_registry()
+            .register_provider(
+                &provider.models[0].provider,
+                Arc::new(RwLock::new(ProviderConfigInput {
+                    api: Some(provider.api.clone()),
+                    stream_simple: Some(Arc::new(RetainedProvider(callback))),
+                    ..ProviderConfigInput::default()
+                })),
+            )
+            .unwrap();
         let refuse = Arc::new(AtomicBool::new(false));
         let refused = Arc::clone(&refuse);
+        let provider_id = provider.models[0].provider.clone();
         world
             .host
             .services()
             .auth_storage
-            .set_fallback_resolver(move |_| {
-                Ok((!refused.swap(false, Ordering::SeqCst)).then(|| "controlled-key".to_owned()))
+            .set_fallback_resolver(move |id| {
+                Ok(
+                    (id == provider_id && !refused.swap(false, Ordering::SeqCst))
+                        .then(|| "controlled-key".to_owned()),
+                )
             });
         let scripted = Self {
             world,
@@ -254,17 +305,19 @@ impl Recorder {
     }
 
     /// Records the rows of each notice added since the last record, skipping the
-    /// resource diagnostics the startup listing appends as a text row and a spacer.
+    /// resource diagnostics the startup listing appends as a text row and a spacer, and
+    /// the message rows the session's events add.
     fn flush(&self) {
         let children = self.chat.children();
         let children = children.borrow();
-        let mut index = self.recorded.get();
-        while index + 1 < children.len() {
-            let spacer = children[index].render(WIDTH);
+        let added = without_messages(&children[self.recorded.get()..]);
+        let mut index = 0;
+        while index + 1 < added.len() {
+            let spacer = added[index].render(WIDTH);
             if spacer.iter().all(String::is_empty) {
                 self.log
                     .borrow_mut()
-                    .push(Err(children[index + 1].render(WIDTH)));
+                    .push(Err(added[index + 1].render(WIDTH)));
             }
             index += 2;
         }
@@ -294,6 +347,23 @@ impl Recorder {
         assert!(prompts.iter_mut().all(|(_, rest)| rest.next().is_none()));
         observed
     }
+}
+
+/// `rows` without the message rows the session's events add: user, assistant and tool rows,
+/// and the spacer before a user row.
+fn without_messages(rows: &[Rc<dyn Component>]) -> Vec<&Rc<dyn Component>> {
+    let kind = |index: usize| rows.get(index).map(|row| -> &dyn Any { row.as_ref() });
+    let user = |index| kind(index).is_some_and(<dyn Any>::is::<UserMessageComponent>);
+    let kept = (0..rows.len()).filter(|&index| {
+        let Some(row) = kind(index) else {
+            return false;
+        };
+        let message = user(index)
+            || row.is::<AssistantMessageComponent>()
+            || row.is::<ToolExecutionComponent>();
+        !(message || row.is::<Spacer>() && user(index + 1))
+    });
+    kept.map(|index| &rows[index]).collect()
 }
 
 /// The text and image blocks of each user message `session` holds, in order.
@@ -581,7 +651,7 @@ fn build(directory: &Path, startup: &mut Startup) -> Scripted {
         std::fs::write(&catalog, &startup.catalog_error).unwrap();
     }
     let options = &mut startup.options;
-    let scripted = Scripted::new(
+    Scripted::new(
         directory,
         InteractiveModeOptions {
             migrated_providers: std::mem::take(&mut options.migrated_providers),
@@ -591,11 +661,7 @@ fn build(directory: &Path, startup: &mut Startup) -> Scripted {
             initial_messages: std::mem::take(&mut options.initial_messages),
             ..InteractiveModeOptions::default()
         },
-    );
-    if written {
-        std::fs::remove_file(&catalog).unwrap();
-    }
-    scripted
+    )
 }
 
 /// Runs the loop through `startup`, then compares every notice, admission and failed answer
@@ -639,7 +705,8 @@ async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>
 fn replay(test: &str) {
     isolated(test, |directory| {
         for (startup, expected) in cases::<Startup, Vec<Step>>(FIXTURES, test) {
-            on_local(replay_case(directory, startup, expected));
+            let case = maestro_test_directory::Scratch::new_in(directory).unwrap();
+            on_local(replay_case(case.path(), startup, expected));
         }
     });
 }

@@ -7,6 +7,9 @@ modes and the interactive components stay with their own crates; the RPC client,
 which drives Maestro as a child process, lives here in `rpc_client`
 ([RPC client](../client.md)).
 
+[Session observations](lifecycle.md) describes name publication and finalized
+message replacements.
+
 ## Creating a session
 
 `create_agent_session` takes a `CreateAgentSessionOptions` and fills each absent
@@ -109,8 +112,10 @@ extensions may cancel through `session_before_switch` or `session_before_fork`;
 the target history is prepared; the current session shuts down with its reason,
 the before-invalidate callback runs, and the session is disposed; the factory
 creates the next session, the rebind callback runs, and `with_session` continues
-with the replacement's context. The start event carries the previous session
-file. A failure after the teardown restores nothing.
+with the replacement's context. Setup, message reload and continuation stay bound
+to that replacement even if another operation changes the current session while
+a callback is suspended. The start event carries the previous session file.
+A failure after the teardown restores nothing.
 
 - `new_session` starts a history in the same directory, optionally recording a
   parent session, and runs `setup` on it before the agent reloads its messages.

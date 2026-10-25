@@ -211,7 +211,7 @@ fn on_response(runner_ref: &ExtensionRunnerRef) -> maestro_models::OnResponse<Lo
 }
 
 /// Lets the extensions rewrite the messages of each request.
-fn transform_context(
+pub fn transform_context(
     runner_ref: &ExtensionRunnerRef,
 ) -> Rc<<Local as AgentExecution>::Transform<CustomAgentMessages>> {
     let runner_ref = Rc::clone(runner_ref);

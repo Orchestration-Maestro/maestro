@@ -330,17 +330,19 @@ impl AgentSessionRuntime {
         Ok(())
     }
 
-    /// Rebinds the host to the replacement, then continues against it.
+    /// Rebinds the host to the captured replacement, then continues against that session
+    /// even if another operation replaces the current session during rebinding.
     async fn finish_session_replacement(
         &self,
+        session: &Rc<AgentSession>,
         with_session: Option<&WithSession>,
     ) -> Result<(), DiagnosticErrorInfo> {
         let rebind = self.rebind_session.borrow().clone();
         if let Some(rebind) = rebind {
-            rebind(self.session()).await?;
+            rebind(Rc::clone(session)).await?;
         }
         if let Some(with_session) = with_session {
-            with_session(self.session().create_replaced_session_context())
+            with_session(session.create_replaced_session_context())
                 .await
                 .map_err(thrown)?;
         }

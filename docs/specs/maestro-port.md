@@ -344,6 +344,7 @@ from the optional foundation utility described below.
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json`, `maestro-resources` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-directory` | own disposable native test directories | — | 0 |
+| `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
@@ -351,12 +352,12 @@ from the optional foundation utility described below.
 | `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock` | 0 |
-| `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners` | 1 |
+| `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners`, `maestro-json` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listing` | 1 |
-| `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process` | 1 |
+| `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process`, `maestro-listeners` | 1 |
 | `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-ipc`, `maestro-process`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources` | 2 |
@@ -418,7 +419,9 @@ summaries enable it. User-authored Markdown leaves it disabled.
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.
 Tool renderer field selection reuses `maestro-json` for JSON truth and selected-value
 display. Callers keep field lookup and defaults; the leaf borrows truthy strings and
-writes other truthy values with its compact JSON writer.
+writes other truthy values with its compact JSON writer. `maestro-agent` reuses that
+leaf's truth classification for the falsy reconstructed tool-call argument roots its
+proxy stream falls back from; the edge carries no other coupling.
 
 `maestro-request` defines shared message and model-request records: model
 descriptors, messages, content, usage, stream events and diagnostics, plus
@@ -449,7 +452,10 @@ The read-only footer contract `ReadonlyFooterDataProvider`, its live
 belong to the extension consumer layer (`maestro-extensions::footer_data_provider`),
 because extension footer factories receive it. The application keeps the footer
 metadata owner, its branch, watch, count and status policy and its existing public
-paths, which re-export the moved declarations.
+paths, which re-export the moved declarations. The keyed live map reuses
+`maestro-listeners::Listeners` for insertion-order traversal. Replacement keeps
+position; removal returns ownership for release outside collection borrows.
+Clones retain one collection, and active walks observe edits until exhaustion.
 Native repository discovery belongs to `maestro-workspace::workspace::git`.
 The daemon and application footer reuse its directory walk, lexical path and drive
 resolution and shared Unicode trimming without replacing native path bytes.
@@ -513,14 +519,19 @@ name decoding and any further ordering.
 It owns one job: retaining callbacks in live registration order. A callback is
 admitted once per identity, so registering a live one again keeps its first
 position, while removing and re-registering it moves it to the last position.
-Traversal sees the collection as it is at each step. Models, the terminal
-toolkit, the agent, the application and the extension runtime may depend on it.
+A caller may instead admit every registration as its own entry, as an
+event-emitter listener list keeps them; each removal operation then removes its
+own registration. Traversal sees the collection as it is at each step. Models,
+the terminal toolkit, the agent, the application, the extension runtime and the
+terminal adapter may depend on it.
 Each caller keeps its own borrowing, locking, delivery and settlement policy:
 the leaf holds no lock, runs no callback under its own borrow and returns removed
 ownership to the caller. Its storage is a flat ordered list plus an identity
 index; retired slots are reclaimed while no traversal runs, so one removal costs
 expected constant work and clearing every registration costs work proportional to
 their number. Traversal bookkeeping is per walk and never retains callbacks.
+Callers that need emission-time membership use an owned snapshot of the registered
+handles.
 
 Implement these owners only after this amendment lands, through
 [filesystem-watch ownership](https://github.com/Orchestration-Maestro/maestro/issues/493)
@@ -539,7 +550,13 @@ truncation, artifact files, presentation, result mapping and user-facing errors 
 with their feature owners. The process leaf also owns the retained-front byte queue
 shared by pane-process input and native terminal output: ordered admission, partial
 write advancement and failure cleanup. Callers choose the write chunk bound and
-keep descriptor readiness, lifecycle and error-reporting policy.
+keep descriptor readiness, lifecycle and error-reporting policy. It owns native
+termination-signal subscription and idempotent removal; a native mode supplies the
+callback and keeps its exit policy. No frontend subscribes to native signals
+itself. It also owns the current process's native signal effects: the default action a
+prepared termination signal or interrupt takes, the job-control stop of the process
+group and the observation of its continuation. Callers keep when to prepare, restore,
+stop and resume.
 The shared launch contract includes synchronous capture
 with optional raw stdin, an optional caller-supplied timeout and an optional
 combined captured-byte bound, inherited standard
@@ -571,7 +588,7 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), component runtime adapter
 (`maestro-extensions-wasmtime`), terminal scenario harness
 (`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), disposable directory owner
-(`maestro-test-directory`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
+(`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
 request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
 (`maestro-lock`), process leaf (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
@@ -612,6 +629,13 @@ rendering environment; the adapter's normal dependency stays `maestro-app` alone
 `maestro-chat` to `maestro-models`, declared as a non-optional native development
 dependency, lets interactive-mode tests drive a real session through the scripted
 provider; it permits no normal or build dependency on models.
+`maestro-cli` to `maestro-listeners`, declared as a non-optional native development
+dependency, supplies retained registration snapshots for the controlled print adapter.
+It permits no normal or build dependency on the listener leaf.
+`maestro-chat` to `maestro-tui-crossterm`, declared for native targets only and
+without optionality, lets the interactive mode's composed witness drive a real
+native terminal; it permits no normal or build dependency on the adapter and does
+not make the interactive frontend a terminal owner.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -636,8 +660,8 @@ test. It has no workspace dependencies except the native feature unifier and one
 native development edge to the disposable directory owner for its own child
 fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
-from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
+from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`
 and `maestro-tui-crossterm`; a
@@ -665,9 +689,10 @@ temporary directory unless its case sets one.
 exclusive disposable-directory allocation and cleanup. It has no workspace
 edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
-dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
+dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
+`maestro-extensions-wasmtime`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
@@ -703,6 +728,20 @@ supplied relative path with the other names its own directory holds and returns 
 groups the host does not keep apart. Both let a caller state a premise a folding or
 restrictive host cannot exercise. The leaf owns no caller policy, process launcher,
 timer, retry limit or ownership-transfer API.
+
+### Test fixture owner
+
+`maestro-test-fixtures` is a dedicated, unpublished, portable leaf for shared
+fixture records, recorded-header lookup, wire-literal round trips and single-color
+theme construction. It has no product dependencies or foundation utility edge;
+its only internal normal dependency is the native feature unifier.
+Fixture development callers are `maestro-agent`, `maestro-models`, `maestro-request`,
+`maestro-catalog`, `maestro-chat`, `maestro-credentials`, `maestro-tools` and
+`maestro-export`; declarations may be portable or target-specific, including aliases.
+Models, request, catalog, chat and credentials use portable development declarations;
+agent, tools and export use native development declarations. No normal or build
+edge to this owner is permitted. Both production and test cycle checks apply.
+The policy and inventory admit this owner before its first member exists.
 
 ### Test tracing owner
 
@@ -783,8 +822,13 @@ exact wire bytes, fields, omission/null rules and results. Workspace commands ar
 `maestro-protocol` owns the generic request and response envelopes, the workspace records and
 their schema; `maestro-app::rpc_types` owns the session records and the composed command
 family; `maestro-json::jsonl` owns JSONL framing. `maestro-app::rpc_mode` is the one connection
-runner: it serves a local session runtime over a caller's line reader and writer and returns
-how the connection ended. `maestro-rpc` is its standard-stream adapter, which exits the process. Live screen traffic stays binary in
+runner: it serves workspace operations and an optional local session over a caller's line
+reader and writer, returning how the connection ended. `RpcModeOptions` groups session-only
+facilities in `Option<RpcSessionOptions>`: runtime, process signals, theme and export effects.
+A session-free connection creates no UI or session binding and registers no session signals;
+session commands return a correlated refusal asking the caller to open in a session. A supplied
+session keeps its binding, rebind, event subscription and disposal lifecycle.
+`maestro-rpc` is its standard-stream adapter, which exits the process. Live screen traffic stays binary in
 a channel of the same protocol and version. Plain JSONL clients need no new header, handshake or
 version member, and receive no unsolicited startup record or binary bytes.
 
@@ -799,7 +843,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 
 **Below layer 0:** `maestro-protocol`, `maestro-ipc` join the existing foundation leaves.
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
@@ -882,10 +926,12 @@ and enumeration transport; its WIT and callback identities do not change.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
-keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
-listeners, extension error delivery and terminal input listeners reuse it. For
-shared `Rc` callbacks it also owns subscribing, which returns the removal
+keeps a `ToolInfo` alias over the same owner. Live callback storage
+belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
+default or one per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal
 operation, and the live walk in registration order. What each listener receives
 and when it runs remain with the caller. The collection returns removed ownership
 for release outside guards, and it reclaims retired registrations while no
