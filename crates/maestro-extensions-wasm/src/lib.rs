@@ -48,6 +48,7 @@ pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
 pub use maestro_request::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo,
 };
+pub use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};
 pub use maestro_request::skills::Skill;
 pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 pub use maestro_request::types::{
@@ -66,3 +67,10 @@ pub use types::*;
 
 #[cfg(test)]
 extern crate self as maestro_extensions_wasm;
+
+/// Guest schema code using the shared record owner.
+#[path = "types/schema_code.rs"]
+pub mod schema_code;
+
+#[cfg(any(test, target_arch = "wasm32"))]
+mod schema_error;

@@ -12,7 +12,6 @@ mod prompting;
 mod queues;
 mod retry;
 mod selection;
-mod skill_block;
 mod state;
 mod statistics;
 mod tool_runtime;
@@ -23,8 +22,8 @@ mod types;
 #[cfg(not(target_arch = "wasm32"))]
 mod tests;
 
+pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
 pub(crate) use selection::{model_level, saved_level};
-pub use skill_block::{ParsedSkillBlock, parse_skill_block};
 pub(crate) use state::{agent_messages, content_text, thrown};
 pub use types::*;
 

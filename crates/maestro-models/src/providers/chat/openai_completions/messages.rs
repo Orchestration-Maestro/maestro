@@ -8,7 +8,7 @@ use serde_json::Value;
 use super::compat::{OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat};
 use crate::arguments::json_parse::whitespace;
 use crate::projection::IMAGE_PLACEHOLDER;
-use crate::providers::json_text::{compact_object, is_truthy, json_value, raw_json};
+use crate::providers::json_text::{compact_json, is_truthy, json_value, raw_json};
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, JsonObject, Message, Model,
     ModelInput, ThinkingContent, ToolCall, ToolResultMessage, UserBlock, UserContent, UserMessage,
@@ -410,7 +410,7 @@ fn replay_content(
 
 /// Convert a tool call, rendering its arguments as compact JSON text.
 fn wire_tool_call(call: &ToolCall) -> Result<ChatCompletionMessageToolCall, DiagnosticErrorInfo> {
-    let arguments = compact_object(&call.arguments)
+    let arguments = compact_json(&call.arguments)
         .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
     Ok(ChatCompletionMessageToolCall {
         id: call.id.clone(),

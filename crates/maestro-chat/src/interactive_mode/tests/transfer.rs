@@ -1,23 +1,17 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
 use super::typed::{poll, recalled, submit, waiting};
-use super::{Setup, World, cases as recorded_cases, complete, started};
-use crate::components::session_selector::list::tests::session_picker::native_child as child;
-use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, get_theme_directories};
+use super::{Setup, World, cases as recorded_cases, isolated_package, started};
+use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
 use maestro_app::{NativeExportOperations, ReadonlySessionManager, SessionManager};
-use maestro_test_process::TestProcess;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
 use maestro_tui::Component;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{path::Path, rc::Rc, sync::LazyLock};
+use std::{path::Path, rc::Rc};
 
 /// Every recorded argument case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_transfer.json");
-
-/// The package-directory environment key the installation reads.
-static ENV_PACKAGE_DIR: LazyLock<String> =
-    LazyLock::new(|| format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase()));
 
 /// One recorded argument read.
 #[derive(Deserialize)]
@@ -77,37 +71,13 @@ fn transfer_import_argument_preserves_quotes_apostrophes_and_command_boundary() 
     );
 }
 
-/// Runs `body` in a fresh single-test child whose working directory is a disposable root
-/// and whose package directory is `package` inside it.
-fn isolated_export(test: &str, body: impl FnOnce(&Path, &Path)) {
-    if maestro_test_process::selection().is_child() {
-        let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
-        let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
-        body(Path::new(&directory), Path::new(&package));
-        return;
-    }
-    let scratch = child::Scratch::new();
-    let directory = scratch.0.path();
-    let package = directory.join("package");
-    std::fs::create_dir(&package).unwrap();
-    child::probe(
-        TestProcess::current(test).unwrap().case("child"),
-        directory,
-        &[
-            (ENV_AGENT_DIR.as_str(), directory.to_str().unwrap()),
-            (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
-        ],
-        &[],
-    );
-}
-
 /// The directory the export bundle of `layout` sits in inside `package`.
-fn layout_dir(package: &Path, layout: &str) -> std::path::PathBuf {
+pub(super) fn layout_dir(package: &Path, layout: &str) -> std::path::PathBuf {
     package.join(layout).join("core").join("export-html")
 }
 
 /// Writes the five bundle assets, each carrying `mark` so its document names its bundle.
-fn bundle(directory: &Path, mark: &str) {
+pub(super) fn bundle(directory: &Path, mark: &str) {
     let vendor = directory.join("vendor");
     std::fs::create_dir_all(&vendor).unwrap();
     for (path, body) in [
@@ -131,7 +101,7 @@ fn bundle(directory: &Path, mark: &str) {
 
 /// Copies the shipped theme documents into the bundle's package so the registry reads
 /// them, returning the directories it resolves for the running checkout.
-fn themes(package: &Path) -> ThemeDirectories {
+pub(super) fn themes(package: &Path) -> ThemeDirectories {
     let shipped = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-theme/assets/theme");
     let themes_dir = package.join("crates/maestro-theme/assets/theme");
     std::fs::create_dir_all(&themes_dir).unwrap();
@@ -145,7 +115,7 @@ fn themes(package: &Path) -> ThemeDirectories {
 
 /// A published two-branch history installed into the mode's shared session handle: the
 /// current branch keeps `BRANCH_ONE` and `BRANCH_TWO`, its sibling keeps `ANSWER_ONE`.
-fn branches(world: &World, directory: &Path) {
+pub(super) fn branches(world: &World, directory: &Path) {
     let cwd = directory.to_str().unwrap();
     let sessions = directory.join("sessions");
     let mut manager = SessionManager::create(cwd, Some(sessions.to_str().unwrap()), cwd).unwrap();
@@ -167,22 +137,22 @@ fn branches(world: &World, directory: &Path) {
 }
 
 /// A started mode over `directory` whose session is a published two-branch history.
-fn exportable(directory: &Path) -> World {
-    let world = started(directory);
+async fn exportable(directory: &Path) -> World {
+    let world = started(directory).await;
     branches(&world, directory);
     world
 }
 
 /// A started mode over `directory` whose session is published and whose theme registry
 /// reads the shipped documents the bundle package carries.
-fn themed(directory: &Path, package: &Path) -> World {
+pub(super) async fn themed(directory: &Path, package: &Path) -> World {
     let directories = themes(package);
     let world = Setup {
         directories: Some(directories),
         ..Setup::default()
     }
     .build(directory);
-    complete(world.mode.init()).unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     branches(&world, directory);
     world
@@ -194,15 +164,15 @@ fn cwd() -> String {
 }
 
 /// `world`'s transcript rows rendered wide enough to hold them.
-fn rows(world: &World) -> Vec<String> {
+pub(super) fn rows(world: &World) -> Vec<String> {
     world.mode.chat_container.render(WIDTH)
 }
 
 /// The row width every notice assertion renders at, wider than any recorded notice.
-const WIDTH: usize = 200;
+pub(super) const WIDTH: usize = 200;
 
 /// Asserts the transcript's last row is `message` painted in `role`, padded to the width.
-fn assert_last_row(world: &World, role: &ThemeColor, message: &str, label: &str) {
+pub(super) fn assert_last_row(world: &World, role: &ThemeColor, message: &str, label: &str) {
     let theme = world.themes.theme().get().unwrap();
     let painted = format!(" {}{message}\u{1b}[39m", theme.get_fg_ansi(role).unwrap());
     let padding = WIDTH.saturating_sub(1 + message.chars().count());
@@ -211,7 +181,7 @@ fn assert_last_row(world: &World, role: &ThemeColor, message: &str, label: &str)
 }
 
 /// Asserts the transcript's last row carries `needle`.
-fn assert_last_row_holds(world: &World, needle: &str, label: &str) {
+pub(super) fn assert_last_row_holds(world: &World, needle: &str, label: &str) {
     let row = rows(world).last().cloned().unwrap_or_default();
     assert!(row.contains(needle), "{label}: {row}");
 }
@@ -278,11 +248,11 @@ const EXPORT_CASES: [(&str, Format, Option<&str>); 11] = [
 
 #[test]
 fn transfer_export_selects_suffix_and_reports_the_returned_path() {
-    isolated_export(
+    isolated_package(
         "transfer_export_selects_suffix_and_reports_the_returned_path",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = themed(directory, package);
+            let world = themed(directory, package).await;
             for (text, format, authored) in EXPORT_CASES {
                 submit(&world.mode, text);
                 let returned = match (format, authored) {
@@ -312,11 +282,11 @@ fn transfer_export_selects_suffix_and_reports_the_returned_path() {
 
 #[test]
 fn transfer_export_errors_are_recoverable_and_keep_the_exact_prefix() {
-    isolated_export(
+    isolated_package(
         "transfer_export_errors_are_recoverable_and_keep_the_exact_prefix",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             // A file where the export needs a directory refuses both export routes.
             std::fs::write(directory.join("blocked"), "").unwrap();
             let session = world.host.session();
@@ -367,11 +337,11 @@ const SUBMISSIONS: [(&str, bool); 8] = [
 
 #[test]
 fn transfer_installed_submit_consumes_only_export_commands() {
-    isolated_export(
+    isolated_package(
         "transfer_installed_submit_consumes_only_export_commands",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = themed(directory, package);
+            let world = themed(directory, package).await;
             // The history the earlier submissions left, oldest first.
             let mut recorded: Vec<String> = Vec::new();
             for (text, command) in SUBMISSIONS {
@@ -414,11 +384,11 @@ fn transfer_installed_submit_consumes_only_export_commands() {
 
 #[test]
 fn transfer_submit_clears_after_export_failure_without_consuming_input() {
-    isolated_export(
+    isolated_package(
         "transfer_submit_clears_after_export_failure_without_consuming_input",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             std::fs::write(directory.join("blocked"), "").unwrap();
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, "/export blocked/lost.jsonl");
@@ -435,11 +405,11 @@ fn transfer_submit_clears_after_export_failure_without_consuming_input() {
 
 #[test]
 fn transfer_jsonl_command_writes_current_branch_with_original_path() {
-    isolated_export(
+    isolated_package(
         "transfer_jsonl_command_writes_current_branch_with_original_path",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             let before = leaf(&world);
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, "/export \"with space.jsonl\"");
@@ -474,11 +444,11 @@ fn transfer_jsonl_command_writes_current_branch_with_original_path() {
 
 #[test]
 fn transfer_html_command_uses_native_assets_and_the_current_session_environment() {
-    isolated_export(
+    isolated_package(
         "transfer_html_command_uses_native_assets_and_the_current_session_environment",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = themed(directory, package);
+            let world = themed(directory, package).await;
             submit(&world.mode, "/export page.html");
             assert_last_row(
                 &world,
@@ -521,12 +491,12 @@ fn transfer_html_command_uses_native_assets_and_the_current_session_environment(
 
 #[test]
 fn transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order() {
-    isolated_export(
+    isolated_package(
         "transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
             bundle(&layout_dir(package, "dist"), "DIST");
-            let world = themed(directory, package);
+            let world = themed(directory, package).await;
             // The source checkout selects its source bundle, not the distribution one.
             submit(&world.mode, "/export chosen.html");
             let chosen = std::fs::read_to_string(directory.join("chosen.html")).unwrap();
@@ -558,9 +528,9 @@ fn transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order()
 
 #[test]
 fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
-    isolated_export(
+    isolated_package(
         "transfer_export_failure_keeps_waiter_and_releases_the_mode",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
             let World {
                 mode,
@@ -569,7 +539,7 @@ fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
                 themes,
                 host,
                 loader,
-            } = exportable(directory);
+            } = exportable(directory).await;
             std::fs::write(directory.join("blocked"), "").unwrap();
             let mut waiter = waiting(&mode);
             submit(&mode, "/export blocked/lost.jsonl");
@@ -593,11 +563,11 @@ fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
 
 #[test]
 fn transfer_notice_failure_uses_existing_runtime_error_route() {
-    isolated_export(
+    isolated_package(
         "transfer_notice_failure_uses_existing_runtime_error_route",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             // A published theme without the status colour makes the notice fail after the
             // export itself wrote its file.
             let bare = Rc::new(

@@ -16,7 +16,7 @@ mod tool_hooks;
 mod transforms;
 mod ui;
 use crate::{
-    ErrorReporter, ExtensionExecution,
+    ErrorReporter, ExtensionCommandContextActions, ExtensionExecution,
     types::{ExtensionCollection, ExtensionRuntime, ExtensionUIContext, read},
 };
 pub(crate) use binding::ContextBinding;
@@ -70,8 +70,8 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 runtime: state,
                 session,
                 actions: RefCell::default(),
-                command_actions: RefCell::default(),
-                ui: RefCell::new(no_ui.clone()),
+                command_actions: RefCell::new(ExtensionCommandContextActions::unbound()),
+                ui: RefCell::new(no_ui.clone().into()),
                 no_ui,
             }),
             warning_reporter,

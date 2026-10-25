@@ -17,9 +17,11 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use maestro_tui::Terminal;
+use maestro_tui::terminal::OutputErrorHandler;
 use tokio::task::{JoinHandle, LocalSet};
 use tokio::time::Instant;
 
+use crate::output_errors::{FailureSource, OutputErrors};
 use dimensions::Dimensions;
 use lifecycle::Running;
 pub use lifecycle::wait_for_input;
@@ -75,13 +77,23 @@ struct Shared {
     dimensions: Dimensions,
     /// The first failure of a background task, reported by the next `stop`.
     failure: RefCell<Option<io::Error>>,
+    /// The callbacks registered for native output failures.
+    errors: Rc<OutputErrors>,
     /// The one live output writer, retained across input generations.
     output: RefCell<Option<Rc<tty_writer::TtyWriter>>>,
 }
 
 impl Shared {
-    /// Admits bytes to the running writer, or writes synchronously while stopped.
+    /// Writes `text` to the running writer, or synchronously while stopped, and announces an
+    /// output failure to the registered handlers once.
     fn emit(&self, text: &str) -> io::Result<()> {
+        self.write_output(text)
+            .inspect_err(|error| self.errors.notify(error))
+    }
+
+    /// Writes `text` to the running writer, or synchronously while stopped, without
+    /// announcing a failure; the caller retains and announces the one it gets.
+    fn write_output(&self, text: &str) -> io::Result<()> {
         let writer = self.output.borrow().clone();
         if let Some(writer) = writer {
             writer.write(text);
@@ -151,8 +163,10 @@ impl Shared {
         }
     }
 
-    /// Keeps the first failure of a background task.
-    fn fail(&self, error: io::Error) {
+    /// Keeps the first failure of a background task and announces it when it came from
+    /// output or standard error.
+    fn fail(&self, source: FailureSource, error: io::Error) {
+        self.errors.notify_source(source, &error);
         self.failure.borrow_mut().get_or_insert(error);
     }
 }
@@ -175,6 +189,7 @@ impl ProcessTerminal {
                 activity: Cell::new(Instant::now()),
                 dimensions: Dimensions::observe(),
                 failure: RefCell::new(None),
+                errors: Rc::new(OutputErrors::default()),
                 output: RefCell::new(None),
             }),
             running: None,
@@ -196,7 +211,7 @@ impl Terminal for ProcessTerminal {
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         self.drain(max, idle)
     }
 
@@ -258,6 +273,10 @@ impl Terminal for ProcessTerminal {
 
     fn set_progress(&mut self, active: bool) -> io::Result<()> {
         self.show_progress(active)
+    }
+
+    fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
+        self.shared.errors.register(handler)
     }
 }
 

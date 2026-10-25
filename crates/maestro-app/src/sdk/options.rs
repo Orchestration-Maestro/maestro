@@ -70,6 +70,8 @@ pub struct CreateAgentSessionOptions {
     pub session_start_event: Option<SessionStartEvent>,
     /// The published theme extensions see while no user interface is bound.
     pub theme: LiveTheme,
+    /// A caller's offline selection for search programs, or the ambient flag.
+    pub offline: Option<bool>,
 }
 
 /// A created session and what a frontend needs beside it.

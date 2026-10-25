@@ -12,8 +12,10 @@ mod hook_boundaries;
 mod hook_dispatch;
 mod hook_exports;
 mod hook_transforms;
+mod live_widget_map;
 mod local_registration;
 mod message_renderer_calls;
+mod registered_schemas;
 mod registered_tools;
 mod registration_queries;
 mod ui_bound_calls;
@@ -81,3 +83,5 @@ mod display_context;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/session.rs"]
 mod session;
+
+mod executable_schemas;

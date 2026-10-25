@@ -3,13 +3,14 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, the export command, session replay, the reset of the
-presentation after a session replacement, the fatal-error exit, the expansion and
-thinking shortcuts, thinking and model cycling, model selection and scopes, the
-editor border, external editing and image paste. The prompt loop, streaming
-messages, startup messages, installed custom headers, the terminal title and the
-other integrations are still to come; the mode prompts the session only for input
-queued during a response or a compaction.
+input, queued input, the export, share, copy and changelog commands, the prompt loop, session replay, the
+session events with the working row and the streamed transcript rows, the window
+title, the extension controls of that row and of the hidden-thinking label, the
+expansion and thinking shortcuts, thinking and model cycling, model selection and
+scopes, the editor border, external editing, image paste, compaction and retry
+progress and native shutdown. Installed custom headers and the other integrations
+are still to come.
+[Interactive commands](commands.md) describes the session command methods.
 
 ## Construction
 
@@ -32,18 +33,29 @@ fallback theme is returned.
 
 ## Startup
 
-`init` is asynchronous and runs once; later calls change nothing. It first ensures
-both search programs and installs [completion](extension-ui.md#completion), then
-builds the header, adds the header, transcript, pending-messages, status, upper
-widget, editor and lower widget containers and the footer in that order. It focuses
-the editor, binds the transcript shortcuts, the queue keys and editor actions,
-installs editor submission and starts the terminal. A failure to locate the managed
-binary directory or to start the terminal is returned and leaves the mode
-uninitialized. After a successful start, a theme change invalidates the
-presentation, recolours the
-editor border and requests a frame, and a branch change requests a frame. Neither
-callback keeps the mode alive. Last, it lists the loaded resources and their
-diagnostics in the transcript and then replays the session (see below).
+`init` is asynchronous. It installs termination and output-error handlers, selects
+startup history, then prepares both search programs and installs
+[completion](extension-ui.md#completion) before building the presentation.
+It does nothing while the mode is initialized. After `stop`, it runs again.
+Unix initialization runs on a caller-driven Tokio local executor with signal
+delivery enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
+upper widget, editor and lower widget containers and the footer, in that order. The upper widget container starts with
+one blank spacer row; the lower widget container starts empty. It focuses the
+editor, binds the transcript shortcuts, the queue keys and editor actions, installs
+editor submission and the global debug key, and starts the terminal. A terminal
+start failure is returned and leaves the mode uninitialized. Once started, it
+binds the session's extensions with the mode as their
+[user interface](#extension-ui-host) and waits for their `session_start` handlers
+and resource discovery; a failure there is returned. It then subscribes to the
+session events and sets the window title. It installs the
+[extension shortcut interceptor](extension-ui.md#shortcuts) using the current runner.
+A theme change then
+invalidates the presentation, recolours the editor border and requests a frame,
+and a branch change requests a frame. Neither callback keeps the mode alive. Last,
+it lists the loaded resources and their diagnostics in the transcript, shows the
+[startup history](startup.md#startup-history) once, and replays the session (see
+below). The history selection and version recording happen before building the
+header, even if starting the terminal later fails.
 
 The search programs are `fd` and `rg`. Both start before either finishes, so a missing
 program does not delay the other. `fd` stays selected for file completion. The managed
@@ -59,6 +71,50 @@ verbose mode it shows the full list of key hints instead. Hints follow the loade
 bindings: several keys keep their order, and an unbound action shows no key.
 Header text keeps the colours of the theme in effect when it was built.
 
+## Stopping the presentation
+
+`stop` removes lifecycle handlers, clears terminal progress when enabled, stops
+and releases the working loader, clears extension terminal input listeners,
+disposes the footer and its repository watch, removes the session subscription,
+and stops the UI if initialized. Unrelated terminal listeners stay registered.
+The status container keeps its
+rows. A later session event no longer restarts this presentation, and the shared
+theme watch stays active.
+
+A progress-clearing failure prevents the remaining cleanup, leaving extension
+input listeners active. A UI-stop failure leaves them cleared and the mode
+initialized; only a successful UI stop clears that flag. Reinitialization does
+not restore cleared extension callbacks. The original I/O error is returned.
+Repeating a successful stop does not stop the
+absent loader or UI again. This operation does not dispose the application
+runtime, terminate the process or kill detached children. The registered `app.clear` action clears the editor and requests a frame. A second
+press less than 500 ms after the last clear starts graceful shutdown; exactly
+500 ms clears again. Only the clear branch updates that wall-clock timestamp.
+`app.exit` starts the same shutdown only when the editor is empty. Both actions
+honor configured bindings (by default Ctrl+C and Ctrl+D), preserve editor history
+and do not add signal-only detached-child cleanup.
+
+## Native shutdown
+
+On Unix, TERM kills tracked detached children, then starts graceful shutdown. The
+mode removes its handlers and drains terminal input with the existing 1,000 ms
+maximum and default 50 ms idle period. It stops the presentation, awaits application
+disposal and exits 0. Admission happens before asynchronous work is scheduled;
+repeated requests do not repeat shutdown. A drain, progress, UI-stop or disposal
+failure ends that sequence without a successful exit.
+
+HUP and native stdout/stderr disconnection errors take the emergency route:
+remove handlers, kill tracked children and exit 129, without draining, restoring
+the terminal or disposing the application runtime. EIO, broken-pipe and
+not-connected errors select this route; input errors and other output errors
+keep their existing handling. During graceful disposal, a second termination or
+hangup signal takes its native default action. Windows console-close integration
+is not provided by this mode.
+
+At agent end, a requested shutdown follows transient-row cleanup through this
+same graceful owner instead of requesting a final frame. Extension request
+producers are not connected yet.
+
 ## Loaded resources
 
 The listing appends one section per kind of loaded resource that has entries, in
@@ -73,9 +129,10 @@ discovery order. The compact form puts them on one row, separated by commas: a f
 inside the working directory shows its relative path (`.` for the directory
 itself), and any other file its absolute path. The expanded form puts each path on
 its own row. Paths resolve lexically, without reading the filesystem. A leading
-home directory is shown as `~`; an empty home directory abbreviates nothing. The home
-directory is looked up only when a full path is shown, so a listing of prompts
-alone needs none. When that lookup fails, the listing reports the failure.
+home directory is shown as `~`; a home directory that is empty or `/` abbreviates
+nothing, so paths stay as written. The home directory is looked up only when a
+full path is shown, so a listing of prompts alone needs none. When that lookup
+fails, the listing reports the failure.
 
 `[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
 templates. The compact form is one row of skill names, or of prompt names with a
@@ -136,9 +193,23 @@ later repaints only its heading in the current theme.
 
 `show_error` and `show_warning` append an empty row and a padded notice, labelled
 `Error:` or `Warning:` in the theme's error or warning colour, to the transcript.
-Each requests one frame. The supplied text is kept as given, including line
+Each requests one frame and returns the published theme's error, so the caller
+keeps the original failure type. The supplied text is kept as given, including line
 breaks and its own styling. `clear_editor` empties the editor and requests a
 frame; the editor's history is kept.
+
+## Extension UI host
+
+The mode implements the extension UI port, and `init` installs it as the
+session's extension UI. The session and its runner only borrow the mode, which
+owns them, so they do not keep it alive; a UI context an extension
+holds keeps the mode alive until it is dropped, and afterwards the session's
+contexts report no UI. Another host retains it with
+`ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
+lists the operations it answers today, which are dialogs, editor access, theme
+queries and selection, the terminal title, tool expansion, status text and keyed
+widgets above or below the editor. Notifications and terminal input listeners
+keep their own published owners.
 
 ## Typed input
 
@@ -147,9 +218,10 @@ editor, with the key bound to `tui.input.submit` (Enter by default). Submitted
 text loses its outer whitespace under the shared whitespace policy: Unicode white
 space other than U+0085, plus U+FEFF. U+0085, U+200B, inner spaces and line breaks
 stay. Submission ignores text that is empty after trimming: no input receives it
-and the history does not record it. While the session compacts or a response
-streams, submitted text is queued instead (see Queued input) and no input receives
-it.
+and the history does not record it. The session commands in
+[Interactive commands](commands.md) are handled before this step. While the session
+compacts or a response streams, submitted text is queued instead (see Queued
+input) and no input receives it.
 
 Only one input waits at a time. The future starts waiting when it is first
 polled, not when it is created, and it does not borrow the mode. When it waits,
@@ -162,11 +234,47 @@ code that runs when the input completes can already wait for the next one. Every
 submission delivered as prompt text enters the history, whether or not an input
 was waiting. Submission does not keep the mode alive.
 
-Submission offers the text to the mode's commands first. Text recognized as
-`/export` runs that command instead: it reports on the transcript, completes no
-waiting input and enters no history. Near spellings are prompt text, so
-`/exporter notes.jsonl` and `/export` followed by a tab reach the input. See
-[interactive commands](commands.md).
+Submission offers the text to the mode's commands first. Text recognized as one of
+the commands runs that command instead of becoming prompt text: the command reports
+on the transcript, completes no waiting input and enters no history. `/export`,
+`/changelog` and `/hotkeys` answer before the editor hands the text back; `/share`
+and `/copy` are admitted on the terminal runtime and clear the editor once they settle. Near spellings are
+prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`
+and `/copyx` reach the input. See [interactive commands](commands.md).
+
+## Running the prompt loop
+
+`run` awaits initialization before starting the [independent startup checks](startup.md#independent-startup-checks),
+then shows the startup warnings, sends the startup prompts and keeps sending typed prompts. It never finishes on its own. It returns only an
+initialization failure or a failure to show a notice.
+
+The synchronous startup warnings come in this order, before any prompt:
+
+- a warning `Migrated credentials to auth.json: ` followed by
+  `migrated_providers` joined with `", "`, when the list is not empty. Names keep
+  their order, duplicates and empty names;
+- an error `models.json error: ` followed by the current session's catalog load
+  error, when there is one;
+- `model_fallback_message` as a warning, when it is not empty. Text made only of
+  white space is still shown.
+
+The first prompt is `initial_message`, sent unless it is absent or empty. Startup
+text is never trimmed. `initial_images` go with that first prompt only, and they are
+not sent when there is no first prompt. Absent and empty image lists stay distinct
+for the session's input handlers. `initial_messages` follow in order, each sent once,
+empty and repeated text included. Then the loop waits for typed input with
+`get_user_input` and sends each submission.
+
+Every prompt goes to the runtime's session at the time it is sent, so after the
+runtime replaces its session, the next typed prompt reaches the new one. When the
+session refuses a prompt, such as one sent without credentials, the mode shows the
+session's message once as an error and goes on to the next prompt. An answer that
+fails after the prompt was accepted stays a session event; the mode adds no notice
+for it.
+
+Still to come: rendering the session's events in the transcript, queued input,
+commands, rebinding the presentation to a replaced session, update
+notices and the startup check of subscription-based credentials.
 
 ## Session replay
 
@@ -213,9 +321,10 @@ While the session compacts, a registered command (`/name`, with the name ending 
 first space) still runs at once. The mode keeps any other text in the order it was
 typed, as steering from Enter or as a follow-up from the follow-up key, records it
 in the history, clears it from the editor, shows it in the pending rows and confirms
-it with the status line `Queued message for after compaction`. The mode does not
-yet send the kept messages when the compaction ends; until it does, they stay in
-the pending rows, and the dequeue key restores them.
+it with the status line `Queued message for after compaction`. When the compaction
+ends, the mode delivers what it kept (see
+[Compaction and retry progress](#compaction-and-retry-progress)); until then the
+messages stay in the pending rows, and the dequeue key restores them.
 
 Queued messages, including those kept during a compaction, appear above the
 editor. Each steering message gets a dim `Steering: <text>` row and each follow-up
@@ -224,6 +333,11 @@ message a dim `Follow-up: <text>` row, cut to one line. A last row names the key
 keys are read when the rows are built, each part capitalized, as in `Ctrl+Alt+Q`.
 With nothing queued, the rows are removed.
 
+A shell row shown in that area while a response streams stays above those text
+rows. Rebuilding them re-adds the same row rather than a new one, so a refresh, a
+dequeue or a theme change leaves its identity and its output in place; the next
+ordinary submission moves it into the transcript.
+
 The dequeue key moves every queued message back into the editor: steering messages
 first, then follow-up messages, separated by blank lines and followed by the current
 draft when that draft is not blank. Duplicates and their order are kept. A status
@@ -231,10 +345,147 @@ line then says `Restored 1 queued message to editor`,
 `Restored <n> queued messages to editor` or `No queued messages to restore`; with
 nothing queued the editor is left as it was.
 
-While a response streams, the interrupt key (Escape by default) restores the queued
-messages the same way and then stops the response, even when nothing was queued. When
-no response streams, the key does nothing. The queue keys do not keep the mode alive,
-and a failure in them goes to the terminal runtime's error route.
+The interrupt key (Escape by default) takes the first case that applies: while a
+response streams it restores the queued messages the same way and then stops the
+response, even when nothing was queued; while a shell command runs it cancels that
+command and keeps the editor text; while the editor holds a shell command it empties the
+editor, leaves shell mode and repaints the border for the current thinking level. With
+none of those it does nothing. The queue keys do not keep the mode alive, and a failure
+in them goes to the terminal runtime's error route.
+
+## Session events
+
+One listener carries the session's events into the mode. It is the session's own
+subscription, so the removal operation the session returns is kept for the
+lifecycle that ends it. The listener keeps only a weak mode handle. Events arriving
+before initialization completes wait in arrival order for one continuation on the
+supplied runtime. Once that queue is drained, delivery is synchronous and borrowed:
+the mode handles each event before the producer returns. A failure goes to the
+terminal runtime's error route; a failed event does not discard later events. A
+failed initialization releases its queued batch, and a later event tries again.
+
+Every event then invalidates the footer, which the footer does not cache. The events
+that carry session metadata read the session's live state rather than the values
+the event carries:
+
+- a changed session name writes the window title;
+- a changed thinking level recolours the editor border for the shell colour or
+  the new level, as the shortcut section describes;
+- a queue update rebuilds the pending rows from the session's queues and the
+  messages kept during a compaction, whatever the event lists.
+
+The agent's events drive the working row and the transcript:
+
+- an agent start forgets the registered tool calls, shows terminal progress when
+  `terminal.showTerminalProgress` is set, and replaces the working row in the status
+  rows, unless an extension hid it: the indicator in the accent colour beside the
+  muted working message, painted by the theme in effect when it is drawn;
+- a message start adds a custom or user message to the transcript, the user one
+  also rebuilding the pending rows; an assistant message starts one streaming row
+  that keeps the message it shows; a tool result adds nothing;
+- an assistant update shows the new message in the streaming row and gives each of
+  its tool calls a row registered by call id, in the order the calls appear; a call
+  that already has a row gets the new arguments in that row. Without a streaming
+  row the update is ignored;
+- an assistant end shows the ended message. An aborted message gets
+  `Operation aborted`, `Aborted after 1 retry attempt` or `Aborted after N retry
+  attempts` as its error, written into the message itself, and its registered calls
+  complete with that text as an error; a failed message's calls complete with its
+  error text, or `Error`. Otherwise the registered calls are marked as having their
+  full arguments. The streaming row is then released. A user message's end
+  changes nothing and requests no frame;
+- a tool start marks its row started, adding a registered row first when the call
+  has none; a row the replay or an update made keeps its arguments. A tool update
+  shows its output as partial and never as a failure; a tool end shows the final
+  output with the event's failure flag and forgets the call. An update or end of an
+  unknown call adds no row and requests no frame. The result details reach the
+  row's renderer as the tool returned them, with a missing value kept apart from
+  null;
+- an agent end clears terminal progress when `terminal.showTerminalProgress` is set,
+  stops the working row and empties the status rows, removes an unfinished
+  streaming row and forgets the registered calls; completed rows stay. A requested
+  shutdown then runs through the graceful owner; otherwise the mode requests a frame.
+
+Rows change in place, so each frame rewrites only from its first changed row.
+
+Extensions control the working row and the thinking label through the extension UI
+host:
+
+- the working message replaces `Working...`, also in a running row; clearing it
+  restores the default, while an empty message stays empty;
+- hiding the working row stops and removes it, and showing it again while a
+  response streams starts a new one; the setting holds for later responses;
+- a working indicator replaces the toolkit's own in the running row and in later
+  ones: its frames are shown as given, an empty list hides the indicator, and one
+  frame stays still; clearing it restores the toolkit's indicator;
+- the hidden-thinking label replaces `Thinking...` on every assistant row of the
+  transcript, the streaming row and later rows; clearing it restores the default.
+
+The window title is `Maestro - <name> - <directory>` when the session has a name
+and `Maestro - <directory>` when it has none. The directory is the last segment of
+the session's working directory as authored text, so it needs no filesystem read
+and keeps the separators of the platform the build targets. The name is the one
+the session stores: the newest name record wins, an empty record clears it, and
+the name loses its outer whitespace under the shared whitespace policy. A name
+record that holds anything but text or null is an invalid-data failure, which
+takes the event's error route and leaves the current title in place.
+
+## Compaction and retry progress
+
+`compaction_start` shows a loader in the status container and makes the interrupt
+key abort the compaction. The label names the reason it records: `Compacting
+context... (escape to cancel)` when the caller asked for it, `Auto-compacting...
+(escape to cancel)` at the reserve threshold, and `Context overflow detected,
+Auto-compacting... (escape to cancel)` after an overflow. The parenthesised keys
+are the ones bound to `app.interrupt` when the compaction starts, joined with `/`;
+an action bound to no key reads `( to cancel)`. The editor keeps its text, its
+focus and its submission, so input typed during a compaction still queues. The
+terminal's indeterminate progress follows the `showTerminalProgress` setting, read
+when the event arrives rather than when the mode was built, so changing it between
+the start and the end changes what the next event does.
+
+`compaction_end` restores the interrupt callback the compaction replaced, or the
+editor's ordinary action when it had none, turns the terminal's progress off, stops
+the loader and empties its row. It then shows what the compaction ended with:
+
+- an aborted manual compaction shows `Compaction cancelled` as an error notice; an
+  aborted automatic one shows `Auto-compaction cancelled` as a status line;
+- a result clears the transcript, replays the session from the stored context, and
+  appends one synthetic compaction summary carrying the summary text, the token
+  count and the current time, then invalidates the footer;
+- a failed manual compaction shows the supplied message as an error notice; a
+  failed automatic one appends it unpainted by that prefix, in the error colour;
+- an end with neither a result nor a non-empty failure message adds no row.
+
+`auto_retry_start` shows `Retrying (<attempt>/<limit>) in <seconds>s... (escape to
+cancel)` in the status container, where the same key aborts the retry. The
+seconds are the wait rounded up, which the existing countdown timer writes on its
+first report; it then reports each whole second left, and the label is rebuilt on
+every tick so it reads the keys bound then. The attempt limit keeps its numeric
+spelling, so a fractional limit reads `2.5`. `auto_retry_end` stops the countdown
+and the loader, empties their row, restores the interrupt callback, and shows
+`Retry failed after <attempt> attempts: <error>` only when the retries are
+exhausted, with `Unknown error` for an absent or empty failure.
+
+A started response clears the retry row and its countdown before the working
+presentation resumes, and turns the terminal's progress on. Because the
+retry's own row is removed there, a retry end that arrives afterwards removes
+nothing. When the response ends, the terminal's progress is turned off again, and
+both ends read the setting as their event arrives.
+
+When a compaction ends, the mode captures the input it kept before the session
+does anything with it, shows the pending rows without it, and delivers it on the
+terminal host. A retried compaction queues each message the way its own kind asks:
+a registered command still runs as a prompt, and other text joins the steering or
+follow-up queue. Otherwise the first message that is not a registered command starts
+the next turn, the commands selected before it prompt first, and the rest of the
+batch follows behind that turn in order. Selected commands still prompt if an earlier
+command removes their registration; a batch containing only commands prompts them all.
+A tail message is not sent once the first prompt has failed. A phase that fails
+clears the session's queues, restores the captured batch ahead of any input
+admitted since, and shows one notice reading
+`Failed to send queued message<s>: <error>`; a second failure changes nothing. A
+compaction that ends with nothing captured delivers nothing.
 
 ## Status lines
 
@@ -243,8 +494,9 @@ the last row, a new status replaces its text; otherwise it starts a new line.
 
 ## Session replacement and fatal errors
 
-`render_current_session_state` clears the transcript and the pending-message rows and
-then replays the current session with the initial replay's effects: it refreshes the
+`render_current_session_state` clears the transcript and the pending-message rows,
+discards queued compaction input and the active streamed message, then replays the
+current session with the initial replay's effects: it refreshes the
 footer and the editor border, adds each user text to the editor history and shows the
 compaction notice. A transcript row or pending tool row left by the replaced session
 does not survive the call, so the presentation shows only the session it now reads.
@@ -267,8 +519,11 @@ summaries, skill rows and custom messages. The walk uses the transcript's rows a
 a row a renderer appends during the walk is reached, and a row it removes is not.
 
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
-replays the transcript and shows `Thinking blocks: hidden` or `Thinking blocks:
-visible`. A shortcut's failure goes to the terminal runtime's error route.
+replays the transcript, puts a streaming row back after it with the new visibility
+and shows `Thinking blocks: hidden` or `Thinking blocks: visible`. A shortcut's failure goes to the terminal runtime's error route.
+
+Extension shortcuts run before these actions; [extension UI](extension-ui.md#shortcuts)
+covers their selection, dispatch and failure notice.
 
 ## Thinking and model cycling
 
@@ -291,7 +546,7 @@ session error is shown as an error notice instead of the switch message. A faile
 credential lookup leaves the selection as it was; a recording or listener failure
 happens after the new model is selected, so that model stays selected.
 
-`/model`, `/scoped-models` and the model-select key are described in
+`/model`, `/scoped-models`, `/login`, `/logout` and the model-select key are described in
 [interactive commands](commands.md).
 
 ## Editor border
@@ -339,4 +594,23 @@ Unix: an existing file or symbolic link of the same name is left untouched, and 
 edit stops with an error before the editor runs. Neither action keeps the mode
 alive; a clipboard read in progress keeps the mode until it completes.
 
-Suspending to the background is not part of the mode yet.
+## Suspend
+
+The key bound to `app.suspend` (Ctrl+Z by default) sends the mode to the
+background. From the key press until the process continues, interrupts are
+ignored. The mode stops the terminal and sends the stop signal to its process
+group. When the shell continues the process, interrupts take their default action
+again and the mode restarts the terminal once, with a full redraw. If stopping the
+terminal or signalling the group fails, interrupts take their default action again,
+a later continue signal does nothing, and the failure is handed to the terminal's
+runtime host. The continue signal is observed on the terminal's Tokio runtime,
+which must have I/O enabled. On Windows the key only shows
+`Suspend to background is not supported on Windows`.
+
+## Startup dispatch contract
+
+`InteractiveMode` implements the application-owned
+`presentation_data::mode_dispatch::InteractiveModeRunner`: initialization, run
+and stop delegate to the same retained mode. `InteractiveModeOptions` is defined
+at that application seam and remains available from both existing chat paths.
+This contract does not add another lifecycle or wire an executable.

@@ -6,7 +6,7 @@ use crate::{
     EventError, ExtensionExecution,
     types::{
         ExtensionCommandContextActions, ExtensionContextActions, ExtensionRuntimeState,
-        ExtensionUIContext,
+        ExtensionUIContext, ExtensionUIContextBinding,
     },
 };
 use maestro_catalog::ModelRegistry;
@@ -37,17 +37,17 @@ pub(crate) struct ContextBinding {
     /// The headless fallback restored by a reset.
     pub(super) no_ui: ExtensionUIContext,
     /// The current UI context.
-    pub(super) ui: RefCell<ExtensionUIContext>,
+    pub(super) ui: RefCell<ExtensionUIContextBinding>,
 }
 
 impl ContextBinding {
     /// Returns the current UI context; it keeps its host after later changes.
     pub(super) fn get_ui_context(&self) -> ExtensionUIContext {
-        self.ui.borrow().clone()
+        self.ui.borrow().get().unwrap_or_else(|| self.no_ui.clone())
     }
     /// Whether an installed context, rather than a headless fallback, is current.
     pub(super) fn has_ui(&self) -> bool {
-        !self.ui.borrow().fallback
+        self.ui.borrow().has_ui()
     }
 }
 
@@ -108,7 +108,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         drop(
             self.binding
                 .command_actions
-                .replace(actions.unwrap_or_default()),
+                .replace(actions.unwrap_or_else(ExtensionCommandContextActions::unbound)),
         );
     }
 }

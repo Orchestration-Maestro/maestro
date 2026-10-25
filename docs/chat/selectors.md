@@ -124,7 +124,9 @@ current shared `Model`, ordered `ScopedModel` records, initial search and
 
 The picker starts scoped when scoped records exist, otherwise all. Scoped order,
 duplicates and missing models are retained; registry matches use refreshed
-handles. All models put current provider/ID matches first, followed by stable
+handles. Current-model comparisons recognize shared handles without reading their
+descriptor; independent descriptors use their live provider and ID.
+All models put current provider/ID matches first, followed by stable
 locale provider order. Search uses IDs, providers and their combinations, not
 model names, with [shared fuzzy ranking](../terminal/completion.md#shared-fuzzy-ranking).
 Filtering clamps the existing selection. Switching scope retains the query.

@@ -101,6 +101,10 @@ pub struct Observed {
     pub live: usize,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
+    pub schemas: Vec<(String, String, u32)>,
+    pub schema_request_bytes: usize,
+    pub schema_response_bytes: usize,
+    pub schema_checks: usize,
     /// Delivered partial results in observation order.
     pub updates: Vec<String>,
     /// Partial result number to refuse, counted from zero, with the host's message.
@@ -194,8 +198,12 @@ impl Observed {
         prepare: Option<u32>,
         execute: u32,
     ) -> Result<(), String> {
-        let value: serde_json::Value = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
-        let name = value["name"].as_str().ok_or("missing tool name")?;
+        #[derive(serde::Deserialize)]
+        struct Named {
+            /// The registration identity observed by the host.
+            name: String,
+        }
+        let Named { name } = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
         if let Some(error) = self.registrations.refusal() {
             return Err(error);
         }

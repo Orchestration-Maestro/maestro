@@ -1,0 +1,49 @@
+.maestro-docx-artifact {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  overflow: auto;
+  background: var(--maestro-color-background);
+}
+.maestro-docx-container {
+  padding: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.maestro-docx-container .docx-wrapper {
+  max-width: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+.maestro-docx-container .docx-wrapper > section.docx {
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 2em !important;
+  background: white !important;
+  color: black !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+}
+.maestro-docx-container table {
+  max-width: 100% !important;
+  width: auto !important;
+  overflow-x: auto !important;
+  display: block !important;
+}
+.maestro-docx-container img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+.maestro-docx-container p,
+.maestro-docx-container span,
+.maestro-docx-container div {
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+.maestro-docx-container .docx-page-break { display: none !important; }

@@ -150,7 +150,7 @@ pub struct World {
 impl World {
     /// A world over `cwd` with the dark palette published and one provider.
     pub fn new(cwd: &str, oauth_provider: Option<&str>) -> Self {
-        let session = session(cwd, oauth_provider, None, |loader| loader).session;
+        let session = session(cwd, oauth_provider, |loader| loader).session;
         let (publication, theme) = published::published(&dark_theme());
         Self {
             session,
@@ -246,6 +246,17 @@ impl World {
         self.append_entries(&[serde_json::json!({"type": "message", "message": message})]);
     }
 
+    /// Puts one already-decoded answer into the conversation the session derives its context
+    /// usage from.
+    pub fn push_answer(&self, document: &Value) {
+        let message = serde_json::from_value(document.clone()).expect("a controlled answer");
+        self.session
+            .messages()
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(message);
+    }
+
     /// Puts one answer into the conversation the session derives its context usage from.
     pub fn set_context(&self, tokens: f64) {
         let document = serde_json::json!({
@@ -271,12 +282,7 @@ impl World {
             "stopReason": "stop",
             "timestamp": 0.0
         });
-        let message = serde_json::from_value(document).expect("a controlled answer");
-        self.session
-            .messages()
-            .write()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(message);
+        self.push_answer(&document);
     }
 
     /// Appends a compaction record, which leaves context tokens unknown until the next answer.
@@ -302,7 +308,7 @@ pub fn unpublished(cwd: &str) -> World {
     let state = published::unpublished();
     let theme = state.theme();
     World {
-        session: session(cwd, None, None, |loader| loader).session,
+        session: session(cwd, None, |loader| loader).session,
         metadata: Metadata::new(Some("main"), 1.0),
         publication: Rc::new(state),
         theme,

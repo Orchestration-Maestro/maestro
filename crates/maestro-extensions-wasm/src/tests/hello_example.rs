@@ -2,7 +2,7 @@
 use serde_json::{Value, json};
 
 use super::example_support::{
-    decoded, invoke_tool_on_component, registered, release_all, result_value,
+    invoke_tool_on_component, registered, registered_metadata, release_all, result_value,
 };
 use crate::component_adapter::ToolCapabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
@@ -27,8 +27,9 @@ fn corpus() -> Value {
 /// Assert the metadata and schema received by the actual host against a recorded document.
 pub(super) fn assert_metadata(metadata: &[String], expected: &Value) {
     assert_eq!(metadata.len(), 1);
-    assert_eq!(decoded(&metadata[0], "parameters"), *expected);
+    assert_eq!(registered_metadata(&metadata[0]), *expected);
 }
+
 /// Register once and assert the declared required string without optional metadata.
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {
@@ -99,10 +100,7 @@ fn hello_ignores_unused_invocation_handles() -> Result<(), String> {
 /// The built single-copy example registers and executes across the component interface.
 #[test]
 fn hello_component_greets_through_the_host() -> Result<(), String> {
-    let path = super::build::example_component("hello")?;
-    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
-    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
-        .map_err(|error| error.to_string())?;
+    let mut harness = super::host::Harness::example("hello")?;
     assert_metadata(&harness.observed().tools, &corpus()["metadata"]);
     let key = harness.callback("tool hello").map_err(|e| e.to_string())?;
     for row in corpus()["rows"].as_array().unwrap() {

@@ -146,7 +146,8 @@ fn recorded_echo_tool(runs: Rc<RefCell<Vec<String>>>) -> ToolDefinitionHandle {
         "type": "object",
         "properties": {"text": {"type": "string"}},
         "required": ["text"],
-    });
+    })
+    .into();
     definition.execute = Rc::new(move |_, arguments: Value, _, _, _| {
         let text = arguments["text"].as_str().unwrap_or_default().to_owned();
         let runs = Rc::clone(&runs);

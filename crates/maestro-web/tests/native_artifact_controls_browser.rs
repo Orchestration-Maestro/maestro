@@ -96,14 +96,6 @@ fn mounted(view: &DomView, props: DownloadButtonProps) -> (DomRoot, HtmlElement)
 fn glyph(control: &Element) -> Element {
     control.query_selector("svg").unwrap().unwrap()
 }
-/// Activate `control` and observe one complete native download of `bytes`.
-async fn saved(fixture: &Fixture, control: &HtmlElement, bytes: &[u8], mime: &str, name: &str) {
-    fixture.begin("success");
-    control.click();
-    wasm_bindgen_futures::JsFuture::from(fixture.finish(bytes, mime, name, true))
-        .await
-        .unwrap();
-}
 /// The rendered extent of `element`.
 fn extent(element: &Element) -> (f64, f64) {
     let rect = element.get_bounding_client_rect();
@@ -160,7 +152,9 @@ async fn assert_filenames(view: &DomView, fixture: &Fixture) {
             view,
             DownloadButtonProps::new(DownloadContent::Text("plain!".into()), filename.into()),
         );
-        saved(fixture, &control, b"plain!", "text/plain", expected).await;
+        fixture
+            .saved(&control, b"plain!", "text/plain", expected)
+            .await;
         drop(owner);
     }
 }
@@ -264,7 +258,9 @@ async fn assert_text_payloads(view: &DomView, fixture: &Fixture) {
         let mut props = DownloadButtonProps::new(content, "file.bin".into());
         props.is_base64 = *forced;
         let (owner, control) = mounted(view, props);
-        saved(fixture, &control, expected, "text/plain", "file.bin").await;
+        fixture
+            .saved(&control, expected, "text/plain", "file.bin")
+            .await;
         drop(owner);
         assert!(!label.is_empty());
     }
@@ -277,28 +273,25 @@ async fn assert_byte_payloads(view: &DomView, fixture: &Fixture) {
         view,
         DownloadButtonProps::new(DownloadContent::Bytes(windowed), "file.bin".into()),
     );
-    saved(fixture, &control, &[1, 2], "text/plain", "file.bin").await;
+    fixture
+        .saved(&control, &[1, 2], "text/plain", "file.bin")
+        .await;
     drop(owner);
     let empty = Uint8Array::new_with_length(0);
     let (owner, control) = mounted(
         view,
         DownloadButtonProps::new(DownloadContent::Bytes(empty), "file.bin".into()),
     );
-    saved(fixture, &control, &[], "text/plain", "file.bin").await;
+    fixture.saved(&control, &[], "text/plain", "file.bin").await;
     drop(owner);
     let binary = Uint8Array::from(&[0u8, 128, 255, 13, 10][..]);
     let (owner, control) = mounted(
         view,
         DownloadButtonProps::new(DownloadContent::Bytes(binary), "file.bin".into()),
     );
-    saved(
-        fixture,
-        &control,
-        &[0, 128, 255, 13, 10],
-        "text/plain",
-        "file.bin",
-    )
-    .await;
+    fixture
+        .saved(&control, &[0, 128, 255, 13, 10], "text/plain", "file.bin")
+        .await;
     drop(owner);
 }
 /// The browser's own Blob keeps its MIME semantics.
@@ -308,7 +301,9 @@ async fn assert_mime_types(view: &DomView, fixture: &Fixture) {
             DownloadButtonProps::new(DownloadContent::Text("plain!".into()), "file.bin".into());
         props.mime_type = (*supplied).into();
         let (owner, control) = mounted(view, props);
-        saved(fixture, &control, b"plain!", expected, "file.bin").await;
+        fixture
+            .saved(&control, b"plain!", expected, "file.bin")
+            .await;
         drop(owner);
     }
 }
@@ -436,14 +431,9 @@ pub async fn download_dom_retains_activation_inputs_and_releases_on_drop(
     );
     buffer.set_index(1, 42);
     buffer.set_index(2, 43);
-    saved(
-        &fixture,
-        &window_control,
-        &[42, 43],
-        "text/plain",
-        "window.bin",
-    )
-    .await;
+    fixture
+        .saved(&window_control, &[42, 43], "text/plain", "window.bin")
+        .await;
     drop(window_owner);
     // Text is owned on construction, so no later caller change can reach the control.
     let captured = String::from("first!");
@@ -452,7 +442,9 @@ pub async fn download_dom_retains_activation_inputs_and_releases_on_drop(
         DownloadButtonProps::new(DownloadContent::Text(captured.clone()), "text.bin".into()),
     );
     drop(captured);
-    saved(&fixture, &text_control, b"first!", "text/plain", "text.bin").await;
+    fixture
+        .saved(&text_control, b"first!", "text/plain", "text.bin")
+        .await;
     drop(text_owner);
     let (released, released_control) = mounted(
         &view,
@@ -574,7 +566,7 @@ impl Recorder {
     }
 }
 /// Form submissions counted while the recorder lives.
-struct Submitting {
+pub(crate) struct Submitting {
     /// Submissions observed so far.
     count: Rc<Cell<u32>>,
     /// Registration removed with the recorder.
@@ -582,7 +574,7 @@ struct Submitting {
 }
 impl Submitting {
     /// Count submissions of `form` without navigating.
-    fn new(form: &Element) -> Self {
+    pub(crate) fn new(form: &Element) -> Self {
         let count = Rc::new(Cell::new(0u32));
         let counted = Rc::clone(&count);
         let callback = Closure::<dyn Fn(Event)>::new(move |event: Event| {
@@ -595,7 +587,7 @@ impl Submitting {
         }
     }
     /// How many submissions were observed.
-    fn count(&self) -> u32 {
+    pub(crate) fn count(&self) -> u32 {
         self.count.get()
     }
 }

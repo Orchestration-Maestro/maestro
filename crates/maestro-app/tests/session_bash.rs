@@ -4,7 +4,7 @@
 use crate::support::session_harness::{
     Harness, HarnessOptions, ScriptedShell, Transcript, assistant, bash_result_view, case,
     entries_view, harness, hold_first_answer, labelled, messages_view, on_task_set, queue_view,
-    start_and_abandon, start_prompt, supplied_failure, transcribed, with_placeholders,
+    start_prompt, supplied_failure, transcribed, with_placeholders,
 };
 use maestro_app::agent_session::{BashRunOptions, PromptOptions};
 use maestro_session::SessionManager;
@@ -289,6 +289,32 @@ fn shell_failure_keeps_its_supplied_fields() {
 }
 
 #[test]
+fn shell_starts_and_accepts_abort_before_observation() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let operations = Arc::new(ScriptedShell::held(vec!["chunk".into()], Some(7.0)));
+        let observer = h.session.execute_bash(
+            "shell",
+            None,
+            BashRunOptions {
+                exclude_from_context: None,
+                operations: Some(operations.clone()),
+            },
+        );
+        let running_at_call = h.session.is_bash_running();
+        let executed_at_call = operations.executed.lock().unwrap().len();
+        h.session.abort_bash();
+        operations.release.notify_one();
+        let result = observer.await.unwrap();
+        assert_eq!(
+            (running_at_call, executed_at_call, result.cancelled),
+            (true, 1, true)
+        );
+        assert!(!h.session.is_bash_running());
+    });
+}
+
+#[test]
 fn abandoned_shell_command_still_settles_and_records() {
     on_task_set(|_| async {
         let tasks = Rc::new(RefCell::new(Vec::new()));
@@ -303,7 +329,7 @@ fn abandoned_shell_command_still_settles_and_records() {
             exclude_from_context: None,
             operations: Some(operations.clone()),
         };
-        start_and_abandon(h.session.execute_bash("slow", None, options));
+        drop(h.session.execute_bash("slow", None, options));
         assert!(h.session.is_bash_running());
         let task = tasks.borrow_mut().pop();
         let task = task.expect("the session's facility holds the command");

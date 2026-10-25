@@ -6,8 +6,8 @@ use crate::{
     BashExecutionComponent, BranchSummaryMessageComponent, CompactionSummaryMessageComponent,
     CustomMessageComponent, SkillInvocationMessageComponent, ToolExecutionComponent,
 };
-use maestro_app::Local;
 use maestro_app::agent_session::CycleDirection;
+use maestro_app::{EventError, Local};
 use maestro_theme::ThemeError;
 use maestro_tui::{Component, EditorComponent};
 use std::{any::Any, error::Error, rc::Rc};
@@ -19,11 +19,23 @@ impl InteractiveMode {
     /// Binds the transcript shortcuts and editor actions on the editor, in the order the
     /// editor consults them, then installs its change and image-paste callbacks.
     pub(super) fn setup_key_handlers(self: &Rc<Self>) {
+        self.on_action("app.clear", |mode| {
+            mode.handle_ctrl_c();
+            Ok(())
+        });
+        self.on_action("app.exit", |mode| {
+            mode.handle_ctrl_d();
+            Ok(())
+        });
+        #[cfg(unix)]
+        self.on_action("app.suspend", |mode| mode.handle_ctrl_z());
+        #[cfg(windows)]
+        self.on_action("app.suspend", |mode| mode.show_suspend_unsupported());
         self.on_action("app.thinking.cycle", |mode| mode.cycle_thinking_level());
         self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
         self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
-        self.on_action("app.model.select", |mode| mode.show_model_selector(None));
         self.on_action("app.session.fork", Self::show_user_message_selector);
+        self.on_action("app.model.select", |mode| mode.show_model_selector(None));
         self.on_action("app.tools.expand", |mode| {
             mode.toggle_tool_output_expansion()
         });
@@ -54,6 +66,7 @@ impl InteractiveMode {
     /// Returns the failure of a tool row's native formatting or of a text rendering.
     fn toggle_tool_output_expansion(&self) -> Result<(), Box<dyn Error>> {
         self.set_tools_expanded(!self.tool_output_expanded.get())
+            .map_err(|error| -> Box<dyn Error> { error })
     }
 
     /// Applies `expanded` to the startup help and every expandable chat row, walking
@@ -61,7 +74,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of a tool row's native formatting or of a text rendering.
-    pub(super) fn set_tools_expanded(&self, expanded: bool) -> Result<(), Box<dyn Error>> {
+    pub(super) fn set_tools_expanded(&self, expanded: bool) -> Result<(), EventError> {
         self.tool_output_expanded.set(expanded);
         let header = self.built_in_header.borrow().clone();
         if let Some(header) = header {
@@ -94,8 +107,8 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// Flips and saves whether thinking is hidden, replays the transcript with it and shows
-    /// the new state.
+    /// Flips and saves whether thinking is hidden, replays the transcript with it, puts the
+    /// streaming row back after it with the new visibility and shows the new state.
     ///
     /// # Errors
     /// Returns the failure of the replay or of the published theme.
@@ -108,8 +121,15 @@ impl InteractiveMode {
             .borrow_mut()
             .set_hide_thinking_block(hide);
         self.rebuild_chat_from_messages()?;
+        let streaming = self.streaming.borrow().clone();
+        if let Some((component, message)) = streaming {
+            component.set_hide_thinking_block(hide);
+            component.update_content(message);
+            self.chat_container.add_child(component);
+        }
         let state = if hide { "hidden" } else { "visible" };
         self.show_status(&format!("Thinking blocks: {state}"))
+            .map_err(Into::into)
     }
 }
 
@@ -117,7 +137,7 @@ impl InteractiveMode {
 ///
 /// # Errors
 /// Returns the failure of a tool row's native formatting or of a text rendering.
-fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), Box<dyn Error>> {
+fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), EventError> {
     let child: &dyn Any = child;
     if let Some(row) = child.downcast_ref::<ToolExecutionComponent>() {
         row.set_expanded(expanded)?;

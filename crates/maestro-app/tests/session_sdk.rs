@@ -3,8 +3,9 @@
 //! hooks, withheld images and both resource routes, compared with the recorded SDK cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, TestResourceLoader, create_test_extensions_result,
-    create_test_resource_loader, harness, on_task_set, recorded_number,
+    Auth, Harness, HarnessOptions, TestResourceLoader, answer, assistant,
+    create_test_extensions_result, create_test_resource_loader, harness, on_task_set,
+    recorded_number, script_responses, summary_provider, usage,
 };
 use maestro_app::{
     CreateAgentSessionOptions, CreateAgentSessionResult, PromptOptions, ResourceLoaderOptions,
@@ -20,7 +21,7 @@ use maestro_models::{
     StreamOptionsInput,
 };
 use maestro_session::SessionManager;
-use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_settings::SettingsManager;
 use serde_json::{Value, json};
 use std::{
@@ -66,6 +67,7 @@ fn options(h: &Harness, settings: Value) -> CreateAgentSessionOptions {
         settings_manager: Some(Rc::new(RefCell::new(SettingsManager::in_memory(settings)))),
         session_start_event: None,
         theme: maestro_theme::LiveTheme::default(),
+        offline: None,
     }
 }
 
@@ -360,6 +362,210 @@ fn restores_stored_messages_into_agent_state() {
     });
 }
 
+/// A harness serving `faux-1` whose model reports `window` context tokens.
+async fn windowed_fixture(window: f64) -> Harness {
+    harness(HarnessOptions {
+        models: vec![("faux-1", true)],
+        auth: Auth::Key,
+        context_window: Some(window),
+        ..HarnessOptions::default()
+    })
+    .await
+}
+
+/// A stored history with one answered question whose usage is `usage` and, when asked, a
+/// compaction keeping that answer.
+fn saved_history(cwd: &str, usage: &Value, compaction: bool) -> SessionManager {
+    let mut manager = SessionManager::in_memory(Some(cwd)).unwrap();
+    manager
+        .append_message(json!({"role": "user", "content": "saved question", "timestamp": 0}))
+        .unwrap();
+    let answer = manager
+        .append_message(assistant(
+            "saved answer",
+            0,
+            &json!({"model": "faux-1", "usage": usage}),
+        ))
+        .unwrap();
+    manager.append_model_change("faux", "faux-1").unwrap();
+    if compaction {
+        manager.branch(&answer).unwrap();
+        manager
+            .append_compaction("Saved summary", &answer, 13.0, CompactionOptions::default())
+            .unwrap();
+    }
+    manager
+}
+
+/// Creates the session over `manager` with default preferences.
+async fn open(h: &Harness, manager: SessionManager) -> CreateAgentSessionResult {
+    let mut options = options(h, json!({}));
+    options.session_manager = Some(Rc::new(RefCell::new(manager)));
+    create(options).await
+}
+
+/// The live messages as stored JSON records.
+fn live_records(created: &CreateAgentSessionResult) -> Vec<Value> {
+    let messages = created.session.messages();
+    let messages = messages.read().unwrap();
+    messages
+        .iter()
+        .map(|message| serde_json::to_value(message).unwrap())
+        .collect()
+}
+
+/// The session's context tokens and percentage.
+fn context(created: &CreateAgentSessionResult) -> (Option<f64>, Option<f64>) {
+    let usage = created.session.get_context_usage().unwrap();
+    let usage = usage.expect("a context window");
+    (usage.tokens, usage.percent)
+}
+
+/// A saved history whose compaction is followed by one answer carrying `extra`.
+fn after_compaction(cwd: &str, extra: &Value) -> SessionManager {
+    let mut manager = saved_history(cwd, &usage([7, 3, 2, 1], 1.0, None), true);
+    manager
+        .append_message(json!({"role": "user", "content": "later question", "timestamp": 1000}))
+        .unwrap();
+    manager
+        .append_message(assistant("later answer", 1000, extra))
+        .unwrap();
+    manager
+}
+
+#[test]
+fn saved_history_readers_keep_missing_totals() {
+    on_task_set(|_| async {
+        let h = windowed_fixture(100.0).await;
+        saved_totals(&h).await;
+        answers_after_compaction(&h).await;
+    });
+}
+
+/// Restoring a saved answer without a total keeps the live record absent and reports the
+/// category totals to the context, statistics and stored history readers.
+async fn saved_totals(h: &Harness) {
+    let missing = usage([7, 3, 2, 1], 1.0, None);
+    let created = open(h, saved_history(&h.cwd, &missing, false)).await;
+    let records = live_records(&created);
+    assert_eq!(
+        records[1]["usage"].get("totalTokens"),
+        None,
+        "{}",
+        records[1]
+    );
+    assert_eq!(context(&created), (Some(13.0), Some(13.0)));
+    let stats = created.session.get_session_stats().unwrap();
+    assert_eq!(
+        (
+            stats.user_messages,
+            stats.assistant_messages,
+            stats.total_messages
+        ),
+        (1, 1, 2)
+    );
+    let tokens = &stats.tokens;
+    assert_eq!(
+        (
+            tokens.input,
+            tokens.output,
+            tokens.cache_read,
+            tokens.cache_write,
+            tokens.total,
+            stats.cost
+        ),
+        (7.0, 3.0, 2.0, 1.0, 13.0, 1.0)
+    );
+
+    let supplied = open(
+        h,
+        saved_history(&h.cwd, &usage([7, 3, 2, 1], 1.0, Some(97)), false),
+    )
+    .await;
+    assert_eq!(context(&supplied), (Some(97.0), Some(97.0)));
+    assert_eq!(
+        supplied
+            .session
+            .get_session_stats()
+            .unwrap()
+            .tokens
+            .total
+            .to_bits(),
+        13.0_f64.to_bits()
+    );
+
+    let compacted = open(h, saved_history(&h.cwd, &missing, true)).await;
+    assert_eq!(context(&compacted), (None, None));
+}
+
+/// A stored compaction hides the usage of the answer it kept until a later answer reports
+/// its own; a zero, aborted or failed answer leaves it unknown.
+async fn answers_after_compaction(h: &Harness) {
+    let answered = after_compaction(
+        &h.cwd,
+        &json!({"stopReason": "stop", "usage": usage([13, 0, 0, 0], 1.0, None)}),
+    );
+    assert_eq!(context(&open(h, answered).await), (Some(13.0), Some(13.0)));
+    for (stop, usage, error) in [
+        ("stop", usage([0, 0, 0, 0], 0.0, None), None),
+        ("aborted", usage([0, 0, 0, 0], 0.0, None), None),
+        ("error", usage([0, 0, 0, 0], 0.0, None), Some("failed")),
+    ] {
+        let mut extra = json!({"stopReason": stop, "usage": usage});
+        if let Some(error) = error {
+            extra["errorMessage"] = json!(error);
+        }
+        let created = open(h, after_compaction(&h.cwd, &extra)).await;
+        assert_eq!(context(&created), (None, None), "{stop}");
+    }
+}
+
+#[test]
+fn saved_large_history_compacts_with_recorded_tail() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            models: vec![("faux-1", true)],
+            auth: Auth::Key,
+            context_window: Some(200_000.0),
+            ..HarnessOptions::default()
+        })
+        .await;
+        let fixture = format!(
+            "{}/../maestro-session/tests/fixtures/session_history_large.jsonl",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let path = h.scratch.path().join("saved.jsonl");
+        std::fs::copy(&fixture, &path).unwrap();
+        let manager = SessionManager::open(path.to_str().unwrap(), None, None).unwrap();
+        let extensions =
+            create_test_extensions_result(vec![(None, summary_provider("compacted"))], &h.cwd)
+                .await;
+        let mut options = options(
+            &h,
+            json!({"compaction": {"reserveTokens": 16384, "keepRecentTokens": 20000}}),
+        );
+        options.resources =
+            SessionResources::Loader(Rc::new(create_test_resource_loader(Some(extensions))));
+        options.session_manager = Some(Rc::new(RefCell::new(manager)));
+        let created = create(options).await;
+        let before = live_records(&created);
+        assert_eq!(before.len(), 914);
+        let omitted = before
+            .iter()
+            .filter(|record| {
+                record["role"] == "assistant" && record["usage"].get("totalTokens").is_none()
+            })
+            .count();
+        assert_eq!(omitted, 453);
+        let _answered = script_responses(&h, vec![answer("prefix summary", None, None)]);
+        let result = created.session.compact(None).await.unwrap();
+        assert_eq!(result.tokens_before.to_bits(), 177_657.0_f64.to_bits());
+        let after = live_records(&created);
+        assert_eq!(after.len(), 182);
+        assert_eq!(after[1..], before[before.len() - 181..]);
+    });
+}
+
 /// A scripted answer that hands each request to `observe`.
 struct Observed<F>(F);
 
@@ -435,65 +641,213 @@ fn carries_provider_retry_settings_into_the_request() {
     });
 }
 
+/// Exact-spelled request headers captured before protocol normalization.
+type AttributionHeaders = indexmap::IndexMap<String, String>;
+
+/// One request through the session-created attribution wrapper.
+struct AttributionCase {
+    /// Provider identity used by the selected descriptor.
+    provider: String,
+    /// Descriptor address, independent of provider identity.
+    base_url: String,
+    /// Explicit install telemetry preference.
+    telemetry_enabled: bool,
+    /// Resolved credential headers.
+    credential_headers: Option<AttributionHeaders>,
+    /// Headers supplied by this invocation.
+    request_headers: Option<AttributionHeaders>,
+}
+
+/// The complete header map the provider receives for `case`'s one request, sent through the
+/// request function a created session installs.
+async fn capture_attribution_headers(case: AttributionCase) -> Option<AttributionHeaders> {
+    let h = fixture(Auth::Key).await;
+    let mut descriptor = h.model("faux-1").read().unwrap().clone();
+    descriptor.provider.clone_from(&case.provider);
+    descriptor.base_url = case.base_url;
+    let config = maestro_catalog::ProviderConfigInput {
+        api_key: Some("faux-key".into()),
+        headers: case.credential_headers,
+        ..maestro_catalog::ProviderConfigInput::default()
+    };
+    h.registry
+        .register_provider(&case.provider, Arc::new(std::sync::RwLock::new(config)))
+        .unwrap();
+    let model = Arc::new(std::sync::RwLock::new(descriptor));
+    let mut setup = options(
+        &h,
+        json!({"enableInstallTelemetry": case.telemetry_enabled}),
+    );
+    setup.model = Some(Arc::clone(&model));
+    let created = create(setup).await;
+    let captured = Arc::new(Mutex::new(Vec::new()));
+    let capturing = Arc::clone(&captured);
+    observe_next(&h, move |input| {
+        capturing
+            .lock()
+            .unwrap()
+            .push(common(input).headers.clone());
+    });
+    let agent = created.session.agent();
+    let stream = Rc::clone(agent.stream_fn.read().unwrap().as_ref().unwrap());
+    let request = maestro_models::SimpleStreamOptions {
+        common: StreamOptions {
+            headers: case.request_headers,
+            ..StreamOptions::default()
+        },
+        ..maestro_models::SimpleStreamOptions::default()
+    };
+    let selected = model.read().unwrap().clone();
+    let context = maestro_models::Context {
+        system_prompt: None,
+        messages: Vec::new(),
+        tools: None,
+    };
+    let response = stream(
+        selected,
+        context,
+        request,
+        maestro_models::ProviderStreamOptions::default(),
+    )
+    .await
+    .unwrap();
+    let _answer = response.result().await;
+    let mut captured = captured.lock().unwrap();
+    assert_eq!(
+        captured.len(),
+        1,
+        "the provider receives exactly one request"
+    );
+    captured.pop().unwrap()
+}
+
+/// Sends each recorded attribution case `ids` names from a child without the telemetry
+/// variable and compares the presence and the whole map of the provider's headers.
+fn check_attribution_cases(ids: &[&str]) {
+    crate::isolated_home::with_environment_without(
+        std::thread::current().name().unwrap(),
+        &[],
+        &["MAESTRO_TELEMETRY"],
+        |_| {
+            on_task_set(|_| async {
+                for id in ids {
+                    let row = crate::support::session_harness::case("attribution", id);
+                    let input = AttributionCase {
+                        provider: row["model"]["provider"].as_str().unwrap().to_owned(),
+                        base_url: row["model"]["baseUrl"].as_str().unwrap().to_owned(),
+                        telemetry_enabled: row["settings"]["enableInstallTelemetry"]
+                            .as_bool()
+                            .unwrap(),
+                        credential_headers: serde_json::from_value(
+                            row["credentialHeaders"].clone(),
+                        )
+                        .unwrap(),
+                        request_headers: serde_json::from_value(row["requestHeaders"].clone())
+                            .unwrap(),
+                    };
+                    let read = json!({
+                        "name": id,
+                        "model": {"provider": input.provider, "baseUrl": input.base_url},
+                        "settings": {"enableInstallTelemetry": input.telemetry_enabled},
+                        "credentialHeaders": input.credential_headers,
+                        "requestHeaders": input.request_headers,
+                        "expected": row["expected"],
+                    });
+                    assert_eq!(read, row, "{id} holds only the fields the case reads");
+                    let actual = capture_attribution_headers(input).await;
+                    assert_eq!(
+                        json!({"present": actual.is_some(), "headers": actual}),
+                        row["expected"],
+                        "{id}"
+                    );
+                }
+            });
+        },
+    );
+}
+
+#[test]
+fn disables_attribution_without_losing_other_headers() {
+    check_attribution_cases(&[
+        "disabled_routed",
+        "disabled_cloudflare",
+        "disabled_all_maps_absent",
+    ]);
+}
+
+#[test]
+fn attributes_workers_ai_without_a_routed_url() {
+    check_attribution_cases(&["workers_provider"]);
+}
+
+#[test]
+fn attributes_gateway_provider_without_a_routed_url() {
+    check_attribution_cases(&["gateway_provider"]);
+}
+
+#[test]
+fn attributes_routed_provider_with_or_without_a_matching_url() {
+    check_attribution_cases(&["routed_provider", "routed_provider_and_url"]);
+}
+
 #[test]
 fn merges_attribution_auth_and_caller_headers() {
-    on_task_set(|_| async {
-        let h = fixture(Auth::Key).await;
-        let config = maestro_catalog::ProviderConfigInput {
-            base_url: Some("https://openrouter.ai/api/v1".into()),
-            api_key: Some("faux-key".into()),
-            api: Some(h.faux.api.clone()),
-            headers: Some(
-                [
-                    ("X-OpenRouter-Title", "provider title"),
-                    ("X-Provider", "provider"),
-                ]
-                .map(|(name, value)| (name.to_owned(), value.to_owned()))
-                .into_iter()
-                .collect(),
-            ),
-            models: Some(vec![maestro_catalog::ProviderModelInput {
-                id: "routed".into(),
-                name: "Routed".into(),
-                api: Some(h.faux.api.clone()),
-                base_url: Some("https://openrouter.ai/api/v1".into()),
-                reasoning: false,
-                thinking_level_map: None,
-                input: Vec::new(),
-                cost: maestro_models::ModelCost::default(),
-                context_window: 1000.0,
-                max_tokens: 100.0,
-                headers: None,
-                compat: None,
-            }]),
-            ..maestro_catalog::ProviderConfigInput::default()
-        };
-        h.registry
-            .register_provider("faux", Arc::new(std::sync::RwLock::new(config)))
-            .unwrap();
-        let mut options = options(&h, json!({"enableInstallTelemetry": true}));
-        options.model = h.registry.find("faux", "routed");
-        let created = create(options).await;
-        let captured = Arc::new(Mutex::new(None));
-        let capturing = Arc::clone(&captured);
-        observe_next(&h, move |input| {
-            *capturing.lock().unwrap() = Some(json!(common(input).headers));
-        });
-        created
-            .session
-            .prompt("hi", PromptOptions::default())
-            .await
-            .unwrap();
-        assert_eq!(
-            captured.lock().unwrap().take().unwrap(),
-            json!({
-                "HTTP-Referer": "https://github.com/Orchestration-Maestro/maestro",
-                "X-OpenRouter-Title": "provider title",
-                "X-OpenRouter-Categories": "cli-agent",
-                "X-Provider": "provider",
-            })
-        );
-    });
+    check_attribution_cases(&["routed_url", "routed_url_defaults"]);
+}
+
+#[test]
+fn attributes_cloudflare_api_url_for_unrelated_providers() {
+    check_attribution_cases(&["cloudflare_api_url", "cloudflare_url_substring"]);
+}
+
+#[test]
+fn attributes_cloudflare_gateway_url_for_unrelated_providers() {
+    check_attribution_cases(&["cloudflare_gateway_url", "gateway_url_substring"]);
+}
+
+#[test]
+fn leaves_unmatched_requests_without_attribution() {
+    check_attribution_cases(&[
+        "unmatched_preserves_headers",
+        "provider_comparison_is_exact",
+        "url_comparison_is_case_sensitive",
+        "empty_unmatched_url",
+    ]);
+}
+
+#[test]
+fn selects_routed_attribution_before_cloudflare_matches() {
+    check_attribution_cases(&[
+        "routed_provider_precedes_cloudflare_url",
+        "routed_url_precedes_cloudflare_provider",
+    ]);
+}
+
+#[test]
+fn caller_headers_win_after_credential_and_attribution_headers() {
+    check_attribution_cases(&["three_layer_precedence", "provider_and_request_overrides"]);
+}
+
+#[test]
+fn cloudflare_user_agent_respects_credential_and_caller_precedence() {
+    check_attribution_cases(&[
+        "cloudflare_credential_precedence",
+        "cloudflare_caller_precedence",
+    ]);
+}
+
+#[test]
+fn keeps_header_names_distinct_at_application_merge() {
+    check_attribution_cases(&["application_header_keys_are_exact"]);
+}
+
+#[test]
+fn preserves_absent_and_explicit_empty_request_headers() {
+    check_attribution_cases(&[
+        "all_maps_absent",
+        "empty_credential_map",
+        "empty_request_map",
+    ]);
 }
 
 /// An extension that replaces each payload with itself marked `injected` and records the

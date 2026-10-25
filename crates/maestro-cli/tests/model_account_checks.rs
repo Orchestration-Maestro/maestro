@@ -593,7 +593,7 @@ impl World {
             .iter()
             .map(Arc::clone)
             .collect::<Vec<OAuthProviderHandle>>();
-        runtime().block_on(cli::main(args, snapshot, &resolver, console))
+        crate::support::startup::runtime().block_on(cli::main(args, snapshot, &resolver, console))
     }
 }
 
@@ -633,13 +633,6 @@ fn default_credentials() -> OAuthCredentials {
         expires: 1_700_000_000_000.0,
         extra: Map::from_iter([("tenant".to_owned(), json!("team"))]),
     }
-}
-
-/// A current-thread runtime for one recorded run.
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .expect("current-thread runtime")
 }
 
 /// Put the case's original account file, or its directory, in place.

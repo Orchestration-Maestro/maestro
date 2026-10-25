@@ -161,6 +161,8 @@ pub fn tool_definitions<E: crate::AgentExecution>(
         .collect();
     definitions
         .into_iter()
-        .map(|(tool, description)| AgentToolRecord::<E>::resolve_definition(tool, description))
+        .map(|(tool, description)| {
+            AgentToolRecord::<E>::resolve_definition(tool, description).map(|tool| tool.data())
+        })
         .collect()
 }

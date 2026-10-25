@@ -400,9 +400,13 @@ impl<E> Lexer<'_, E> {
         }
         let mut old = frame.output.nodes.pop()?;
         let mut joined = frame.output.raw()?;
+        // A container whose own body is this text's tail loses exactly that body. One a
+        // nested level published spells the same content with its quoting removed, so only
+        // the container's authored start names a position this text owns.
+        let authored = frame.text.local(&joined.native(&(0..joined.len()))?)?.start;
         let prefix = match &old.kind {
-            Kind::Quote(_, body) => frame.text.len().checked_sub(body.len())?,
-            _ => frame.text.local(&joined.native(&(0..joined.len()))?)?.start,
+            Kind::Quote(_, body) if frame.text.ends_with(body) => frame.text.len() - body.len(),
+            _ => authored,
         };
         joined.newline();
         joined.append(&std::mem::take(&mut frame.pending).seal());

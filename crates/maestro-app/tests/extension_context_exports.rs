@@ -75,14 +75,15 @@ fn native_context_exports_share_the_extension_records() {
 #[test]
 fn native_command_context_exports_share_the_extension_records() {
     let runner = runner();
-    let actions = maestro_app::ExtensionCommandContextActions {
-        new_session: Rc::new(|_| {
-            Box::pin(async {
-                Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
-            })
-        }),
-        ..Default::default()
-    };
+    let actions =
+        maestro_app::ExtensionCommandContextActions::new(maestro_app::CommandContextOperations {
+            new_session: Rc::new(|_| {
+                Box::pin(async {
+                    Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
+                })
+            }),
+            ..crate::command_operations::silent()
+        });
     runner.bind_command_context(Some(actions));
     let ctx: maestro_app::ExtensionCommandContext = runner.create_command_context();
     crate::support::run(async {
@@ -115,9 +116,8 @@ fn runner() -> ExtensionRunner {
 fn native_runtime_exports_share_the_extension_records() {
     let runtime: Arc<ExtensionRuntime> = create_extension_runtime::<Threaded>();
     let mut actions: ExtensionActions = Threaded::unbound_actions();
-    let tool = runtime_tool();
-    let expected = serde_json::to_value(&tool).unwrap();
-    actions.get_all_tools = Arc::new(move || Ok(vec![tool.clone()]));
+    let expected = serde_json::to_value(runtime_tool()).unwrap();
+    actions.get_all_tools = Arc::new(|| Ok(vec![runtime_schema_tool()]));
     let config = runtime_provider();
     let owner = Arc::new(RwLock::new(Extension::new(
         "/extension".into(),
@@ -181,8 +181,21 @@ fn runtime_tool() -> maestro_app::ToolInfo {
     maestro_app::ToolInfo {
         name: "inspect".into(),
         description: "Inspect data".into(),
-        parameters: serde_json::json!({"type":"object"}),
+        parameters: serde_json::json!({"type":"object"}).into(),
         source_info: source,
+    }
+}
+
+/// Add local executable storage only after the threaded callback is invoked.
+#[cfg(not(target_arch = "wasm32"))]
+fn runtime_schema_tool()
+-> maestro_app::ToolInfo<maestro_models::ParameterSchema<maestro_models::SchemaCode>> {
+    let tool = runtime_tool();
+    maestro_app::ToolInfo {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters.with_code(maestro_models::SchemaCode::new()),
+        source_info: tool.source_info,
     }
 }
 
@@ -295,7 +308,7 @@ fn sdk_registered_definition() -> maestro_app::ToolDefinition<
         definition: maestro_models::Tool {
             name: "sdk".into(),
             description: "SDK".into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         label: "SDK".into(),
         prompt_snippet: None,

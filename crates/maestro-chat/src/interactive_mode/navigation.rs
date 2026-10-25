@@ -16,7 +16,9 @@ impl InteractiveMode {
     pub(super) fn show_user_message_selector(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         let messages = self.runtime_host.session().get_user_messages_for_forking();
         if messages.is_empty() {
-            return self.show_status("No messages to fork from");
+            return self
+                .show_status("No messages to fork from")
+                .map_err(Into::into);
         }
         let initial_selected_id = messages.last().map(|message| message.entry_id.clone());
         let items: Vec<_> = messages
@@ -79,7 +81,7 @@ impl InteractiveMode {
             .get_leaf_id()
             .map(str::to_owned);
         let Some(leaf_id) = leaf_id else {
-            return self.show_status("Nothing to clone yet");
+            return self.show_status("Nothing to clone yet").map_err(Into::into);
         };
         let options = ForkOptions {
             position: Some(ForkPosition::At),
@@ -87,7 +89,7 @@ impl InteractiveMode {
         };
         let result = match self.runtime_host.fork(&leaf_id, options).await {
             Ok(result) => result,
-            Err(error) => return self.show_error(&error.to_string()),
+            Err(error) => return self.show_error(&error.to_string()).map_err(Into::into),
         };
         if result.cancelled {
             self.ui.request_render(false);
@@ -96,6 +98,7 @@ impl InteractiveMode {
         self.render_current_session_state()?;
         self.editor.set_text("");
         self.show_status("Cloned to new session")
+            .map_err(Into::into)
     }
 }
 
@@ -128,7 +131,7 @@ async fn run_fork(
         Ok(result) => fork_succeeded(mode, done, result.selected_text.as_deref()),
         Err(error) => {
             done();
-            mode.show_error(&error.to_string())
+            mode.show_error(&error.to_string()).map_err(Into::into)
         }
     }
 }
@@ -144,4 +147,5 @@ fn fork_succeeded(
     mode.editor.set_text(selected_text.unwrap_or(""));
     done();
     mode.show_status("Forked to new session")
+        .map_err(Into::into)
 }

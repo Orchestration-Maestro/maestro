@@ -22,6 +22,7 @@ mod composed_consumer;
 mod contributions;
 mod contributions_browser;
 mod copy_buttons;
+mod custom_provider_card_browser;
 mod dialog_shell;
 mod dialog_shell_browser;
 mod diff_factory;
@@ -50,8 +51,13 @@ mod message_renderers_browser;
 mod message_tool_arguments;
 mod message_visuals_browser;
 mod messages_browser;
+mod native_artifact_console_browser;
+mod native_artifact_console_support;
 mod native_artifact_controls_browser;
+mod native_console_browser;
+mod native_document_artifacts_browser;
 mod native_markdown_browser;
+mod native_simple_artifacts_browser;
 mod native_thinking_browser;
 mod pdf_views;
 mod pdf_views_browser;
@@ -100,6 +106,8 @@ pub mod highlighter_support;
 pub mod input_support;
 pub mod markdown_support;
 pub mod markdown_svg_support;
+#[cfg(target_arch = "wasm32")]
+pub mod native_simple_artifacts_support;
 pub mod panel_browser_support;
 pub mod pdf_support;
 pub mod reading_browser_support;
@@ -131,3 +139,8 @@ mod offline_tool_card_support;
 mod offline_tool_cards;
 
 mod offline_tool_cards_browser;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "../../maestro-app/tests/support/artifact_presentation.rs"]
+mod artifact_presentation_support;
+mod sample_sessions_browser;

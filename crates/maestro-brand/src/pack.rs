@@ -1,5 +1,6 @@
 //! Typed brand pack records and their native decoding.
 use crate::BrandError;
+use maestro_json::escape_pointer_token;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
@@ -166,26 +167,27 @@ impl PackData {
 
     /// Reject a type size that is not positive or a spacing or radius below zero.
     fn check_measurements(&self) -> Result<(), BrandError> {
-        let sizes = self
-            .typography
-            .iter()
-            .map(|(role, kind)| (kind.size > 0.0, format!("/type/{}/size", pointer(role))));
-        let spacing = self
-            .spacing
-            .iter()
-            .map(|(role, value)| (*value >= 0.0, format!("/spacing/{}", pointer(role))));
-        let radii = self
-            .radii
-            .iter()
-            .map(|(role, value)| (*value >= 0.0, format!("/radii/{}", pointer(role))));
+        let sizes = self.typography.iter().map(|(role, kind)| {
+            (
+                kind.size > 0.0,
+                format!("/type/{}/size", escape_pointer_token(role)),
+            )
+        });
+        let spacing = self.spacing.iter().map(|(role, value)| {
+            (
+                *value >= 0.0,
+                format!("/spacing/{}", escape_pointer_token(role)),
+            )
+        });
+        let radii = self.radii.iter().map(|(role, value)| {
+            (
+                *value >= 0.0,
+                format!("/radii/{}", escape_pointer_token(role)),
+            )
+        });
         match sizes.chain(spacing).chain(radii).find(|(valid, _)| !valid) {
             Some((_, path)) => Err(BrandError::Measurement(path)),
             None => Ok(()),
         }
     }
-}
-
-/// Escape a JSON Pointer reference token.
-fn pointer(token: &str) -> String {
-    token.replace('~', "~0").replace('/', "~1")
 }

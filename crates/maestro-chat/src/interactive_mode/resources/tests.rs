@@ -4,7 +4,9 @@ use super::{
     format_display_path, format_scope_groups, get_short_path,
 };
 use crate::interactive_mode::startup::ExpandableText;
-use crate::interactive_mode::tests::{Setup, World, isolated_case, light, painted, roles, start};
+use crate::interactive_mode::tests::{
+    Setup, World, dark, isolated_case, light, painted, roles, start,
+};
 use crate::{InteractiveMode, InteractiveModeOptions};
 use maestro_app::{
     ContextFile, PromptTemplate, Skill, SourceInfo, SourceOrigin, SourceScope, home_directory,
@@ -281,9 +283,9 @@ fn context_files(located: Vec<Located>) -> Vec<ContextFile> {
 }
 
 /// Runs `body` in a fresh child whose home directory and locale are the recorded ones.
-fn in_home(test: &str, body: impl FnOnce(&Path)) {
+fn in_home(test: &str, body: impl AsyncFnOnce(&Path)) {
     let environment = [("HOME", HOME), ("LANG", "C.UTF-8")];
-    isolated_case(test, "child", (&environment, &[]), body);
+    isolated_case(test, "child", &environment, body);
 }
 
 /// The retained expandable sections of the transcript.
@@ -305,7 +307,7 @@ fn expand_all(mode: &InteractiveMode, expanded: bool) {
 
 /// Starts a mode over `listing` and checks the recorded rows after startup, with every
 /// section expanded and collapsed again, and the transcript's children.
-fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> World {
+async fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> World {
     let Expected::Listing {
         before,
         expanded,
@@ -331,7 +333,10 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
         .collect();
     prompts.push(templates(listing.templates));
     let world = Setup {
-        options: InteractiveModeOptions { verbose },
+        options: InteractiveModeOptions {
+            verbose,
+            ..InteractiveModeOptions::default()
+        },
         configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
         cwd: listing.cwd,
         context: context_files(listing.context),
@@ -349,7 +354,7 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
         };
         world.mode.show_loaded_resources(options).unwrap();
     } else {
-        start(&world);
+        start(&world).await;
     }
     let width = listing.width.unwrap_or(WIDTH);
     let theme = world.themes.theme().get().unwrap();
@@ -364,28 +369,28 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
 }
 
 /// Checks every recorded listing case of `test`, then `extra` on each started mode.
-fn listings(test: &str, extra: impl Fn(&World)) {
-    in_home(test, |directory| {
+fn listings(test: &str, extra: &impl AsyncFn(&World)) {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             let Input::Listing(listing) = input else {
                 panic!("a listing case");
             };
-            extra(&check_listing(directory, listing, expected));
+            extra(&check_listing(directory, listing, expected).await).await;
         }
     });
 }
 
 #[test]
 fn loaded_resources_use_compact_defaults() {
-    listings("loaded_resources_use_compact_defaults", |world| {
+    listings("loaded_resources_use_compact_defaults", &async |world| {
         let chat = &world.mode.chat_container;
         assert_eq!(
             sections(&world.mode).len(),
             chat.children().borrow().len() / 2
         );
-        start(world);
+        start(world).await;
         let children = chat.children().borrow().len();
-        start(world);
+        start(world).await;
         assert_eq!(chat.children().borrow().len(), children);
         assert_eq!(world.terminal.events(), ["start"]);
     });
@@ -393,24 +398,24 @@ fn loaded_resources_use_compact_defaults() {
 
 #[test]
 fn verbose_resources_override_quiet_startup() {
-    listings("verbose_resources_override_quiet_startup", |_| {});
+    listings("verbose_resources_override_quiet_startup", &async |_| {});
 }
 
 #[test]
 fn quiet_resources_require_force() {
-    listings("quiet_resources_require_force", |_| {});
+    listings("quiet_resources_require_force", &async |_| {});
 }
 
 #[test]
 fn empty_resources_do_not_add_chat_children() {
-    listings("empty_resources_do_not_add_chat_children", |_| {});
+    listings("empty_resources_do_not_add_chat_children", &async |_| {});
 }
 
 #[test]
 fn context_resources_keep_discovery_order_and_relative_paths() {
     listings(
         "context_resources_keep_discovery_order_and_relative_paths",
-        |_| {},
+        &async |_| {},
     );
 }
 
@@ -418,7 +423,7 @@ fn context_resources_keep_discovery_order_and_relative_paths() {
 fn loaded_resources_keep_heading_roles_and_section_spacing() {
     listings(
         "loaded_resources_keep_heading_roles_and_section_spacing",
-        |world| {
+        &async |world| {
             let rows = world.mode.chat_container.render(WIDTH);
             let header = world.mode.header_container.render(WIDTH).len();
             assert_eq!(
@@ -432,14 +437,14 @@ fn loaded_resources_keep_heading_roles_and_section_spacing() {
 #[test]
 fn loaded_resource_sections_retain_content_across_redraws() {
     let test = "loaded_resource_sections_retain_content_across_redraws";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             let Input::Listing(listing) = input else {
                 panic!("a listing case");
             };
             let width = listing.width.unwrap();
             let leading = usize::from(!listing.context.is_empty());
-            let world = check_listing(directory, listing, expected);
+            let world = check_listing(directory, listing, expected).await;
             let rows = world.mode.chat_container.render(width);
             world.mode.chat_container.invalidate();
             assert_eq!(world.mode.chat_container.render(width), rows);
@@ -470,7 +475,7 @@ fn repainted(initial: &Theme, current: &Theme, rows: &[String], heading: usize) 
 #[test]
 fn resource_section_heading_refreshes_on_toggle_without_restyling_body() {
     let test = "resource_section_heading_refreshes_on_toggle_without_restyling_body";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             let (
                 Input::ThemeToggle {
@@ -495,7 +500,7 @@ fn resource_section_heading_refreshes_on_toggle_without_restyling_body() {
                 ..Setup::default()
             }
             .build(directory);
-            start(&world);
+            start(&world).await;
             let dark = world.themes.theme().get().unwrap();
             let chat = &world.mode.chat_container;
             assert_eq!(chat.render(width), painted(&dark, &before));
@@ -544,6 +549,28 @@ fn resource_paths_abbreviate_supplied_home_prefix() {
 }
 
 #[test]
+fn resource_listing_keeps_root_home_paths_absolute() {
+    let test = "resource_listing_keeps_root_home_paths_absolute";
+    in_home(test, async |directory| {
+        for (home, value) in [
+            ("/", "/tmp/supplied-home/file"),
+            ("", "/tmp/supplied-home/file"),
+            ("/tmp/supplied-home", "~/file"),
+        ] {
+            let setup = Setup {
+                context: context_files(vec![Located {
+                    path: "/tmp/supplied-home/file".to_owned(),
+                }]),
+                ..Setup::default()
+            };
+            let rows = listed(directory, setup, &|| Ok(home.to_owned())).unwrap();
+            let row = dark().fg(&ThemeColor::Dim, &format!("  {value}")).unwrap();
+            assert_eq!(rows[2].trim_end(), row, "{home:?} home");
+        }
+    });
+}
+
+#[test]
 fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix() {
     let test = "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix";
     for (input, expected) in cases(test) {
@@ -552,24 +579,47 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
             panic!("a native home case");
         };
         let environment: &[(&str, &str)] = match mode.as_str() {
-            "absent" => &[],
             "supplied" => &[("HOME", "/tmp/supplied-home")],
             "empty" => &[("HOME", "")],
             other => panic!("an unknown home mode {other}"),
         };
-        isolated_case(test, &mode, (environment, &[]), |directory| {
-            assert_eq!(format_display_path(&path, &home_directory).unwrap(), value);
-            let world = Setup {
-                context: context_files(vec![Located { path }]),
-                ..Setup::default()
-            }
-            .build(directory);
-            world.mode.tool_output_expanded.set(true);
-            start(&world);
-            let theme = world.themes.theme().get().unwrap();
-            let row = theme.fg(&ThemeColor::Dim, &format!("  {value}")).unwrap();
-            assert_eq!(world.mode.chat_container.render(WIDTH)[2].trim_end(), row);
+        isolated_case(test, &mode, environment, async |directory| {
+            assert_native_home(directory, &path, &value).await;
         });
+    }
+    isolated_case(test, "absent", &[], async |directory| {
+        let (path, value) = native_absent_case();
+        assert_native_home(directory, &path, &value).await;
+    });
+}
+
+/// Checks `path` shows as `value` under the child's home, both formatted and listed.
+async fn assert_native_home(directory: &Path, path: &str, value: &str) {
+    assert_eq!(format_display_path(path, &home_directory).unwrap(), value);
+    let world = Setup {
+        context: context_files(vec![Located {
+            path: path.to_owned(),
+        }]),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.tool_output_expanded.set(true);
+    world.mode.init().await.unwrap();
+    let theme = world.themes.theme().get().unwrap();
+    let row = theme.fg(&ThemeColor::Dim, &format!("  {value}")).unwrap();
+    assert_eq!(world.mode.chat_container.render(WIDTH)[2].trim_end(), row);
+}
+
+/// The path and the display it shows when the account home stands in for an absent HOME.
+fn native_absent_case() -> (String, String) {
+    let home = home_directory().unwrap();
+    if home.is_empty() {
+        let path = "/tmp/supplied-home/file".to_owned();
+        (path.clone(), path)
+    } else if home == "/" {
+        (home.clone(), home)
+    } else {
+        (home, "~".to_owned())
     }
 }
 
@@ -611,7 +661,7 @@ fn under_home(path: &str, name: &str) -> Vec<Recorded> {
 #[test]
 fn resource_listing_looks_up_home_only_to_abbreviate_a_path() {
     let test = "resource_listing_looks_up_home_only_to_abbreviate_a_path";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         let prompts = || Setup {
             prompts: vec![templates(under_home("prompt.md", "prompt"))],
             ..Setup::default()
@@ -646,29 +696,38 @@ fn resource_listing_looks_up_home_only_to_abbreviate_a_path() {
 
 #[test]
 fn loaded_resources_expand_each_retained_section() {
-    listings("loaded_resources_expand_each_retained_section", |_| {});
+    listings(
+        "loaded_resources_expand_each_retained_section",
+        &async |_| {},
+    );
 }
 
 #[test]
 fn resource_scopes_keep_project_user_path_order() {
-    listings("resource_scopes_keep_project_user_path_order", |_| {});
+    listings(
+        "resource_scopes_keep_project_user_path_order",
+        &async |_| {},
+    );
 }
 
 #[test]
 fn resource_groups_keep_stable_locale_order() {
-    listings("resource_groups_keep_stable_locale_order", |_| {});
+    listings("resource_groups_keep_stable_locale_order", &async |_| {});
 }
 
 #[test]
 fn compact_resource_labels_use_ecmascript_space_rules() {
-    listings("compact_resource_labels_use_ecmascript_space_rules", |_| {});
+    listings(
+        "compact_resource_labels_use_ecmascript_space_rules",
+        &async |_| {},
+    );
 }
 
 #[test]
 fn prompt_resources_use_session_templates_and_last_path_lookup() {
     listings(
         "prompt_resources_use_session_templates_and_last_path_lookup",
-        |world| {
+        &async |world| {
             let rows = world.mode.chat_container.render(WIDTH).join("\n");
             assert!(!rows.contains("NOT_SELECTED"));
         },

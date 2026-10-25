@@ -21,6 +21,65 @@ use crate::{
 struct Generated;
 
 impl Imports for Generated {
+    type JsonNode = host::JsonNode;
+    fn json_kind(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> ExtensionResult<Option<host::JsonKind>> {
+        node.kind(path)
+    }
+    fn json_read(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Option<String>> {
+        node.read(path)
+    }
+    fn json_keys(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Vec<String>> {
+        node.keys(path)
+    }
+    fn json_set(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        key: &str,
+        value: &str,
+    ) -> ExtensionResult<()> {
+        node.set(path, key, value)
+    }
+    fn json_delete(&self, node: &Self::JsonNode, path: &str, key: &str) -> ExtensionResult<()> {
+        node.delete(path, key)
+    }
+    fn json_splice(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        range: (u32, u32),
+        values: &[String],
+    ) -> ExtensionResult<Vec<String>> {
+        node.splice(path, range, values)
+    }
+    fn callback_id(&self, callback: &Self::Callback) -> u32 {
+        callback.id()
+    }
+    fn get_all_tools(&self) -> ExtensionResult<super::ToolListing<Self::Callback>> {
+        let listing = host::get_all_tools()?;
+        Ok((
+            listing.metadata,
+            listing
+                .schemas
+                .into_iter()
+                .map(|b| (b.tool, b.pointer, b.handler))
+                .collect(),
+        ))
+    }
+    fn register_tool(
+        &self,
+        metadata: &str,
+        prepare: Option<&Self::Callback>,
+        execute: &Self::Callback,
+        schemas: &[(String, &Self::Callback)],
+    ) -> ExtensionResult<()> {
+        host::register_tool(metadata, prepare, execute, schemas)
+    }
+
     forward_resources! { functions {
         send_message(message: &str, options: Option<&str>) -> ExtensionResult<()> => host::send_message;
         send_user_message(content: &str, options: Option<&str>) -> ExtensionResult<()> => host::send_user_message;
@@ -28,7 +87,7 @@ impl Imports for Generated {
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
         set_label(entry_id: &str, label: Option<&str>) -> ExtensionResult<()> => host::set_label;
         get_active_tools() -> ExtensionResult<Vec<String>> => host::get_active_tools;
-        get_all_tools() -> ExtensionResult<String> => host::get_all_tools;
+
         set_active_tools(tool_names: &[String]) -> ExtensionResult<()> => host::set_active_tools;
         get_commands() -> ExtensionResult<String> => host::get_commands;
         get_thinking_level() -> ExtensionResult<String> => host::get_thinking_level;
@@ -42,7 +101,7 @@ impl Imports for Generated {
         register_shortcut(shortcut: &str, description: Option<&str>, handler: &host::Callback) -> ExtensionResult<()> => host::register_shortcut;
         register_flag(name: &str, options: &FlagOptions) -> ExtensionResult<()> => host::register_flag;
         get_flag(name: &str) -> ExtensionResult<Option<FlagValue>> => host::get_flag;
-        register_tool(metadata: &str, prepare: Option<&host::Callback>, execute: &host::Callback) -> ExtensionResult<()> => host::register_tool;
+
         append_entry(custom_type: &str, data: Option<&str>) -> ExtensionResult<()> => host::append_entry;
     } }
     forward_resources! {
@@ -240,6 +299,30 @@ impl Imports for Generated {
 pub struct Glue<E>(PhantomData<E>);
 
 impl<E: Extension> Guest for Glue<E> {
+    fn describe_schema(
+        handler: &host::Callback,
+    ) -> Result<host::SchemaShape, host::DiagnosticErrorInfo> {
+        Exports::<Generated>::describe_schema(handler.id()).map_err(crate::schema_error::to_wire)
+    }
+    fn retain_schema(
+        handler: &host::Callback,
+        retained: host::Callback,
+    ) -> Result<(), host::DiagnosticErrorInfo> {
+        Exports::new(Generated)
+            .retain_schema(handler.id(), retained)
+            .map_err(crate::schema_error::to_wire)
+    }
+    fn invoke_schema(
+        handler: &host::Callback,
+        operation: host::SchemaOperation,
+        node: &host::JsonNode,
+        emitter: &host::CallbackEmitter,
+    ) -> Result<String, host::DiagnosticErrorInfo> {
+        Exports::new(Generated)
+            .invoke_schema(handler.id(), operation, node, emitter)
+            .map_err(crate::schema_error::to_wire)
+    }
+
     type ComponentView = RenderedComponent;
     type BashOperations = ReturnedBashOperations;
     fn invoke_renderer(

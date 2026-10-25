@@ -13,9 +13,6 @@ use crate::{CheckedChild, TestProcessError, selection};
 /// Variable the coverage runtime reads; kept when the environment is cleared.
 const PROFILE: &str = "LLVM_PROFILE_FILE";
 
-/// The shell a startup setup runs in.
-const SHELL: &str = "bash";
-
 /// One ordered environment edit.
 #[derive(Debug)]
 enum EnvEdit {
@@ -98,17 +95,6 @@ pub struct TestProcess {
     skips: Vec<String>,
     /// Shell text run before the test executable replaces the shell.
     shell: Option<String>,
-}
-
-/// The shell program of a startup setup, resolved through the current `PATH` so that a
-/// child whose own environment replaces `PATH` still starts it.
-fn shell_program() -> PathBuf {
-    let found = std::env::var_os("PATH").and_then(|path| {
-        std::env::split_paths(&path)
-            .map(|directory| directory.join(SHELL))
-            .find(|candidate| candidate.is_file())
-    });
-    found.unwrap_or_else(|| PathBuf::from(SHELL))
 }
 
 impl TestProcess {
@@ -458,7 +444,7 @@ impl TestProcess {
         let executable = self.eligible()?;
         let mut command = match self.shell.take() {
             Some(setup) => {
-                let mut shell = Command::new(shell_program());
+                let mut shell = Command::new("bash");
                 shell.args(["-c", &format!("{setup}; exec \"$@\""), "startup"]);
                 shell.arg(executable);
                 shell

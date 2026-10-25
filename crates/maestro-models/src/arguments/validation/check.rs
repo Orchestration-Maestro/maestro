@@ -1,5 +1,15 @@
 //! Ordered schema evaluation with isolated branch results and location marks.
 
+mod code;
+mod frame;
+mod operand;
+mod program;
+
+pub(super) use code::Code;
+pub(super) use frame::{authored_candidate, candidate, check, check_owned};
+pub(super) use operand::Instance;
+pub(super) use program::Phase;
+
 use std::{
     borrow::Cow,
     collections::{BTreeSet, VecDeque},
@@ -9,13 +19,11 @@ use num_traits::ToPrimitive;
 use serde_json::{Map, Value};
 
 use super::{
-    collections,
-    prepare::{self, Patterns},
-    references::{self, Context, Location},
+    references::{Context, Location},
     scalars,
 };
 
-/// Maximum number of distinct corrective messages retained per evaluation.
+/// Maximum number of corrective messages retained per evaluation.
 const ERROR_LIMIT: usize = 8;
 
 #[derive(Default)]
@@ -43,31 +51,56 @@ impl Marks {
     }
 }
 
+/// A corrective line retaining whether its refinement index makes it distinct.
+#[derive(PartialEq)]
+pub(super) enum Failure {
+    /// Ordinary duplicate corrective lines are suppressed.
+    Ordinary(String),
+    /// Separate refinement checks remain separate failures, even with equal text.
+    Refinement(String),
+}
+
+impl From<String> for Failure {
+    fn from(message: String) -> Self {
+        Self::Ordinary(message)
+    }
+}
+
+impl Failure {
+    /// Render a retained failure at the external diagnostic boundary.
+    fn into_message(self) -> String {
+        match self {
+            Self::Ordinary(message) | Self::Refinement(message) => message,
+        }
+    }
+}
+
 /// Completed child application: marks exist only for a valid branch.
 pub(super) enum Outcome {
     /// Every assertion held; the locations the branch evaluated.
     Valid(Marks),
     /// At least one assertion failed; its ordered corrective messages.
-    Invalid(Vec<String>),
+    Invalid(Vec<Failure>),
 }
 
 #[derive(Default)]
 /// Failures and evaluated locations accumulated by one schema application.
 pub(super) struct Evaluation {
     /// Ordered corrective messages accumulated by this evaluation.
-    pub errors: Vec<String>,
+    pub errors: Vec<Failure>,
     /// Locations evaluated so far, visible to later unevaluated checks.
     pub marks: Marks,
 }
 
 impl Evaluation {
-    /// Retain ordered distinct failures within the diagnostic limit.
-    fn add_errors(&mut self, errors: impl IntoIterator<Item = String>) {
+    /// Retain ordered ordinary failures once, without merging indexed refinements.
+    fn add_errors(&mut self, errors: impl IntoIterator<Item = impl Into<Failure>>) {
         for error in errors {
+            let error = error.into();
             if self.errors.len() == ERROR_LIMIT {
                 break;
             }
-            if !self.errors.contains(&error) {
+            if matches!(error, Failure::Refinement(_)) || !self.errors.contains(&error) {
                 self.errors.push(error);
             }
         }
@@ -85,6 +118,12 @@ impl Evaluation {
 
 /// Deferred work preserving keyword order within an evaluation frame.
 pub(super) enum Instruction<'a> {
+    /// Apply an author guard before literals and compositions.
+    Guard,
+    /// Resolve a keyword against the live operand when its source phase is reached.
+    Phase(Phase),
+    /// Admit a dependency only after the preceding dependency has completed.
+    Dependency(Job<'a>, &'static str, String),
     /// Append already computed scalar or cardinality failures.
     Errors(Vec<String>),
     /// Evaluate child schemas before merging their outcomes.
@@ -110,6 +149,8 @@ pub(super) enum Mode<'a> {
         /// Keyword failure text rendered at the containing instance.
         message: &'static str,
     },
+    /// Stop as soon as one member satisfies the existence rule.
+    Some,
     /// Compare the number of successful children with contains bounds.
     Count {
         /// Active lower bound on the number of matching items.
@@ -120,7 +161,7 @@ pub(super) enum Mode<'a> {
         message: Cow<'static, str>,
     },
     /// Aggregate invalid property-name evaluations by their original names.
-    Names(Vec<&'a str>),
+    Names(Vec<String>),
     /// Invert child validity without exporting its errors or marks.
     Not,
     /// Evaluate a condition before choosing one of two branch jobs.
@@ -142,41 +183,13 @@ pub(super) enum Mark {
     Index(usize),
 }
 
-#[derive(Clone, Copy)]
-/// Borrowed JSON location or property name being checked as a string.
-pub(super) enum Instance<'a> {
-    /// Existing argument value whose location can be compared by identity.
-    Json(&'a Value),
-    /// Object key exposed as a string for propertyNames assertions.
-    Name(&'a str),
-}
-
-impl<'a> Instance<'a> {
-    /// Compare instance locations for non-progress cycle detection.
-    fn same(self, other: Self) -> bool {
-        match (self, other) {
-            (Self::Json(left), Self::Json(right)) => std::ptr::eq(left, right),
-            (Self::Name(left), Self::Name(right)) => std::ptr::eq(left, right),
-            _ => false,
-        }
-    }
-
-    /// Expose a JSON instance, materializing property names as strings.
-    fn value(self) -> Cow<'a, Value> {
-        match self {
-            Self::Json(value) => Cow::Borrowed(value),
-            Self::Name(name) => Cow::Owned(Value::String(name.to_owned())),
-        }
-    }
-}
-
 #[derive(Clone)]
 /// One schema application retaining its context, instance and diagnostic path.
 pub(super) struct Job<'a> {
     /// Schema location and live anchor bindings to apply.
     pub context: Context<'a>,
     /// Instance location whose validity is being determined.
-    pub value: Instance<'a>,
+    pub value: Instance,
     /// Slash-separated instance path used for corrective diagnostics.
     pub path: String,
 }
@@ -188,7 +201,7 @@ impl<'a> Job<'a> {
     }
 
     /// Apply a lexically nested schema to a member instance.
-    pub fn child(&self, schema: &'a Value, value: Instance<'a>, path: String) -> Self {
+    pub fn child(&self, schema: &'a Value, value: Instance, path: String) -> Self {
         Self {
             context: self.context.child(schema),
             value,
@@ -198,14 +211,14 @@ impl<'a> Job<'a> {
 
     /// Apply a lexically nested schema to the same instance.
     pub fn same_instance(&self, schema: &'a Value) -> Self {
-        self.child(schema, self.value, self.path.clone())
+        self.child(schema, Instance::Same, self.path.clone())
     }
 
     /// Apply a resolved reference target to the same instance.
     pub fn resolved(&self, target: Location<'a>) -> Self {
         Self {
             context: self.context.follow(target),
-            value: self.value,
+            value: Instance::Same,
             path: self.path.clone(),
         }
     }
@@ -232,139 +245,6 @@ impl<'a> Batch<'a> {
     }
 }
 
-/// Explicit evaluator continuation for one active schema and instance.
-struct Frame<'a> {
-    /// Active schema location and bindings used for cycle detection.
-    context: Context<'a>,
-    /// Active instance location used for cycle detection.
-    instance: Instance<'a>,
-    /// Remaining keyword work in diagnostic order.
-    instructions: VecDeque<Instruction<'a>>,
-    /// Child applications currently being evaluated or aggregated.
-    pending: Option<Batch<'a>>,
-    /// Accumulated failures and successful location marks for this frame.
-    result: Evaluation,
-    /// Diagnostic instance path retained across child evaluations.
-    path: String,
-}
-
-impl<'a> Frame<'a> {
-    /// Prepare an evaluation frame for one schema application.
-    fn new(job: Job<'a>, root: &Location<'a>, patterns: &Patterns<'_>) -> Self {
-        Self {
-            instructions: instructions(&job, root, patterns).into(),
-            context: job.context,
-            instance: job.value,
-            pending: None,
-            result: Evaluation::default(),
-            path: job.path,
-        }
-    }
-
-    /// Take the next pending child without retaining its result yet.
-    fn next_child(&mut self) -> Option<Job<'a>> {
-        self.pending.as_mut()?.jobs.pop_front()
-    }
-
-    /// Merge completed children or schedule the selected conditional branch.
-    fn finish_batch(&mut self) {
-        if let Some(batch) = self.pending.take() {
-            self.pending = apply(batch, &self.path, &mut self.result);
-        }
-    }
-}
-
-/// Return ordered failures while evaluating schemas without recursive frames, or the first
-/// pattern error found while preparing the schema.
-pub(super) fn check(schema: &Value, value: &Value) -> Result<Vec<String>, regress::Error> {
-    let root = Location::root(schema);
-    let patterns = prepare::prepare(&root)?;
-    let job = Job {
-        context: Context::root(root.clone()),
-        value: Instance::Json(value),
-        path: String::new(),
-    };
-    let mut frames = vec![Frame::new(job, &root, &patterns)];
-    while let Some(frame) = frames.last_mut() {
-        if let Some(job) = frame.next_child() {
-            if frames
-                .iter()
-                .any(|frame| frame.instance.same(job.value) && frame.context.same(&job.context))
-            {
-                reject_cycle(&mut frames, &job.path);
-            } else {
-                frames.push(Frame::new(job, &root, &patterns));
-            }
-            continue;
-        }
-        frame.finish_batch();
-        if frame.pending.is_some() {
-            continue;
-        }
-        match frame.instructions.pop_front() {
-            Some(Instruction::Errors(errors)) => frame.result.add_errors(errors),
-            Some(Instruction::Children(batch)) => frame.pending = Some(batch),
-            Some(Instruction::Unevaluated(job)) => frame
-                .instructions
-                .extend(collections::unevaluated(&job, &frame.result.marks)),
-            None => {
-                let Some(completed) = frames.pop() else { break };
-                let Some(parent) = frames.last_mut() else {
-                    return Ok(completed.result.errors);
-                };
-                if let Some(batch) = &mut parent.pending {
-                    batch.results.push(completed.result.finish());
-                }
-            }
-        }
-    }
-    Ok(Vec::new())
-}
-
-/// Schedule keyword assertions in their diagnostic order.
-fn instructions<'a>(
-    job: &Job<'a>,
-    root: &Location<'a>,
-    patterns: &Patterns<'_>,
-) -> Vec<Instruction<'a>> {
-    let schema = job.schema();
-    let value = job.value.value();
-    let mut instructions = vec![Instruction::Errors(scalars::type_errors(
-        schema, &value, &job.path,
-    ))];
-    collections::object(job, patterns, &mut instructions);
-    collections::array(job, &mut instructions);
-    instructions.push(Instruction::Errors(scalars::string_errors(
-        schema, &value, &job.path, patterns,
-    )));
-    instructions.push(Instruction::Errors(scalars::number_errors(
-        schema, &value, &job.path,
-    )));
-    instructions.extend(references::instructions(root, job));
-    instructions.push(Instruction::Errors(scalars::literal_errors(
-        schema, &value, &job.path,
-    )));
-    conditional(job, &mut instructions);
-    if let Some(schema) = schema.get("not").filter(|schema| is_schema(schema)) {
-        instructions.push(Instruction::Children(Batch::new(
-            Mode::Not,
-            [job.same_instance(schema)],
-        )));
-    }
-    for (keyword, mode) in [
-        ("allOf", Mode::All),
-        ("anyOf", Mode::Any),
-        ("oneOf", Mode::One),
-    ] {
-        if let Some(schemas) = schema.get(keyword).and_then(schema_array) {
-            let jobs = schemas.iter().map(|schema| job.same_instance(schema));
-            instructions.push(Instruction::Children(Batch::new(mode, jobs)));
-        }
-    }
-    instructions.push(Instruction::Unevaluated(job.clone()));
-    instructions
-}
-
 /// Merge branch outcomes according to their composition or membership policy.
 fn apply<'a>(batch: Batch<'a>, path: &str, result: &mut Evaluation) -> Option<Batch<'a>> {
     let Batch { mode, results, .. } = batch;
@@ -379,6 +259,14 @@ fn apply<'a>(batch: Batch<'a>, path: &str, result: &mut Evaluation) -> Option<Ba
                     Outcome::Valid(_) => result.marks.add(mark),
                     Outcome::Invalid(errors) => result.add_errors(errors),
                 }
+            }
+        }
+        Mode::Some => {
+            if !results
+                .iter()
+                .any(|outcome| matches!(outcome, Outcome::Valid(_)))
+            {
+                result.add_errors([scalars::render(path, "must contain at least 1 valid item")]);
             }
         }
         Mode::Aggregate { .. } | Mode::Count { .. } | Mode::Names(_) => {
@@ -444,7 +332,7 @@ fn apply_collection(mode: Mode<'_>, results: &[Outcome], path: &str, result: &mu
                 .iter()
                 .zip(results)
                 .filter(|(_, outcome)| !valid(outcome))
-                .map(|(name, _)| *name)
+                .map(|(name, _)| name.as_str())
                 .collect();
             if !invalid.is_empty() {
                 result.add_errors([scalars::render(
@@ -519,16 +407,6 @@ fn apply_conditional<'a>(
     None
 }
 
-/// Record a false-schema failure for a non-progressing child.
-fn reject_cycle(frames: &mut [Frame<'_>], path: &str) {
-    if let Some(batch) = frames.last_mut().and_then(|frame| frame.pending.as_mut()) {
-        batch.results.push(Outcome::Invalid(vec![scalars::render(
-            path,
-            "schema is false",
-        )]));
-    }
-}
-
 /// Recognize the admitted object and boolean schema forms.
 pub(super) fn is_schema(value: &Value) -> bool {
     value.is_object() || value.is_boolean()
@@ -548,3 +426,6 @@ pub(super) fn schema_array(value: &Value) -> Option<&[Value]> {
         .filter(|schemas| schemas.iter().all(is_schema))
         .map(Vec::as_slice)
 }
+
+#[cfg(test)]
+mod tests;

@@ -774,3 +774,44 @@ fn early_commands_wait_and_keep_arrival_order() {
         assert_eq!(records.last().unwrap()["id"], "slow");
     });
 }
+
+/// A connection without a session refuses session operations without constructing session
+/// facilities, and still handles workspace commands on the same reader and writer.
+#[test]
+fn workspace_only_connections_refuse_session_commands() {
+    on_task_set(|_| async {
+        use crate::support::rpc_connection::ClosureWorkspace;
+        use maestro_app::rpc_mode::{JsonlLineReader, RpcModeOptions};
+        let lines = Rc::new(RefCell::new(Vec::new()));
+        let written = Rc::clone(&lines);
+        let output = Rc::new(move |line: &maestro_app::rpc_mode::RpcLine| {
+            written
+                .borrow_mut()
+                .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
+            Ok(())
+        });
+        let options = RpcModeOptions {
+            session: None,
+            workspace: Rc::new(ClosureWorkspace(no_workspace())),
+        };
+        let input = Box::new(JsonlLineReader::new(
+            b"{\"id\":\"session\",\"type\":\"get_state\"}\n{\"id\":\"workspace\",\"type\":\"ping\"}\n".as_slice(),
+        ));
+        let outcome = maestro_app::run_rpc_connection(input, output, options)
+            .await
+            .unwrap();
+        assert_eq!(outcome, RpcConnectionOutcome::Eof);
+        let lines = lines.borrow();
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0]["id"], "session");
+        assert_eq!(lines[0]["command"], "get_state");
+        assert!(
+            lines[0]["error"]
+                .as_str()
+                .unwrap()
+                .contains("open in a session")
+        );
+        assert_eq!(lines[1]["id"], "workspace");
+        assert_eq!(lines[1]["command"], "ping");
+    });
+}
