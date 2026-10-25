@@ -180,9 +180,38 @@ pub(in super::super) fn candidate(
     value: &mut Value,
     code: &Code<'_>,
 ) -> Result<bool, DiagnosticErrorInfo> {
+    acceptance(
+        schema,
+        &[],
+        value,
+        code,
+        Pass::Compiled {
+            unevaluated: uses_unevaluated(schema),
+        },
+    )
+}
+
+/// Check an authored conversion candidate with its currently visible definitions.
+pub(in super::super) fn authored_candidate<'s>(
+    schema: &'s Value,
+    definitions: &[&'s Map<String, Value>],
+    value: &mut Value,
+    code: &Code<'_>,
+) -> Result<bool, DiagnosticErrorInfo> {
+    acceptance(schema, definitions, value, code, Pass::Check)
+}
+
+/// Run acceptance without diagnostic factories under the caller's source policy.
+fn acceptance<'s>(
+    schema: &'s Value,
+    definitions: &[&'s Map<String, Value>],
+    value: &mut Value,
+    code: &Code<'_>,
+    pass: Pass,
+) -> Result<bool, DiagnosticErrorInfo> {
     let root = Root {
         location: Location::root(schema),
-        definitions: &[],
+        definitions,
     };
     let Ok(patterns) = prepare::prepare(&root) else {
         return Ok(false);
@@ -192,9 +221,7 @@ pub(in super::super) fn candidate(
         &patterns,
         Operand::Write(std::mem::take(value)),
         code,
-        Pass::Compiled {
-            unevaluated: uses_unevaluated(schema),
-        },
+        pass,
     )?;
     if let Operand::Write(result) = result {
         *value = result;

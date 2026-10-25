@@ -6,7 +6,7 @@ mod operand;
 mod program;
 
 pub(super) use code::Code;
-pub(super) use frame::{candidate, check, check_owned};
+pub(super) use frame::{authored_candidate, candidate, check, check_owned};
 pub(super) use operand::Instance;
 pub(super) use program::Phase;
 

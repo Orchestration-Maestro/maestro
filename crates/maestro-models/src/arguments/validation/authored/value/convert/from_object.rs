@@ -1,5 +1,6 @@
 //! Conversion through the declared members of an object.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::convert_member;
@@ -13,7 +14,7 @@ pub(crate) fn from_object<'a>(
     converter: &mut Context<'a>,
     object: &ObjectNode<'a>,
     value: &mut Value,
-) -> Option<Value> {
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
     match object.source {
         Some(view) => from_object_view(converter, view, value),
         None => from_composed(converter, object, value),
@@ -27,13 +28,19 @@ pub(crate) fn from_object_view<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let object = value.as_object_mut()?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(object) = value.as_object_mut() else {
+        return Ok(None);
+    };
+    let mut result = Ok(());
     coercion::members(view.raw, object, |member, child| {
         let child = Node::Leaf(converter.document.view(child));
-        convert_member(converter, &child, member);
+        if result.is_ok() {
+            result = convert_member(converter, &child, member);
+        }
     });
-    None
+    result?;
+    Ok(None)
 }
 
 /// Convert a supplied value through the members a composed object carries.
@@ -41,14 +48,16 @@ fn from_composed<'a>(
     converter: &mut Context<'a>,
     object: &ObjectNode<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let members = value.as_object_mut()?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(members) = value.as_object_mut() else {
+        return Ok(None);
+    };
     for member in &object.properties {
         if let Some(supplied) = members.get_mut(member.name.as_ref())
-            && let Some(replacement) = from_type(converter, &member.node, supplied)
+            && let Some(replacement) = from_type(converter, &member.node, supplied)?
         {
             *supplied = replacement;
         }
     }
-    None
+    Ok(None)
 }

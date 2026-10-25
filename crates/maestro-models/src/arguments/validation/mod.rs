@@ -49,8 +49,8 @@ pub fn validate_tool_arguments<C: SchemaCodeSource + Default>(
 ) -> Result<Value, DiagnosticErrorInfo> {
     let schema = tool.parameters.as_json();
     let mut candidate = tool_call.arguments.clone();
-    authored::convert(&mut candidate, schema, tool.parameters.conversions());
     let code = check::Code::new(schema, tool.parameters.code().schema_code());
+    authored::convert(&mut candidate, schema, tool.parameters.conversions(), &code)?;
     coercion::coerce(&mut candidate, schema, &code)?;
     let (candidate, errors) = check::check_owned(schema, candidate, &code)?;
     if errors.is_empty() {

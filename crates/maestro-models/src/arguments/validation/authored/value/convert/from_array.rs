@@ -1,5 +1,6 @@
 //! Conversion through the single declared item kind of a sequence.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::{convert_member, from_type::from_type, r#try::try_array};
@@ -15,20 +16,33 @@ pub(crate) fn from_array<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    view.raw.get("items").filter(|items| items.is_object())?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    if !view.raw.get("items").is_some_and(Value::is_object) {
+        return Ok(None);
+    }
     let Value::Array(source) = value else {
         let mut members = try_array::try_array(value);
+        let mut result = Ok(());
         coercion::sequence(view.raw, &mut members, |member, item| {
             let item = Node::Leaf(converter.document.view(item));
-            convert_member(converter, &item, member);
+            if result.is_ok() {
+                result = convert_member(converter, &item, member);
+            }
         });
-        return Some(Value::Array(members));
+        result?;
+        return Ok(Some(Value::Array(members)));
     };
     let mut members = Vec::with_capacity(source.len());
+    let mut result = Ok(());
     coercion::sequence(view.raw, source, |member, item| {
         let item = Node::Leaf(converter.document.view(item));
-        members.push(from_type(converter, &item, member).unwrap_or_else(|| member.clone()));
+        if result.is_ok() {
+            match from_type(converter, &item, member) {
+                Ok(replacement) => members.push(replacement.unwrap_or_else(|| member.clone())),
+                Err(error) => result = Err(error),
+            }
+        }
     });
-    Some(Value::Array(members))
+    result?;
+    Ok(Some(Value::Array(members)))
 }

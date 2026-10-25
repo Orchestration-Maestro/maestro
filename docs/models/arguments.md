@@ -114,7 +114,9 @@ A cyclic node's definitions are visible only while its reference converts, so a
 sibling member sees the enclosing definitions again. A reference names the innermost
 definition visible at the point where conversion reaches it. Union alternatives are
 checked against those same definitions, and a composed alternative keeps the constraints
-and optional members its author declared.
+and optional members its author declared. An authored union checks the original value
+first. If no alternative accepts it, every alternative converts an independent candidate
+before selection begins; a later conversion error is not hidden by an earlier match.
 
 Two authored nodes are compared by what each kind accepts. An alternative set never
 stands in for a sequence or an intersection of the same members, so its alternatives keep
@@ -132,6 +134,10 @@ their argument edits, not external callback effects. Type unions preserve values
 already match a member. Missing values are not defaulted and unknown fields are not removed.
 
 A `ParameterSchema<SchemaCode>` retains local callbacks separately from its JSON.
+An authored Base node runs its supplied converter during the authored pass. Nested
+replacements are kept; root replacements are discarded, while in-place edits remain.
+Conversion and acceptance propagate callback errors unchanged, without requesting
+error text for successful union selection.
 The checker runs a supplied Base guard before literals and compositions, even on a
 node without a declared Base kind. Refinements run after that node's ordinary
 assertions succeed. Checking stops at a failed refinement; diagnostic collection

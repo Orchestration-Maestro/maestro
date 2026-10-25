@@ -106,7 +106,8 @@ mod tests {
         for width in [16, 32, 64] {
             let (schema, kinds) = wide(width);
             let document = Document::new(&schema, &kinds);
-            let converter = Context::new(&document);
+            let code = crate::arguments::validation::check::Code::default();
+            let converter = Context::new(&document, &code);
             let performed = work(|| {
                 let _ = instantiate(&converter, converter.document.root());
             });

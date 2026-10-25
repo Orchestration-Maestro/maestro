@@ -24,7 +24,7 @@ impl<'a> Code<'a> {
     }
 
     /// Read callbacks for this original schema, including resolved reference targets.
-    pub(super) fn node(&self, schema: &Value) -> Option<&'a SchemaNode> {
+    pub(in super::super) fn node(&self, schema: &Value) -> Option<&'a SchemaNode> {
         if schema.is_object() {
             self.nodes.get(&std::ptr::from_ref(schema)).copied()
         } else {

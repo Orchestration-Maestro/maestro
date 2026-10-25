@@ -158,6 +158,21 @@ impl<'m, 'a> Members<'m, 'a> {
     }
 }
 
+impl<'a> Node<'a> {
+    /// Original authored node retained by an instantiated or composed stage.
+    pub(crate) fn source(&self) -> Option<View<'a>> {
+        match self {
+            Self::Leaf(view) => Some(*view),
+            Self::Object(object) => object.source,
+            Self::Array(_, source)
+            | Self::Tuple(_, source)
+            | Self::Union(_, source)
+            | Self::Intersect(_, source) => *source,
+            _ => None,
+        }
+    }
+}
+
 impl Node<'_> {
     /// The kind this node converts and compares as.
     pub(crate) fn kind(&self) -> Option<SchemaKind> {
