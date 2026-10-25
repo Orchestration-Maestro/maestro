@@ -34,6 +34,7 @@ impl InteractiveMode {
         self.on_action("app.thinking.cycle", |mode| mode.cycle_thinking_level());
         self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
         self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
+        self.on_action("app.session.tree", |mode| mode.show_tree_selector(None));
         self.on_action("app.session.fork", Self::show_user_message_selector);
         self.on_action("app.model.select", |mode| mode.show_model_selector(None));
         self.on_action("app.tools.expand", |mode| {

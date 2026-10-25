@@ -130,6 +130,7 @@ impl InteractiveMode {
     fn runs_navigation_command(self: &Rc<Self>, text: &str) -> bool {
         match text {
             "/fork" => self.report(self.show_user_message_selector()),
+            "/tree" => self.report(self.show_tree_selector(None)),
             "/clone" => {
                 self.editor.set_text("");
                 let mode = Rc::clone(self);

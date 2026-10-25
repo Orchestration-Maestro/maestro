@@ -60,11 +60,11 @@ pub(super) async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>
 }
 
 /// A mode whose sessions answer through the scripted provider without retrying.
-struct Scripted {
+pub(super) struct Scripted {
     /// The mode and its runtime.
-    world: World,
+    pub(super) world: World,
     /// The scripted provider.
-    provider: FauxProviderRegistration,
+    pub(super) provider: FauxProviderRegistration,
     /// Makes the next credential lookup find no key, so the session refuses that prompt.
     refuse: Arc<AtomicBool>,
     /// What the application input hook saw of each prompt.
@@ -120,7 +120,7 @@ impl<E: ProviderExecution> Invoke<E, ProviderCall<E, StreamOptionsInput<E>>> for
 
 impl Scripted {
     /// Builds a mode with `options` in `directory`; its key comes from the fallback resolver.
-    fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
+    pub(super) fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
         let hook: HookLog = Rc::default();
         let world = Setup {
             options,
@@ -183,7 +183,7 @@ impl Scripted {
     }
 
     /// Unregisters the provider and disposes of the current session.
-    fn finish(&self) {
+    pub(super) fn finish(&self) {
         self.world.host.session().dispose();
         self.provider.unregister();
     }

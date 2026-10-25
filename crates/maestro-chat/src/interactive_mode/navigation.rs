@@ -1,4 +1,6 @@
 //! Forking from an earlier user message and cloning the current leaf.
+mod tree;
+
 use super::InteractiveMode;
 use crate::components::user_message_selector::{
     UserMessageItem, UserMessageSelectorComponent, UserMessageSelectorOptions,

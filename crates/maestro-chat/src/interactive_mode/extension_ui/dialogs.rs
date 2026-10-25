@@ -34,7 +34,7 @@ struct Open {
 impl InteractiveMode {
     /// Shows a selector over `options` in place of the editor; resolves with the chosen
     /// option, or `None` on cancellation, timeout or abort.
-    pub(super) fn show_extension_selector(
+    pub(in crate::interactive_mode) fn show_extension_selector(
         &self,
         title: String,
         options: Vec<String>,
@@ -120,7 +120,7 @@ impl InteractiveMode {
 
     /// Shows a multiline editor in place of the editor; resolves with the submitted
     /// text, or `None` on cancellation.
-    pub(super) fn show_extension_editor(
+    pub(in crate::interactive_mode) fn show_extension_editor(
         &self,
         title: String,
         prefill: Option<String>,

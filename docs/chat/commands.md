@@ -21,6 +21,24 @@ Editor submission routes `/name` or `/name ` followed by a name, `/session` and
 `/debug` to those methods. Other text, such as `/names` or `/session extra`, is
 ordinary input. When a command fails, the failure goes to the terminal host.
 
+## Session tree
+
+`/tree` opens the current session's tree at its current leaf, using the saved tree
+filter. The configurable `app.session.tree` action opens the same panel. Selecting
+another entry offers `No summary`, `Summarize` and `Summarize with custom prompt`.
+The `branchSummary.skipPrompt` setting skips this question and navigates without a
+summary. Selecting the current leaf shows `Already at this point` instead.
+
+Custom instructions may be empty. Cancelling their editor returns to the summary
+choices; cancelling the choices reopens the tree at the same entry. A summary
+shows a loader whose interrupt key cancels it. Cancelling a summary reopens that
+entry, while an extension veto closes navigation without changing the transcript.
+
+Successful navigation replays the selected branch and delivers input captured
+during compaction. Returned message text fills an empty or whitespace-only editor;
+an existing draft is kept. The panel's label action records or removes the selected
+entry's label through the session manager.
+
 ## `/quit`
 
 After the shared trim, exact `/quit` clears the editor and starts graceful
