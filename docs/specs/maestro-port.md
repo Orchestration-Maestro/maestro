@@ -670,11 +670,14 @@ that calls this same entry. The test-process leaf does not depend on process.
 
 ### Test process owner
 
-`maestro-test-process` is a dedicated, unpublished, native, std-only test-support
-leaf that starts one named libtest child and proves the child started exactly that
-test. It has no workspace dependencies except the native feature unifier and one
-native development edge to the disposable directory owner for its own child
-fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
+`maestro-test-process` is a dedicated, unpublished, native test-support leaf
+that starts one named libtest child and proves the child started exactly that
+test. On Unix it runs caller-supplied setup text in the interpreter the caller
+names by absolute path, so it carries no shell lookup, and it uses no external
+crate. It has no workspace dependencies except the native feature unifier and
+one native development edge to the disposable directory owner for its own child
+fixtures, and it is excluded from the foundation utility permission. Its only
+incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,

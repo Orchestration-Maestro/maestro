@@ -137,8 +137,9 @@ instead of answering with old state. The interceptor holds the mode weakly, so i
 keeps the presentation alive; a callback that already started may keep it until it
 finishes.
 
-Rebinding replaces the whole set. An empty selection removes the interceptor, and the
-retired callbacks are released without being invoked.
+Rebinding, at startup and after each session replacement, replaces the whole set.
+An empty selection removes the interceptor, and the retired callbacks are released
+without being invoked.
 
 ## Completion
 
