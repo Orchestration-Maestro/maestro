@@ -776,3 +776,171 @@ fn custom_view_observer_drop_keeps_admitted_work_alive() {
         },
     );
 }
+
+#[test]
+fn custom_overlay_settlement_releases_callback_state() {
+    isolated(
+        "custom_overlay_settlement_releases_callback_state",
+        async |directory| {
+            for (index, reset) in [(0, false), (0, true), (1, true)] {
+                let views = Views::new();
+                let weak = Rc::downgrade(&views);
+                let building = weak.clone();
+                let (world, mut bound) = with_factories(directory, move |api| {
+                    vec![building.upgrade().unwrap().bind(api, BOTH)]
+                })
+                .await;
+                let bound = bound.pop().unwrap();
+                let options = overlay(
+                    Some(OverlayOptionsSource::Resolver(bound.resolver.clone())),
+                    Some(bound.on_handle.clone()),
+                );
+                let result = port(&world.mode).custom(bound.views[index].clone(), Some(options));
+                if reset {
+                    world.mode.reset_extension_ui().unwrap();
+                } else {
+                    views.complete(0, "done").unwrap();
+                }
+                if index == 1 {
+                    views.release(&world);
+                }
+                assert_eq!(result.await.unwrap().as_deref(), (!reset).then_some("done"));
+                assert!(!world.mode.ui.has_overlay());
+                let expected = if index == 0 {
+                    vec!["resolve-options", "on-handle", "CUSTOM:dispose"]
+                } else {
+                    vec!["CUSTOM:dispose"]
+                };
+                assert_eq!(*views.trace.borrow(), expected);
+                drop((bound, views));
+                assert!(
+                    weak.upgrade().is_none(),
+                    "settled options must release callbacks"
+                );
+            }
+        },
+    );
+}
+
+#[test]
+fn custom_overlay_visibility_completion_removes_only_its_own_view() {
+    isolated(
+        "custom_overlay_visibility_completion_removes_only_its_own_view",
+        async |directory| {
+            let views = Views::new();
+            let (world, bound) = started(directory, &views, BOTH).await;
+            let closing = views.clone();
+            let tui = world.mode.ui.clone();
+            let called = Cell::new(false);
+            let options = Rc::new(RefCell::new(OverlayOptions {
+                visible: Some(Rc::new(move |_, _| {
+                    if !called.replace(true) {
+                        closing.complete(0, "first").unwrap();
+                        tui.show_overlay(
+                            Rc::new(maestro_tui::Text::new("sibling".into(), 0, 0, None)),
+                            None,
+                        )
+                        .unwrap();
+                    }
+                    true
+                })),
+                ..OverlayOptions::default()
+            }));
+            let result = port(&world.mode).custom(
+                bound.views[0].clone(),
+                Some(overlay(
+                    Some(OverlayOptionsSource::Static(options)),
+                    Some(bound.on_handle),
+                )),
+            );
+            assert_eq!(result.await.unwrap().as_deref(), Some("first"));
+            assert!(world.mode.ui.has_overlay(), "the sibling remains installed");
+            world.mode.ui.hide_overlay().unwrap();
+            assert!(
+                !world.mode.ui.has_overlay(),
+                "the completed view was removed by identity"
+            );
+            assert_eq!(*views.trace.borrow(), ["CUSTOM:dispose"]);
+            assert!(views.built.borrow()[0].upgrade().is_none());
+        },
+    );
+}
+
+/// Builds a view whose disposal tries to commit a value after admission fails.
+fn admission_failure_factory(views: &Rc<Views>, api: &ExtensionAPI<Local>) -> ViewFactory {
+    let (building, api) = (views.clone(), api.clone());
+    api.clone().ui_callback(
+        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, Done), _| {
+            let mut component = building.component(&api, "CUSTOM", plain(Flow::Ready));
+            let disposing = building.clone();
+            component.dispose = Some(api.ui_callback(move |(), _| {
+                disposing.mark("CUSTOM:dispose");
+                done("ignored".into())
+            }));
+            Ok(CustomFactoryOutcome::Ready(component))
+        },
+    )
+}
+
+#[test]
+fn custom_overlay_admission_cursor_failure_disposes_the_view() {
+    isolated(
+        "custom_overlay_admission_cursor_failure_disposes_the_view",
+        async |directory| {
+            let views = Views::new();
+            let building = views.clone();
+            let (world, mut factories) = with_factories(directory, move |api| {
+                vec![admission_failure_factory(&building, api)]
+            })
+            .await;
+            world
+                .terminal
+                .set_hide_error(Some(std::io::ErrorKind::BrokenPipe));
+            let result =
+                port(&world.mode).custom(factories.pop().unwrap(), Some(overlay(None, None)));
+            let error = result.await.unwrap_err();
+            assert_eq!(
+                error.downcast_ref::<std::io::Error>().unwrap().kind(),
+                std::io::ErrorKind::BrokenPipe
+            );
+            assert!(!world.mode.ui.has_overlay());
+            assert_eq!(*views.trace.borrow(), ["CUSTOM:dispose"]);
+            assert!(views.built.borrow()[0].upgrade().is_none());
+            world.terminal.set_hide_error(None);
+        },
+    );
+}
+
+#[test]
+fn custom_overlay_cleanup_keeps_the_original_callback_error() {
+    isolated(
+        "custom_overlay_cleanup_keeps_the_original_callback_error",
+        async |directory| {
+            let views = Views::new();
+            let terminal = Rc::new(RefCell::new(None::<super::RecordingTerminal>));
+            let (building, failing, output) = (views.clone(), views.clone(), terminal.clone());
+            let (world, mut bound) = with_factories(directory, move |api| {
+                let (failing, output) = (failing.clone(), output.clone());
+                let callback = api.ui_callback(move |_: Handle, _| {
+                    output
+                        .borrow()
+                        .as_ref()
+                        .unwrap()
+                        .set_hide_error(Some(std::io::ErrorKind::BrokenPipe));
+                    Err(failing.failure())
+                });
+                vec![(building.bind(api, BOTH), callback)]
+            })
+            .await;
+            terminal.replace(Some(world.terminal.clone()));
+            let (bound, callback) = bound.pop().unwrap();
+            let result = port(&world.mode)
+                .custom(bound.views[0].clone(), Some(overlay(None, Some(callback))));
+            let error = result.await.unwrap_err();
+            assert!(views.is_original(error.as_ref()));
+            assert!(!world.mode.ui.has_overlay());
+            assert_eq!(*views.trace.borrow(), ["CUSTOM:dispose"]);
+            world.terminal.set_hide_error(None);
+        },
+    );
+}

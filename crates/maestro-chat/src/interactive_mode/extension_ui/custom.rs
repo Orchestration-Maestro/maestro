@@ -55,8 +55,8 @@ pub(in super::super) struct CustomView {
     mode: Weak<InteractiveMode>,
     /// Whether the view is an overlay rather than in place of the editor.
     overlay: bool,
-    /// The extension's options.
-    options: CustomUIOptions,
+    /// The extension's options until setup takes them or the view settles.
+    options: RefCell<Option<CustomUIOptions>>,
     /// The current editor's raw text when the view started.
     saved_text: String,
     /// Where the view is in its life.
@@ -90,7 +90,7 @@ impl InteractiveMode {
         let view = Rc::new(CustomView {
             mode: self.this.clone(),
             overlay: options.overlay.unwrap_or(false),
-            options,
+            options: RefCell::new(Some(options)),
             saved_text,
             phase: RefCell::new(Phase::Open),
             component: RefCell::default(),
@@ -242,14 +242,17 @@ impl CustomView {
     /// width in whole cells, then hands the extension its handle. Closing while the options
     /// resolve shows nothing.
     ///
+    /// A terminal failure settles the view before its component is disposed.
+    ///
     /// # Errors
-    /// Returns the resolver's, the terminal's or the handle callback's failure.
+    /// Returns the resolver's or the handle callback's failure.
     fn show_overlay(
         &self,
         mode: &InteractiveMode,
         component: &ExtensionComponent,
     ) -> Result<(), EventError> {
-        let options = match &self.options.overlay_options {
+        let setup = self.options.take().unwrap_or_default();
+        let options = match &setup.overlay_options {
             Some(OverlayOptionsSource::Static(options)) => Some(Rc::clone(options)),
             Some(OverlayOptionsSource::Resolver(resolve)) => Some(resolve.call(())?),
             None => component.width.filter(|width| *width != 0.0).map(|width| {
@@ -263,20 +266,34 @@ impl CustomView {
         if !self.is_open() {
             return Ok(());
         }
-        let shown = mode
+        let mut shown = match mode
             .ui
-            .show_overlay(Rc::clone(&component.component), options)?;
+            .show_overlay(Rc::clone(&component.component), options)
+        {
+            Ok(shown) => shown,
+            Err(error) => {
+                if self.is_open() {
+                    self.fail(error.into());
+                    dispose(component);
+                }
+                return Ok(());
+            }
+        };
+        if !self.is_open() {
+            shown.hide()?;
+            return Ok(());
+        }
         let handle: SharedHandle = Rc::new(RefCell::new(shown));
         self.handle.replace(Some(Rc::clone(&handle)));
-        if let Some(on_handle) = &self.options.on_handle {
+        if let Some(on_handle) = &setup.on_handle {
             on_handle.call(handle)?;
         }
         Ok(())
     }
 
     /// Fails an open view with `error`: an inline view restores the editor and a shown
-    /// overlay is removed and its component disposed. A failed restoration settles with its
-    /// own failure instead.
+    /// overlay is removed and its component disposed. Overlay cleanup keeps the initiating
+    /// error; a failed inline restoration settles with its own failure instead.
     fn fail(&self, error: EventError) {
         if !self.is_open() {
             return;
@@ -292,7 +309,12 @@ impl CustomView {
         if let Some(component) = component.filter(|_| admitted) {
             dispose(&component);
         }
-        self.finish(Err(removed.err().unwrap_or(error)));
+        let error = if self.overlay {
+            error
+        } else {
+            removed.err().unwrap_or(error)
+        };
+        self.finish(Err(error));
     }
 
     /// Settles the observation and releases the component, the overlay and the mode's hold
@@ -301,6 +323,7 @@ impl CustomView {
         if let Some(settle) = self.settle.take() {
             drop(settle.send(result));
         }
+        drop(self.options.take());
         drop(self.handle.take());
         drop(self.component.take());
         if let Some(release) = self.release.take() {

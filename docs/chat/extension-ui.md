@@ -440,12 +440,17 @@ it again; no value is committed.
 
 A view completed before its component exists never shows that component and
 disposes it once. Completing while the overlay options resolve shows nothing.
+Completing in an admission visibility callback removes that view's overlay
+before setup returns; `on_handle` is not called.
 A failing factory, resolver or handle callback settles the view with the
 original error: an inline view puts the editor back, and an overlay already shown
-is removed and its component disposed. When putting the editor back fails too,
+is removed and its component disposed. An overlay cleanup error does not replace
+the initiating failure. A terminal failure during admission removes the overlay
+and disposes its component. When putting the editor back fails too,
 that failure is the result. Closing one overlay leaves every other view shown,
 and focus returns to the overlay still shown.
 
 The mode keeps each view and its building work until the view settles, so
 dropping the returned future neither cancels the build nor closes the view.
-A settled view releases its component, overlay handle and the mode.
+A settled view releases its setup callbacks, component, overlay handle and the
+mode's registration.
