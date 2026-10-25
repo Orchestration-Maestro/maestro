@@ -17,3 +17,5 @@ mod startup_options;
 mod startup_runtime;
 mod startup_sessions;
 mod support;
+
+mod startup_mode_dispatch;

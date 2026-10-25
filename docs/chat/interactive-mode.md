@@ -575,3 +575,11 @@ a later continue signal does nothing, and the failure is handed to the terminal'
 runtime host. The continue signal is observed on the terminal's Tokio runtime,
 which must have I/O enabled. On Windows the key only shows
 `Suspend to background is not supported on Windows`.
+
+## Startup dispatch contract
+
+`InteractiveMode` implements the application-owned
+`presentation_data::mode_dispatch::InteractiveModeRunner`: initialization, run
+and stop delegate to the same retained mode. `InteractiveModeOptions` is defined
+at that application seam and remains available from both existing chat paths.
+This contract does not add another lifecycle or wire an executable.

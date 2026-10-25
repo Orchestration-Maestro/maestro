@@ -21,6 +21,7 @@ pub fn args(tokens: &[&str]) -> maestro_cli::input::args::Args {
 /// A current-thread runtime for one asynchronous startup case.
 pub fn runtime() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
+        .enable_all()
         .build()
         .expect("current-thread runtime")
 }

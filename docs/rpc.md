@@ -198,3 +198,10 @@ shutdown has started, a second signal kills the process by that signal; once the
 is disposing, the end of input exits 0 at once. A failed read, or a failed write of any
 record, also disposes the session, and the connection returns that first failure however
 it then ends.
+
+## Startup handoff
+
+The application-owned `presentation_data::mode_dispatch::RpcModeRunner` accepts
+the prepared session runtime. A native adapter supplies `RpcModeOptions` and
+calls `run_rpc_mode`; the runner retains its standard-stream framing and exit
+policy. Executable composition is not provided by this contract.

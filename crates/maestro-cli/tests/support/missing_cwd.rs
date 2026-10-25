@@ -20,20 +20,7 @@ pub fn isolated(name: &str) -> bool {
         "{\n  \"tui.select.confirm\": \"ctrl+y\",\n  \"tui.select.cancel\": \"ctrl+x\"\n}\n",
     )
     .unwrap();
-    let output = TestProcess::current(name)
-        .unwrap()
-        .env_clear()
-        .case("presentation")
-        .env("HOME", scratch.path())
-        .env(
-            "MAESTRO_PACKAGE_DIR",
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap(),
-        )
-        .env("MAESTRO_CODING_AGENT_DIR", scratch.path())
+    let output = command(name, "presentation", scratch.path())
         .output()
         .unwrap();
     assert!(
@@ -43,6 +30,24 @@ pub fn isolated(name: &str) -> bool {
         String::from_utf8_lossy(&output.stderr)
     );
     true
+}
+
+/// A checked child with the startup tests' cleared process environment.
+pub fn command(name: &str, case: &str, root: &std::path::Path) -> TestProcess {
+    TestProcess::current(name)
+        .unwrap()
+        .env_clear()
+        .case(case)
+        .env("HOME", root)
+        .env(
+            "MAESTRO_PACKAGE_DIR",
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap(),
+        )
+        .env("MAESTRO_CODING_AGENT_DIR", root)
 }
 
 /// One retained request slot for a presented dialog.
