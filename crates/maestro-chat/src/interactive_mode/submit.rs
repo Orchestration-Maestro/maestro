@@ -67,7 +67,10 @@ impl InteractiveMode {
                 mode.editor.set_text("");
                 return;
             }
-            if mode.runs_command(text) || mode.runs_model_command(text) {
+            if mode.runs_command(text)
+                || mode.runs_session_command(text)
+                || mode.runs_model_command(text)
+            {
                 return;
             }
             match mode.submit_queued_input(text, UserMessageDelivery::Steer) {
@@ -88,23 +91,6 @@ impl InteractiveMode {
     /// the terminal runtime, and says whether `text` was handled as a command.
     fn runs_command(self: &Rc<Self>, text: &str) -> bool {
         let share = text == "/share";
-        let session_command: Option<LocalFuture> = if text == "/new" {
-            Some(Box::pin(Rc::clone(self).handle_clear_command()))
-        } else if text == "/compact" || text.starts_with("/compact ") {
-            let instructions = text
-                .strip_prefix("/compact ")
-                .map(|rest| rest.trim_matches(is_whitespace_scalar).to_owned());
-            Some(Box::pin(
-                Rc::clone(self).handle_compact_command(instructions),
-            ))
-        } else {
-            None
-        };
-        if let Some(work) = session_command {
-            self.editor.set_text("");
-            self.tool_environment.runtime.spawn_local(work);
-            return true;
-        }
         if !share && text != "/copy" {
             let result = if text == "/name" || text.starts_with("/name ") {
                 self.handle_name_command(text)
@@ -140,6 +126,24 @@ impl InteractiveMode {
                 mode.clear_editor();
                 settled
             }));
+        true
+    }
+
+    /// Starts `/new`, or `/compact` with its instructions, when `text` is one of them, after
+    /// clearing the editor, and says whether `text` was handled as a command.
+    fn runs_session_command(self: &Rc<Self>, text: &str) -> bool {
+        let work: LocalFuture = if text == "/new" {
+            Box::pin(Rc::clone(self).handle_clear_command())
+        } else if text == "/compact" || text.starts_with("/compact ") {
+            let instructions = text
+                .strip_prefix("/compact ")
+                .map(|rest| rest.trim_matches(is_whitespace_scalar).to_owned());
+            Box::pin(Rc::clone(self).handle_compact_command(instructions))
+        } else {
+            return false;
+        };
+        self.editor.set_text("");
+        self.tool_environment.runtime.spawn_local(work);
         true
     }
 
