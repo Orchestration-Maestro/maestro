@@ -6562,5 +6562,1841 @@
       ],
       "renders": 1
     }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": null,
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "0",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "off\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "on\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "always\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": " \ufeffon\ufeff\n",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "\u0085on\u0085",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "",
+        "code": 0
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "on",
+        "code": 1
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "xterm\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "csi-u\n",
+        "code": 0
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "tmux_warning_selects_first_reachable_policy",
+    "input": {
+      "op": "tmux",
+      "tmux": "session",
+      "ext": {
+        "text": "off",
+        "signal": true
+      },
+      "format": {
+        "text": "",
+        "code": 1
+      }
+    },
+    "expected": {
+      "warning": null
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "## [1.2.3]\n```\nplain\n```",
+      "palette": "dark",
+      "width": 80,
+      "indent": ""
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[1.2.3]\u001b[22m\u001b[39m                                                                        ",
+        "                                                                                ",
+        " @mdCodeBlockBorder@```\u001b[39m                                                                            ",
+        " @mdCodeBlock@plain\u001b[39m                                                                          ",
+        " @mdCodeBlockBorder@```\u001b[39m                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "## [1.2.3]\n```\nplain\n```",
+      "palette": "dark",
+      "width": 80,
+      "indent": "    "
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[1.2.3]\u001b[22m\u001b[39m                                                                        ",
+        "                                                                                ",
+        " @mdCodeBlockBorder@```\u001b[39m                                                                            ",
+        "     @mdCodeBlock@plain\u001b[39m                                                                      ",
+        " @mdCodeBlockBorder@```\u001b[39m                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "## [1.2.3]\n```\nplain\n```",
+      "palette": "light",
+      "width": 80,
+      "indent": ""
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[1.2.3]\u001b[22m\u001b[39m                                                                        ",
+        "                                                                                ",
+        " @mdCodeBlockBorder@```\u001b[39m                                                                            ",
+        " @mdCodeBlock@plain\u001b[39m                                                                          ",
+        " @mdCodeBlockBorder@```\u001b[39m                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
+  },
+  {
+    "test": "changelog_expanded_notice_keeps_markdown_theme_padding_and_borders",
+    "input": {
+      "op": "startup-card",
+      "collapse": false,
+      "initial": "",
+      "markdown": "## [1.2.3]\n```\nplain\n```",
+      "palette": "light",
+      "width": 80,
+      "indent": "    "
+    },
+    "expected": {
+      "lines": [
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+        " \u001b[1m@accent@What's New\u001b[39m\u001b[22m                                                                     ",
+        "",
+        " @mdHeading@\u001b[1m[1.2.3]\u001b[22m\u001b[39m                                                                        ",
+        "                                                                                ",
+        " @mdCodeBlockBorder@```\u001b[39m                                                                            ",
+        "     @mdCodeBlock@plain\u001b[39m                                                                      ",
+        " @mdCodeBlockBorder@```\u001b[39m                                                                            ",
+        "",
+        "@border@\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+      ],
+      "renders": 0
+    }
   }
 ]

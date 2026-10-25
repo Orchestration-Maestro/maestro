@@ -312,6 +312,8 @@ struct StartupCard {
     palette: String,
     /// Render width.
     width: usize,
+    /// Current code-block indentation when explicitly configured.
+    indent: Option<String>,
 }
 
 /// Painted rows and requested frames.
@@ -343,6 +345,11 @@ fn startup_cards(test: &str) {
                 configure: Box::new(move |settings| {
                     settings.set_theme(input.palette);
                     settings.set_collapse_changelog(input.collapse);
+                    settings.set_global_key(
+                        "markdown",
+                        "codeBlockIndent",
+                        input.indent.unwrap_or_else(|| "  ".to_owned()),
+                    );
                 }),
                 ..Setup::default()
             }
@@ -861,4 +868,1038 @@ fn painted_update(theme: &maestro_theme::Theme, rows: &[String]) -> Vec<String> 
         }
     }
     painted(theme, &rows)
+}
+
+#[test]
+fn startup_package_check_skips_before_observations_when_offline() {
+    const TEST: &str = "startup_package_check_skips_before_observations_when_offline";
+    for (index, value) in [
+        None,
+        Some(""),
+        Some("0"),
+        Some("false"),
+        Some("1"),
+        Some("TRUE"),
+        Some("yes"),
+        Some(" "),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        super::isolated_case(TEST, &index.to_string(), &[], |directory| {
+            let world = native_package_world(directory);
+            if let Some(value) = value {
+                world.runtime.set_environment("MAESTRO_OFFLINE", value);
+            }
+            super::on_tasks(async {
+                let set = value.is_some_and(|value| !value.is_empty());
+                assert_eq!(maestro_app::configuration::flag_is_set(value), set);
+                let (updates, errors) =
+                    super::driving(&world, world.mode.check_for_package_updates()).await;
+                assert!(errors.is_empty());
+                assert_eq!(
+                    updates,
+                    if set {
+                        Vec::<String>::new()
+                    } else {
+                        vec!["before".to_owned()]
+                    }
+                );
+                assert_eq!(directory.join("npm-observed").exists(), !set);
+            });
+        });
+    }
+}
+
+/// A native configured-source manager with distinct services and current session directories.
+fn native_package_world(root: &std::path::Path) -> World {
+    native_package_world_with(root, None, crate::InteractiveModeOptions::default(), None)
+}
+
+/// Builds a native manager witness with an optional real input handler.
+fn native_package_world_with(
+    root: &std::path::Path,
+    extension: Option<maestro_app::ExtensionFactory<maestro_app::Local>>,
+    options: crate::InteractiveModeOptions,
+    offline: Option<bool>,
+) -> World {
+    for name in [
+        "service",
+        "session/.maestro/npm/node_modules/before",
+        "session/.maestro/npm/node_modules/after",
+    ] {
+        std::fs::create_dir_all(root.join(name)).unwrap();
+    }
+    for name in ["before", "after"] {
+        std::fs::write(
+            root.join(format!(
+                "session/.maestro/npm/node_modules/{name}/package.json"
+            )),
+            "{\n  \"version\": \"1\"\n}\n",
+        )
+        .unwrap();
+    }
+    let observed = root.join("npm-observed");
+    let script = format!(
+        "printf '%s\\n' \"$PWD|$0|$1|$2|$3\" >> '{}'; printf '\"2\"'",
+        observed.display()
+    );
+    let world = Setup {
+        options,
+        extension,
+        offline,
+        cwd: Some(root.join("service").to_str().unwrap().to_owned()),
+        configure: Box::new(move |settings| {
+            settings.set_project_packages(vec![maestro_app::PackageSource::Source(
+                "npm:before".into(),
+            )]);
+            settings.set_npm_command(Some(
+                ["/bin/sh", "-c", &script]
+                    .into_iter()
+                    .map(|s| maestro_app::SettingsListEntry::String(s.into()))
+                    .collect(),
+            ));
+        }),
+        ..Setup::default()
+    }
+    .build(root);
+    *world.host.session().session_manager().borrow_mut() =
+        maestro_app::SessionManager::in_memory(Some(root.join("session").to_str().unwrap()))
+            .unwrap();
+    world
+}
+
+/// A finite native tmux query result.
+#[derive(Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+struct TmuxResult {
+    /// Captured standard output.
+    text: String,
+    /// Native exit code, absent for a signal.
+    code: Option<i32>,
+    /// Whether the child terminates itself by signal.
+    signal: Option<bool>,
+}
+
+/// Both native option observations and tmux admission.
+#[derive(Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+struct TmuxInput {
+    /// Recorded operation.
+    op: String,
+    /// Ambient tmux value.
+    tmux: Option<String>,
+    /// Extended-keys result.
+    ext: TmuxResult,
+    /// Extended-keys-format result.
+    format: TmuxResult,
+}
+
+/// The warning selected after both queries settle.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WarningExpected {
+    /// Complete warning or silence.
+    warning: Option<String>,
+}
+
+/// One finite interpreter process for each native query, with no subprocesses.
+const TMUX_SCRIPT: &str = r"#!/usr/bin/python3
+import json, os, signal, sys
+assert sys.argv[1:3] == ['show', '-gv'] and len(sys.argv) == 4
+assert sys.argv[3] in ['extended-keys', 'extended-keys-format']
+case = json.loads(os.environ['MAESTRO_TMUX_CASE'])
+row = case['ext' if sys.argv[3] == 'extended-keys' else 'format']
+sys.stdout.write(row['text'])
+sys.stdout.flush()
+if row.get('signal'):
+    os.kill(os.getpid(), signal.SIGTERM)
+sys.exit(row.get('code') or 0)
+";
+
+/// Installs an executable through the existing checked child owner.
+fn install_command(root: &std::path::Path, name: &str, script: &str) {
+    let source = root.join(format!("{name}.py"));
+    std::fs::write(&source, script).unwrap();
+    super::native::install_executable(&source, &root.join("bin").join(name));
+    assert_eq!(
+        std::fs::read_to_string(root.join("bin").join(name)).unwrap(),
+        script
+    );
+}
+
+#[test]
+fn tmux_warning_selects_first_reachable_policy() {
+    const TEST: &str = "tmux_warning_selects_first_reachable_policy";
+    for (index, (input, expected)) in cases::<TmuxInput, WarningExpected>(FIXTURES, TEST)
+        .into_iter()
+        .enumerate()
+    {
+        let encoded = serde_json::to_string(&input).unwrap();
+        super::isolated_case(
+            TEST,
+            &index.to_string(),
+            &[("MAESTRO_TMUX_CASE", &encoded)],
+            |directory| {
+                install_command(directory, "tmux", TMUX_SCRIPT);
+                let world = Setup::default().build(directory);
+                assert_eq!(input.op, "tmux");
+                if let Some(value) = &input.tmux {
+                    world.runtime.set_environment("TMUX", value);
+                }
+                super::on_tasks(async {
+                    let (warning, errors) =
+                        super::driving(&world, world.mode.check_tmux_keyboard_setup()).await;
+                    assert!(errors.is_empty());
+                    assert_eq!(warning, expected.warning);
+                });
+            },
+        );
+    }
+}
+
+#[test]
+fn startup_checks_start_in_order_without_blocking_prompts() {
+    const TEST: &str = "startup_checks_start_in_order_without_blocking_prompts";
+    super::isolated_case(TEST, "child", &[], |directory| {
+        super::on_tasks(async {
+            let (fetch, requests) = reporting_transport();
+            let world = Setup {
+                options: crate::InteractiveModeOptions {
+                    service_origin: Some("https://service.invalid".into()),
+                    fetch: Some(fetch),
+                    ..Default::default()
+                },
+                configure: Box::new(|settings| settings.set_enable_install_telemetry(false)),
+                ..Setup::default()
+            }
+            .build(directory);
+            let mut run = Box::pin(world.mode.run());
+            assert!(poll(&mut run).is_none());
+            assert_eq!(
+                *requests.lock().unwrap(),
+                ["https://service.invalid/api/latest-version"]
+            );
+            assert!(world.mode.on_input_callback.borrow().is_some());
+            for work in world.runtime.take_futures() {
+                work.await.unwrap();
+            }
+            drop(run);
+        });
+    });
+    super::isolated_case(TEST, "ready", &[], |root| {
+        super::on_tasks(ready_completion_order(root));
+    });
+    for (index, order) in [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        super::isolated_case(
+            TEST,
+            &index.to_string(),
+            &[("MAESTRO_NOTICE_INHERITED", "retained")],
+            |root| {
+                super::on_tasks(completion_order(root, order));
+            },
+        );
+    }
+}
+
+#[test]
+fn startup_package_check_uses_current_directories_settings_and_recovers() {
+    const TEST: &str = "startup_package_check_uses_current_directories_settings_and_recovers";
+    super::isolated_case(TEST, "child", &[], |directory| {
+        super::on_tasks(async {
+            let world = native_package_world(directory);
+            let (first, errors) =
+                super::driving(&world, world.mode.check_for_package_updates()).await;
+            assert!(errors.is_empty());
+            assert_eq!(first, ["before"]);
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .set_project_packages(vec![maestro_app::PackageSource::Source("npm:after".into())]);
+            let (second, errors) =
+                super::driving(&world, world.mode.check_for_package_updates()).await;
+            assert!(errors.is_empty());
+            assert_eq!(second, ["after"]);
+            let observed = std::fs::read_to_string(directory.join("npm-observed")).unwrap();
+            let cwd = directory.join("session").canonicalize().unwrap();
+            assert_eq!(
+                observed,
+                format!(
+                    "{}|view|before|version|--json\n{}|view|after|version|--json\n",
+                    cwd.display(),
+                    cwd.display()
+                )
+            );
+            assert_current_agent_root(&world, directory).await;
+            let observed = std::fs::read_to_string(directory.join("npm-observed")).unwrap();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
+                    "/missing/maestro-command".into(),
+                )]));
+            let (failed, errors) =
+                super::driving(&world, world.mode.check_for_package_updates()).await;
+            assert!(errors.is_empty() && failed.is_empty());
+            assert_eq!(
+                std::fs::read_to_string(directory.join("npm-observed")).unwrap(),
+                observed
+            );
+        });
+    });
+}
+
+/// Settings handed to the real input hook after the mode has been constructed.
+type InputSettings = std::rc::Rc<
+    std::cell::RefCell<Option<std::rc::Rc<std::cell::RefCell<maestro_app::SettingsManager>>>>,
+>;
+
+/// An actual input hook that replaces the manager's configured source.
+fn changing_packages(slot: &InputSettings) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+    let slot = slot.clone();
+    std::rc::Rc::new(move |api| {
+        let slot = slot.clone();
+        let handler: maestro_app::ExtensionHandler<
+            maestro_app::InputEvent,
+            maestro_app::InputEventResult,
+            maestro_app::Local,
+        > = std::rc::Rc::new(move |_, _| {
+            let settings = slot.borrow().as_ref().unwrap().clone();
+            settings
+                .borrow_mut()
+                .set_project_packages(vec![maestro_app::PackageSource::Source("npm:after".into())]);
+            Box::pin(async { Ok(Some(maestro_app::InputEventResult::Handled)) })
+        });
+        api.on::<maestro_app::InputEvent, maestro_app::InputEventResult>("input".into(), handler)
+            .unwrap();
+        Box::pin(async { Ok(()) })
+    })
+}
+
+#[test]
+fn startup_checks_snapshot_packages_before_input_hooks() {
+    const TEST: &str = "startup_checks_snapshot_packages_before_input_hooks";
+    super::isolated_case(TEST, "child", &[], |directory| {
+        super::on_tasks(async {
+            let slot = InputSettings::default();
+            let world = native_package_world_with(
+                directory,
+                Some(changing_packages(&slot)),
+                crate::InteractiveModeOptions {
+                    initial_message: Some("replace packages".into()),
+                    ..Default::default()
+                },
+                None,
+            );
+            *slot.borrow_mut() = Some(world.host.session().settings_manager().clone());
+            let mut run = Box::pin(world.mode.run());
+            assert!(poll(&mut run).is_none());
+            assert_eq!(
+                world
+                    .host
+                    .session()
+                    .settings_manager()
+                    .borrow()
+                    .get_project_settings()
+                    .0["packages"],
+                serde_json::json!(["npm:after"])
+            );
+            let ((), errors) = super::driving(&world, until_notice(&world, "- before")).await;
+            assert!(errors.is_empty());
+            drop(run);
+            let lazy = world.mode.check_for_package_updates();
+            world
+                .host
+                .session()
+                .prompt("same input hook", maestro_app::PromptOptions::default())
+                .await
+                .unwrap();
+            let (result, errors) = super::driving(&world, lazy).await;
+            assert!(errors.is_empty());
+            assert_eq!(result, ["after"]);
+        });
+    });
+}
+
+/// Waits for a producer's visible transcript result while the shared task driver runs.
+async fn until_notice(world: &World, text: &str) {
+    while !world
+        .mode
+        .chat_container
+        .render(120)
+        .iter()
+        .any(|row| row.contains(text))
+    {
+        tokio::task::yield_now().await;
+    }
+}
+
+/// Native children acknowledge their exact operands before waiting for a permit.
+const GATED_TMUX: &str = r"#!/usr/bin/python3
+import json, os, signal, sys
+assert sys.argv[1:3] == ['show', '-gv'] and len(sys.argv) == 4
+name = sys.argv[3]
+assert name in ['extended-keys', 'extended-keys-format']
+root = os.environ['MAESTRO_CODING_AGENT_DIR']
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+with open(os.path.join(root, name + '.ready'), 'w') as ready:
+    json.dump({'argv':sys.argv[1:], 'cwd':os.getcwd(), 'inherited':os.environ.get('MAESTRO_NOTICE_INHERITED')}, ready)
+with open(os.path.join(root, name + '.permit')) as permit:
+    assert permit.readline() == 'go\n'
+sys.stdout.write('off\n' if name == 'extended-keys' else 'xterm\n')
+sys.stdout.flush()
+";
+
+/// One joined peer for native readiness and independently released queries.
+struct NativeGates {
+    /// The finite query names whose descriptors this peer owns.
+    names: &'static [&'static str],
+    /// Every query's readiness transcript.
+    ready: Option<tokio::sync::oneshot::Receiver<Vec<serde_json::Value>>>,
+    /// Query permits, followed by the final cleanup message.
+    release: std::sync::mpsc::Sender<Option<String>>,
+    /// The peer that owns its FIFO descriptors through capture completion.
+    worker: std::thread::JoinHandle<()>,
+}
+
+impl NativeGates {
+    /// Creates both query pipes before any native child starts.
+    fn new(root: &std::path::Path) -> Self {
+        Self::with_names(root, &["extended-keys", "extended-keys-format"])
+    }
+
+    /// Creates the finite named producer gates before any child starts.
+    fn with_names(root: &std::path::Path, names: &'static [&'static str]) -> Self {
+        let paths: Vec<_> = names
+            .iter()
+            .flat_map(|name| {
+                [
+                    root.join(format!("{name}.ready")),
+                    root.join(format!("{name}.permit")),
+                ]
+            })
+            .collect();
+        assert!(
+            std::process::Command::new("mkfifo")
+                .args(paths)
+                .status()
+                .unwrap()
+                .success()
+        );
+        let root = root.to_owned();
+        let (send, ready) = tokio::sync::oneshot::channel();
+        let (release, receive) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            use std::io::Write;
+            let observed = names
+                .iter()
+                .map(|name| {
+                    let file = std::fs::File::open(root.join(format!("{name}.ready"))).unwrap();
+                    serde_json::from_reader(file).unwrap()
+                })
+                .collect();
+            send.send(observed).unwrap();
+            let mut descriptors = Vec::new();
+            while let Some(name) = receive.recv().unwrap() {
+                let mut file = std::fs::OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(root.join(format!("{name}.permit")))
+                    .unwrap();
+                file.write_all(b"go\n").unwrap();
+                descriptors.push(file);
+            }
+        });
+        Self {
+            names,
+            ready: Some(ready),
+            release,
+            worker,
+        }
+    }
+
+    /// Requires both finite children to reach their blocking point first.
+    async fn ready(&mut self, root: &std::path::Path) {
+        let observed = self.ready.take().unwrap().await.unwrap();
+        for (name, row) in self.names.iter().zip(observed) {
+            let (argv, cwd) = if *name == "package" {
+                (
+                    serde_json::json!(["view", "before", "version", "--json"]),
+                    root.join("session"),
+                )
+            } else {
+                (serde_json::json!(["show", "-gv", name]), root.to_owned())
+            };
+            assert_eq!(row["argv"], argv);
+            assert_eq!(row["cwd"], cwd.canonicalize().unwrap().to_str().unwrap());
+            assert_eq!(row["inherited"], "retained");
+        }
+    }
+
+    /// Lets both producers finish, without waiting for a source deadline.
+    fn release(&self) {
+        for name in ["extended-keys", "extended-keys-format"] {
+            self.release.send(Some(name.into())).unwrap();
+        }
+    }
+
+    /// Closes the peer only after its native captures have been joined.
+    fn finish(self) {
+        self.release.send(None).unwrap();
+        self.worker.join().unwrap();
+    }
+}
+
+/// Runs every admitted native capture as a joined test-owned task.
+fn capture_tasks(
+    world: &World,
+) -> Vec<tokio::task::JoinHandle<Result<(), Box<dyn std::error::Error>>>> {
+    world
+        .runtime
+        .take_futures()
+        .into_iter()
+        .map(tokio::task::spawn_local)
+        .collect()
+}
+
+/// Joins all actual native capture work before dropping fixture descriptors.
+async fn finish_captures(
+    tasks: Vec<tokio::task::JoinHandle<Result<(), Box<dyn std::error::Error>>>>,
+) {
+    for task in tasks {
+        task.await.unwrap().unwrap();
+    }
+}
+
+#[test]
+fn tmux_probe_uses_both_options_concurrently() {
+    const TEST: &str = "tmux_probe_uses_both_options_concurrently";
+    super::isolated_case(
+        TEST,
+        "child",
+        &[("MAESTRO_NOTICE_INHERITED", "retained")],
+        |root| {
+            super::on_tasks(async {
+                install_command(root, "tmux", GATED_TMUX);
+                let mut gates = NativeGates::new(root);
+                let world = Setup::default().build(root);
+                world.runtime.set_environment("TMUX", "session");
+                let mut query = Box::pin(world.mode.check_tmux_keyboard_setup());
+                assert!(poll(&mut query).is_none());
+                let tasks = capture_tasks(&world);
+                gates.ready(root).await;
+                assert!(poll(&mut query).is_none());
+                gates.release();
+                assert!(
+                    query
+                        .await
+                        .unwrap()
+                        .starts_with("tmux extended-keys is off.")
+                );
+                finish_captures(tasks).await;
+                gates.finish();
+            });
+        },
+    );
+}
+
+#[test]
+fn tmux_query_failures_and_timeout_are_silent() {
+    const TEST: &str = "tmux_query_failures_and_timeout_are_silent";
+    if let Some(output) = super::isolated_output(
+        TEST,
+        "missing",
+        &[],
+        "trap '' XFSZ; PATH=/nonexistent/maestro-programs",
+        |root| {
+            super::on_tasks(async {
+                let world = Setup::default().build(root);
+                assert_eq!(world.mode.run_tmux_show("extended-keys").await, None);
+            });
+        },
+    ) {
+        assert!(output.status.success());
+    }
+    super::isolated_case(
+        TEST,
+        "deadline",
+        &[("MAESTRO_NOTICE_INHERITED", "retained")],
+        |root| {
+            super::on_tasks(async {
+                let world = Setup::default().build(root);
+                install_command(root, "tmux", GATED_TMUX);
+                let mut gates = NativeGates::new(root);
+                let mut keys = world.mode.run_tmux_show("extended-keys");
+                let mut format = world.mode.run_tmux_show("extended-keys-format");
+                let tasks = capture_tasks(&world);
+                gates.ready(root).await;
+                let weak = std::rc::Rc::downgrade(&world.mode);
+                drop(world.mode);
+                assert!(weak.upgrade().is_none());
+                tokio::time::pause();
+                assert!(
+                    world
+                        .runtime
+                        .advance_to(std::time::Duration::from_millis(1_999))
+                        .into_iter()
+                        .all(|result| result.is_ok())
+                );
+                assert!(poll(&mut keys).is_none() && poll(&mut format).is_none());
+                tokio::time::advance(std::time::Duration::from_millis(2_000)).await;
+                assert!(tasks.iter().all(|task| !task.is_finished()));
+                assert!(
+                    world
+                        .runtime
+                        .advance_to(std::time::Duration::from_millis(2_000))
+                        .into_iter()
+                        .all(|result| result.is_ok())
+                );
+                assert_eq!(keys.await, None);
+                assert_eq!(format.await, None);
+                gates.release();
+                finish_captures(tasks).await;
+                gates.finish();
+            });
+        },
+    );
+}
+
+#[test]
+fn tmux_capture_uses_raw_status_and_two_second_settlement() {
+    const TEST: &str = "tmux_capture_uses_raw_status_and_two_second_settlement";
+    let case = serde_json::json!({"ext":{"text":"off\n","signal":true},"format":{"text":"xterm\n","code":0}}).to_string();
+    super::isolated_case(TEST, "signal", &[("MAESTRO_TMUX_CASE", &case)], |root| {
+        super::on_tasks(async {
+            install_command(root, "tmux", TMUX_SCRIPT);
+            let world = Setup::default().build(root);
+            let query = world.mode.run_tmux_show("extended-keys");
+            let tasks = capture_tasks(&world);
+            assert_eq!(query.await, None);
+            finish_captures(tasks).await;
+            let wrong = maestro_app::exec_command(
+                "tmux",
+                &["show".into(), "-gv".into(), "extended-keys".into()],
+                root.to_str().unwrap(),
+                maestro_app::ExecOptions::default(),
+            )
+            .await
+            .unwrap();
+            assert_eq!((wrong.code, wrong.killed), (0, false));
+            assert_eq!(wrong.stdout, "off\n");
+        });
+    });
+}
+
+#[test]
+fn notice_background_work_releases_mode_after_completion() {
+    const TEST: &str = "notice_background_work_releases_mode_after_completion";
+    super::isolated_case(TEST, "child", &[], |root| {
+        super::on_tasks(async {
+            let release = std::sync::Arc::new(tokio::sync::Notify::new());
+            let fetch = held_release_fetch(release.clone());
+            let world = Setup {
+                options: crate::InteractiveModeOptions {
+                    service_origin: Some("https://service.invalid".into()),
+                    fetch: Some(fetch),
+                    ..Default::default()
+                },
+                configure: Box::new(|settings| settings.set_enable_install_telemetry(false)),
+                ..Setup::default()
+            }
+            .build(root);
+            let operations = world.mode.native_package_operations();
+            let weak = std::rc::Rc::downgrade(&world.mode);
+            let mut run = Box::pin(world.mode.run());
+            assert!(poll(&mut run).is_none());
+            let tasks = capture_tasks(&world);
+            drop(run);
+            drop(world.mode);
+            assert!(weak.upgrade().is_some());
+            release.notify_one();
+            finish_captures(tasks).await;
+            assert!(weak.upgrade().is_none());
+            assert_eq!(
+                maestro_app::PackageOperations::spawn(&operations, Box::pin(async {}))
+                    .unwrap_err()
+                    .to_string(),
+                "package runtime is no longer available"
+            );
+        });
+    });
+}
+
+#[test]
+fn notice_traversals_consume_each_input_once() {
+    const TEST: &str = "notice_traversals_consume_each_input_once";
+    isolated_package(TEST, |root, _| {
+        for count in [64, 128, 256] {
+            let entries: Vec<_> = (0..count)
+                .map(|index| maestro_app::ChangelogEntry {
+                    major: 1.0,
+                    minor: 0.0,
+                    patch: 0.0,
+                    content: format!("entry-{index}"),
+                })
+                .collect();
+            let visits = std::cell::Cell::new(0);
+            let joined = super::super::notices::join_changelog(
+                entries.iter().inspect(|_| visits.set(visits.get() + 1)),
+            );
+            assert_eq!(
+                joined.split("\n\n").collect::<Vec<_>>(),
+                entries
+                    .iter()
+                    .map(|entry| entry.content.as_str())
+                    .collect::<Vec<_>>()
+            );
+            assert!(visits.get() <= count);
+            assert!(rescanning_visits(&entries) > count);
+            let names: Vec<_> = entries.into_iter().map(|entry| entry.content).collect();
+            let world = Setup::default().build(root);
+            world.mode.show_package_update_notification(&names).unwrap();
+            let rows: Vec<_> = world
+                .mode
+                .chat_container
+                .render(120)
+                .into_iter()
+                .map(|row| maestro_app::strip_ansi(&row).unwrap().trim().to_owned())
+                .filter(|row| row.starts_with("- "))
+                .collect();
+            assert_eq!(
+                rows.iter()
+                    .map(|row| row.strip_prefix("- ").unwrap())
+                    .collect::<Vec<_>>(),
+                names
+            );
+        }
+    });
+}
+
+#[test]
+fn startup_offline_selection_reaches_each_existing_operation() {
+    const TEST: &str = "startup_offline_selection_reaches_each_existing_operation";
+    let case =
+        serde_json::json!({"ext":{"text":"off\n","code":0},"format":{"text":"xterm\n","code":0}})
+            .to_string();
+    for (index, offline) in [None, Some(false), Some(true)].into_iter().enumerate() {
+        for skip in [false, true] {
+            super::isolated_case(
+                TEST,
+                &format!("{index}-{skip}"),
+                &[
+                    ("MAESTRO_OFFLINE", "1"),
+                    ("MAESTRO_SKIP_VERSION_CHECK", if skip { "1" } else { "" }),
+                    ("MAESTRO_TMUX_CASE", &case),
+                ],
+                |root| {
+                    super::on_tasks(offline_consumers(root, offline, skip));
+                },
+            );
+        }
+    }
+}
+
+/// Observes explicit offline forwarding at the actual request and native command consumers.
+async fn offline_consumers(root: &std::path::Path, offline: Option<bool>, skip: bool) {
+    install_command(root, "tmux", TMUX_SCRIPT);
+    let (fetch, requests) = reporting_transport();
+    let world = native_package_world_with(
+        root,
+        None,
+        crate::InteractiveModeOptions {
+            service_origin: Some("https://service.invalid".into()),
+            fetch: Some(fetch),
+            ..Default::default()
+        },
+        offline,
+    );
+    world.runtime.set_environment("MAESTRO_OFFLINE", "1");
+    world.runtime.set_environment("TMUX", "session");
+    let mut run = Box::pin(world.mode.run());
+    assert!(poll(&mut run).is_none());
+    let online = offline == Some(false);
+    let mut expected = Vec::new();
+    if online {
+        expected.push(format!(
+            "https://service.invalid/api/report-install?version={VERSION}"
+        ));
+    }
+    if online && !skip {
+        expected.push("https://service.invalid/api/latest-version".into());
+    }
+    assert_eq!(*requests.lock().unwrap(), expected);
+    let ((), errors) = super::driving(&world, async {
+        if online {
+            until_notice(&world, "- before").await;
+        }
+        until_notice(&world, "tmux extended-keys is off.").await;
+    })
+    .await;
+    assert!(errors.is_empty());
+    assert_eq!(root.join("npm-observed").exists(), online);
+    drop(run);
+}
+
+/// Holds the real release request at response headers until the caller releases it.
+fn held_release_fetch(release: std::sync::Arc<tokio::sync::Notify>) -> maestro_app::Fetch {
+    std::sync::Arc::new(move |_| {
+        let release = release.clone();
+        Box::pin(async move {
+            release.notified().await;
+            Err(maestro_app::FetchError::Timeout)
+        })
+    })
+}
+
+/// A deliberately rescanning control, counted at the same iterator boundary.
+fn rescanning_visits(entries: &[maestro_app::ChangelogEntry]) -> usize {
+    let visits = std::cell::Cell::new(0);
+    for end in 1..=entries.len() {
+        for _ in entries.iter().take(end) {
+            visits.set(visits.get() + 1);
+        }
+    }
+    visits.get()
+}
+
+/// One finite native package probe at its actual argument and working-directory boundary.
+const GATED_PACKAGE: &str = r"#!/usr/bin/python3
+import json, os, sys
+assert sys.argv[1:] == ['view', 'before', 'version', '--json']
+root = os.environ['MAESTRO_CODING_AGENT_DIR']
+with open(os.path.join(root, 'package.ready'), 'w') as ready:
+    json.dump({'argv':sys.argv[1:], 'cwd':os.getcwd(), 'inherited':os.environ.get('MAESTRO_NOTICE_INHERITED')}, ready)
+with open(os.path.join(root, 'package.permit')) as permit:
+    assert permit.readline() == 'go\n'
+sys.stdout.write(json.dumps('2'))
+";
+
+/// A controlled successful release over the existing finite-stream fixture pattern.
+fn successful_release(
+    release: std::sync::Arc<tokio::sync::Notify>,
+) -> (maestro_app::Fetch, Requests) {
+    let requests = Requests::default();
+    let seen = requests.clone();
+    let fetch: maestro_app::Fetch = std::sync::Arc::new(move |request| {
+        seen.lock().unwrap().push(request.url);
+        let release = release.clone();
+        Box::pin(async move {
+            release.notified().await;
+            Ok(maestro_app::HttpResponse {
+                status: 200,
+                status_text: "OK".into(),
+                headers: std::collections::BTreeMap::default(),
+                body: Box::pin(futures_util::stream::iter([Ok(
+                    b"{\"version\":\"9.8.7\"}".to_vec()
+                )])),
+            })
+        })
+    });
+    (fetch, requests)
+}
+
+/// Checks each producer's appended transcript slice in its completion order.
+async fn completion_order(root: &std::path::Path, order: [usize; 3]) {
+    install_command(root, "tmux", GATED_TMUX);
+    install_command(root, "npm", GATED_PACKAGE);
+    let mut gates =
+        NativeGates::with_names(root, &["package", "extended-keys", "extended-keys-format"]);
+    let release = std::sync::Arc::new(tokio::sync::Notify::new());
+    let (fetch, requests) = successful_release(release.clone());
+    let world = completion_world(root, fetch);
+    let mut run = Box::pin(world.mode.run());
+    assert!(poll(&mut run).is_none());
+    assert!(world.mode.on_input_callback.borrow().is_some());
+    assert_eq!(
+        *requests.lock().unwrap(),
+        ["https://service.invalid/api/latest-version"]
+    );
+    let tasks = capture_tasks(&world);
+    gates.ready(root).await;
+    let mut previous = world.mode.chat_container.render(120).len();
+    for producer in order {
+        match producer {
+            0 => release.notify_one(),
+            1 => gates.release.send(Some("package".into())).unwrap(),
+            _ => gates.release(),
+        }
+        let text = [
+            "New version 9.8.7 is available.",
+            "- before",
+            "tmux extended-keys is off.",
+        ][producer];
+        until_notice(&world, text).await;
+        let rows = world.mode.chat_container.render(120);
+        let current = &rows[previous..];
+        assert!(current.iter().any(|row| row.contains(text)));
+        previous = rows.len();
+    }
+    finish_captures(tasks).await;
+    gates.finish();
+    drop(run);
+}
+
+/// Builds the actual configured sources and modes used by completion permutations.
+fn completion_world(root: &std::path::Path, fetch: maestro_app::Fetch) -> World {
+    let world = native_package_world_with(
+        root,
+        None,
+        crate::InteractiveModeOptions {
+            service_origin: Some("https://service.invalid".into()),
+            fetch: Some(fetch),
+            ..Default::default()
+        },
+        None,
+    );
+    world
+        .host
+        .session()
+        .settings_manager()
+        .borrow_mut()
+        .set_enable_install_telemetry(false);
+    world
+        .host
+        .session()
+        .settings_manager()
+        .borrow_mut()
+        .set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
+            "npm".into(),
+        )]));
+    world.runtime.set_environment("TMUX", "session");
+    world
+}
+
+/// Native metadata proves the fresh manager uses the ambient agent root, not services' root.
+async fn assert_current_agent_root(world: &World, root: &std::path::Path) {
+    let script = r"#!/usr/bin/python3
+import json, os, sys
+root = os.environ['MAESTRO_CODING_AGENT_DIR']
+with open(os.path.join(root, 'git-observed'), 'a') as record:
+    record.write(json.dumps({'cwd':os.getcwd(), 'argv':sys.argv[1:], 'prompt':os.environ.get('GIT_TERMINAL_PROMPT')}) + '\n')
+if sys.argv[1:] == ['rev-parse', 'HEAD']:
+    print('a' * 40)
+elif sys.argv[1:] == ['rev-parse', '--abbrev-ref', '@{upstream}']:
+    print('origin/main')
+else:
+    assert sys.argv[1:] == ['ls-remote', 'origin', 'refs/heads/main']
+    print('b' * 40 + '\trefs/heads/main')
+";
+    install_command(root, "git", script);
+    let checkout = root.join("git/example.test/team/repo");
+    std::fs::create_dir_all(&checkout).unwrap();
+    let session = world.host.session();
+    session
+        .settings_manager()
+        .borrow_mut()
+        .set_packages(vec![maestro_app::PackageSource::Source(
+            "https://example.test/team/repo".into(),
+        )]);
+    assert_ne!(world.host.services().agent_dir, root.to_str().unwrap());
+    let (result, errors) = super::driving(world, world.mode.check_for_package_updates()).await;
+    assert!(errors.is_empty());
+    assert_eq!(result, ["after", "example.test/team/repo"]);
+    let rows: Vec<serde_json::Value> = std::fs::read_to_string(root.join("git-observed"))
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert_eq!(rows.len(), 3);
+    assert!(
+        rows.iter()
+            .all(|row| row["cwd"] == checkout.canonicalize().unwrap().to_str().unwrap())
+    );
+    assert_eq!(
+        rows[2]["argv"],
+        serde_json::json!(["ls-remote", "origin", "refs/heads/main"])
+    );
+    assert_eq!(rows[2]["prompt"], "0");
+    session
+        .settings_manager()
+        .borrow_mut()
+        .set_packages(Vec::new());
+}
+
+/// An already-ready release still follows the synchronous startup warning.
+async fn ready_completion_order(root: &std::path::Path) {
+    ready_prefix_root(root).await;
+    let release = std::sync::Arc::new(tokio::sync::Notify::new());
+    release.notify_one();
+    let (fetch, _) = successful_release(release);
+    let world = Setup {
+        options: crate::InteractiveModeOptions {
+            service_origin: Some("https://service.invalid".into()),
+            fetch: Some(fetch),
+            model_fallback_message: Some("SYNC_WARNING".into()),
+            ..Default::default()
+        },
+        configure: Box::new(|settings| settings.set_enable_install_telemetry(false)),
+        ..Setup::default()
+    }
+    .build(root);
+    let mut run = Box::pin(world.mode.run());
+    assert!(poll(&mut run).is_none());
+    for work in world.runtime.take_futures() {
+        work.await.unwrap();
+    }
+    let rows = world.mode.chat_container.render(120);
+    let warning = rows
+        .iter()
+        .position(|row| row.contains("SYNC_WARNING"))
+        .unwrap();
+    let release = rows
+        .iter()
+        .position(|row| row.contains("New version 9.8.7 is available."))
+        .unwrap();
+    assert!(
+        warning < release,
+        "synchronous warning must precede ready release notification"
+    );
+    drop(run);
+}
+
+/// Distinguishes eager producer admission from deferred notification at their shared owner.
+async fn ready_prefix_root(root: &std::path::Path) {
+    let release = std::sync::Arc::new(tokio::sync::Notify::new());
+    release.notify_one();
+    let (fetch, requests) = successful_release(release);
+    let world = Setup {
+        options: crate::InteractiveModeOptions {
+            service_origin: Some("https://service.invalid".into()),
+            fetch: Some(fetch),
+            ..Default::default()
+        },
+        ..Setup::default()
+    }
+    .build(root);
+    world.mode.start_startup_checks();
+    assert_eq!(
+        *requests.lock().unwrap(),
+        ["https://service.invalid/api/latest-version"]
+    );
+    assert!(
+        world.mode.chat_container.render(120).is_empty(),
+        "eager producer must defer its notification"
+    );
+    for work in world.runtime.take_futures() {
+        work.await.unwrap();
+    }
+    assert!(
+        world
+            .mode
+            .chat_container
+            .render(120)
+            .iter()
+            .any(|row| row.contains("New version 9.8.7 is available."))
+    );
 }

@@ -68,3 +68,26 @@ version, the `maestro update` command and a link to the release history.
 package names, preserving their order and duplicates. Both methods accept empty
 values and request a frame. Borders follow later theme changes; the card text
 keeps the theme used when it was created.
+
+## Independent startup checks
+
+After initialization, `run` starts the release, package and terminal checks before
+startup warnings and prompts. Notifications run through the terminal's task host,
+so synchronous warnings precede even an already-ready result. The checks do not
+block prompt input. Results appear
+in completion order; absent results and failed requests add no card. Release checks
+and install reporting share the supplied origin and HTTP transport.
+
+Package checks build a fresh manager from the current session directory, the
+current agent directory and the session's settings handle. The startup offline
+selection reaches release checking, reporting and package checking. An omitted
+selection uses the owning operation's ambient policy. For the startup package
+wrapper, any nonempty `MAESTRO_OFFLINE` value skips all package observations,
+including `0`, `false` and a space, when the startup selection is omitted.
+
+Inside tmux, both keyboard options are queried concurrently. The queries keep
+native success distinct from signal termination and settle the notice after two
+seconds even when native capture cleanup is still pending. Unavailable queries
+stay silent. An extended-keys value other than `on` or `always` shows the setup
+warning; otherwise `extended-keys-format` equal to `xterm` shows the format warning.
+Maestro does not edit terminal configuration.

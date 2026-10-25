@@ -227,10 +227,12 @@ impl InteractiveMode {
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, binds the
+    /// Selects unseen release history before starting the terminal, builds the header,
+    /// adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission and the global debug key, starts
-    /// the terminal, lists the loaded resources with their diagnostics and replays the
-    /// session; theme changes then refresh the editor border, and theme and branch
+    /// the terminal, lists the loaded resources with their diagnostics, shows selected
+    /// history once and replays the session; theme changes then refresh the editor
+    /// border, and theme and branch
     /// changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.

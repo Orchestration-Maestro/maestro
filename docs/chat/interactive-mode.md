@@ -196,11 +196,11 @@ and `/copyx` reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
-`run` initializes the mode, shows the startup notices, sends the startup prompts and
-then keeps sending typed prompts. It never finishes on its own. It returns only an
+`run` initializes the mode and starts the [independent startup checks](startup.md#independent-startup-checks),
+then shows the startup warnings, sends the startup prompts and keeps sending typed prompts. It never finishes on its own. It returns only an
 initialization failure or a failure to show a notice.
 
-The startup notices come in this order, before any prompt:
+The synchronous startup warnings come in this order, before any prompt:
 
 - a warning `Migrated credentials to auth.json: ` followed by
   `migrated_providers` joined with `", "`, when the list is not empty. Names keep

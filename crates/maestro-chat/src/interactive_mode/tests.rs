@@ -428,6 +428,8 @@ pub(super) struct World {
 /// Builds the inputs of one mode, letting `configure` change settings and the theme
 /// selected while the loader's themes are read.
 pub(super) struct Setup {
+    /// The startup offline selection supplied by session services.
+    pub(super) offline: Option<bool>,
     /// The mode options.
     pub(super) options: InteractiveModeOptions,
     /// Changes the settings before construction.
@@ -472,6 +474,7 @@ pub(super) struct Setup {
 impl Default for Setup {
     fn default() -> Self {
         Self {
+            offline: None,
             options: InteractiveModeOptions::default(),
             configure: Box::new(|_| {}),
             select: None,
@@ -550,7 +553,7 @@ impl Setup {
             .session_history
             .as_ref()
             .map(|d| d.to_str().unwrap().to_owned());
-        let result = session::session_with_auth(
+        let mut result = session::session_with_auth(
             &cwd,
             self.auth,
             move |inner| {
@@ -560,6 +563,7 @@ impl Setup {
             },
             history.as_deref(),
         );
+        select_offline(&mut result, self.offline);
         let settings = Rc::clone(result.session.settings_manager());
         prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
@@ -589,6 +593,16 @@ impl Setup {
             host,
             loader,
         }
+    }
+}
+
+/// Applies an explicit startup selection before any runtime aliases the services.
+fn select_offline(
+    result: &mut maestro_app::CreateAgentSessionRuntimeResult,
+    offline: Option<bool>,
+) {
+    if let Some(offline) = offline {
+        Rc::get_mut(&mut result.services).unwrap().offline = Some(offline);
     }
 }
 
