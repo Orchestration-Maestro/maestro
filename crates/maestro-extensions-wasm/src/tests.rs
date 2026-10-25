@@ -88,6 +88,7 @@ pub(crate) mod shell_host;
 mod shutdown_example;
 mod stream_events;
 mod system_prompt_header_example;
+pub(crate) mod theme_host;
 mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;

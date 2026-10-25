@@ -249,6 +249,38 @@ pub trait Imports: Clone + 'static {
     type Callback: 'static;
     /// Independently retained theme owner.
     type Theme: 'static;
+    /// Reads the theme name.
+    fn theme_name(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Reads the theme file path.
+    fn theme_source_path(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Reads the theme provenance document.
+    fn theme_source_info(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Replaces the theme provenance document, or clears it.
+    fn theme_set_source_info(
+        &self,
+        theme: &Self::Theme,
+        source: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Applies a foreground color.
+    fn theme_fg(&self, theme: &Self::Theme, color: &str, text: &str) -> ExtensionResult<String>;
+    /// Applies a background color.
+    fn theme_bg(&self, theme: &Self::Theme, color: &str, text: &str) -> ExtensionResult<String>;
+    /// Applies bold styling.
+    fn theme_bold(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies italic styling.
+    fn theme_italic(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies underline styling.
+    fn theme_underline(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies inverse styling.
+    fn theme_inverse(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies strikethrough styling.
+    fn theme_strikethrough(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Reads a foreground escape.
+    fn theme_get_fg_ansi(&self, theme: &Self::Theme, color: &str) -> ExtensionResult<String>;
+    /// Reads a background escape.
+    fn theme_get_bg_ansi(&self, theme: &Self::Theme, color: &str) -> ExtensionResult<String>;
+    /// Reads the color depth.
+    fn theme_get_color_mode(&self, theme: &Self::Theme) -> ExtensionResult<crate::ColorMode>;
     /// Registers a renderer against its host callback identity.
     fn register_message_renderer(
         &self,

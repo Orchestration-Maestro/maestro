@@ -882,4 +882,18 @@ input defaults to a no-op and the release preference defaults to false. Renderin
 the supplied width; successful rendering returns the author's ordered lines. Returned errors remain errors.
 
 Cloned themes retain the supplied host owner independently of renderer registration.
-Theme is currently opaque: styling methods and widget composition are not exposed here.
+Each `Theme` method sends one synchronous request to that owner. The owner keeps the palette
+and the style algorithms, so every call reads its current state:
+
+| Method | Answer |
+| --- | --- |
+| `name`, `source_path` | The theme name and file path, or `None`. |
+| `source_info`, `set_source_info` | Reads, replaces or clears the theme's `SourceInfo`. |
+| `fg`, `bg` | Text wrapped in a named foreground or background color that restores only that color. |
+| `bold`, `italic`, `underline`, `inverse`, `strikethrough` | Text with that one style and its own closing escape. |
+| `get_fg_ansi`, `get_bg_ansi` | The escape that selects a named color. |
+| `get_color_mode` | The `ColorMode`: `Truecolor` or `Color256`. |
+
+The styled text is the owner's bytes, unchanged. An unknown color name is an error carrying the
+owner's message. A theme kept past its renderer call observes later theme changes and provenance
+edits made through any of its clones. Widget composition is not exposed here.

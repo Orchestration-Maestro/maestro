@@ -1,18 +1,7 @@
 //! Renderer invocation with owned themes and returned components.
 use super::event_bus::Emitter;
 use super::{Exports, Imports, callbacks};
-use crate::{
-    CallbackEmitter, Component, ExtensionResult, MessageRenderOptions, MessageRenderer, Theme,
-    ThemePort,
-};
-use std::rc::Rc;
-
-/// Owned host theme kept by the facade.
-struct RetainedTheme<I: Imports> {
-    /// Retained host resource.
-    _handle: I::Theme,
-}
-impl<I: Imports> ThemePort for RetainedTheme<I> {}
+use crate::{CallbackEmitter, Component, ExtensionResult, MessageRenderOptions, MessageRenderer};
 
 /// Inputs lent or transferred to a renderer invocation.
 pub(crate) struct RenderRequest<'a, I: Imports> {
@@ -34,9 +23,7 @@ impl<I: Imports> Exports<I> {
     ) -> ExtensionResult<Option<Component>> {
         let renderer = callbacks::find::<MessageRenderer>(handler)?;
         let message = super::session::decode(request.message)?;
-        let theme = Theme::new(Rc::new(RetainedTheme::<I> {
-            _handle: request.theme,
-        }));
+        let theme = super::theme::theme(self.imports.clone(), request.theme);
         with_emitter(&self.imports, request.emitter, |emitter| {
             renderer(
                 message,
