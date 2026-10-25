@@ -38,6 +38,8 @@ pub(super) struct View {
     focus: FocusFlag,
     /// The last width the view rendered at.
     width: Cell<Option<usize>>,
+    /// Raw input delivered by the retained terminal host.
+    input: RefCell<Vec<String>>,
 }
 impl Focusable for View {
     fn focus_flag(&self) -> &FocusFlag {
@@ -45,7 +47,9 @@ impl Focusable for View {
     }
 }
 impl InputHandler for View {
-    fn handle_input(&self, _data: &str) {}
+    fn handle_input(&self, data: &str) {
+        self.input.borrow_mut().push(data.to_owned());
+    }
 }
 impl Component for View {
     fn render(&self, width: usize) -> Vec<String> {
@@ -202,6 +206,7 @@ impl Views {
             label,
             focus: FocusFlag::default(),
             width: Cell::new(None),
+            input: RefCell::default(),
         });
         self.built.borrow_mut().push(Rc::downgrade(&view));
         let views = self.clone();
@@ -669,20 +674,33 @@ fn custom_overlay_width_uses_explicit_options_before_component_fallback() {
                 views.complete(index, "done").unwrap();
                 result.await.unwrap();
             }
-            for (options, before) in [
-                (OverlayOptions::default(), 80),
-                (width_options(21).take(), 21),
+            let empty = Rc::new(RefCell::new(OverlayOptions::default()));
+            for (source, options, before, after) in [
+                (OverlayOptionsSource::Static(empty.clone()), empty, 80, 31),
+                (
+                    OverlayOptionsSource::Static(views.options.clone()),
+                    views.options.clone(),
+                    21,
+                    31,
+                ),
+                (
+                    OverlayOptionsSource::Resolver(bound.resolver.clone()),
+                    views.options.clone(),
+                    31,
+                    41,
+                ),
             ] {
-                let options = Rc::new(RefCell::new(options));
-                let source = OverlayOptionsSource::Static(options.clone());
                 let index = views.done.borrow().len();
                 let result = ui.custom(bound.views[3].clone(), Some(overlay(Some(source), None)));
                 world.runtime.settle().unwrap();
                 assert_eq!(views.view(index).width.get(), Some(before));
-                options.borrow_mut().width = Some(SizeValue::Cells(31));
+                options.borrow_mut().width = Some(SizeValue::Cells(after));
                 world.mode.ui.request_render(false);
                 world.runtime.settle().unwrap();
-                assert_eq!(views.view(index).width.get(), Some(31));
+                assert_eq!(
+                    views.view(index).width.get(),
+                    Some(usize::try_from(after).unwrap())
+                );
                 views.complete(index, "done").unwrap();
                 result.await.unwrap();
             }
@@ -744,9 +762,8 @@ fn custom_view_observer_drop_keeps_admitted_work_alive() {
             views.release(&world);
             let view = views.view(0);
             assert!(view.focus.get());
-            let shown = world.mode.editor_container.children().borrow()[0].clone();
-            shown.input_handler().unwrap().handle_input("x");
-            drop(shown);
+            world.terminal.send_input("x");
+            assert_eq!(*view.input.borrow(), ["x"]);
             views.complete(0, "first").unwrap();
             assert!(restored(&world, "saved"));
             assert_eq!(*views.trace.borrow(), ["CUSTOM:dispose"]);
