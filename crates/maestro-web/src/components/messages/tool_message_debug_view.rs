@@ -10,6 +10,10 @@ use crate::{
 };
 use std::rc::Rc;
 
+/// Native page debug listings.
+#[doc(hidden)]
+pub mod dom;
+
 /// Retained call and result listings, independent of result-payload presence.
 pub struct ToolMessageDebugView {
     /// Original optional call arguments; absence displays empty literal code.

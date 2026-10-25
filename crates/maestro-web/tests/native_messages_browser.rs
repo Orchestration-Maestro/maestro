@@ -8,6 +8,74 @@ use maestro_web::{components::messages::dom::UserMessage, dom::DomContent as _};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
+mod rows;
+
+/// Tool rows pass original arguments and result envelopes to the selected renderer, let an abort
+/// replace the result and end streaming, and card only default content.
+#[wasm_bindgen]
+pub fn tool_dom_preserves_original_operands_abort_and_card_choice(
+    import_module: &js_sys::Function,
+) {
+    let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
+    let fixture = rows::fixture();
+    rows::recorded_combinations(&view, &fixture);
+    rows::selection_and_card(&view, &fixture);
+}
+
+/// Debug listings replay every recorded locale, details, value and output case literally.
+#[wasm_bindgen]
+pub fn debug_dom_keeps_strict_pretty_missing_null_and_literal_code(
+    import_module: &js_sys::Function,
+) {
+    let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
+    let fixture = rows::fixture();
+    rows::debug_cases(&view, &fixture);
+    rows::pretty_and_output_cases(&view, &fixture);
+}
+
+/// Every delivered row keeps its containing root through updates and reconnection, keeps its last
+/// published content when a candidate fails and releases its children when dropped.
+#[wasm_bindgen]
+pub async fn message_dom_reconnect_update_and_drop_keep_independent_roots(
+    import_module: &js_sys::Function,
+) {
+    let view = view();
+    let _elements = crate::contributions_support::host(&view, import_module);
+    let page = crate::contributions_support::page_module(import_module).await;
+    let fixture = rows::fixture();
+    rows::tool_row_lifecycle(&view, &fixture, &page).await;
+    rows::debug_row_lifecycle(&view);
+    rows::abort_row(&view, &fixture);
+    user_row_lifecycle(&view);
+}
+
+/// A user row keeps its root and last text when its required message goes missing.
+fn user_row_lifecycle(view: &maestro_web::dom::DomView) {
+    let mut row = UserMessage::<NoCustomMessages> {
+        message: Some(
+            serde_json::from_value(
+                serde_json::json!({"role":"user", "content":"kept text", "timestamp":0}),
+            )
+            .unwrap(),
+        ),
+    };
+    let root = row.mount(view).unwrap();
+    body().append_child(&root.node).unwrap();
+    let node: &Element = root.node.unchecked_ref();
+    node.remove();
+    body().append_child(&root.node).unwrap();
+    row.update(&root, view).unwrap();
+    assert_eq!(node.text_content().unwrap().trim(), "kept text");
+    row.message = None;
+    assert!(row.update(&root, view).is_err());
+    assert_eq!(node.text_content().unwrap().trim(), "kept text");
+    let other = UserMessage::<NoCustomMessages>::default();
+    assert!(other.mount(view).is_err());
+    node.remove();
+}
+
 /// Source-derived user selection with an open original input record.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -1,9 +1,17 @@
 //! Call-scoped dispatch through a retained tool row.
 use super::color;
-use crate::tools::types::{
-    ToolContentOutput, ToolParams, ToolRenderState, ToolRenderView, ToolUiError,
+use crate::tools::{
+    ContentKind,
+    types::{
+        ToolContent, ToolContentOutput, ToolRenderResult, ToolRenderState, ToolRenderView,
+        ToolUiError,
+    },
 };
 use maestro_app::{ToolCall, ToolResultMessage};
+
+/// Native page tool rows.
+#[doc(hidden)]
+pub mod dom;
 
 /// Borrow one tool invocation without narrowing its native result details.
 pub struct ToolMessageProps<'a, D = serde_json::Value> {
@@ -59,41 +67,7 @@ impl ToolMessage {
         view: ToolRenderView<'_>,
         overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<egui::Response, ToolUiError> {
-        let aborted = if props.aborted {
-            #[cfg(target_arch = "wasm32")]
-            let timestamp = js_sys::Date::now();
-            #[cfg(not(target_arch = "wasm32"))]
-            let timestamp = epoch_milliseconds()?;
-            Some(ToolResultMessage {
-                tool_call_id: props.tool_call.id.clone(),
-                tool_name: props.tool_call.name.clone(),
-                content: Vec::new(),
-                details: None,
-                is_error: true,
-                timestamp,
-            })
-        } else {
-            None
-        };
-        let result = aborted.as_ref().or(props.result);
-        let name = props
-            .tool
-            .filter(|name| !name.is_empty())
-            .unwrap_or(&props.tool_call.name);
-        let streaming = !props.aborted && (props.is_streaming || props.pending);
-        // An object root borrows its inner map for existing map registrations; any other root
-        // borrows the whole value through the ordinary JSON route.
-        let rendered = match props.tool_call.arguments.as_object() {
-            Some(members) => {
-                crate::render_tool(name, Some(ToolParams::object(members)), result, streaming)?
-            }
-            None => crate::render_tool(
-                name,
-                Some(ToolParams::json(&props.tool_call.arguments)),
-                result,
-                streaming,
-            )?,
-        };
+        let rendered = dispatch::<D, Box<dyn ToolContent>>(props)?;
         if rendered.is_custom {
             return rendered
                 .render(ui, view, &mut self.retained)
@@ -118,6 +92,39 @@ impl ToolMessage {
         row.inner?;
         Ok(row.response)
     }
+}
+/// Dispatch one call to its selected renderer; an abort replaces any result and ends streaming.
+/// # Errors
+/// Returns reached dispatch or clock failures.
+fn dispatch<D: 'static, C: ContentKind>(
+    props: ToolMessageProps<'_, D>,
+) -> Result<ToolRenderResult<C>, ToolUiError> {
+    let aborted = if props.aborted {
+        #[cfg(target_arch = "wasm32")]
+        let timestamp = js_sys::Date::now();
+        #[cfg(not(target_arch = "wasm32"))]
+        let timestamp = epoch_milliseconds()?;
+        Some(ToolResultMessage {
+            tool_call_id: props.tool_call.id.clone(),
+            tool_name: props.tool_call.name.clone(),
+            content: Vec::new(),
+            details: None,
+            is_error: true,
+            timestamp,
+        })
+    } else {
+        None
+    };
+    let name = props
+        .tool
+        .filter(|name| !name.is_empty())
+        .unwrap_or(&props.tool_call.name);
+    crate::tools::render_call(
+        name,
+        &props.tool_call.arguments,
+        aborted.as_ref().or(props.result),
+        !props.aborted && (props.is_streaming || props.pending),
+    )
 }
 /// Observe whole wall-clock milliseconds on native targets when constructing an abort.
 #[cfg(not(target_arch = "wasm32"))]

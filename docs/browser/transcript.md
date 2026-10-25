@@ -10,6 +10,21 @@ attachment-bearing user branch emits tiles, in original order, retaining the
 original shared handles. Candidate children are prepared before replacing the
 contents of the containing root, so a failed preparation preserves its last content.
 
+`components::messages::dom::ToolMessage<D>` holds the original call and result
+envelope as shared handles. Mounting without a call returns an error. An empty or
+absent `tool` name selects the call's own name. An abort replaces any result with
+an error result for the same call ID and name, stamped with the current time, and
+ends streaming. The selected renderer receives the original argument object and
+result details. Only default content gets the ordinary card. A changed card
+choice publishes fully prepared content; a failed candidate keeps the last one.
+
+`components::messages::dom::ToolMessageDebugView` shows the call arguments as
+JSON and, when `has_result` is set, the joined text output and the details.
+Missing values show empty code, `null` stays `null`, JSON strings are parsed
+strictly and other text stays literal, never decoded as base64. Listings stay in
+place while the result stays shown. `components::messages::dom::AbortedMessage`
+shows the localized abort text.
+
 ## Retained message rows
 
 `UserMessage`, `AssistantMessage`, `ToolMessage`, `ToolMessageDebugView`,

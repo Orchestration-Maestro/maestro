@@ -37,11 +37,11 @@ fn pretty(value: &Value) -> Result<String, ToolUiError> {
     maestro_app::pretty_json(value).map_err(|error| ToolUiError::Presentation(error.to_string()))
 }
 /// One literal listing and its selected language.
-pub(in crate::tools) struct Listing {
+pub(crate) struct Listing {
     /// Original displayed and copied text.
-    pub(in crate::tools) code: String,
+    pub(crate) code: String,
     /// Explicit syntax label.
-    pub(in crate::tools) language: &'static str,
+    pub(crate) language: &'static str,
 }
 /// Branch-selected header and independently retained subsections.
 struct Prepared {

@@ -39,6 +39,33 @@ pub fn render_tool<P: 'static, D: 'static>(
 ) -> Result<ToolRenderResult, ToolUiError> {
     dispatch::<P, D, Box<dyn types::ToolContent>>(tool_name, params, result, is_streaming)
 }
+/// Route a model call's original arguments to the selected renderer.
+///
+/// An object root borrows its inner map for map registrations; any other root borrows the
+/// whole value through the ordinary JSON route.
+/// # Errors
+/// Returns an operand-type mismatch, decoder, formatter or custom renderer failure.
+pub(crate) fn render_call<D: 'static, C: ContentKind>(
+    tool_name: &str,
+    arguments: &serde_json::Value,
+    result: Option<&maestro_app::ToolResultMessage<D>>,
+    is_streaming: bool,
+) -> Result<ToolRenderResult<C>, ToolUiError> {
+    match arguments.as_object() {
+        Some(members) => dispatch(
+            tool_name,
+            Some(ToolParams::object(members)),
+            result,
+            is_streaming,
+        ),
+        None => dispatch(
+            tool_name,
+            Some(ToolParams::json(arguments)),
+            result,
+            is_streaming,
+        ),
+    }
+}
 /// Content representation selected by the shared dispatcher.
 ///
 /// The canvas implementation leaves with the canvas renderer family.
