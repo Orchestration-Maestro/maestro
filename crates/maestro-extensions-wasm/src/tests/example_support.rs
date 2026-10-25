@@ -5,11 +5,13 @@
     clippy::excessive_nesting
 )]
 
+use serde::Deserialize;
 use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::host::Harness;
 use super::host_family::guest::{ToolCapabilities, ToolInvocation};
+use super::observed::Observed;
 use crate::component_adapter::{Exports, release};
 use crate::loader::Extension;
 
@@ -31,10 +33,89 @@ pub async fn registered<E: Extension>(
     Ok((host, key, exports))
 }
 
+/// The registered command a corpus records: its name, description and whether it has argument
+/// completions.
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Command {
+    /// The command name.
+    pub name: String,
+    /// The command description.
+    pub description: String,
+    /// Whether the factory registers argument completions.
+    pub completions: bool,
+}
+
+/// Asserts the host received exactly the recorded command.
+pub fn assert_registered_command(observed: &Observed, command: &Command) {
+    assert_eq!(
+        observed.registrations.commands,
+        [(
+            command.name.clone(),
+            Some(command.description.clone()),
+            command.completions
+        )],
+        "the registered command"
+    );
+}
+
+/// One effect a shipped example asked the host for.
+#[derive(Debug, PartialEq)]
+pub enum Observation {
+    /// A notification request, with the message and severity it carries.
+    Notify {
+        /// The message text.
+        message: String,
+        /// The severity, when the request names one.
+        kind: Option<String>,
+    },
+    /// An admitted user-message delivery, with the content and options it carries.
+    Delivery {
+        /// The delivered content.
+        content: Option<Value>,
+        /// The delivery options, absent when the request carries none.
+        options: Option<Value>,
+    },
+}
+
+/// The effects the host recorded in `lines`, in the order it recorded them.
+pub fn observations(lines: &[String]) -> Vec<Observation> {
+    lines
+        .iter()
+        .filter_map(|line| {
+            if let Some(rest) = line.strip_prefix("action sendUserMessage ") {
+                let arguments: [Value; 2] = serde_json::from_str(rest).expect("delivery arguments");
+                return Some(Observation::Delivery {
+                    content: arguments[0].get("value").cloned(),
+                    options: arguments[1].get("value").cloned(),
+                });
+            }
+            let receipt = super::ui_host::receipt(line)?;
+            if receipt.method != "notify" {
+                return None;
+            }
+            Some(Observation::Notify {
+                message: receipt.operands[0]
+                    .as_str()
+                    .expect("a notification message")
+                    .to_owned(),
+                kind: receipt.operands[1].as_str().map(str::to_lowercase),
+            })
+        })
+        .collect()
+}
+
 /// Parses `text` and decodes the JSON document it carries at `member`.
 pub fn decoded(text: &str, member: &str) -> Value {
     let mut value: Value = serde_json::from_str(text).unwrap();
     value[member] = serde_json::from_str(value[member].as_str().unwrap()).unwrap();
+    value
+}
+
+/// Parses one registration record without the transport's declared-kinds member.
+pub fn registered_metadata(text: &str) -> Value {
+    let mut value: Value = serde_json::from_str(text).unwrap();
+    value.as_object_mut().unwrap().shift_remove("schemaKinds");
     value
 }
 

@@ -1,7 +1,7 @@
 //! Recording command operations shared by the command-context witnesses.
 #![cfg(test)]
 use maestro_extensions::{
-    ExtensionCommandContextActions,
+    CommandContextOperations, ExtensionCommandContextActions,
     types::{ForkOptions, NewSessionCommandOptions, SessionChangeResult, SwitchSessionOptions},
 };
 use maestro_session::session_manager::NavigateTreeOptions;
@@ -26,8 +26,8 @@ pub enum Call {
 #[derive(Default, Clone)]
 pub struct Recorder(pub Rc<RefCell<Vec<Call>>>);
 impl Recorder {
-    /// An action set that records synchronously and resolves to the supplied result.
-    pub fn actions(&self, cancelled: bool) -> ExtensionCommandContextActions {
+    /// Operations that record synchronously and resolve to the supplied result.
+    pub fn operations(&self, cancelled: bool) -> CommandContextOperations {
         let (wait, new, fork, nav, switch, reload) = (
             self.0.clone(),
             self.0.clone(),
@@ -36,7 +36,7 @@ impl Recorder {
             self.0.clone(),
             self.0.clone(),
         );
-        ExtensionCommandContextActions {
+        CommandContextOperations {
             wait_for_idle: Rc::new(move || {
                 wait.borrow_mut().push(Call::Wait);
                 Box::pin(async { Ok(()) })
@@ -62,6 +62,10 @@ impl Recorder {
                 Box::pin(async { Ok(()) })
             }),
         }
+    }
+    /// The same operations as a bound set.
+    pub fn actions(&self, cancelled: bool) -> ExtensionCommandContextActions {
+        ExtensionCommandContextActions::new(self.operations(cancelled))
     }
     /// Takes just the calls produced by the preceding invocation group.
     pub fn take(&self) -> Vec<Call> {

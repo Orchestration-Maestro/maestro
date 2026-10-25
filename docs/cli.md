@@ -2,9 +2,10 @@
 
 The `maestro-cli` library prepares the input of a command-line run: it turns
 authored arguments into retained input, prepares file and image attachments,
-assembles the first message, renders the available-model table and runs the
-configuration and session selectors through supplied presenters. It is a
-command-line frontend; every selector widget stays in `maestro-chat`.
+assembles the first message, renders the available-model table, selects what a
+run does before its frontend starts, and runs the configuration and session
+selectors through supplied presenters. It is a command-line frontend; every
+selector widget stays in `maestro-chat`.
 
 ## Arguments
 
@@ -52,11 +53,20 @@ notification ends the process after those effects.
 `input::selector::SelectorHost::native` supplies the native terminal frame
 writer. Before it presents, the session selector loads the configured
 keybindings and installs that manager, so the search field and the list dispatch
-the configured controls. The records a presentation exchanges with its factory
+the configured controls. `packages::handle_config_command` presents the
+configuration selector over the configured paths it resolved from the loaded
+settings. The records a presentation exchanges with its factory
 live in `maestro_app::presentation_data::input_selectors`; this library
 re-exports `ConfigSelectorOptions` from there and imports the rest from that
 application path, so the interactive frontend and this library name one owner.
 See [selectors](chat/selectors.md) for the widgets.
+
+## Print mode
+
+`run_print_mode` runs one session to completion over a caller-owned runtime and
+presents the result as its final text or as session event records. See [print
+mode](print.md) for the options, the exact output and the cleanup and error
+boundary.
 
 ## Account commands
 
@@ -65,3 +75,50 @@ over an ordered provider snapshot, a live resolver and a console the caller
 supplies. It keeps its own argument grammar and writes the caller-relative
 account file, not the session credential store. See
 [standalone account commands](model_login.md).
+
+## Startup
+
+`startup::main` selects what a run does before any frontend starts, in the
+order the authored arguments decide it. `bootstrap` picks the presentation mode
+from the parsed mode, the print request and the stdin kind; any run that is not
+the interactive frontend reserves standard output first. Parser diagnostics,
+settings failures and conflicting fork flags are written with their exact
+prefix and style, and each reporting step returns the status that ends the run
+when the problem is fatal. The session directory comes from the authored
+argument, from the environment expanded through the supplied home lookup, or
+from the stored setting, in that order.
+
+`sessions` resolves a session argument to a file, searching the current project
+before every project, and selects the operation the arguments name: an unsaved,
+forked, opened, resumed, continued or new session. An explicit fork copies the
+matched session into the current project without asking, wherever it was found;
+a session argument of another project is returned for confirmation instead of
+being opened in place. A missing session keeps the argument its message quotes.
+
+`options` selects the model from the authored pattern before the scoped
+default, the effort from the explicit level before the model shorthand and the
+scope, and the tool policy from the argument. A local resource path is resolved
+once against the original working directory; a package or URL source keeps its
+spelling.
+
+`inputs::read_piped_stdin` reads non-terminal input through EOF with replacement
+for malformed UTF-8, then removes authored whitespace at the edges.
+`prepare_initial_message` forwards file processing and image resizing to the
+existing file owner before consuming the first queued prompt. `prompt_confirm`
+flushes its question before reading an untrimmed answer; an unterminated answer
+at EOF supplies no decision. These operations accept caller-owned streams and
+file effects; the startup entry and executable wiring remain separate work.
+
+`presentation::prompt_for_missing_session_cwd` offers Continue and Cancel using
+an application-supplied selection component. It loads the theme and keybindings
+before constructing its frame writer, forwards saved cursor and clear-on-shrink
+policies, and returns the fallback directory only for Continue. Cancellation,
+repeated notifications and dropped operations share the existing selector's
+one-shot cleanup. It does not start a theme watch or bind session services.
+
+## Print mode
+
+`run_print_mode` runs one session to completion over a caller-owned runtime and
+presents the result as its final text or as session event records. See [print
+mode](print.md) for the options, the exact output and the cleanup and error
+boundary.

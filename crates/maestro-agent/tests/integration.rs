@@ -17,9 +17,11 @@ mod raw_loop_cases;
 mod raw_stream_contract;
 mod run_binding;
 mod run_configuration;
+mod schema_argument_routes;
 mod state_ownership;
 #[cfg(not(target_arch = "wasm32"))]
 mod support;
+mod tool_argument_roots;
 mod tool_callbacks;
 mod tool_detail_presence;
 mod tool_record_identity;

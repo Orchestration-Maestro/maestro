@@ -77,9 +77,6 @@ mod tests {
     /// Panics if rendering or a native observation fails.
     #[wasm_bindgen]
     pub fn thinking_rows_keep_disclosure_state_through_streaming() {
-        let _ = js(
-            "if (!document.getElementById('canvas')) { const c=document.createElement('canvas'); c.id='canvas'; c.width=800; c.height=600; document.body.appendChild(c); }",
-        );
         let mut surface = Surface::new();
         let host = surface.host();
         let mut row = ThinkingBlock::new(host.clone());

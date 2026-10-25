@@ -14,7 +14,7 @@ pub mod thinking_block;
 /// Sandbox runtime messaging.
 pub mod sandbox;
 
-pub(crate) mod download_button;
+pub mod download_button;
 /// Retained sandbox loading and document preparation.
 pub mod sandboxed_iframe;
 
@@ -31,6 +31,8 @@ pub mod markdown_block;
 
 /// Literal native console output with owned copy feedback.
 pub mod console_block;
+/// Native custom-provider summary and current actions.
+pub mod custom_provider_card;
 /// Retained preview/source selection.
 pub mod preview_code_toggle;
 

@@ -201,7 +201,7 @@ impl ExtensionCommandContext {
     /// The returned future yields the stale error or the bound operation's result.
     #[must_use]
     pub fn wait_for_idle(&self) -> ContextFuture<()> {
-        self.start(|actions| &actions.wait_for_idle, |wait| wait())
+        self.start(|actions| &actions.operations().wait_for_idle, |wait| wait())
     }
     /// Starts a new session.
     #[must_use]
@@ -209,7 +209,10 @@ impl ExtensionCommandContext {
         &self,
         options: Option<NewSessionCommandOptions>,
     ) -> ContextFuture<SessionChangeResult> {
-        self.start(|actions| &actions.new_session, |start| start(options))
+        self.start(
+            |actions| &actions.operations().new_session,
+            |start| start(options),
+        )
     }
     /// Forks the session from an entry.
     #[must_use]
@@ -218,7 +221,10 @@ impl ExtensionCommandContext {
         entry_id: String,
         options: Option<ForkOptions>,
     ) -> ContextFuture<SessionChangeResult> {
-        self.start(|actions| &actions.fork, |fork| fork(entry_id, options))
+        self.start(
+            |actions| &actions.operations().fork,
+            |fork| fork(entry_id, options),
+        )
     }
     /// Moves to another point of the session tree.
     #[must_use]
@@ -228,7 +234,7 @@ impl ExtensionCommandContext {
         options: Option<NavigateTreeOptions>,
     ) -> ContextFuture<SessionChangeResult> {
         self.start(
-            |actions| &actions.navigate_tree,
+            |actions| &actions.operations().navigate_tree,
             |navigate| navigate(target_id, options),
         )
     }
@@ -240,14 +246,14 @@ impl ExtensionCommandContext {
         options: Option<SwitchSessionOptions>,
     ) -> ContextFuture<SessionChangeResult> {
         self.start(
-            |actions| &actions.switch_session,
+            |actions| &actions.operations().switch_session,
             |switch| switch(session_path, options),
         )
     }
     /// Reloads extensions, skills, prompts and themes.
     #[must_use]
     pub fn reload(&self) -> ContextFuture<()> {
-        self.start(|actions| &actions.reload, |reload| reload())
+        self.start(|actions| &actions.operations().reload, |reload| reload())
     }
 }
 

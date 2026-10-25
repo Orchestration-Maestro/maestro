@@ -115,8 +115,11 @@ the options that built it become the base prompt that prompts restore.
 `set_session_name` records a `session_info` entry and announces the trimmed name,
 or no name when it is empty.
 
-`navigate_tree` does nothing when the target is already the leaf and refuses an
-unknown target with `Entry <id> not found`. Extensions handling
+Calling `navigate_tree` reads the target and starts the before-tree operation
+before the returned future is polled. Dropping even a never-polled result future
+leaves the move running; `abort_branch_summary` stops its summary. It does nothing
+when the target is already the leaf and refuses an unknown target with
+`Entry <id> not found`. Extensions handling
 `session_before_tree` receive the branch left behind and may cancel the move,
 supply the summary (used only when a summary was requested), or override the
 instructions and the label; a null override clears it. Otherwise, when a summary

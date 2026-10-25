@@ -2,7 +2,7 @@
 
 use super::InteractiveMode;
 use maestro_app::configuration::config::{APP_NAME, VERSION};
-use maestro_theme::{Theme, ThemeColor};
+use maestro_theme::{Theme, ThemeColor, ThemeError};
 use maestro_tui::{Component, EditorComponent, Spacer, Text};
 use std::{error::Error, rc::Rc};
 
@@ -21,7 +21,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the published theme's error colour.
-    pub fn show_error(&self, message: &str) -> Result<(), Box<dyn Error>> {
+    pub fn show_error(&self, message: &str) -> Result<(), ThemeError> {
         self.notice(&ThemeColor::Error, &format!("Error: {message}"))
     }
 
@@ -29,7 +29,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the published theme's warning colour.
-    pub fn show_warning(&self, message: &str) -> Result<(), Box<dyn Error>> {
+    pub fn show_warning(&self, message: &str) -> Result<(), ThemeError> {
         self.notice(&ThemeColor::Warning, &format!("Warning: {message}"))
     }
 
@@ -37,13 +37,18 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the published theme's colour.
-    fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), Box<dyn Error>> {
-        let text = self.themes.theme().get()?.fg(color, text)?;
+    pub(super) fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), ThemeError> {
+        self.add_text(self.themes.theme().get()?.fg(color, text)?, 0);
+        Ok(())
+    }
+
+    /// Appends a spacer and one text, padded by one column and `padding_y` rows, then
+    /// schedules a frame.
+    pub(super) fn add_text(&self, text: String, padding_y: usize) {
         self.chat_container.add_child(Rc::new(Spacer::new(1)));
         self.chat_container
-            .add_child(Rc::new(Text::new(text, 1, 0, None)));
+            .add_child(Rc::new(Text::new(text, 1, padding_y, None)));
         self.ui.request_render(false);
-        Ok(())
     }
 
     /// Adds the startup help to the header container: nothing when startup is quiet
@@ -144,7 +149,7 @@ fn expanded_instructions(
 }
 
 /// Builds one rendering of an expandable text when it is selected.
-pub(super) type TextFactory = Box<dyn Fn() -> Result<String, Box<dyn Error>>>;
+pub(super) type TextFactory = Box<dyn Fn() -> Result<String, ThemeError>>;
 
 /// One text with a collapsed and an expanded rendering, each built when selected.
 pub(super) struct ExpandableText {
@@ -167,7 +172,7 @@ impl ExpandableText {
         expanded_state: bool,
         padding_x: usize,
         padding_y: usize,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self, ThemeError> {
         let value = Self {
             text: Text::new(String::new(), padding_x, padding_y, None),
             collapsed,
@@ -181,7 +186,7 @@ impl ExpandableText {
     ///
     /// # Errors
     /// Returns the failure of the selected rendering, leaving the text unchanged.
-    pub(super) fn set_expanded(&self, expanded: bool) -> Result<(), Box<dyn Error>> {
+    pub(super) fn set_expanded(&self, expanded: bool) -> Result<(), ThemeError> {
         let factory = if expanded {
             &self.expanded
         } else {

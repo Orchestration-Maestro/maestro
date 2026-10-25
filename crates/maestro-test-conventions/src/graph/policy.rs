@@ -14,6 +14,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-lock", &[]),
     ("maestro-process", &[]),
     ("maestro-listing", &[]),
+    ("maestro-listeners", &[]),
     ("maestro-protocol", &[]),
     ("maestro-ipc", &[]),
     ("maestro-terminal", &["maestro-text"]),
@@ -75,6 +76,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-json",
             "maestro-brand",
+            "maestro-listeners",
         ],
     ),
     (
@@ -94,6 +96,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-test-conventions", &["maestro-markdown"]),
     ("maestro-test-process", &[]),
     ("maestro-test-directory", &[]),
+    ("maestro-test-fixtures", &[]),
     ("maestro-test-tracing", &[]),
     ("maestro-tooling", &[]),
     (
@@ -105,11 +108,18 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-markdown",
             "maestro-listing",
             "maestro-resources",
+            "maestro-listeners",
         ],
     ),
     (
         "maestro-agent",
-        &["maestro-models", "maestro-text", "maestro-tool"],
+        &[
+            "maestro-models",
+            "maestro-text",
+            "maestro-tool",
+            "maestro-listeners",
+            "maestro-json",
+        ],
     ),
     (
         "maestro-credentials",
@@ -146,7 +156,12 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     (
         "maestro-tui-crossterm",
-        &["maestro-tui", "maestro-text", "maestro-process"],
+        &[
+            "maestro-tui",
+            "maestro-text",
+            "maestro-process",
+            "maestro-listeners",
+        ],
     ),
     (
         "maestro-catalog",
@@ -210,6 +225,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-theme",
             "maestro-tui",
             "maestro-resources",
+            "maestro-listeners",
         ],
     ),
     (
@@ -237,6 +253,8 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-json",
             "maestro-process",
+            "maestro-listing",
+            "maestro-listeners",
         ],
     ),
     ("maestro-extensions-wasmtime", &["maestro-extensions"]),
@@ -284,12 +302,28 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// Internal development edges permitted beyond the production table.
+/// Internal development edges permitted beyond the production table on any target.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
-    ("maestro-detection", "maestro-text"),
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
+    ("maestro-rpc", "maestro-theme"),
+    ("maestro-rpc", "maestro-tui-crossterm"),
 ];
+
+/// Permitted development edges that only a native, non-optional declaration may use.
+pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-detection", "maestro-text"),
+    ("maestro-cli", "maestro-listeners"),
+    ("maestro-chat", "maestro-models"),
+    ("maestro-chat", "maestro-tui-crossterm"),
+];
+
+/// Whether the policy permits this internal development edge between the two crates.
+pub(crate) fn permitted_development(from: &str, to: &str) -> bool {
+    [DEVELOPMENT, NATIVE_DEVELOPMENT]
+        .iter()
+        .any(|edges| edges.contains(&(from, to)))
+}
 
 /// Foundation utility that native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";
@@ -299,6 +333,7 @@ pub(crate) const TEST_PROCESS: &str = "maestro-test-process";
 
 /// The only crates that may declare the test-process owner as a development dependency.
 pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
+    "maestro",
     "maestro-agent",
     "maestro-app",
     "maestro-catalog",
@@ -308,11 +343,13 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-daemon",
     "maestro-detection",
     "maestro-extensions",
+    "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-models",
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
+    "maestro-rpc",
     "maestro-session",
     "maestro-settings",
     "maestro-test-conventions",
@@ -328,6 +365,7 @@ pub(crate) const TEST_DIRECTORY: &str = "maestro-test-directory";
 
 /// Declared consumers of disposable native directory ownership.
 pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
+    "maestro",
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
@@ -337,6 +375,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-detection",
     "maestro-export",
     "maestro-extensions",
+    "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-listing",
     "maestro-lock",
@@ -344,6 +383,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
+    "maestro-rpc",
     "maestro-session",
     "maestro-settings",
     "maestro-terminal",
@@ -376,10 +416,26 @@ pub(crate) const TEST_TRACING_CALLERS: &[&str] = &[
     "maestro-workspace",
 ];
 
+/// Portable owner of cross-package test fixture operations.
+pub(crate) const TEST_FIXTURES: &str = "maestro-test-fixtures";
+
+/// Declared consumers of portable fixture support.
+pub(crate) const TEST_FIXTURE_CALLERS: &[&str] = &[
+    "maestro-agent",
+    "maestro-models",
+    "maestro-request",
+    "maestro-catalog",
+    "maestro-chat",
+    "maestro-credentials",
+    "maestro-tools",
+    "maestro-export",
+];
+
 /// Resolve one named support owner without granting a crate-name pattern.
 pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str]> {
     match owner {
         TEST_PROCESS => Some(TEST_PROCESS_CALLERS),
+        TEST_FIXTURES => Some(TEST_FIXTURE_CALLERS),
         TEST_DIRECTORY => Some(TEST_DIRECTORY_CALLERS),
         TEST_TRACING => Some(TEST_TRACING_CALLERS),
         TEST_TERMINAL => Some(TEST_TERMINAL_CALLERS),
@@ -432,6 +488,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
                 | "maestro-test-conventions"
                 | "maestro-test-process"
                 | "maestro-test-directory"
+                | "maestro-test-fixtures"
                 | "maestro-test-terminal"
                 | "maestro-test-tracing"
                 | "maestro-tooling"

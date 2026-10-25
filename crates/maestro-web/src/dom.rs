@@ -7,6 +7,7 @@ use std::{
 use web_sys::{Document, Node};
 
 /// Page-wide operands shared by mounted content and built-in elements.
+#[derive(Clone)]
 pub struct DomView {
     /// Document receiving mounted roots.
     pub document: Document,
@@ -87,9 +88,7 @@ impl MountedContent {
             Some((.., old)) => parent.replace_child(&root.node, &old.node),
             None => parent.append_child(&root.node),
         }
-        .map_err(|e| {
-            ToolUiError::Host(crate::browser::attachment_content::browser::host_error(&e))
-        })?;
+        .map_err(|error| ToolUiError::native(&error))?;
         self.active = Some((kind, content.key().map(str::to_owned), root));
         Ok(())
     }
@@ -102,43 +101,73 @@ pub(crate) enum Property {
     Text(&'static str, &'static str),
     /// A boolean property holding the attribute's presence.
     Flag(&'static str, &'static str),
+    /// A boolean property holding the attribute's absence, for properties that default to true.
+    Unset(&'static str, &'static str),
 }
 /// A property getter callable.
 #[cfg(target_arch = "wasm32")]
-type Getter = wasm_bindgen::closure::Closure<dyn Fn() -> wasm_bindgen::JsValue>;
+pub(crate) type Getter = wasm_bindgen::closure::Closure<dyn Fn() -> wasm_bindgen::JsValue>;
 /// A property setter callable.
 #[cfg(target_arch = "wasm32")]
-type Setter = wasm_bindgen::closure::Closure<dyn Fn(wasm_bindgen::JsValue)>;
+pub(crate) type Setter = wasm_bindgen::closure::Closure<dyn Fn(wasm_bindgen::JsValue)>;
+/// A weak reference to one built-in element, which a callback must not keep alive.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type Link = js_sys::WeakRef<web_sys::HtmlElement>;
 /// Property accessors installed on one element, kept as long as its state.
 #[cfg(target_arch = "wasm32")]
 pub(crate) struct Reflected {
     /// Getter and setter callables, released with the element's state.
     _accessors: Vec<(Getter, Setter)>,
 }
+/// The element behind `link` while it exists.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn live(link: &Link) -> Option<web_sys::HtmlElement> {
+    link.deref()
+}
+/// The element behind `link` while it exists and is still connected.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn connected(link: &Link) -> Option<web_sys::HtmlElement> {
+    live(link).filter(|element| element.is_connected())
+}
+/// Install `get` and `set` as the configurable property `name` of `element`, reporting success.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn install(
+    element: &web_sys::HtmlElement,
+    name: &str,
+    get: &Getter,
+    set: &Setter,
+) -> bool {
+    use wasm_bindgen::JsValue;
+    let descriptor = js_sys::Object::new();
+    for (key, value) in [("get", get.as_ref()), ("set", set.as_ref())] {
+        let _ = js_sys::Reflect::set(&descriptor, &key.into(), value);
+    }
+    let _ = js_sys::Reflect::set(&descriptor, &"configurable".into(), &JsValue::TRUE);
+    js_sys::Reflect::define_property(element, &name.into(), &descriptor).is_ok()
+}
 /// Install accessors for `properties` on `element`, so setting one changes its observed attribute.
 #[cfg(target_arch = "wasm32")]
 fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected {
     use wasm_bindgen::JsValue;
-    let live = |weak: &js_sys::WeakRef<web_sys::HtmlElement>| weak.deref();
     let mut kept = Vec::new();
     for &property in properties {
         let (name, attribute, flag) = match property {
-            Property::Text(name, attribute) => (name, attribute, false),
-            Property::Flag(name, attribute) => (name, attribute, true),
+            Property::Text(name, attribute) => (name, attribute, None),
+            Property::Flag(name, attribute) => (name, attribute, Some(true)),
+            Property::Unset(name, attribute) => (name, attribute, Some(false)),
         };
         let weak = js_sys::WeakRef::new(element);
         let read = weak.clone();
-        let get = Getter::new(move || match live(&read) {
-            Some(element) if flag => element.has_attribute(attribute).into(),
-            Some(element) => element.get_attribute(attribute).unwrap_or_default().into(),
-            None => JsValue::UNDEFINED,
+        let get = Getter::new(move || match (live(&read), flag) {
+            (Some(element), Some(present)) => (element.has_attribute(attribute) == present).into(),
+            (Some(element), None) => element.get_attribute(attribute).unwrap_or_default().into(),
+            (None, _) => JsValue::UNDEFINED,
         });
         let set = Setter::new(move |value: JsValue| {
             let Some(element) = live(&weak) else { return };
-            let text = if flag {
-                value.is_truthy().then(String::new)
-            } else {
-                value.as_string()
+            let text = match flag {
+                Some(present) => (value.is_truthy() == present).then(String::new),
+                None => value.as_string(),
             };
             // Attribute changes on a live element only fail for invalid names, which these are not.
             let _ = match text {
@@ -146,12 +175,7 @@ fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected
                 None => element.remove_attribute(attribute),
             };
         });
-        let descriptor = js_sys::Object::new();
-        for (key, value) in [("get", get.as_ref()), ("set", set.as_ref())] {
-            let _ = js_sys::Reflect::set(&descriptor, &key.into(), value);
-        }
-        let _ = js_sys::Reflect::set(&descriptor, &"configurable".into(), &JsValue::TRUE);
-        if js_sys::Reflect::define_property(element, &name.into(), &descriptor).is_ok() {
+        if install(element, name, &get, &set) {
             kept.push((get, set));
         }
     }
@@ -174,6 +198,12 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(crate::icons::ICON_STYLES);
     css.push_str(include_str!("components/code_block/code.css"));
     css.push_str(&maestro_theme::highlight_css().map_err(|error| failure(&error))?);
+    css.push_str(include_str!("components/markdown_block/markdown.css"));
+    css.push_str(include_str!("components/messages.css"));
+    css.push_str(include_str!("tools/artifacts/artifact_element.css"));
+    css.push_str(include_str!("tools/artifacts/generic_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/docx_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/console.css"));
     css.push_str(include_str!("dom.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))

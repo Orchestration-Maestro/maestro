@@ -118,7 +118,7 @@ pub async fn create_agent_session(
         base_tools_override: None,
         extension_runner_ref: Some(runner_ref),
         session_start_event: options.session_start_event,
-        tools_manager: Arc::new(ToolsManager::new(bin_dir, None)),
+        tools_manager: Arc::new(ToolsManager::new(bin_dir, None).with_offline(options.offline)),
         theme: options.theme,
     })?;
     Ok(CreateAgentSessionResult {

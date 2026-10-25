@@ -22,6 +22,7 @@ pub enum AuthType {
     ApiKey,
 }
 /// A caller-supplied provider choice.
+#[derive(Clone)]
 pub struct AuthSelectorProvider {
     /// Open provider identity reported on selection.
     pub id: String,

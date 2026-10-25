@@ -4,8 +4,8 @@
 //! the recorded binding and registry cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, echo_tools, harness, on_task_set, sdk_definition,
-    tool_definition,
+    Harness, HarnessOptions, Scripted, answer, assistant, echo_tools, harness, load_history,
+    on_task_set, script_responses, sdk_definition, tool_definition, user,
 };
 use maestro_app::agent_session::{ExtensionBindings, PromptOptions};
 use maestro_extensions::types::{ExtensionFlagOptions, FlagValue, RegisteredCommandOptions};
@@ -377,9 +377,9 @@ fn binds_partial_ui_bindings_without_clearing_others() {
         };
         h.session.bind_extensions(errors).await.unwrap();
         let commands = ExtensionBindings {
-            command_context_actions: Some(
-                maestro_extensions::ExtensionCommandContextActions::default(),
-            ),
+            command_context_actions: Some(maestro_extensions::ExtensionCommandContextActions::new(
+                crate::command_operations::silent(),
+            )),
             ..ExtensionBindings::default()
         };
         h.session.bind_extensions(commands).await.unwrap();
@@ -475,6 +475,89 @@ fn keeps_captured_contexts_usable_across_a_direct_reload() {
             api.get_active_tools().unwrap(),
             h.session.get_active_tool_names()
         );
+    });
+}
+
+/// Stores two turns and queues both possible summary requests.
+fn prepare_compaction_history(h: &Harness) {
+    for record in [
+        user(&json!("first"), 1),
+        assistant("answer", 2, &json!({})),
+        user(&json!("second"), 3),
+        assistant("last", 4, &json!({})),
+    ] {
+        h.session
+            .session_manager()
+            .borrow_mut()
+            .append_message(record)
+            .unwrap();
+    }
+    load_history(h);
+    script_responses(
+        h,
+        vec![answer("summary", None, None), answer("summary", None, None)],
+    );
+}
+
+#[test]
+fn compaction_completion_failure_reaches_the_error_callback_unchanged() {
+    on_task_set(|_| async {
+        let tasks = Rc::new(RefCell::new(Vec::new()));
+        let spawned = Rc::clone(&tasks);
+        let h = harness(HarnessOptions {
+            settings: json!({"compaction": {"keepRecentTokens": 1}}),
+            spawn: Some(Rc::new(move |task| {
+                spawned.borrow_mut().push(tokio::task::spawn_local(task));
+            })),
+            ..HarnessOptions::default()
+        })
+        .await;
+        prepare_compaction_history(&h);
+        let failure = RefCell::new(Some(
+            Box::new(std::io::Error::from_raw_os_error(13)) as maestro_extensions::EventError
+        ));
+        let identity = std::ptr::from_ref(failure.borrow().as_ref().unwrap().as_ref()).cast::<()>();
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let completed = Rc::clone(&trace);
+        let failed = Rc::clone(&trace);
+        h.runner()
+            .create_context()
+            .compact(Some(maestro_app::CompactOptions {
+                on_complete: Some(Rc::new(move |result| {
+                    assert!(result.summary.contains("summary"));
+                    completed.borrow_mut().push("complete");
+                    Err(failure.borrow_mut().take().unwrap())
+                })),
+                on_error: Some(Rc::new(move |error| {
+                    assert_eq!(
+                        *failed.borrow(),
+                        ["complete"],
+                        "unexpected compaction failure: {error}"
+                    );
+                    assert_eq!(std::ptr::from_ref(error.as_ref()).cast::<()>(), identity);
+                    assert_eq!(
+                        error
+                            .downcast_ref::<std::io::Error>()
+                            .unwrap()
+                            .raw_os_error(),
+                        Some(13)
+                    );
+                    failed.borrow_mut().push("error");
+                    Ok(())
+                })),
+                ..maestro_app::CompactOptions::default()
+            }))
+            .unwrap();
+        loop {
+            let pending = std::mem::take(&mut *tasks.borrow_mut());
+            if pending.is_empty() {
+                break;
+            }
+            for task in pending {
+                task.await.unwrap();
+            }
+        }
+        assert_eq!(*trace.borrow(), ["complete", "error"]);
     });
 }
 
@@ -592,6 +675,7 @@ fn reload_keeps_extension_flag_values() {
                 settings_manager: Some(Rc::new(RefCell::new(settings))),
                 session_start_event: None,
                 theme: maestro_theme::LiveTheme::default(),
+                offline: None,
             })
             .await
             .unwrap();
@@ -652,5 +736,25 @@ fn resolves_tool_descriptions_with_no_guard_held() {
         *slot.borrow_mut() = Rc::downgrade(&h.session);
         h.session.reload().await.unwrap();
         assert_eq!(*changes.borrow(), [(true, None), (true, Some(true))]);
+    });
+}
+
+#[test]
+fn extension_session_name_reaches_the_retained_session_and_listener() {
+    on_task_set(|_| async {
+        let (h, api) = kept_session().await;
+        api.set_session_name("from extension".into()).unwrap();
+        assert_eq!(
+            h.session.session_name().unwrap().as_deref(),
+            Some("from extension")
+        );
+        let names: Vec<Value> = h
+            .events
+            .borrow()
+            .iter()
+            .filter(|event| event["type"] == "session_info_changed")
+            .map(|event| event["name"].clone())
+            .collect();
+        assert_eq!(names, [json!("from extension")]);
     });
 }

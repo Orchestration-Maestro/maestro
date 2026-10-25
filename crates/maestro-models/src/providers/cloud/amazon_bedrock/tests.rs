@@ -299,12 +299,36 @@ fn proxy_choice_follows_the_variables_and_exclusions() -> Result<(), Box<dyn std
 }
 
 #[test]
+fn ftp_source_admits_the_prefixed_script_url() {
+    let destination = Url::parse("http://origin.example/").unwrap();
+    let source = "pac+ftp://proxy.example/script.pac";
+    let selected = environment(&[("HTTP_PROXY", source)])
+        .proxy_for(&destination)
+        .unwrap()
+        .unwrap();
+    assert_eq!(selected.as_str(), source);
+    assert_eq!(
+        selected.as_str().strip_prefix("pac+"),
+        Some("ftp://proxy.example/script.pac")
+    );
+    let unprefixed = environment(&[("HTTP_PROXY", "ftp://proxy.example/script.pac")])
+        .proxy_for(&destination)
+        .unwrap_err();
+    assert!(unprefixed.contains("Unsupported protocol"), "{unprefixed}");
+    let unadmitted = environment(&[("HTTP_PROXY", "pac+gopher://proxy.example/script")])
+        .proxy_for(&destination)
+        .unwrap_err();
+    assert!(unadmitted.contains("Unsupported protocol"), "{unadmitted}");
+}
+
+#[test]
 fn pac_sources_admit_exactly_the_supported_protocols() {
     let destination = Url::parse("http://origin.example/").unwrap();
     for source in [
         "pac+data:,function%20FindProxyForURL()%7Breturn%20'DIRECT'%7D",
         "pac+data://,script",
         "pac+file:///script.pac",
+        "pac+ftp://proxy.example/script.pac",
         "pac+http://proxy.example/script.pac",
         "pac+https://proxy.example/script.pac",
     ] {

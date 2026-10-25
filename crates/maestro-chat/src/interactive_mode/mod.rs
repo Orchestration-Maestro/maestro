@@ -1,29 +1,49 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts and typed input.
+//! resources, notices, transcript shortcuts, editor actions, typed input, queued
+//! input and session commands.
 
-use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
-use indexmap::IndexMap;
+use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, ToolRenderEnvironment,
+    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
 use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
 use std::{
     cell::{Cell, RefCell},
+    collections::VecDeque,
     error::Error,
-    rc::Rc,
+    rc::{Rc, Weak},
 };
 
+mod actions;
+mod authentication;
 mod autocomplete;
+mod bash;
+mod compaction_queue;
+mod debug;
+mod events;
+mod info;
+mod key_display;
+mod lifecycle;
+mod models;
+mod notices;
+mod progress;
+mod queues;
 mod replay;
 mod resources;
+mod selectors;
+mod share;
 mod startup;
 mod submit;
+
+mod extension_ui;
 mod toggles;
 mod transcript;
+mod transfer;
+mod working;
 
 #[cfg(test)]
 #[cfg(unix)]
@@ -32,21 +52,50 @@ mod tests;
 /// The spacer and text of a status line.
 type StatusLine = (Rc<dyn Component>, Rc<Text>);
 
+/// The assistant row a response streams into and the message it shows.
+type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
+
 /// How the interactive mode starts.
 #[derive(Default)]
 pub struct InteractiveModeOptions {
     /// Forces the expanded startup help, even when startup is quiet.
     pub verbose: bool,
+    /// Providers whose credentials were migrated at startup, warned about in order.
+    pub migrated_providers: Vec<String>,
+    /// The warning shown when the session model could not be restored.
+    pub model_fallback_message: Option<String>,
+    /// The first prompt sent at startup.
+    pub initial_message: Option<String>,
+    /// Images attached to the first startup prompt.
+    pub initial_images: Option<Vec<maestro_app::ImageContent>>,
+    /// Prompts sent after the first startup prompt, in order.
+    pub initial_messages: Vec<String>,
+    /// Hosted service origin; absent selects the compiled default.
+    pub service_origin: Option<String>,
+    /// Supplied HTTP transport for startup requests.
+    pub fetch: Option<maestro_app::Fetch>,
 }
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {
+    /// Whether an extension requested graceful shutdown after the agent finishes.
+    pub(crate) shutdown_requested: Cell<bool>,
+    /// Retained exit state and native registration ownership.
+    lifecycle: lifecycle::LifecycleState,
+    /// Bound extension input registrations and their cleanup operations.
+    extension_input: extension_ui::input::ExtensionInput,
+    /// Live keyed widgets above the editor.
+    extension_widgets_above: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    /// Live keyed widgets below the editor.
+    extension_widgets_below: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    /// This mode, for callbacks that must not keep it alive.
+    this: Weak<InteractiveMode>,
     /// The runtime the current session is read from.
     runtime_host: Rc<AgentSessionRuntime>,
     /// How the mode starts.
     options: InteractiveModeOptions,
-    /// The terminal user interface this mode owns.
-    ui: TUI,
+    /// The terminal user interface this mode owns, shared with dialogs that keep it weakly.
+    ui: Rc<TUI>,
     /// The theme registry and its published theme.
     themes: Rc<ThemeState>,
     /// The startup header container.
@@ -69,8 +118,18 @@ pub struct InteractiveMode {
     footer: Rc<FooterComponent>,
     /// The footer metadata and its branch watch.
     footer_data_provider: FooterDataProvider,
+    /// The supplied watch, timer and Git process effects, reused for named theme watching.
+    operations: Rc<dyn FooterOperations>,
+    /// Selected release history for this startup.
+    changelog_markdown: RefCell<Option<String>>,
+    /// Whether this mode has handled its startup notice.
+    startup_notices_shown: Cell<bool>,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
+    /// Events waiting for the presentation to initialize, in arrival order.
+    pending_events: RefCell<VecDeque<maestro_app::AgentSessionEvent>>,
+    /// Whether the one initialization continuation is still delivering events.
+    event_initialization_pending: Cell<bool>,
     /// The expandable startup help, absent when startup is quiet.
     built_in_header: RefCell<Option<Rc<startup::ExpandableText>>>,
     /// The runtime, theme, highlighter and image support shared by transcript rows.
@@ -82,13 +141,29 @@ pub struct InteractiveMode {
     /// The spacer and text of the latest status line.
     last_status: RefCell<Option<StatusLine>>,
     /// Tool rows waiting for their results, by call id in call order.
-    pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
+    pending_tools: RefCell<replay::PendingTools>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// The shell row that is still producing output, when one is attached.
+    active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
+    /// Shell rows shown in the pending area until the next ordinary submission.
+    pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// The selected search program for file completion, absent until startup prepares it.
     fd_path: RefCell<Option<String>>,
+    /// Whether this mode has shown the subscription billing notice.
+    anthropic_subscription_warning_shown: Cell<bool>,
+    /// Messages typed while the session compacts, in the order they were typed.
+    compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The progress presentation's loaders, countdown and interrupt callbacks.
+    progress: progress::Retained,
+    /// The session subscription that delivers agent and session events.
+    unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
+    /// The working row and its extension-controlled presentation.
+    working: working::WorkingState,
+    /// The assistant row of the response streaming now.
+    streaming: RefCell<Option<StreamingMessage>>,
 }
 
 impl InteractiveMode {
@@ -106,24 +181,12 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
-        let tool_environment = Rc::new(ToolRenderEnvironment {
-            runtime: terminal.1.clone(),
-            readme_path: maestro_app::configuration::config::get_readme_path()?,
-            live_theme: themes.theme(),
-            highlighter: Rc::new(
-                SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
-            ),
-            terminal_image: TerminalImage::default(),
-        });
+        let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
-        let editor = create_editor(
-            &ui,
-            themes.theme(),
-            (*keys).clone(),
-            session.settings_manager(),
-        );
+        let settings = session.settings_manager();
+        let editor = create_editor(&ui, themes.theme(), (*keys).clone(), settings);
         let editor_container = Rc::new(Container::new());
         editor_container.add_child(editor.clone());
         let footer_data_provider = FooterDataProvider::new(
@@ -131,11 +194,14 @@ impl InteractiveMode {
             operations.clone(),
         );
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
-        footer.set_auto_compact_enabled(session.auto_compaction_enabled());
-        themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = session.settings_manager().borrow().get_theme();
-        themes.init_theme(selected_theme.as_deref(), Some(operations))?;
-        Ok(Rc::new(Self {
+        let hide_thinking = init_theme(&session, &themes, &operations)?;
+        Ok(Rc::new_cyclic(|this| Self {
+            shutdown_requested: Cell::new(false),
+            this: this.clone(),
+            lifecycle: lifecycle::LifecycleState::default(),
+            extension_input: extension_ui::input::ExtensionInput::default(),
+            extension_widgets_above: maestro_app::Live::new(),
+            extension_widgets_below: maestro_app::Live::new(),
             runtime_host,
             options,
             ui,
@@ -150,40 +216,57 @@ impl InteractiveMode {
             editor,
             footer,
             footer_data_provider,
+            operations,
+            changelog_markdown: RefCell::default(),
+            startup_notices_shown: Cell::new(false),
             is_initialized: Cell::new(false),
+            pending_events: RefCell::default(),
+            event_initialization_pending: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
             fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(
-                session
-                    .settings_manager()
-                    .borrow()
-                    .get_hide_thinking_block(),
-            ),
+            hide_thinking_block: Cell::new(hide_thinking),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            active_shell: RefCell::default(),
+            pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
+            anthropic_subscription_warning_shown: Cell::new(false),
+            compaction_queued_messages: RefCell::default(),
+            progress: progress::Retained::default(),
+            unsubscribe: RefCell::default(),
+            working: working::WorkingState::default(),
+            streaming: RefCell::default(),
         }))
     }
 
-    /// Prepares both search programs, installs completion, builds the header, adds every
-    /// container in order, focuses the editor, binds the transcript shortcuts, installs
-    /// editor submission, starts the terminal, lists the loaded resources with their
-    /// diagnostics and replays the session, once; theme changes then refresh the editor
-    /// border, and theme and branch changes request fresh frames.
+    /// Installs lifecycle handlers, selects unseen release history, prepares search
+    /// programs and completion, then builds the header,
+    /// adds every container in order, focuses the editor, binds the
+    /// transcript shortcuts, installs editor submission and the global debug key, starts
+    /// the terminal, lists the loaded resources with their diagnostics, shows selected
+    /// history once and replays the session; theme changes then refresh the editor
+    /// border, and theme and branch
+    /// changes request fresh frames.
+    /// Finally the footer learns how many providers the model candidates cover.
+    /// Calls while initialized do nothing; after `stop`, initialization runs again.
+    /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
-    /// Returns the failure of the managed binary directory, of the header's theme colours,
-    /// of the terminal start, of the resource listing or of the replay.
+    /// Returns a failure of lifecycle registration, the managed binary directory, the
+    /// header's theme colours, terminal start, resource listing, replay or catalog refresh.
     pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
+        self.register_signal_handlers()?;
+        *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
         self.prepare_search_tools().await?;
         self.setup_autocomplete_provider();
         self.build_header()?;
+        self.render_widgets();
         for child in [
             &self.header_container,
             &self.chat_container,
@@ -198,9 +281,13 @@ impl InteractiveMode {
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
         self.setup_key_handlers();
+        self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
+        self.setup_debug_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
+        self.subscribe_to_agent();
+        self.update_terminal_title()?;
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
@@ -219,8 +306,29 @@ impl InteractiveMode {
             show_diagnostics_when_quiet: true,
             ..resources::ShowLoadedResourcesOptions::default()
         })?;
-        self.render_initial_messages()
+        self.show_startup_notices_if_needed()?;
+        self.render_initial_messages()?;
+        self.update_available_provider_count()
     }
+}
+
+/// The runtime, theme, highlighter and image support shared by the transcript rows.
+///
+/// # Errors
+/// Returns the failure of the documentation path or of the highlighter.
+fn tool_environment(
+    runtime: Rc<dyn TuiRuntime>,
+    live_theme: LiveTheme,
+) -> Result<Rc<ToolRenderEnvironment>, Box<dyn Error>> {
+    Ok(Rc::new(ToolRenderEnvironment {
+        runtime,
+        readme_path: maestro_app::configuration::config::get_readme_path()?,
+        live_theme,
+        highlighter: Rc::new(
+            SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
+        ),
+        terminal_image: TerminalImage::default(),
+    }))
 }
 
 /// Builds the frame writer with the configured hardware-cursor and clear-on-shrink policies,
@@ -229,7 +337,7 @@ fn create_ui(
     session: &AgentSession,
     terminal: (TerminalHandle, Rc<dyn TuiRuntime>),
     image: TerminalImage,
-) -> TUI {
+) -> Rc<TUI> {
     let settings = session.settings_manager().borrow();
     let ui = TUI::new(
         terminal.0,
@@ -238,7 +346,7 @@ fn create_ui(
         Some(settings.get_show_hardware_cursor()),
     );
     ui.set_clear_on_shrink(settings.get_clear_on_shrink());
-    ui
+    Rc::new(ui)
 }
 
 /// Builds the editor with the configured padding and completion limit.
@@ -272,11 +380,30 @@ fn create_footer(
     data: &FooterDataProvider,
     theme: LiveTheme,
 ) -> Result<Rc<FooterComponent>, Box<dyn Error>> {
-    Ok(Rc::new(FooterComponent::new(
+    let auto_compact = session.auto_compaction_enabled();
+    let footer = Rc::new(FooterComponent::new(
         session,
         Rc::new(data.clone()),
         theme,
         Rc::new(Collator::new(&|key| std::env::var(key).ok())?),
         Rc::new(|key| std::env::var(key).ok()),
-    )))
+    ));
+    footer.set_auto_compact_enabled(auto_compact);
+    Ok(footer)
+}
+
+/// Registers loaded themes, selects the configured theme, then reads thinking visibility.
+///
+/// # Errors
+/// Returns the theme selection failure.
+fn init_theme(
+    session: &AgentSession,
+    themes: &Rc<ThemeState>,
+    operations: &Rc<dyn FooterOperations>,
+) -> Result<bool, Box<dyn Error>> {
+    themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
+    let settings = session.settings_manager();
+    let selected = settings.borrow().get_theme();
+    themes.init_theme(selected.as_deref(), Some(operations.clone()))?;
+    Ok(settings.borrow().get_hide_thinking_block())
 }

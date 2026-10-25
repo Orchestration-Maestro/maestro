@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Maestro Tool Stats</title>
+	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+	<style>
+		:root{--maestro-color-accent:#D9A066;--maestro-color-background:#0E0B09;--maestro-color-border:#5E7383;--maestro-color-error:#FF6A1A;--maestro-color-live:#FF6A1A;--maestro-color-mark-live:#FF6A1A;--maestro-color-mark-m:#B7410E;--maestro-color-mark-node:#B7410E;--maestro-color-mark-ring:#B7410E;--maestro-color-mark-star:#FF6A1A;--maestro-color-muted:#D9A066;--maestro-color-on-accent:#0E0B09;--maestro-color-panel:#2A1F1A;--maestro-color-success:#FF6A1A;--maestro-color-text:#F2E8DC;--maestro-color-warning:#D9A066;--maestro-font-body:"Barlow", system-ui, sans-serif;--maestro-font-display:"Barlow Condensed", system-ui, sans-serif;--maestro-font-mono:"JetBrains Mono", ui-monospace, monospace;--maestro-radii-control:4px;--maestro-radii-none:0px;--maestro-radii-panel:8px;--maestro-spacing-lg:24px;--maestro-spacing-md:16px;--maestro-spacing-sm:8px;--maestro-spacing-xl:32px;--maestro-spacing-xs:4px;--maestro-type-body-font:"Barlow", system-ui, sans-serif;--maestro-type-body-line-height:1.55;--maestro-type-body-size:16px;--maestro-type-body-weight:400;--maestro-type-display-font:"Barlow Condensed", system-ui, sans-serif;--maestro-type-display-line-height:1.1;--maestro-type-display-size:36px;--maestro-type-display-weight:700;--maestro-type-display-xl-font:"Barlow Condensed", system-ui, sans-serif;--maestro-type-display-xl-line-height:1.1;--maestro-type-display-xl-size:56px;--maestro-type-display-xl-weight:700;--maestro-type-heading-font:"Barlow Condensed", system-ui, sans-serif;--maestro-type-heading-line-height:1.2;--maestro-type-heading-size:24px;--maestro-type-heading-weight:600;--maestro-type-mono-font:"JetBrains Mono", ui-monospace, monospace;--maestro-type-mono-line-height:1.7;--maestro-type-mono-size:14px;--maestro-type-mono-weight:400}
+		body{background:var(--maestro-color-background);color:var(--maestro-color-text);font-family:var(--maestro-font-body)}
+		h1,h2{font-family:var(--maestro-font-display)}
+		code{font-family:var(--maestro-font-mono)}
+		.card{background:var(--maestro-color-panel)}
+		.muted{color:var(--maestro-color-muted)}
+		.select{background:var(--maestro-color-panel);color:var(--maestro-color-text)}
+		#tools tbody tr[data-row]:hover,#bash tbody tr[data-row]:hover{background:color-mix(in srgb,var(--maestro-color-border) 50%,transparent)}
+		#tools th,#bash th{color:var(--maestro-color-muted)}
+		#tools tbody tr[data-row],#bash tbody tr[data-row]{border-color:var(--maestro-color-border)}
+		.mono{font-family:var(--maestro-font-mono)}
+	</style>
+</head>
+<body class="p-6">
+	<main class="max-w-7xl mx-auto space-y-6">
+		<h1 class="text-3xl font-bold">Maestro Tool Stats</h1>
+		<p class="muted">1 session files from <code>/fixture/sessions-&lt;img src=x&gt;</code>. Generated 2026-03-09T16:00:00.000Z.</p>
+		<section class="grid md:grid-cols-2 gap-6">
+			<div class="card rounded p-4"><h2 class="font-semibold mb-3">Estimated result tokens by tool</h2><canvas id="tokens"></canvas></div>
+			<div class="card rounded p-4"><h2 class="font-semibold mb-3">Tool calls</h2><canvas id="calls"></canvas></div>
+		</section>
+		<section class="grid md:grid-cols-2 gap-6">
+			<div class="card rounded p-4">
+				<div class="flex items-center justify-between gap-4 mb-3">
+					<h2 class="font-semibold">Tool result token histogram</h2>
+					<select id="toolSelect" class="select rounded px-2 py-1 text-sm"></select>
+				</div>
+				<p id="toolSummary" class="muted text-sm mb-3"></p>
+				<canvas id="toolHistogram" height="120"></canvas>
+			</div>
+			<div class="card rounded p-4">
+				<div class="flex items-center justify-between gap-4 mb-3">
+					<h2 class="font-semibold">Bash result token histogram</h2>
+					<select id="bashSelect" class="select rounded px-2 py-1 text-sm"></select>
+				</div>
+				<p id="bashSummary" class="muted text-sm mb-3"></p>
+				<canvas id="bashHistogram" height="120"></canvas>
+			</div>
+		</section>
+		<section class="card rounded p-4"><h2 class="font-semibold mb-3">Tools</h2><div id="tools"></div></section>
+		<section class="card rounded p-4">
+			<h2 class="font-semibold mb-3">Bash common commands (best effort)</h2>
+			<div id="bash" class="mt-4"></div>
+		</section>
+	</main>
+	<script>
+		const data={"generatedAt":"2026-03-09T16:00:00.000Z","sessionsDir":"/fixture/sessions-\u003cimg src=x>","files":1,"parseErrors":0,"bucketLabels":["0-50","50-100","100-250","250-500","500-1000","1000-2000","2000-4000","4000-8000","8000-16000","16000-32000","32000+"],"tools":[{"name":"read","calls":1,"results":1,"estimatedTokens":100,"samples":[100],"errors":0,"avg":100,"histogram":[0,1,0,0,0,0,0,0,0,0,0]},{"name":"bash","calls":1,"results":1,"estimatedTokens":2,"samples":[2],"errors":0,"avg":2,"histogram":[1,0,0,0,0,0,0,0,0,0,0]},{"name":"\u003c/script>\u003cscript>globalThis.payloadExecuted=1\u003c/script>","calls":0,"results":1,"estimatedTokens":2,"samples":[2],"errors":0,"avg":2,"histogram":[1,0,0,0,0,0,0,0,0,0,0]}],"bashCommands":[{"name":"git status","calls":1,"estimatedTokens":2,"samples":[2],"avg":2,"histogram":[1,0,0,0,0,0,0,0,0,0,0]}]};
+		const accent="#D9A066";
+		Chart.defaults.color="#D9A066";
+		Chart.defaults.borderColor="#5E7383";
+		Chart.defaults.font.family="\"Barlow\", system-ui, sans-serif";
+		function fmt(n){return Math.round(n).toLocaleString()}
+		function esc(s){return String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
+		function table(rows,el){
+			document.getElementById(el).innerHTML='<table class="w-full text-sm"><thead><tr><th class="text-left p-2">Name</th><th class="text-right p-2">Calls</th><th class="text-right p-2">Results</th><th class="text-right p-2">Est. tokens</th><th class="text-right p-2">Avg/result</th><th class="text-left p-2 w-64">Histogram</th></tr></thead><tbody>'+rows.map((r,i)=>'<tr class="border-t cursor-pointer" data-row="'+i+'"><td class="p-2 mono">'+esc(r.name)+'</td><td class="p-2 text-right">'+fmt(r.calls)+'</td><td class="p-2 text-right">'+fmt(r.results??r.samples.length)+'</td><td class="p-2 text-right">'+fmt(r.estimatedTokens)+'</td><td class="p-2 text-right">'+fmt(r.avg)+'</td><td class="p-2"><canvas id="'+el+'Hist'+i+'" height="34"></canvas></td></tr>').join('')+'</tbody></table>';
+			rows.forEach((r,i)=>new Chart(document.getElementById(el+'Hist'+i),{type:'bar',data:{labels:data.bucketLabels,datasets:[{data:r.histogram,label:r.name,backgroundColor:accent}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:(items)=>data.bucketLabels[items[0].dataIndex]+' tokens'}}},scales:{x:{display:false},y:{display:false}}}}));
+			document.querySelectorAll('#'+el+' tr[data-row]').forEach(row=>row.addEventListener('click',()=>{const select=document.getElementById(el==='tools'?'toolSelect':'bashSelect');select.value=row.dataset.row;select.dispatchEvent(new Event('change'))}));
+		}
+		function fillSelect(id,rows){document.getElementById(id).innerHTML=rows.map((r,i)=>'<option value="'+i+'">'+esc(r.name)+'</option>').join('')}
+		function summary(r){return fmt(r.calls)+' calls, '+fmt(r.results??r.samples.length)+' results, '+fmt(r.estimatedTokens)+' estimated result tokens, '+fmt(r.avg)+' avg/result'}
+		function singleHistogram(canvasId,summaryId,selectId,rows){
+			let chart;
+			function update(){
+				const row=rows[Number(document.getElementById(selectId).value)]??rows[0];
+				document.getElementById(summaryId).textContent=row?summary(row):'No data';
+				if(chart)chart.destroy();
+				chart=new Chart(document.getElementById(canvasId),{type:'bar',data:{labels:data.bucketLabels,datasets:[{label:row?.name??'',data:row?.histogram??[],backgroundColor:accent}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{title:(items)=>data.bucketLabels[items[0].dataIndex]+' tokens',label:(item)=>fmt(item.raw)+' results'}}},scales:{y:{beginAtZero:true,title:{display:true,text:'result count'}},x:{title:{display:true,text:'estimated tokens/result'}}}}});
+			}
+			document.getElementById(selectId).addEventListener('change',update);
+			update();
+		}
+		table(data.tools,'tools');
+		table(data.bashCommands,'bash');
+		fillSelect('toolSelect',data.tools);
+		fillSelect('bashSelect',data.bashCommands);
+		singleHistogram('toolHistogram','toolSummary','toolSelect',data.tools);
+		singleHistogram('bashHistogram','bashSummary','bashSelect',data.bashCommands);
+		new Chart(document.getElementById('tokens'),{type:'bar',data:{labels:data.tools.map(r=>r.name),datasets:[{label:'estimated tokens',data:data.tools.map(r=>r.estimatedTokens),backgroundColor:accent}]},options:{plugins:{legend:{display:false}}}});
+		new Chart(document.getElementById('calls'),{type:'bar',data:{labels:data.tools.map(r=>r.name),datasets:[{label:'calls',data:data.tools.map(r=>r.calls),backgroundColor:accent}]},options:{plugins:{legend:{display:false}}}});
+	</script>
+</body>
+</html>

@@ -7676,5 +7676,69 @@
         "isSplitTurn": false
       }
     }
+  },
+  {
+    "group": "serialization_format",
+    "id": "array-and-string-roots",
+    "operation": "serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "echo",
+              "arguments": [
+                1,
+                2
+              ]
+            },
+            {
+              "type": "toolCall",
+              "id": "b",
+              "name": "letters",
+              "arguments": "ab"
+            },
+            {
+              "type": "toolCall",
+              "id": "c",
+              "name": "flag",
+              "arguments": false
+            },
+            {
+              "type": "toolCall",
+              "id": "d",
+              "name": "count",
+              "arguments": 3
+            }
+          ],
+          "usage": {
+            "input": 7,
+            "output": 3,
+            "cacheRead": 2,
+            "cacheWrite": 1,
+            "totalTokens": 13,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "controlled",
+          "timestamp": 0
+        }
+      ]
+    ],
+    "output": {
+      "kind": "value",
+      "value": "[Assistant tool calls]: echo(0=1, 1=2); letters(0=\"a\", 1=\"b\"); flag(); count()"
+    }
   }
 ]

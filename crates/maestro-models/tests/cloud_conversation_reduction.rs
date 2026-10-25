@@ -210,10 +210,10 @@ fn canonical_argument_keys() -> TestResult {
         r#"{"9":9,"z":1,"2":2,"a":2"#,
     ] {
         let arguments = maestro_models::parsed_arguments(input);
-        assert_eq!(
-            arguments.keys().map(String::as_str).collect::<Vec<_>>(),
-            ["2", "9", "z", "a"]
-        );
+        let keys = arguments
+            .as_object()
+            .map(|members| members.keys().map(String::as_str).collect::<Vec<_>>());
+        assert_eq!(keys, Some(vec!["2", "9", "z", "a"]));
     }
     for input in [
         r#"{"outer":{"9":9,"z":1,"2":2,"a":2}}"#,

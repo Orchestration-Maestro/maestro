@@ -73,11 +73,11 @@ pub fn create_find_tool_definition<C: 'static $($bound)*>(
         tools_manager,
     });
     ToolDefinition {
-        definition: Tool { name: "find".into(), description: "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).".into(), parameters: json!({"type":"object", "required":["pattern"], "properties": {
+        definition: Tool { name: "find".into(), description: "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).".into(), parameters: maestro_models::ParameterSchema::authored(json!({"type":"object", "required":["pattern"], "properties": {
             "pattern": {"type":"string", "description":"Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"},
             "path": {"type":"string", "description":"Directory to search in (default: current directory)"},
             "limit": {"type":"number", "description":"Maximum number of results (default: 1000)"}
-        }}) }, label: "find".into(), prompt_snippet: Some("Find files by glob pattern (respects .gitignore)".into()), prompt_guidelines: None, render_shell: None, prepare_arguments: None, execution_mode: None,
+        }}), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/pattern".to_owned(), maestro_models::SchemaKind::String), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/limit".to_owned(), maestro_models::SchemaKind::Number)]) }, label: "find".into(), prompt_snippet: Some("Find files by glob pattern (respects .gitignore)".into()), prompt_guidelines: None, render_shell: None, prepare_arguments: None, execution_mode: None,
         execute: $ptr::new(move |_id, input, signal, _update, _context| {
             let finder = Arc::clone(&finder);
             Box::pin(async move { finder.find(input, signal).await })

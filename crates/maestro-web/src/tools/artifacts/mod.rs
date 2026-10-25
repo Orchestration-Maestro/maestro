@@ -1,11 +1,15 @@
 //! Retained artifact panels using application-owned filename policy.
 pub mod artifact_pill;
 pub mod artifacts_tool_renderer;
+#[cfg(target_arch = "wasm32")]
+pub mod console;
 mod presentation_cause;
 pub use presentation_cause::PresentationCause;
 mod ui_error;
 pub use ui_error::ArtifactUiError;
 pub mod artifact_element;
+#[cfg(target_arch = "wasm32")]
+pub mod docx_artifact;
 pub mod excel_artifact;
 pub mod generic_artifact;
 pub mod image_artifact;

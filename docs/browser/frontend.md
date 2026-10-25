@@ -67,6 +67,22 @@ The root exports `Attachment`, `load_attachment`, `UserMessageWithAttachments`,
 supporting records remain in the public application modules. See
 [application attachment policy](../application/browser-attachments.md).
 
+### Sample-session replay data
+
+The [session fixture](../../crates/maestro-web/tests/fixtures/test_sessions.json)
+keeps two complete offline conversations. The
+[replay tests](../../crates/maestro-web/tests/sample_sessions_browser.rs),
+`simple_html_session_replays_existing_browser_owners` and
+`long_session_replays_existing_browser_owners`, render their user and assistant
+rows, inspect tool cards and compare complete reconstructed artifact files.
+Missing timestamps become zero and historical tool outputs become text blocks
+only in the tests' owned copies. Recorded browser commands and model requests
+are not executed. HTML is observed through source/diff cards and reconstructed
+file data, not a specialized preview.
+
+Both tests run in the existing loading family with the `just browser-test`
+command below.
+
 ## Input, timers and dialogs
 
 [Browser input, timers and dialogs](components.md) reuse the attachment content host for
@@ -102,10 +118,11 @@ elements use their tag), mounts a new root in place of the old one and releases
 the old root's owner. A failed mount returns its error and keeps the
 previous root.
 
-`ContributionHost::new` defines the built-in `copy-button`, `code-block` and
-`maestro-slot` elements once per page and installs their stylesheet once: the
-selected pack's properties on the document root, then the rules for listings,
-buttons, tool headers and contribution failures. A definition is permanent: its
+`ContributionHost::new` defines the built-in `copy-button`, `code-block`,
+`markdown-block`, `thinking-block` and `maestro-slot` elements once per page and
+installs their stylesheet once: the selected pack's properties on the document
+root, then the rules for listings, Markdown, reasoning disclosures, buttons, tool
+headers and contribution failures. A definition is permanent: its
 constructor callback lives as long as the page, while views connect and
 disconnect. A changed definition needs a fresh element name or a page reload.
 
@@ -119,6 +136,15 @@ the parts that differ, so a selection elsewhere in the listing survives.
 `show-text` renders it again. The `code`, `language`, `text` and `showText`
 properties set the matching attributes.
 
+`markdown-block` shows its `content` attribute as Markdown. `is-thinking` selects
+the reasoning presentation and `unescaped-html` lets authored HTML through. The
+`content`, `isThinking` and `escapeHtml` properties set them; `escapeHtml` is true
+by default, and setting it to false adds `unescaped-html`. `thinking-block` shows
+a collapsed `Thinking...` disclosure of its `content` attribute, and
+`is-streaming` (the `isStreaming` property) makes the header shimmer. A detached
+`thinking-block` drops its toggle listener; when it is attached again it binds
+the toggle once and keeps its expansion.
+
 `components::button::button` creates a native button whose `type` comes from
 `ButtonType` (`button` by default), with `maestro-button
 maestro-button-<variant> maestro-button-<size>` classes followed by the
@@ -126,7 +152,8 @@ caller's `class_name`, an optional title and a spinning loader while loading.
 Disabled and loading buttons refuse activation. Each variant paints from the
 pack: `default` on the accent color, `destructive` on the error color,
 `outline` with a border, `secondary` on the panel color, `ghost` without a
-background and `link` in the accent color.
+background and `link` in the accent color. Only `outline` carries a border
+width, so every other variant measures its padding and glyph alone.
 
 ## Contributions
 

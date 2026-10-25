@@ -9,13 +9,15 @@ use super::wire::{
     BlockDelta, ContentBlockDelta, ContentBlockStart, ContentBlockStop, Event, MessageDelta,
     MessageStart, OpenedBlock, Position, StartedMessage, ToolUse, Usage,
 };
+use crate::arguments::replay::nullish_default;
 use crate::providers::http::RequestFailure;
 use crate::providers::json_text::{json_value, or_zero};
 use crate::{
-    AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
-    JsonObject, Model, SharedAssistantMessage, StopReason, TextContent, ThinkingContent, Tool,
-    ToolCall, calculate_cost, parsed_arguments,
+    AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Model,
+    SharedAssistantMessage, StopReason, TextContent, ThinkingContent, Tool, ToolCall,
+    calculate_cost, parsed_arguments,
 };
+use maestro_request::presence::Presence;
 
 /// Text of a redacted reasoning block.
 const REDACTED_TEXT: &str = "[Reasoning redacted]";
@@ -128,7 +130,8 @@ impl<'a> Reducer<'a> {
     /// Recompute the token total and the costs of the message.
     fn total_usage(&self, message: &mut AssistantMessage) {
         let usage = &mut message.usage;
-        usage.total_tokens = usage.input + usage.output + usage.cache_read + usage.cache_write;
+        usage.total_tokens =
+            Presence::Present(usage.input + usage.output + usage.cache_read + usage.cache_write);
         calculate_cost(&self.model, usage);
     }
 
@@ -295,7 +298,7 @@ impl<'a> Reducer<'a> {
     }
 
     /// Replace the arguments of a tool call with those the text received so far spells.
-    fn append_arguments(&self, position: usize, fragment: String, arguments: JsonObject) {
+    fn append_arguments(&self, position: usize, fragment: String, arguments: Value) {
         self.update(|message| {
             if let Some(AssistantContent::ToolCall(call)) = message.content.get_mut(position) {
                 call.arguments = arguments;
@@ -374,18 +377,14 @@ fn thinking(text: String, signature: Option<String>, redacted: Option<bool>) -> 
     })
 }
 
-/// Build the tool call a block opens: its initial arguments are those it carries when they
-/// are an object that fits the conversion bound, otherwise none.
+/// Build the tool call a block opens: its initial arguments are those it carries, or an empty
+/// object when it carries none or carries null.
 fn tool_call(call: ToolUse, name: String) -> AssistantContent {
     let arguments = call
         .input
         .as_deref()
         .and_then(|raw: &RawValue| json_value(raw).ok())
-        .and_then(|value| match value {
-            Value::Object(arguments) => Some(arguments),
-            _ => None,
-        })
-        .unwrap_or_default();
+        .map_or_else(|| nullish_default(Value::Null), nullish_default);
     AssistantContent::ToolCall(ToolCall {
         id: call.id.unwrap_or_default(),
         name,

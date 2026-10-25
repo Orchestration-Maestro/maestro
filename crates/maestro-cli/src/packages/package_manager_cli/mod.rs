@@ -7,6 +7,7 @@ mod presentation;
 pub use parse::PackageCommand;
 
 use super::package_manager_cli::parse::{PackageCommandOptions, UpdateTarget};
+use crate::input::config_selector::{ConfigPresentation, ConfigSelectorOptions, select_config};
 use maestro_app::configuration::config::{
     SelfUpdateCommand, SelfUpdateOperations, get_self_update_plan, run_self_update,
 };
@@ -187,6 +188,48 @@ async fn operate(
         PackageCommand::List => presentation::list(&prepared.manager, context),
         PackageCommand::Update => update(options, prepared, context).await,
     }
+}
+
+/// Handle the configuration command, reporting whether the arguments belonged to it.
+///
+/// Only a leading `config` is handled and later tokens are ignored. The selector runs over
+/// the resolved configured paths and, once it settles, the command asks the presentation's
+/// exit effect for status 0.
+///
+/// # Errors
+/// Returns working-directory, settings-load, manager-construction, resolution and
+/// presentation failures, which the caller reports as it does for its own operations.
+pub async fn handle_config_command(
+    args: &[String],
+    context: &PackageCommandContext<'_>,
+    presentation: ConfigPresentation,
+) -> io::Result<bool> {
+    if args.first().map(String::as_str) != Some("config") {
+        return Ok(false);
+    }
+    let cwd = (context.cwd)()?;
+    let agent_dir = (context.agent_dir)()?;
+    let settings = (context.load_settings)(&cwd, &agent_dir)?;
+    presentation::warn(&settings, "config command", context)?;
+    let manager = (context.create_package_manager)(PackageManagerOptions {
+        cwd: cwd.clone(),
+        agent_dir: agent_dir.clone(),
+        settings_manager: Rc::clone(&settings),
+    })?;
+    let resolved_paths = manager.resolve(None).await?;
+    let exit = Rc::clone(&presentation.host.exit);
+    select_config(
+        ConfigSelectorOptions {
+            resolved_paths,
+            settings_manager: settings,
+            cwd,
+            agent_dir,
+        },
+        presentation,
+    )
+    .await?;
+    exit(0);
+    Ok(true)
 }
 
 /// Handle one package command, reporting whether the arguments belonged to one.

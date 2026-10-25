@@ -105,13 +105,44 @@ Optional arguments are passed through unchanged: an absent value stays absent,
 an empty string or list stays present, and millisecond numbers are not
 validated. An absent widget placement means above the editor.
 
-Factories, renderers, input handlers, disposers, overlay option resolvers and
-overlay handle callbacks receive a `CallbackEmitter`. A host calls them through
-`EventBus::invoke_callback` on the extension's bus, so events they emit reach
-other extensions' listeners right after the callback returns, as for event
-listeners. A host calls a synchronous factory before its setter returns.
-Disposal is explicit: the host calls `ExtensionComponent::dispose` when it
-removes a component; dropping a handle does not dispose anything.
+Every UI callback is bound to the extension facade that authored it:
+
+```rust
+use maestro_extensions::types::{TerminalInputHandler, UIHostCall};
+use maestro_extensions::ExtensionAPI;
+use maestro_models::Local;
+use maestro_tui::tui::InputListenerResult;
+
+fn bind(api: &ExtensionAPI<Local>) {
+    let handler: TerminalInputHandler = api.ui_callback(|data: String, events| {
+        events.emit("received", serde_json::json!("input"));
+        Ok(InputListenerResult::Replace(data))
+    });
+    let call: UIHostCall<String, InputListenerResult> =
+        api.ui_callback(|data: String, _| Ok(InputListenerResult::Replace(data)));
+    assert!(!call.ptr_eq(&handler));
+    assert!(matches!(
+        call.call("x".into()),
+        Ok(InputListenerResult::Replace(data)) if data == "x"
+    ));
+}
+```
+
+`ExtensionAPI::ui_callback` keeps the facade's event capability together with
+the callback, so a host calls `UIHostCall::call(operands)` and never obtains a
+bus or builds an emitter. Events the callback emits reach other extensions'
+listeners right after it returns, as for event listeners; listeners of the
+authoring extension run inside the call. The default thread-safe facade and a
+local facade both bind the same handle, which stays local: `Rc` values and
+terminal objects are still the callbacks' operands and results. `call`
+requires neither its operands nor its result to be `Clone`.
+
+A handle is one allocation: `clone`, `ptr_eq`, `PartialEq` and `Hash` all follow
+that allocation, so a host can key a cache or a listener set by the callback it
+was given instead of wrapping every registration in a new identity. A host calls
+a synchronous factory before its setter returns. Disposal is explicit: the host
+calls `ExtensionComponent::dispose` when it removes a component; dropping a
+handle does not dispose anything.
 
 `theme()` returns a live view: a retained handle reads each later publication,
 and reading it before the first publication fails with the theme owner's error.

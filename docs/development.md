@@ -206,11 +206,25 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- \
   node --test crates/maestro-web/tests/sandbox_loading_support/run.test.cjs
 ```
 
+The tool report page is a second witness in the same job: `analysis_page.cjs`
+serves the committed report fixture and answers the page's two pinned library
+URLs from cached copies whose SHA-256 digests it checks (a missing copy is
+fetched with retries, and a mismatch fails). Any other request that would leave
+the machine fails the run, so the bytes the page executes are the bytes the cache
+was verified with. The script then observes what the page paints: a row click
+must change the selected summary and the canvas bitmap, a recorded `</script>`
+payload must stay inert text, and bar fills, chart label text, heading glyphs,
+summary text and row borders must show the brand roles. Canvas bands and
+screenshots are sampled as pixels, and a chart's own animation completion is the
+render signal, so no test here waits on a clock. The native report test holds the
+fixture byte-for-byte, so a template change has to move both.
+
 Canvas session-header tests and offline tool cards are not executed; the latter
 still depend on the canvas renderer. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
-requests the shared Chromium job with `browser_test_crates = ["maestro-web"]`.
+requests the shared Chromium job with
+`browser_test_crates = ["maestro-app", "maestro-web"]`.
 The job runs when the existing package selection includes a requested package,
 when a nonempty request changes, or for merge groups and main pushes; advisory-only
 runs skip it. Native package selection and the coverage floor stay unchanged.
@@ -395,10 +409,12 @@ viewer bundle rather than building it.
 
 ## Debugging
 
-The hidden `/debug` command is unavailable until the interactive front end is
-delivered. Its output belongs under
-`~/.maestro/agent/maestro-debug.log`. It contains rendered terminal lines with ANSI
-sequences and the last model messages. The interactive owner supplies this
+In the interactive mode, Shift+Ctrl+D writes a debug capture to
+`~/.maestro/agent/maestro-debug.log`, or to `maestro-debug.log` in the directory
+`MAESTRO_CODING_AGENT_DIR` names. The capture holds the terminal size, every
+rendered line with its visible width and escaped ANSI sequences, and the session's
+messages as JSON lines. Submitting `/debug` writes the same capture. See
+[debug capture](chat/commands.md#debug-capture). The interactive owner supplies this
 behavior; development commands do not create a replacement logger.
 
 ## Tests

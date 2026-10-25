@@ -978,7 +978,7 @@ fn stream_tool_call() -> maestro_models::ToolCall {
     maestro_models::ToolCall {
         id: "call".into(),
         name: "custom".into(),
-        arguments: serde_json::Map::new(),
+        arguments: serde_json::Map::new().into(),
         thought_signature: None,
     }
 }
@@ -1293,7 +1293,7 @@ fn threaded_definition(
         definition: maestro_models::Tool {
             name,
             description: "worker".into(),
-            parameters: json!({}),
+            parameters: json!({}).into(),
         },
         label: "worker".into(),
         prompt_snippet: None,

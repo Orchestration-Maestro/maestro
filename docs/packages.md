@@ -45,6 +45,11 @@ Installation does not consult the offline setting. [Available-update
 checks](package-updates.md) consult it without acquiring contents. Configured
 execution selects registrations before applying the offline return.
 
+`DefaultPackageManager::with_offline` supplies the caller's startup selection.
+`Some(true)` suppresses that remote work, `Some(false)` permits it, and `None` keeps
+reading `MAESTRO_OFFLINE` whenever an operation consults offline mode. The flag
+accepts `1`, or `true` and `yes` in any ASCII letter case, and is never trimmed.
+
 ## Progress
 
 `set_progress_callback` replaces or clears the callback; each emission reads the
@@ -79,6 +84,16 @@ so an extension failure stops before any self-update. The self-update side reuse
 the [application plan and runner](application/configuration.md#self-update-selection):
 a release that is not newer skips it, a changed package identity replaces the
 installed one, and a nonzero child exit reports the manual command to run.
+
+`handle_config_command` handles one leading `config` and ignores later tokens. It
+observes the working directory and the agent directory once, loads the settings
+owner, reports their failures as
+`Warning (config command, <scope> settings): <message>`, builds the manager over
+that same owner, resolves the configured paths and presents the
+[selector](cli.md#selectors) over them. A command whose presentation succeeds asks
+that presentation's exit effect for status 0; directory, settings, manager,
+resolution and presentation failures keep their own error, so it requests no exit and
+prints no package-command error line.
 
 ## Persistence
 

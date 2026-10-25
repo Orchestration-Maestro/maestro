@@ -5,7 +5,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Harness, HarnessOptions, answer, corpus, get_assistant_texts, get_message_text, get_user_texts,
-    harness, on_task_set, session_run_ended, start_prompt,
+    harness, on_task_set, prompt_to_end, session_run_ended, start_prompt,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentEvent, AgentMessage, AgentToolRecord, AgentToolResult, SharedAgentTool};
@@ -150,7 +150,8 @@ fn dummy_tools(failing: Option<&'static str>) -> IndexMap<String, SharedAgentToo
             name: "dummy".into(),
             description: "Dummy tool".into(),
             parameters: json!({"type": "object", "properties": {"q": {"type": "string"}},
-                "required": ["q"]}),
+                "required": ["q"]})
+            .into(),
         },
         description: None,
         label: "dummy".into(),
@@ -187,25 +188,16 @@ fn dummy_calls(text: Option<&str>, calls: &[(&str, &str)]) -> AssistantMessage {
         .into_iter()
         .collect();
     content.extend(calls.iter().map(|(q, id)| {
-        let arguments = json!({"q": q}).as_object().unwrap().clone();
         let options = FauxToolCallOptions {
             id: Some((*id).into()),
         };
-        AssistantContent::ToolCall(faux_tool_call("dummy", arguments, options))
+        AssistantContent::ToolCall(faux_tool_call("dummy", json!({"q": q}), options))
     }));
     let options = FauxAssistantMessageOptions {
         stop_reason: Some(StopReason::ToolUse),
         ..FauxAssistantMessageOptions::default()
     };
     faux_assistant_message(content, options)
-}
-
-/// Prompts `text` and waits until the session has delivered the run's end.
-async fn prompt_to_end(h: &Harness, text: &str, options: PromptOptions) {
-    let ended = session_run_ended(h);
-    h.session.prompt(text, options).await.unwrap();
-    h.session.agent().wait_for_idle().await;
-    ended.notified().await;
 }
 
 /// The supplied thinking and code answer, as its fixture records it.
@@ -800,6 +792,7 @@ fn empty_resource_roots_keep_the_session_isolated() {
                 settings_manager: Some(Rc::new(RefCell::new(settings))),
                 session_start_event: None,
                 theme: maestro_theme::LiveTheme::default(),
+                offline: None,
             })
             .await
             .unwrap();

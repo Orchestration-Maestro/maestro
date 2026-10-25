@@ -3772,6 +3772,8 @@ version = "0.1.0"
 dependencies = [
  "futures-util",
  "maestro-dependencies",
+ "maestro-json",
+ "maestro-listeners",
  "maestro-models",
  "maestro-test-process",
  "maestro-text",
@@ -3804,6 +3806,8 @@ dependencies = [
  "maestro-export",
  "maestro-extensions",
  "maestro-json",
+ "maestro-listeners",
+ "maestro-listing",
  "maestro-markdown",
  "maestro-models",
  "maestro-packages",
@@ -3882,19 +3886,24 @@ name = "maestro-chat"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "futures-util",
  "indexmap 2.14.2",
  "maestro-app",
  "maestro-dependencies",
+ "maestro-models",
  "maestro-path",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-theme",
  "maestro-tui",
+ "maestro-tui-crossterm",
  "regress",
+ "rustix",
  "ryu-js",
  "serde",
  "serde_json",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -3906,6 +3915,7 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-app",
  "maestro-dependencies",
+ "maestro-listeners",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-test-terminal",
@@ -3944,6 +3954,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-detection",
  "maestro-ipc",
+ "maestro-json",
  "maestro-path",
  "maestro-process",
  "maestro-protocol",
@@ -4108,6 +4119,7 @@ dependencies = [
  "maestro-catalog",
  "maestro-credentials",
  "maestro-dependencies",
+ "maestro-listeners",
  "maestro-models",
  "maestro-path",
  "maestro-resources",
@@ -4160,6 +4172,13 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "maestro-listeners"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
 ]
 
 [[package]]
@@ -4328,6 +4347,7 @@ dependencies = [
  "rustix",
  "serde",
  "serde_json",
+ "signal-hook",
  "tokio",
  "tracing",
 ]
@@ -4373,6 +4393,20 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "maestro-rpc"
+version = "0.1.0"
+dependencies = [
+ "maestro-app",
+ "maestro-dependencies",
+ "maestro-test-directory",
+ "maestro-test-process",
+ "maestro-theme",
+ "maestro-tui-crossterm",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -4598,6 +4632,7 @@ dependencies = [
  "getrandom 0.4.3",
  "maestro-cancellation",
  "maestro-dependencies",
+ "maestro-listeners",
  "maestro-listing",
  "maestro-markdown",
  "maestro-path",
@@ -4625,6 +4660,7 @@ dependencies = [
  "chrono",
  "maestro-brand",
  "maestro-dependencies",
+ "maestro-listeners",
  "maestro-path",
  "maestro-process",
  "maestro-test-directory",

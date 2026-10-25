@@ -201,6 +201,7 @@ fn assert_cost_case(
     expected: [f64; 4],
 ) {
     use maestro_models::{ModelCost, Usage, UsageCost, calculate_cost};
+    use maestro_request::presence::Presence;
     model.cost = ModelCost {
         input: rates[0],
         output: rates[1],
@@ -212,7 +213,7 @@ fn assert_cost_case(
         output: counts[1],
         cache_read: counts[2],
         cache_write: counts[3],
-        total_tokens: -123.5,
+        total_tokens: Presence::Present(-123.5),
         cost: UsageCost {
             input: 99.0,
             output: 99.0,
@@ -249,7 +250,7 @@ fn assert_cost_case(
         .map(f64::to_bits),
         counts.map(f64::to_bits)
     );
-    assert_float(usage.total_tokens, -123.5);
+    assert_eq!(usage.total_tokens, Presence::Present(-123.5));
 }
 
 fn assert_cost_sum_order(model: &mut maestro_models::Model) {

@@ -107,6 +107,47 @@ Close focus decoration is qualified through sampled raster pixels at multiple
 densities; other canvas paint is qualified through visible tessellated primitives.
 Broader canvas raster qualification follows [the canvas runner](https://github.com/Orchestration-Maestro/maestro/issues/1760).
 
+## Markdown and reasoning
+
+Markdown and the reasoning disclosure also mount as native page content and as
+the `markdown-block` and `thinking-block` elements; see
+[native Markdown and code](transcript.md#native-markdown-and-code) and
+[page content](frontend.md#page-content).
+
+## Native download and preview/source controls
+
+[`download_button`](../../crates/maestro-web/src/components/download_button/dom.rs)
+mounts a native button that saves the caller's original bytes through the one
+scoped Blob/anchor owner. `DownloadButtonProps::new` selects a small ghost button
+with a small glyph and the `text/plain` MIME type; callers then set the tooltip,
+the visible label, the button size, the emphasis, the glyph extent and forced
+Base64 decoding. An absent tooltip uses the localized `Download` text and an
+explicitly empty one stays empty; `show_text` adds the localized label
+independently. Localization is read only where it is used, so a control with an
+explicit tooltip and no visible label builds even when the language cannot be
+read. The button is a plain action, so it never submits a surrounding
+form. Text content qualifies for decoding only at four or more characters, a
+multiple of four, with the complete Base64 alphabet and at most two terminal
+`=`; a failed decode saves the original text. Byte content keeps the caller's
+native array, so a later write or a subview is read when the control activates.
+The mounted root owns the activation listener and releases it on drop.
+
+[`PreviewCodeToggle`](../../crates/maestro-web/src/components/preview_code_toggle.rs)
+keeps one `ViewMode` in shared owned state. `mode` reads it and `set_mode` writes
+it silently; `DomContent::mount` and `update` publish a native group with two icon
+buttons, and `render` keeps the retained canvas pair for callers that still draw
+on the canvas. A real user change updates the mode, then dispatches one bubbling
+`mode-change` event whose detail is `preview` or `code`; selecting the current
+mode reports nothing, and a listener that selects again keeps its own choice. The
+buttons keep their native form behavior, so neither sets `type`. Registering the
+`preview-code-toggle` element gives page authors the same group with an
+unreflected `mode` property that reads and writes that enum and repaints the
+mounted buttons. An update refreshes the buttons' localized titles and hands the
+group to the controller it publishes, so later clicks reach that controller while
+the buttons keep their native nodes and focus. Disconnecting
+removes the group's handlers, and reconnecting restores them once with the
+selection intact.
+
 ## Tool content
 
 [Tool renderers](tool-renderers.md) provide named dispatch, retained tool headers,
@@ -122,3 +163,36 @@ preview/source toggles return `components::copy_button::LocalizedControlError`
 for localization, shared control drawing and selected-color I/O errors.
 These Rust source interfaces keep failure kinds and causes with the operation
 that owns them, without changing rendering, callback timing or retained lifetimes.
+
+## Custom provider cards
+
+[`CustomProviderCard`](../../crates/maestro-web/src/components/custom_provider_card.rs)
+mounts through `DomContent` with the existing `CustomProvider` handle:
+
+```rust
+use std::{cell::RefCell, rc::Rc};
+use maestro_web::{CustomProvider, CustomProviderCard};
+
+fn provider_card(provider: Rc<RefCell<CustomProvider>>) -> CustomProviderCard {
+    let mut card = CustomProviderCard::new(provider);
+    card.on_edit = Some(Rc::new(|provider| {
+        provider.borrow_mut().name = "Edited provider".into();
+    }));
+    card
+}
+```
+
+The card starts in manual mode and displays the supplied model count. Set
+`is_auto_discovery` independently of the provider protocol to display the supplied
+`components::custom_provider_card::ProviderStatus`; an absent discovery result
+omits that row. Names, protocol spellings and URLs remain literal native text.
+
+Call `DomContent::update` after changing operands. Existing buttons keep their
+nodes, focus and selection while their actions remain present. Activation reads
+the most recently published callback and provider handle, including later edits
+to that provider. It releases component borrows before calling the action, so the
+action may update its containing card. Removing an action releases its binding;
+disconnected roots perform no action, and reconnecting restores delivery without
+a second registration. Dropping `DomRoot` releases every retained binding even
+when the page still holds its nodes. Localization failures leave the last
+successfully published content in place.

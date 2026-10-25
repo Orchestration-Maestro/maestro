@@ -1,6 +1,9 @@
 //! Mounted page content, page-content registries and built-in elements in a real document.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{Text, body, container, host, result, text, view};
+use crate::contributions_support::{
+    Clipboard, Recorded, Text, body, computed, container, host, page_module, result, rgb, text,
+    until, view,
+};
 use crate::message_renderer_support::{NativeMessage, message};
 use maestro_app::{AgentMessage, JsonObject, NoCustomMessages, ToolResultMessage};
 use maestro_web::DefaultRenderer;
@@ -26,14 +29,14 @@ use maestro_web::{
 };
 use serde_json::{Value, json};
 use std::{
-    cell::{Cell, RefCell},
+    cell::Cell,
     rc::Rc,
     sync::{
         Arc,
         atomic::{AtomicU32, Ordering},
     },
 };
-use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
+use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement, Node};
 
 /// Content counting its mounts and updates.
@@ -593,20 +596,6 @@ pub fn page_code_block_decodes_encoded_code(import_module: &js_sys::Function) {
     assert_eq!(copy.get_attribute("text").as_deref(), Some(original));
 }
 
-/// Stub the clipboard and collect each written text.
-fn recorded_clipboard() -> (Rc<RefCell<Vec<String>>>, impl Sized) {
-    let copies = Rc::new(RefCell::new(Vec::new()));
-    let recorded = Rc::clone(&copies);
-    let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(move |text: String| {
-        recorded.borrow_mut().push(text);
-        js_sys::Promise::resolve(&JsValue::UNDEFINED)
-    });
-    let navigator = web_sys::window().unwrap().navigator();
-    let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
-    js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
-    (copies, write)
-}
-
 /// Built-in elements follow their properties and observed attributes after connecting.
 #[wasm_bindgen]
 pub async fn built_in_elements_follow_property_and_attribute_changes(
@@ -624,7 +613,9 @@ pub async fn built_in_elements_follow_property_and_attribute_changes(
         text(&block.query_selector("span").unwrap().unwrap()),
         "rust"
     );
-    let (copies, _write) = recorded_clipboard();
+    let clipboard = crate::contributions_support::Recorded::install(
+        crate::contributions_support::Clipboard::Accept,
+    );
     let control = view.document.create_element("copy-button").unwrap();
     body().append_child(&control).unwrap();
     let title = |control: &Element| {
@@ -649,24 +640,41 @@ pub async fn built_in_elements_follow_property_and_attribute_changes(
         .unchecked_into::<HtmlElement>()
         .click();
     crate::contributions_support::until(&page, &control, || text(&control) == "Copied!").await;
-    assert_eq!(*copies.borrow(), ["property text"]);
+    assert_eq!(clipboard.texts(), ["property text"]);
 }
 
-/// A CSS `rgb(...)` value for a `#rrggbb` brand color.
-fn rgb(hex: &str) -> String {
-    let channel = |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).unwrap();
-    format!("rgb({}, {}, {})", channel(1), channel(3), channel(5))
+/// Success feedback and its restoration keep the focused native control in place.
+#[wasm_bindgen]
+pub async fn copy_control_keeps_focus_through_success_and_restoration(
+    import_module: js_sys::Function,
+) {
+    let view = view();
+    let _host = host(&view, &import_module);
+    let _clipboard = Recorded::install(Clipboard::Accept);
+    let control = view.document.create_element("copy-button").unwrap();
+    control.set_attribute("text", "payload").unwrap();
+    control.set_attribute("show-text", "").unwrap();
+    body().append_child(&control).unwrap();
+    let button: HtmlElement = control
+        .query_selector("button")
+        .unwrap()
+        .unwrap()
+        .unchecked_into();
+    button.focus().unwrap();
+    let focused = || {
+        view.document
+            .active_element()
+            .is_some_and(|active| active.is_same_node(Some(button.unchecked_ref())))
+    };
+    assert!(focused(), "the control did not take focus");
+    let page = page_module(&import_module).await;
+    button.click();
+    until(&page, &control, || text(&control) == "Copied!").await;
+    assert!(focused(), "success feedback dropped the focused control");
+    until(&page, &control, || text(&control).is_empty()).await;
+    assert!(focused(), "restoration dropped the focused control");
 }
-/// One computed style property of an element.
-fn computed(element: &Element, property: &str) -> String {
-    web_sys::window()
-        .unwrap()
-        .get_computed_style(element)
-        .unwrap()
-        .unwrap()
-        .get_property_value(property)
-        .unwrap()
-}
+
 /// Running animations on an element.
 fn animations(element: &Element) -> u32 {
     let list: js_sys::Function = js_sys::Reflect::get(element, &"getAnimations".into())

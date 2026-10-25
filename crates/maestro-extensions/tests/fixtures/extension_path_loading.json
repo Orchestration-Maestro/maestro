@@ -2963,7 +2963,7 @@
             },
             {
               "path": "$ROOT/nodir/",
-              "error": "Failed to load extension: module not found: $ROOT/nodir/"
+              "error": "Failed to load extension: module not found: $ROOT/nodir"
             }
           ],
           "flagValues": {}

@@ -136,6 +136,12 @@ owners may outlive the event or execution that supplied them. Callback errors
 return to the author/caller without undoing prior output. For the signal's live
 `aborted()` state, see [live context capabilities](#live-context-and-catalog-capabilities).
 
+Registration and enumeration preserve nested parameter schemas and the kinds declared
+for their nodes. An enumerated declaration can be registered again with those kinds
+intact. Metadata transport does not validate invocation arguments; argument preparation
+and validation remain with the model argument validator. Model-server JSON limits do
+not apply to these author-supplied declarations.
+
 ## Event channels
 
 `api.events()` returns the supplied host's `EventBus`. Ordinary code awaits
@@ -587,6 +593,53 @@ prompt. A supplied user append is already part of the event's `systemPrompt`,
 including any edit an earlier handler made; the example never appends that
 option again. Loading it into an application is opt-in, and
 `examples/extensions/README.md` gives the build and controlled-run commands.
+
+### A hidden thinking label
+
+[`examples/extensions/hidden_thinking_label.rs`](../../examples/extensions/hidden_thinking_label.rs)
+is the shipped collapsed-thinking-label extension. Its `/thinking-label`
+command sets the label the host shows, and the same command without arguments
+clears that label and restores `Pondering...` for the next session start. The
+example also registers a `session_start` handler that applies the label it
+retains, so the next session shows the label the session before set.
+
+The command trims the surrounding whitespace of the text it receives and keeps
+the interior text unchanged, and a command that sends no text takes the reset
+branch rather than setting an empty label. Clearing the label and applying the
+example default are separate requests: the first asks the host to restore its own
+default, and the second shows the example's text at the next session start.
+
+A host rejection ends the command with the host's message. The command has
+already stored the label it chose, so the next session start applies it. Loading the component into an application is opt-in and needs a host that
+enables the component runtime; `examples/extensions/README.md` gives the build
+and controlled-run commands.
+
+### A prompt toggle
+
+`examples/extensions/pirate.rs` registers a `/pirate` command and a
+`before_agent_start` handler that share one boolean the factory instance owns.
+The command flips that boolean and reports the new state through
+`ExtensionUIContext::notify`; the handler appends this example's instructions to
+the supplied `systemPrompt` only while the boolean is set and otherwise returns
+no override. A refused notification leaves the flip in place. Loading it into an
+application is opt-in, and `examples/extensions/README.md` gives the build and
+controlled-run commands.
+
+### A system prompt status header
+
+[`examples/extensions/system_prompt_header.rs`](../../examples/extensions/system_prompt_header.rs)
+registers `agent_start` to read the prompt the host supplies at that moment and
+set the `system-prompt` status to `System: N chars`, where `N` counts UTF-16 code
+units of that prompt. Whitespace, a byte order mark and combining sequences keep
+the width the string stores, and nothing is trimmed, rebuilt or cached.
+`session_shutdown` removes the status under the same key, including when no start
+came first, so the handler keeps no state between invocations.
+
+A host rejection from the getter or the status request reaches the host
+unchanged, and no fallback status is written. Loading the component into an
+application is opt-in, and `examples/extensions/README.md` gives the build and
+controlled-run commands.
+
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses
@@ -648,6 +701,88 @@ uppercase spellings and backslash separators are left as they are, and no
 filesystem call decides the answer. The three patterns are the example's own
 policy; a hook needs a host that enables the component runtime, and
 `examples/extensions/README.md` holds the build and controlled-run commands.
+
+### A compaction trigger
+
+[`examples/extensions/trigger_compact.rs`](../../examples/extensions/trigger_compact.rs)
+registers a `turn_end` hook and a `trigger-compact` command. The hook records the
+context usage the host reports and requests compaction once a known estimate at or
+below 100,000 tokens is followed by a known estimate above it; an estimate the host
+does not report leaves the last one in place. The command requests compaction at
+once, passing its trimmed arguments as the instructions, or none when they are
+blank, and it never changes the recorded estimate.
+
+The example only asks the host for compaction and reports `Compaction started`
+before the request, then `Compaction completed` or `Compaction failed: <message>`
+when the host answers. Each report reads the UI availability of that moment, so a
+headless start can still report a completion that arrives after a UI appears.
+
+It is opt-in like the greeting tool: its crate's tests run the built component in a
+controlled host, and `examples/extensions/README.md` holds the build and
+controlled-run commands. Compacting a running application is not part of that
+controlled run.
+
+### Entry bookmarks
+
+[`examples/extensions/bookmark.rs`](../../examples/extensions/bookmark.rs) labels
+session entries, which is what the tree view shows beside an entry. `/bookmark`
+labels the newest assistant message: with the argument text when it has any, and
+with `bookmark-<epoch milliseconds>` when the argument is blank. `/unbookmark`
+removes the newest label from any entry kind and ignores its arguments.
+
+The example reads the complete entry list once per invocation, walks it from the
+newest entry and stops at the first match, so a bookmark never scans the list
+twice. It keeps no label store of its own: `set_label` and `get_label` reach the
+host's session, and a label it removes keeps the entry it was written on.
+
+Entry identity comes from the entry `message`, `thinking_level_change`,
+`model_change`, `compaction`, `branch_summary`, `custom`, `custom_message`,
+`label` and `session_info` all carry, so removal covers every kind. Both commands
+return host failures unchanged, and a command that writes a label before
+notifying writes nothing when the label write itself fails.
+
+It is opt-in like the other shipped extensions: its crate's tests run the built
+component in a controlled host with a supplied wall clock, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
+
+### A custom working message on session start
+
+[`examples/extensions/working_message_test.rs`](../../examples/extensions/working_message_test.rs)
+registers one `session_start` handler. It acquires the context's UI and sends
+`set_working_message` with the authored text, then `set_working_indicator` with
+one authored frame and no interval, and returns no event result. Both requests
+keep every authored byte, including the colour and reset sequences. A refusal the
+host returns ends the callback with the host's message, so a refused working-text
+request leaves the indicator unsent.
+
+The controlled run asserts the ordered requests the guest sends; it does not show
+that an interactive host keeps them across agent turns or loader recreation, which
+belongs to the host's own working-loader operations. Loading the component into an
+application is opt-in and needs that application's component runtime.
+
+### User message delivery
+
+[`examples/extensions/send_user_message.rs`](../../examples/extensions/send_user_message.rs)
+sends user messages the way a user types them. `/ask` sends an ordinary message,
+which starts a turn, and reports `Agent is busy. Use /steer or /followup
+instead.` while the agent is working. `/steer` sends an ordinary message while
+idle and a steering message while the agent is working, so that message reaches
+the request in flight. `/followup` sends an ordinary message while idle and
+otherwise queues a follow-up, reporting `Follow-up queued` once the host admitted
+it. `/askwith` sends two text blocks, `User request: <arguments>` and `Please
+respond concisely.`, so the second instruction arrives with the request.
+
+A command with no message reports its own usage warning before it reads the idle
+flag or sends anything: `Usage: /ask <message>` and its three siblings. Message
+text is sent exactly as it arrived, whitespace included, even
+though the same text decides whether the argument is blank. Each command returns
+a host failure unchanged, and a queued follow-up acknowledges only a send the host
+admitted.
+
+It is opt-in like the other shipped extensions: its crate's tests run the built
+component in a controlled host and `examples/extensions/README.md` holds the build
+and controlled-run commands. Delivering those requests from a running
+application is part of the queue the application owns, not of this controlled run.
 
 ### A user-request summary handler
 

@@ -7,14 +7,45 @@ use std::{
     time::UNIX_EPOCH,
 };
 
+/// Encode an authored working directory into its session directory name.
+///
+/// Strips one leading separator and replaces separators and drive colons with
+/// dashes. Performs no I/O and does not normalize the authored path.
+pub(crate) fn encode_session_dir(cwd: &str) -> String {
+    let cwd = cwd.strip_prefix(['/', '\\']).unwrap_or(cwd);
+    format!("--{}--", cwd.replace(['/', '\\', ':'], "-"))
+}
+
+/// The directory beneath a base that holds one working directory's sessions.
+///
+/// Only this module builds one, so a caller receives a session directory
+/// instead of spelling one:
+///
+/// ```compile_fail,E0603
+/// let _ = maestro_session::SessionDir(String::from("--workspace--"));
+/// ```
+pub struct SessionDir(String);
+
+impl SessionDir {
+    /// The directory path this record names.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// The directory beneath `base` that holds the sessions of `cwd`.
+#[must_use]
+pub fn sessions_dir(base: &str, cwd: &str) -> SessionDir {
+    SessionDir(maestro_path::join(&[base, &encode_session_dir(cwd)]))
+}
+
 /// Encode the authored cwd into a default directory beneath the resolved agent root.
 ///
 /// # Errors
 /// Propagates native directory creation errors.
 pub fn get_default_session_dir(cwd: &str, agent_dir: &str) -> io::Result<String> {
-    let cwd = cwd.strip_prefix(['/', '\\']).unwrap_or(cwd);
-    let safe = format!("--{}--", cwd.replace(['/', '\\', ':'], "-"));
-    let directory = maestro_path::join(&[agent_dir, "sessions", &safe]);
+    let directory = maestro_path::join(&[agent_dir, "sessions", &encode_session_dir(cwd)]);
     if !std::path::Path::new(&directory).exists() {
         fs::create_dir_all(&directory)?;
     }

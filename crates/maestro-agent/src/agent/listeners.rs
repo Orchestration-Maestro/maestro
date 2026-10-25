@@ -70,16 +70,11 @@ impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
     ) -> impl std::future::Future<Output = Result<(), DiagnosticErrorInfo>> + use<C, E> {
         agent.reduce(&event);
         let event = Arc::new(RwLock::new(event));
-        let mut next = 0;
+        let mut cursor = lock(&agent.listeners).cursor();
 
         let mut invoke_next = move || {
-            let listener = lock(&agent.listeners)
-                .next_from(next)
-                .map(|(cursor, listener)| (cursor, listener.clone()));
-            listener.map(|(id, listener)| {
-                next = id;
-                listener(Arc::clone(&event), signal.clone())
-            })
+            let listener = lock(&agent.listeners).next_from(&mut cursor).cloned();
+            listener.map(|listener| listener(Arc::clone(&event), signal.clone()))
         };
         let mut pending = invoke_next();
         async move {
