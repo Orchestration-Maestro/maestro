@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const deviceScaleFactor = 1.25;
 const launchArgs = ['--no-sandbox', `--force-device-scale-factor=${deviceScaleFactor}`, '--js-flags=--expose-gc'];
 const families = ['execution', 'loading', 'contributions'];
-const counts = {execution: 26, loading: 19, contributions: 73};
+const counts = {execution: 26, loading: 23, contributions: 73};
 const total = Object.values(counts).reduce((sum, count) => sum + count);
 // Runtime modules initialize without unsafe-eval; frames load their own document.
 const contributionPolicy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'";
@@ -298,12 +298,12 @@ async function run({root, chromium, executablePath, inventory, log = console.log
     for (const family of families) {
       for (const name of inventory[family]) {
         log(`START ${family} ${name}`);
-        // Contribution exports receive the page bootstrap's module import, as an embedder supplies it.
-        await withPage(name, page => page.evaluate(async ([name, family]) => {
+        // Exports receive the page bootstrap's module import, as an embedder supplies it.
+        await withPage(name, page => page.evaluate(async name => {
           const module = await import('/sandbox.js');
           await module.default();
-          await (family === 'contributions' ? module[name](url => import(url)) : module[name]());
-        }, [name, family]), family === 'contributions' ? '/contributions.html' : '/');
+          await module[name](url => import(url));
+        }, name), family === 'contributions' ? '/contributions.html' : '/');
         passed[family]++;
         log(`PASS ${family} ${name}`);
       }

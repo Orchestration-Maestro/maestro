@@ -32,7 +32,7 @@ component-owned native controls: `components::download_button::dom::download_but
 and `DomContent for PreviewCodeToggle` publish them as page content. The generic
 file body also mounts natively through `DomContent for GenericArtifact`, and its
 independent header is `GenericArtifact::get_header_buttons(view: &DomView)`. The
-remaining artifact bodies, the panel and the Chat integration still use their
+other artifact bodies, the panel and the Chat integration still use their
 retained canvas owners until their own deliveries mount those controls.
 
 A mounted native body owns its `<section class="maestro-generic-artifact">` nodes,
@@ -249,3 +249,27 @@ Reading or Control preparation error. `Error::source` retains the original cause
 for code/Markdown rendering and localized copy or preview/source controls. Rust
 callers must update error paths and nested Host/Presentation matches; messages,
 retained views and recovery remain unchanged.
+
+## Native Word body
+
+On browser targets, `tools::artifacts::docx_artifact::DocxArtifact` implements
+`DomContent` directly. Create it with `new` or `default`, set its public `filename`
+and call `set_content` with the original base64 document. Mount its body and its
+independent `get_header_buttons(&DomView)` root separately. This direct interface
+does not install a Word viewer in the retained panel factory.
+
+The body reuses the document renderer with page width ignored and the other
+renderer defaults retained. Pages have white backgrounds, black text and 2em
+padding in both brand modes. Surrounding chrome uses the supplied brand roles.
+The body and header use the same complete original-byte decoder; the header saves
+with the Word document MIME type. A rejected header does not prevent mounting a
+body that displays the reached diagnostic.
+
+Call `update` after editing fields. Equal successful content and filename-only
+updates preserve page nodes. Empty content keeps a successful document, but
+clears a failed body. Assigning failed content again retries rendering and keeps
+the diagnostic if it fails again. Each mounted root owns its document URLs and
+pending shape sizing; replacement or root release drops those resources without
+affecting siblings. Errors share the attachment preview's literal node builder.
+The [shared Word renderer](../application/document-formats.md#word-page-rendering)
+still owns document parsing and safe link output.
