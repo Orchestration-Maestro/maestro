@@ -29,7 +29,9 @@ session's working directory. Last, the themes the session's resource loader has
 loaded are registered and the configured `theme` is selected, so a loaded theme
 wins over a shipped one with the same name. The setting is read after the loader
 answers. A failure to read the bindings, build the footer's collator or load the
-fallback theme is returned.
+fallback theme is returned. The constructed mode installs its rebinding and its
+[extension UI reset](extension-ui.md#session-replacement) on the runtime, both
+holding the mode weakly.
 
 ## Startup
 
@@ -616,8 +618,8 @@ else happens. On Unix the command splits on ASCII spaces only, and the file path
 its last argument; Windows runs it through the configured command interpreter, as
 the extension editor dialog does.
 
-The text written is the current editor's expanded text, so a collapsed paste is written in full
-rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md` in
+The text written is the current editor's expanded text, so a collapsed paste is
+written in full rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md` in
 the temporary directory. The mode then stops the terminal and runs the editor on
 the inherited terminal. A zero exit replaces the text of the editor current at that
 moment with the file's text less one final line feed; a nonzero exit, a signal or a

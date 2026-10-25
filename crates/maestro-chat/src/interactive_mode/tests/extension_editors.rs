@@ -66,7 +66,7 @@ impl Knobs {
 /// fail any of them with the witness's original error.
 pub(super) struct Probe {
     /// The forwarded editor.
-    inner: CustomEditor,
+    pub(super) inner: CustomEditor,
     /// The test's view of this editor.
     knobs: Rc<Knobs>,
 }

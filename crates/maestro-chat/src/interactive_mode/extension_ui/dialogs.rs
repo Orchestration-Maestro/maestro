@@ -21,6 +21,29 @@ type Settle = Rc<dyn Fn(Option<String>)>;
 /// Stops a dialog component's countdown before the editor returns.
 type Dispose = Box<dyn Fn()>;
 
+/// The settlement of the latest selector, text input and multi-line editor dialog.
+#[derive(Default)]
+pub(in super::super) struct DialogSlots {
+    /// The latest selector, including confirmations.
+    selector: RefCell<Option<Settle>>,
+    /// The latest text input.
+    input: RefCell<Option<Settle>>,
+    /// The latest multi-line editor.
+    editor: RefCell<Option<Settle>>,
+}
+
+impl DialogSlots {
+    /// Cancels each kept dialog that has not settled, as its own cancellation does, so it
+    /// answers `None`.
+    pub(in super::super) fn cancel_all(&self) {
+        for slot in [&self.selector, &self.input, &self.editor] {
+            if let Some(settle) = slot.take() {
+                settle(None);
+            }
+        }
+    }
+}
+
 /// A shown dialog that has not settled yet.
 struct Open {
     /// Receives the answer.
@@ -41,7 +64,7 @@ impl InteractiveMode {
         opts: Option<ExtensionUIDialogOptions>,
     ) -> ExtensionUIFuture<Option<String>> {
         let ExtensionUIDialogOptions { signal, timeout } = opts.unwrap_or_default();
-        self.show_dialog(signal, |settle| {
+        self.show_dialog(signal, &self.dialogs.selector, |settle| {
             let cancel = Rc::clone(&settle);
             let selector = Rc::new(ExtensionSelectorComponent::new(
                 title,
@@ -99,7 +122,7 @@ impl InteractiveMode {
         opts: Option<ExtensionUIDialogOptions>,
     ) -> ExtensionUIFuture<Option<String>> {
         let ExtensionUIDialogOptions { signal, timeout } = opts.unwrap_or_default();
-        self.show_dialog(signal, |settle| {
+        self.show_dialog(signal, &self.dialogs.input, |settle| {
             let cancel = Rc::clone(&settle);
             let input = Rc::new(ExtensionInputComponent::new(
                 title,
@@ -125,7 +148,7 @@ impl InteractiveMode {
         title: String,
         prefill: Option<String>,
     ) -> ExtensionUIFuture<Option<String>> {
-        self.show_dialog(None, |settle| {
+        self.show_dialog(None, &self.dialogs.editor, |settle| {
             let cancel = Rc::clone(&settle);
             let editor = ExtensionEditorComponent::new(
                 &self.ui,
@@ -150,10 +173,11 @@ impl InteractiveMode {
     /// An already-aborted signal settles at once without showing anything. Settling
     /// stops the countdown, restores the current editor and ends the abort observer;
     /// the shown component keeps the settlement, so dropping the returned future
-    /// leaves the dialog working.
+    /// leaves the dialog working. `slot` keeps the settlement for the reset.
     fn show_dialog(
         &self,
         signal: Option<Cancellation>,
+        slot: &RefCell<Option<Settle>>,
         build: impl FnOnce(Settle) -> Result<(Rc<dyn Component>, Option<Dispose>), ThemeError>,
     ) -> ExtensionUIFuture<Option<String>> {
         if signal.as_ref().is_some_and(Cancellation::is_aborted) {
@@ -167,6 +191,7 @@ impl InteractiveMode {
             dispose: None,
         })));
         let settle = self.settlement(Rc::clone(&open));
+        drop(slot.replace(Some(Rc::clone(&settle))));
         let (component, dispose) = match build(Rc::clone(&settle)) {
             Ok(shown) => shown,
             Err(error) => return Box::pin(std::future::ready(Err(error.into()))),

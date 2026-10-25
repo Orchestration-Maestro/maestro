@@ -121,6 +121,15 @@ impl InteractiveMode {
         Box::pin(async move { settled.await.unwrap_or(Ok(())) })
     }
 
+    /// Settles every custom view that has not settled without a value: each removes its own
+    /// overlay and disposes its component once, and the editor reset puts the editor back.
+    ///
+    /// # Errors
+    /// Returns the first overlay removal failure, after that view settled.
+    pub(super) fn abandon_custom_views(&self) -> Result<(), EventError> {
+        Listeners::try_for_each_live(&self.custom_views, CustomView::abandon)
+    }
+
     /// Puts the current editor back in place of a custom view with `text`, focused.
     ///
     /// # Errors
@@ -171,6 +180,26 @@ impl CustomView {
             dispose(&component);
         }
         Ok(true)
+    }
+
+    /// Settles an open view without a value: removes its own overlay, leaves the editor to
+    /// the editor reset and disposes the component once, ignoring a disposal failure.
+    ///
+    /// # Errors
+    /// Returns the failure to remove the overlay, after the view settled.
+    fn abandon(&self) -> Result<(), EventError> {
+        if !self.is_open() {
+            return Ok(());
+        }
+        drop(self.phase.replace(Phase::Closed));
+        let handle = self.handle.borrow().clone().filter(|_| self.overlay);
+        let removed = handle.map_or(Ok(()), |handle| handle.borrow_mut().hide());
+        let component = self.component.take();
+        self.finish(Ok(()));
+        if let Some(component) = component {
+            dispose(&component);
+        }
+        Ok(removed?)
     }
 
     /// Removes the view's own overlay, or puts the editor back with the saved text.

@@ -21,16 +21,17 @@ use std::{
 use tokio::sync::oneshot;
 
 /// Completes a typed custom view.
-type Done = Rc<dyn Fn(String) -> Result<(), EventError>>;
+pub(super) type Done = Rc<dyn Fn(String) -> Result<(), EventError>>;
 
 /// The typed custom-view factory the witnesses build.
-type ViewFactory = UIHostCall<(TUI, LiveTheme, KeybindingsManager, Done), CustomFactoryOutcome>;
+pub(super) type ViewFactory =
+    UIHostCall<(TUI, LiveTheme, KeybindingsManager, Done), CustomFactoryOutcome>;
 
 /// The overlay handle an extension receives.
-type Handle = Rc<RefCell<Box<dyn OverlayHandle>>>;
+pub(super) type Handle = Rc<RefCell<Box<dyn OverlayHandle>>>;
 
 /// A focusable view recording the width it renders at.
-struct View {
+pub(super) struct View {
     /// The painted label.
     label: &'static str,
     /// The view's focus.
@@ -61,7 +62,7 @@ impl Component for View {
 
 /// When and how a witness's factory settles its view.
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Flow {
+pub(super) enum Flow {
     /// Returns the component at once.
     Ready,
     /// Settles the component on the terminal runtime.
@@ -76,7 +77,7 @@ enum Flow {
 
 /// How a witness's factory builds its view.
 #[derive(Clone, Copy)]
-struct Build {
+pub(super) struct Build {
     /// When and how the view settles.
     flow: Flow,
     /// Fails the component's disposal.
@@ -86,7 +87,7 @@ struct Build {
 }
 
 /// A view settling as `flow` selects, with no width.
-const fn plain(flow: Flow) -> Build {
+pub(super) const fn plain(flow: Flow) -> Build {
     Build {
         flow,
         dispose_fails: false,
@@ -106,13 +107,13 @@ enum Setup {
 }
 
 /// What the witnesses observe of the views their factories build.
-struct Views {
+pub(super) struct Views {
     /// Effects in call order.
-    trace: RefCell<Vec<String>>,
+    pub(super) trace: RefCell<Vec<String>>,
     /// The completion each factory call received.
     done: RefCell<Vec<Done>>,
     /// The views built, kept weakly in build order.
-    built: RefCell<Vec<Weak<View>>>,
+    pub(super) built: RefCell<Vec<Weak<View>>>,
     /// The identity the failures carry.
     error: Arc<()>,
     /// Releases asynchronous builds, in order.
@@ -128,13 +129,13 @@ struct Views {
 }
 
 /// The callbacks one witness binds to its extension.
-struct Bound {
+pub(super) struct Bound {
     /// The view factories, by label.
-    views: Vec<ViewFactory>,
+    pub(super) views: Vec<ViewFactory>,
     /// The overlay options resolver.
-    resolver: UIHostCall<(), Rc<RefCell<OverlayOptions>>>,
+    pub(super) resolver: UIHostCall<(), Rc<RefCell<OverlayOptions>>>,
     /// The overlay handle callback.
-    on_handle: UIHostCall<Handle, ()>,
+    pub(super) on_handle: UIHostCall<Handle, ()>,
 }
 
 /// An error whose allocation identity survives host forwarding.
@@ -149,7 +150,7 @@ impl std::error::Error for Original {}
 
 impl Views {
     /// A fresh witness whose resolver returns a width of 21.
-    fn new() -> Rc<Self> {
+    pub(super) fn new() -> Rc<Self> {
         Rc::new(Self {
             trace: RefCell::default(),
             done: RefCell::default(),
@@ -181,7 +182,7 @@ impl Views {
         self.built.borrow()[index].upgrade().unwrap()
     }
     /// Calls the `index`th factory call's completion with `value`.
-    fn complete(&self, index: usize, value: &str) -> Result<(), EventError> {
+    pub(super) fn complete(&self, index: usize, value: &str) -> Result<(), EventError> {
         let done = self.done.borrow()[index].clone();
         done(value.into())
     }
@@ -240,7 +241,11 @@ impl Views {
         )
     }
     /// The views `builds` describe with the resolver and handle callback.
-    fn bind(self: &Rc<Self>, api: &ExtensionAPI<Local>, builds: &[(&'static str, Build)]) -> Bound {
+    pub(super) fn bind(
+        self: &Rc<Self>,
+        api: &ExtensionAPI<Local>,
+        builds: &[(&'static str, Build)],
+    ) -> Bound {
         let (resolving, handling) = (self.clone(), self.clone());
         Bound {
             views: builds
@@ -276,7 +281,7 @@ impl Views {
         }
     }
     /// Releases the next asynchronous build and runs the host's admitted work.
-    async fn release(&self, world: &World) {
+    pub(super) async fn release(&self, world: &World) {
         let gate = self.gates.borrow_mut().remove(0);
         gate.send(()).unwrap();
         settle_work(world).await;
@@ -328,7 +333,7 @@ async fn settle_work(world: &World) {
 }
 
 /// Options showing the view as an overlay with `source` and `on_handle`.
-fn overlay(
+pub(super) fn overlay(
     source: Option<OverlayOptionsSource>,
     on_handle: Option<UIHostCall<Handle, ()>>,
 ) -> CustomUIOptions {

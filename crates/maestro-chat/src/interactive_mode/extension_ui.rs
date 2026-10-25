@@ -9,10 +9,11 @@ use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOp
 use std::rc::Rc;
 
 pub(super) mod custom;
-mod dialogs;
+pub(super) mod dialogs;
 pub(super) mod editor;
 pub(super) mod input;
 mod replacements;
+mod reset;
 mod widgets;
 
 impl ExtensionUIContextPort for InteractiveMode {

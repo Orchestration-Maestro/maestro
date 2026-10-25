@@ -76,6 +76,26 @@ impl InteractiveMode {
         Ok(())
     }
 
+    /// Calls every widget's disposer, above then below, walking the live maps so a disposer's
+    /// own edits are seen, then empties both maps and rebuilds the containers.
+    ///
+    /// # Errors
+    /// Returns the original disposer failure, before either map is emptied.
+    pub(in super::super) fn clear_extension_widgets(&self) -> Result<(), EventError> {
+        for map in [&self.extension_widgets_above, &self.extension_widgets_below] {
+            for (_, widget) in map {
+                widget
+                    .dispose
+                    .as_ref()
+                    .map_or(Ok(()), |dispose| dispose.call(()))?;
+            }
+        }
+        self.extension_widgets_above.clear();
+        self.extension_widgets_below.clear();
+        self.render_widgets();
+        Ok(())
+    }
+
     /// Rebuilds the two containers from their live maps, retaining the above spacer.
     pub(in super::super) fn render_widgets(&self) {
         for (container, map, leading) in [

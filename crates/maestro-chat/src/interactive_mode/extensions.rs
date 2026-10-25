@@ -126,7 +126,7 @@ impl InteractiveMode {
         self.subscribe_to_agent();
         self.update_available_provider_count()?;
         self.update_editor_border_color()?;
-        self.update_terminal_title()
+        self.update_terminal_title().map_err(erase)
     }
     /// Appends an extension failure to the transcript in the error colour, then its stack
     /// below without the first line, each frame trimmed, indented and dimmed.
@@ -169,11 +169,24 @@ fn erase(error: maestro_app::EventError) -> Box<dyn std::error::Error> {
     error
 }
 
+/// Installs the extension UI reset that runs before each session invalidation and the
+/// replacement continuation on the runtime, both reaching `mode` weakly, so the runtime
+/// the mode owns does not keep it alive.
+pub(super) fn bind_runtime_hooks(mode: &Rc<InteractiveMode>) {
+    let reset = Rc::downgrade(mode);
+    mode.runtime_host
+        .set_before_session_invalidate(Some(Rc::new(move || {
+            reset
+                .upgrade()
+                .map_or(Ok(()), |mode| mode.reset_extension_ui())
+        })));
+    mode.runtime_host
+        .set_rebind_session(Some(rebind_callback(Rc::downgrade(mode))));
+}
+
 /// The runtime's replacement continuation: rebinds the mode, while it is alive, before
 /// the runtime continues with the replacement session.
-///
-/// The mode is reached weakly, so the runtime that the mode owns does not keep it alive.
-pub(super) fn rebind_callback(mode: std::rc::Weak<InteractiveMode>) -> maestro_app::RebindSession {
+fn rebind_callback(mode: std::rc::Weak<InteractiveMode>) -> maestro_app::RebindSession {
     Rc::new(move |_session| {
         let mode = mode.upgrade();
         Box::pin(async move {

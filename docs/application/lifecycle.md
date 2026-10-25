@@ -8,7 +8,8 @@ operations.
 
 New, resumed and forked sessions can be vetoed before replacement. Shutdown
 handlers finish before the host's invalidation callback; the old contexts then
-become stale. The host rebinds the replacement before its `with_session`
+become stale. A failing invalidation callback stops the replacement before the
+old session is disposed. The host rebinds the replacement before its `with_session`
 continuation runs. Use that continuation's context for messages to the new
 session, not a captured command context or extension API. Reads from the old
 command frame fail recoverably after replacement.

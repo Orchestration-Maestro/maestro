@@ -246,7 +246,7 @@ provider the mode last installed. An editor that implements the application
 capability also receives every application action in its order, in the map it
 already shares. Its own interrupt, empty-editor exit, image-paste and shortcut
 callbacks stay; each missing one calls the default editor's callback current at
-that moment. Unsupported optional operations stay unsupported.
+that moment. Optional operations the new editor lacks are skipped.
 
 The mode's own text, history, insertion, completion, border, padding and
 completion-height operations reach the current editor. Application actions and
@@ -255,7 +255,7 @@ rebuilds update the default editor first and then a distinct current editor once
 when the default editor is current it is updated once.
 
 A failure stops at its own phase and returns, or reports, the original error.
-The factory stays kept. A failing factory or new editor leaves the editor
+The factory stays set. A failing factory or new editor leaves the editor
 container empty and the previous editor current; a failing read of the current
 text changes nothing else.
 
@@ -369,11 +369,38 @@ failures return the original error and keep effects already performed. A
 failed disposer stops before removal; a failed factory leaves the old entry
 removed. Neither failure rebuilds the last painted containers.
 
-These setters do not implement session replacement or reset.
+## Session replacement
+
+Before each session replacement invalidates the current session, the mode resets
+what extensions changed, in this order:
+
+1. The latest selector, input and multi-line editor dialogs answer `None`, as
+   their own cancellation does, which stops their countdowns and signal watches.
+2. Every custom view that has not settled ends with no value: its own overlay is
+   removed and its component disposed once. A view still building disposes its
+   component when it arrives, without showing it. The editor is left to step 5.
+3. The extension terminal input listeners are removed.
+4. The built-in footer and header return, the widgets are disposed and removed,
+   and the status texts are cleared.
+5. The default editor returns with the current editor's raw text, a fresh
+   completion provider and no extension shortcuts.
+6. The title is rewritten, and the working message, visibility, indicator and
+   hidden-thinking label return to their defaults.
+
+The mode installs this reset on the runtime when it is constructed, reaching the
+mode weakly. A failing step returns its original error, keeps the steps before it,
+and stops the replacement before the session is disposed. Clearing the widgets
+calls each disposer while walking the live maps, so widgets a disposer adds are
+disposed too and widgets it removes are skipped; a disposer failure stops before
+either map is emptied.
+
+Working messages, visibility, indicators and hidden-thinking labels an extension
+sets stay in effect across prompt turns until the extension changes them or the
+session is replaced.
 
 ## Custom views
 
-`custom` shows the component an extension builds, ready or later, in place of
+`custom` shows the component an extension builds, at once or later, in place of
 the editor with focus, or as an overlay when `overlay` is `Some(true)`. The
 factory receives the live terminal, theme, application keybindings and the
 view's completion. The current editor's raw text is kept when the view starts.

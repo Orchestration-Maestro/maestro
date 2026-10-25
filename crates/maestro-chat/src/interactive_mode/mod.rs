@@ -105,6 +105,8 @@ pub struct InteractiveMode {
     editor_state: extension_ui::editor::EditorState,
     /// The extension custom views that have not settled.
     custom_views: extension_ui::custom::CustomViews,
+    /// The latest extension dialog of each kind.
+    dialogs: extension_ui::dialogs::DialogSlots,
     /// The keybindings the editor reads, and the configured keys extension shortcuts use.
     keybindings: KeybindingsManager,
     /// The footer.
@@ -204,6 +206,7 @@ impl InteractiveMode {
             editor_container,
             editor_state: extension_ui::editor::EditorState::new(editor.clone()),
             custom_views: Rc::default(),
+            dialogs: extension_ui::dialogs::DialogSlots::default(),
             editor,
             keybindings: keys,
             footer,
@@ -234,8 +237,7 @@ impl InteractiveMode {
             working: working::WorkingState::default(),
             streaming: RefCell::default(),
         });
-        let rebind = extensions::rebind_callback(Rc::downgrade(&mode));
-        mode.runtime_host.set_rebind_session(Some(rebind));
+        extensions::bind_runtime_hooks(&mode);
         Ok(mode)
     }
 
