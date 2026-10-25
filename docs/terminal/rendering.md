@@ -42,7 +42,7 @@ use maestro_tui::{Component, Terminal, TerminalImage, TUI};
 #     fn start(&mut self, _: Box<dyn FnMut(&str)>, _: Box<dyn FnMut()>) -> io::Result<()> { Ok(()) }
 #     fn stop(&mut self) -> io::Result<()> { Ok(()) }
 #     fn drain_input(&mut self, _: Option<Duration>, _: Option<Duration>)
-#         -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> { Box::pin(async { Ok(()) }) }
+#         -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> { Box::pin(async { Ok(()) }) }
 #     fn write(&mut self, data: &str) -> io::Result<()> { self.0.borrow_mut().push(data.to_owned()); Ok(()) }
 #     fn columns(&self) -> usize { 12 }
 #     fn rows(&self) -> usize { 4 }

@@ -4657,6 +4657,7 @@ dependencies = [
  "chrono",
  "maestro-brand",
  "maestro-dependencies",
+ "maestro-listeners",
  "maestro-path",
  "maestro-process",
  "maestro-test-directory",
