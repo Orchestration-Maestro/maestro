@@ -31,6 +31,8 @@ pub mod markdown_block;
 
 /// Literal native console output with owned copy feedback.
 pub mod console_block;
+/// Native custom-provider summary and current actions.
+pub mod custom_provider_card;
 /// Retained preview/source selection.
 pub mod preview_code_toggle;
 

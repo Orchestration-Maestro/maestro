@@ -209,3 +209,10 @@ canvas for the message rows and artifacts that still use one.
 
 Tool-renderer listings use the same listing pipeline with literal input; see
 [tool renderers](tool-renderers.md). Their text is not auto-decoded.
+
+## Provider-card continuation
+
+[Custom provider cards](components.md#custom-provider-cards) now mount as native
+page content independently of the transcript. Native attachment/message
+composition, list/streaming containers, the editor and complete chat composition
+remain separate continuation work; the card does not deliver those surfaces.
