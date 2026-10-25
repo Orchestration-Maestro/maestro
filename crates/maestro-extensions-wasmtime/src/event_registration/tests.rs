@@ -1,0 +1,52 @@
+//! Every shared event name registers the exact native event/result pair.
+use super::{Binding, bindings};
+use crate::lifecycle::replies::Replies;
+use crate::{guest_calls::Callbacks, local_resources::Pump};
+use maestro_extensions::{ExtensionAPI, ExtensionExecution, Local};
+use serde::Serialize;
+
+/// Emits a single exhaustive inventory test from the owning shared table.
+macro_rules! inventory_test {
+    (before { $($(#[$bm:meta])* $bn:ident($bt:ty),)* }
+     session { $($(#[$sm:meta])* $sn:ident / $sd:ident($st:ty, $sdt:ty),)* }
+     after { $($(#[$am:meta])* $an:ident($at:ty),)* }) => {
+        /// Canonical names encoded by the same inventory's snake-case contract.
+        #[derive(Serialize)]
+        #[serde(rename_all = "snake_case")]
+        enum Name { $($(#[$bm])* $bn,)* $($(#[$sm])* $sd,)* $($(#[$am])* $an,)* }
+        #[test]
+        fn every_known_event_has_a_concrete_native_registration() {
+            let (owner, api) = crate::tests::api::api(maestro_extensions::create_extension_runtime::<Local>());
+            let (pump, admission) = Pump::new();
+            let (calls, _incoming) = tokio::sync::mpsc::unbounded_channel();
+            let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
+            let callback = callbacks.allocate().unwrap();
+            let handler = callbacks.retain(callback.id, admission).unwrap();
+            let mut count = 0;
+            $(verify::<bindings::$bn>(&owner, &api, Name::$bn, &handler, &pump); count += 1;)*
+            $(verify::<bindings::$sd>(&owner, &api, Name::$sd, &handler, &pump); count += 1;)*
+            $(verify::<bindings::$an>(&owner, &api, Name::$an, &handler, &pump); count += 1;)*
+            assert_eq!(owner.read().unwrap().handlers.len(), count);
+            assert_eq!(count, 29);
+        }
+    };
+}
+maestro_extensions::extension_event_table!(inventory_test);
+
+/// Checks the native owner's real downcast, including application-message specialization.
+fn verify<B: Binding>(
+    owner: &maestro_extensions::types::ExtensionHandle<Local>,
+    api: &ExtensionAPI<Local>,
+    name: Name,
+    handler: &crate::guest_calls::Handle,
+    pump: &Pump,
+) {
+    let name = serde_json::to_value(name)
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .to_owned();
+    super::register(api, name.clone(), handler.clone(), pump.registry()).unwrap();
+    let owner = owner.read().unwrap();
+    assert!(Local::recover_handler::<B::Event, B::Result>(&owner.handlers[&name][0]).is_some());
+}

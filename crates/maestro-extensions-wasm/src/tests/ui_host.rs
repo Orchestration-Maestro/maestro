@@ -235,9 +235,10 @@ impl State {
         this: &Resource<Ui>,
         method: &str,
         operands: &Value,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         let key = self.table.get(this)?.0;
-        Ok(call(&mut self.observed, key, method, operands))
+        let result = call(&mut self.observed, key, method, operands);
+        self.routed(result)
     }
 }
 
@@ -247,7 +248,7 @@ impl host::HostExtensionUiContext for State {
         this: Resource<Ui>,
         message: String,
         kind: Option<host::NotificationType>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         let seen = kind.map(variant);
         self.ui_call(&this, "notify", &notify(&message, seen.as_deref()))
     }
@@ -257,7 +258,7 @@ impl host::HostExtensionUiContext for State {
         this: Resource<Ui>,
         key: String,
         text: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         self.ui_call(&this, "setStatus", &status(&key, text.as_deref()))
     }
 
@@ -265,7 +266,7 @@ impl host::HostExtensionUiContext for State {
         &mut self,
         this: Resource<Ui>,
         message: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         self.ui_call(
             &this,
             "setWorkingMessage",
@@ -277,7 +278,7 @@ impl host::HostExtensionUiContext for State {
         &mut self,
         this: Resource<Ui>,
         visible: bool,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         self.ui_call(&this, "setWorkingVisible", &working_visible(visible))
     }
 
@@ -285,7 +286,7 @@ impl host::HostExtensionUiContext for State {
         &mut self,
         this: Resource<Ui>,
         options: Option<host::WorkingIndicatorOptions>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         let options = options.map(|options| IndicatorOptions {
             frames: options.frames,
             interval_ms: options.interval_ms,
@@ -297,7 +298,7 @@ impl host::HostExtensionUiContext for State {
         &mut self,
         this: Resource<Ui>,
         label: Option<String>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         self.ui_call(
             &this,
             "setHiddenThinkingLabel",
@@ -311,7 +312,7 @@ impl host::HostExtensionUiContext for State {
         key: String,
         content: Option<Vec<String>>,
         options: Option<host::ExtensionWidgetOptions>,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         let options = options.map(|options| WidgetOptions {
             placement: options.placement.map(variant),
         });
@@ -326,7 +327,7 @@ impl host::HostExtensionUiContext for State {
         &mut self,
         this: Resource<Ui>,
         title: String,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         self.ui_call(&this, "setTitle", &self::title(&title))
     }
 
@@ -334,7 +335,7 @@ impl host::HostExtensionUiContext for State {
         &mut self,
         this: Resource<Ui>,
         text: String,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         self.ui_call(&this, "pasteToEditor", &json!([text]))
     }
 
@@ -342,9 +343,10 @@ impl host::HostExtensionUiContext for State {
         &mut self,
         this: Resource<Ui>,
         text: String,
-    ) -> wasmtime::Result<Result<(), String>> {
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
         let key = self.table.get(&this)?.0;
-        Ok(set_editor_text(&mut self.observed, key, &text))
+        let result = set_editor_text(&mut self.observed, key, &text);
+        self.routed(result)
     }
 
     fn get_editor_text(&mut self, this: Resource<Ui>) -> wasmtime::Result<Result<String, String>> {

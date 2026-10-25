@@ -9,6 +9,7 @@ use super::{
     callbacks::{self, Identity},
     event_bus::Emitter,
 };
+use crate::bindings::maestro::extension::host::CompactionData;
 use crate::{
     CallbackEmitter, CompactOptions, CompactionComplete, CompactionError, ExtensionResult,
 };
@@ -16,27 +17,40 @@ use crate::{
 pub(super) fn compact<I: Imports>(
     imports: &I,
     options: Option<CompactOptions>,
-    send: impl FnOnce(Option<&str>, Option<&I::Callback>, Option<&I::Callback>) -> ExtensionResult<()>,
+    send: impl FnOnce(
+        Option<&CompactionData>,
+        Option<&I::Callback>,
+        Option<&I::Callback>,
+    ) -> ExtensionResult<()>,
 ) -> ExtensionResult<()> {
-    let CompactOptions {
-        custom_instructions,
-        on_complete,
-        on_error,
-    } = options.unwrap_or_default();
-    let complete = on_complete.map(|f| (Identity::new(imports), f));
-    let error = on_error.map(|f| (Identity::new(imports), f));
-    send(
-        custom_instructions.as_deref(),
-        complete.as_ref().map(|(id, _)| &id.handle),
-        error.as_ref().map(|(id, _)| &id.handle),
-    )?;
-    if let Some((id, f)) = complete {
-        id.keep(f);
+    let (custom_instructions, on_complete, on_error) =
+        options.map_or((None, None, None), |options| {
+            (
+                Some(CompactionData {
+                    custom_instructions: options.custom_instructions,
+                }),
+                options.on_complete,
+                options.on_error,
+            )
+        });
+    let complete = on_complete.map(|f| staged(imports, f));
+    let error = on_error.map(|f| staged(imports, f));
+    let result = send(
+        custom_instructions.as_ref(),
+        complete.as_ref().map(|id| &id.handle),
+        error.as_ref().map(|id| &id.handle),
+    );
+    for id in [complete, error].into_iter().flatten() {
+        id.settle(result.is_ok());
     }
-    if let Some((id, f)) = error {
-        id.keep(f);
-    }
-    Ok(())
+    result
+}
+
+/// Stages a notification so the host may deliver it before compaction returns.
+fn staged<I: Imports>(imports: &I, closure: impl callbacks::Stored) -> Identity<I> {
+    let identity = Identity::new(imports);
+    identity.stage(closure);
+    identity
 }
 impl<I: Imports> Exports<I> {
     /// Delivers a success without consuming the registered callback.

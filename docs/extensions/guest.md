@@ -46,6 +46,12 @@ Releasing a callback table entry removes that registration's ownership. Independ
 aliases and admitted futures can retain its captures after release. Entries leave the table
 before captures are destroyed, so a destructor may register another callback.
 
+The native executor releases each invocation's admission operands before reporting completion,
+including when a caller has stopped waiting. A component fault settles all started calls,
+including callback releases, without entering guest code or running guest destructors again.
+The Store remains alive until the last external admission ends; completed invocation records
+do not keep it alive.
+
 `CommandOptions` owns its handler and optional `get_argument_completions` callback.
 Completion receives literal argument text and returns `None`, an empty list or an ordered
 list of `AutocompleteItem` records. The guest forwards each value, label and optional
@@ -104,7 +110,7 @@ For shared content and JSON conventions, see [the data boundary](#events-and-res
 `toolName`, including overrides of built-in names. Their `ToolInput` / `ToolDetails`
 carrier offers `decode::<T>()` for an on-demand typed view and `from_value()` for
 finite-checked authored replacements. Named aliases expose the built-in typed views;
-name predicates compare the name alone. Result input remains an opaque string.
+name predicates compare the name alone. Result input uses `JsonText`.
 `UserBashEventResult` may independently return custom `BashOperations` and an
 already-produced `BashResult`. Operations travel as a typed capability, outside the
 [event/result document](#events-and-results).
@@ -178,6 +184,11 @@ re-registration and invocation are tracked together in
 `bus.emit(channel, data)`; a synchronous listener uses its borrowed `CallbackEmitter`.
 Both forward literal channels and JSON payloads without trimming or sorting.
 See [shared event-bus scheduling](event_bus.md) for the host's delivery rules.
+The component adapter preserves the emission-time listener snapshot in registration order.
+Same-instance listeners run locally, interleaved with synchronously acknowledged host segments;
+nested emission takes a fresh snapshot. Each listener has its own callback-return and tail boundary.
+The internal component exports are async-typed, but author callbacks and `CallbackEmitter::emit`
+remain synchronous; no `.await` is added to author code.
 
 `bus.on(channel, listener)` returns an explicitly invoked `Subscription`.
 Dropping its facade does not unsubscribe; call `unsubscribe()` to forward removal.
@@ -198,6 +209,11 @@ Ordinary and command contexts expose `session_manager()`, which acquires the cur
 bound `ReadonlySessionManager` on each call. Its thirteen queries forward the host's
 strings, optional records and ordered lists without guest-side trimming, sorting or
 path resolution. Entry records use [the existing data boundary](#events-and-results).
+The `data` in custom entries and `details` in compaction, branch-summary and custom-message
+entries use `JsonText`. It holds compact JSON text while the wire carries the JSON value,
+including objects and arrays. It preserves key order and number values; missing and null
+remain distinct. Borrow it as `&str`, or convert owned text with `.into()`. Authored text
+must be valid JSON when serialized. The same conversion applies to entries in events.
 
 `get_tree()` returns independently owned `SessionTreeNode` handles. Read a node's
 `entry()`, `children()`, `label()` or `label_timestamp()` to traverse the captured tree;
@@ -296,7 +312,7 @@ the guest does not discover resources or build the prompt.
 | `session_before_fork` | `SessionBeforeForkResult` | `cancel?`, `skipConversationRestore?` |
 | `session_before_compact` | `SessionBeforeCompactResult` | `cancel?`, `compaction?` |
 | `session_before_tree` | `SessionBeforeTreeResult` | `cancel?`, `summary?`, `customInstructions?`, `replaceInstructions?`, `label?` |
-| `before_provider_request` | `BeforeProviderRequestEventResult` | a string holding the replacement request |
+| `before_provider_request` | `BeforeProviderRequestEventResult` | the replacement JSON value, held as `JsonText` |
 | `input` | `InputEventResult` | `action` is `continue`, `handled` or `transform`; a transform has `text` and `images?` |
 
 Returned `compaction` holds `summary`, `firstKeptEntryId`, `tokensBefore` and `details?`.
@@ -400,7 +416,7 @@ records without sorting or deduplication. `set_active_tools` forwards the reques
 names. [`ToolInfo`](../../crates/maestro-extensions-wasm/src/types/actions.rs) and
 [`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
 retain host-supplied provenance. See the [data boundary](#how-an-event-travels) for
-opaque schema and details text.
+schema and details text with semantic JSON serialization.
 
 ## Model selection and action errors
 
@@ -417,7 +433,8 @@ selection).
 `ExtensionContext::compact` is inherited by command and replacement command views.
 It returns admission before its optional completion or error notification.
 [`CompactOptions`](../../crates/maestro-extensions-wasm/src/types/context.rs) carries
-optional literal instructions, `on_complete` and `on_error`. Completion receives
+optional literal instructions, `on_complete` and `on_error`. Absent options remain
+distinct from present options with every field empty. Completion receives
 `CompactionResult`; error receives the supplied message. A callback failure returns
 to the host, which decides whether to invoke the error callback.
 
@@ -457,12 +474,14 @@ Other extension-assigned Infinity or NaN fails encoding with
 `extension wrote a non-finite number (Infinity or NaN)`; the independent callback
 failure or other encoded part is retained. Numeric-looking text remains text.
 
-The request body of `before_provider_request`, its replacement, tool-execution notification arguments and
-partial/final notification results, and application-message or compaction `details` are opaque text
-carried as a string. The adapter never parses or reformats it, so
-duplicate keys, spacing, exponents and any nesting depth reach the handler as authored. A
-replacement `null` is text and differs from returning no result; `details` text `null` differs
-from `details` null.
+The request body of `before_provider_request`, its replacement, tool-execution arguments
+and results, tool-result input, tool schemas and arbitrary `details` use `JsonText`.
+It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
+Tool schemas are values inside metadata, not quoted JSON documents. Thinking levels
+cross the component interface as JSON string literals in both directions.
+Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
+Construct authored values from valid JSON text with `.into()`. A replacement `null` differs
+from returning no result. Optional details retain missing and null as distinct states.
 
 The event's `type` tag must be a JSON string, not a single-property object. The reason fields
 of resource discovery, session start, session switch and session shutdown, the fork position
@@ -528,8 +547,9 @@ an `ExtensionCommandContext`, which adds `wait_for_idle`, `new_session`, `fork`,
 methods, which the rustdoc examples check at compile time.
 
 `new_session` accepts optional `setup` and `with_session` callbacks; `fork` and
-`switch_session` accept an optional `with_session`. Tree navigation and reload have
-no replacement continuation. Setup receives a
+`switch_session` accept an optional `with_session`. Absent options remain distinct
+from present empty options, even when no callback is supplied. Tree navigation and
+reload have no replacement continuation. Setup receives a
 writable [`SessionManager`](../../crates/maestro-extensions-wasm/src/session_manager.rs);
 ordinary contexts still expose a reader. When the host invokes the continuation, it
 supplies a `ReplacedSessionContext` while the operation is pending. The

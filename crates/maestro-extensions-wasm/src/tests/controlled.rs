@@ -12,6 +12,7 @@ use std::rc::Rc;
 
 use super::observed::{Observed, Session, pause};
 use super::setup_host::document;
+use crate::bindings::maestro::extension::host::CompactionData;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::component_adapter::{Exports, Imports};
 use crate::types::{ExtensionFuture, ExtensionResult};
@@ -380,6 +381,7 @@ impl Imports for Controlled {
         &'a self,
         context: &'a CommandContext,
         id: &'a str,
+        options: Option<()>,
         callback: Option<&'a Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult> {
         Box::pin(async move {
@@ -394,7 +396,7 @@ impl Imports for Controlled {
                 &mut self.observed.borrow_mut(),
                 "switchSession",
                 id,
-                None,
+                options.map(|()| "{}"),
                 callback.is_some(),
             );
             pause(hold).await;
@@ -482,7 +484,7 @@ impl Imports for Controlled {
     fn compact(
         &self,
         context: &Context,
-        instructions: Option<&str>,
+        instructions: Option<&CompactionData>,
         complete: Option<&Callback>,
         error: Option<&Callback>,
     ) -> ExtensionResult<()> {
@@ -493,15 +495,16 @@ impl Imports for Controlled {
             .log(format!("compact binding {cwd}"));
         super::action_host::compact(
             &mut self.observed.borrow_mut(),
-            instructions,
+            instructions.and_then(|data| data.custom_instructions.as_deref()),
             complete.map(|c| c.id),
             error.map(|c| c.id),
+            instructions.is_some(),
         )
     }
     fn command_compact(
         &self,
         context: &CommandContext,
-        instructions: Option<&str>,
+        instructions: Option<&CompactionData>,
         complete: Option<&Callback>,
         error: Option<&Callback>,
     ) -> ExtensionResult<()> {
@@ -512,9 +515,10 @@ impl Imports for Controlled {
             .log(format!("compact binding {cwd}"));
         super::action_host::compact(
             &mut self.observed.borrow_mut(),
-            instructions,
+            instructions.and_then(|data| data.custom_instructions.as_deref()),
             complete.map(|c| c.id),
             error.map(|c| c.id),
+            instructions.is_some(),
         )
     }
 
@@ -1604,16 +1608,21 @@ impl Imports for Controlled {
     fn new_session<'a>(
         &'a self,
         context: &'a CommandContext,
-        data: NewSessionCommandData,
+        data: Option<NewSessionCommandData>,
         setup: Option<&'a Callback>,
         with_session: Option<&'a Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult> {
         Box::pin(async move {
-            let parent = data.parent_session.as_deref().unwrap_or("none");
+            let parent = data
+                .as_ref()
+                .and_then(|data| data.parent_session.as_deref())
+                .unwrap_or("none");
             let hold = super::setup_host::command_start(
                 &mut self.observed.borrow_mut(),
-                data.parent_session.as_deref(),
+                data.as_ref()
+                    .and_then(|data| data.parent_session.as_deref()),
                 (setup.is_some(), with_session.is_some()),
+                data.is_some(),
             );
             pause(hold).await;
             if let Some(error) = self.observed.borrow().setup.session_error.clone() {

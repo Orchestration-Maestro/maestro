@@ -15,7 +15,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use std::sync::{Arc, RwLock};
 
 /// Guidance for an invalidated or released registration facade.
-const STALE_MESSAGE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
+pub(crate) const STALE_MESSAGE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
 
 impl<E: ExtensionExecution> Extension<E> {
     /// Creates an empty owner with supplied paths and provenance.
@@ -218,12 +218,24 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
         event: String,
         handler: ExtensionHandler<V, R, E>,
     ) -> Result<(), EventError> {
+        self.on_retained(event, E::erase_handler(handler))
+    }
+    /// Retains one opaque registration in the original ordered handler owner.
+    ///
+    /// Adapter callbacks under unknown names remain owned without a callable surrogate.
+    /// # Errors
+    /// Returns the existing stale-owner error before retaining the registration.
+    pub fn on_retained(
+        &self,
+        event: String,
+        registration: E::HandlerRegistration,
+    ) -> Result<(), EventError> {
         let owner = self.owner()?;
         write(&owner)
             .handlers
             .entry(event)
             .or_default()
-            .push(E::erase_handler(handler));
+            .push(registration);
         Ok(())
     }
     /// Replace in the original slot, then invoke the live refresh outside the guard.

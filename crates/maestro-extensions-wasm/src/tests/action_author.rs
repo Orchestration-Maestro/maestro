@@ -84,12 +84,7 @@ pub async fn dispatch(api: &ExtensionAPI, request: &str) -> ExtensionResult<()> 
 
 /// Execute the sendMessage authored branch.
 fn send_custom(api: &ExtensionAPI, input: &Value) -> ExtensionResult<()> {
-    let mut message = input["message"].clone();
-    if let Some(details) = message.get_mut("details")
-        && !details.is_null()
-    {
-        *details = json!(details.to_string());
-    }
+    let message = input["message"].clone();
     api.send_message(
         serde_json::from_value(message).map_err(|e| e.to_string())?,
         custom_options(&input["options"])?,

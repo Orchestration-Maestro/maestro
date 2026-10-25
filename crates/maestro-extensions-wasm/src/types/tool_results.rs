@@ -16,4 +16,4 @@ pub type UserBashEventResult = maestro_request::extension_events::tool_results::
 pub type ToolCallEventResult = maestro_request::extension_events::tool_results::ToolCallEventResult;
 /// Shared schema specialized for the guest operands.
 pub type ToolResultEventResult =
-    maestro_request::extension_events::tool_results::ToolResultEventResult<String>;
+    maestro_request::extension_events::tool_results::ToolResultEventResult<crate::JsonText>;

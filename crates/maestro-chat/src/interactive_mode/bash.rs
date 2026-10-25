@@ -14,7 +14,7 @@ use maestro_tui::TUI;
 use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc, sync::Arc};
 
 /// The callable operations an extension supplies for one shell command.
-type ShellOperations = Arc<dyn BashOperations>;
+type ShellOperations = Arc<dyn BashOperations + Send + Sync>;
 
 /// The shell command a submission selected, which an extension cannot rewrite.
 #[derive(Clone, Copy)]

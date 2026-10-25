@@ -607,7 +607,9 @@ fn mark(event: &mut ExtensionEvent) -> ExtensionResult<()> {
         ExtensionEvent::Session(SessionEvent::Shutdown(shutdown)) => {
             shutdown.target_session_file = Presence::Present(changed());
         }
-        ExtensionEvent::BeforeProviderRequest(request) => request.payload = changed(),
+        ExtensionEvent::BeforeProviderRequest(request) => {
+            request.payload = json!(changed()).to_string().into();
+        }
         ExtensionEvent::AfterProviderResponse(response) => response.status = 201.0,
         ExtensionEvent::ToolCall(event) => {
             return tool_author::mark(&mut event.input, &event.tool_name);

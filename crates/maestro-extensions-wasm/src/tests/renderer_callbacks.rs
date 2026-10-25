@@ -180,13 +180,8 @@ fn maestro_renderer_callbacks_emit_and_recover() -> Result<(), String> {
     on_both_adapters!(emissions)
 }
 
-/// Encodes semantic source details once using the existing host's opaque-text convention.
+/// Normalizes only the shared floating-point timestamp representation.
 fn wire_message(mut message: Value) -> Value {
-    if let Some(details) = message.get_mut("details")
-        && !details.is_null()
-    {
-        *details = json!(details.to_string());
-    }
     if let Some(timestamp) = message.get_mut("timestamp") {
         *timestamp = json!(timestamp.as_f64().unwrap());
     }

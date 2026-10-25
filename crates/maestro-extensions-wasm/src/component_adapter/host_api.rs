@@ -158,33 +158,33 @@ impl<I: Imports> ExtensionHost for Host<I> {
             prepare_arguments,
             execute,
         } = tool;
+        let encoded = super::tools::encode_metadata(&metadata)?;
         let code = metadata
             .parameters
             .code()
             .iter()
             .map(|(pointer, node)| {
-                (
-                    pointer.clone(),
-                    Identity::new(&self.0),
-                    super::schema::handler(node.clone()),
-                )
+                let identity = Identity::new(&self.0);
+                let handler = super::schema::handler(node.clone());
+                identity.stage(handler);
+                (pointer.clone(), identity)
             })
             .collect::<Vec<_>>();
-        let metadata = super::tools::encode_metadata(&metadata)?;
         let prepare = prepare_arguments.map(|prepare| (Identity::new(&self.0), prepare));
         let identity = Identity::new(&self.0);
-        self.0.register_tool(
-            &metadata,
+        let result = self.0.register_tool(
+            &encoded,
             prepare.as_ref().map(|(identity, _)| &identity.handle),
             &identity.handle,
             &code
                 .iter()
-                .map(|(pointer, id, _)| (pointer.clone(), &id.handle))
+                .map(|(pointer, id)| (pointer.clone(), &id.handle))
                 .collect::<Vec<_>>(),
-        )?;
-        for (_, identity, handler) in code {
-            identity.keep(handler);
+        );
+        for (_, identity) in code {
+            identity.settle(result.is_ok());
         }
+        result?;
         if let Some((identity, prepare)) = prepare {
             identity.keep(prepare);
         }

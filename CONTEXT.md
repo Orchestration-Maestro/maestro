@@ -321,3 +321,10 @@ From `docs/specs/tool-additions.md`.
   models, process, terminal and workspace may use it through native development
   edges, and tests capture only through it.
   See the [contract](docs/specs/maestro-port.md#test-tracing-owner).
+
+The parameter-schema owner also owns the component metadata transport in
+`maestro-request::parameter_schema::transport`, re-exported through models and native extensions
+as `schema_transport`. Guest registration and enumeration use that same codec;
+ordinary provider and persisted JSON omit the carried schema kinds. This adds no
+crate dependency: both extension adapters already reach the request owner through
+their declared edges.
