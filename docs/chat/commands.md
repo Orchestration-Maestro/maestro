@@ -363,7 +363,8 @@ provider's instructions when they are not empty. A provider with a callback serv
 also accepts a pasted redirect under
 `Paste redirect URL below, or complete login in browser:`; empty text is ignored,
 every request for it sees the same answer, and the provider decides which of the
-two arrives first. GitHub Copilot shows `Waiting for browser authentication...`
+two arrives first. After an empty submission, another paste or Escape still works.
+GitHub Copilot shows `Waiting for browser authentication...`
 while it polls. Questions, progress lines and choices appear in the same dialog; a
 choice replaces the dialog until it is answered, then the same dialog comes back
 and the provider receives the identifier of the first option with the chosen label.

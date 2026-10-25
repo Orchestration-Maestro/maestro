@@ -220,6 +220,42 @@ fn subscription_manual_input_and_callback_have_controlled_winners() {
     );
 }
 
+#[test]
+fn subscription_blank_manual_input_keeps_submission_and_escape_working() {
+    isolated(
+        "subscription_blank_manual_input_keeps_submission_and_escape_working",
+        async |directory| {
+            quiet_browser(directory);
+            for cancel in [true, false] {
+                let world = started_with(directory, None).await;
+                let record = Record::default();
+                let _server = racing(&world, &record);
+                sign_in_to(&world, AuthType::OAuth, "acme");
+                answer(&world, "");
+                assert!(!editor_restored(&world), "blank input keeps the dialog");
+                if cancel {
+                    world.terminal.send_input("\x1b");
+                    settle(&world);
+                    assert!(stored_access(&world, "acme").is_none());
+                    assert!(!notes(&world, "Error: "), "cancellation is silent");
+                    assert!(record.all().is_empty());
+                } else {
+                    answer(&world, "redirect-code");
+                    assert_eq!(
+                        stored_access(&world, "acme").as_deref(),
+                        Some("redirect-code")
+                    );
+                    assert_eq!(record.all(), ["redirect-code", "aborted=false"]);
+                }
+                assert!(
+                    editor_restored(&world),
+                    "the sign-in finishes after blank input"
+                );
+            }
+        },
+    );
+}
+
 /// Shows progress, asks three questions and one choice, recording each answer, then waits
 /// for `gate` before signing in.
 async fn questioning(
