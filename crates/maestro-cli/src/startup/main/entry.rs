@@ -450,10 +450,9 @@ async fn finish(
     }
     let scoped_models = prepared.runtime.session().scoped_models();
     timings.time("resolveModelScope", host.now);
-    if report_runtime(&prepared.runtime, &host)? {
+    if report_runtime(&prepared.runtime, app_mode, &host, timings)? {
         return Ok(1);
     }
-    timings.time("createAgentSession", host.now);
     let request = ModeDispatch {
         app_mode,
         startup_benchmark: std::env::var("MAESTRO_STARTUP_BENCHMARK").ok(),
@@ -499,14 +498,32 @@ fn interactive_options(
     }
 }
 
-/// Report the runtime diagnostics, returning whether one of them is an error.
-fn report_runtime(runtime: &AgentSessionRuntime, host: &MainHost<'_, '_>) -> io::Result<bool> {
+/// Report runtime errors, sample session creation, then check the no-model fallback.
+fn report_runtime(
+    runtime: &AgentSessionRuntime,
+    app_mode: AppMode,
+    host: &MainHost<'_, '_>,
+    timings: &mut Timings,
+) -> Result<bool, Box<dyn Error>> {
     let diagnostics = runtime.diagnostics();
     let styles = host.package.styles_enabled;
     report_diagnostics(&diagnostics, &mut *host.package.stderr.borrow_mut(), styles)?;
-    Ok(diagnostics.iter().any(|diagnostic| {
+    if diagnostics.iter().any(|diagnostic| {
         diagnostic.r#type == maestro_app::AgentSessionRuntimeDiagnosticType::Error
-    }))
+    }) {
+        return Ok(true);
+    }
+    timings.time("createAgentSession", host.now);
+    if app_mode.is_interactive() || runtime.model_fallback_message().is_none() {
+        return Ok(false);
+    }
+    let docs = config::get_docs_path()?;
+    let message = maestro_app::format_no_models_available_message(&docs);
+    if runtime.model_fallback_message().as_deref() != Some(message.as_str()) {
+        return Ok(false);
+    }
+    line(&host.package.stderr, &Theme::red(&message, styles))?;
+    Ok(true)
 }
 
 /// Wait for one key after the conversion notices on the native terminal.

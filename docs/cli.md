@@ -111,6 +111,11 @@ command. Non-interactive ordinary output uses the application's managed stdout
 route; print and RPC protocol output keep their raw route. Help and model listing
 run after extension registration but before fatal runtime diagnostics.
 
+Text, JSON and RPC startup without a resolved model prints login guidance in red
+on stderr and returns status 1 before benchmark validation or mode launch.
+Runtime errors take precedence. Interactive startup still opens without a model;
+a selected saved/default model does not need credentials to pass this check.
+
 The retained factory rebuilds directory-bound settings, resources and providers
 when a session changes directory. Replacements share the original auth store,
 startup-relative resource paths, extra factories and stream handles. Each write

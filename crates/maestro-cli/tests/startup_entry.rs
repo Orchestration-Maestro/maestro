@@ -659,6 +659,7 @@ mod entry {
     fn rpc_keeps_stdin_for_protocol() {
         run("entry::rpc_keeps_stdin_for_protocol", |local| async move {
             let e = Entry::new();
+            e.models(&["first"]);
             *e.stdin.borrow_mut() = b"{\"type\":\"get_state\"}\n".to_vec();
             *e.tty.borrow_mut() = [false].into();
             let args = ["--mode", "rpc", "first prompt"];
@@ -823,6 +824,108 @@ mod entry {
                         assert!(!log.contains(&"factory".to_owned()));
                     }
                 }
+            },
+        );
+    }
+
+    #[test]
+    fn noninteractive_empty_catalog_reports_guidance_before_benchmark() {
+        cases(
+            "entry::noninteractive_empty_catalog_reports_guidance_before_benchmark",
+            &[
+                ("ordinary", &[]),
+                ("benchmark", &[("MAESTRO_STARTUP_BENCHMARK", "1")]),
+            ],
+            |local, _| async move {
+                let e = Entry::new();
+                e.styles.set(true);
+                assert_eq!(e.run(&local, &[], MainOptions::default()).await.unwrap(), 0);
+                let runtime = e.recorder.runtime.borrow_mut().take().unwrap();
+                assert!(
+                    runtime
+                        .services()
+                        .model_registry
+                        .get_available()
+                        .unwrap()
+                        .is_empty()
+                );
+                assert!(e.log().contains(&"factory".to_owned()));
+                let docs = maestro_app::configuration::config::get_docs_path().unwrap();
+                let expected = format!(
+                    "\u{1b}[31mNo models available. Use /login to log into a provider via OAuth or API key. See:\u{1b}[39m\n\u{1b}[31m  {docs}/providers.md\u{1b}[39m\n\u{1b}[31m  {docs}/models.md\u{1b}[39m\n"
+                );
+                for args in [&["-p"][..], &["--mode", "json"], &["--mode", "rpc"]] {
+                    e.commands.stderr.clear();
+                    e.recorder.log.borrow_mut().clear();
+                    assert_eq!(
+                        e.run(&local, args, MainOptions::default()).await.unwrap(),
+                        1
+                    );
+                    assert_eq!(e.stderr(), expected, "{args:?}");
+                    assert_eq!(e.stdout(), "");
+                    assert_eq!(e.log(), ["apply:false", "unread:0"]);
+                    assert!(e.recorder.runtime.borrow().is_none());
+                }
+                e.commands.stderr.clear();
+                let args = ["--mode", "rpc", "-e", "./absent-extension.ts"];
+                assert_eq!(
+                    e.run(&local, &args, MainOptions::default()).await.unwrap(),
+                    1
+                );
+                let error = e.stderr();
+                assert!(
+                    error.starts_with("\u{1b}[31mError: Failed to load extension"),
+                    "{error}"
+                );
+                assert!(!error.contains("No models available"));
+                assert!(!error.contains("MAESTRO_STARTUP_BENCHMARK"));
+                assert!(e.recorder.runtime.borrow().is_none());
+            },
+        );
+    }
+
+    #[test]
+    fn noninteractive_saved_model_without_auth_reaches_dispatch() {
+        run(
+            "entry::noninteractive_saved_model_without_auth_reaches_dispatch",
+            |local| async move {
+                let e = Entry::new();
+                std::fs::write(
+                    format!("{}/models.json", e.commands.agent_dir),
+                    json!({"providers": {"anthropic": {
+                        "baseUrl": "https://example.test/v1",
+                        "api": "openai-completions", "models": [{"id": "unknown"}]
+                    }}})
+                    .to_string(),
+                )
+                .unwrap();
+                e.settings(
+                    Some(json!({
+                        "defaultProvider": "anthropic", "defaultModel": "unknown"
+                    })),
+                    None,
+                );
+                let args = ["--mode", "rpc"];
+                assert_eq!(
+                    e.run(&local, &args, MainOptions::default()).await.unwrap(),
+                    0
+                );
+                assert_eq!(e.stderr(), "");
+                assert_eq!(e.log(), ["apply:false", "rpc", "unread:0"]);
+                let runtime = e.recorder.runtime.borrow().clone().unwrap();
+                assert!(
+                    runtime
+                        .services()
+                        .model_registry
+                        .get_available()
+                        .unwrap()
+                        .is_empty()
+                );
+                assert!(runtime.session().scoped_models().is_empty());
+                let model = runtime.session().model();
+                let model = model.read().unwrap();
+                assert_eq!((&*model.provider, &*model.id), ("anthropic", "unknown"));
+                assert_eq!(runtime.model_fallback_message(), None);
             },
         );
     }
@@ -1011,6 +1114,7 @@ mod entry {
             timing,
             |local, _| async move {
                 let e = Entry::new();
+                e.models(&["first"]);
                 let log = Rc::clone(&e.recorder.log);
                 e.commands
                     .stderr
@@ -1149,6 +1253,7 @@ mod entry {
             &[("parse", &[("MAESTRO_TIMING", "1")])],
             |local, _| async move {
                 let mut e = Entry::new();
+                e.models(&["first"]);
                 let observed = observed_at_parse_sample(&mut e);
                 for args in [&["--version"][..], &["--mode", "rpc"]] {
                     e.clock.set(0.0);
@@ -1249,6 +1354,7 @@ mod entry {
                 });
                 for (mode, print, tty) in selections {
                     let e = Entry::new();
+                    e.models(&["first"]);
                     *e.tty.borrow_mut() = [tty].into();
                     let mut args = Vec::new();
                     args.extend(mode.into_iter().flat_map(|mode| ["--mode", mode]));
