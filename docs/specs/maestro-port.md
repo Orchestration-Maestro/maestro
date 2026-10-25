@@ -353,7 +353,7 @@ from the optional foundation utility described below.
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners`, `maestro-json` | 1 |
-| `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
+| `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-request`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listing` | 1 |
@@ -434,7 +434,12 @@ existing `Presence<T>` optional-field wrapper, and the custom-message renderer
 option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, re-exported by session and the guest. It owns the declarations and their
 serialization, plus the resolved request-auth record, default zero usage and the shared
-optional-field helper; `Presence<T>` stays single-source here. Existing models and resources public paths re-export their moved records. Provider
+optional-field helper; `Presence<T>` stays single-source here. Its `oauth` module owns
+`OAuthCredentials` and its `auth_storage` module owns `ApiKeyCredential`,
+`AuthCredential`, `AuthStorageData`, `AuthSource` and `AuthStatus` with their
+serialization; models and credentials re-export them, and parsing, stored-record
+construction, locking, key selection and persistence stay with credentials.
+Existing models, resources and credentials public paths re-export their moved records. Provider
 invocation, scheduling, clock-dependent diagnostics, resource discovery and
 provenance construction stay with their existing owners; this is not a general
 shared-types container.

@@ -4,6 +4,12 @@
 ordered headers, selects request keys, logs in to OAuth providers, refreshes
 expired OAuth tokens and formats login guidance.
 
+The typed credential and status records (`ApiKeyCredential`, `AuthCredential`,
+`AuthStorageData`, `AuthSource`, `AuthStatus` and `OAuthCredentials`) are defined
+in `maestro-request` and re-exported here unchanged, so extensions use the same
+types. Their ordinary serialization uses the stored field names and the snake-case
+source names; it is not the stored-file writer, which stays with `AuthStorage`.
+
 ## Stored credentials
 
 `AuthStorage` accepts the stored records when it is created, on `reload` and when a
