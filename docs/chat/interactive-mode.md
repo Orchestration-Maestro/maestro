@@ -483,6 +483,25 @@ compaction that ends with nothing captured delivers nothing.
 A status is a dim line in the transcript. When the previous status line is still
 the last row, a new status replaces its text; otherwise it starts a new line.
 
+## Session replacement and fatal errors
+
+`render_current_session_state` clears the transcript and the pending-message rows,
+discards queued compaction input and the active streamed message, then replays the
+current session with the initial replay's effects: it refreshes the
+footer and the editor border, adds each user text to the editor history and shows the
+compaction notice. A transcript row or pending tool row left by the replaced session
+does not survive the call, so the presentation shows only the session it now reads.
+
+`handle_fatal_runtime_error` takes a prefix and the error that ended a session
+operation. It appends `Error: <prefix>: <message>` to the transcript, where the message
+is the error's own text, draws that frame at once, then closes the theme watch and
+stops the terminal, so no theme reload or further frame repaints once the notice is
+drawn. It then ends the process with status 1. A failure while appending or drawing
+the notice, or while stopping the terminal, is ignored, because the process is ending
+either way. The notice is drawn before the terminal stops, because a stop cancels a
+queued frame and the final frame is not deferred while the terminal's output is backed
+up.
+
 ## Shortcuts
 
 The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of

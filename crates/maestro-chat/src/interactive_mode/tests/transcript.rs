@@ -727,7 +727,7 @@ fn result(id: &str) -> Value {
 }
 
 /// A stored user record with text content.
-fn user_record(text: &str) -> Value {
+pub(super) fn user_record(text: &str) -> Value {
     json!({"role": "user", "content": text, "timestamp": 0})
 }
 

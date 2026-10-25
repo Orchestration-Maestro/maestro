@@ -292,6 +292,36 @@ impl InteractiveMode {
         self.render_initial_messages()?;
         self.update_available_provider_count()
     }
+
+    /// Clears the transcript and the pending-message rows, then replays the current session
+    /// with the initial replay's footer, history and compaction effects.
+    ///
+    /// # Errors
+    /// Returns the failure of reading the session context, of a stored record, of a row's
+    /// rendering or of the published theme.
+    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+        self.chat_container.clear();
+        self.pending_messages_container.clear();
+        self.compaction_queued_messages.borrow_mut().clear();
+        drop(self.streaming.take());
+        self.render_initial_messages()
+    }
+
+    /// Reports a fatal runtime failure as its transcript notice, draws that frame before
+    /// the stop that would cancel it, closes the theme watch and stops the terminal, so
+    /// nothing repaints while the process ends.
+    fn report_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) {
+        let _ = self.show_error(&format!("{prefix}: {error}"));
+        let _ = self.ui.render_pending_frame();
+        self.themes.stop_theme_watcher();
+        let _ = self.ui.stop();
+    }
+
+    /// Reports a fatal runtime failure and ends the process with status one.
+    pub fn handle_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) -> ! {
+        self.report_fatal_runtime_error(prefix, error);
+        std::process::exit(1);
+    }
 }
 
 /// The runtime, theme, highlighter and image support shared by the transcript rows.
