@@ -73,16 +73,21 @@ impl InteractiveMode {
             .map_err(|error| -> Box<dyn Error> { error })
     }
 
-    /// Applies `expanded` to the startup help and every expandable chat row, walking
+    /// Applies `expanded` to the active header and every expandable chat row, walking
     /// the child array held when the walk starts, then requests a frame.
     ///
     /// # Errors
-    /// Returns the failure of a tool row's native formatting or of a text rendering.
+    /// Returns the failure of the extension header's expansion, of a tool row's native
+    /// formatting or of a text rendering.
     pub(super) fn set_tools_expanded(&self, expanded: bool) -> Result<(), EventError> {
         self.tool_output_expanded.set(expanded);
-        let header = self.built_in_header.borrow().clone();
-        if let Some(header) = header {
-            header.set_expanded(expanded)?;
+        let custom = self.custom_header.borrow().clone();
+        if let Some(custom) = custom {
+            if let Some(set_expanded) = &custom.set_expanded {
+                set_expanded.call(expanded)?;
+            }
+        } else if let Some(header) = self.built_in_header.borrow().clone() {
+            set_expanded(header.as_ref(), expanded)?;
         }
         for child in self.chat_container.walk() {
             set_expanded(child.as_ref(), expanded)?;
@@ -137,11 +142,11 @@ impl InteractiveMode {
     }
 }
 
-/// Expands or collapses `child` when it is one of the expandable chat rows.
+/// Expands or collapses `child` when it is one of the expandable rows.
 ///
 /// # Errors
 /// Returns the failure of a tool row's native formatting or of a text rendering.
-fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), EventError> {
+pub(super) fn set_expanded(child: &dyn Component, expanded: bool) -> Result<(), EventError> {
     let child: &dyn Any = child;
     if let Some(row) = child.downcast_ref::<ToolExecutionComponent>() {
         row.set_expanded(expanded)?;

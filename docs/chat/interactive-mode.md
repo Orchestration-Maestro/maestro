@@ -248,8 +248,8 @@ holds keeps the mode alive until it is dropped, and afterwards the session's
 contexts report no UI. Another host retains it with
 `ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
 lists the operations it answers today, which are dialogs, editor access, theme
-queries and selection, the terminal title, tool expansion, status text and keyed
-widgets above or below the editor. Notifications and terminal input listeners
+queries and selection, the terminal title, tool expansion, status text, keyed
+widgets above or below the editor, and extension headers and footers. Notifications and terminal input listeners
 keep their own published owners.
 
 ## Typed input

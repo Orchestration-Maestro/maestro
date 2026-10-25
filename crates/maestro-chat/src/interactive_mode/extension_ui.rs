@@ -11,6 +11,7 @@ use std::rc::Rc;
 
 mod dialogs;
 pub(super) mod input;
+mod replacements;
 mod widgets;
 
 impl ExtensionUIContextPort for InteractiveMode {
@@ -96,6 +97,22 @@ impl ExtensionUIContextPort for InteractiveMode {
         options: Option<maestro_app::ExtensionWidgetOptions>,
     ) -> Result<(), EventError> {
         self.set_extension_widget(key, content, options)
+    }
+
+    /// Replaces the footer with the extension's, or restores the built-in one for `None`.
+    ///
+    /// # Errors
+    /// Returns the original disposal or factory failure.
+    fn set_footer(&self, factory: Option<maestro_app::FooterFactory>) -> Result<(), EventError> {
+        self.set_extension_footer(factory)
+    }
+
+    /// Replaces the header with the extension's, or restores the built-in one for `None`.
+    ///
+    /// # Errors
+    /// Returns the original disposal, factory or expansion failure.
+    fn set_header(&self, factory: Option<maestro_app::ComponentFactory>) -> Result<(), EventError> {
+        self.set_extension_header(factory)
     }
 
     /// Forwards the supplied text to the terminal's title setter unchanged.

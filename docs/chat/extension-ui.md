@@ -255,8 +255,34 @@ name.
 
 `set_title` forwards the supplied text to the terminal unchanged; there is no
 formatter. `get_tools_expanded` reads the mode's own flag, and
-`set_tools_expanded` applies the value to the startup help and every expandable
-transcript row through the existing walk, then requests a frame.
+`set_tools_expanded` applies the value to the active header and every expandable
+transcript row through the existing walk, then requests a frame. The active header
+is the extension header when one is installed, which follows the value only when it
+supplies `set_expanded`; otherwise it is the built-in startup help.
+
+## Headers and footers
+
+`set_header` and `set_footer` replace the built-in header and footer with a
+component an extension builds, and `None` restores the built-in one. Each call
+first calls the current extension component's disposer, then requests a frame
+once the replacement is in place.
+
+A header factory receives the live terminal and theme. The new header takes the
+active header's place in the header container; when that header is no longer
+there, a new extension header goes first and restoring the built-in one adds
+nothing. An extension header that supplies `set_expanded` receives the current
+tool expansion as soon as it is built, and the built-in header receives it when
+restored. Before the mode builds its own header, `set_header` does nothing and
+calls no factory.
+
+A footer factory also receives the live footer metadata, so a footer reads later
+status, branch and provider-count changes. The current footer is removed, and the
+new one is appended after construction.
+
+A failing disposer stops before anything is removed and leaves the current
+component in place. A failing factory leaves the old component disposed: the old
+header stays shown, and the old footer stays removed with no footer appended.
+Either failure returns the original error and requests no frame.
 
 ## Notifications and terminal input
 
@@ -315,5 +341,5 @@ failures return the original error and keep effects already performed. A
 failed disposer stops before removal; a failed factory leaves the old entry
 removed. Neither failure rebuilds the last painted containers.
 
-Headers, footers, custom editors and custom-view installation are separate
-operations; these setters do not implement session replacement or reset.
+Custom editors and custom-view installation are separate operations; these
+setters do not implement session replacement or reset.

@@ -119,8 +119,12 @@ pub struct InteractiveMode {
     pending_events: RefCell<VecDeque<maestro_app::AgentSessionEvent>>,
     /// Whether the one initialization continuation is still delivering events.
     event_initialization_pending: Cell<bool>,
-    /// The expandable startup help, absent when startup is quiet.
-    built_in_header: RefCell<Option<Rc<startup::ExpandableText>>>,
+    /// The built-in header, absent until the header is built.
+    built_in_header: RefCell<Option<maestro_tui::tui::ComponentHandle>>,
+    /// The extension header shown in place of the built-in one.
+    custom_header: RefCell<Option<Rc<maestro_app::ExtensionComponent>>>,
+    /// The extension footer shown in place of the built-in one.
+    custom_footer: RefCell<Option<Rc<maestro_app::ExtensionComponent>>>,
     /// The runtime, theme, highlighter and image support shared by transcript rows.
     tool_environment: Rc<ToolRenderEnvironment>,
     /// Whether tool output and summaries, and with them the startup text, are expanded.
@@ -173,11 +177,8 @@ impl InteractiveMode {
         let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let (keys, editor, editor_container) = create_input(&session, &ui, themes.theme())?;
-        let footer_data_provider = FooterDataProvider::new(
-            session.session_manager().borrow().get_cwd().to_owned(),
-            operations.clone(),
-        );
-        let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
+        let (footer, footer_data_provider) =
+            create_footer(session.clone(), operations.clone(), themes.theme())?;
         let hide_thinking = init_theme(&session, &themes, &operations)?;
         let mode = Rc::new_cyclic(|this| Self {
             shutdown_requested: Cell::new(false),
@@ -208,6 +209,8 @@ impl InteractiveMode {
             pending_events: RefCell::default(),
             event_initialization_pending: Cell::new(false),
             built_in_header: RefCell::default(),
+            custom_header: RefCell::default(),
+            custom_footer: RefCell::default(),
             tool_environment,
             fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
@@ -403,15 +406,20 @@ fn create_editor(
     ))
 }
 
-/// Builds the footer over the session, its metadata and the published theme.
+/// Builds the footer metadata over the session's directory and `operations`, then the
+/// footer over the session, that metadata and the published theme.
 ///
 /// # Errors
 /// Returns the failure of the collator reading the locale environment.
 fn create_footer(
     session: Rc<AgentSession>,
-    data: &FooterDataProvider,
+    operations: Rc<dyn FooterOperations>,
     theme: LiveTheme,
-) -> Result<Rc<FooterComponent>, Box<dyn Error>> {
+) -> Result<(Rc<FooterComponent>, FooterDataProvider), Box<dyn Error>> {
+    let data = FooterDataProvider::new(
+        session.session_manager().borrow().get_cwd().to_owned(),
+        operations,
+    );
     let auto_compact = session.auto_compaction_enabled();
     let footer = Rc::new(FooterComponent::new(
         session,
@@ -421,7 +429,7 @@ fn create_footer(
         Rc::new(|key| std::env::var(key).ok()),
     ));
     footer.set_auto_compact_enabled(auto_compact);
-    Ok(footer)
+    Ok((footer, data))
 }
 
 /// Registers loaded themes, selects the configured theme, then reads thinking visibility.
