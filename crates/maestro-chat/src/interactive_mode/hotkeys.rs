@@ -1,6 +1,6 @@
 //! Keyboard help using the live display registry.
 use super::InteractiveMode;
-use std::error::Error;
+use std::{error::Error, fmt::Write, sync::PoisonError};
 
 impl InteractiveMode {
     /// Appends the current keyboard help as a bordered transcript card.
@@ -8,17 +8,37 @@ impl InteractiveMode {
     /// # Errors
     /// Returns a failure reading the heading's theme.
     pub fn handle_hotkeys_command(&self) -> Result<(), Box<dyn Error>> {
-        self.append_markdown_panel("Keyboard Shortcuts", Self::hotkeys_markdown())
+        self.append_markdown_panel("Keyboard Shortcuts", self.hotkeys_markdown())
     }
 
-    /// The three built-in tables in their displayed order.
-    pub(super) fn hotkeys_markdown() -> String {
-        format!(
+    /// The fixed tables followed by the current runner's selected shortcuts.
+    pub(super) fn hotkeys_markdown(&self) -> String {
+        let mut text = format!(
             "{}\n\n{}\n\n{}",
             navigation_keys(),
             editing_keys(cfg!(windows)),
             other_keys()
-        )
+        );
+        let session = self.runtime_host.session();
+        let shortcuts = session
+            .extension_runner()
+            .get_shortcuts(&self.keybindings.get_effective_config());
+        if !shortcuts.is_empty() {
+            text.push_str("\n\n**Extensions**\n| Key | Action |\n|-----|--------|");
+            for (key, shortcut) in shortcuts {
+                let shortcut = shortcut.read().unwrap_or_else(PoisonError::into_inner);
+                let description = shortcut
+                    .description
+                    .as_deref()
+                    .unwrap_or(&shortcut.extension_path);
+                let _ = write!(
+                    text,
+                    "\n| `{}` | {description} |",
+                    capitalize_shortcut(&key)
+                );
+            }
+        }
+        text
     }
 }
 
@@ -124,6 +144,23 @@ fn other_keys() -> String {
         key("app.message.dequeue"),
         key("app.clipboard.pasteImage"),
     )
+}
+
+/// Capitalizes ASCII word starts without changing the rest of a shortcut.
+fn capitalize_shortcut(key: &str) -> String {
+    let mut previous = false;
+    key.chars()
+        .map(|value| {
+            let word = value.is_ascii_alphanumeric() || value == '_';
+            let display = if word && !previous {
+                value.to_ascii_uppercase()
+            } else {
+                value
+            };
+            previous = word;
+            display
+        })
+        .collect()
 }
 
 #[cfg(test)]

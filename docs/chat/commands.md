@@ -176,7 +176,10 @@ After the shared trim, only exact `/hotkeys` is a command. `/hotkey`, `/HOTKEYS`
 `/hotkeys extra` and `/hotkeys` followed by U+0085 remain ordinary input. The
 command leaves the waiting input pending and adds no editor history.
 
-Extension shortcut rows are not delivered yet; they remain part of #851.
+An Extensions table follows when the current session has selected shortcuts.
+The runner applies the retained key configuration for reservations, independently
+of the display registry. Rows keep selection order and use the description, or
+the extension path when it is absent; an empty description stays empty.
 
 ## How the path is read
 
