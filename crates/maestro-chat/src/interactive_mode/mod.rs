@@ -58,6 +58,7 @@ type StatusLine = (Rc<dyn Component>, Rc<Text>);
 /// The assistant row a response streams into and the message it shows.
 type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
+pub use authentication::is_api_key_login_provider;
 pub use maestro_app::presentation_data::mode_dispatch::InteractiveModeOptions;
 
 /// The retained interactive presentation over the current session.
