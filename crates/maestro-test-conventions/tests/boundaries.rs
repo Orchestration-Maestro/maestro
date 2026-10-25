@@ -1513,6 +1513,8 @@ fn terminal_effect_recorders_have_one_owner() {
         "src/recording_terminal.rs",
         "pub struct RecordingTerminal;\npub struct ManualRuntime;",
     );
+    source(&workspace, "maestro-cli", "tests/support.rs", "");
+    workspace.integration("maestro-cli");
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     for (path, contents) in [
         ("src/support.rs", "struct RecordingTerminal;"),

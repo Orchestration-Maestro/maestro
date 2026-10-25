@@ -52,20 +52,23 @@ pub fn signals_for_host() -> Vec<TerminationSignal> {
 /// The delivery runs as tasks of the calling thread, so the caller drives it from a Tokio
 /// runtime with the signal driver enabled. Removing the last live registration restores
 /// the native TERM/HUP default actions; reopening defers those same prepared actions again.
+/// The default-action check precedes delivery, so removing a registration from its
+/// callback cannot terminate the process with the signal already being handled.
 /// Dropping the removal handle alone does not unregister the callback.
 ///
 /// # Errors
 /// Returns the native registration failure.
 #[cfg(unix)]
 pub fn register_signals(callback: Rc<dyn Fn(TerminationSignal)>) -> io::Result<Box<dyn Fn()>> {
+    acquire_defaults()?;
     let signals = signals_for_host()
         .into_iter()
         .map(|signal| {
             let kind = tokio::signal::unix::SignalKind::from_raw(signal.as_raw());
             tokio::signal::unix::signal(kind).map(|stream| (signal, stream))
         })
-        .collect::<io::Result<Vec<_>>>()?;
-    acquire_defaults()?;
+        .collect::<io::Result<Vec<_>>>()
+        .inspect_err(|_| release_defaults())?;
     let deliveries = signals
         .into_iter()
         .map(move |(signal, stream)| {

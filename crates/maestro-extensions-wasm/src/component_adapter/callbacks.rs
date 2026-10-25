@@ -96,6 +96,9 @@ kinds! {
         Shortcut(crate::ShortcutHandler),
         Prepare(crate::PrepareArguments),
         Tool(crate::ToolExecute),
+        Component(crate::Component),
+        Bash(crate::BashOperations),
+        Schema(crate::schema_code::Handler),
     }
     once {
         WithSession(WithSession),
@@ -134,6 +137,58 @@ impl<I: Imports> Identity<I> {
         Self { handle, id }
     }
 
+    /// Hands the identity handle to the host while the object stays in this table.
+    #[cfg(target_arch = "wasm32")]
+    pub(super) fn transfer(self, object: impl Stored) -> I::Callback {
+        let Self { handle, id } = self;
+        insert(
+            id,
+            Entry {
+                kind: object.wrap(),
+                _owner: None,
+            },
+        );
+        handle
+    }
+
+    /// Makes a closure callable under this identity while the request announcing it is
+    /// still with the host, which may call it before answering.
+    pub(super) fn stage(&self, closure: impl Stored) {
+        insert(
+            self.id,
+            Entry {
+                kind: closure.wrap(),
+                _owner: None,
+            },
+        );
+    }
+
+    /// Keeps a staged closure until the host releases it, or withdraws it when the host
+    /// rejected its request.
+    pub(super) fn settle(self, accepted: bool) {
+        let Self { handle, id } = self;
+        if !accepted {
+            release(id);
+            return;
+        }
+        let staged = TABLE.with_borrow_mut(|table| table.remove(&id));
+        if let Some(Entry { kind, .. }) = staged {
+            insert(
+                id,
+                Entry {
+                    kind,
+                    _owner: Some(Box::new(handle)),
+                },
+            );
+        }
+    }
+
+    /// Adopt a fresh host-supplied identity for a retained originating callback.
+    pub(super) fn from_handle(imports: &I, handle: I::Callback) -> Self {
+        let id = imports.callback_id(&handle);
+        Self { handle, id }
+    }
+
     /// Keeps a closure for the identity until the host releases it. Dropping the identity
     /// without calling this retains nothing, which rolls back a rejected registration.
     pub(super) fn keep(self, closure: impl Stored) {
@@ -160,6 +215,12 @@ pub(super) struct Scoped<I: Imports> {
 }
 
 impl<I: Imports> Scoped<I> {
+    /// Adopt an already retained local identity and release it on every exit path.
+    pub(super) fn from_handle(imports: &I, handle: I::Callback) -> Self {
+        let id = imports.callback_id(&handle);
+        Self { handle, id }
+    }
+
     /// Registers a closure that lives only for one operation.
     pub(super) fn new(imports: &I, closure: impl Stored) -> Self {
         let Identity { handle, id } = Identity::<I>::new(imports);

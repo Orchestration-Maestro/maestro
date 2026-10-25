@@ -26,6 +26,8 @@ pub(crate) enum Request {
         prepare: Option<Handle>,
         /// Actual execution callback.
         execute: Handle,
+        /// The schema bindings admitted for this declaration.
+        schemas: crate::schema_registration::Schemas,
         /// Catchable native registration result.
         reply: Reply,
     },
@@ -73,12 +75,12 @@ impl Request {
                 metadata,
                 prepare,
                 execute,
+                schemas,
                 reply,
             } => {
                 let result = crate::tool_registration::definition(
                     &metadata,
-                    prepare,
-                    execute,
+                    (prepare, execute, schemas),
                     registry.clone(),
                     api.events.clone(),
                 )
@@ -98,7 +100,8 @@ impl Request {
             } => {
                 let options = RegisteredCommandOptions {
                     description,
-                    get_argument_completions: completions.map(|handler| handler.completions()),
+                    get_argument_completions: completions
+                        .map(|handler| handler.completions(registry.clone())),
                     handler: handler.command(registry.clone()),
                 };
                 (api.register_command(name, options), reply)
@@ -138,5 +141,15 @@ impl Endpoint {
     ) -> Result<(), String> {
         self.0
             .request(|id, reply| Message::Registration(id, request(reply)))
+    }
+
+    /// Registers through a route, for a registration whose native refresh may call back
+    /// into this instance.
+    pub(crate) fn routed_registration(
+        &self,
+        request: impl FnOnce(Reply) -> Request,
+    ) -> crate::import_route::Route {
+        self.0
+            .route(|id, reply| Message::Registration(id, request(reply)))
     }
 }

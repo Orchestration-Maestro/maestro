@@ -10,7 +10,6 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 pub(crate) mod bash_output;
 pub(crate) mod effects;
 mod synchronous;
-#[cfg(test)]
 pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
@@ -20,6 +19,13 @@ pub(crate) type Work = std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>;
 pub(crate) enum Message {
     /// Completes an admitted synchronous guest call through this same receiver.
     Completed(u64, Result<(), String>),
+    /// The original retained Json.
+    Json(u64, crate::schema_reads::Request),
+    /// Live declarations with their original schema callback identities.
+    SchemaListing(
+        u64,
+        std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
+    ),
     /// An operation on its original guarded context.
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
@@ -65,28 +71,19 @@ pub(crate) enum Message {
     ReplacedCommand(u64, std::sync::mpsc::Sender<Result<Endpoint, String>>),
     /// Uses original native observers and explicit subscription removers.
     Effect(u64, effects::Request),
+    /// Runs a request whose native code may call back into this instance through its route.
+    Routed(
+        Box<Message>,
+        std::sync::mpsc::Sender<crate::import_route::Nested>,
+    ),
     /// Forwards an owned chunk into its original execution's data stream.
     BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
+    /// Reads or edits the independently retained live renderer theme.
+    Theme(u64, crate::theme_reads::Request),
     /// Final release of an independently retained capability.
     Release(u64),
-}
-
-impl Message {
-    /// Whether the Store thread waits for this answer; asynchronous requests carry an admission.
-    fn blocks_store(&self) -> bool {
-        !matches!(
-            self,
-            Self::Completed(..)
-                | Self::Events(_, crate::event_reads::Request::Emit(..))
-                | Self::ApiModel(..)
-                | Self::Command(..)
-                | Self::Auth(..)
-                | Self::Replaced(..)
-                | Self::Release(..)
-        )
-    }
 }
 
 /// A startup or callback admission keeping the pump available.
@@ -142,6 +139,20 @@ impl Lease {
             .recv()
             .map_err(|_| "extension resource reply ended".to_owned())?
     }
+
+    /// Sends a request whose native code may call back into this instance; the guest
+    /// drives the returned route until the request's own result arrives.
+    pub(crate) fn route(
+        &self,
+        request: impl FnOnce(u64, std::sync::mpsc::Sender<Result<(), String>>) -> Message,
+    ) -> crate::import_route::Route {
+        let (reply, response) = std::sync::mpsc::channel();
+        let (nested, route) = crate::import_route::Route::new(response);
+        let _ = self
+            .requests
+            .send(Message::Routed(Box::new(request(self.id, reply)), nested));
+        route
+    }
 }
 
 impl Drop for Lease {
@@ -192,30 +203,19 @@ enum Capability {
     /// Original explicit remover from the existing event bus.
     Subscription(maestro_extensions::Subscription<maestro_extensions::Local>),
     /// Original live theme supplied by native rendering.
-    Theme {
-        /// Ownership alone crosses the opaque canonical theme resource.
-        _owner: maestro_extensions::LiveTheme,
-    },
+    Theme(maestro_extensions::LiveTheme),
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
 }
 
 /// Local entries and their monotonic identities.
 #[derive(Default)]
-struct Resources {
+pub(crate) struct Resources {
     /// Next identity; released identities are never reused.
     next: u64,
     /// Weak native callback identities by allocation address; each weak handle keeps its
     /// address from reuse and retains no guest admission.
-    listeners: std::collections::HashMap<
-        usize,
-        (
-            std::rc::Weak<
-                <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::Listener,
-            >,
-            u32,
-        ),
-    >,
+    pub(crate) identities: std::collections::HashMap<usize, Identity>,
     /// Identity count at which retired identities are dropped, doubling so the work stays linear.
     prune_at: usize,
     /// Each entry owns exactly the capability identified by its lease.
@@ -226,7 +226,7 @@ struct Resources {
 #[derive(Clone)]
 pub(crate) struct Registry {
     /// Shared local entries; never borrowed while invoking domain code.
-    resources: Rc<RefCell<Resources>>,
+    pub(crate) resources: Rc<RefCell<Resources>>,
     /// Registration services do not grant their own admission.
     requests: WeakUnboundedSender<Message>,
     /// Receiver access is weak until a synchronous invocation has been admitted.
@@ -320,6 +320,41 @@ impl Registry {
             .map(crate::tree_reads::Endpoint)
     }
 
+    /// Returns the innermost native operation that currently owns this instance's route.
+    fn route(&self) -> Option<std::sync::mpsc::Sender<crate::import_route::Nested>> {
+        self.pump
+            .upgrade()
+            .and_then(|pump| pump.routes.borrow().last().cloned())
+    }
+
+    /// Hands a synchronous target to the native operation that currently owns this instance,
+    /// or submits it to the Store when no operation does.
+    pub(crate) fn dispatch(
+        &self,
+        endpoint: &crate::lifecycle::StoreEndpoint,
+        call: crate::guest_calls::Call,
+    ) -> Result<(), String> {
+        match self.route() {
+            Some(route) => crate::import_route::Nested::send(&route, call, None),
+            None => endpoint.send(call),
+        }
+    }
+
+    /// Hands an asynchronous target to the native operation that owns this instance and
+    /// waits until its prefix ran, or submits it to the Store when no operation does.
+    pub(crate) fn admit(
+        &self,
+        endpoint: &crate::lifecycle::StoreEndpoint,
+        call: crate::guest_calls::Call,
+    ) -> Result<(), String> {
+        match self.route() {
+            Some(route) => self.invoke_sync(None, |prefix, _| {
+                crate::import_route::Nested::send(&route, call, Some(prefix))
+            }),
+            None => endpoint.send(call),
+        }
+    }
+
     /// Allocates one independent identity while an existing admission is live.
     fn insert(&self, capability: Capability) -> Result<Arc<Lease>, String> {
         let requests = self
@@ -350,3 +385,43 @@ mod pump;
 
 #[cfg(test)]
 mod tests;
+
+/// Weak callback identities share one cache without retaining domain code or Store admission.
+pub(crate) enum Identity {
+    /// The original weak listener allocation and guest callback identity.
+    Listener(
+        std::rc::Weak<
+            <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::Listener,
+        >,
+        u32,
+    ),
+    /// The original weak schema allocation and guest callback admission.
+    Schema(crate::schema_registration::Identity),
+}
+impl Identity {
+    /// Whether the original callback still has a strong capture owner.
+    pub(crate) fn alive(&self) -> bool {
+        match self {
+            Self::Listener(weak, _) => weak.strong_count() > 0,
+            Self::Schema((weak, _)) => weak.strong_count() > 0,
+        }
+    }
+}
+impl Resources {
+    /// Insert one weak identity with amortized retirement.
+    pub(crate) fn identity(&mut self, key: usize, identity: Identity) {
+        if self.identities.len() >= self.prune_at {
+            #[cfg(test)]
+            effects::emission::CAPACITY
+                .set(effects::emission::CAPACITY.get() + self.identities.capacity());
+            self.identities.retain(|_, identity| {
+                effects::emission::inspect();
+                identity.alive()
+            });
+            // `retain` scans every bucket, so retired capacity must not outlive the prune.
+            self.identities.shrink_to_fit();
+            self.prune_at = 2 * self.identities.len() + 1;
+        }
+        self.identities.insert(key, identity);
+    }
+}

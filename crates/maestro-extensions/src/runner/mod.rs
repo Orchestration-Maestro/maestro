@@ -71,7 +71,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 session,
                 actions: RefCell::default(),
                 command_actions: RefCell::new(ExtensionCommandContextActions::unbound()),
-                ui: RefCell::new(no_ui.clone()),
+                ui: RefCell::new(no_ui.clone().into()),
                 no_ui,
             }),
             warning_reporter,

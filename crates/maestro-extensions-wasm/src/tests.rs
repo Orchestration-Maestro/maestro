@@ -26,6 +26,7 @@ macro_rules! on_both_adapters {
 }
 
 pub(crate) mod action_host;
+mod advanced_ui;
 mod agent_events;
 mod application_messages;
 pub(crate) mod author;
@@ -69,6 +70,7 @@ pub(crate) mod renderer_host;
 mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
+pub(crate) mod schema_host;
 mod selection_events;
 mod send_user_message_example;
 mod session_actions;
@@ -87,6 +89,7 @@ pub(crate) mod shell_host;
 mod shutdown_example;
 mod stream_events;
 mod system_prompt_header_example;
+pub(crate) mod theme_host;
 mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;
@@ -439,7 +442,7 @@ fn assert_typed_event_export(contract: &Contract) {
         contract.event_results,
         [concat!(
             "result<record {event: result<option<string>, string>, ",
-            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<bash-operations>>}, string>"
+            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<callback>>}, string>"
         )],
         "the event export answers with independent event, decision and operations channels or a refusal"
     );
@@ -541,8 +544,8 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_async_exports(&contract);
     assert_eq!(
         names(&contract.exports, false),
-        ["release"],
-        "only closure release remains a synchronous export"
+        ["describe-schema", "release", "retain-schema"],
+        "describe, retain and release only touch guest callback storage"
     );
     assert_shell_contract(&contract);
     assert_renderer_contract(&contract);
@@ -567,6 +570,8 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
             "event-emit",
+            "get-all-tools",
+            "register-tool",
             "set-model",
         ]
     );
@@ -604,7 +609,7 @@ fn ui_signatures(
 
 /// The retained UI resource is borrowed while its requests stay synchronous and typed.
 fn assert_ui_contract(contract: &Contract) {
-    let unit = vec!["result<_, string>".to_owned()];
+    let unit = vec!["own<import-route>".to_owned()];
     let self_ = "self: borrow<extension-ui-context>".to_owned();
     let params = [
         vec![
@@ -640,7 +645,7 @@ fn assert_ui_contract(contract: &Contract) {
         assert_eq!(actual, &expected, "retained UI request {index} parameters");
         assert_eq!(
             results, &unit,
-            "retained UI request {index} stays synchronous"
+            "retained UI request {index} stays synchronous through its route"
         );
     }
 }
@@ -717,7 +722,6 @@ fn assert_action_contract(contract: &Contract) {
         "get-session-name",
         "set-label",
         "get-active-tools",
-        "get-all-tools",
         "set-active-tools",
         "get-commands",
         "get-thinking-level",
@@ -760,11 +764,11 @@ fn expected_action_signatures() -> [Signature; 7] {
     [
         (
             vec!["message: string", "options: option<string>"],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec!["content: string", "options: option<string>"],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (vec!["model: string"], vec!["result<bool, string>"]),
         (
@@ -774,7 +778,7 @@ fn expected_action_signatures() -> [Signature; 7] {
                 "on-complete: option<borrow<callback>>",
                 "on-error: option<borrow<callback>>",
             ],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec![
@@ -783,7 +787,7 @@ fn expected_action_signatures() -> [Signature; 7] {
                 "on-complete: option<borrow<callback>>",
                 "on-error: option<borrow<callback>>",
             ],
-            vec!["result<_, string>"],
+            vec!["own<import-route>"],
         ),
         (
             vec![
@@ -940,16 +944,16 @@ fn renderer_signatures(
     [
         (host, "register-message-renderer"),
         (guest, "invoke-renderer"),
-        (guest, "[method]component-view.render"),
-        (guest, "[method]component-view.handle-input"),
-        (guest, "[method]component-view.wants-key-release"),
-        (guest, "[method]component-view.invalidate"),
+        (guest, "component-render"),
+        (guest, "component-handle-input"),
+        (guest, "component-wants-key-release"),
+        (guest, "component-invalidate"),
     ]
     .into_iter()
     .map(|(interface, name)| signature(engine, interface, name, &declared))
     .collect()
 }
-/// Checks actual guest resource methods, not just the free-function inventory.
+/// Checks the renderer and the retained-component exports keyed by callback identity.
 fn assert_renderer_contract(contract: &Contract) {
     let expected = [
         (
@@ -962,11 +966,11 @@ fn assert_renderer_contract(contract: &Contract) {
                 "request: record {message: string, expanded: bool, theme: own<theme>}",
                 "emitter: borrow<callback-emitter>",
             ],
-            vec!["result<option<own<component-view>>, string>"],
+            vec!["result<option<own<callback>>, string>"],
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "width: u32",
                 "emitter: borrow<callback-emitter>",
             ],
@@ -974,7 +978,7 @@ fn assert_renderer_contract(contract: &Contract) {
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "data: string",
                 "emitter: borrow<callback-emitter>",
             ],
@@ -982,14 +986,14 @@ fn assert_renderer_contract(contract: &Contract) {
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "emitter: borrow<callback-emitter>",
             ],
             vec!["result<bool, string>"],
         ),
         (
             vec![
-                "self: borrow<component-view>",
+                "handler: borrow<callback>",
                 "emitter: borrow<callback-emitter>",
             ],
             vec!["result<_, string>"],
@@ -1020,13 +1024,10 @@ fn shell_signatures(
 ) -> Result<Vec<Signature>, String> {
     let mut declared = resources(engine, host);
     declared.extend(resources(engine, guest));
-    [
-        (guest, "[method]bash-operations.exec"),
-        (host, "[method]bash-output.on-data"),
-    ]
-    .into_iter()
-    .map(|(interface, name)| signature(engine, interface, name, &declared))
-    .collect()
+    [(guest, "bash-exec"), (host, "[method]bash-output.on-data")]
+        .into_iter()
+        .map(|(interface, name)| signature(engine, interface, name, &declared))
+        .collect()
 }
 /// Owned output and optional signal coexist with literal numeric/environment operands.
 fn assert_shell_contract(contract: &Contract) {
@@ -1036,7 +1037,7 @@ fn assert_shell_contract(contract: &Contract) {
             .contains(&("[method]bash-output.on-data".into(), false))
     );
     let expected = [
-        (vec!["self: borrow<bash-operations>", "request: record {command: string, cwd: string, timeout: option<f64>, env: option<list<tuple<string, option<string>>>>}", "resources: record {output: own<bash-output>, signal: option<own<abort-signal>>}"],vec!["result<option<f64>, string>"]),
+        (vec!["handler: borrow<callback>", "request: record {command: string, cwd: string, timeout: option<f64>, env: option<list<tuple<string, option<string>>>>}", "resources: record {output: own<bash-output>, signal: option<own<abort-signal>>}"],vec!["result<option<f64>, string>"]),
         (vec!["self: borrow<bash-output>","data: list<u8>"],vec!["result<_, string>"])
     ].map(|(params,results)| (params.into_iter().map(str::to_owned).collect::<Vec<_>>(),results.into_iter().map(str::to_owned).collect::<Vec<_>>()));
     assert_eq!(contract.shell_signatures, expected);
@@ -1047,11 +1048,11 @@ fn assert_async_exports(contract: &Contract) {
     assert_eq!(
         names(&contract.exports, true),
         [
-            "[method]bash-operations.exec",
-            "[method]component-view.handle-input",
-            "[method]component-view.invalidate",
-            "[method]component-view.render",
-            "[method]component-view.wants-key-release",
+            "bash-exec",
+            "component-handle-input",
+            "component-invalidate",
+            "component-render",
+            "component-wants-key-release",
             "invoke-command",
             "invoke-compaction-complete",
             "invoke-compaction-error",
@@ -1060,6 +1061,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-listener",
             "invoke-prepare",
             "invoke-renderer",
+            "invoke-schema",
             "invoke-setup",
             "invoke-shortcut",
             "invoke-tail",

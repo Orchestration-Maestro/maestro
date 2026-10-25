@@ -3,6 +3,7 @@ use super::{Message, Registry, pump::State};
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeMap,
+    future::Future,
     sync::Arc,
     task::{Context, Poll, Wake, Waker},
 };
@@ -69,18 +70,13 @@ impl Registry {
     /// Services reentrant native requests while the active Accessor enters the guest.
     pub(crate) fn invoke_sync(
         &self,
-        start: impl FnOnce(Completion) -> Result<(), String>,
+        value: Option<&mut serde_json::Value>,
+        start: impl FnOnce(Completion, crate::schema_reads::Endpoint) -> Result<(), String>,
     ) -> Result<(), String> {
         let pump = self
             .pump
             .upgrade()
             .ok_or_else(|| "extension resource owner ended".to_owned())?;
-        if pump.store_blocked.get() {
-            return Err(
-                "extension cannot be re-entered while it waits for a synchronous host call"
-                    .to_owned(),
-            );
-        }
         let requests = self
             .requests
             .upgrade()
@@ -91,38 +87,75 @@ impl Registry {
             id.checked_add(1)
                 .ok_or_else(|| "extension invocation identity exhausted".to_owned())?,
         );
-        let started = start(Completion {
+        let endpoint = crate::schema_reads::Endpoint {
             id,
-            requests: Some(requests),
-        });
-        let result = pump.wait(id);
+            requests: requests.clone(),
+        };
+        let started = start(
+            Completion {
+                id,
+                requests: Some(requests),
+            },
+            endpoint,
+        );
+        let result = pump.wait(id, value);
         started.and(result)
     }
 }
 
 impl State {
     /// Borrows the receiver only while polling, never while dispatching native code.
-    fn wait(&self, id: u64) -> Result<(), String> {
+    fn wait(&self, id: u64, value: Option<&mut serde_json::Value>) -> Result<(), String> {
         let waker = Waker::from(Arc::new(ThreadWake(std::thread::current())));
         let previous = self.waker.replace(waker.clone());
-        let result = self.wait_for(id, &waker);
+        let result = self.wait_for(id, &waker, value);
         self.waker.replace(previous.clone());
         previous.wake();
         result
     }
 
     /// Drives the current synchronous waiter without losing the suspended pump task's wakeup.
-    fn wait_for(&self, id: u64, waker: &Waker) -> Result<(), String> {
+    fn wait_for(
+        &self,
+        id: u64,
+        waker: &Waker,
+        mut value: Option<&mut serde_json::Value>,
+    ) -> Result<(), String> {
         let mut context = Context::from_waker(waker);
         loop {
             if let Some(result) = self.synchronous.completed.borrow_mut().remove(&id) {
                 return result;
             }
-            match self.poll_next(&mut context) {
+            // A blocking waiter cannot yield to replenish Tokio's cooperative budget.
+            let mut next = std::pin::pin!(tokio::task::coop::unconstrained(std::future::poll_fn(
+                |context| {
+                    self.poll_next_using(context, &mut |message| scoped(message, id, &mut value))
+                }
+            )));
+            match next.as_mut().poll(&mut context) {
                 Poll::Ready(true) => {}
                 Poll::Ready(false) => return Err("extension resource owner ended".to_owned()),
                 Poll::Pending => std::thread::park(),
             }
         }
     }
+}
+
+/// Answer only the operand belonging to this stack's synchronous invocation.
+fn scoped(
+    message: Message,
+    id: u64,
+    value: &mut Option<&mut serde_json::Value>,
+) -> Option<Message> {
+    let Message::Json(target, request) = message else {
+        return Some(message);
+    };
+    if target == id
+        && let Some(value) = value.as_deref_mut()
+    {
+        request.answer(value);
+    } else {
+        request.reject();
+    }
+    None
 }

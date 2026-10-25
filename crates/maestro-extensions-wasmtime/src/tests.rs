@@ -19,6 +19,7 @@ mod history;
 mod registrations;
 mod replaced;
 mod returned_bash;
+mod schema;
 mod tools;
 mod tree;
 mod unknown_events;
@@ -43,11 +44,15 @@ pub(super) fn runner(cwd: &str) -> ExtensionRunner<Local> {
     )
 }
 
-/// Runs `invoke` in a native observer while a simulated Store thread blocks in its
-/// synchronous update import, the only state in which that Store cannot enter its guest.
-pub(super) async fn during_blocking_request<T: 'static>(
+/// A nested same-instance call as the Store receives it.
+pub(super) type NestedCall = crate::guest_calls::Call<crate::guest_calls::Callback>;
+
+/// Runs `invoke` in a native observer while a simulated Store thread waits in its routed
+/// update import, answering each nested same-instance call the observer makes with `answer`.
+pub(super) async fn during_routed_request<T: 'static>(
     pump: &mut crate::local_resources::Pump,
     invoke: impl FnOnce() -> T + 'static,
+    mut answer: impl FnMut(NestedCall) + Send + 'static,
 ) -> T {
     let result = Rc::new(std::cell::RefCell::new(None));
     let slot = result.clone();
@@ -60,24 +65,18 @@ pub(super) async fn during_blocking_request<T: 'static>(
             }
         }))
         .unwrap();
-    let store = std::thread::spawn(move || update.update(r#"{"content":[]}"#.into()).unwrap());
+    let store = std::thread::spawn(move || {
+        let mut route = update.update(r#"{"content":[]}"#.into());
+        loop {
+            match route.next() {
+                Ok(nested) => answer(nested.call),
+                Err(result) => break result.unwrap(),
+            }
+        }
+    });
     while result.borrow().is_none() {
         assert!(pump.answer_next().await);
     }
     store.join().unwrap();
     result.borrow_mut().take().unwrap()
-}
-
-/// Asserts that a same-Store guest call made during a blocking request reports reentry.
-pub(super) async fn reports_reentry<T: 'static, E: std::fmt::Display + 'static>(
-    pump: &mut crate::local_resources::Pump,
-    invoke: impl FnOnce() -> Result<T, E> + 'static,
-) {
-    let Err(error) = during_blocking_request(pump, invoke).await else {
-        panic!("a blocked Store entered its guest")
-    };
-    assert_eq!(
-        error.to_string(),
-        "extension cannot be re-entered while it waits for a synchronous host call"
-    );
 }

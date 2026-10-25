@@ -21,7 +21,7 @@ type Completion = TypedFunc<(Resource<Callback>, String), (Result<Option<Vec<Ite
 /// Owned canonical completion item, converted directly to its native domain record.
 #[derive(ComponentType, Lift)]
 #[component(record)]
-struct Item {
+pub(crate) struct Item {
     /// Literal inserted text.
     value: String,
     /// Literal displayed label.

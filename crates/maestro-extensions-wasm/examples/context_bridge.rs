@@ -22,6 +22,9 @@ mod commands;
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/prefixes.rs"]
+mod prefixes;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
 #[cfg(target_arch = "wasm32")]
@@ -34,6 +37,10 @@ mod retained;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/ui.rs"]
 mod ui;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/theme.rs"]
+mod theme;
 
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/schema.rs"]
@@ -61,7 +68,10 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         let renderer_api = api.clone();
         api.register_message_renderer(
             "bridge-view",
-            Rc::new(move |message, options, _, emitter| {
+            Rc::new(move |message, options, theme, emitter| {
+                if let Some(method) = message.custom_type.strip_prefix("theme ") {
+                    return Ok(Some(theme::view(theme, method.into())));
+                }
                 emitter.emit(
                     "renderer-created",
                     serde_json::json!([message.custom_type, options.expanded]),
@@ -71,6 +81,10 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 }
                 if message.custom_type == "creation-error" {
                     return Err("guest creation failure".into());
+                }
+                if message.custom_type == "send-message" {
+                    send_inner(&renderer_api)?;
+                    emitter.emit("trace", serde_json::json!("send-returned"))?;
                 }
                 Ok(Some(maestro_extensions_wasm::Component::new(View {
                     api: renderer_api.clone(),
@@ -154,18 +168,36 @@ fn command(
         if args == "healthy-admitted" {
             return retained::healthy(context).await;
         }
+        if args == "register-tool" {
+            return registrations::tool(&api);
+        }
+        if args == "register-prefixes" {
+            return prefixes::register(&api, context);
+        }
+        if args == "compact" {
+            return compact(&context);
+        }
         if let Some(root) = args.strip_prefix("api imports:") {
             return Err(api::observe(&api, &context, root).await?.to_string());
         }
         if let Some(path) = args.strip_prefix("command imports:") {
             return Err(commands::observe(&context, path.into()).await?.to_string());
         }
+        if let Some(count) = args.strip_prefix("schema growth:") {
+            let count = count.parse::<usize>().map_err(|e| e.to_string())?;
+            return Err(schema::growth(&api, count)?.to_string());
+        }
+        if args == "schema executable" {
+            return Err(schema::executable(&api)?.to_string());
+        }
+        if args == "schema relay" {
+            return Err(schema::relay(&api)?.to_string());
+        }
         if args == "schema imports" {
             return Err(schema::observe(&api)?.to_string());
         }
-        if args == "ui imports" || args == "ui clear" {
-            ui::observe(&context, args == "ui clear")?;
-            return Err("UI forwarded".into());
+        if args == "ui imports" || args == "ui clear" || args.starts_with("editor ") {
+            return Err(ui::observe(&context, &args)?);
         }
         if args == "imports" {
             return Err(reads::observe(&context)?.to_string());
@@ -183,6 +215,31 @@ fn command(
             context.get_system_prompt()?
         ))
     })
+}
+
+/// Sends a displayed custom message whose rendering the host may run before returning.
+#[cfg(target_arch = "wasm32")]
+fn send_inner(api: &ExtensionAPI) -> Result<(), String> {
+    let message = serde_json::from_value(
+        serde_json::json!({"customType": "inner", "content": "sent", "display": true}),
+    )
+    .map_err(|error| error.to_string())?;
+    api.send_message(message, None)
+}
+
+/// Starts compaction with notifications the host may deliver before compaction returns.
+#[cfg(target_arch = "wasm32")]
+fn compact(context: &maestro_extensions_wasm::ExtensionCommandContext) -> Result<(), String> {
+    context.compact(Some(maestro_extensions_wasm::CompactOptions {
+        custom_instructions: None,
+        on_complete: Some(Rc::new(|_, emitter| {
+            emitter.emit("trace", serde_json::json!("compact-complete"))
+        })),
+        on_error: Some(Rc::new(|error, emitter| {
+            emitter.emit("trace", serde_json::json!(format!("compact-error:{error}")))
+        })),
+    }))?;
+    Err("compact returned".into())
 }
 
 /// Exposes the actual context supplied by the typed native session-start caller.

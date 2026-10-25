@@ -1,4 +1,6 @@
-# Extension question dialogs
+# Extension UI
+
+## Extension question dialogs
 
 `maestro_chat::ExtensionSelectorComponent` and
 `maestro_chat::ExtensionInputComponent` compose reusable questions from the
@@ -47,7 +49,7 @@ its own flag and immediately forwards every setter to the retained editor,
 including after the editor is removed from the displayed children. The writer
 consumes the child's cursor marker to place the hardware cursor.
 
-# Extension editor dialog
+## Extension editor dialog
 
 Native callers construct `maestro_chat::ExtensionEditorComponent` with a shared
 `Rc<TUI>`, a live application keybinding manager, a title and
@@ -75,7 +77,7 @@ its own focus state. The inherited container child-array interface remains
 available; removing visible children does not replace the retained input target.
 Callbacks may reenter rendering and input.
 
-## External editing
+### External editing
 
 The runtime's nonempty `VISUAL` wins over nonempty `EDITOR`. Selection is sampled
 independently when preparing help and on each invocation. With neither configured,
@@ -107,18 +109,105 @@ restart requests a full redraw. External editing never submits or cancels.
 
 Interactive dialog presentation and settlement are separate from this component.
 
+## Shortcuts
+
+`InteractiveMode` installs one interceptor as the editor's first input handler once the
+terminal starts, over the shortcuts the session's extension runner selects from the
+bindings in effect. Selection belongs to the runner: a key a reserved application action
+claims is skipped with a warning, a key an ordinary application action also claims stays
+with the extension and warns, and a later claim on the same key replaces the earlier
+extension's callback in that key's original slot. The runner owns those messages;
+[the resource listing](interactive-mode.md#loaded-resources) shows them beside the other
+extension issues.
+
+Input is matched against the selected keys by their lowercased spelling, in selection
+order. The first match consumes the input and starts its callback, and every other input,
+including the same key with another modifier, reaches the editor unchanged. A callback
+runs on the terminal runtime after the input returns, so a handler never blocks typing,
+and its failure appears as `Error: Shortcut handler error: <message>` through the
+transcript's error notice.
+
+Each callback receives a context built when the key is pressed, from the runner the
+session has now. It reads the current session's working directory, model, idle state,
+pending messages, context usage and system prompt, and it asks that runner to abort,
+compact or shut down. Its UI is the mode itself. Shutting down while idle ends the mode at
+once; while a response streams, the agent's end does. A context kept from a runner the
+session has discarded fails as stale
+instead of answering with old state. The interceptor holds the mode weakly, so it never
+keeps the presentation alive; a callback that already started may keep it until it
+finishes.
+
+Rebinding, at startup and after each session replacement, replaces the whole set.
+An empty selection removes the interceptor, and the retired callbacks are released
+without being invoked.
+
+## Completion
+
+`InteractiveMode` installs one completion provider on its editor each time it
+[binds the current session](interactive-mode.md#session-binding). Each rebuild starts
+from a fresh base provider over the current session:
+
+1. the builtin commands, in the order the workspace's command inventory lists them;
+2. the loaded prompt templates, with their argument hints;
+3. the extension commands, under the name each is invoked by;
+4. when the `enableSkillCommands` setting is on, one `skill:<name>` command per
+   loaded skill.
+
+A description carries its provenance marker: `u`, `p` or `t` for the user, project
+and temporary scopes, `u:` followed by the trimmed source for a package, and
+`u:git:host/owner/repo` with `@ref` when the source names one. Source text is trimmed by the shared
+whitespace scalars, which removes a byte-order mark and keeps U+0085. An absent
+description yields the marker alone; a resource without provenance keeps its
+description unchanged. Prompt templates and extensions keep their input order and
+duplicates. An extension command whose raw name is a builtin name is skipped, so the
+builtin keeps that name. Disabling skill commands rebuilds the list without them.
+
+`/model` completes argument text against the session's scoped models, or the
+catalog's available ones when none are scoped. Candidates are matched on identity
+and provider together, so `opus anthropic` finds one, and are offered as
+`provider/id` with the identity as the label and the provider as the description.
+The callback reads the session when the request arrives, so it follows a replaced
+session.
+
+An extension command's argument callback receives exactly the typed prefix and keeps
+its own failure. An absent list, an empty list and a failed callback stay distinct:
+the first two offer nothing, the third reports the failure.
+
+`add_autocomplete_provider` retains the supplied bound factory and rebuilds completion
+before returning. Each rebuild folds all registered factories over a fresh base in
+registration order; the last wrapper receives requests first. Registering the same
+handle twice keeps both registrations. A factory may append another registration
+while rebuilding, and that rebuild sees the append. Factory calls retain their
+originating extension's event capability even when another host receives the handle.
+
+Only a successful rebuild replaces the retained provider and the default editor's
+provider, with the same handle. A failing factory returns its original error, skips
+later factories and leaves the installed provider unchanged. Its registration remains
+for later rebuilds. Settings changes that rebuild completion report failures through
+the terminal runtime after saving the setting. Custom-editor completion forwarding
+is separate from this default-editor behavior.
+
+Typing `@` completes attachments through the search program selected during startup.
+File completion keeps the candidate and applied text of the toolkit's provider. The
+provider asks the search owner for the paths, so removing the selected program leaves
+completion with no candidates instead of falling back to another search.
+
 # Extension UI host in the interactive mode
 
-`maestro_chat::InteractiveMode` implements the extension UI port, so a host
-retains it with the existing `ExtensionUIContext::new(mode.clone())` and gives it
-to the session's extension bindings. The bindings carry the originating event
+`maestro_chat::InteractiveMode` implements the extension UI port. Its `init`
+gives the mode to the session's extension bindings through
+`ExtensionUIContextBinding::borrowed`, because the mode already owns the session.
+A UI context an extension obtains keeps the mode alive while it is held; once the
+mode is released, the session's contexts answer with the headless results. Another
+host retains it with the existing `ExtensionUIContext::new(mode.clone())`. The
+bindings carry the originating event
 capability, so the host only calls the bound handles it receives; it never
 obtains an event bus.
 
 This section covers the operations that exist today: dialogs, editor access,
 theme queries and selection, the terminal title, tool expansion, notifications,
-terminal input listeners, status text and widgets. Custom headers, footers and
-editors keep their own owners and their published components.
+terminal input listeners, completion wrappers, status text and widgets. Custom headers,
+footers and editors keep their own owners and their published components.
 
 ## Dialogs
 

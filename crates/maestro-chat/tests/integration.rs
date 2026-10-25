@@ -12,6 +12,7 @@ mod footer_support;
 #[path = "support/keybindings.rs"]
 mod keybindings;
 mod login_dialog;
+mod login_provider_admission;
 mod message_rendering;
 mod model_selection;
 mod model_selector_support;

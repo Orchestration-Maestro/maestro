@@ -36,7 +36,7 @@ fn shared_tool_records_keep_one_schema_owner() {
         messages: Vec::new(),
         tools: Some(vec![tool]),
     };
-    let info = ToolInfo {
+    let info: ToolInfo = ToolInfo {
         name: "echo".into(),
         description: "Echo".into(),
         parameters: ParameterSchema::authored(schema, kinds),
@@ -59,7 +59,7 @@ fn shared_tool_records_keep_one_schema_owner() {
 #[test]
 fn mixed_schema_metadata_survives_owned_clones() {
     let (schema, kinds) = mixed();
-    let authored = ParameterSchema::authored(schema.clone(), kinds.clone());
+    let authored: ParameterSchema = ParameterSchema::authored(schema.clone(), kinds.clone());
     assert_eq!(authored.as_json(), &schema);
     assert_eq!(authored.conversions().len(), kinds.len());
     assert_eq!(
@@ -83,7 +83,7 @@ fn mixed_schema_metadata_survives_owned_clones() {
 #[test]
 fn schema_serialization_is_plain_json() {
     let (schema, kinds) = mixed();
-    let authored = ParameterSchema::authored(schema.clone(), kinds);
+    let authored: ParameterSchema = ParameterSchema::authored(schema.clone(), kinds);
     let encoded = serde_json::to_value(&authored).expect("schema serialization");
     assert_eq!(
         encoded, schema,
@@ -98,7 +98,67 @@ fn schema_serialization_is_plain_json() {
         "reparsing the JSON loses the authored kinds"
     );
 
-    let plain = ParameterSchema::from(schema.clone());
+    let plain: ParameterSchema = ParameterSchema::from(schema.clone());
     assert_eq!(plain.conversions().len(), 0);
     assert_eq!(plain.into_json(), schema);
+}
+
+use maestro_request::diagnostics::{DiagnosticCode, DiagnosticErrorInfo};
+use maestro_request::parameter_schema::{Base, SchemaCallback, SchemaCode, SchemaNode};
+use serde_json::Value;
+use std::{cell::Cell, rc::Rc};
+
+#[test]
+fn code_annotations_stay_out_of_serialized_parameters() {
+    let calls = Rc::new(Cell::new(0));
+    let capture = Rc::clone(&calls);
+    let code: SchemaCode = std::collections::HashMap::from([(
+        String::new(),
+        SchemaNode {
+            base: Some(Base {
+                convert: SchemaCallback::new(move |value| {
+                    capture.set(capture.get() + 1);
+                    *value = json!({"edited": true});
+                    Ok(Some(json!(42)))
+                }),
+                ..Base::default()
+            }),
+            refinements: Vec::new(),
+        },
+    )]);
+    let schema = json!({"type": "object"});
+    let parameters = ParameterSchema::<()>::from(schema.clone()).with_code(code);
+    let tool = Tool {
+        name: "local".into(),
+        description: String::new(),
+        parameters,
+    };
+    let encoded = serde_json::to_value(&tool).unwrap();
+    assert_eq!(encoded["parameters"], schema);
+    assert_eq!(calls.get(), 0);
+    let restored: Tool<SchemaCode> = serde_json::from_value(encoded).unwrap();
+    assert!(restored.parameters.code().is_empty());
+    let data = tool.parameters.data();
+    assert_eq!(data.as_json(), &schema);
+    assert_eq!(data.conversions(), tool.parameters.conversions());
+    let retained = tool.clone();
+    drop(tool);
+    let base = retained.parameters.code()[""].base.as_ref().unwrap();
+    let mut value = json!({});
+    assert_eq!(base.convert.call(&mut value).unwrap(), Some(json!(42)));
+    assert_eq!(value, json!({"edited": true}));
+    assert_eq!(calls.get(), 1);
+}
+
+#[test]
+fn schema_callbacks_preserve_supplied_errors() {
+    let error = DiagnosticErrorInfo {
+        name: Some("AuthorError".into()),
+        message: "conversion failed".into(),
+        stack: Some("author frame".into()),
+        code: Some(DiagnosticCode::Number(7.0)),
+    };
+    let original = error.clone();
+    let callback = SchemaCallback::<bool>::new(move |_| Err(error.clone()));
+    assert_eq!(callback.call(&mut Value::Null), Err(original));
 }

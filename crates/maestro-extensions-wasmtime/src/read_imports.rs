@@ -16,6 +16,11 @@ pub(crate) trait ReadEndpoint: Clone + Send + 'static {
         &self,
         request: impl FnOnce(Sender<Result<T, String>>) -> Self::Request,
     ) -> Result<T, String>;
+    /// Sends a request whose native code may call back into this instance.
+    fn route(
+        &self,
+        request: impl FnOnce(Sender<Result<(), String>>) -> Self::Request,
+    ) -> crate::import_route::Route;
 }
 /// Declares the request envelope without copying the endpoint's transport implementation.
 macro_rules! endpoints {
@@ -25,11 +30,14 @@ macro_rules! endpoints {
             fn read<T>(&self, request: impl FnOnce(Sender<Result<T, String>>) -> Self::Request) -> Result<T, String> {
                 self.0.request(|id, reply| Message::$variant(id, request(reply)))
             }
+            fn route(&self, request: impl FnOnce(Sender<Result<(), String>>) -> Self::Request) -> crate::import_route::Route {
+                self.0.route(|id, reply| Message::$variant(id, request(reply)))
+            }
         }
     )+};
 }
 endpoints! { api_reads => Api, context_reads => Read, history_reads => History,
-writer_reads => Writer, tree_reads => Node, catalog_reads => Catalog }
+writer_reads => Writer, tree_reads => Node, catalog_reads => Catalog, theme_reads => Theme }
 
 /// Clones an original resource endpoint before invoking its native owner.
 pub(crate) fn resource<T: WasiView, E: ReadEndpoint>(
@@ -60,6 +68,42 @@ where
 {
     host.func_wrap(name, move |mut store: StoreContextMut<'_, T>, params: P| {
         Ok((endpoint(store.data_mut(), params)?.read(request),))
+    })
+}
+/// Installs one no-operand action whose native code may call back into this instance.
+pub(crate) fn add_routed<T, E, P>(
+    host: &mut LinkerInstance<'_, T>,
+    name: &str,
+    request: fn(Sender<Result<(), String>>) -> E::Request,
+    endpoint: fn(&mut T, P) -> wasmtime::Result<E>,
+) -> wasmtime::Result<()>
+where
+    T: WasiView + 'static,
+    E: ReadEndpoint,
+    P: ComponentNamedList + Lift + 'static,
+{
+    host.func_wrap(name, move |mut store: StoreContextMut<'_, T>, params: P| {
+        let route = endpoint(store.data_mut(), params)?.route(request);
+        Ok((crate::import_route::push(store.data_mut(), route)?,))
+    })
+}
+/// Installs one exact-operand action whose native code may call back into this instance.
+pub(crate) fn add_routed_operand<T, E, P, A>(
+    host: &mut LinkerInstance<'_, T>,
+    name: &str,
+    request: fn(A, Sender<Result<(), String>>) -> E::Request,
+    endpoint: fn(&mut T, P) -> wasmtime::Result<(E, A)>,
+) -> wasmtime::Result<()>
+where
+    T: WasiView + 'static,
+    E: ReadEndpoint,
+    P: ComponentNamedList + Lift + 'static,
+    A: 'static,
+{
+    host.func_wrap(name, move |mut store: StoreContextMut<'_, T>, params: P| {
+        let (endpoint, value) = endpoint(store.data_mut(), params)?;
+        let route = endpoint.route(|reply| request(value, reply));
+        Ok((crate::import_route::push(store.data_mut(), route)?,))
     })
 }
 /// Installs one exact-operand read without changing absent or empty values.

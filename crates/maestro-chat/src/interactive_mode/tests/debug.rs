@@ -88,14 +88,14 @@ fn authored(mut message: Value) -> Value {
 }
 
 /// Runs one recorded capture in a fresh mode.
-fn debug_case(
+async fn debug_case(
     directory: &std::path::Path,
     rendered: Vec<String>,
     messages: Vec<Value>,
     observed: Value,
 ) {
     let expected: DebugExpected = expected(observed);
-    let world = started(directory);
+    let world = started(directory).await;
     world.terminal.resize(40, 12);
     let lines = Rc::new(Lines {
         rows: rendered,
@@ -124,12 +124,12 @@ fn debug_case(
 #[test]
 fn debug_log_keeps_dimensions_widths_escaping_and_message_order() {
     let test = "debug_log_keeps_dimensions_widths_escaping_and_message_order";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, observed) in cases(test) {
             let DebugInput::Debug { rendered, messages } = input else {
                 panic!("a capture case");
             };
-            debug_case(directory, rendered, messages, observed);
+            debug_case(directory, rendered, messages, observed).await;
         }
     });
 }
@@ -145,7 +145,7 @@ fn error_kind(code: &str) -> io::ErrorKind {
 #[test]
 fn debug_write_failure_has_no_success_notice() {
     let test = "debug_write_failure_has_no_success_notice";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         let [(DebugInput::DebugFailure { kind }, observed)] =
             <[_; 1]>::try_from(cases(test)).ok().unwrap()
         else {
@@ -153,7 +153,7 @@ fn debug_write_failure_has_no_success_notice() {
         };
         assert_eq!(kind, "file-path-is-directory");
         let expected: DebugFailureExpected = expected(observed);
-        let world = started(directory);
+        let world = started(directory).await;
         world
             .runtime
             .set_write_error(Some(error_kind(&expected.code)));
@@ -185,8 +185,8 @@ fn writes(world: &World) -> usize {
 fn global_debug_runs_outside_editor_focus_without_retaining_mode() {
     isolated(
         "global_debug_runs_outside_editor_focus_without_retaining_mode",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             world.mode.ui.set_focus(None);
             world.terminal.send_input(DEBUG_KEY);
             assert_eq!(writes(&world), 1);
@@ -229,7 +229,7 @@ fn defaults<T: Default>() -> T {
 }
 
 /// Replaces the runtime's session by a stored history named `Replacement`.
-fn replace_session(world: &World, directory: &std::path::Path) -> String {
+async fn replace_session(world: &World, directory: &std::path::Path) -> String {
     let header = json!({
         "type": "session", "version": 3, "id": "replacement-session",
         "timestamp": "2026-01-02T03:04:05.006Z", "cwd": directory.to_str().unwrap(),
@@ -241,11 +241,8 @@ fn replace_session(world: &World, directory: &std::path::Path) -> String {
     let file = directory.join("replacement.jsonl");
     std::fs::write(&file, format!("{header}\n{name}\n")).unwrap();
     let path = file.to_str().unwrap().to_owned();
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
     let switch = world.host.switch_session(&path, None, defaults());
-    let result = tokio::task::LocalSet::new().block_on(&runtime, switch);
+    let result = switch.await;
     assert!(!result.unwrap().cancelled);
     path
 }
@@ -254,10 +251,10 @@ fn replace_session(world: &World, directory: &std::path::Path) -> String {
 fn debug_uses_current_session_and_pre_notice_frame() {
     isolated(
         "debug_uses_current_session_and_pre_notice_frame",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let first = world.host.session();
-            let path = replace_session(&world, directory);
+            let path = replace_session(&world, directory).await;
             assert!(!Rc::ptr_eq(&first, &world.host.session()));
             let message =
                 json!({"role": "user", "content": "replacement question", "timestamp": 5});

@@ -649,6 +649,9 @@ It permits no normal or build dependency on the listener leaf.
 without optionality, lets the interactive mode's composed witness drive a real
 native terminal; it permits no normal or build dependency on the adapter and does
 not make the interactive frontend a terminal owner.
+`maestro-extensions-wasm` to `maestro-models`, declared as a native-only,
+non-optional development dependency, lets component tests pass retained schema
+callbacks to the native argument validator. It permits no normal or build edge.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -667,11 +670,14 @@ that calls this same entry. The test-process leaf does not depend on process.
 
 ### Test process owner
 
-`maestro-test-process` is a dedicated, unpublished, native, std-only test-support
-leaf that starts one named libtest child and proves the child started exactly that
-test. It has no workspace dependencies except the native feature unifier and one
-native development edge to the disposable directory owner for its own child
-fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
+`maestro-test-process` is a dedicated, unpublished, native test-support leaf
+that starts one named libtest child and proves the child started exactly that
+test. On Unix it runs caller-supplied setup text in the interpreter the caller
+names by absolute path, so it carries no shell lookup, and it uses no external
+crate. It has no workspace dependencies except the native feature unifier and
+one native development edge to the disposable directory owner for its own child
+fixtures, and it is excluded from the foundation utility permission. Its only
+incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
@@ -920,7 +926,22 @@ The parser depends internally only on text and introduces no UI or effect owner.
 The dedicated conventions checker may consume its code-block source ranges for
 documentation checks; it does not own a separate Markdown grammar.
 
+JSON Pointer token escaping belongs to `maestro-json::escape_pointer_token`;
+brand diagnostics and guest JSON member views reuse it.
+
 Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`.
+`ParameterSchema<C = ()>` keeps executable annotations in its generic payload;
+the default payload stays data-only. The shared `Base`, `Refinement` and
+`SchemaNode` records own conversion, guard and ordered refinement callbacks.
+The request-owned `SchemaCallback` retains shared captures and compares callback
+identity. A defaulted callable type keeps the native signature; the guest adapter
+delegates capture ownership while supplying its borrowed operand signature.
+Native callbacks receive a mutable JSON value. The guest
+specializes those records with borrowed JSON views and its existing callback
+resource; it does not declare another schema record or callback registry.
+`Tool<C = ()>` retains that payload, while ordinary request contexts keep the
+data-only default. Explicit data projection strips executable annotations without
+running them. Serialization never writes code, and deserialization never rebuilds it.
 The record keeps the supplied JSON Schema value and, beside it, the kinds its author
 declared for individual nodes, keyed by JSON pointer; a node without an entry is plain
 and is never converted as an authored node. `SchemaKind` names the extensible kinds the
@@ -935,7 +956,11 @@ context or a projection shared between kinds. Serialization writes the supplied 
 alone: providers, persisted JSON
 and the SDK observe ordinary JSON Schema, and nothing infers author intent from a schema
 text. The guest carries the declared kinds only inside its opaque internal registration
-and enumeration transport; its WIT and callback identities do not change.
+and enumeration transport. Executable nodes use invocation-local JSON resources
+and independently retained identities in the existing callback table. Same-origin
+guest enumeration keeps the original callbacks and captures, with bindings per
+tool. Foreign guest entries remain data-only; live foreign schema reuse and
+invocation are tracked in [the foreign schema capability work](https://github.com/Orchestration-Maestro/maestro/issues/2625).
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring

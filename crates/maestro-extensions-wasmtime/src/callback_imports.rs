@@ -12,6 +12,8 @@ use wasmtime::{
 pub(crate) trait CallbackView: ApiView {
     /// Returns callback identities associated with this Store alone.
     fn callbacks(&mut self) -> &mut Callbacks;
+    /// Read the canonical exports resolved for this Store.
+    fn exports(&self) -> Result<std::sync::Arc<crate::guest_exports::Exports>, String>;
 }
 
 /// Installs identity allocation and lookup without inventing a closure owner.
@@ -49,6 +51,19 @@ pub(crate) fn retain<T: CallbackView>(
     store
         .callbacks()
         .retain(id, admission)
+        .map_err(wasmtime::Error::msg)
+}
+
+/// Takes ownership of an authored object the guest returned under a fresh identity.
+pub(crate) fn transferred<T: CallbackView>(
+    store: &mut T,
+    object: Resource<Callback>,
+) -> wasmtime::Result<Handle> {
+    let id = store.ctx().table.delete(object)?.id;
+    let admission = store.api().admission();
+    store
+        .callbacks()
+        .retain_object(id, admission)
         .map_err(wasmtime::Error::msg)
 }
 

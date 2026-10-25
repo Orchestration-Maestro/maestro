@@ -5,25 +5,34 @@
 use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
-    AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
+    AgentSession, AgentSessionRuntime, AutocompleteProviderFactory, KeybindingsManager,
+    ReadonlyFooterDataProvider, ReadonlySessionManager, SettingsManager, SharedAssistantMessage,
+    ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
-use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
+use maestro_tui::{
+    AutocompleteProvider, Cancellation, Component, Container, EditorOptions, TUI, TerminalImage,
+    Text,
+};
 use std::{
     cell::{Cell, RefCell},
+    collections::VecDeque,
     error::Error,
     rc::{Rc, Weak},
 };
 
 mod actions;
 mod authentication;
+mod autocomplete;
 mod bash;
+mod commands;
 mod compaction_queue;
 mod debug;
 mod dispatch;
 mod events;
+mod extensions;
+mod hotkeys;
 mod info;
 mod key_display;
 mod lifecycle;
@@ -34,6 +43,7 @@ mod queues;
 mod replay;
 mod resources;
 mod selectors;
+mod settings;
 mod share;
 mod startup;
 mod submit;
@@ -54,6 +64,7 @@ type StatusLine = (Rc<dyn Component>, Rc<Text>);
 /// The assistant row a response streams into and the message it shows.
 type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
+pub use authentication::is_api_key_login_provider;
 pub use maestro_app::presentation_data::mode_dispatch::InteractiveModeOptions;
 
 /// The retained interactive presentation over the current session.
@@ -94,6 +105,8 @@ pub struct InteractiveMode {
     editor_container: Rc<Container>,
     /// The input editor.
     editor: Rc<CustomEditor>,
+    /// The keybindings the editor reads, and the configured keys extension shortcuts use.
+    keybindings: KeybindingsManager,
     /// The footer.
     footer: Rc<FooterComponent>,
     /// The footer metadata and its branch watch.
@@ -106,6 +119,10 @@ pub struct InteractiveMode {
     startup_notices_shown: Cell<bool>,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
+    /// Events waiting for the presentation to initialize, in arrival order.
+    pending_events: RefCell<VecDeque<maestro_app::AgentSessionEvent>>,
+    /// Whether the one initialization continuation is still delivering events.
+    event_initialization_pending: Cell<bool>,
     /// The expandable startup help, absent when startup is quiet.
     built_in_header: RefCell<Option<Rc<startup::ExpandableText>>>,
     /// The runtime, theme, highlighter and image support shared by transcript rows.
@@ -126,6 +143,12 @@ pub struct InteractiveMode {
     pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// The selected search program for file completion, absent until startup prepares it.
+    fd_path: RefCell<Option<String>>,
+    /// The final provider also installed on the default editor.
+    autocomplete_provider: RefCell<Option<Rc<dyn AutocompleteProvider<Signal = Cancellation>>>>,
+    /// Bound factories in registration order, including repeated handles.
+    autocomplete_provider_wrappers: RefCell<Vec<AutocompleteProviderFactory>>,
     /// Whether this mode has shown the subscription billing notice.
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
@@ -157,19 +180,12 @@ impl InteractiveMode {
         let session = runtime_host.session();
         let tool_environment = tool_environment(terminal.1.clone(), themes.theme())?;
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
-        let keys = KeybindingsManager::create(None)?;
-        maestro_tui::set_keybindings((*keys).clone());
-        let settings = session.settings_manager();
-        let editor = create_editor(&ui, themes.theme(), (*keys).clone(), settings);
-        let editor_container = Rc::new(Container::new());
-        editor_container.add_child(editor.clone());
-        let footer_data_provider = FooterDataProvider::new(
-            session.session_manager().borrow().get_cwd().to_owned(),
-            operations.clone(),
-        );
+        let (keys, editor, editor_container) = create_input(&session, &ui, themes.theme())?;
+        let cwd = session.session_manager().borrow().get_cwd().to_owned();
+        let footer_data_provider = FooterDataProvider::new(cwd, operations.clone());
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
         let hide_thinking = init_theme(&session, &themes, &operations)?;
-        Ok(Rc::new_cyclic(|this| Self {
+        let mode = Rc::new_cyclic(|this| Self {
             shutdown_requested: Cell::new(false),
             this: this.clone(),
             lifecycle: lifecycle::LifecycleState::default(),
@@ -188,14 +204,20 @@ impl InteractiveMode {
             widget_container_below: Rc::new(Container::new()),
             editor_container,
             editor,
+            keybindings: keys,
             footer,
             footer_data_provider,
             operations,
             changelog_markdown: RefCell::default(),
             startup_notices_shown: Cell::new(false),
             is_initialized: Cell::new(false),
+            pending_events: RefCell::default(),
+            event_initialization_pending: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
+            fd_path: RefCell::default(),
+            autocomplete_provider: RefCell::default(),
+            autocomplete_provider_wrappers: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking),
             last_status: RefCell::default(),
@@ -210,29 +232,32 @@ impl InteractiveMode {
             unsubscribe: RefCell::default(),
             working: working::WorkingState::default(),
             streaming: RefCell::default(),
-        }))
+        });
+        let rebind = extensions::rebind_callback(Rc::downgrade(&mode));
+        mode.runtime_host.set_rebind_session(Some(rebind));
+        Ok(mode)
     }
 
-    /// Selects unseen release history, installs lifecycle handlers, builds the header,
-    /// adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission and the global debug key, starts
-    /// the terminal, lists the loaded resources with their diagnostics, shows selected
-    /// history once and replays the session; theme changes then refresh the editor
-    /// border, and theme and branch
-    /// changes request fresh frames.
+    /// Installs lifecycle handlers, selects unseen release history, prepares search
+    /// programs, then builds the header, adds every container in order, focuses the
+    /// editor, binds the transcript shortcuts, installs editor submission and the global
+    /// debug key, starts the terminal, binds the current session as `rebind_current_session`
+    /// does and replays the session; theme changes then refresh the editor border, and
+    /// theme and branch changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.
     /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start, of the
-    /// resource listing, of the replay or of the catalog refresh.
-    pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+    /// Returns a failure of lifecycle registration, the managed binary directory, the
+    /// header's theme colours, terminal start, session binding, replay or catalog refresh.
+    pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
-        *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
         self.register_signal_handlers()?;
+        *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
+        self.prepare_search_tools().await?;
         self.build_header()?;
         self.render_widgets();
         for child in [
@@ -254,8 +279,8 @@ impl InteractiveMode {
         self.setup_debug_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
-        self.subscribe_to_agent();
-        self.update_terminal_title()?;
+        self.rebind_current_session().await?;
+        self.render_initial_messages()?;
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
@@ -270,13 +295,40 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(resources::ShowLoadedResourcesOptions {
-            show_diagnostics_when_quiet: true,
-            ..resources::ShowLoadedResourcesOptions::default()
-        })?;
-        self.show_startup_notices_if_needed()?;
-        self.render_initial_messages()?;
         self.update_available_provider_count()
+    }
+
+    /// Clears the transcript, the pending-message rows and the shell rows waiting there, then
+    /// replays the current session with the initial replay's footer, history and compaction
+    /// effects.
+    ///
+    /// # Errors
+    /// Returns the failure of reading the session context, of a stored record, of a row's
+    /// rendering or of the published theme.
+    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+        self.chat_container.clear();
+        self.pending_messages_container.clear();
+        self.compaction_queued_messages.borrow_mut().clear();
+        self.pending_shells.borrow_mut().clear();
+        drop(self.active_shell.take());
+        drop(self.streaming.take());
+        self.render_initial_messages()
+    }
+
+    /// Reports a fatal runtime failure as its transcript notice, draws that frame before
+    /// the stop that would cancel it, closes the theme watch and stops the terminal, so
+    /// nothing repaints while the process ends.
+    fn report_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) {
+        let _ = self.show_error(&format!("{prefix}: {error}"));
+        let _ = self.ui.render_pending_frame();
+        self.themes.stop_theme_watcher();
+        let _ = self.ui.stop();
+    }
+
+    /// Reports a fatal runtime failure and ends the process with status one.
+    pub fn handle_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) -> ! {
+        self.report_fatal_runtime_error(prefix, error);
+        std::process::exit(1);
     }
 }
 
@@ -315,6 +367,26 @@ fn create_ui(
     );
     ui.set_clear_on_shrink(settings.get_clear_on_shrink());
     Rc::new(ui)
+}
+
+/// The configured keybindings, input editor and its presentation container.
+type ConfiguredInput = (KeybindingsManager, Rc<CustomEditor>, Rc<Container>);
+
+/// Builds the configured input editor and its container over the same keybindings.
+///
+/// # Errors
+/// Returns a failure to read the keybinding configuration.
+fn create_input(
+    session: &AgentSession,
+    ui: &TUI,
+    theme: LiveTheme,
+) -> Result<ConfiguredInput, Box<dyn Error>> {
+    let keys = KeybindingsManager::create(None)?;
+    maestro_tui::set_keybindings((*keys).clone());
+    let editor = create_editor(ui, theme, (*keys).clone(), session.settings_manager());
+    let container = Rc::new(Container::new());
+    container.add_child(editor.clone());
+    Ok((keys, editor, container))
 }
 
 /// Builds the editor with the configured padding and completion limit.

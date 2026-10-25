@@ -66,13 +66,13 @@ fn corpus() -> Corpus {
 }
 
 /// Installs the UI probe and the retained UI route without changing the other scenarios.
-async fn install(driver: &mut impl Driver) -> Result<(), String> {
+pub(super) async fn install(driver: &mut impl Driver) -> Result<(), String> {
     driver.run_plain_command("capture", "ui").await?;
     driver.run_plain_command("capture", "catalog").await
 }
 
 /// The answer the extension reported last under `prefix`.
-fn answer(driver: &impl Driver, prefix: &str) -> Result<Value, String> {
+pub(super) fn answer(driver: &impl Driver, prefix: &str) -> Result<Value, String> {
     let text = driver
         .transcript()
         .into_iter()
@@ -83,7 +83,7 @@ fn answer(driver: &impl Driver, prefix: &str) -> Result<Value, String> {
 }
 
 /// Runs one probe operation on the UI author and returns its answer.
-async fn operate(driver: &mut impl Driver, operation: Value) -> Result<Value, String> {
+pub(super) async fn operate(driver: &mut impl Driver, operation: Value) -> Result<Value, String> {
     driver
         .run_plain_command("ui", &operation.to_string())
         .await?;
@@ -91,7 +91,7 @@ async fn operate(driver: &mut impl Driver, operation: Value) -> Result<Value, St
 }
 
 /// Runs one request of the retained UI route and returns its answer.
-async fn route(driver: &mut impl Driver, request: Value) -> Result<Value, String> {
+pub(super) async fn route(driver: &mut impl Driver, request: Value) -> Result<Value, String> {
     driver
         .run_plain_command("catalog", &request.to_string())
         .await?;
@@ -107,7 +107,7 @@ async fn routed_event(driver: &mut impl Driver, request: &Value) -> Result<Value
 }
 
 /// Retains, aliases or drops one independently retained UI owner.
-async fn retained_owner(driver: &mut impl Driver, method: &str) -> Result<(), String> {
+pub(super) async fn retained_owner(driver: &mut impl Driver, method: &str) -> Result<(), String> {
     assert_eq!(
         route(driver, json!({"action":"ui","method":method})).await?,
         json!({"ok":"done"}),
@@ -117,7 +117,7 @@ async fn retained_owner(driver: &mut impl Driver, method: &str) -> Result<(), St
 }
 
 /// Runs one request through a retained UI owner of the supplied index.
-async fn retained_call(
+pub(super) async fn retained_call(
     driver: &mut impl Driver,
     index: usize,
     call: &Value,
@@ -416,7 +416,7 @@ async fn first_acquisition(driver: &mut impl Driver, base: usize) -> Result<usiz
 }
 
 /// Switches the host's current UI binding.
-async fn bind(driver: &mut impl Driver, binding: usize) -> Result<(), String> {
+pub(super) async fn bind(driver: &mut impl Driver, binding: usize) -> Result<(), String> {
     assert_eq!(
         operate(driver, json!({"op":"control","binding":binding})).await?,
         json!("controlled"),

@@ -343,6 +343,8 @@ pub struct State {
     pub effects: Rc<Effects>,
     /// The self-update observations and steps.
     pub updates: Rc<Updates>,
+    /// The startup offline choice passed into newly constructed managers.
+    pub offline: Cell<Option<bool>>,
     /// Settings owners handed to the manager, in call order.
     pub supplied: RefCell<Vec<Rc<RefCell<SettingsManager>>>>,
     /// Settings owners observed by the loader, in call order.
@@ -373,6 +375,8 @@ pub struct Harness {
     pub state: Rc<State>,
     /// The release request options.
     pub version_options: VersionCheckOptions,
+    /// The release requests actually sent through the supplied transport.
+    pub release_requests: Arc<std::sync::atomic::AtomicUsize>,
     /// The service origin of the command.
     pub origin: String,
     /// Standard output of the command.
@@ -402,6 +406,7 @@ impl Harness {
             scratch,
             state: Rc::new(State::default()),
             version_options: VersionCheckOptions::default(),
+            release_requests: Arc::default(),
             origin: String::new(),
             stdout: Capture::default(),
             stderr: Capture::default(),
@@ -445,7 +450,9 @@ impl Harness {
     pub fn release(&mut self, status: u16, body: &str) {
         use maestro_app::{Fetch, HttpResponse};
         let body = body.to_owned();
+        let requests = Arc::clone(&self.release_requests);
         let fetch: Fetch = Arc::new(move |_request| {
+            requests.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             let chunk = if status == 200 {
                 Ok(body.clone().into_bytes())
             } else {
@@ -555,6 +562,18 @@ impl Harness {
         argv: &[String],
         presentation: Option<ConfigPresentation>,
     ) -> io::Result<bool> {
+        self.with_context(async |context| match presentation {
+            Some(presentation) => handle_config_command(argv, &context, presentation).await,
+            None => handle_package_command(argv, &context).await,
+        })
+        .await
+    }
+
+    /// Build this harness's command context and run `body` with it.
+    pub async fn with_context<T>(
+        &self,
+        body: impl AsyncFnOnce(PackageCommandContext<'_>) -> T,
+    ) -> T {
         let cwd = self.cwd.clone();
         let agent_dir = self.agent_dir.clone();
         let observe_cwd = {
@@ -591,10 +610,7 @@ impl Harness {
             entrypoint: Some("/opt/maestro/bin/maestro"),
             styles_enabled: false,
         };
-        match presentation {
-            Some(presentation) => handle_config_command(argv, &context, presentation).await,
-            None => handle_package_command(argv, &context).await,
-        }
+        body(context).await
     }
 
     /// Build the package manager over the settings owner of one command.
@@ -612,11 +628,13 @@ impl Harness {
         }
         if state.second.get() {
             let manager =
-                maestro_app::DefaultPackageManager::new(options, Second(Rc::clone(&effects)));
+                maestro_app::DefaultPackageManager::new(options, Second(Rc::clone(&effects)))
+                    .with_offline(state.offline.get());
             return Rc::new(manager) as Rc<dyn PackageManager>;
         }
         let manager =
-            maestro_app::DefaultPackageManager::new(options, Operations(Rc::clone(&effects)));
+            maestro_app::DefaultPackageManager::new(options, Operations(Rc::clone(&effects)))
+                .with_offline(state.offline.get());
         Rc::new(manager) as Rc<dyn PackageManager>
     }
 

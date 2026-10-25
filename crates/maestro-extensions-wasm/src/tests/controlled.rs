@@ -262,6 +262,16 @@ impl Controlled {
     }
 }
 
+/// Answers a text request on `theme` through the controlled host.
+fn theme_text(
+    observed: &Rc<RefCell<Observed>>,
+    theme: &Theme,
+    method: &str,
+    operands: &serde_json::Value,
+) -> ExtensionResult<String> {
+    super::theme_host::text(&mut observed.borrow_mut(), &theme.key, method, operands)
+}
+
 /// Retained opaque UI owner with a counted lifetime.
 pub struct Ui {
     /// Host identity of this acquisition.
@@ -576,8 +586,25 @@ impl Imports for Controlled {
         o.actions.check()?;
         serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
     }
-    fn get_all_tools(&self) -> ExtensionResult<String> {
-        self.observed.borrow().actions.record()
+    fn get_all_tools(
+        &self,
+    ) -> ExtensionResult<crate::component_adapter::ToolListing<Self::Callback>> {
+        let (metadata, bindings) = super::schema_host::listing(&self.observed.borrow())?;
+        let mut retained = Vec::new();
+        for (tool, pointer, id) in bindings {
+            let (new_id, handle) = self.new_callback();
+            Exports::new(self.clone())
+                .retain_schema(
+                    id,
+                    Callback {
+                        id: new_id,
+                        observed: Rc::clone(&self.observed),
+                    },
+                )
+                .map_err(|error| error.message)?;
+            retained.push((tool, pointer, handle));
+        }
+        Ok((metadata, retained))
     }
     fn get_commands(&self) -> ExtensionResult<String> {
         self.observed.borrow().actions.record()
@@ -614,6 +641,45 @@ impl Imports for Controlled {
 
     type Subscription = super::bus_host::Subscription;
     type Emitter = super::bus_host::Emitter;
+    type JsonNode = super::schema_host::JsonNode;
+    fn json_kind(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> ExtensionResult<Option<crate::schema_code::JsonKind>> {
+        node.kind(path)
+    }
+    fn json_read(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Option<String>> {
+        node.read(path)
+    }
+    fn json_keys(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Vec<String>> {
+        node.keys(path)
+    }
+    fn json_set(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        key: &str,
+        value: &str,
+    ) -> ExtensionResult<()> {
+        node.set(path, key, value)
+    }
+    fn json_delete(&self, node: &Self::JsonNode, path: &str, key: &str) -> ExtensionResult<()> {
+        node.delete(path, key)
+    }
+    fn json_splice(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        range: (u32, u32),
+        values: &[String],
+    ) -> ExtensionResult<Vec<String>> {
+        node.splice(path, range, values)
+    }
+    fn callback_id(&self, callback: &Self::Callback) -> u32 {
+        callback.id
+    }
+
     fn event_on(
         &self,
         channel: &str,
@@ -955,6 +1021,20 @@ impl Imports for Controlled {
             "setTitle",
             &super::ui_host::title(title),
         )
+    }
+    fn ui_paste_to_editor(&self, resource: &Ui, text: &str) -> ExtensionResult<()> {
+        ui_call(
+            &self.observed,
+            resource.key,
+            "pasteToEditor",
+            &serde_json::json!([text]),
+        )
+    }
+    fn ui_set_editor_text(&self, resource: &Ui, text: &str) -> ExtensionResult<()> {
+        super::ui_host::set_editor_text(&mut self.observed.borrow_mut(), resource.key, text)
+    }
+    fn ui_get_editor_text(&self, resource: &Ui) -> ExtensionResult<String> {
+        super::ui_host::get_editor_text(&mut self.observed.borrow_mut(), resource.key)
     }
     type Registry = Reader;
     type Reader = Reader;
@@ -1298,6 +1378,95 @@ impl Imports for Controlled {
     }
 
     type Theme = Theme;
+    fn theme_name(&self, theme: &Theme) -> ExtensionResult<Option<String>> {
+        super::theme_host::optional(&mut self.observed.borrow_mut(), &theme.key, "name")
+    }
+    fn theme_source_path(&self, theme: &Theme) -> ExtensionResult<Option<String>> {
+        super::theme_host::optional(&mut self.observed.borrow_mut(), &theme.key, "sourcePath")
+    }
+    fn theme_source_info(&self, theme: &Theme) -> ExtensionResult<Option<String>> {
+        super::theme_host::source_info(&mut self.observed.borrow_mut(), &theme.key)
+    }
+    fn theme_set_source_info(&self, theme: &Theme, source: Option<&str>) -> ExtensionResult<()> {
+        let operands = serde_json::json!([source]);
+        super::theme_host::request(
+            &mut self.observed.borrow_mut(),
+            &theme.key,
+            "setSourceInfo",
+            &operands,
+        )
+        .map(drop)
+    }
+    fn theme_bold(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(&self.observed, theme, "bold", &serde_json::json!([text]))
+    }
+    fn theme_italic(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(&self.observed, theme, "italic", &serde_json::json!([text]))
+    }
+    fn theme_underline(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "underline",
+            &serde_json::json!([text]),
+        )
+    }
+    fn theme_inverse(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(&self.observed, theme, "inverse", &serde_json::json!([text]))
+    }
+    fn theme_strikethrough(&self, theme: &Theme, text: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "strikethrough",
+            &serde_json::json!([text]),
+        )
+    }
+    fn theme_fg(&self, theme: &Theme, color: &str, text: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "fg",
+            &serde_json::json!([color, text]),
+        )
+    }
+    fn theme_bg(&self, theme: &Theme, color: &str, text: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "bg",
+            &serde_json::json!([color, text]),
+        )
+    }
+    fn theme_get_fg_ansi(&self, theme: &Theme, color: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "getFgAnsi",
+            &serde_json::json!([color]),
+        )
+    }
+    fn theme_get_bg_ansi(&self, theme: &Theme, color: &str) -> ExtensionResult<String> {
+        theme_text(
+            &self.observed,
+            theme,
+            "getBgAnsi",
+            &serde_json::json!([color]),
+        )
+    }
+    fn theme_get_color_mode(&self, theme: &Theme) -> ExtensionResult<crate::ColorMode> {
+        let mode = theme_text(
+            &self.observed,
+            theme,
+            "getColorMode",
+            &serde_json::json!([]),
+        )?;
+        Ok(if mode == "truecolor" {
+            crate::ColorMode::Truecolor
+        } else {
+            crate::ColorMode::Color256
+        })
+    }
     fn register_message_renderer(
         &self,
         custom_type: &str,
@@ -1374,7 +1543,18 @@ impl Imports for Controlled {
         metadata: &str,
         prepare: Option<&Callback>,
         execute: &Callback,
+        schemas: &[(String, &Callback)],
     ) -> ExtensionResult<()> {
+        let name = super::schema_host::tool_name(metadata).map_err(|error| error.to_string())?;
+        {
+            let mut observed = self.observed.borrow_mut();
+            observed.schemas.retain(|(tool, _, _)| tool != &name);
+            observed.schemas.extend(
+                schemas
+                    .iter()
+                    .map(|(pointer, callback)| (name.clone(), pointer.clone(), callback.id)),
+            );
+        }
         self.observed
             .borrow_mut()
             .register_tool(metadata, prepare.map(|p| p.id), execute.id)

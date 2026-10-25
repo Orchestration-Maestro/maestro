@@ -72,12 +72,9 @@ fn add_emission_to_linker<T: CallbackView + 'static>(
         "callback-segment",
         |mut store: StoreContextMut<'_, T>,
          (resource, snapshot, start, end): (Resource<EmitterEndpoint>, u32, u32, u32)| {
-            Ok((store
-                .data_mut()
-                .ctx()
-                .table
-                .get(&resource)?
-                .segment(snapshot, start, end),))
+            let emitter = store.data_mut().ctx().table.get(&resource)?.clone();
+            let route = emitter.segment(snapshot, start, end);
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
     host.func_wrap(
@@ -120,12 +117,9 @@ fn add_local_prefix_to_linker<T: CallbackView + 'static>(
         "callback-end-local",
         |mut store: StoreContextMut<'_, T>,
          (resource, error): (Resource<EmitterEndpoint>, Option<String>)| {
-            Ok((store
-                .data_mut()
-                .ctx()
-                .table
-                .get(&resource)?
-                .end_local(error),))
+            let emitter = store.data_mut().ctx().table.get(&resource)?.clone();
+            let route = emitter.end_local(error);
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
     Ok(())

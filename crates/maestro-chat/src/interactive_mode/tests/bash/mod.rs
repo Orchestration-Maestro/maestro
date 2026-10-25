@@ -4,7 +4,7 @@ mod lifecycle;
 use super::super::bash::component_address;
 use super::typed::{recalled, submit};
 use super::{
-    Setup, ShellOperations, World, active, driving, echoing_shell, holding, isolated, on_tasks,
+    Setup, ShellOperations, World, active, admitted, driving, echoing_shell, holding, isolated,
     scripted, start_shells, started, transcript_positions, until_complete, until_exists,
 };
 use crate::BashExecutionComponent;
@@ -20,7 +20,7 @@ use std::{
 };
 
 /// A started mode whose shell runs `script`.
-pub(super) fn shelling(directory: &Path, script: &str) -> World {
+pub(super) async fn shelling(directory: &Path, script: &str) -> World {
     let script = script.to_owned();
     let world = Setup {
         configure: Box::new(move |settings: &mut SettingsManager| {
@@ -29,7 +29,7 @@ pub(super) fn shelling(directory: &Path, script: &str) -> World {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
 }
@@ -124,10 +124,10 @@ const CASES: &[Case] = &[
 fn command_submission_keeps_exact_prefix_and_whitespace_rules() {
     isolated(
         "command_submission_keeps_exact_prefix_and_whitespace_rules",
-        |directory| {
+        async |directory| {
             let script = scripted(directory, "shell", "printf 'ran\\n'");
-            let world = shelling(directory, &script);
-            let ((), errors) = on_tasks(driving(&world, async {
+            let world = shelling(directory, &script).await;
+            let ((), errors) = (driving(&world, async {
                 let mut rows = 0;
                 for case in CASES {
                     assert!(active(&world).is_none(), "{:?}", case.text);
@@ -138,7 +138,8 @@ fn command_submission_keeps_exact_prefix_and_whitespace_rules() {
                     until_complete(&world, rows).await;
                 }
                 assert_eq!(world.mode.chat_container.children().borrow().len(), rows);
-            }));
+            }))
+            .await;
             assert!(errors.is_empty(), "{errors:?}");
         },
     );
@@ -151,7 +152,7 @@ const BUSY: &str = "A bash command is already running. Press Esc to cancel it fi
 fn busy_shell_restores_selected_input_without_history() {
     isolated(
         "busy_shell_restores_selected_input_without_history",
-        |directory| {
+        async |directory| {
             let started = directory.join("started");
             let release = directory.join("release");
             let script = scripted(
@@ -163,8 +164,8 @@ fn busy_shell_restores_selected_input_without_history() {
                     release.display()
                 ),
             );
-            let world = shelling(directory, &script);
-            let ((), errors) = on_tasks(driving(&world, async {
+            let world = shelling(directory, &script).await;
+            let ((), errors) = (driving(&world, async {
                 submit(&world.mode, "!first");
                 until_exists(&started).await;
                 assert!(world.host.session().is_bash_running());
@@ -177,7 +178,8 @@ fn busy_shell_restores_selected_input_without_history() {
                 std::fs::write(&release, "").unwrap();
                 // The shell row, and a spacer and a text row for each warning.
                 until_complete(&world, 5).await;
-            }));
+            }))
+            .await;
             assert!(errors.is_empty(), "{errors:?}");
             assert!(started.exists() && release.exists());
         },
@@ -244,7 +246,7 @@ fn intercepting(seen: &Seen, answer: Answer) -> maestro_app::ExtensionFactory<ma
 }
 
 /// A started mode with `answer` registered, whose shell runs `script`.
-fn intercepting_world(directory: &Path, script: &str, answer: Answer) -> (World, Seen) {
+async fn intercepting_world(directory: &Path, script: &str, answer: Answer) -> (World, Seen) {
     let seen: Seen = Rc::default();
     let script = script.to_owned();
     let extension = intercepting(&seen, answer);
@@ -256,7 +258,7 @@ fn intercepting_world(directory: &Path, script: &str, answer: Answer) -> (World,
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     (world, seen)
 }
@@ -314,21 +316,22 @@ async fn until_command_settles(world: &World) {
 }
 
 /// Submits `text` in a fresh mode answering `user_bash` through `answer`, and settles it.
-fn settled(
+async fn settled(
     directory: &Path,
     script: &str,
     answer: Answer,
     text: &str,
 ) -> (World, Seen, Vec<Box<dyn Error>>) {
-    let (world, seen) = intercepting_world(directory, script, answer);
-    let errors = on_tasks(async {
+    let (world, seen) = intercepting_world(directory, script, answer).await;
+    let errors = async {
         let ((), errors) = driving(&world, async {
             submit(&world.mode, text);
             until_command_settles(&world).await;
         })
         .await;
         errors
-    });
+    }
+    .await;
     (world, seen, errors)
 }
 
@@ -346,19 +349,19 @@ fn whole(output: &'static str, code: Option<f64>) -> Answer {
 fn shell_interception_and_operations_share_one_retained_row_and_settle() {
     isolated(
         "shell_interception_and_operations_share_one_retained_row_and_settle",
-        |directory| {
-            whole_result_keeps_one_recorded_row(directory);
-            excluded_result_records_its_exclusion(directory);
-            supplied_operations_run_the_command(directory);
-            rejected_execution_fails_the_row(directory);
-            streaming_placement(directory, ("!echo p", false));
-            streaming_placement(directory, ("!!echo p", true));
+        async |directory| {
+            whole_result_keeps_one_recorded_row(directory).await;
+            excluded_result_records_its_exclusion(directory).await;
+            supplied_operations_run_the_command(directory).await;
+            rejected_execution_fails_the_row(directory).await;
+            streaming_placement(directory, ("!echo p", false)).await;
+            streaming_placement(directory, ("!!echo p", true)).await;
         },
     );
 }
 
 /// A whole intercepted result shows its output and records it once, without a process.
-fn whole_result_keeps_one_recorded_row(directory: &Path) {
+async fn whole_result_keeps_one_recorded_row(directory: &Path) {
     let marker = directory.join("whole-ran");
     let script = scripted(
         directory,
@@ -370,7 +373,8 @@ fn whole_result_keeps_one_recorded_row(directory: &Path) {
         &script,
         whole("whole output", Some(2.0)),
         "!echo x",
-    );
+    )
+    .await;
     assert!(errors.is_empty(), "{errors:?}");
     assert_eq!(seen.borrow().len(), 1);
     assert_eq!(seen.borrow()[0].command, "echo x");
@@ -389,9 +393,10 @@ fn whole_result_keeps_one_recorded_row(directory: &Path) {
 }
 
 /// A double prefix keeps the intercepted output out of the context.
-fn excluded_result_records_its_exclusion(directory: &Path) {
+async fn excluded_result_records_its_exclusion(directory: &Path) {
     let script = scripted(directory, "shell", "printf 'unused\\n'");
-    let (world, seen, errors) = settled(directory, &script, whole("kept out", None), "!!echo y");
+    let (world, seen, errors) =
+        settled(directory, &script, whole("kept out", None), "!!echo y").await;
     assert!(errors.is_empty(), "{errors:?}");
     assert!(seen.borrow()[0].exclude_from_context);
     let records = recorded(&world);
@@ -400,7 +405,7 @@ fn excluded_result_records_its_exclusion(directory: &Path) {
 }
 
 /// Operations an extension supplies run the command in place of the local shell.
-fn supplied_operations_run_the_command(directory: &Path) {
+async fn supplied_operations_run_the_command(directory: &Path) {
     let marker = directory.join("operations-ran");
     let script = scripted(
         directory,
@@ -414,7 +419,7 @@ fn supplied_operations_run_the_command(directory: &Path) {
             result: None,
         })
     });
-    let (world, _, errors) = settled(directory, &script, answer, "!echo z");
+    let (world, _, errors) = settled(directory, &script, answer, "!echo z").await;
     assert!(errors.is_empty(), "{errors:?}");
     assert!(marker.exists(), "the supplied operations ran the command");
     let rows = transcript(&world);
@@ -426,7 +431,7 @@ fn supplied_operations_run_the_command(directory: &Path) {
 }
 
 /// A rejected execution completes the row as failed and records nothing.
-fn rejected_execution_fails_the_row(directory: &Path) {
+async fn rejected_execution_fails_the_row(directory: &Path) {
     let script = scripted(directory, "shell", "printf 'unused\\n'");
     let missing = maestro_app::create_local_bash_operations(
         String::new(),
@@ -438,7 +443,7 @@ fn rejected_execution_fails_the_row(directory: &Path) {
             result: None,
         })
     });
-    let (world, _, errors) = settled(directory, &script, answer, "!echo w");
+    let (world, _, errors) = settled(directory, &script, answer, "!echo w").await;
     assert!(errors.is_empty(), "{errors:?}");
     let rows = transcript(&world);
     assert!(
@@ -499,7 +504,7 @@ struct Placement {
 
 /// Submits both prefix forms while a response streams: the command keeps one retained row
 /// in the pending area, never in the transcript, through every interception branch.
-fn streaming_placement(directory: &Path, (text, excluded): (&'static str, bool)) {
+async fn streaming_placement(directory: &Path, (text, excluded): (&'static str, bool)) {
     let script = scripted(directory, "streaming-shell", "printf 'ran\n'");
     let supplied = maestro_app::create_local_bash_operations(String::new(), Some(script.clone()));
     let cases = [
@@ -529,14 +534,14 @@ fn streaming_placement(directory: &Path, (text, excluded): (&'static str, bool))
         },
     ];
     for case in cases {
-        placement_case(directory, &script, &case);
+        placement_case(directory, &script, &case).await;
     }
 }
 
 /// Runs one streaming placement case and checks the retained row it left.
-fn placement_case(directory: &Path, script: &str, case: &Placement) {
-    let (world, seen) = intercepting_world(directory, script, Rc::clone(&case.answer));
-    let errors = on_tasks(async {
+async fn placement_case(directory: &Path, script: &str, case: &Placement) {
+    let (world, seen) = intercepting_world(directory, script, Rc::clone(&case.answer)).await;
+    let errors = async {
         holding(&world, |_| async {
             let ((), errors) = driving(&world, async {
                 submit(&world.mode, case.text);
@@ -546,7 +551,8 @@ fn placement_case(directory: &Path, script: &str, case: &Placement) {
             errors
         })
         .await
-    });
+    }
+    .await;
     assert!(errors.is_empty(), "{errors:?}");
     assert_eq!(seen.borrow().len(), 1, "{}", case.text);
     assert_eq!(
@@ -594,23 +600,23 @@ fn placement_case(directory: &Path, script: &str, case: &Placement) {
 fn shell_hooks_preserve_selected_arguments_and_read_current_session_after_await() {
     isolated(
         "shell_hooks_preserve_selected_arguments_and_read_current_session_after_await",
-        |directory| {
-            hook_reads_the_selected_arguments(directory);
-            hook_cannot_rewrite_the_selection(directory);
-            replaced_session_during_interception_records_there(directory);
+        async |directory| {
+            hook_reads_the_selected_arguments(directory).await;
+            hook_cannot_rewrite_the_selection(directory).await;
+            replaced_session_during_interception_records_there(directory).await;
         },
     );
 }
 
 /// The handler sees the trimmed selection and the session's own directory.
-fn hook_reads_the_selected_arguments(directory: &Path) {
+async fn hook_reads_the_selected_arguments(directory: &Path) {
     let script = scripted(directory, "shell", "printf 'ran\\n'");
     let cwd = directory.to_str().unwrap().to_owned();
     let answer: Answer = Rc::new(|event: &mut maestro_app::UserBashEvent| {
         assert_eq!(event.command, "echo kept");
         None
     });
-    let (world, seen, errors) = settled(directory, &script, answer, "! echo kept ");
+    let (world, seen, errors) = settled(directory, &script, answer, "! echo kept ").await;
     assert!(errors.is_empty(), "{errors:?}");
     let events = seen.borrow();
     assert_eq!(events.len(), 1);
@@ -630,7 +636,7 @@ fn hook_reads_the_selected_arguments(directory: &Path) {
 }
 
 /// A handler that rewrites the event cannot change what runs or what is recorded.
-fn hook_cannot_rewrite_the_selection(directory: &Path) {
+async fn hook_cannot_rewrite_the_selection(directory: &Path) {
     let script = scripted(directory, "shell", "printf 'ran\\n'");
     let rewrite: Answer = Rc::new(|event: &mut maestro_app::UserBashEvent| {
         event.command = "mutated".to_owned();
@@ -641,7 +647,7 @@ fn hook_cannot_rewrite_the_selection(directory: &Path) {
             result: Some(result("rewritten", Some(0.0))),
         })
     });
-    let (world, seen, errors) = settled(directory, &script, rewrite, "!!echo kept");
+    let (world, seen, errors) = settled(directory, &script, rewrite, "!!echo kept").await;
     assert!(errors.is_empty(), "{errors:?}");
     assert!(seen.borrow()[0].exclude_from_context);
     let records = recorded(&world);
@@ -689,7 +695,7 @@ fn awaiting_interception(
 }
 
 /// A replacement during a pending hook records the answer into the session current after it.
-fn replaced_session_during_interception_records_there(directory: &Path) {
+async fn replaced_session_during_interception_records_there(directory: &Path) {
     let script = scripted(directory, "shell", "printf 'not run\\n'");
     let reached = Rc::new(tokio::sync::Notify::new());
     let resume = Rc::new(tokio::sync::Notify::new());
@@ -709,10 +715,10 @@ fn replaced_session_during_interception_records_there(directory: &Path) {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     let retired = world.host.session();
-    let errors = on_tasks(async {
+    let errors = async {
         let ((), errors) = driving(&world, async {
             submit(&world.mode, "!echo kept");
             reached.notified().await;
@@ -728,7 +734,8 @@ fn replaced_session_during_interception_records_there(directory: &Path) {
         })
         .await;
         errors
-    });
+    }
+    .await;
     assert!(errors.is_empty(), "{errors:?}");
     assert_eq!(seen.borrow().len(), 1);
     assert_eq!(
@@ -806,10 +813,11 @@ const FIELD_CASES: &[Fields] = &[
 fn shell_result_fields_reach_completion_without_projection_loss() {
     isolated(
         "shell_result_fields_reach_completion_without_projection_loss",
-        |directory| {
+        async |directory| {
             let script = scripted(directory, "shell", "printf 'not run\n'");
             for case in FIELD_CASES {
-                let (world, _, errors) = settled(directory, &script, fields(case), "!cat file");
+                let (world, _, errors) =
+                    settled(directory, &script, fields(case), "!cat file").await;
                 assert!(errors.is_empty(), "{errors:?}");
                 assert_recorded(&world, case);
                 assert_painted(&world, case);
@@ -870,7 +878,7 @@ fn assert_painted(world: &World, case: &Fields) {
 }
 
 /// A started mode whose shell runs `script`, replacing the session when one is replaced.
-fn replacing(directory: &Path, script: &str) -> World {
+async fn replacing(directory: &Path, script: &str) -> World {
     let script = script.to_owned();
     let world = Setup {
         configure: Box::new(move |settings: &mut SettingsManager| {
@@ -880,7 +888,7 @@ fn replacing(directory: &Path, script: &str) -> World {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
 }
@@ -914,18 +922,25 @@ fn recorded_in(session: &Rc<maestro_app::AgentSession>) -> Vec<String> {
         .collect()
 }
 
+/// Yields until `session` runs no shell command.
+async fn until_idle(session: &maestro_app::AgentSession) {
+    while session.is_bash_running() {
+        tokio::task::yield_now().await;
+    }
+}
+
 #[test]
 fn shell_completion_from_replaced_session_is_retired() {
     isolated(
         "shell_completion_from_replaced_session_is_retired",
-        |directory| {
+        async |directory| {
             let script = scripted(
                 directory,
                 "shell",
                 ": > \"$2-started\"\nwhile [ ! -e \"$2-release\" ]; do :; done\nprintf '%s output\\n' \"$2\"",
             );
-            let world = replacing(directory, &script);
-            on_tasks(async {
+            let world = replacing(directory, &script).await;
+            async {
                 let ((), errors) = driving(&world, async {
                     submit(&world.mode, "!old");
                     until_exists(&directory.join("old-started")).await;
@@ -946,10 +961,36 @@ fn shell_completion_from_replaced_session_is_retired() {
                         ["old output\n"],
                         "the old command recorded into its own session"
                     );
+                    // A new session typed in the editor disposes the running command's session
+                    // and resets: neither its row nor its output survives the release.
+                    submit(
+                        &world.mode,
+                        "!: > second-started; while [ ! -e second-release ]; do :; done; \
+                         printf 'second output\\n'",
+                    );
+                    until_exists(&directory.join("second-started")).await;
+                    let second_session = world.host.session();
+                    submit(&world.mode, "/new");
+                    assert!(admitted(&world.runtime).await.is_empty());
+                    let rows = transcript(&world).join("\n");
+                    assert!(rows.contains("New session started"), "{rows}");
+                    std::fs::write(directory.join("second-release"), "").unwrap();
+                    until_idle(&second_session).await;
+                    assert!(active(&world).is_none());
+                    submit(&world.mode, "later");
+                    let rows = transcript(&world).join("\n");
+                    assert!(!rows.contains("output"), "nothing old survives: {rows}");
+                    assert!(recorded_in(&world.host.session()).is_empty());
+                    submit(&world.mode, "!printf 'third output\\n'");
+                    until_command_settles(&world).await;
+                    let rows = transcript(&world).join("\n");
+                    assert!(rows.contains("third output"), "{rows}");
+                    assert_eq!(recorded_in(&world.host.session()), ["third output\n"]);
                 })
                 .await;
                 assert!(errors.is_empty(), "{errors:?}");
-            });
+            }
+            .await;
         },
     );
 }
@@ -958,7 +999,7 @@ fn shell_completion_from_replaced_session_is_retired() {
 fn intercepted_shell_recording_failure_releases_active_row() {
     isolated(
         "intercepted_shell_recording_failure_releases_active_row",
-        |directory| {
+        async |directory| {
             use std::os::unix::fs::PermissionsExt;
             let history = directory.join("history");
             std::fs::create_dir(&history).unwrap();
@@ -973,7 +1014,7 @@ fn intercepted_shell_recording_failure_releases_active_row() {
                 ..Setup::default()
             }
             .build(directory);
-            world.mode.init().unwrap();
+            world.mode.init().await.unwrap();
             world.runtime.settle().unwrap();
             let session = world.host.session();
             let manager = Rc::clone(session.session_manager());
@@ -993,14 +1034,15 @@ fn intercepted_shell_recording_failure_releases_active_row() {
                 .map(str::to_owned)
                 .expect("the session file");
             std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o400)).unwrap();
-            let errors = on_tasks(async {
+            let errors = async {
                 let ((), errors) = driving(&world, async {
                     submit(&world.mode, "!echo kept");
                     until_command_settles(&world).await;
                 })
                 .await;
                 errors
-            });
+            }
+            .await;
             std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o600)).unwrap();
             assert_eq!(errors.len(), 1, "the recording failure is preserved");
             let message = errors[0].to_string();
@@ -1021,42 +1063,46 @@ fn intercepted_shell_recording_failure_releases_active_row() {
 
 #[test]
 fn native_shell_output_paints_chunks_once() {
-    isolated("native_shell_output_paints_chunks_once", |directory| {
-        let script = scripted(directory, "shell", "printf 'chunk\\n'");
-        let world = shelling(directory, &script);
-        let errors = on_tasks(async {
-            let ((), errors) = driving(&world, async {
-                submit(&world.mode, "!true");
-                until_complete(&world, 1).await;
-            })
+    isolated(
+        "native_shell_output_paints_chunks_once",
+        async |directory| {
+            let script = scripted(directory, "shell", "printf 'chunk\\n'");
+            let world = shelling(directory, &script).await;
+            let errors = async {
+                let ((), errors) = driving(&world, async {
+                    submit(&world.mode, "!true");
+                    until_complete(&world, 1).await;
+                })
+                .await;
+                errors
+            }
             .await;
-            errors
-        });
-        assert!(errors.is_empty(), "{errors:?}");
-        let rows = transcript(&world);
-        assert_eq!(
-            rows.iter().filter(|row| row.contains("chunk")).count(),
-            1,
-            "the streamed output is painted once: {rows:?}"
-        );
-        let records = recorded(&world);
-        assert_eq!(records.len(), 1, "{records:?}");
-        assert_eq!(records[0]["output"], "chunk\n");
-    });
+            assert!(errors.is_empty(), "{errors:?}");
+            let rows = transcript(&world);
+            assert_eq!(
+                rows.iter().filter(|row| row.contains("chunk")).count(),
+                1,
+                "the streamed output is painted once: {rows:?}"
+            );
+            let records = recorded(&world);
+            assert_eq!(records.len(), 1, "{records:?}");
+            assert_eq!(records[0]["output"], "chunk\n");
+        },
+    );
 }
 
 #[test]
 fn overlapping_shell_rows_release_only_their_own_claim() {
     isolated(
         "overlapping_shell_rows_release_only_their_own_claim",
-        |directory| {
+        async |directory| {
             let script = scripted(
                 directory,
                 "shell",
                 ": > \"$2-started\"\nwhile [ ! -e \"$2-release\" ]; do :; done\nprintf '%s output\\n' \"$2\"",
             );
-            let world = shelling(directory, &script);
-            let errors = on_tasks(async {
+            let world = shelling(directory, &script).await;
+            let errors = async {
                 let ((), errors) = driving(&world, async {
                     let older = start_command(&world, "older");
                     until_exists(&directory.join("older-started")).await;
@@ -1075,7 +1121,8 @@ fn overlapping_shell_rows_release_only_their_own_claim() {
                 })
                 .await;
                 errors
-            });
+            }
+            .await;
             assert!(errors.is_empty(), "{errors:?}");
             let rows = transcript(&world).join("\n");
             assert!(rows.contains("older output"), "{rows}");
@@ -1097,7 +1144,7 @@ fn start_command(
 fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
     isolated(
         "shell_paints_streamed_chunks_in_order_before_its_row_completes",
-        |directory| {
+        async |directory| {
             let started = directory.join("drain-started");
             let release = directory.join("drain-release");
             let script = scripted(
@@ -1109,8 +1156,8 @@ fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
                     release.display()
                 ),
             );
-            let world = shelling(directory, &script);
-            let errors = on_tasks(async {
+            let world = shelling(directory, &script).await;
+            let errors = async {
                 let ((), errors) = driving(&world, async {
                     submit(&world.mode, "!drain");
                     until_exists(&started).await;
@@ -1130,7 +1177,8 @@ fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
                 })
                 .await;
                 errors
-            });
+            }
+            .await;
             assert!(errors.is_empty(), "{errors:?}");
             let rows = transcript(&world);
             let first = rows.iter().position(|row| row.contains("first"));
@@ -1167,15 +1215,15 @@ fn painted(row: &BashExecutionComponent) -> String {
 fn cancelled_shell_settles_its_row_and_records_the_cancellation() {
     isolated(
         "cancelled_shell_settles_its_row_and_records_the_cancellation",
-        |directory| {
+        async |directory| {
             let started = directory.join("cancel-started");
             let script = scripted(
                 directory,
                 "shell",
                 &format!(": > {}\nwhile :; do :; done", started.display()),
             );
-            let world = shelling(directory, &script);
-            let errors = on_tasks(async {
+            let world = shelling(directory, &script).await;
+            let errors = async {
                 let ((), errors) = driving(&world, async {
                     submit(&world.mode, "!cancel");
                     until_exists(&started).await;
@@ -1184,7 +1232,8 @@ fn cancelled_shell_settles_its_row_and_records_the_cancellation() {
                 })
                 .await;
                 errors
-            });
+            }
+            .await;
             assert!(errors.is_empty(), "{errors:?}");
             let rows = transcript(&world).join("\n");
             assert!(rows.contains("(cancelled)"), "{rows}");
@@ -1199,19 +1248,19 @@ fn cancelled_shell_settles_its_row_and_records_the_cancellation() {
 fn pending_shell_flush_uses_linear_identity_membership() {
     isolated(
         "pending_shell_flush_uses_linear_identity_membership",
-        |directory| {
+        async |directory| {
             for count in [3, 64, 128, 256] {
-                membership_case(directory, count);
+                membership_case(directory, count).await;
             }
-            streaming_flush(directory);
+            streaming_flush(directory).await;
         },
     );
 }
 
 /// Flushes `count` equal-looking pending rows recorded in another order than the container
 /// holds them, and checks the transcript order a second flush leaves alone.
-fn membership_case(directory: &Path, count: usize) {
-    let world = started(directory);
+async fn membership_case(directory: &Path, count: usize) {
+    let world = started(directory).await;
     let (rows, neighbours) = pending_area(&world, count);
     world.mode.flush_pending_bash_components();
     assert_pending_flush(&world, &rows, &neighbours);
@@ -1234,9 +1283,9 @@ fn membership_case(directory: &Path, count: usize) {
 
 /// Rows two real shell commands produced while a response streamed move into the transcript
 /// in submission order under their own identities.
-fn streaming_flush(directory: &Path) {
-    let world = echoing_shell(directory);
-    let rows = on_tasks(async {
+async fn streaming_flush(directory: &Path) {
+    let world = echoing_shell(directory).await;
+    let rows = async {
         holding(&world, |_| async {
             let (rows, errors) = driving(&world, async {
                 start_shells(&world, 2).await;
@@ -1247,7 +1296,8 @@ fn streaming_flush(directory: &Path) {
             rows
         })
         .await
-    });
+    }
+    .await;
     assert_eq!(rows.len(), 2, "both commands kept their row");
     let baseline = world.mode.chat_container.children().borrow().len();
     world.mode.flush_pending_bash_components();

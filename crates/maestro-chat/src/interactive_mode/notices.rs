@@ -20,9 +20,21 @@ impl InteractiveMode {
     pub(super) fn handle_changelog_command(&self) -> Result<(), Box<dyn Error>> {
         let path = get_changelog_path(&get_package_dir()?)?;
         let markdown = join_contents(&parse_changelog(&path));
+        self.append_markdown_panel("What's New", markdown)
+    }
+
+    /// Appends a bordered Markdown card with a captured heading and requests a frame.
+    ///
+    /// # Errors
+    /// Returns a failure reading the heading's theme.
+    pub(super) fn append_markdown_panel(
+        &self,
+        heading: &str,
+        markdown: String,
+    ) -> Result<(), Box<dyn Error>> {
         let live = self.themes.theme();
         let theme = live.get()?;
-        let title = Theme::bold(&theme.fg(&ThemeColor::Accent, "What's New")?, true);
+        let title = Theme::bold(&theme.fg(&ThemeColor::Accent, heading)?, true);
         self.chat_container.add_child(Rc::new(Spacer::new(1)));
         self.chat_container
             .add_child(Rc::new(DynamicBorder::new(live.clone(), None)));

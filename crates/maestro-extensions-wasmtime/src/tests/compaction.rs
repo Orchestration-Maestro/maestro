@@ -65,7 +65,7 @@ async fn compaction(command: bool) {
     worker.join().unwrap();
     let full = full_options(std::mem::take(&mut *requests.borrow_mut()));
     let on_error = full.on_error.clone().unwrap();
-    super::reports_reentry(&mut pump, move || on_error(" error ".into())).await;
+    routed_failure(&mut pump, move || on_error(" nested error ".into())).await;
     let worker = std::thread::spawn(move || notifications(incoming));
     let complete = (full.on_complete.as_ref().unwrap())(
         serde_json::from_value(
@@ -79,6 +79,23 @@ async fn compaction(command: bool) {
     error.unwrap();
     drop((full, calls, admission));
     pump.serve().await;
+}
+
+/// Answers a failure notification made while the Store waits in a routed request.
+async fn routed_failure<E: std::fmt::Debug + 'static>(
+    pump: &mut Pump,
+    notify: impl FnOnce() -> Result<(), E> + 'static,
+) {
+    let nested = super::during_routed_request(pump, notify, |call| {
+        let Call::Synchronous(call) = call else {
+            panic!("missing nested failure callback")
+        };
+        assert!(matches!(call.kind, SynchronousKind::CompactionError));
+        assert_eq!(call.data, " nested error ");
+        call.completion.send(Ok(())).unwrap();
+    })
+    .await;
+    nested.unwrap();
 }
 
 /// Sends absent, empty and full options through the original context endpoint.

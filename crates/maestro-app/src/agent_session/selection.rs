@@ -272,7 +272,8 @@ fn same_model(a: &Arc<RwLock<Model>>, b: &Arc<RwLock<Model>>) -> bool {
 }
 
 /// The saved form of a queue mode.
-fn delivery_mode(mode: QueueMode) -> MessageDeliveryMode {
+#[must_use]
+pub fn delivery_mode(mode: QueueMode) -> MessageDeliveryMode {
     match mode {
         QueueMode::All => MessageDeliveryMode::All,
         QueueMode::OneAtATime => MessageDeliveryMode::OneAtATime,

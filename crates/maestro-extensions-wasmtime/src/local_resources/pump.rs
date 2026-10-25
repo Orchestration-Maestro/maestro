@@ -31,8 +31,44 @@ pub(super) struct State {
     pub(super) waker: RefCell<std::task::Waker>,
     /// Typed completion storage for active synchronous guest invocations.
     pub(super) synchronous: super::synchronous::Returns,
-    /// Set while answering a request its Store thread waits for, when it cannot enter the guest.
-    pub(super) store_blocked: std::cell::Cell<bool>,
+    /// Native operations in progress, innermost last, whose nested targets their guest runs.
+    pub(super) routes: RefCell<Vec<std::sync::mpsc::Sender<crate::import_route::Nested>>>,
+    /// Dropped after local requests and pending work release their reply senders.
+    worker: RefCell<Option<Worker>>,
+}
+
+/// The native pump owns joining its Store thread, including thread-local destruction.
+struct Worker {
+    /// Taken once when the pump retires.
+    thread: Option<std::thread::JoinHandle<()>>,
+    /// Wakes the Store without retaining its lifetime.
+    shutdown: std::sync::Weak<tokio::sync::Notify>,
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        if let Some(shutdown) = self.shutdown.upgrade() {
+            shutdown.notify_one();
+        }
+        let thread = JoinGuard(self.thread.take());
+        if let Ok(runtime) = tokio::runtime::Handle::try_current() {
+            // Keeps the local executor running. Shutdown may drop the task unstarted; that joins too.
+            drop(runtime.spawn_blocking(move || drop(thread)));
+        } else {
+            drop(thread);
+        }
+    }
+}
+
+/// Joins its thread when dropped, even when Tokio discards the blocking task holding it.
+struct JoinGuard(Option<std::thread::JoinHandle<()>>);
+
+impl Drop for JoinGuard {
+    fn drop(&mut self) {
+        if let Some(thread) = self.0.take() {
+            let _ = thread.join();
+        }
+    }
 }
 
 impl Pump {
@@ -50,7 +86,8 @@ impl Pump {
             staging: RefCell::default(),
             waker: RefCell::new(std::task::Waker::noop().clone()),
             synchronous: super::synchronous::Returns::default(),
-            store_blocked: std::cell::Cell::default(),
+            routes: RefCell::default(),
+            worker: RefCell::default(),
         });
         (
             Self { state },
@@ -58,6 +95,18 @@ impl Pump {
                 _requests: requests,
             },
         )
+    }
+
+    /// Retains the Store thread until retirement has disconnected native replies.
+    pub(crate) fn own_worker(
+        &self,
+        thread: std::thread::JoinHandle<()>,
+        shutdown: std::sync::Weak<tokio::sync::Notify>,
+    ) {
+        *self.state.worker.borrow_mut() = Some(Worker {
+            thread: Some(thread),
+            shutdown,
+        });
     }
 
     /// Returns a weak local registration service, not a new admission.
@@ -79,12 +128,25 @@ impl Pump {
 impl State {
     /// Receives one request while servicing every already-ready admitted completion.
     pub(super) fn poll_next(&self, context: &mut Context<'_>) -> Poll<bool> {
+        self.poll_next_using(context, &mut Some)
+    }
+    /// Service scoped operand requests through the original receiver.
+    pub(super) fn poll_next_using(
+        &self,
+        context: &mut Context<'_>,
+        service: &mut dyn FnMut(Message) -> Option<Message>,
+    ) -> Poll<bool> {
         self.waker.borrow_mut().clone_from(context.waker());
+        let mut dispatch = |message| {
+            if let Some(message) = service(message) {
+                self.dispatch(message);
+            }
+        };
         loop {
             let message = self.requests.borrow_mut().poll_recv(context);
             match message {
                 Poll::Ready(Some(message)) => {
-                    self.answer(message);
+                    dispatch(message);
                     self.poll_pending(context);
                     return Poll::Ready(true);
                 }
@@ -116,17 +178,14 @@ impl State {
         }
     }
 
-    /// Dispatches a consumed request outside capability-table borrows.
-    fn answer(&self, message: Message) {
-        let blocked = self.store_blocked.get();
-        self.store_blocked.set(blocked || message.blocks_store());
-        self.dispatch(message);
-        self.store_blocked.set(blocked);
-    }
-
     /// Answers one request with the native owner it names.
     fn dispatch(&self, message: Message) {
         match message {
+            Message::Routed(message, route) => self.routed(*message, route),
+            Message::Json(_, request) => request.reject(),
+            Message::SchemaListing(id, reply) => {
+                let _ = reply.send(self.schema_listing(id));
+            }
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.read_api(id, request),
@@ -140,12 +199,7 @@ impl State {
                 self.start_auth(id, *model, reply, admission);
             }
             Message::Aborted(id, reply) => {
-                let capability = self.registry.capability(id);
-                let result = match capability.as_deref() {
-                    Some(Capability::Signal(signal)) => Ok(signal.is_aborted()),
-                    _ => Err("extension signal resource ended".to_owned()),
-                };
-                let _ = reply.send(result);
+                let _ = reply.send(self.aborted(id));
             }
             Message::History(id, request) => {
                 let capability = self.registry.capability(id);
@@ -179,11 +233,41 @@ impl State {
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
+            Message::Theme(id, request) => self.theme(id, request),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Release(id) => {
                 let removed = self.registry.resources.borrow_mut().entries.remove(&id);
                 drop(removed);
             }
+        }
+    }
+
+    /// Answers a request while its native code owns the route into this instance.
+    fn routed(
+        &self,
+        message: Message,
+        route: std::sync::mpsc::Sender<crate::import_route::Nested>,
+    ) {
+        self.routes.borrow_mut().push(route);
+        self.dispatch(message);
+        self.routes.borrow_mut().pop();
+    }
+
+    /// Observe live metadata through its original API capability.
+    fn schema_listing(&self, id: u64) -> Result<crate::schema_registration::ToolListing, String> {
+        let capability = self.registry.capability(id);
+        match capability.as_deref() {
+            Some(Capability::Api(api)) => self.registry.schema_listing(api),
+            _ => Err("extension API resource ended".into()),
+        }
+    }
+
+    /// Observe the original retained cancellation signal.
+    fn aborted(&self, id: u64) -> Result<bool, String> {
+        let capability = self.registry.capability(id);
+        match capability.as_deref() {
+            Some(Capability::Signal(signal)) => Ok(signal.is_aborted()),
+            _ => Err("extension signal resource ended".to_owned()),
         }
     }
 
@@ -332,6 +416,16 @@ impl State {
             request.answer(ui);
         } else {
             request.reject("extension UI resource ended");
+        }
+    }
+
+    /// Serves the current theme after releasing the capability table borrow.
+    fn theme(&self, id: u64, request: crate::theme_reads::Request) {
+        let capability = self.registry.capability(id);
+        if let Some(Capability::Theme(theme)) = capability.as_deref() {
+            request.answer(theme);
+        } else {
+            request.reject("extension theme resource ended");
         }
     }
 
