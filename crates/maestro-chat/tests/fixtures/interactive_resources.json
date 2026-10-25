@@ -1865,17 +1865,6 @@
     "test": "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix",
     "input": {
       "op": "native-home",
-      "mode": "absent",
-      "path": "/tmp/supplied-home/file"
-    },
-    "expected": {
-      "value": "/tmp/supplied-home/file"
-    }
-  },
-  {
-    "test": "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix",
-    "input": {
-      "op": "native-home",
       "mode": "supplied",
       "path": "/tmp/supplied-home/file"
     },
@@ -1892,6 +1881,160 @@
     },
     "expected": {
       "value": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/tmp/supplied-home/file",
+      "home": "/"
+    },
+    "expected": {
+      "value": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/",
+      "home": "/"
+    },
+    "expected": {
+      "value": "/"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "//server/share",
+      "home": "/"
+    },
+    "expected": {
+      "value": "//server/share"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "relative/file",
+      "home": "/"
+    },
+    "expected": {
+      "value": "relative/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "",
+      "home": "/"
+    },
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/tmp/supplied-home/file",
+      "home": ""
+    },
+    "expected": {
+      "value": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "",
+      "home": ""
+    },
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/username/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~name/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/tmp/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/tmp/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "relative/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "relative/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/élève/文書",
+      "home": "/home/élève"
+    },
+    "expected": {
+      "value": "~/文書"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/file",
+      "home": "/home/user/"
+    },
+    "expected": {
+      "value": "~file"
     }
   }
 ]

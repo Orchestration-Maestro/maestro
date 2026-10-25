@@ -81,6 +81,24 @@ fn all_crates_must_inherit_workspace_lints() {
 }
 
 #[test]
+fn guest_crate_cannot_omit_its_qualified_lint_table() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm"]);
+    let manifest = workspace
+        .root
+        .path()
+        .join("crates/maestro-extensions-wasm/Cargo.toml");
+    let baseline = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(&manifest, baseline.replace(support::GUEST_LINTS, "")).unwrap();
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("maestro-extensions-wasm: must declare its own lint table".into())
+    );
+    std::fs::write(&manifest, baseline).unwrap();
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
 fn test_files_and_trailing_test_modules_do_not_count() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");

@@ -280,7 +280,7 @@ impl ProcessTerminal {
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         let begin = Instant::now();
         self.shared.activity.set(begin);
         self.shared.negotiating.set(false);

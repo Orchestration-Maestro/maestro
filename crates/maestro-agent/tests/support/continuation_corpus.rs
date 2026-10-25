@@ -487,7 +487,7 @@ fn install_tools(agent: &Arc<Agent<Notice>>, input: &Arc<Input>, trace: &Arc<Mut
             definition: maestro_models::Tool {
                 name: "echo".into(),
                 description: "Echo".into(),
-                parameters: json!({"type":"object","properties":{}}),
+                parameters: json!({"type":"object","properties":{}}).into(),
             },
             label: "Echo".into(),
             prepare_arguments: None,
@@ -613,7 +613,7 @@ fn response(input: &Input, turn: usize) -> maestro_models::SharedAssistantMessag
                 AssistantContent::ToolCall(maestro_models::ToolCall {
                     id: id.into(),
                     name: "echo".into(),
-                    arguments: maestro_models::JsonObject::new(),
+                    arguments: maestro_models::JsonObject::new().into(),
                     thought_signature: None,
                 })
             })

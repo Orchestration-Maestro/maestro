@@ -10,4 +10,6 @@ pub mod clipboard_native;
 
 pub(crate) mod lock;
 pub(crate) mod numbers;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod task;
 pub(crate) mod uri;

@@ -1,0 +1,364 @@
+{
+  "summaries": [
+    {
+      "language": "en",
+      "logs": [],
+      "summary": "console (0)"
+    },
+    {
+      "language": "en",
+      "logs": [
+        {
+          "type": "log",
+          "text": "<literal>雪"
+        }
+      ],
+      "summary": "console (1)"
+    },
+    {
+      "language": "en",
+      "logs": [
+        {
+          "type": "error",
+          "text": "bad"
+        }
+      ],
+      "summary": "console (1 error)"
+    },
+    {
+      "language": "en",
+      "logs": [
+        {
+          "type": "log",
+          "text": "a"
+        },
+        {
+          "type": "error",
+          "text": "b"
+        },
+        {
+          "type": "error",
+          "text": "c"
+        }
+      ],
+      "summary": "console (2 errors)"
+    },
+    {
+      "language": "de",
+      "logs": [],
+      "summary": "Konsole (0)"
+    },
+    {
+      "language": "de",
+      "logs": [
+        {
+          "type": "log",
+          "text": "<literal>雪"
+        }
+      ],
+      "summary": "Konsole (1)"
+    },
+    {
+      "language": "de",
+      "logs": [
+        {
+          "type": "error",
+          "text": "bad"
+        }
+      ],
+      "summary": "Konsole (1 error)"
+    },
+    {
+      "language": "de",
+      "logs": [
+        {
+          "type": "log",
+          "text": "a"
+        },
+        {
+          "type": "error",
+          "text": "b"
+        },
+        {
+          "type": "error",
+          "text": "c"
+        }
+      ],
+      "summary": "Konsole (2 errors)"
+    }
+  ],
+  "values": [
+    {
+      "kind": "missing",
+      "operand": {
+        "nativeType": "Undefined"
+      },
+      "paint": "[log]",
+      "copy": "[log] undefined"
+    },
+    {
+      "kind": "null",
+      "operand": null,
+      "paint": "[log]",
+      "copy": "[log] null"
+    },
+    {
+      "kind": "string",
+      "operand": "literal <&> 雪",
+      "paint": "[log] literal <&> 雪",
+      "copy": "[log] literal <&> 雪"
+    },
+    {
+      "kind": "number",
+      "operand": 42,
+      "paint": "[log] 42",
+      "copy": "[log] 42"
+    },
+    {
+      "kind": "boolean",
+      "operand": true,
+      "paint": "[log] true",
+      "copy": "[log] true"
+    },
+    {
+      "kind": "object",
+      "operand": {
+        "x": 1
+      },
+      "paint": "[log] [object Object]",
+      "copy": "[log] [object Object]"
+    },
+    {
+      "kind": "array",
+      "operand": [
+        "a",
+        null,
+        "b"
+      ],
+      "paint": "[log] ab",
+      "copy": "[log] a,,b"
+    },
+    {
+      "kind": "false",
+      "operand": false,
+      "paint": "[log] false",
+      "copy": "[log] false"
+    },
+    {
+      "kind": "nested-array",
+      "operand": [
+        "a",
+        [
+          "b",
+          null,
+          "c"
+        ],
+        false,
+        {
+          "x": 1
+        },
+        7
+      ],
+      "paint": "[log] abcfalse[object Object]7",
+      "copy": "[log] a,b,,c,false,[object Object],7"
+    },
+    {
+      "kind": "empty-array",
+      "operand": [],
+      "paint": "[log]",
+      "copy": "[log] "
+    },
+    {
+      "kind": "negative-zero",
+      "paint": "[log] 0",
+      "copy": "[log] 0"
+    },
+    {
+      "kind": "large-number",
+      "operand": 1e+21,
+      "paint": "[log] 1e+21",
+      "copy": "[log] 1e+21"
+    },
+    {
+      "kind": "small-number",
+      "operand": 1e-07,
+      "paint": "[log] 1e-7",
+      "copy": "[log] 1e-7"
+    },
+    {
+      "kind": "map",
+      "operand": {
+        "nativeType": "Map",
+        "entries": [
+          [
+            "k",
+            1
+          ],
+          [
+            "z",
+            null
+          ]
+        ]
+      },
+      "paint": "[log] k1z",
+      "copy": "[log] [object Map]"
+    },
+    {
+      "kind": "set",
+      "operand": {
+        "nativeType": "Set",
+        "items": [
+          "a",
+          null,
+          "b"
+        ]
+      },
+      "paint": "[log] ab",
+      "copy": "[log] [object Set]"
+    },
+    {
+      "kind": "typed-array",
+      "operand": {
+        "nativeType": "Uint8Array",
+        "items": [
+          1,
+          2,
+          3
+        ]
+      },
+      "paint": "[log] 123",
+      "copy": "[log] 1,2,3"
+    },
+    {
+      "kind": "explicit-undefined",
+      "operand": {
+        "nativeType": "Undefined"
+      },
+      "paint": "[log]",
+      "copy": "[log] undefined"
+    },
+    {
+      "kind": "not-a-number",
+      "operand": {
+        "nativeType": "Number",
+        "value": "NaN"
+      },
+      "paint": "[log] NaN",
+      "copy": "[log] NaN"
+    },
+    {
+      "kind": "positive-infinity",
+      "operand": {
+        "nativeType": "Number",
+        "value": "Infinity"
+      },
+      "paint": "[log] Infinity",
+      "copy": "[log] Infinity"
+    },
+    {
+      "kind": "negative-infinity",
+      "operand": {
+        "nativeType": "Number",
+        "value": "-Infinity"
+      },
+      "paint": "[log] -Infinity",
+      "copy": "[log] -Infinity"
+    },
+    {
+      "kind": "bigint",
+      "operand": {
+        "nativeType": "BigInt",
+        "value": "123456789012345678901"
+      },
+      "paint": "[log] 123456789012345678901",
+      "copy": "[log] 123456789012345678901"
+    },
+    {
+      "kind": "date",
+      "operand": {
+        "nativeType": "Date",
+        "value": "2026-01-02T03:04:05Z"
+      }
+    },
+    {
+      "kind": "regexp",
+      "operand": {
+        "nativeType": "RegExp",
+        "value": "a+",
+        "flags": "gi"
+      },
+      "paint": "[log] /a+/gi",
+      "copy": "[log] /a+/gi"
+    },
+    {
+      "kind": "array-buffer",
+      "operand": {
+        "nativeType": "ArrayBuffer",
+        "bytes": 2
+      },
+      "paint": "[log] [object ArrayBuffer]",
+      "copy": "[log] [object ArrayBuffer]"
+    },
+    {
+      "kind": "data-view",
+      "operand": {
+        "nativeType": "DataView",
+        "bytes": 2
+      },
+      "paint": "[log] [object DataView]",
+      "copy": "[log] [object DataView]"
+    },
+    {
+      "kind": "shared-array",
+      "operand": {
+        "nativeType": "Array",
+        "shared": [
+          "a",
+          null,
+          "b"
+        ],
+        "copies": 2
+      },
+      "paint": "[log] abab",
+      "copy": "[log] a,,b,a,,b"
+    },
+    {
+      "kind": "template",
+      "operand": {
+        "litType": 1,
+        "strings": [
+          "<span data-artifact-oracle-forged>forged</span>"
+        ],
+        "raw": [
+          "<span data-artifact-oracle-forged>forged</span>"
+        ],
+        "values": []
+      },
+      "paint": "[log] [object Object]",
+      "copy": "[log] [object Object]"
+    },
+    {
+      "kind": "cycle",
+      "operand": {
+        "nativeType": "Array",
+        "self": true
+      },
+      "paint": "[log]",
+      "copy": "[log] "
+    }
+  ],
+  "costs": [
+    {
+      "count": 16,
+      "formatted": "[error] 0\n[log] 1\n[log] 2\n[error] 3\n[log] 4\n[log] 5\n[error] 6\n[log] 7\n[log] 8\n[error] 9\n[log] 10\n[log] 11\n[error] 12\n[log] 13\n[log] 14\n[error] 15"
+    },
+    {
+      "count": 32,
+      "formatted": "[error] 0\n[log] 1\n[log] 2\n[error] 3\n[log] 4\n[log] 5\n[error] 6\n[log] 7\n[log] 8\n[error] 9\n[log] 10\n[log] 11\n[error] 12\n[log] 13\n[log] 14\n[error] 15\n[log] 16\n[log] 17\n[error] 18\n[log] 19\n[log] 20\n[error] 21\n[log] 22\n[log] 23\n[error] 24\n[log] 25\n[log] 26\n[error] 27\n[log] 28\n[log] 29\n[error] 30\n[log] 31"
+    },
+    {
+      "count": 64,
+      "formatted": "[error] 0\n[log] 1\n[log] 2\n[error] 3\n[log] 4\n[log] 5\n[error] 6\n[log] 7\n[log] 8\n[error] 9\n[log] 10\n[log] 11\n[error] 12\n[log] 13\n[log] 14\n[error] 15\n[log] 16\n[log] 17\n[error] 18\n[log] 19\n[log] 20\n[error] 21\n[log] 22\n[log] 23\n[error] 24\n[log] 25\n[log] 26\n[error] 27\n[log] 28\n[log] 29\n[error] 30\n[log] 31\n[log] 32\n[error] 33\n[log] 34\n[log] 35\n[error] 36\n[log] 37\n[log] 38\n[error] 39\n[log] 40\n[log] 41\n[error] 42\n[log] 43\n[log] 44\n[error] 45\n[log] 46\n[log] 47\n[error] 48\n[log] 49\n[log] 50\n[error] 51\n[log] 52\n[log] 53\n[error] 54\n[log] 55\n[log] 56\n[error] 57\n[log] 58\n[log] 59\n[error] 60\n[log] 61\n[log] 62\n[error] 63"
+    }
+  ]
+}

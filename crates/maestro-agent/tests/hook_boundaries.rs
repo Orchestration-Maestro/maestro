@@ -51,7 +51,10 @@ async fn mutation_case() {
         let call = tool_call();
         if let maestro_models::AssistantContent::ToolCall(c) = &mut call.write().unwrap().content[0]
         {
-            c.arguments.insert("value".into(), raw);
+            c.arguments
+                .as_object_mut()
+                .expect("object root")
+                .insert("value".into(), raw);
         }
         let returned = run_agent_loop(
             vec![],
@@ -330,7 +333,7 @@ fn mutation_context(schema: &str, expected: serde_json::Value) -> maestro_agent:
         .write()
         .unwrap()
         .definition
-        .parameters = serde_json::json!({"type":"object","properties":{"value":{"type":schema}},"required":["value"]});
+        .parameters = serde_json::json!({"type":"object","properties":{"value":{"type":schema}},"required":["value"]}).into();
     if schema == "integer" {
         context.tools.as_ref().unwrap().read().unwrap()[0]
             .write()

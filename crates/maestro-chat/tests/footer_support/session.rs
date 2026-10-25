@@ -1,4 +1,5 @@
-//! The interactive-mode test session, built over an in-memory catalog, settings and loader.
+//! The interactive-mode test session, built over a catalog read from its directory and
+//! in-memory settings and loader.
 use maestro_app::resources::resource_loader::ResourceLoader;
 use maestro_app::{
     AgentSession, AgentSessionConfig, AgentSessionServices, AuthStorage, ConfigValues,
@@ -9,19 +10,68 @@ use maestro_app::{
 use maestro_theme::LiveTheme;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-/// A memory session over an in-memory catalog, settings and loader, with its services;
-/// its resource loader is `loader` applied to the default one.
+/// A memory session over its own services; its resource loader is `loader` applied to the
+/// default one.
 pub fn session(
     cwd: &str,
     oauth_provider: Option<&str>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> CreateAgentSessionRuntimeResult {
-    let services = services(cwd, oauth_provider, loader);
+    session_over(cwd, oauth_provider, loader, None)
+}
+
+/// The same session, over a history file under `session_dir` when supplied.
+pub fn session_over(
+    cwd: &str,
+    oauth_provider: Option<&str>,
+    loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
+    session_dir: Option<&str>,
+) -> CreateAgentSessionRuntimeResult {
+    session_with_auth(
+        cwd,
+        Some(Arc::new(AuthStorage::in_memory(credentials(
+            oauth_provider,
+        )))),
+        loader,
+        session_dir,
+    )
+}
+
+/// The same session over the supplied credentials, or an empty in-memory store.
+pub fn session_with_auth(
+    cwd: &str,
+    auth: Option<Arc<AuthStorage>>,
+    loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
+    session_dir: Option<&str>,
+) -> CreateAgentSessionRuntimeResult {
+    let auth = auth.unwrap_or_else(|| Arc::new(AuthStorage::in_memory(credentials(None))));
+    let services = services(cwd, auth, loader);
+    let manager = match session_dir {
+        Some(directory) => SessionManager::create(cwd, Some(directory), &services.agent_dir)
+            .expect("a session history file"),
+        None => return over(cwd, &services),
+    };
+    over_manager(cwd, &services, manager)
+}
+
+/// A memory session over existing `services`, as a replacement session is built.
+pub fn over(
+    cwd: &str,
+    services: &Rc<AgentSessionServices<Local>>,
+) -> CreateAgentSessionRuntimeResult {
+    let manager = SessionManager::in_memory(Some(cwd)).expect("a memory session");
+    over_manager(cwd, services, manager)
+}
+
+/// A session over `manager` and the services built for `cwd`.
+fn over_manager(
+    cwd: &str,
+    services: &Rc<AgentSessionServices<Local>>,
+    manager: SessionManager,
+) -> CreateAgentSessionRuntimeResult {
     let session = AgentSession::new(AgentSessionConfig {
         agent: Rc::default(),
-        session_manager: Rc::new(RefCell::new(
-            SessionManager::in_memory(Some(cwd)).expect("a memory session"),
-        )),
+        session_manager: Rc::new(RefCell::new(manager)),
         settings_manager: Rc::clone(&services.settings_manager),
         cwd: cwd.to_owned(),
         bin_dir: String::new(),
@@ -43,28 +93,30 @@ pub fn session(
     .expect("a memory session");
     CreateAgentSessionRuntimeResult {
         session,
-        services: Rc::clone(&services),
+        services: Rc::clone(services),
         extensions_result: services.resource_loader.get_extensions(),
         diagnostics: Vec::new(),
         model_fallback_message: None,
     }
 }
 
-/// The credentials, catalog, settings and loader the session is built over.
+/// The credentials, settings, loader and catalog the session is built over; the catalog
+/// reads `models.json` in `cwd` when present.
 fn services(
     cwd: &str,
-    oauth_provider: Option<&str>,
+    auth: Arc<AuthStorage>,
     wrap: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> Rc<AgentSessionServices<Local>> {
     let settings = Rc::new(RefCell::new(
         SettingsManager::in_memory(Settings::default()),
     ));
-    let auth = Arc::new(AuthStorage::in_memory(credentials(oauth_provider)));
     let commands: ConfigValues = Arc::new(ProcessConfigValueOperations::new(|| {
         Err(std::io::Error::other("not invoked"))
     }));
+    let models = std::path::Path::new(cwd).join("models.json");
     let registry = Arc::new(
-        ModelRegistry::in_memory(Arc::clone(&auth), commands).expect("an in-memory catalog"),
+        ModelRegistry::create(Arc::clone(&auth), models.display().to_string(), commands)
+            .expect("a catalog"),
     );
     let module_loader: ModuleLoader<Local> = Rc::new(|_| Box::pin(async { Err("unused".into()) }));
     let loader = wrap(Rc::new(DefaultResourceLoader::new(
@@ -86,6 +138,7 @@ fn services(
         model_registry: registry,
         resource_loader: loader,
         diagnostics: Vec::new(),
+        offline: None,
     })
 }
 

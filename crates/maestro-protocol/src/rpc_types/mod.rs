@@ -22,12 +22,13 @@ use crate::schema::{
 use serde::{Deserialize, Serialize};
 
 mod response;
-pub use response::RpcResponse;
+pub use response::{RpcErrorRef, RpcResponse, serialize_rpc_response};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Request record.
-#[schemars(description = "")]
-pub struct Request {
+/// A command with its optional correlation identifier, flattened into one record; the
+/// command family defaults to the workspace commands.
+#[schemars(description = "", rename = "Request")]
+pub struct Request<C = RpcCommand> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Id.
     #[schemars(description = "")]
@@ -35,7 +36,7 @@ pub struct Request {
     #[serde(flatten)]
     /// Command.
     #[schemars(description = "")]
-    pub command: RpcCommand,
+    pub command: C,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]

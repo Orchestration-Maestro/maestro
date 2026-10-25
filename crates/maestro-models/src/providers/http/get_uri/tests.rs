@@ -1,5 +1,10 @@
 //! Source bytes and retained cache observations.
 
+/// Emit a DEBUG event carrying a credential-shaped field, so a capture can prove it sees one.
+pub(super) fn probe_credential(value: &str) {
+    tracing::debug!(password = value, "credential probe");
+}
+
 #[test]
 fn pac_data_sources_preserve_bytes_and_cache_identity() {
     crate::tests::runtime::run(async {
@@ -283,4 +288,6 @@ async fn https_rejects_invalid_identity(trust: bool) {
 }
 
 mod files;
+mod ftp;
+mod listing;
 mod redirects;

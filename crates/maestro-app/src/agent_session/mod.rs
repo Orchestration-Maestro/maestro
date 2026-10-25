@@ -12,7 +12,6 @@ mod prompting;
 mod queues;
 mod retry;
 mod selection;
-mod skill_block;
 mod state;
 mod statistics;
 mod tool_runtime;
@@ -23,8 +22,8 @@ mod types;
 #[cfg(not(target_arch = "wasm32"))]
 mod tests;
 
+pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
 pub(crate) use selection::{model_level, saved_level};
-pub use skill_block::{ParsedSkillBlock, parse_skill_block};
 pub(crate) use state::{agent_messages, content_text, thrown};
 pub use types::*;
 
@@ -37,7 +36,8 @@ use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_extensions::{
     ExtensionExecution, ExtensionRunner, ReplacedSessionContext, SessionStartEvent,
 };
-use maestro_models::{DiagnosticErrorInfo, Local, Model, records::listeners::Listeners};
+use maestro_listeners::Listeners;
+use maestro_models::{DiagnosticErrorInfo, Local, Model};
 use maestro_session::{
     Presence, SessionManager, messages::CustomAgentMessages,
     session_manager::ReadonlySessionManager,
@@ -395,14 +395,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
         operation: impl std::future::Future<Output = T> + 'static,
     ) -> tokio::sync::oneshot::Receiver<T> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let mut task: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> =
-            Box::pin(async move {
-                drop(sender.send(operation.await));
-            });
-        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-        if task.as_mut().poll(&mut context).is_pending() {
-            (self.spawn)(task);
-        }
+        let task = Box::pin(async move {
+            drop(sender.send(operation.await));
+        });
+        crate::utils::task::start_now(task, |task| (self.spawn)(task));
         receiver
     }
 

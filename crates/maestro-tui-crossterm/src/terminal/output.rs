@@ -11,6 +11,7 @@ use tokio::task::JoinHandle;
 use tokio::time::{Instant, MissedTickBehavior, interval_at};
 
 use super::{ProcessTerminal, Shared};
+use crate::output_errors::FailureSource;
 
 /// Enables bracketed paste.
 pub(super) const PASTE_ON: &str = "\x1b[?2004h";
@@ -150,8 +151,8 @@ async fn keepalive(shared: Rc<Shared>, first: Instant) {
     ticks.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
         ticks.tick().await;
-        if let Err(error) = shared.emit(PROGRESS_ACTIVE) {
-            return shared.fail(error);
+        if let Err(error) = shared.write_output(PROGRESS_ACTIVE) {
+            return shared.fail(FailureSource::Output, error);
         }
     }
 }

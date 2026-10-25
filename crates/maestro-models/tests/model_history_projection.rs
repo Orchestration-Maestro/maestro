@@ -581,6 +581,8 @@ mod tests {
             panic!()
         };
         call.arguments
+            .as_object_mut()
+            .expect("projected object root")
             .insert("nested".into(), json!({"changed":true}));
         assistant.response_id = Some("changed".into());
         let Message::User(user) = &mut output[0] else {
@@ -608,7 +610,8 @@ mod tests {
             tools: Some(vec![Tool {
                 name: "first".into(),
                 description: "supplied".into(),
-                parameters: json!({"type":"object", "properties":{"nested":{"type":"object"}}}),
+                parameters: json!({"type":"object", "properties":{"nested":{"type":"object"}}})
+                    .into(),
             }]),
         };
         let original = context.clone();

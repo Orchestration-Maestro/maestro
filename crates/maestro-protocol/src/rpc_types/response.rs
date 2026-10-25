@@ -18,22 +18,58 @@ pub struct RpcResponse {
 
 impl Serialize for RpcResponse {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut map = serializer.serialize_map(None)?;
-        if let Some(id) = &self.id {
-            map.serialize_entry("id", id)?;
-        }
-        map.serialize_entry("type", "response")?;
-        map.serialize_entry("command", &self.command)?;
-        map.serialize_entry("success", &self.result.is_ok())?;
-        match &self.result {
-            Ok(data) => map.serialize_entry("data", data)?,
-            Err(error) => {
-                map.serialize_entry("error", &error.message)?;
-                map.serialize_entry("code", &error.code)?;
+        let result = match &self.result {
+            Ok(data) => Ok(Some(data)),
+            Err(error) => Err(RpcErrorRef {
+                message: &error.message,
+                code: Some(&error.code),
+            }),
+        };
+        serialize_rpc_response(serializer, self.id.as_deref(), Some(&self.command), result)
+    }
+}
+
+/// A borrowed failure of the shared response envelope.
+#[derive(Clone, Copy, Debug)]
+pub struct RpcErrorRef<'a> {
+    /// The human-readable failure.
+    pub message: &'a str,
+    /// The open machine-readable failure kind, written only when present.
+    pub code: Option<&'a str>,
+}
+
+/// Write the shared response envelope: the optional `id`, `type: "response"`, the optional
+/// `command`, `success`, then `data` when a success carries one, or `error` and an optional
+/// `code` for a failure.
+///
+/// # Errors
+/// Returns the serializer's failure.
+pub fn serialize_rpc_response<S: Serializer, T: Serialize>(
+    serializer: S,
+    id: Option<&str>,
+    command: Option<&str>,
+    result: Result<Option<&T>, RpcErrorRef<'_>>,
+) -> Result<S::Ok, S::Error> {
+    let mut map = serializer.serialize_map(None)?;
+    if let Some(id) = id {
+        map.serialize_entry("id", id)?;
+    }
+    map.serialize_entry("type", "response")?;
+    if let Some(command) = command {
+        map.serialize_entry("command", command)?;
+    }
+    map.serialize_entry("success", &result.is_ok())?;
+    match result {
+        Ok(Some(data)) => map.serialize_entry("data", data)?,
+        Ok(None) => {}
+        Err(error) => {
+            map.serialize_entry("error", error.message)?;
+            if let Some(code) = error.code {
+                map.serialize_entry("code", code)?;
             }
         }
-        map.end()
     }
+    map.end()
 }
 
 /// The single response discriminator.

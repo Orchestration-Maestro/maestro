@@ -883,6 +883,21 @@ fn invalid_stream() -> SharedHandle<RwLock<ProviderConfig>> {
     stream
 }
 
+/// Binds command operations whose wait for idle counts its calls.
+fn bind_counting_wait(runner: &ExtensionRunner<Local>, count: Rc<Cell<usize>>) {
+    runner.bind_command_context(Some(
+        maestro_extensions::ExtensionCommandContextActions::new(
+            maestro_extensions::CommandContextOperations {
+                wait_for_idle: Rc::new(move || {
+                    count.set(count.get() + 1);
+                    Box::pin(async { Ok(()) })
+                }),
+                ..super::context_actions::silent_command_operations()
+            },
+        ),
+    ));
+}
+
 pub fn binding_order() {
     let runtime = create_extension_runtime::<Local>();
     let runner = Rc::new(runner_local(runtime.clone(), catalog()));
@@ -922,14 +937,7 @@ pub fn binding_order() {
         unregister_provider: None,
     };
     let commands = Rc::new(Cell::new(0));
-    let count = commands.clone();
-    runner.bind_command_context(Some(maestro_extensions::ExtensionCommandContextActions {
-        wait_for_idle: Rc::new(move || {
-            count.set(count.get() + 1);
-            Box::pin(async { Ok(()) })
-        }),
-        ..Default::default()
-    }));
+    bind_counting_wait(&runner, commands.clone());
     let mut actions = Local::unbound_actions();
     actions.get_session_name = Rc::new(|| Ok(Some("just bound".into())));
     runner

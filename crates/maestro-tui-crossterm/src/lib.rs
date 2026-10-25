@@ -8,3 +8,5 @@ pub use terminal::ProcessTerminal;
 pub mod runtime;
 #[cfg(not(target_arch = "wasm32"))]
 pub use runtime::ProcessTuiRuntime;
+
+mod output_errors;

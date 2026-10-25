@@ -1,5 +1,6 @@
 //! Owned conversion and corrective diagnostics for tool invocations.
 
+mod authored;
 mod check;
 mod coercion;
 mod collections;
@@ -8,8 +9,9 @@ mod formats;
 mod prepare;
 mod references;
 mod scalars;
+mod schema;
 
-use crate::{DiagnosticErrorInfo, JsonObject, Tool, ToolCall};
+use crate::{DiagnosticErrorInfo, Tool, ToolCall};
 use serde_json::Value;
 
 /// Select the first declaration with the invocation's exact name and check its arguments.
@@ -20,7 +22,7 @@ use serde_json::Value;
 pub fn validate_tool_call(
     tools: &[Tool],
     tool_call: &ToolCall,
-) -> Result<JsonObject, DiagnosticErrorInfo> {
+) -> Result<Value, DiagnosticErrorInfo> {
     let tool = tools
         .iter()
         .find(|tool| tool.name == tool_call.name)
@@ -42,15 +44,15 @@ pub fn validate_tool_call(
 pub fn validate_tool_arguments(
     tool: &Tool,
     tool_call: &ToolCall,
-) -> Result<JsonObject, DiagnosticErrorInfo> {
-    let mut candidate = Value::Object(tool_call.arguments.clone());
-    coercion::coerce(&mut candidate, &tool.parameters);
-    let errors = check::check(&tool.parameters, &candidate)
-        .map_err(|error| diagnostic(error.to_string()))?;
-    if errors.is_empty()
-        && let Value::Object(arguments) = candidate
-    {
-        return Ok(arguments);
+) -> Result<Value, DiagnosticErrorInfo> {
+    let schema = tool.parameters.as_json();
+    let mut candidate = tool_call.arguments.clone();
+    authored::convert(&mut candidate, schema, tool.parameters.conversions());
+    coercion::coerce(&mut candidate, schema);
+    let errors =
+        check::check(schema, &[], &candidate).map_err(|error| diagnostic(error.to_string()))?;
+    if errors.is_empty() {
+        return Ok(candidate);
     }
     Err(diagnostic(format!(
         "Validation failed for tool \"{}\":\n{}\n\nReceived arguments:\n{}",
@@ -65,7 +67,7 @@ pub fn validate_tool_arguments(
 /// # Errors
 /// Returns the existing diagnostic when schema preparation fails.
 pub fn validate_schema(schema: &Value, value: &Value) -> Result<Vec<String>, DiagnosticErrorInfo> {
-    check::check(schema, value).map_err(|error| diagnostic(error.to_string()))
+    check::check(schema, &[], value).map_err(|error| diagnostic(error.to_string()))
 }
 
 /// Wrap a corrective message in the existing error record.
