@@ -115,6 +115,8 @@ pub struct Observed {
     pub catalog: super::catalog_host::Bank,
     /// Retained UI acquisition identities and supplied rejections.
     pub ui: super::ui_host::Bank,
+    /// Themes the host publishes under each handed-out key.
+    pub themes: super::theme_host::Bank,
     /// Last identity handed out.
     next: u32,
     /// Registered callback keys by name, such as `event input`.
@@ -274,6 +276,9 @@ impl Observed {
         }
         if custom_type == "ui-control" {
             self.ui.control(data.expect("control document"));
+        }
+        if custom_type == "theme-control" {
+            self.themes.control(data.expect("control document"));
         }
         self.log(format!("entry {custom_type} {}", data.unwrap_or("none")));
     }

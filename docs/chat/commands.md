@@ -8,11 +8,11 @@ waiting input and never enters the editor history. Any other text, including
 `/Model`, `/models`, `/model<Tab>term`, `/scoped-models extra`, `/login extra` and
 `/logout extra`, is ordinary input.
 
-The mode handles shell input and the slash commands `/export`, `/changelog`,
+The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
 `/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
-`/debug`,
-`/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume` and `/quit`. Import, the offline viewer and packaged
-asset injection are not delivered yet (see [what is missing](#what-is-missing)).
+`/debug`, `/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume` and
+`/quit`. The offline viewer and packaged asset injection are not delivered yet (see
+[what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
 methods. Each method reads the runtime's current session when it is called, so it
@@ -128,6 +128,41 @@ transcript's error colour, with the diagnostic the export owner produced. A
 failure to render that notice goes to the terminal runtime's error route, which
 is the route the mode's shortcuts already use.
 
+## `/import`
+
+`/import <path.jsonl>` copies a session into the current session directory and
+replaces the current session after confirmation:
+
+```text
+/import saved.jsonl
+/import "notes from friday.jsonl"
+```
+
+An absent, empty or unterminated path shows `Usage: /import <path.jsonl>`.
+Otherwise the dialog asks `Import session` and
+`Replace current session with <path>?`. No or Escape shows `Import cancelled`
+without changing the current session or its progress. Yes stops the working
+indicator and clears the status area before importing. An extension veto also
+shows `Import cancelled`, but occurs after that progress cleanup.
+
+A successful import replays the imported history and shows
+`Session imported from: <path>`, using the authored path. A missing stored working
+directory opens the existing directory confirmation. Declining leaves the
+current session unchanged; accepting retries the same file once with the offered
+working directory. The copied file is not rolled back after cancellation.
+
+A missing input file shows `Failed to import session: <diagnostic>` and leaves
+ordinary input available. Other first-attempt failures use the fatal error path:
+the final error is rendered, the theme watcher and terminal stop, and the process
+exits with status 1. A retry failure instead reaches the terminal runtime's error
+reporter; it prints the error and keeps running with the input waiter unresolved.
+A rejected operation does not perform the command's final editor clear.
+
+The runtime [binds the mode](interactive-mode.md#session-binding) to the imported
+session before the replay. When the replay and the status line run, the new
+session's UI, settings, shortcuts, footer and window title are already in place, and
+events from the replaced session no longer reach the mode.
+
 ## `/share`
 
 `/share` exports the current session to HTML and publishes it as a secret GitHub
@@ -226,18 +261,18 @@ the extension path when it is absent; an empty description stays empty.
 The reader recognizes the command token, then reads one path. It is token
 reading, not shell parsing:
 
-- The text must be exactly `/export`, or `/export` followed by one space. A
-  prefix such as `/exporter` or `/export` followed by a tab is not the command,
-  and that text is delivered as prompt input.
+- The text must be exactly `/export` or `/import`, or that token followed by
+  one literal space. A prefix such as `/exporter` or `/important`, or either
+  command followed by a tab, is ordinary prompt input.
 - After that single space, leading whitespace is removed under the shared
   [whitespace policy](../terminal/text.md): Unicode white space other than
   U+0085, plus U+FEFF.
 - A quoted path returns the text between the first quote and the next matching
   quote, including empty text. An unterminated quote leaves no path, so the
-  command exports HTML under the default name.
+  export command writes HTML under the default name; import shows its usage.
 - A bare path ends at the first whitespace character. Later tokens are ignored.
 - Nothing is unescaped, expanded or normalized: `~/notes.jsonl` and `"notes
-  from friday.jsonl"` reach the export owner as authored.
+  from friday.jsonl"` reach the import or export operation unchanged.
 
 The first matching quote wins, so `"/export/one"` is the path `/export/one` and a
 second quote character inside the path ends it. Apostrophes are ordinary
@@ -514,8 +549,6 @@ show it once. Checking at startup comes with the prompt loop.
 
 ## What is missing
 
-- Import (`/import <path.jsonl>`) is not delivered. It waits for the shared
-  dialog host and the session rebuild helpers, and it stays part of the same work.
 - The complete offline viewer is separate work (#1762); the export tests supply a
   controlled bundle, so they prove the serializer wiring and not a shipped viewer.
   Until it ships, a share with no bundle installed follows the export failure path
