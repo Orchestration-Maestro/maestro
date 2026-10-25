@@ -1,0 +1,766 @@
+{
+  "preparation": [
+    {
+      "input": {
+        "mode": "absent",
+        "args": null
+      },
+      "expected": {
+        "arguments": null,
+        "calls": 0
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": null
+      },
+      "expected": {
+        "arguments": null,
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": null
+      },
+      "expected": {
+        "arguments": {
+          "prepared": null
+        },
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": null
+      },
+      "expected": {
+        "error": "prepare failed: \u03a9\nline",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": ""
+      },
+      "expected": {
+        "arguments": "",
+        "calls": 0
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": ""
+      },
+      "expected": {
+        "arguments": "",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": ""
+      },
+      "expected": {
+        "arguments": {
+          "prepared": ""
+        },
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": ""
+      },
+      "expected": {
+        "error": "prepare failed: \u03a9\nline",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": 0
+      },
+      "expected": {
+        "arguments": 0,
+        "calls": 0
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": 0
+      },
+      "expected": {
+        "arguments": 0,
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": 0
+      },
+      "expected": {
+        "arguments": {
+          "prepared": 0
+        },
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": 0
+      },
+      "expected": {
+        "error": "prepare failed: \u03a9\nline",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": false
+      },
+      "expected": {
+        "arguments": false,
+        "calls": 0
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": false
+      },
+      "expected": {
+        "arguments": false,
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": false
+      },
+      "expected": {
+        "arguments": {
+          "prepared": false
+        },
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": false
+      },
+      "expected": {
+        "error": "prepare failed: \u03a9\nline",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": {
+          "z": 1,
+          "a": null
+        }
+      },
+      "expected": {
+        "arguments": {
+          "z": 1,
+          "a": null
+        },
+        "calls": 0
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": {
+          "z": 1,
+          "a": null
+        }
+      },
+      "expected": {
+        "arguments": {
+          "z": 1,
+          "a": null
+        },
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": {
+          "z": 1,
+          "a": null
+        }
+      },
+      "expected": {
+        "arguments": {
+          "prepared": {
+            "z": 1,
+            "a": null
+          }
+        },
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": {
+          "z": 1,
+          "a": null
+        }
+      },
+      "expected": {
+        "error": "prepare failed: \u03a9\nline",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": [
+          null,
+          false,
+          "\u96ea"
+        ]
+      },
+      "expected": {
+        "arguments": [
+          null,
+          false,
+          "\u96ea"
+        ],
+        "calls": 0
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": [
+          null,
+          false,
+          "\u96ea"
+        ]
+      },
+      "expected": {
+        "arguments": [
+          null,
+          false,
+          "\u96ea"
+        ],
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": [
+          null,
+          false,
+          "\u96ea"
+        ]
+      },
+      "expected": {
+        "arguments": {
+          "prepared": [
+            null,
+            false,
+            "\u96ea"
+          ]
+        },
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": [
+          null,
+          false,
+          "\u96ea"
+        ]
+      },
+      "expected": {
+        "error": "prepare failed: \u03a9\nline",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": "\ufeff\u0085\u96ea"
+      },
+      "expected": {
+        "arguments": "\ufeff\u0085\u96ea",
+        "calls": 0
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": "\ufeff\u0085\u96ea"
+      },
+      "expected": {
+        "arguments": "\ufeff\u0085\u96ea",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": "\ufeff\u0085\u96ea"
+      },
+      "expected": {
+        "arguments": {
+          "prepared": "\ufeff\u0085\u96ea"
+        },
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": "\ufeff\u0085\u96ea"
+      },
+      "expected": {
+        "error": "prepare failed: \u03a9\nline",
+        "calls": 1
+      }
+    },
+    {
+      "input": {
+        "mode": "mutate",
+        "args": {
+          "kept": "old",
+          "deleted": "old"
+        }
+      },
+      "expected": {
+        "arguments": {
+          "kept": "new",
+          "deleted": "old"
+        }
+      }
+    },
+    {
+      "input": {
+        "mode": "add",
+        "args": {
+          "kept": "old",
+          "deleted": "old"
+        }
+      },
+      "expected": {
+        "arguments": {
+          "kept": "old",
+          "deleted": "old",
+          "added": "new"
+        }
+      }
+    },
+    {
+      "input": {
+        "mode": "delete",
+        "args": {
+          "kept": "old",
+          "deleted": "old"
+        }
+      },
+      "expected": {
+        "arguments": {
+          "kept": "old"
+        }
+      }
+    },
+    {
+      "input": {
+        "mode": "signed_zero",
+        "literal": "-0"
+      },
+      "expected": {
+        "negative_zero": true
+      }
+    }
+  ],
+  "validation": [
+    {
+      "input": {
+        "mode": "absent",
+        "args": null
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\nnull",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": null
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\nnull",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": null
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "prepared": null
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": null
+      },
+      "expected": {
+        "phase": "preparation",
+        "error": "prepare failed: \u03a9\nline",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": ""
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\n\"\"",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": ""
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\n\"\"",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": ""
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "prepared": ""
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": ""
+      },
+      "expected": {
+        "phase": "preparation",
+        "error": "prepare failed: \u03a9\nline",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": 0
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\n0",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": 0
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\n0",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": 0
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "prepared": 0
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": 0
+      },
+      "expected": {
+        "phase": "preparation",
+        "error": "prepare failed: \u03a9\nline",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": false
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\nfalse",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": false
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\nfalse",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": false
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "prepared": false
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": false
+      },
+      "expected": {
+        "phase": "preparation",
+        "error": "prepare failed: \u03a9\nline",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": {
+          "z": 1,
+          "a": null
+        }
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "z": 1,
+          "a": null
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": {
+          "z": 1,
+          "a": null
+        }
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "z": 1,
+          "a": null
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": {
+          "z": 1,
+          "a": null
+        }
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "prepared": {
+            "z": 1,
+            "a": null
+          }
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": {
+          "z": 1,
+          "a": null
+        }
+      },
+      "expected": {
+        "phase": "preparation",
+        "error": "prepare failed: \u03a9\nline",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": [
+          null,
+          false,
+          "\u96ea"
+        ]
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\n[\n  null,\n  false,\n  \"\u96ea\"\n]",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": [
+          null,
+          false,
+          "\u96ea"
+        ]
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\n[\n  null,\n  false,\n  \"\u96ea\"\n]",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": [
+          null,
+          false,
+          "\u96ea"
+        ]
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "prepared": [
+            null,
+            false,
+            "\u96ea"
+          ]
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": [
+          null,
+          false,
+          "\u96ea"
+        ]
+      },
+      "expected": {
+        "phase": "preparation",
+        "error": "prepare failed: \u03a9\nline",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "absent",
+        "args": "\ufeff\u0085\u96ea"
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\n\"\ufeff\u0085\u96ea\"",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "same",
+        "args": "\ufeff\u0085\u96ea"
+      },
+      "expected": {
+        "phase": "validation",
+        "error": "Validation failed for tool \"echo\":\n  - root: must be object\n\nReceived arguments:\n\"\ufeff\u0085\u96ea\"",
+        "executed": false
+      }
+    },
+    {
+      "input": {
+        "mode": "replace",
+        "args": "\ufeff\u0085\u96ea"
+      },
+      "expected": {
+        "phase": "execution",
+        "arguments": {
+          "prepared": "\ufeff\u0085\u96ea"
+        },
+        "executed": true
+      }
+    },
+    {
+      "input": {
+        "mode": "throw",
+        "args": "\ufeff\u0085\u96ea"
+      },
+      "expected": {
+        "phase": "preparation",
+        "error": "prepare failed: \u03a9\nline",
+        "executed": false
+      }
+    }
+  ]
+}

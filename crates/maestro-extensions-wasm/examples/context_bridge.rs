@@ -34,6 +34,9 @@ mod reads;
 #[path = "context_bridge/registrations.rs"]
 mod registrations;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/results.rs"]
+mod results;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/retained.rs"]
 mod retained;
 

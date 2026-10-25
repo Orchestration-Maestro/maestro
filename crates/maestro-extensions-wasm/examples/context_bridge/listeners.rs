@@ -49,6 +49,21 @@ enum Op {
         /// Literal channel.
         channel: String,
     },
+    /// Registers tool `echo`, with or without preparation.
+    Echo {
+        /// Whether the tool prepares its arguments.
+        prepare: bool,
+    },
+    /// Selects how later preparations answer.
+    PrepareMode {
+        /// Authored answer.
+        mode: String,
+    },
+    /// Requests compaction with `absent`, `empty` or `full` options.
+    Compact {
+        /// Options presence.
+        options: String,
+    },
 }
 
 /// An authored listener: what its prefix records, its tail and its one-time edits.
@@ -163,12 +178,14 @@ pub(super) async fn run(
     let programs = PROGRAMS.with(Rc::clone);
     let ops: Vec<Op> = serde_json::from_str(args).map_err(|error| error.to_string())?;
     for op in ops {
-        if let Op::EmitAndWait { channel } = op {
-            emit(&api, &channel, Value::Null).await?;
-            context.wait_for_idle().await?;
-            trace(&api.events(), &api, "emitter:resumed").await?;
-        } else {
-            step(&api, &programs, op).await?;
+        match op {
+            Op::EmitAndWait { channel } => {
+                emit(&api, &channel, Value::Null).await?;
+                context.wait_for_idle().await?;
+                trace(&api.events(), &api, "emitter:resumed").await?;
+            }
+            Op::Compact { options } => super::results::compact(&api, &context, &options).await?,
+            op => step(&api, &programs, op).await?,
         }
     }
     Ok(())
@@ -180,6 +197,11 @@ async fn step(api: &ExtensionAPI, programs: &Rc<Programs>, op: Op) -> ExtensionR
         Op::Emit { channel, data } => emit(api, &channel, data).await,
         Op::Tool => tool(api),
         Op::Typed { channel } => typed(api, channel),
+        Op::Echo { prepare } => super::results::echo(api, prepare),
+        Op::PrepareMode { mode } => {
+            super::results::set_mode(mode);
+            Ok(())
+        }
         op => edit(api, programs, op),
     }
 }

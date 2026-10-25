@@ -2,6 +2,7 @@
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
 mod callback_ordering;
+mod callback_results;
 mod canonical_api;
 mod canonical_callbacks;
 mod canonical_commands;
