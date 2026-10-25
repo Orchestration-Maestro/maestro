@@ -83,3 +83,5 @@ mod display_context;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/session.rs"]
 mod session;
+
+mod executable_schemas;

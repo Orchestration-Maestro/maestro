@@ -88,6 +88,14 @@ impl Route {
         (send, route)
     }
 
+    /// Returns a catchable failure discovered before native admission.
+    pub(crate) fn failed(error: String) -> Self {
+        let (send, result) = std::sync::mpsc::channel();
+        let (_, route) = Self::new(result);
+        let _ = send.send(Err(error));
+        route
+    }
+
     /// Waits for the next nested call, or for the operation's own result once it returned.
     pub(crate) fn next(&mut self) -> Result<Nested, Result<(), String>> {
         self.nested.recv().map_err(|_| {

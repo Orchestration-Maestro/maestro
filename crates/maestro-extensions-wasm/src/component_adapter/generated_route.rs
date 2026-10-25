@@ -83,6 +83,11 @@ fn dispatch(call: host::LocalCall) -> Running {
             &call.args,
             &call.emitter,
         )),
+        host::LocalCall::Schema(call) => host::LocalResult::Schema(
+            exports
+                .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
+                .map_err(crate::schema_error::to_wire),
+        ),
         host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
         call => return asynchronous(call),
     };
@@ -194,4 +199,38 @@ pub(super) async fn bash(
         .invoke_bash(&operations, request, resources)
         .await?
         .exit_code)
+}
+
+/// Walks the retained native snapshot without changing mixed callback order.
+pub(super) fn walk_snapshot(
+    emitter: &host::CallbackEmitter,
+    snapshot: u32,
+    tags: &[Option<u32>],
+    data: &str,
+) -> ExtensionResult<()> {
+    let mut index = 0;
+    while index < tags.len() {
+        if let Some(id) = tags[index] {
+            let local = host::callback_begin_local(
+                emitter,
+                snapshot,
+                u32::try_from(index).map_err(|error| error.to_string())?,
+            )?;
+            let result = Exports::new(Generated).invoke_listener(id, data, &local);
+            drive(&host::callback_end_local(&local, result.err().as_deref()))?;
+            index += 1;
+        } else {
+            let start = index;
+            while index < tags.len() && tags[index].is_none() {
+                index += 1;
+            }
+            drive(&host::callback_segment(
+                emitter,
+                snapshot,
+                u32::try_from(start).map_err(|error| error.to_string())?,
+                u32::try_from(index).map_err(|error| error.to_string())?,
+            ))?;
+        }
+    }
+    Ok(())
 }

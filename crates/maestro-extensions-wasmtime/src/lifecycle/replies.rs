@@ -129,13 +129,22 @@ impl Replies {
         registry: &crate::local_resources::Registry,
         start: impl FnOnce(Reply<T>) -> Result<(), String>,
     ) -> Result<T, String> {
+        self.synchronous_with(registry, None, |reply, _| start(reply))
+    }
+    /// Wait for a typed guest result while lending an invocation-local JSON operand.
+    pub(crate) fn synchronous_with<T: Send + 'static>(
+        &self,
+        registry: &crate::local_resources::Registry,
+        value: Option<&mut serde_json::Value>,
+        start: impl FnOnce(Reply<T>, crate::schema_reads::Endpoint) -> Result<(), String>,
+    ) -> Result<T, String> {
         let (sender, result) = std::sync::mpsc::channel();
-        registry.invoke_sync(|completion| {
+        registry.invoke_sync(value, |completion, node| {
             let reply = self.register(move |value| {
                 let _ = sender.send(value);
                 completion.complete(Ok(()));
             })?;
-            start(reply)
+            start(reply, node)
         })?;
         result.recv().map_err(|_| "extension guest reply ended")?
     }

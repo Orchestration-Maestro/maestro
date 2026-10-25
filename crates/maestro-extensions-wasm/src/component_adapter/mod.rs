@@ -21,6 +21,7 @@ mod generated;
 mod host_api;
 mod imports;
 mod model_registry;
+mod schema;
 mod session;
 mod setup;
 mod tools;
@@ -34,3 +35,8 @@ pub(crate) use exports::{EventOutcome, outcome};
 #[cfg(target_arch = "wasm32")]
 pub use generated::Glue;
 pub(crate) use imports::Imports;
+
+pub(crate) use imports::ToolListing;
+
+/// Decode a complete JSON payload with the nesting admitted by authored schemas.
+pub(crate) use maestro_request::parameter_schema::transport::decode_json;

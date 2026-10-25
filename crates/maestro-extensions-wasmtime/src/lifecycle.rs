@@ -29,6 +29,8 @@ pub(crate) struct State {
     api: Endpoint,
     /// Weak callback registration and the single reply/fault owner.
     callbacks: Callbacks,
+    /// The original retained pub.
+    pub(crate) exports: Option<Arc<Exports>>,
 }
 impl State {
     /// Constructs the one instance state before canonical linking.
@@ -38,6 +40,7 @@ impl State {
             table: ResourceTable::new(),
             api,
             callbacks,
+            exports: None,
         }
     }
 }
@@ -55,6 +58,11 @@ impl crate::api_imports::ApiView for State {
     }
 }
 impl crate::callback_imports::CallbackView for State {
+    fn exports(&self) -> Result<Arc<Exports>, String> {
+        self.exports
+            .clone()
+            .ok_or_else(|| "extension exports unavailable".into())
+    }
     fn callbacks(&mut self) -> &mut Callbacks {
         &mut self.callbacks
     }
@@ -77,6 +85,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::session_imports::add_to_linker(&mut host)?;
     crate::effect_imports::add_to_linker(&mut host)?;
     crate::event_imports::add_to_linker(&mut host)?;
+    crate::schema_imports::add_to_linker(&mut host)?;
     crate::registration_imports::add_to_linker(&mut host)?;
     crate::import_route::link(&mut host)
 }

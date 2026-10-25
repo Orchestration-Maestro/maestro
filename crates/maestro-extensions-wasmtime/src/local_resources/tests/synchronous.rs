@@ -19,7 +19,7 @@ fn synchronous_native_callbacks_service_nested_original_context_reads() {
     let (first, first_calls) = mpsc::channel::<Completion>();
     let second_registry = registry.clone();
     let second_callback: AgentToolUpdateCallback<serde_json::Value, Local> = Rc::new(move |_| {
-        let nested = second_registry.invoke_sync(|completion| {
+        let nested = second_registry.invoke_sync(None, |completion, _| {
             completion.complete(Ok(()));
             Ok(())
         });
@@ -36,7 +36,9 @@ fn synchronous_native_callbacks_service_nested_original_context_reads() {
         completion.complete(Ok(()));
     });
     registry
-        .invoke_sync(|completion| first.send(completion).map_err(|error| error.to_string()))
+        .invoke_sync(None, |completion, _| {
+            first.send(completion).map_err(|error| error.to_string())
+        })
         .unwrap();
     guest.join().unwrap();
     drop((registry, admission, pump));
@@ -48,7 +50,7 @@ fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
     let registry = pump.registry();
     assert_eq!(
         registry
-            .invoke_sync(|completion| {
+            .invoke_sync(None, |completion, _| {
                 drop(completion);
                 Ok(())
             })
@@ -56,7 +58,7 @@ fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
         "extension guest reply ended"
     );
     registry
-        .invoke_sync(|completion| {
+        .invoke_sync(None, |completion, _| {
             completion.complete(Ok(()));
             Ok(())
         })
@@ -64,7 +66,7 @@ fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
     drop(pump);
     drop(admission);
     assert_eq!(
-        registry.invoke_sync(|_| Ok(())).unwrap_err(),
+        registry.invoke_sync(None, |_, _| Ok(())).unwrap_err(),
         "extension resource owner ended"
     );
 }
@@ -79,7 +81,7 @@ fn consecutive_synchronous_invocations_return_without_the_caller_task_yielding()
             let registry = pump.registry();
             for _ in 0..1000 {
                 registry
-                    .invoke_sync(|completion| {
+                    .invoke_sync(None, |completion, _| {
                         completion.complete(Ok(()));
                         Ok(())
                     })
@@ -127,7 +129,9 @@ fn synchronous_wait_returns_receiver_wakeups_to_the_suspended_async_owner() {
         completion.complete(Ok(()));
     });
     registry
-        .invoke_sync(|completion| calls.send(completion).map_err(|error| error.to_string()))
+        .invoke_sync(None, |completion, _| {
+            calls.send(completion).map_err(|error| error.to_string())
+        })
         .unwrap();
     guest.join().unwrap();
     assert!(
@@ -151,7 +155,7 @@ fn other_store_invocation_during_a_blocking_request_completes() {
             let invoked = crate::tests::during_routed_request(
                 &mut pump,
                 move || {
-                    target.invoke_sync(|completion| {
+                    target.invoke_sync(None, |completion, _| {
                         started.send(completion).map_err(|error| error.to_string())
                     })
                 },

@@ -83,6 +83,7 @@ async fn execute(
     let mut store = Store::new(&engine, state);
     let instance = linker.instantiate_async(&mut store, &component).await?;
     let exports = Arc::new(crate::guest_exports::Exports::new(&mut store, &instance)?);
+    store.data_mut().exports = Some(exports.clone());
     if let Err(error) = lifecycle::drive(&mut store, exports, incoming, calls).await {
         replies.fault(format!("component fault {path}: {error:#}"));
         lifecycle::faulted(incoming).await;

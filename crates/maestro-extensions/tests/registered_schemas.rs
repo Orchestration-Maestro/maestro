@@ -29,10 +29,10 @@ fn registered_schema_origin_survives_native_retention() {
     let bus = support::LocalBus::new();
     let loaded = support::loaded("owner", bus.controller.for_extension());
     let mut wrapped_source = tool_support::definition("echo", "Echo");
-    wrapped_source.definition.parameters = mixed();
+    wrapped_source.definition.parameters = mixed().with_code(maestro_models::SchemaCode::default());
     let wrapped = maestro_tools::local::wrap_tool_definition(wrapped_source, None);
     let mut definition = tool_support::definition("echo", "Echo");
-    definition.definition.parameters = mixed();
+    definition.definition.parameters = mixed().with_code(maestro_models::SchemaCode::default());
     loaded.api.register_tool(definition).expect("registration");
 
     let retained = {

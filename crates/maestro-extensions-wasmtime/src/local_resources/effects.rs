@@ -4,7 +4,7 @@ use maestro_extensions::callbacks::CallbackFrame;
 use maestro_extensions::{AgentToolUpdateCallback, LiveTheme, Local, Subscription};
 use std::sync::{Arc, mpsc};
 
-mod emission;
+pub(crate) mod emission;
 
 /// Catchable results returned to the waiting Store thread.
 type Reply = mpsc::Sender<Result<(), String>>;

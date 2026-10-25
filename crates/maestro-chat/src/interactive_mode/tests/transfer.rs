@@ -137,22 +137,22 @@ pub(super) fn branches(world: &World, directory: &Path) {
 }
 
 /// A started mode over `directory` whose session is a published two-branch history.
-fn exportable(directory: &Path) -> World {
-    let world = started(directory);
+async fn exportable(directory: &Path) -> World {
+    let world = started(directory).await;
     branches(&world, directory);
     world
 }
 
 /// A started mode over `directory` whose session is published and whose theme registry
 /// reads the shipped documents the bundle package carries.
-pub(super) fn themed(directory: &Path, package: &Path) -> World {
+pub(super) async fn themed(directory: &Path, package: &Path) -> World {
     let directories = themes(package);
     let world = Setup {
         directories: Some(directories),
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     branches(&world, directory);
     world
@@ -250,9 +250,9 @@ const EXPORT_CASES: [(&str, Format, Option<&str>); 11] = [
 fn transfer_export_selects_suffix_and_reports_the_returned_path() {
     isolated_package(
         "transfer_export_selects_suffix_and_reports_the_returned_path",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = themed(directory, package);
+            let world = themed(directory, package).await;
             for (text, format, authored) in EXPORT_CASES {
                 submit(&world.mode, text);
                 let returned = match (format, authored) {
@@ -284,9 +284,9 @@ fn transfer_export_selects_suffix_and_reports_the_returned_path() {
 fn transfer_export_errors_are_recoverable_and_keep_the_exact_prefix() {
     isolated_package(
         "transfer_export_errors_are_recoverable_and_keep_the_exact_prefix",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             // A file where the export needs a directory refuses both export routes.
             std::fs::write(directory.join("blocked"), "").unwrap();
             let session = world.host.session();
@@ -339,9 +339,9 @@ const SUBMISSIONS: [(&str, bool); 8] = [
 fn transfer_installed_submit_consumes_only_export_commands() {
     isolated_package(
         "transfer_installed_submit_consumes_only_export_commands",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = themed(directory, package);
+            let world = themed(directory, package).await;
             // The history the earlier submissions left, oldest first.
             let mut recorded: Vec<String> = Vec::new();
             for (text, command) in SUBMISSIONS {
@@ -386,9 +386,9 @@ fn transfer_installed_submit_consumes_only_export_commands() {
 fn transfer_submit_clears_after_export_failure_without_consuming_input() {
     isolated_package(
         "transfer_submit_clears_after_export_failure_without_consuming_input",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             std::fs::write(directory.join("blocked"), "").unwrap();
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, "/export blocked/lost.jsonl");
@@ -407,9 +407,9 @@ fn transfer_submit_clears_after_export_failure_without_consuming_input() {
 fn transfer_jsonl_command_writes_current_branch_with_original_path() {
     isolated_package(
         "transfer_jsonl_command_writes_current_branch_with_original_path",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             let before = leaf(&world);
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, "/export \"with space.jsonl\"");
@@ -446,9 +446,9 @@ fn transfer_jsonl_command_writes_current_branch_with_original_path() {
 fn transfer_html_command_uses_native_assets_and_the_current_session_environment() {
     isolated_package(
         "transfer_html_command_uses_native_assets_and_the_current_session_environment",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = themed(directory, package);
+            let world = themed(directory, package).await;
             submit(&world.mode, "/export page.html");
             assert_last_row(
                 &world,
@@ -493,10 +493,10 @@ fn transfer_html_command_uses_native_assets_and_the_current_session_environment(
 fn transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order() {
     isolated_package(
         "transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
             bundle(&layout_dir(package, "dist"), "DIST");
-            let world = themed(directory, package);
+            let world = themed(directory, package).await;
             // The source checkout selects its source bundle, not the distribution one.
             submit(&world.mode, "/export chosen.html");
             let chosen = std::fs::read_to_string(directory.join("chosen.html")).unwrap();
@@ -530,7 +530,7 @@ fn transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order()
 fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
     isolated_package(
         "transfer_export_failure_keeps_waiter_and_releases_the_mode",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
             let World {
                 mode,
@@ -539,7 +539,7 @@ fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
                 themes,
                 host,
                 loader,
-            } = exportable(directory);
+            } = exportable(directory).await;
             std::fs::write(directory.join("blocked"), "").unwrap();
             let mut waiter = waiting(&mode);
             submit(&mode, "/export blocked/lost.jsonl");
@@ -565,9 +565,9 @@ fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
 fn transfer_notice_failure_uses_existing_runtime_error_route() {
     isolated_package(
         "transfer_notice_failure_uses_existing_runtime_error_route",
-        |directory, package| {
+        async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             // A published theme without the status colour makes the notice fail after the
             // export itself wrote its file.
             let bare = Rc::new(

@@ -19,6 +19,13 @@ pub(crate) type Work = std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>;
 pub(crate) enum Message {
     /// Completes an admitted synchronous guest call through this same receiver.
     Completed(u64, Result<(), String>),
+    /// The original retained Json.
+    Json(u64, crate::schema_reads::Request),
+    /// Live declarations with their original schema callback identities.
+    SchemaListing(
+        u64,
+        std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
+    ),
     /// An operation on its original guarded context.
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
@@ -204,20 +211,12 @@ enum Capability {
 
 /// Local entries and their monotonic identities.
 #[derive(Default)]
-struct Resources {
+pub(crate) struct Resources {
     /// Next identity; released identities are never reused.
     next: u64,
     /// Weak native callback identities by allocation address; each weak handle keeps its
     /// address from reuse and retains no guest admission.
-    listeners: std::collections::HashMap<
-        usize,
-        (
-            std::rc::Weak<
-                <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::Listener,
-            >,
-            u32,
-        ),
-    >,
+    pub(crate) identities: std::collections::HashMap<usize, Identity>,
     /// Identity count at which retired identities are dropped, doubling so the work stays linear.
     prune_at: usize,
     /// Each entry owns exactly the capability identified by its lease.
@@ -228,7 +227,7 @@ struct Resources {
 #[derive(Clone)]
 pub(crate) struct Registry {
     /// Shared local entries; never borrowed while invoking domain code.
-    resources: Rc<RefCell<Resources>>,
+    pub(crate) resources: Rc<RefCell<Resources>>,
     /// Registration services do not grant their own admission.
     requests: WeakUnboundedSender<Message>,
     /// Receiver access is weak until a synchronous invocation has been admitted.
@@ -350,7 +349,7 @@ impl Registry {
         call: crate::guest_calls::Call,
     ) -> Result<(), String> {
         match self.route() {
-            Some(route) => self.invoke_sync(|prefix| {
+            Some(route) => self.invoke_sync(None, |prefix, _| {
                 crate::import_route::Nested::send(&route, call, Some(prefix))
             }),
             None => endpoint.send(call),
@@ -387,3 +386,43 @@ mod pump;
 
 #[cfg(test)]
 mod tests;
+
+/// Weak callback identities share one cache without retaining domain code or Store admission.
+pub(crate) enum Identity {
+    /// The original weak listener allocation and guest callback identity.
+    Listener(
+        std::rc::Weak<
+            <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::Listener,
+        >,
+        u32,
+    ),
+    /// The original weak schema allocation and guest callback admission.
+    Schema(crate::schema_registration::Identity),
+}
+impl Identity {
+    /// Whether the original callback still has a strong capture owner.
+    pub(crate) fn alive(&self) -> bool {
+        match self {
+            Self::Listener(weak, _) => weak.strong_count() > 0,
+            Self::Schema((weak, _)) => weak.strong_count() > 0,
+        }
+    }
+}
+impl Resources {
+    /// Insert one weak identity with amortized retirement.
+    pub(crate) fn identity(&mut self, key: usize, identity: Identity) {
+        if self.identities.len() >= self.prune_at {
+            #[cfg(test)]
+            effects::emission::CAPACITY
+                .set(effects::emission::CAPACITY.get() + self.identities.capacity());
+            self.identities.retain(|_, identity| {
+                effects::emission::inspect();
+                identity.alive()
+            });
+            // `retain` scans every bucket, so retired capacity must not outlive the prune.
+            self.identities.shrink_to_fit();
+            self.prune_at = 2 * self.identities.len() + 1;
+        }
+        self.identities.insert(key, identity);
+    }
+}

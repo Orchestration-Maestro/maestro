@@ -466,14 +466,14 @@ fn edited_content(params: &ArtifactsParams, current: &str) -> Result<String, Str
     Ok(current.replacen(old.as_str(), new, 1))
 }
 /// The model-facing declaration shared by both executable tools and history replay.
-fn definition() -> Tool {
+fn definition<C: Default>() -> Tool<C> {
     Tool {
         name: "artifacts".into(),
         description: artifacts_tool_description(&[
             ATTACHMENTS_RUNTIME_DESCRIPTION,
             ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO,
         ]),
-        parameters: schema(),
+        parameters: schema().with_code(C::default()),
     }
 }
 /// Artifact view selected from the literal filename suffix.

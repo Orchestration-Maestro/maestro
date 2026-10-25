@@ -98,6 +98,7 @@ kinds! {
         Tool(crate::ToolExecute),
         Component(crate::Component),
         Bash(crate::BashOperations),
+        Schema(crate::schema_code::Handler),
     }
     once {
         WithSession(WithSession),
@@ -182,6 +183,12 @@ impl<I: Imports> Identity<I> {
         }
     }
 
+    /// Adopt a fresh host-supplied identity for a retained originating callback.
+    pub(super) fn from_handle(imports: &I, handle: I::Callback) -> Self {
+        let id = imports.callback_id(&handle);
+        Self { handle, id }
+    }
+
     /// Keeps a closure for the identity until the host releases it. Dropping the identity
     /// without calling this retains nothing, which rolls back a rejected registration.
     pub(super) fn keep(self, closure: impl Stored) {
@@ -208,6 +215,12 @@ pub(super) struct Scoped<I: Imports> {
 }
 
 impl<I: Imports> Scoped<I> {
+    /// Adopt an already retained local identity and release it on every exit path.
+    pub(super) fn from_handle(imports: &I, handle: I::Callback) -> Self {
+        let id = imports.callback_id(&handle);
+        Self { handle, id }
+    }
+
     /// Registers a closure that lives only for one operation.
     pub(super) fn new(imports: &I, closure: impl Stored) -> Self {
         let Identity { handle, id } = Identity::<I>::new(imports);

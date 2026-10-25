@@ -4076,6 +4076,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-entry",
  "maestro-json",
+ "maestro-models",
  "maestro-request",
  "maestro-tool",
  "regex",

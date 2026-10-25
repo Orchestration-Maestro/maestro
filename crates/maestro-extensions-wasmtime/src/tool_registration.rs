@@ -1,5 +1,5 @@
 //! Authored metadata becomes the real native local tool definition.
-use crate::{guest_calls::Handle, local_resources::Registry};
+use crate::local_resources::Registry;
 use maestro_extensions::{
     EventBus, Local, Presence, Tool, ToolExecutionMode, ToolRenderShell, local::ToolDefinition,
 };
@@ -52,13 +52,16 @@ fn optional<T>(value: Presence<T>) -> Option<T> {
 /// Retains actual prepare/execute closures without supplying a context factory at registration.
 pub(crate) fn definition(
     metadata: &str,
-    prepare: Option<Handle>,
-    execute: Handle,
+    callbacks: crate::schema_registration::ToolCallbacks,
     registry: Registry,
     events: EventBus<Local>,
-) -> Result<ToolDefinition<maestro_extensions::ExtensionContext, Value, Value, ()>, String> {
+) -> Result<ToolDefinition<maestro_extensions::ExtensionContext, Value, Value>, String> {
+    let (prepare, execute, schemas) = callbacks;
     let (metadata, parameters): (Metadata, _) =
-        maestro_extensions::schema_transport::decode_metadata(metadata)?;
+        maestro_extensions::schema_transport::decode_metadata::<Metadata, ()>(metadata)?;
+    let parameters = parameters.with_code(crate::schema_registration::code(
+        schemas, &registry, &events,
+    ));
     let prepare_arguments = prepare.map(|prepare| prepare.prepare(registry.clone(), events));
     Ok(ToolDefinition {
         definition: Tool {

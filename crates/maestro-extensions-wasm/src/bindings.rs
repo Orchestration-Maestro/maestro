@@ -10,7 +10,11 @@
 
 wit_bindgen::generate!({
     path: "wit",
-    async: ["-import:maestro:extension/host@0.1.0#callback-emit"],
+    async: [
+        "-import:maestro:extension/host@0.1.0#callback-emit",
+        "-import:maestro:extension/host@0.1.0#get-all-tools",
+        "-import:maestro:extension/host@0.1.0#register-tool",
+    ],
     world: "extension",
     pub_export_macro: true,
     default_bindings_module: "maestro_extensions_wasm::bindings",
@@ -39,6 +43,7 @@ pub(crate) mod host_side {
             "maestro:extension/host.import-route": crate::tests::host::Route,
             "maestro:extension/host.local-settlement": crate::tests::host::Settlement,
             "maestro:extension/host.callback": crate::tests::host::Identity,
+            "maestro:extension/host.json-node": crate::tests::host::JsonNode,
             "maestro:extension/host.abort-signal": crate::tests::host::Flag,
             "maestro:extension/host.context": crate::tests::host::Ordinary,
             "maestro:extension/host.command-context": crate::tests::host::Command,

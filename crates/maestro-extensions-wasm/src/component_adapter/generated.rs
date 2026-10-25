@@ -24,6 +24,19 @@ mod route;
 struct Generated;
 
 impl Imports for Generated {
+    type JsonNode = host::JsonNode;
+    fn get_all_tools(&self) -> ExtensionResult<super::ToolListing<Self::Callback>> {
+        let listing = host::get_all_tools()?;
+        Ok((
+            listing.metadata,
+            listing
+                .schemas
+                .into_iter()
+                .map(|b| (b.tool, b.pointer, b.handler))
+                .collect(),
+        ))
+    }
+
     fn callback_emit(
         &self,
         emitter: &Self::Emitter,
@@ -31,7 +44,7 @@ impl Imports for Generated {
         data: &str,
     ) -> ExtensionResult<()> {
         let (snapshot, tags) = host::callback_emit(emitter, channel, data)?;
-        let result = walk_snapshot(emitter, snapshot, &tags, data);
+        let result = route::walk_snapshot(emitter, snapshot, &tags, data);
         let end = host::callback_end_snapshot(emitter, snapshot);
         result.and(end)
     }
@@ -43,7 +56,7 @@ impl Imports for Generated {
         set_label(entry_id: &str, label: Option<&str>) => host::set_label;
         set_active_tools(tool_names: &[String]) => host::set_active_tools;
         set_thinking_level(level: &str) => host::set_thinking_level;
-        register_tool(metadata: &str, prepare: Option<&host::Callback>, execute: &host::Callback) => host::register_tool;
+        register_tool(metadata: &str, prepare: Option<&host::Callback>, execute: &host::Callback, schemas: &[(String, &host::Callback)]) => host::register_tool;
         append_entry(custom_type: &str, data: Option<&str>) => host::append_entry;
     } }
     forward_resources! { routed {
@@ -66,7 +79,6 @@ impl Imports for Generated {
     forward_resources! { functions {
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
         get_active_tools() -> ExtensionResult<Vec<String>> => host::get_active_tools;
-        get_all_tools() -> ExtensionResult<String> => host::get_all_tools;
         get_commands() -> ExtensionResult<String> => host::get_commands;
         get_thinking_level() -> ExtensionResult<String> => host::get_thinking_level;
         event_on(channel: &str, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::event_on;
@@ -79,6 +91,13 @@ impl Imports for Generated {
         get_flag(name: &str) -> ExtensionResult<Option<FlagValue>> => host::get_flag;
     } }
     forward_resources! {
+        json_kind(node: &Self::JsonNode, path: &str) -> ExtensionResult<Option<host::JsonKind>> => kind(path);
+        json_read(node: &Self::JsonNode, path: &str) -> ExtensionResult<Option<String>> => read(path);
+        json_keys(node: &Self::JsonNode, path: &str) -> ExtensionResult<Vec<String>> => keys(path);
+        json_set(node: &Self::JsonNode, path: &str, key: &str, value: &str) -> ExtensionResult<()> => set(path, key, value);
+        json_delete(node: &Self::JsonNode, path: &str, key: &str) -> ExtensionResult<()> => delete(path, key);
+        json_splice(node: &Self::JsonNode, path: &str, range: (u32, u32), values: &[String]) -> ExtensionResult<Vec<String>> => splice(path, range, values);
+        callback_id(callback: &Self::Callback) -> u32 => id();
         unsubscribe(subscription: &Self::Subscription) -> ExtensionResult<()> => unsubscribe();
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
@@ -257,45 +276,36 @@ impl Imports for Generated {
     }
 }
 
-/// Walks the retained native snapshot without changing mixed callback order.
-fn walk_snapshot(
-    emitter: &host::CallbackEmitter,
-    snapshot: u32,
-    tags: &[Option<u32>],
-    data: &str,
-) -> ExtensionResult<()> {
-    let mut index = 0;
-    while index < tags.len() {
-        if let Some(id) = tags[index] {
-            let local = host::callback_begin_local(
-                emitter,
-                snapshot,
-                u32::try_from(index).map_err(|error| error.to_string())?,
-            )?;
-            let result = Exports::new(Generated).invoke_listener(id, data, &local);
-            route::drive(&host::callback_end_local(&local, result.err().as_deref()))?;
-            index += 1;
-        } else {
-            let start = index;
-            while index < tags.len() && tags[index].is_none() {
-                index += 1;
-            }
-            route::drive(&host::callback_segment(
-                emitter,
-                snapshot,
-                u32::try_from(start).map_err(|error| error.to_string())?,
-                u32::try_from(index).map_err(|error| error.to_string())?,
-            ))?;
-        }
-    }
-    Ok(())
-}
-
 /// Entry type of an extension component: serves the generated exports for `E`.
 #[doc(hidden)]
 pub struct Glue<E>(PhantomData<E>);
 
 impl<E: Extension> Guest for Glue<E> {
+    fn describe_schema(
+        handler: &host::Callback,
+    ) -> Result<host::SchemaShape, host::DiagnosticErrorInfo> {
+        Exports::<Generated>::describe_schema(handler.id()).map_err(crate::schema_error::to_wire)
+    }
+    fn retain_schema(
+        handler: &host::Callback,
+        retained: host::Callback,
+    ) -> Result<(), host::DiagnosticErrorInfo> {
+        Exports::new(Generated)
+            .retain_schema(handler.id(), retained)
+            .map_err(crate::schema_error::to_wire)
+    }
+    fn invoke_schema(
+        handler: &host::Callback,
+        operation: host::SchemaOperation,
+        node: &host::JsonNode,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = Result<String, host::DiagnosticErrorInfo>> {
+        std::future::ready(
+            Exports::new(Generated)
+                .invoke_schema(handler.id(), operation, node, emitter)
+                .map_err(crate::schema_error::to_wire),
+        )
+    }
     fn invoke_renderer(
         handler: &host::Callback,
         request: guest::RenderRequest,

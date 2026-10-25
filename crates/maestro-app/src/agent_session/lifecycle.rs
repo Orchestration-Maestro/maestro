@@ -178,7 +178,7 @@ impl AgentSession<Local> {
                 bound.on_error.clone(),
             )
         };
-        runner.set_ui_context(ui_context);
+        runner.set_ui_context_binding(ui_context);
         runner.bind_command_context(command_actions);
         let previous = self.state.borrow_mut().error_unsubscriber.take();
         if let Some(unsubscribe) = previous {

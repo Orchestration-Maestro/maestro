@@ -1198,3 +1198,5 @@ async fn shell_pending(
         .unwrap();
     proceed.send(()).unwrap();
 }
+
+pub(crate) mod schema_qualification;

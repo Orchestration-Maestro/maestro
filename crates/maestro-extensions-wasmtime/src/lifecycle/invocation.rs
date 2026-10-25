@@ -42,6 +42,7 @@ impl Call {
                 ComponentCall::WantsKeyRelease(_, _, reply) => attach(reply, completion),
             },
             Self::Synchronous(call) => attach(&call.completion, completion),
+            Self::Schema(call) => attach(&call.reply, completion),
             Self::Event(call) => attach(&call.reply, completion),
             Self::Bash(call) => attach(&call.reply, completion),
             Self::Registered(call) => match call {

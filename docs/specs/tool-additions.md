@@ -138,7 +138,8 @@ no second converter here.
 3. The terminal reports its queued byte count. The toolkit defers a frame while more
    than 256 KiB are queued and retries after 10 ms; the deferred frame draws the
    latest state, keeping any forced or clearing intent. Values from the addition
-   reference.
+   reference. A final frame claimed just before the terminal stops is not deferred:
+   it is one bounded frame and the stop drains it with the rest of the queue.
 4. Stopping and dropping the terminal write every queued byte before restoring modes,
    as today.
 5. A write error is recorded as the terminal's first background failure, reported by

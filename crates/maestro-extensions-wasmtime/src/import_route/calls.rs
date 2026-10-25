@@ -79,6 +79,20 @@ pub(super) struct LocalPrepare {
     emitter: Resource<EmitterEndpoint>,
 }
 
+/// Owned operands of one nested schema method on the still-borrowed native operand.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalSchema {
+    /// Authored identity of the retained schema node.
+    target: u32,
+    /// Exact author method requested by the checker.
+    operation: crate::schema_wire::Operation,
+    /// Invocation-local borrowed operand capability.
+    node: Resource<crate::schema_reads::Endpoint>,
+    /// Independent native invocation frame.
+    emitter: Resource<EmitterEndpoint>,
+}
+
 /// Owned operands of one nested synchronous callback prefix.
 #[derive(ComponentType, Lower)]
 #[component(record)]
@@ -203,6 +217,9 @@ pub(super) enum LocalCall {
     /// A synchronous callback prefix.
     #[component(name = "synchronous")]
     Synchronous(LocalSynchronous),
+    /// A schema method against the original borrowed operand.
+    #[component(name = "schema")]
+    Schema(LocalSchema),
     /// An event callback.
     #[component(name = "event")]
     Event(LocalEvent),
@@ -254,6 +271,9 @@ pub(super) enum LocalResult {
     /// Unit result of a synchronous prefix, or the authored error.
     #[component(name = "synchronous")]
     Synchronous(Result<(), String>),
+    /// The schema result with every authored diagnostic field.
+    #[component(name = "schema")]
+    Schema(Result<String, crate::schema_wire::Error>),
     /// Event outcome, or the message rejecting the event before its handler ran.
     #[component(name = "event")]
     Event(Result<Returned, String>),
@@ -291,6 +311,12 @@ pub(super) fn lower(
             target: handler.id,
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
+        }),
+        Call::Schema(call) => LocalCall::Schema(LocalSchema {
+            target: call.handler.id,
+            operation: call.operation.clone(),
+            node: table.push(call.node.clone())?,
+            emitter: table.push(call.emitter.clone())?,
         }),
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
@@ -455,6 +481,9 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         }
         (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value)) => {
             let _ = reply.send(value);
+        }
+        (Call::Schema(call), LocalResult::Schema(value)) => {
+            let _ = call.reply.send(Ok(value));
         }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);

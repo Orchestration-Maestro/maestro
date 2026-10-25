@@ -21,12 +21,7 @@ pub(crate) struct Document<'a> {
 impl<'a> Document<'a> {
     /// Index each authored kind by the node its pointer addresses.
     pub(crate) fn new(root: &'a Value, kinds: &'a HashMap<String, SchemaKind>) -> Self {
-        let indexed = kinds
-            .iter()
-            .filter_map(|(pointer, kind)| {
-                Some((std::ptr::from_ref::<Value>(root.pointer(pointer)?), kind))
-            })
-            .collect();
+        let indexed = index(root, kinds);
         Self {
             root,
             kinds: indexed,
@@ -163,6 +158,21 @@ impl<'m, 'a> Members<'m, 'a> {
     }
 }
 
+impl<'a> Node<'a> {
+    /// Original authored node retained by an instantiated or composed stage.
+    pub(crate) fn source(&self) -> Option<View<'a>> {
+        match self {
+            Self::Leaf(view) => Some(*view),
+            Self::Object(object) => object.source,
+            Self::Array(_, source)
+            | Self::Tuple(_, source)
+            | Self::Union(_, source)
+            | Self::Intersect(_, source) => *source,
+            _ => None,
+        }
+    }
+}
+
 impl Node<'_> {
     /// The kind this node converts and compares as.
     pub(crate) fn kind(&self) -> Option<SchemaKind> {
@@ -180,4 +190,15 @@ impl Node<'_> {
             Node::Unknown => Some(SchemaKind::Unknown),
         }
     }
+}
+
+/// Resolve supplied node pointers once, retaining the original schema identities.
+pub(in super::super) fn index<'a, T>(
+    root: &'a Value,
+    entries: &'a HashMap<String, T>,
+) -> HashMap<*const Value, &'a T> {
+    entries
+        .iter()
+        .filter_map(|(pointer, item)| Some((std::ptr::from_ref(root.pointer(pointer)?), item)))
+        .collect()
 }

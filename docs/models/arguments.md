@@ -78,11 +78,30 @@ A provider that replays an earlier call applies its own default to the argument 
 A nullish default replaces only null with an empty object. A truthy default replaces
 every falsy root, so null, `false`, zero and the empty string all become one. A
 supplied empty array or object is truthy and stays as recorded, and every nonempty
-root of any kind is replayed unchanged. The same default decides the argument value of
-a call whose service data carries none or carries null.
+root of any kind is replayed unchanged.
 
 The replay default is one shared operation rather than a rule per provider, so the two
 policies differ only in which roots they replace.
+
+History projection keeps the stored call unchanged. Each protocol applies its own
+wire default:
+
+| Protocol family | Null | False, zero or empty string | Other roots |
+|---|---|---|---|
+| Chat and response | JSON text `null` | JSON text of the value | JSON text of the value |
+| Cloud conversation | null | Unchanged | Unchanged |
+| Message and content generation | `{}` | Unchanged | Unchanged |
+| Conversation | JSON text `{}` | JSON text `{}` | JSON text of the value |
+
+Empty arrays and objects remain arrays and objects in every family. Content
+generation also uses `{}` for missing or null incoming function-call arguments;
+other supplied roots survive through both direct and cloud entries. Conversation
+stream arguments admit encoded JSON text or a dictionary; scalar and array roots
+are supplied as encoded text.
+
+Session tool-start and tool-update events carry the original argument value,
+including null and arrays. Updates also carry the complete progress result;
+progress does not replace the arguments or the retained assistant call.
 
 ## Checking without conversion
 
@@ -114,7 +133,9 @@ A cyclic node's definitions are visible only while its reference converts, so a
 sibling member sees the enclosing definitions again. A reference names the innermost
 definition visible at the point where conversion reaches it. Union alternatives are
 checked against those same definitions, and a composed alternative keeps the constraints
-and optional members its author declared.
+and optional members its author declared. An authored union checks the original value
+first. If no alternative accepts it, every alternative converts an independent candidate
+before selection begins; a later conversion error is not hidden by an earlier match.
 
 Two authored nodes are compared by what each kind accepts. An alternative set never
 stands in for a sequence or an intersection of the same members, so its alternatives keep
@@ -127,8 +148,26 @@ once from the pointer the builder recorded.
 Checking converts declared primitive values before evaluating the original schema.
 Objects and arrays are traversed only when their type is explicitly declared.
 Combinator alternatives use independent candidates; the first valid converted
-alternative wins. Type unions preserve values that already match a member.
-Missing values are not defaulted and unknown fields are not removed.
+alternative wins, including edits made by its custom checks. Rejected candidates lose
+their argument edits, not external callback effects. Type unions preserve values that
+already match a member. Missing values are not defaulted and unknown fields are not removed.
+
+A `ParameterSchema<SchemaCode>` retains local callbacks separately from its JSON.
+An authored Base node runs its supplied converter during the authored pass. Nested
+replacements are kept; root replacements are discarded, while in-place edits remain.
+Conversion and acceptance propagate callback errors unchanged, without requesting
+error text for successful union selection.
+The checker runs a supplied Base guard before literals and compositions, even on a
+node without a declared Base kind. Refinements run after that node's ordinary
+assertions succeed. Checking stops at a failed refinement; diagnostic collection
+visits each refinement and requests error text only for failures. Equal messages
+from separate refinements remain separate lines. At most eight lines are retained,
+but later error factories still run and their errors propagate unchanged.
+Ordinary schema JSON never reconstructs these callbacks.
+Compiled checking still checks a required property after a dependency callback
+removes it. Optional properties and interpreted candidate checking skip missing
+members. Author callbacks accept JSON values, so a deleted member does not invoke
+its own Base guard or refinement.
 
 The checker supports object, array, string, number and composition constraints,
 offline schema resources, anchors, recursive and dynamic references, and evaluated
@@ -178,18 +217,19 @@ branch, a negation, a failing `then` or `else`, and the items checked by `contai
 cover nothing, and the properties a nested value evaluated never cover those of
 its parent.
 
-Failures report at most eight distinct field diagnostics in evaluation order,
+Failures report at most eight field diagnostics in evaluation order,
 followed by the original arguments as two-space-indented JSON. Repeated identical
-messages, including missing-dependency messages, appear only once. Numeric-index
+ordinary messages, including missing-dependency messages, appear only once;
+separate refinements may retain equal messages. Numeric-index
 keys precede ordinary insertion-ordered keys. Returned diagnostics have an error name and message, without a manufactured
-stack or code.
+stack or code. A supplied callback error instead retains its original fields.
 
 ```rust
 use maestro_models::{Tool, ToolCall, validate_tool_arguments};
 use serde_json::json;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let tool = Tool {
+let tool: Tool = Tool {
     name: "count".into(),
     description: "Count supplied items".into(),
     parameters: json!({
@@ -216,3 +256,7 @@ assert_eq!(error.message,
 # Ok(())
 # }
 ```
+
+The agent's local tool records retain schema callbacks through preparation and typed
+execution. Model requests use `Tool::data()` to copy the schema without its executable
+annotations; projecting a request never calls those annotations.

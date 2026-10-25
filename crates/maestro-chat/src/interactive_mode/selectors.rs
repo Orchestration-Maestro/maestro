@@ -20,16 +20,28 @@ impl InteractiveMode {
         let mode = Rc::downgrade(self);
         let done = Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
-                mode.editor_container.clear();
-                mode.editor_container.add_child(mode.editor.clone());
-                mode.ui.set_focus(Some(mode.editor.clone()));
+                mode.restore_editor();
             }
         });
         let (component, focus) = create(done)?;
+        self.show_panel(component, focus);
+        Ok(())
+    }
+
+    /// Shows `component` in place of whatever the editor container shows, focuses `focus`
+    /// and requests a frame.
+    pub(super) fn show_panel(&self, component: Rc<dyn Component>, focus: Rc<dyn Component>) {
         self.editor_container.clear();
         self.editor_container.add_child(component);
         self.ui.set_focus(Some(focus));
         self.ui.request_render(false);
-        Ok(())
+    }
+
+    /// Puts the editor back in place of whatever the editor container shows and focuses it,
+    /// without requesting a frame.
+    pub(super) fn restore_editor(&self) {
+        self.editor_container.clear();
+        self.editor_container.add_child(self.editor.clone());
+        self.ui.set_focus(Some(self.editor.clone()));
     }
 }

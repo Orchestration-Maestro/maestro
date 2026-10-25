@@ -145,9 +145,11 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Session services:** Credentials, settings, the model catalog and reloaded resources bound to one session working directory, created before and separately from the session. See [application resources](docs/application/resources.md#session-services).
 - **Module loader:** The caller-supplied operation that turns a resolved extension path into a factory; the component runtime supplies it and the executable wires it.
 
-Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`,
-which keeps the supplied JSON Schema value beside the kinds its author declared for
-individual nodes. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema<C = ()>`,
+which keeps the supplied JSON Schema value beside declared node kinds and a generic
+executable payload. Its data-only default stays usable in model requests. Shared
+`Base`, `Refinement` and `SchemaNode` records retain local author callbacks; guest
+specializations use borrowed JSON operands on the existing callback resources. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
 re-exports it, and the model argument-validation owner is its only converter.
 Serialization writes the supplied JSON alone.
 

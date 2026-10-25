@@ -9,9 +9,10 @@ pub use maestro_extensions::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EventError, ExtensionActions, ExtensionCommandContext, ExtensionCommandContextActions,
     ExtensionContext, ExtensionContextActions, ExtensionError, ExtensionRuntime,
-    ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions,
-    MessageRenderer, ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo,
-    UIHostCall, WidgetPlacement, WorkingIndicatorOptions, create_extension_runtime,
+    ExtensionUIContext, ExtensionUIContextBinding, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ProviderConfig,
+    ProviderModelConfig, TerminalInputHandler, ToolInfo, UIHostCall, WidgetPlacement,
+    WorkingIndicatorOptions, create_extension_runtime,
 };
 
 pub use maestro_extensions::types::events::*;

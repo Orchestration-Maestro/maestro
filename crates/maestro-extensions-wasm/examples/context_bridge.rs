@@ -176,6 +176,18 @@ fn command(
         if let Some(path) = args.strip_prefix("command imports:") {
             return Err(commands::observe(&context, path.into()).await?.to_string());
         }
+        if let Some(count) = args.strip_prefix("schema growth:") {
+            return Err(
+                schema::growth(&api, count.parse::<usize>().map_err(|e| e.to_string())?)?
+                    .to_string(),
+            );
+        }
+        if args == "schema executable" {
+            return Err(schema::executable(&api)?.to_string());
+        }
+        if args == "schema relay" {
+            return Err(schema::relay(&api)?.to_string());
+        }
         if args == "schema imports" {
             return Err(schema::observe(&api)?.to_string());
         }

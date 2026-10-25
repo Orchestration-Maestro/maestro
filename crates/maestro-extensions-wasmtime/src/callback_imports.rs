@@ -12,6 +12,8 @@ use wasmtime::{
 pub(crate) trait CallbackView: ApiView {
     /// Returns callback identities associated with this Store alone.
     fn callbacks(&mut self) -> &mut Callbacks;
+    /// Read the canonical exports resolved for this Store.
+    fn exports(&self) -> Result<std::sync::Arc<crate::guest_exports::Exports>, String>;
 }
 
 /// Installs identity allocation and lookup without inventing a closure owner.

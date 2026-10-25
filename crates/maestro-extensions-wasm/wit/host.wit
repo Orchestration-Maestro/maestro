@@ -33,11 +33,35 @@ interface host {
     /// Registers a renderer without invoking it.
     register-message-renderer: func(custom-type: string, handler: borrow<callback>) -> result<_, string>;
 
+    /// Supplied diagnostic fields, mirroring the shared request record.
+    variant diagnostic-code { text(string), number(f64) }
+    record diagnostic-error-info { name: option<string>, message: string, stack: option<string>, code: option<diagnostic-code> }
+    /// The JSON kind of one supplied value.
+    enum json-kind { null, boolean, number, %string, array, object }
+    /// One method of an executable schema node.
+    variant schema-operation { convert, check, errors, refine(u32), message(u32) }
+    /// Executable callbacks retained at one schema location.
+    record schema-shape { base: bool, refinements: u32 }
+    /// Invocation-local JSON access. Paths are relative to the supplied operand.
+    resource json-node {
+        kind: func(path: string) -> result<option<json-kind>, string>;
+        read: func(path: string) -> result<option<string>, string>;
+        keys: func(path: string) -> result<list<string>, string>;
+        set: func(path: string, key: string, value: string) -> result<_, string>;
+        delete: func(path: string, key: string) -> result<_, string>;
+        splice: func(path: string, range: tuple<u32, u32>, values: list<string>) -> result<list<string>, string>;
+    }
+    /// Bindings belong to their own tool and contain only this guest's callbacks.
+    /// Foreign tool records carry only schema data.
+    record schema-binding { tool: u32, pointer: string, handler: callback }
+    /// Opaque metadata with independently retained executable annotations.
+    record tool-listing { metadata: string, schemas: list<schema-binding> }
     /// Host-owned identity of one guest closure.
     resource callback {
         constructor();
         /// Stable key of this identity, equal for the owner handle and every borrow.
         id: func() -> u32;
+
     }
 
     /// Explicit subscription remover.
@@ -104,6 +128,8 @@ interface host {
     record local-continuation { target: u32, ctx: replaced-session-context }
     /// One nested same-instance execution of returned shell operations.
     record local-bash { target: u32, request: bash-request, resources: bash-capabilities }
+    /// One nested same-instance schema method over the operand its native caller lends.
+    record local-schema { target: u32, operation: schema-operation, node: json-node, emitter: callback-emitter }
     /// The nested same-instance target and its owned operands.
     variant local-call {
         renderer(local-renderer),
@@ -112,6 +138,7 @@ interface host {
         key(local-key),
         prepare(local-prepare),
         synchronous(local-synchronous),
+        schema(local-schema),
         event(local-event),
         command(local-command),
         completion(local-completion),
@@ -130,6 +157,7 @@ interface host {
         key(result<bool, string>),
         prepared(result<string, string>),
         synchronous(result<_, string>),
+        schema(result<string, diagnostic-error-info>),
         event(result<event-outcome, string>),
         completion(result<option<list<autocomplete-item>>, string>),
         tool(result<string, string>),
@@ -334,7 +362,7 @@ interface host {
         name: string, description: option<string>, completions: option<borrow<callback>>, handler: borrow<callback>,
     ) -> result<_, string>;
     /// Registers authored tool data and callbacks.
-    register-tool: func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>) -> import-route;
+    register-tool: async func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>) -> import-route;
     /// Appends a custom entry to the session; `data` is JSON text.
     append-entry: func(custom-type: string, data: option<string>) -> import-route;
 
@@ -344,7 +372,7 @@ interface host {
     get-session-name: func() -> result<option<string>, string>;
     set-label: func(entry-id: string, label: option<string>) -> import-route;
     get-active-tools: func() -> result<list<string>, string>;
-    get-all-tools: func() -> result<string, string>;
+    get-all-tools: async func() -> result<tool-listing, string>;
     set-active-tools: func(tool-names: list<string>) -> import-route;
     get-commands: func() -> result<string, string>;
     set-model: async func(model: string) -> result<bool, string>;
