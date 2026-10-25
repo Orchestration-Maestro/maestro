@@ -396,7 +396,7 @@ fn rescan(listeners: &mut Listeners<Rc<usize>>) -> Vec<usize> {
 }
 
 #[test]
-fn ordered_walk_has_linear_work() {
+fn widget_map_walk_has_linear_slot_work() {
     for count in [128, 256, 512] {
         let mut listeners: Listeners<Rc<usize>> = Listeners::default();
         for slot in 0..count {
@@ -411,6 +411,22 @@ fn ordered_walk_has_linear_work() {
         assert_eq!(rescan(&mut listeners), seen);
         let rescanned = visits();
         assert!(rescanned > count + 1, "{count}: {rescanned}");
+        let mut cursor = listeners.cursor();
+        reset_visits();
+        let mut observed = 0;
+        while let Some(value) = listeners.next_from(&mut cursor).cloned() {
+            observed += 1;
+            drop(listeners.remove(Rc::as_ptr(&value)));
+            if *value == 0 {
+                listeners.add(Rc::new(count));
+            }
+        }
+        assert_eq!(observed, count + 1);
+        assert!(visits() <= 3 * count + 4);
+        drop(cursor);
+        reset_visits();
+        assert!(walk_owned(&mut listeners).is_empty());
+        assert!(visits() <= count + 1);
     }
 }
 
@@ -496,4 +512,55 @@ fn cursor_can_cross_a_threaded_await() {
         drop(cursor);
         value
     });
+}
+
+#[test]
+fn retained_snapshots_keep_membership_order_and_owned_values() {
+    let mut listeners = Listeners::default();
+    assert!(listeners.snapshot().is_empty());
+    let first = Rc::new(7);
+    let second = Rc::new(3);
+    let weak = Rc::downgrade(&first);
+    listeners.add(Rc::clone(&first));
+    listeners.add(Rc::clone(&second));
+    let snapshot = listeners.snapshot();
+    assert!(Rc::ptr_eq(&snapshot[0], &first));
+    assert!(Rc::ptr_eq(&snapshot[1], &second));
+    drop(listeners.remove(Rc::as_ptr(&first)));
+    listeners.add(Rc::new(9));
+    assert_eq!(
+        listeners
+            .snapshot()
+            .iter()
+            .map(|value| **value)
+            .collect::<Vec<_>>(),
+        [3, 9]
+    );
+    drop(listeners);
+    drop(first);
+    drop(second);
+    assert_eq!(
+        snapshot.iter().map(|value| **value).collect::<Vec<_>>(),
+        [7, 3]
+    );
+    assert!(weak.upgrade().is_some());
+    drop(snapshot);
+    assert!(weak.upgrade().is_none());
+}
+
+#[test]
+fn retained_snapshot_walk_keeps_linear_work() {
+    for count in [128, 256, 512] {
+        let mut listeners = Listeners::default();
+        for value in 0..count {
+            listeners.add(Rc::new(value));
+        }
+        reset_visits();
+        let snapshot = listeners.snapshot();
+        assert_eq!(
+            snapshot.iter().map(|value| **value).collect::<Vec<_>>(),
+            (0..count).collect::<Vec<_>>()
+        );
+        assert!(visits() <= count + 1, "{count}: {}", visits());
+    }
 }

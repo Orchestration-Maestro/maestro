@@ -70,6 +70,12 @@ impl InteractiveMode {
     /// runtime, and says whether `text` was handled as a command. A share or copy command
     /// is admitted on that runtime and clears the editor once it settles.
     fn runs_command(self: &Rc<Self>, text: &str) -> bool {
+        if text == "/changelog" {
+            if let Err(error) = self.handle_changelog_command() {
+                self.report(Err(error));
+            }
+            return true;
+        }
         if text == "/export" || text.starts_with("/export ") {
             if let Err(error) = self.handle_export_command(text) {
                 self.report(Err(error));

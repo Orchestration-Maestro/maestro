@@ -1,4 +1,6 @@
 //! Owned artifact fields with independent header and body drawing.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod header;
 use crate::tools::artifacts::ArtifactUiError;
 /// Call-scoped localization and branding, never retained by a native factory.
 #[derive(Clone, Copy)]

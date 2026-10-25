@@ -5,8 +5,9 @@ Text it recognizes as a command runs in the mode and answers on the transcript;
 every other submission reaches the [typed input](interactive-mode.md#typed-input)
 and the editor history as before.
 
-Today the mode handles three commands, `/export`, `/share` and `/copy`. Import, the
-offline viewer and packaged asset injection are not delivered yet (see
+Today the mode handles shell input and four slash commands: `/export`, `/share`,
+`/copy` and `/changelog`. Import, the offline viewer and packaged asset injection
+are not delivered yet (see
 [what is missing](#what-is-missing)).
 
 ## Shell input
@@ -117,6 +118,23 @@ previous one. With nothing to copy the mode shows `No agent messages to copy yet
 A completed copy shows `Copied last agent message to clipboard`; a reached
 clipboard failure shows its own message in the error colour. The mode reads the
 current session each time, so a replaced session is copied from its own answer.
+
+## `/changelog`
+
+`/changelog` prints the whole changelog, not only the sections added since the
+last run. It reads the changelog beside the running package and appends a
+bordered "What's New" card holding every section, in reverse file order.
+
+```text
+/changelog
+```
+
+The card reuses the [changelog utility](startup.md) for the file read and the
+Markdown renderer for the body, so the mode adds no parser and no renderer of its
+own. A package whose changelog holds no section shows
+`No changelog entries found.` inside the same card. The submission must be
+exactly `/changelog`; `/changelogs`, `/changelog extra` and `/CHANGELOG` are
+prompt text.
 
 ## How the path is read
 

@@ -128,7 +128,7 @@ fn palette() -> Rc<Theme> {
 }
 
 /// A mode in `directory` with images hidden, publishing the recorded palette.
-fn recorded(directory: &Path, setup: Setup) -> World {
+pub(super) fn recorded(directory: &Path, setup: Setup) -> World {
     let configure = setup.configure;
     let world = Setup {
         configure: Box::new(move |settings| {
@@ -404,7 +404,7 @@ fn transcript_registered_toggle_actions_release_the_mode() {
 }
 
 /// The frames `world` has requested since the last count, which are then drawn.
-fn frames(world: &World) -> usize {
+pub(super) fn frames(world: &World) -> usize {
     let requested = world.runtime.pending();
     world.runtime.settle().unwrap();
     requested
@@ -429,7 +429,7 @@ pub(super) fn history(world: &World) -> Vec<String> {
 }
 
 /// The registered unresolved tool calls, in registration order.
-fn pending(world: &World) -> Vec<String> {
+pub(super) fn pending(world: &World) -> Vec<String> {
     world.mode.pending_tools.borrow().keys().cloned().collect()
 }
 
@@ -457,7 +457,7 @@ fn observe(world: &World, expected: &Transcript, earlier_frames: usize) {
 }
 
 /// A native application message read from its stored record.
-fn message(record: Value) -> NativeAgentMessage {
+pub(super) fn message(record: Value) -> NativeAgentMessage {
     serde_json::from_value(record).unwrap()
 }
 
@@ -704,7 +704,7 @@ fn usage() -> Value {
 }
 
 /// A stored assistant record with `content`, its stop reason and an optional error.
-fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
+pub(super) fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
     let mut record = json!({"role": "assistant", "content": content, "api": "controlled",
         "provider": "controlled", "model": "controlled", "usage": usage(),
         "stopReason": stop, "timestamp": 0});
@@ -715,7 +715,7 @@ fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
 }
 
 /// A stored tool call of `name` with the recorded object arguments.
-fn call(id: &str, name: &str) -> Value {
+pub(super) fn call(id: &str, name: &str) -> Value {
     json!({"type": "toolCall", "id": id, "name": name, "arguments": {"z": 1, "a": 2}})
 }
 
@@ -732,7 +732,7 @@ fn user_record(text: &str) -> Value {
 }
 
 /// Replays `messages` into the transcript of `world` without other effects.
-fn replay(world: &World, messages: Vec<Value>) {
+pub(super) fn replay(world: &World, messages: Vec<Value>) {
     let context = maestro_app::SessionContext {
         messages,
         thinking_level: Presence::Present("off".into()),
@@ -1093,10 +1093,10 @@ fn transcript_replay_options_do_not_repopulate_history_on_rebuild() {
 }
 
 /// A registered tool `name` without renderers, returning nothing.
-type Definition = maestro_app::local::ToolDefinition<ExtensionContext, Value, Value, ()>;
+pub(super) type Definition = maestro_app::local::ToolDefinition<ExtensionContext, Value, Value, ()>;
 
 /// A registered tool `name` without renderers whose execution returns nothing.
-fn tool(name: &str) -> Definition {
+pub(super) fn tool(name: &str) -> Definition {
     Definition {
         definition: serde_json::from_value(json!({"name": name, "description": "",
             "parameters": {"type": "object", "properties": {}}}))
@@ -1122,7 +1122,7 @@ fn tool(name: &str) -> Definition {
 }
 
 /// An extension registering `tools`.
-fn registering(tools: Vec<Definition>) -> ExtensionFactory<Local> {
+pub(super) fn registering(tools: Vec<Definition>) -> ExtensionFactory<Local> {
     let tools = RefCell::new(tools);
     Rc::new(move |api| {
         for tool in tools.take() {
@@ -1140,7 +1140,7 @@ fn raw(
 }
 
 /// A recorded text row as a renderer's component.
-fn text(value: &str) -> ComponentHandle {
+pub(super) fn text(value: &str) -> ComponentHandle {
     Rc::new(Text::new(value.into(), 0, 0, None))
 }
 
@@ -1306,7 +1306,7 @@ struct KindInput {
 }
 
 /// The recorded JSON value of `kind`.
-fn kind_value(kind: &str) -> Value {
+pub(super) fn kind_value(kind: &str) -> Value {
     match kind {
         "null" => Value::Null,
         "string" => json!("detail"),

@@ -450,7 +450,10 @@ The read-only footer contract `ReadonlyFooterDataProvider`, its live
 belong to the extension consumer layer (`maestro-extensions::footer_data_provider`),
 because extension footer factories receive it. The application keeps the footer
 metadata owner, its branch, watch, count and status policy and its existing public
-paths, which re-export the moved declarations.
+paths, which re-export the moved declarations. The keyed live map reuses
+`maestro-listeners::Listeners` for insertion-order traversal. Replacement keeps
+position; removal returns ownership for release outside collection borrows.
+Clones retain one collection, and active walks observe edits until exhaustion.
 Native repository discovery belongs to `maestro-workspace::workspace::git`.
 The daemon and application footer reuse its directory walk, lexical path and drive
 resolution and shared Unicode trimming without replacing native path bytes.
@@ -522,6 +525,8 @@ ownership to the caller. Its storage is a flat ordered list plus an identity
 index; retired slots are reclaimed while no traversal runs, so one removal costs
 expected constant work and clearing every registration costs work proportional to
 their number. Traversal bookkeeping is per walk and never retains callbacks.
+Callers that need emission-time membership use an owned snapshot of the registered
+handles.
 
 Implement these owners only after this amendment lands, through
 [filesystem-watch ownership](https://github.com/Orchestration-Maestro/maestro/issues/493)
@@ -541,6 +546,10 @@ with their feature owners. The process leaf also owns the retained-front byte qu
 shared by pane-process input and native terminal output: ordered admission, partial
 write advancement and failure cleanup. Callers choose the write chunk bound and
 keep descriptor readiness, lifecycle and error-reporting policy.
+It also owns the current process's native signal effects: the default action a
+prepared termination signal or interrupt takes, the job-control stop of the process
+group and the observation of its continuation. Callers keep when to prepare, restore,
+stop and resume.
 The shared launch contract includes synchronous capture
 with optional raw stdin, an optional caller-supplied timeout and an optional
 combined captured-byte bound, inherited standard
@@ -613,6 +622,9 @@ rendering environment; the adapter's normal dependency stays `maestro-app` alone
 `maestro-chat` to `maestro-models`, declared as a non-optional native development
 dependency, lets interactive-mode tests drive a real session through the scripted
 provider; it permits no normal or build dependency on models.
+`maestro-cli` to `maestro-listeners`, declared as a non-optional native development
+dependency, supplies retained registration snapshots for the controlled print adapter.
+It permits no normal or build dependency on the listener leaf.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.

@@ -12,4 +12,4 @@ pub use maestro_process::child_process::{
 };
 
 #[cfg(unix)]
-pub use maestro_process::DefaultSignalActions;
+pub use maestro_process::{DefaultSignalActions, continued, stop_process_group};
