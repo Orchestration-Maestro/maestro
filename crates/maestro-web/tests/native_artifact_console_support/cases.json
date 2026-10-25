@@ -93,34 +93,40 @@
       "operand": {
         "nativeType": "Undefined"
       },
-      "paint": "[log]"
+      "paint": "[log]",
+      "copy": "[log] undefined"
     },
     {
       "kind": "null",
       "operand": null,
-      "paint": "[log]"
+      "paint": "[log]",
+      "copy": "[log] null"
     },
     {
       "kind": "string",
       "operand": "literal <&> 雪",
-      "paint": "[log] literal <&> 雪"
+      "paint": "[log] literal <&> 雪",
+      "copy": "[log] literal <&> 雪"
     },
     {
       "kind": "number",
       "operand": 42,
-      "paint": "[log] 42"
+      "paint": "[log] 42",
+      "copy": "[log] 42"
     },
     {
       "kind": "boolean",
       "operand": true,
-      "paint": "[log] true"
+      "paint": "[log] true",
+      "copy": "[log] true"
     },
     {
       "kind": "object",
       "operand": {
         "x": 1
       },
-      "paint": "[log] [object Object]"
+      "paint": "[log] [object Object]",
+      "copy": "[log] [object Object]"
     },
     {
       "kind": "array",
@@ -129,12 +135,14 @@
         null,
         "b"
       ],
-      "paint": "[log] ab"
+      "paint": "[log] ab",
+      "copy": "[log] a,,b"
     },
     {
       "kind": "false",
       "operand": false,
-      "paint": "[log] false"
+      "paint": "[log] false",
+      "copy": "[log] false"
     },
     {
       "kind": "nested-array",
@@ -151,27 +159,32 @@
         },
         7
       ],
-      "paint": "[log] abcfalse[object Object]7"
+      "paint": "[log] abcfalse[object Object]7",
+      "copy": "[log] a,b,,c,false,[object Object],7"
     },
     {
       "kind": "empty-array",
       "operand": [],
-      "paint": "[log]"
+      "paint": "[log]",
+      "copy": "[log] "
     },
     {
       "kind": "negative-zero",
       "operand": 0,
-      "paint": "[log] 0"
+      "paint": "[log] 0",
+      "copy": "[log] 0"
     },
     {
       "kind": "large-number",
       "operand": 1e+21,
-      "paint": "[log] 1e+21"
+      "paint": "[log] 1e+21",
+      "copy": "[log] 1e+21"
     },
     {
       "kind": "small-number",
       "operand": 1e-07,
-      "paint": "[log] 1e-7"
+      "paint": "[log] 1e-7",
+      "copy": "[log] 1e-7"
     },
     {
       "kind": "map",
@@ -188,7 +201,8 @@
           ]
         ]
       },
-      "paint": "[log] k1z"
+      "paint": "[log] k1z",
+      "copy": "[log] [object Map]"
     },
     {
       "kind": "set",
@@ -200,7 +214,8 @@
           "b"
         ]
       },
-      "paint": "[log] ab"
+      "paint": "[log] ab",
+      "copy": "[log] [object Set]"
     },
     {
       "kind": "typed-array",
@@ -212,14 +227,16 @@
           3
         ]
       },
-      "paint": "[log] 123"
+      "paint": "[log] 123",
+      "copy": "[log] 1,2,3"
     },
     {
       "kind": "explicit-undefined",
       "operand": {
         "nativeType": "Undefined"
       },
-      "paint": "[log]"
+      "paint": "[log]",
+      "copy": "[log] undefined"
     },
     {
       "kind": "not-a-number",
@@ -227,7 +244,8 @@
         "nativeType": "Number",
         "value": "NaN"
       },
-      "paint": "[log] NaN"
+      "paint": "[log] NaN",
+      "copy": "[log] NaN"
     },
     {
       "kind": "positive-infinity",
@@ -235,7 +253,8 @@
         "nativeType": "Number",
         "value": "Infinity"
       },
-      "paint": "[log] Infinity"
+      "paint": "[log] Infinity",
+      "copy": "[log] Infinity"
     },
     {
       "kind": "negative-infinity",
@@ -243,7 +262,8 @@
         "nativeType": "Number",
         "value": "-Infinity"
       },
-      "paint": "[log] -Infinity"
+      "paint": "[log] -Infinity",
+      "copy": "[log] -Infinity"
     },
     {
       "kind": "bigint",
@@ -251,7 +271,8 @@
         "nativeType": "BigInt",
         "value": "123456789012345678901"
       },
-      "paint": "[log] 123456789012345678901"
+      "paint": "[log] 123456789012345678901",
+      "copy": "[log] 123456789012345678901"
     },
     {
       "kind": "date",
@@ -259,7 +280,8 @@
         "nativeType": "Date",
         "value": "2026-01-02T03:04:05Z"
       },
-      "paint": "[log] Fri Jan 02 2026 03:04:05 GMT+0000 (Coordinated Universal Time)"
+      "paint": "[log] Fri Jan 02 2026 03:04:05 GMT+0000 (Coordinated Universal Time)",
+      "copy": "[log] Fri Jan 02 2026 03:04:05 GMT+0000 (Coordinated Universal Time)"
     },
     {
       "kind": "regexp",
@@ -268,7 +290,8 @@
         "value": "a+",
         "flags": "gi"
       },
-      "paint": "[log] /a+/gi"
+      "paint": "[log] /a+/gi",
+      "copy": "[log] /a+/gi"
     },
     {
       "kind": "array-buffer",
@@ -276,7 +299,8 @@
         "nativeType": "ArrayBuffer",
         "bytes": 2
       },
-      "paint": "[log] [object ArrayBuffer]"
+      "paint": "[log] [object ArrayBuffer]",
+      "copy": "[log] [object ArrayBuffer]"
     },
     {
       "kind": "data-view",
@@ -284,7 +308,8 @@
         "nativeType": "DataView",
         "bytes": 2
       },
-      "paint": "[log] [object DataView]"
+      "paint": "[log] [object DataView]",
+      "copy": "[log] [object DataView]"
     },
     {
       "kind": "shared-array",
@@ -297,7 +322,8 @@
         ],
         "copies": 2
       },
-      "paint": "[log] abab"
+      "paint": "[log] abab",
+      "copy": "[log] a,,b,a,,b"
     },
     {
       "kind": "template",
@@ -311,7 +337,8 @@
         ],
         "values": []
       },
-      "paint": "[log] [object Object]"
+      "paint": "[log] [object Object]",
+      "copy": "[log] [object Object]"
     },
     {
       "kind": "cycle",
@@ -319,7 +346,22 @@
         "nativeType": "Array",
         "self": true
       },
-      "paint": "[log]"
+      "paint": "[log]",
+      "copy": "[log] "
+    }
+  ],
+  "costs": [
+    {
+      "count": 16,
+      "formatted": "[error] 0\n[log] 1\n[log] 2\n[error] 3\n[log] 4\n[log] 5\n[error] 6\n[log] 7\n[log] 8\n[error] 9\n[log] 10\n[log] 11\n[error] 12\n[log] 13\n[log] 14\n[error] 15"
+    },
+    {
+      "count": 32,
+      "formatted": "[error] 0\n[log] 1\n[log] 2\n[error] 3\n[log] 4\n[log] 5\n[error] 6\n[log] 7\n[log] 8\n[error] 9\n[log] 10\n[log] 11\n[error] 12\n[log] 13\n[log] 14\n[error] 15\n[log] 16\n[log] 17\n[error] 18\n[log] 19\n[log] 20\n[error] 21\n[log] 22\n[log] 23\n[error] 24\n[log] 25\n[log] 26\n[error] 27\n[log] 28\n[log] 29\n[error] 30\n[log] 31"
+    },
+    {
+      "count": 64,
+      "formatted": "[error] 0\n[log] 1\n[log] 2\n[error] 3\n[log] 4\n[log] 5\n[error] 6\n[log] 7\n[log] 8\n[error] 9\n[log] 10\n[log] 11\n[error] 12\n[log] 13\n[log] 14\n[error] 15\n[log] 16\n[log] 17\n[error] 18\n[log] 19\n[log] 20\n[error] 21\n[log] 22\n[log] 23\n[error] 24\n[log] 25\n[log] 26\n[error] 27\n[log] 28\n[log] 29\n[error] 30\n[log] 31\n[log] 32\n[error] 33\n[log] 34\n[log] 35\n[error] 36\n[log] 37\n[log] 38\n[error] 39\n[log] 40\n[log] 41\n[error] 42\n[log] 43\n[log] 44\n[error] 45\n[log] 46\n[log] 47\n[error] 48\n[log] 49\n[log] 50\n[error] 51\n[log] 52\n[log] 53\n[error] 54\n[log] 55\n[log] 56\n[error] 57\n[log] 58\n[log] 59\n[error] 60\n[log] 61\n[log] 62\n[error] 63"
     }
   ]
 }

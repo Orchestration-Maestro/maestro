@@ -14,6 +14,8 @@ pub(super) struct Cases {
     pub(super) summaries: Vec<CountCase>,
     /// Ordinary native values and corrected dangerous values.
     pub(super) values: Vec<Value>,
+    /// Exact formatter output at three growing input sizes.
+    pub(super) costs: Vec<Cost>,
 }
 /// One summary observation.
 #[derive(Deserialize)]
@@ -45,6 +47,8 @@ pub(super) struct Value {
     pub(super) operand: serde_json::Value,
     /// Expected rendered line.
     pub(super) paint: String,
+    /// Expected whole-value clipboard line.
+    pub(super) copy: String,
 }
 /// Read the strictly consumed corpus.
 pub(super) fn cases() -> Cases {
@@ -77,4 +81,14 @@ pub(super) fn native(module: &JsValue, name: &str, args: &js_sys::Array) -> JsVa
         .unchecked_into::<js_sys::Function>()
         .apply(&JsValue::NULL, args)
         .unwrap()
+}
+
+/// One recorded formatter growth observation.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct Cost {
+    /// Number of supplied rows.
+    pub(super) count: u32,
+    /// Exact ordered whole-value result.
+    pub(super) formatted: String,
 }

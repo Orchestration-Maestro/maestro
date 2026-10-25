@@ -18,6 +18,8 @@ mod browser;
 pub(crate) mod dom;
 #[cfg(target_arch = "wasm32")]
 mod nodes;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use nodes::scroll_bottom;
 
 /// Console output's semantic color.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]

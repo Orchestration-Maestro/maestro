@@ -27,3 +27,35 @@ export function operand(kind, value) {
 }
 // Date text follows the actual browser's locale and timezone.
 export function nativeString(value) { return String(value); }
+
+// Counters live on supplied native values, not on the production console.
+export function probe(count) {
+  let visits = 0, reads = 0;
+  return {
+    scalars: Array.from({length: count}, (_, i) => ({toString() { reads++; return String(i); }})),
+    iterable: {[Symbol.iterator]: function* () { for (let i = 0; i < count; i++) { visits++; yield 'x'; } }},
+    visits: () => visits,
+    reads: () => reads,
+  };
+}
+export function stats(probe) { return [probe.visits(), probe.reads()]; }
+// A deliberately wrong whole-input rescan, retained as a discriminating control.
+export function rescan(count) {
+  let visits = 0;
+  for (let i = 0; i < count; i++) for (let j = 0; j < count; j++) visits++;
+  return visits;
+}
+// A deliberately wrong global identity filter suppresses completed shared occurrences.
+export function deduplicated(value) {
+  const seen = new WeakSet();
+  function visit(value) {
+    if (value == null) return '';
+    if (typeof value === 'object' && value[Symbol.iterator]) {
+      if (seen.has(value)) return '';
+      seen.add(value);
+      return [...value].map(visit).join('');
+    }
+    return String(value);
+  }
+  return visit(value);
+}

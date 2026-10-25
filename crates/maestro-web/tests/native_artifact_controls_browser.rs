@@ -566,7 +566,7 @@ impl Recorder {
     }
 }
 /// Form submissions counted while the recorder lives.
-struct Submitting {
+pub(crate) struct Submitting {
     /// Submissions observed so far.
     count: Rc<Cell<u32>>,
     /// Registration removed with the recorder.
@@ -574,7 +574,7 @@ struct Submitting {
 }
 impl Submitting {
     /// Count submissions of `form` without navigating.
-    fn new(form: &Element) -> Self {
+    pub(crate) fn new(form: &Element) -> Self {
         let count = Rc::new(Cell::new(0u32));
         let counted = Rc::clone(&count);
         let callback = Closure::<dyn Fn(Event)>::new(move |event: Event| {
@@ -587,7 +587,7 @@ impl Submitting {
         }
     }
     /// How many submissions were observed.
-    fn count(&self) -> u32 {
+    pub(crate) fn count(&self) -> u32 {
         self.count.get()
     }
 }

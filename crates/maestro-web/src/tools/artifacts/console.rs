@@ -3,8 +3,9 @@ use crate::{
     browser::{
         attachment_content::browser::{element, set_text_if_changed},
         event_subscription::EventSubscription,
-        sandbox_value::BrowserSandboxValue,
+        sandbox_value::{BrowserSandboxValue, native_string},
     },
+    components::copy_button::dom::{self as copy_button, Localization},
     dom::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
@@ -44,12 +45,22 @@ pub struct LogEntry {
     pub text: BrowserSandboxValue,
 }
 /// Artifact output mounted directly as native page content.
-#[derive(Default)]
 pub struct Console {
     /// Replaceable collection of ordered lines.
     pub logs: Rc<RefCell<Vec<LogEntry>>>,
     /// Disclosure selection shared with mounted actions.
     expanded: Rc<Cell<bool>>,
+    /// Whether expanded updates follow the final row.
+    autoscroll: Rc<Cell<bool>>,
+}
+impl Default for Console {
+    fn default() -> Self {
+        Self {
+            logs: Rc::default(),
+            expanded: Rc::default(),
+            autoscroll: Rc::new(Cell::new(true)),
+        }
+    }
 }
 impl Console {
     /// Create an independent empty, collapsed console.
@@ -61,10 +72,8 @@ impl Console {
 /// Operands replaced together when a later controller updates a root.
 #[derive(Clone)]
 struct Binding {
-    /// Current collection, not necessarily the creator's.
-    logs: Rc<RefCell<Vec<LogEntry>>>,
-    /// Current disclosure selection.
-    expanded: Rc<Cell<bool>>,
+    /// Retained current controller state, sharing only its supplied handles.
+    console: Rc<Console>,
     /// Current page and localization.
     view: DomView,
 }
@@ -82,6 +91,14 @@ struct Mounted {
     glyph: Element,
     /// Ordered positional row container.
     rows: Element,
+    /// Header receiving expanded controls.
+    header: Element,
+    /// Following button, detached while collapsed.
+    follow: Element,
+    /// Copy element, released on collapse and owner teardown.
+    copy: RefCell<Option<Element>>,
+    /// Replaceable labels used by the shared copy element.
+    i18n: Localization,
     /// Native event registrations with weak owner backedges.
     clicks: RefCell<Vec<Click>>,
 }
@@ -94,6 +111,7 @@ impl DomContent for Console {
         let glyph = element(document, "span", "")?;
         let label = element(document, "span", "")?;
         let rows = element(document, "div", "maestro-artifact-logs")?;
+        let follow = element(document, "button", "maestro-artifact-follow")?;
         summary
             .append_child(&glyph)
             .map_err(|error| failure(&error))?;
@@ -112,21 +130,14 @@ impl DomContent for Console {
             label,
             glyph,
             rows,
+            header,
+            follow,
+            copy: RefCell::default(),
+            i18n: Rc::new(RefCell::new(Rc::clone(&view.i18n))),
             clicks: RefCell::default(),
         });
-        let weak = Rc::downgrade(&mounted);
-        let callback = Closure::new(move || {
-            if let Some(owner) = weak.upgrade() {
-                let binding = owner.binding.borrow().clone();
-                binding.expanded.set(!binding.expanded.get());
-                // Native callbacks have no error channel; a failed render keeps its reached nodes.
-                let _ = owner.render();
-            }
-        });
-        let subscription =
-            EventSubscription::new(mounted.summary.clone().into(), "click", callback)
-                .map_err(|error| failure(&error))?;
-        mounted.clicks.borrow_mut().push(subscription);
+        mounted.subscribe(&mounted.summary, false)?;
+        mounted.subscribe(&mounted.follow, true)?;
         mounted.render()?;
         Ok(DomRoot {
             node: root.into(),
@@ -145,20 +156,115 @@ impl DomContent for Console {
     }
 }
 impl Console {
+    /// Format each whole native operand once in log order.
+    pub(crate) fn get_logs_text(&self) -> Result<String, ToolUiError> {
+        let logs = self.logs.borrow().clone();
+        logs.iter()
+            .map(|line| {
+                Ok(format!(
+                    "[{}] {}",
+                    line.r#type.label(),
+                    native_string(&line.text.0).map_err(|error| failure(&error))?
+                ))
+            })
+            .collect::<Result<Vec<_>, ToolUiError>>()
+            .map(|lines| lines.join("\n"))
+    }
     /// Capture handles without retaining the controller itself.
     fn binding(&self, view: &DomView) -> Binding {
         Binding {
-            logs: Rc::clone(&self.logs),
-            expanded: Rc::clone(&self.expanded),
+            console: Rc::new(Self {
+                logs: Rc::clone(&self.logs),
+                expanded: Rc::clone(&self.expanded),
+                autoscroll: Rc::clone(&self.autoscroll),
+            }),
             view: view.clone(),
         }
     }
 }
 impl Mounted {
+    /// Register one activation that reads its current controller outside the binding borrow.
+    fn subscribe(self: &Rc<Self>, button: &Element, following: bool) -> Result<(), ToolUiError> {
+        let weak = Rc::downgrade(self);
+        let callback = Closure::new(move || {
+            let Some(owner) = weak.upgrade() else {
+                return;
+            };
+            let binding = owner.binding.borrow().clone();
+            let flag = if following {
+                &binding.console.autoscroll
+            } else {
+                &binding.console.expanded
+            };
+            flag.set(!flag.get());
+            // Native callbacks have no error channel; a failed render keeps its reached nodes.
+            let _ = owner.render();
+        });
+        let subscription = EventSubscription::new(button.clone().into(), "click", callback)
+            .map_err(|error| failure(&error))?;
+        self.clicks.borrow_mut().push(subscription);
+        Ok(())
+    }
+    /// Publish expanded controls through the existing copy element and its feedback owner.
+    fn controls(&self, binding: &Binding) -> Result<(), ToolUiError> {
+        let previous = self.i18n.replace(Rc::clone(&binding.view.i18n));
+        drop(previous);
+        if !binding.console.expanded.get() {
+            self.follow.remove();
+            let copy = self.copy.borrow_mut().take();
+            if let Some(copy) = copy {
+                copy.remove();
+            }
+            return Ok(());
+        }
+        let following = binding.console.autoscroll.get();
+        let title = binding.view.i18n.text(if following {
+            "Autoscroll enabled"
+        } else {
+            "Autoscroll disabled"
+        })?;
+        self.follow
+            .set_attribute("title", &title)
+            .map_err(|error| failure(&error))?;
+        self.follow
+            .set_attribute("aria-pressed", if following { "true" } else { "false" })
+            .map_err(|error| failure(&error))?;
+        icon(
+            &self.follow,
+            if following { "ChevronsDown" } else { "Lock" },
+        )?;
+        if self.follow.parent_node().is_none() {
+            self.header
+                .append_child(&self.follow)
+                .map_err(|error| failure(&error))?;
+        }
+        let previous = self.copy.borrow().clone();
+        let copy = if let Some(copy) = previous {
+            copy
+        } else {
+            let copy = copy_button::create(
+                &binding.view.document,
+                &self.i18n,
+                copy_button::FEEDBACK_MS,
+                None,
+            )
+            .map_err(|error| failure(&error))?;
+            self.copy.replace(Some(copy.clone()));
+            self.header
+                .append_child(&copy)
+                .map_err(|error| failure(&error))?;
+            copy
+        };
+        copy.set_attribute("text", &binding.console.get_logs_text()?)
+            .map_err(|error| failure(&error))?;
+        copy.set_attribute("title", &binding.view.i18n.text("Copy logs")?)
+            .map_err(|error| failure(&error))?;
+        Ok(())
+    }
     /// Reconcile summary and positional literal rows without replacing unchanged text.
     fn render(&self) -> Result<(), ToolUiError> {
         let binding = self.binding.borrow().clone();
-        let logs = binding.logs.borrow().clone();
+        let logs = binding.console.logs.borrow().clone();
         let errors = logs
             .iter()
             .filter(|line| line.r#type == LogType::Error)
@@ -172,7 +278,7 @@ impl Mounted {
             &self.label,
             &format!("{} ({count})", binding.view.i18n.text("console")?),
         );
-        let expanded = binding.expanded.get();
+        let expanded = binding.console.expanded.get();
         self.summary
             .set_attribute("aria-expanded", if expanded { "true" } else { "false" })
             .map_err(|error| failure(&error))?;
@@ -188,7 +294,12 @@ impl Mounted {
             .unchecked_ref::<web_sys::HtmlElement>()
             .set_hidden(!expanded);
         let visible = if expanded { logs.as_slice() } else { &[] };
-        self.render_rows(visible, &binding.view.document)
+        self.controls(&binding)?;
+        self.render_rows(visible, &binding.view.document)?;
+        if expanded && binding.console.autoscroll.get() {
+            crate::components::console_block::scroll_bottom(&self.rows);
+        }
+        Ok(())
     }
     /// Keep rows positional, removing only the no-longer-published suffix.
     fn render_rows(
@@ -240,4 +351,12 @@ fn icon(holder: &Element, name: &str) -> Result<(), ToolUiError> {
             .map_err(|error| failure(&error))?;
     }
     Ok(())
+}
+
+impl Drop for Mounted {
+    fn drop(&mut self) {
+        if let Some(copy) = self.copy.get_mut().take() {
+            copy.remove();
+        }
+    }
 }
