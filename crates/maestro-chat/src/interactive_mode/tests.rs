@@ -1302,17 +1302,18 @@ pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
     mode.editor.on_submit().unwrap()(text);
 }
 
-/// Awaits the work the mode handed `runtime` since it was last taken, returning the failures
-/// that work reported.
+/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
 ///
-/// Called right after the input that admits the work, it awaits that work even beside a
-/// [`driving`] task, which runs the work it hands over in turn.
+/// Work handed over earlier goes back to `runtime` unawaited, so a [`driving`] task beside the
+/// caller runs it: such work, like a running shell command's output, can end only after the
+/// caller's later steps.
 pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
-    let mut errors = Vec::new();
-    for work in runtime.take_futures() {
-        errors.extend(work.await.err());
+    let mut work = runtime.take_futures();
+    let command = work.pop().expect("the input handed over its work");
+    for earlier in work {
+        maestro_tui::tui::TuiRuntime::spawn_local(runtime, earlier);
     }
-    errors
+    command.await.err().into_iter().collect()
 }
 
 /// Waits until `path` exists, yielding so the work that creates it runs.
