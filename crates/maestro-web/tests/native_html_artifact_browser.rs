@@ -167,8 +167,90 @@ pub async fn html_artifact_dom_executes_once_per_source_or_reload(import_module:
     assert_eq!(reads.get(), 3);
     artifact.execute_content("").unwrap();
     assert_eq!(reads.get(), 4, "an explicit empty run still loads");
+    reload_current(&view);
+    replace_unlisted_source(&view);
     reconnection(&page, &parent, &root, &mut artifact, &reads).await;
     failure(&root, &mut artifact);
+    parent.remove();
+}
+/// A retained reload reads each assignment before any presentation update, including failure.
+fn reload_current(view: &DomView) {
+    let reads = Rc::new(Cell::new(0));
+    let mut artifact = HtmlArtifact::new();
+    artifact.runtime_providers.push(marker("reload", &reads));
+    artifact.set_content(QUIET.to_owned()).unwrap();
+    let root = artifact.mount(view).unwrap();
+    let parent = container();
+    parent.append_child(&root.node).unwrap();
+    let header = artifact.get_header_buttons(view).unwrap();
+    let reload = select(&header.node, "button[title='Reload HTML']");
+    for source in ["<p>new</p>", ""] {
+        artifact.set_content(source.to_owned()).unwrap();
+        reload.unchecked_ref::<web_sys::HtmlElement>().click();
+        assert!(
+            srcdoc(&root).ends_with(&format!(
+                "{source}<script>if (window.complete) window.complete();</script>"
+            )),
+            "reload did not use current source"
+        );
+    }
+    let failed = Rc::new(Cell::new(true));
+    artifact.runtime_providers = vec![SharedHandle::new(
+        crate::native_html_artifact_support::Marker {
+            name: "recovering",
+            reads: Rc::clone(&reads),
+            fails: Rc::clone(&failed),
+        },
+    )];
+    artifact
+        .set_content("<p>failed</p>".to_owned())
+        .unwrap_err();
+    let before = reads.get();
+    failed.set(false);
+    reload.unchecked_ref::<web_sys::HtmlElement>().click();
+    assert_eq!(
+        reads.get(),
+        before + 1,
+        "reload retries the failed assignment"
+    );
+    assert!(
+        srcdoc(&root)
+            .ends_with("<p>failed</p><script>if (window.complete) window.complete();</script>")
+    );
+    parent.remove();
+}
+/// Replacement compares current source, even when the old listing has not been updated.
+fn replace_unlisted_source(view: &DomView) {
+    let reads = Rc::new(Cell::new(0));
+    let mut first = HtmlArtifact::new();
+    first.set_content(QUIET.to_owned()).unwrap();
+    let root = first.mount(view).unwrap();
+    let parent = container();
+    parent.append_child(&root.node).unwrap();
+    let header = first.get_header_buttons(view).unwrap();
+    first.set_content(LOGGING.to_owned()).unwrap();
+    assert_eq!(listed(&root), QUIET);
+    let mut replacement = HtmlArtifact::new();
+    replacement
+        .runtime_providers
+        .push(marker("replacement", &reads));
+    replacement.set_content(QUIET.to_owned()).unwrap();
+    replacement.update(&root, view).unwrap();
+    assert_eq!(
+        reads.get(),
+        1,
+        "replacement loads against the current unlisted source"
+    );
+    select(&header.node, "button[title='Reload HTML']")
+        .unchecked_ref::<web_sys::HtmlElement>()
+        .click();
+    assert_eq!(reads.get(), 2, "retained header reloads the replacement");
+    replacement.update(&root, view).unwrap();
+    assert_eq!(reads.get(), 2, "equal update remains suppressed");
+    assert!(
+        srcdoc(&root)
+            .ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
+    );
     parent.remove();
 }
 /// Detaching removes the frame and its route; reconnecting loads the source once more.
@@ -234,9 +316,10 @@ pub async fn html_artifact_dom_forwards_current_providers_and_url(import_module:
         document.ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
     );
     assert!(!frame(&root).unwrap().has_attribute("src"));
+    let header = artifact.get_header_buttons(&view).unwrap();
     addresses(&page, &root, &mut artifact).await;
     providers(&root, &mut artifact);
-    retarget(&page, &root, &artifact, &reads).await;
+    retarget(&page, &root, &artifact, &reads, &header).await;
     parent.remove();
 }
 /// A counting address provider for `path` below the page origin.
@@ -317,6 +400,7 @@ async fn retarget(
     root: &DomRoot,
     artifact: &HtmlArtifact,
     reads: &Rc<Cell<u32>>,
+    header: &DomRoot,
 ) {
     let view = view();
     let adapter = artifact.sandbox_iframe_ref.borrow().clone().unwrap();
@@ -324,11 +408,20 @@ async fn retarget(
     target.filename = "target.html".to_owned();
     target.runtime_providers = vec![marker("target", reads)];
     target.set_content(LOGGING.to_owned()).unwrap();
+    let previous_reads = reads.get();
     target.update(root, &view).unwrap();
+    assert_eq!(reads.get(), previous_reads + 1, "replacement loads once");
     assert!(artifact.sandbox_iframe_ref.borrow().is_none());
     let moved = target.sandbox_iframe_ref.borrow().clone().unwrap();
     assert!(Rc::ptr_eq(&moved, &adapter));
-    target.execute_content(target.content()).unwrap();
+    select(&header.node, "button[title='Reload HTML']")
+        .unchecked_ref::<web_sys::HtmlElement>()
+        .click();
+    assert_eq!(
+        reads.get(),
+        previous_reads + 2,
+        "retained header targets replacement"
+    );
     let document = srcdoc(root);
     assert!(document.contains("\"artifact-target.html\"") && document.contains("runtime_target"));
     logged(page, root, &target, &view.i18n, "[log] one").await;
@@ -528,7 +621,10 @@ fn guidance(view: &DomView) {
 async fn lifetime(page: &wasm_bindgen::JsValue) {
     let view = view();
     let parent = container();
+    let provider = marker("released", &Rc::default());
+    let released = Rc::downgrade(&provider);
     let mut first = HtmlArtifact::new();
+    first.runtime_providers.push(provider);
     first.filename = "first.html".to_owned();
     first.set_content(LOGGING.to_owned()).unwrap();
     let mut sibling = HtmlArtifact::new();
@@ -548,6 +644,11 @@ async fn lifetime(page: &wasm_bindgen::JsValue) {
     drop(live);
     parent.remove_child(&root.node).unwrap();
     drop(root);
+    first.runtime_providers.clear();
+    assert!(
+        released.upgrade().is_none(),
+        "released body retains its provider"
+    );
     assert!(first.sandbox_iframe_ref.borrow().is_none());
     assert_eq!(
         Rc::strong_count(&adapter),
@@ -604,7 +705,7 @@ pub async fn html_artifact_dom_nested_creation_keeps_controllers(import_module: 
     }
     assert_eq!((reads_a.get(), reads_b.get()), (1, 1));
     attributes(&parent, &root_a, &reads_a);
-    untaken(&view, &parent);
+    default_released(&page, &view, &parent).await;
     parent.remove_child(&root_a.node).unwrap();
     drop(root_a);
     assert!(first.sandbox_iframe_ref.borrow().is_none());
@@ -619,6 +720,22 @@ pub async fn html_artifact_dom_nested_creation_keeps_controllers(import_module: 
     )
     .await;
     parent.remove();
+}
+/// A disconnected default element releases its controller-owned descendants.
+async fn default_released(page: &wasm_bindgen::JsValue, view: &DomView, parent: &Element) {
+    let released = untaken(view, parent);
+    let window = web_sys::window().unwrap();
+    let gc = js_sys::Reflect::get(&window, &"gc".into())
+        .unwrap()
+        .unchecked_into::<js_sys::Function>();
+    for _ in 0..4 {
+        crate::contributions_support::frames(page, 1).await;
+        gc.call0(&window).unwrap();
+    }
+    assert!(
+        released.deref().is_none(),
+        "default element retains its body subtree"
+    );
 }
 /// The filename attribute renames the next load's sandbox; a content attribute is not source.
 fn attributes(parent: &Element, root: &DomRoot, reads: &Rc<Cell<u32>>) {
@@ -635,7 +752,7 @@ fn attributes(parent: &Element, root: &DomRoot, reads: &Rc<Cell<u32>>) {
 }
 /// A body mounted into a document without element definitions leaves its operands untaken, and
 /// a later default element starts empty.
-fn untaken(view: &DomView, parent: &Element) {
+fn untaken(view: &DomView, parent: &Element) -> js_sys::WeakRef<Element> {
     let inert = web_sys::DomParser::new()
         .unwrap()
         .parse_from_string(
@@ -669,6 +786,7 @@ fn untaken(view: &DomView, parent: &Element) {
     );
     assert_eq!(stale_reads.get(), 0);
     fresh.remove();
+    js_sys::WeakRef::new(&fresh)
 }
 /// A long logging source whose listing overflows a bounded body.
 fn long_source() -> String {
@@ -686,6 +804,26 @@ fn toggles(header: &DomRoot) -> (web_sys::HtmlElement, web_sys::HtmlElement) {
         .unwrap();
     let at = |index| buttons.item(index).unwrap().unchecked_into();
     (at(0), at(1))
+}
+/// Measure the HTML header's eight-pixel space between the toggle and reload.
+fn assert_header_gap(header: &DomRoot) {
+    let left = header
+        .node
+        .first_child()
+        .unwrap()
+        .unchecked_into::<Element>()
+        .get_bounding_client_rect();
+    let right = header
+        .node
+        .child_nodes()
+        .item(1)
+        .unwrap()
+        .unchecked_into::<Element>()
+        .get_bounding_client_rect();
+    assert!(
+        (right.left() - left.right() - 8.0).abs() < 0.1,
+        "HTML header gap must be 8px"
+    );
 }
 /// Whether a body shows its source listing rather than its preview.
 fn shows_source(root: &DomRoot) -> bool {
@@ -717,6 +855,7 @@ pub async fn html_artifact_dom_keeps_frame_across_mode_changes(import_module: js
     parent.append_child(&root.node).unwrap();
     let header = artifact.get_header_buttons(&view).unwrap();
     container().append_child(&header.node).unwrap();
+    assert_header_gap(&header);
     logged(&page, &root, &artifact, &view.i18n, "[log] one").await;
     // The load and the header's standalone preparation each read the provider once.
     assert_eq!(reads.get(), 2);

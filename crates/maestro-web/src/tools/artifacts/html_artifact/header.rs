@@ -36,6 +36,9 @@ impl HtmlArtifact {
     /// Returns localization, standalone preparation or native control failures.
     pub fn get_header_buttons(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let row = header::row(view)?;
+        row.class_list()
+            .add_1("maestro-html-header")
+            .map_err(|error| ToolUiError::native(&error))?;
         let (toggle, selection) = self.toggle(view)?;
         let (reload, reloading) = self.reload(view)?;
         let localization = Rc::new(RefCell::new(Rc::clone(&view.i18n)));

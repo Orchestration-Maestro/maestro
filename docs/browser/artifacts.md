@@ -315,18 +315,20 @@ The body keeps two regions in place: a preview with the isolated frame and, whil
 there are logs, the artifact console; and a highlighted source listing. Connecting
 the element creates the frame adapter, publishes it in `sandbox_iframe_ref` and
 loads a nonempty source once. A changed source clears the logs and, while
-connected, loads again. Equal or empty assignments, arriving logs and `update`
-never load. `execute_content` loads any source while connected, even an empty one.
+connected, loads again. Equal or empty assignments, arriving logs and updates
+from the same artifact never load. `execute_content` loads any source while
+connected, even an empty one.
 Loads read the current providers in order. A configured address replaces the
 frame's address; without one the frame keeps its own. Each load appends the
 completion signal after the whole source, so authored scripts, comments and
-attributes stay intact. In an empty document the signal runs in the body.
+attributes stay intact. In an empty document the signal runs in the head.
 
 Detaching the element removes the frame and its route and empties
 `sandbox_iframe_ref`. Reconnecting loads again through the same adapter, and
 dropping the mounted root releases it. An `update` from another artifact moves the
-frame to that artifact. The `filename` attribute names the sandbox of the next
-load; a `content` attribute is ignored.
+frame to that artifact and loads its source if it is changed and nonempty. The
+`filename` attribute names the sandbox of the next load; a `content` attribute is
+ignored.
 
 Only messages whose `type` is `"console"` become log lines, in arrival order and
 with their raw text; only the `"error"` method marks an error line. `get_logs`

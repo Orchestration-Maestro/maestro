@@ -26,14 +26,14 @@ pub(crate) struct Marker {
     /// Data reads so far.
     pub(crate) reads: Rc<Cell<u32>>,
     /// Whether data reads fail.
-    pub(crate) fails: bool,
+    pub(crate) fails: Rc<Cell<bool>>,
 }
 impl SandboxRuntimeProvider<BrowserSandboxValue> for Marker {
     fn get_data(
         &self,
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
         self.reads.set(self.reads.get() + 1);
-        if self.fails {
+        if self.fails.get() {
             return Err(DiagnosticErrorInfo::error("provider failed"));
         }
         Ok([(self.name.to_owned(), BrowserSandboxValue(self.name.into()))].into())
@@ -50,7 +50,7 @@ pub(crate) fn marker(name: &'static str, reads: &Rc<Cell<u32>>) -> Provider {
     SharedHandle::new(Marker {
         name,
         reads: Rc::clone(reads),
-        fails: false,
+        fails: Rc::default(),
     })
 }
 /// A provider whose data reads fail, counting into `reads`.
@@ -58,7 +58,7 @@ pub(crate) fn failing(reads: &Rc<Cell<u32>>) -> Provider {
     SharedHandle::new(Marker {
         name: "failing",
         reads: Rc::clone(reads),
-        fails: true,
+        fails: Rc::new(Cell::new(true)),
     })
 }
 /// The body's isolated frame, when one is placed.

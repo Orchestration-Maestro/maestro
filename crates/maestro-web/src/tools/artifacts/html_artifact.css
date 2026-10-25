@@ -25,3 +25,7 @@
   overflow: auto;
   background: var(--maestro-color-background);
 }
+
+.maestro-html-header {
+  gap: 0.5rem;
+}

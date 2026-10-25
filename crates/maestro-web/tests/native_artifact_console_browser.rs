@@ -565,6 +565,8 @@ async fn growth(
                 > f64::from(2 * case.count)
         );
     }
+    append_work(view, factory);
+    reentrant_history(view);
 }
 
 /// Native row paint and finished control transitions use the selected mode's roles.
@@ -696,5 +698,82 @@ fn assert_disclosure(root: &DomRoot, expanded: bool) {
                 .as_deref(),
             Some("Autoscroll enabled")
         );
+    }
+}
+
+/// Appending visits each new native value once for rows and once for copy, never old values.
+fn append_work(view: &DomView, factory: &wasm_bindgen::JsValue) {
+    let mut bounded = true;
+    for expanded in [false, true] {
+        for count in [16, 32, 64] {
+            let console = Console::new();
+            let (parent, root) = place(view, &console);
+            if expanded {
+                click(&root, ".maestro-artifact-summary");
+            }
+            let probe = js_sys::Reflect::get(factory, &"probe".into())
+                .unwrap()
+                .unchecked_into::<js_sys::Function>()
+                .call1(&wasm_bindgen::JsValue::UNDEFINED, &count.into())
+                .unwrap();
+            let scalars = js_sys::Reflect::get(&probe, &"scalars".into())
+                .unwrap()
+                .unchecked_into::<js_sys::Array>();
+            for value in scalars.iter() {
+                console.logs.borrow_mut().push(log(value));
+                console.append(&root, view).unwrap();
+            }
+            let stats = js_sys::Reflect::get(factory, &"stats".into())
+                .unwrap()
+                .unchecked_into::<js_sys::Function>()
+                .call1(&wasm_bindgen::JsValue::UNDEFINED, &probe)
+                .unwrap()
+                .unchecked_into::<js_sys::Array>();
+            bounded &=
+                stats.get(1).as_f64() == Some(if expanded { f64::from(2 * count) } else { 0.0 });
+            parent.remove();
+        }
+    }
+    assert!(bounded, "append revisited accumulated history");
+}
+
+/// Native coercion can append to the live history without keeping a conflicting borrow.
+fn reentrant_history(view: &DomView) {
+    for append in [false, true] {
+        let console = Console::new();
+        let (parent, root) = place(view, &console);
+        click(&root, ".maestro-artifact-summary");
+        let logs = Rc::clone(&console.logs);
+        let once = std::cell::Cell::new(false);
+        let callback = wasm_bindgen::closure::Closure::<dyn Fn() -> String>::new(move || {
+            if !once.replace(true) {
+                logs.borrow_mut().push(log("during"));
+            }
+            "value".to_owned()
+        });
+        let value = js_sys::Object::new();
+        js_sys::Reflect::set(&value, &"toString".into(), callback.as_ref()).unwrap();
+        console.logs.borrow_mut().push(log(value));
+        if append {
+            console.append(&root, view).unwrap();
+        } else {
+            console.update(&root, view).unwrap();
+        }
+        assert_eq!(console.logs.borrow().len(), 2);
+        console.update(&root, view).unwrap();
+        assert_eq!(
+            select(&root.node, "copy-button")
+                .get_attribute("text")
+                .as_deref(),
+            Some("[log] value\n[log] during")
+        );
+        assert_eq!(
+            select(&root.node, ".maestro-artifact-logs")
+                .child_nodes()
+                .length(),
+            2
+        );
+        console.logs.borrow_mut().clear();
+        parent.remove();
     }
 }

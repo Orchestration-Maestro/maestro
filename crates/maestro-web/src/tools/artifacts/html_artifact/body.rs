@@ -98,6 +98,9 @@ impl Body {
     ) -> Result<(), ToolUiError> {
         artifact.body.replace(Rc::downgrade(self));
         let next = artifact.binding();
+        let replaced_content = !Rc::ptr_eq(&self.binding.borrow().frame, &next.frame)
+            && self.binding.borrow().content != next.content
+            && !next.content.is_empty();
         let previous = self.binding.replace(next);
         if let Some(sandbox) = self.sandbox.borrow().as_ref()
             && !Rc::ptr_eq(&previous.frame, &artifact.sandbox_iframe_ref)
@@ -113,7 +116,21 @@ impl Body {
         self.view.replace(view.clone());
         self.list(&artifact.content, view);
         self.show_mode()?;
-        self.paint_logs()
+        self.paint_logs(false)?;
+        if replaced_content {
+            let binding = self.binding.borrow().clone();
+            binding.execute(&binding.content)?;
+        }
+        Ok(())
+    }
+    /// Refresh a bound controller's load operands without updating its listing.
+    pub(super) fn assign(&self, artifact: &HtmlArtifact) -> Result<(), ToolUiError> {
+        if Rc::ptr_eq(&self.binding.borrow().frame, &artifact.sandbox_iframe_ref) {
+            let previous = self.binding.replace(artifact.binding());
+            drop(previous);
+            self.paint_logs(false)?;
+        }
+        Ok(())
     }
     /// Show `mode` through the bound artifact's presentation.
     pub(super) fn select(&self, mode: ViewMode) -> Result<(), ToolUiError> {
@@ -133,13 +150,12 @@ impl Body {
         }
         Ok(())
     }
-    /// Clear the logs, then load the listed source again, even when empty.
+    /// Clear the logs, then load the current controller source again, even when empty.
     pub(super) fn reload(&self) -> Result<(), ToolUiError> {
         let binding = self.binding.borrow().clone();
         binding.logs.borrow_mut().clear();
-        self.paint_logs()?;
-        let content = self.shown.borrow().clone();
-        binding.execute(&content)
+        self.paint_logs(false)?;
+        binding.execute(&binding.content)
     }
     /// Re-list the source only when it changed, keeping the listing nodes and selection otherwise.
     fn list(&self, content: &str, view: &DomView) {
@@ -153,7 +169,7 @@ impl Body {
         content.clone_into(&mut self.shown.borrow_mut());
     }
     /// Show the console below the frame while there are logs.
-    fn paint_logs(&self) -> Result<(), ToolUiError> {
+    fn paint_logs(&self, appended: bool) -> Result<(), ToolUiError> {
         let console = self.console.borrow();
         let mut mounted = self.console_root.borrow_mut();
         if console.logs.borrow().is_empty() {
@@ -164,7 +180,11 @@ impl Body {
         }
         let view = self.view.borrow().clone();
         if let Some(root) = mounted.as_ref() {
-            return console.update(root, &view);
+            return if appended {
+                console.append(root, &view)
+            } else {
+                console.update(root, &view)
+            };
         }
         let root = console.mount(&view)?;
         self.preview
@@ -192,11 +212,10 @@ impl Body {
         let replaced = self.binding.borrow().frame.replace(Some(sandbox));
         drop(replaced);
         let binding = self.binding.borrow().clone();
-        let content = self.shown.borrow().clone();
-        if content.is_empty() {
+        if binding.content.is_empty() {
             return Ok(());
         }
-        binding.execute(&content)
+        binding.execute(&binding.content)
     }
     /// Withdraw the adapter from the bound artifact and remove its frame and route, keeping the
     /// adapter for a later connection.
@@ -237,7 +256,7 @@ impl Drop for Mounted {
 /// Mount `artifact` as an `html-artifact` element owning its body.
 pub(super) fn mount(artifact: &HtmlArtifact, view: &DomView) -> Result<DomRoot, ToolUiError> {
     let body = Body::new(artifact, view)?;
-    let node = crate::dom::create_with(&view.document, TAG, Rc::clone(&body))
+    let node = crate::dom::create_with(&view.document, TAG, Rc::downgrade(&body))
         .map_err(|error| ToolUiError::native(&error))?;
     body.attach(&node)?;
     Ok(DomRoot {
@@ -282,7 +301,7 @@ impl MessageConsumer<BrowserSandboxValue> for LogConsumer {
             self.logs.borrow_mut().push(LogEntry { r#type, text });
             if let Some(body) = self.body.upgrade() {
                 // The message is already recorded; a failed repaint keeps the previous console.
-                let _ = body.paint_logs();
+                let _ = body.paint_logs(true);
             }
         }
         Box::pin(async { Ok(()) })
@@ -294,16 +313,18 @@ struct ArtifactElement {
     root: Link,
     /// Page operands for an element created without a body.
     view: Rc<DomView>,
-    /// Body handed over by [`mount`], or built on first connection.
-    body: Option<Rc<Body>>,
+    /// Body retained by the mounted root, never by its element backedge.
+    body: Weak<Body>,
+    /// Body of a default element, owned only while connected.
+    default_body: Option<Rc<Body>>,
     /// Accessors of the filename property.
     _properties: Reflected,
 }
 impl ArtifactElement {
     /// The element's body, building an empty one named by its attribute on first use.
     fn body(&mut self) -> Result<Rc<Body>, ToolUiError> {
-        if let Some(body) = &self.body {
-            return Ok(Rc::clone(body));
+        if let Some(body) = self.body.upgrade() {
+            return Ok(body);
         }
         let root = crate::dom::live(&self.root)
             .ok_or_else(|| ToolUiError::Presentation("HTML element was released".to_owned()))?;
@@ -312,8 +333,10 @@ impl ArtifactElement {
             ..HtmlArtifact::default()
         };
         let body = Body::new(&artifact, &self.view)?;
+        root.replace_children_with_node_0();
         body.attach(&root)?;
-        Ok(Rc::clone(self.body.insert(body)))
+        self.body = Rc::downgrade(&body);
+        Ok(Rc::clone(self.default_body.insert(body)))
     }
 }
 impl custom_element::CustomElement for ArtifactElement {
@@ -322,12 +345,15 @@ impl custom_element::CustomElement for ArtifactElement {
         let _ = self.body().and_then(|body| body.connect());
     }
     fn disconnected_callback(&mut self) {
-        if let Some(body) = &self.body {
+        if let Some(body) = self.body.upgrade() {
             body.disconnect();
+        }
+        if let Some(body) = self.default_body.take() {
+            body.release();
         }
     }
     fn attribute_changed_callback(&mut self, _: &str, _: JsValue, new: JsValue) {
-        if let Some(body) = &self.body {
+        if let Some(body) = self.body.upgrade() {
             body.binding.borrow_mut().filename = new.as_string().unwrap_or_default();
         }
     }
@@ -342,7 +368,8 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
         ArtifactElement {
             root: Link::new(&root),
             view: Rc::clone(&view),
-            body: crate::dom::take_creating::<Rc<Body>>(),
+            body: crate::dom::take_creating::<Weak<Body>>().unwrap_or_default(),
+            default_body: None,
             _properties: properties,
         }
     })

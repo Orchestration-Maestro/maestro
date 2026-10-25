@@ -67,6 +67,10 @@ impl HtmlArtifact {
         }
         self.content = content;
         self.logs.borrow_mut().clear();
+        let body = self.body.borrow().upgrade();
+        if let Some(body) = body {
+            body.assign(self)?;
+        }
         if self.content.is_empty() {
             return Ok(());
         }
@@ -93,6 +97,7 @@ impl HtmlArtifact {
     /// The operands a load reads, sharing this artifact's handles.
     fn binding(&self) -> Binding {
         Binding {
+            content: self.content.clone(),
             filename: self.filename.clone(),
             providers: self.runtime_providers.clone(),
             url: self.sandbox_url_provider.clone(),
@@ -106,6 +111,8 @@ impl HtmlArtifact {
 /// Operands of one load, which a mounted body keeps from the artifact that last updated it.
 #[derive(Clone)]
 struct Binding {
+    /// Current controller source, independent of presentation updates.
+    content: String,
     /// Filename naming the sandbox.
     filename: String,
     /// Runtime providers in load order.
