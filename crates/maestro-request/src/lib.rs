@@ -6,6 +6,7 @@ pub mod model_registry;
 pub mod oauth;
 pub mod parameter_schema;
 pub mod presence;
+pub mod provider_config;
 pub mod skills;
 pub mod slash_commands;
 pub mod source_info;

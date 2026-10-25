@@ -17,6 +17,8 @@ mod events;
 mod extension_result;
 pub(crate) mod finite;
 pub(crate) mod object;
+mod providers;
+pub use providers::{ProviderConfig, ProviderModelConfig};
 mod selection_events;
 mod session_events;
 mod tool_events;

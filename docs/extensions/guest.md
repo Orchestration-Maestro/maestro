@@ -337,6 +337,13 @@ operation for the supplied descriptor, without checking catalog membership.
 present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
+`ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
+`get_provider_auth_status`, `get_provider_display_name`, `is_using_oauth`,
+`register_provider`, `unregister_provider` and `get_api_key_for_provider` to the
+same host catalog. Models and provider data are checked for nonfinite numbers
+before the call; `AuthStatus` and `AuthSource` are the
+[shared credential records](../records.md#credential-records).
+
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
 floating-point context window without recalculation. No usage is distinct from
@@ -398,6 +405,16 @@ names. [`ToolInfo`](../../crates/maestro-extensions-wasm/src/types/actions.rs) a
 [`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
 retain host-supplied provenance. See the [data boundary](#how-an-event-travels) for
 opaque schema and details text.
+
+## Provider registration
+
+`ExtensionAPI::register_provider` sends a literal name and a `ProviderConfig` to the
+host, and `unregister_provider` sends a name. `ProviderConfig` and
+`ProviderModelConfig` are the [shared provider records](../records.md#provider-registration-records),
+carrying data only. Absent fields are omitted; empty strings, lists and maps and
+`false` are sent as written, header, model and input order is kept, and signed zero
+survives. A nonfinite number fails with the finite-number error before the host
+sees the call. Queuing during loading, validation and replacement stay host policy.
 
 ## Model selection and action errors
 

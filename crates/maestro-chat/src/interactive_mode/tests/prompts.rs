@@ -138,7 +138,10 @@ impl Scripted {
                 &provider.models[0].provider,
                 Arc::new(RwLock::new(ProviderConfigInput {
                     api: Some(provider.api.clone()),
-                    stream_simple: Some(Arc::new(RetainedProvider(callback))),
+                    callbacks: maestro_app::ProviderCallbacks {
+                        stream_simple: Some(Arc::new(RetainedProvider(callback))),
+                        ..Default::default()
+                    },
                     ..ProviderConfigInput::default()
                 })),
             )

@@ -438,7 +438,10 @@ optional-field helper; `Presence<T>` stays single-source here. Its `oauth` modul
 `OAuthCredentials` and its `auth_storage` module owns `ApiKeyCredential`,
 `AuthCredential`, `AuthStorageData`, `AuthSource` and `AuthStatus` with their
 serialization; models and credentials re-export them, and parsing, stored-record
-construction, locking, key selection and persistence stay with credentials.
+construction, locking, key selection and persistence stay with credentials. Its
+`provider_config` module owns `ProviderConfig<C>` and `ProviderModelConfig`; the
+catalog specializes `C` with its callable provider operations, the guest leaves it
+empty, and validation, replay and registration stay with the catalog.
 Existing models, resources and credentials public paths re-export their moved records. Provider
 invocation, scheduling, clock-dependent diagnostics, resource discovery and
 provenance construction stay with their existing owners; this is not a general

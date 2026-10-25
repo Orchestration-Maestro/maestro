@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 
-use crate::{ExtensionFuture, ExtensionResult, Model};
+use crate::{AuthStatus, ExtensionFuture, ExtensionResult, Model, ProviderConfig};
 pub use maestro_request::model_registry::ResolvedRequestAuth;
 use std::rc::Rc;
 port! {
@@ -18,10 +18,28 @@ port! {
         fn get_available() -> Vec<Model>;
         /// Finds a descriptor using literal provider and model identifiers.
         fn find(provider: &str, model_id: &str) -> Option<Model>;
+        /// Reloads the host catalog and replays its registered providers.
+        fn refresh() -> ();
+        /// Returns the catalog's current load error.
+        fn get_error() -> Option<String>;
+        /// Reports whether the model's provider has configured authentication.
+        fn has_configured_auth(model: Model) -> bool;
+        /// Returns the provider's authentication status without key values.
+        fn get_provider_auth_status(provider: &str) -> AuthStatus;
+        /// Returns the provider's display name, or the literal identifier.
+        fn get_provider_display_name(provider: &str) -> String;
+        /// Reports whether the model's provider uses stored subscription credentials.
+        fn is_using_oauth(model: Model) -> bool;
+        /// Registers a provider directly in this catalog.
+        fn register_provider(name: &str, config: ProviderConfig) -> ();
+        /// Unregisters a provider from this catalog.
+        fn unregister_provider(name: &str) -> ();
     }
     asynchronous {
         /// Resolves credentials for the supplied model.
         fn get_api_key_and_headers(model: Model) -> ResolvedRequestAuth;
+        /// Resolves the provider's request key.
+        fn get_api_key_for_provider(provider: &str) -> Option<String>;
     }
 }
 /// Retained catalog; clones share its host owner.
@@ -43,5 +61,13 @@ impl ModelRegistry {
         model: Model,
     ) -> ExtensionFuture<'_, ResolvedRequestAuth> {
         self.0.get_api_key_and_headers(model)
+    }
+    /// Resolves the provider's request key.
+    ///
+    /// # Errors
+    /// Returns the host failure.
+    #[must_use]
+    pub fn get_api_key_for_provider(&self, provider: &str) -> ExtensionFuture<'_, Option<String>> {
+        self.0.get_api_key_for_provider(provider)
     }
 }

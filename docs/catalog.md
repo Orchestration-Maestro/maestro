@@ -102,6 +102,11 @@ a nonempty model list requires a provider endpoint, key or OAuth, and an API on
 each model or its provider. Validation failure changes nothing. Dynamic
 `ProviderModelInput` values do not use the file loader's defaults or limit checks.
 
+`ProviderConfigInput` is the [shared provider record](records.md#provider-registration-records)
+with `ProviderCallbacks` beside its data: `stream_simple` and `oauth` live in its
+`callbacks` field. Its JSON form deserializes straight into `ProviderConfigInput`
+with no operations, so an extension's registration data needs no second record.
+
 Nonempty model lists replace this provider's descriptors and append definitions
 in supplied order, including duplicates. Missing or empty lists do not replace
 immediately. Endpoint/header-only updates publish replacement matching descriptors

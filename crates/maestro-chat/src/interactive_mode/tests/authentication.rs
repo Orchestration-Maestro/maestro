@@ -216,7 +216,9 @@ fn subscribe(
         server,
         script: Arc::new(script),
     });
-    register_configured(world, id, &[], move |config| config.oauth = Some(scripted));
+    register_configured(world, id, &[], move |config| {
+        config.callbacks.oauth = Some(scripted);
+    });
 }
 
 /// Subscription credentials whose key is `access`.
@@ -466,7 +468,7 @@ fn register_one(world: &World, provider: &Provider) {
     register_configured(world, &provider.id, &ids, move |config| {
         config.name = name;
         config.api_key = key;
-        config.oauth = oauth;
+        config.callbacks.oauth = oauth;
     });
 }
 
@@ -790,7 +792,7 @@ fn refuse_after(world: &World, succeeds: usize) {
         succeeds: AtomicUsize::new(succeeds),
     });
     register_configured(world, "refusing", &["one"], move |config| {
-        config.oauth = Some(oauth);
+        config.callbacks.oauth = Some(oauth);
     });
     let credential = json!({
         "type": "oauth",

@@ -6,7 +6,7 @@ mod error;
 pub use error::CatalogError;
 mod loading;
 mod provider_config;
-pub use provider_config::{ProviderConfigInput, ProviderModelInput};
+pub use provider_config::{ProviderCallbacks, ProviderConfigInput, ProviderModelInput};
 use std::borrow::Cow;
 mod request_auth;
 use indexmap::IndexMap;
@@ -164,10 +164,10 @@ impl ModelRegistry {
         provider_name: &str,
         config: SharedHandle<RwLock<ProviderConfigInput>>,
     ) -> Result<(), CatalogError> {
-        config
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .validate(provider_name)?;
+        provider_config::validate(
+            &config.read().unwrap_or_else(PoisonError::into_inner),
+            provider_name,
+        )?;
         self.apply_provider_config(provider_name, &config)?;
         self.upsert_registered_provider(provider_name, config);
         Ok(())

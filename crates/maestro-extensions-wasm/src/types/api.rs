@@ -83,6 +83,10 @@ port! {
         fn set_active_tools(tool_names: &[String]) -> ();
         /// Reads the host's ordered command inventory.
         fn get_commands() -> Vec<SlashCommandInfo>;
+        /// Registers a provider; the host queues it until binding.
+        fn register_provider(name: &str, config: super::ProviderConfig) -> ();
+        /// Unregisters a provider together with its queued registrations.
+        fn unregister_provider(name: &str) -> ();
         /// Reads the host's current thinking level.
         fn get_thinking_level() -> ThinkingLevel;
         /// Sets the requested thinking level through the host.

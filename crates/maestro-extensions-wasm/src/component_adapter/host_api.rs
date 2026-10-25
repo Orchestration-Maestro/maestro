@@ -199,4 +199,10 @@ impl<I: Imports> ExtensionHost for Host<I> {
         self.0
             .append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
     }
+    fn register_provider(&self, name: &str, config: crate::ProviderConfig) -> ExtensionResult<()> {
+        self.0.register_provider(name, &encode_value(&config)?)
+    }
+    fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {
+        self.0.unregister_provider(name)
+    }
 }

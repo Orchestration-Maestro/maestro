@@ -692,6 +692,21 @@ impl host::Host for State {
             .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep()))
     }
 
+    fn register_provider(
+        &mut self,
+        name: String,
+        config: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        self.observed
+            .log(format!("provider register {name} {config}"));
+        Ok(Ok(()))
+    }
+
+    fn unregister_provider(&mut self, name: String) -> wasmtime::Result<Result<(), String>> {
+        self.observed.log(format!("provider unregister {name}"));
+        Ok(Ok(()))
+    }
+
     fn append_entry(
         &mut self,
         custom_type: String,

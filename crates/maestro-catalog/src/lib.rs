@@ -5,8 +5,8 @@ pub use maestro_credentials::clear_config_value_cache as clear_api_key_cache;
 #[cfg(not(target_arch = "wasm32"))]
 pub use model_registry::NativeModelFileOperations;
 pub use model_registry::{
-    CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ProviderConfigInput,
-    ProviderModelInput, ResolvedRequestAuth,
+    CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ProviderCallbacks,
+    ProviderConfigInput, ProviderModelInput, ResolvedRequestAuth,
 };
 
 mod defaults;

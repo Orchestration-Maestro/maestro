@@ -71,9 +71,9 @@ pub use maestro_tools::{ExecOptions, ExecResult};
 pub use types::{
     AppendEntryHandler, ExtensionActions, ExtensionError, ExtensionErrorListener, ExtensionRuntime,
     ExtensionRuntimeState, GetActiveToolsHandler, GetAllToolsHandler, GetCommandsHandler,
-    GetThinkingLevelHandler, ProviderConfig, ProviderModelConfig, SendMessageHandler,
-    SendUserMessageHandler, SetActiveToolsHandler, SetLabelHandler, SetModelHandler,
-    SetThinkingLevelHandler,
+    GetThinkingLevelHandler, ProviderCallbacks, ProviderConfig, ProviderModelConfig,
+    SendMessageHandler, SendUserMessageHandler, SetActiveToolsHandler, SetLabelHandler,
+    SetModelHandler, SetThinkingLevelHandler,
 };
 
 /// Registered-tool invocation adapters.

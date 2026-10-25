@@ -45,6 +45,7 @@ pub use compaction::*;
 #[doc(hidden)]
 pub use component_adapter::Glue;
 pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
+pub use maestro_request::auth_storage::{AuthSource, AuthStatus};
 pub use maestro_request::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo,
 };

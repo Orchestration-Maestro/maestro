@@ -1315,6 +1315,75 @@ impl Imports for Controlled {
             &[serde_json::json!(provider), serde_json::json!(model_id)],
         )
     }
+    fn registry_refresh(&self, resource: &Reader) -> ExtensionResult<()> {
+        resource.data.unit("refresh", &[])
+    }
+    fn registry_get_error(&self, resource: &Reader) -> ExtensionResult<Option<String>> {
+        resource.data.optional("getError", &[])
+    }
+    fn registry_has_configured_auth(
+        &self,
+        resource: &Reader,
+        model: &str,
+    ) -> ExtensionResult<bool> {
+        resource
+            .data
+            .flag("hasConfiguredAuth", &[serde_json::json!(model)])
+    }
+    fn registry_get_provider_auth_status(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("getProviderAuthStatus", &[serde_json::json!(provider)])?
+            .ok_or("missing status".into())
+    }
+    fn registry_get_provider_display_name(
+        &self,
+        resource: &Reader,
+        provider: &str,
+    ) -> ExtensionResult<String> {
+        resource
+            .data
+            .optional("getProviderDisplayName", &[serde_json::json!(provider)])?
+            .ok_or("missing name".into())
+    }
+    fn registry_is_using_oauth(&self, resource: &Reader, model: &str) -> ExtensionResult<bool> {
+        resource
+            .data
+            .flag("isUsingOAuth", &[serde_json::json!(model)])
+    }
+    fn registry_register_provider(
+        &self,
+        resource: &Reader,
+        name: &str,
+        config: &str,
+    ) -> ExtensionResult<()> {
+        resource.data.unit(
+            "registerProvider",
+            &[serde_json::json!(name), serde_json::json!(config)],
+        )
+    }
+    fn registry_unregister_provider(&self, resource: &Reader, name: &str) -> ExtensionResult<()> {
+        resource
+            .data
+            .unit("unregisterProvider", &[serde_json::json!(name)])
+    }
+    fn registry_get_api_key_for_provider<'a>(
+        &'a self,
+        resource: &'a Reader,
+        provider: String,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(async move {
+            let hold = self.observed.borrow_mut().take_hold();
+            pause(hold).await;
+            resource
+                .data
+                .optional("getApiKeyForProvider", &[serde_json::json!(provider)])
+        })
+    }
     fn registry_get_api_key_and_headers<'a>(
         &'a self,
         resource: &'a Reader,
@@ -1452,6 +1521,20 @@ impl Imports for Controlled {
         if let Some(flag) = &update.cancel_on_first {
             flag.abort();
         }
+        Ok(())
+    }
+
+    fn register_provider(&self, name: &str, config: &str) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .log(format!("provider register {name} {config}"));
+        Ok(())
+    }
+
+    fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .log(format!("provider unregister {name}"));
         Ok(())
     }
 

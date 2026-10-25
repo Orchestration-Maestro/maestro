@@ -101,6 +101,8 @@ impl Imports for Generated {
         register_shortcut(shortcut: &str, description: Option<&str>, handler: &host::Callback) -> ExtensionResult<()> => host::register_shortcut;
         register_flag(name: &str, options: &FlagOptions) -> ExtensionResult<()> => host::register_flag;
         get_flag(name: &str) -> ExtensionResult<Option<FlagValue>> => host::get_flag;
+        register_provider(name: &str, config: &str) -> ExtensionResult<()> => host::register_provider;
+        unregister_provider(name: &str) -> ExtensionResult<()> => host::unregister_provider;
 
         append_entry(custom_type: &str, data: Option<&str>) -> ExtensionResult<()> => host::append_entry;
     } }
@@ -132,6 +134,14 @@ impl Imports for Generated {
         command_compact(context: &Self::CommandContext, instructions: Option<&str>, complete: Option<&Self::Callback>, error: Option<&Self::Callback>) -> ExtensionResult<()> => compact(instructions, complete, error);
         registry_get_available(resource: &Self::Registry) -> ExtensionResult<String> => get_available();
         registry_find(resource: &Self::Registry, provider: &str, model_id: &str) -> ExtensionResult<Option<String>> => find(provider, model_id);
+        registry_refresh(resource: &Self::Registry) -> ExtensionResult<()> => refresh();
+        registry_get_error(resource: &Self::Registry) -> ExtensionResult<Option<String>> => get_error();
+        registry_has_configured_auth(resource: &Self::Registry, model: &str) -> ExtensionResult<bool> => has_configured_auth(model);
+        registry_get_provider_auth_status(resource: &Self::Registry, provider: &str) -> ExtensionResult<String> => get_provider_auth_status(provider);
+        registry_get_provider_display_name(resource: &Self::Registry, provider: &str) -> ExtensionResult<String> => get_provider_display_name(provider);
+        registry_is_using_oauth(resource: &Self::Registry, model: &str) -> ExtensionResult<bool> => is_using_oauth(model);
+        registry_register_provider(resource: &Self::Registry, name: &str, config: &str) -> ExtensionResult<()> => register_provider(name, config);
+        registry_unregister_provider(resource: &Self::Registry, name: &str) -> ExtensionResult<()> => unregister_provider(name);
         ui(context: &Self::Context) -> ExtensionResult<Self::Ui> => ui();
         ui_notify(resource: &Self::Ui, message: &str, kind: Option<NotificationType>) -> ExtensionResult<()> => notify(message, kind);
         ui_set_status(resource: &Self::Ui, key: &str, text: Option<&str>) -> ExtensionResult<()> => set_status(key, text);
@@ -260,6 +270,14 @@ impl Imports for Generated {
                 }
             })
         })
+    }
+
+    fn registry_get_api_key_for_provider<'a>(
+        &'a self,
+        resource: &'a Self::Registry,
+        provider: String,
+    ) -> ExtensionFuture<'a, Option<String>> {
+        Box::pin(resource.get_api_key_for_provider(provider))
     }
 
     type BashOutput = host::BashOutput;

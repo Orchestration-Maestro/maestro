@@ -159,6 +159,17 @@ interface host {
         get-available: func() -> result<string, string>;
         find: func(provider: string, model-id: string) -> result<option<string>, string>;
         get-api-key-and-headers: async func(model: string) -> result<resolved-request-auth, string>;
+        refresh: func() -> result<_, string>;
+        get-error: func() -> result<option<string>, string>;
+        has-configured-auth: func(model: string) -> result<bool, string>;
+        /// The provider's authentication status as JSON.
+        get-provider-auth-status: func(provider: string) -> result<string, string>;
+        get-provider-display-name: func(provider: string) -> result<string, string>;
+        is-using-oauth: func(model: string) -> result<bool, string>;
+        /// Registers JSON provider data directly in this catalog.
+        register-provider: func(name: string, config: string) -> result<_, string>;
+        unregister-provider: func(name: string) -> result<_, string>;
+        get-api-key-for-provider: async func(provider: string) -> result<option<string>, string>;
     }
 
     /// Live capabilities available to every callback.
@@ -253,6 +264,10 @@ interface host {
     ) -> result<_, string>;
     /// Registers authored tool data and callbacks.
     register-tool: func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>, schemas: list<tuple<string, borrow<callback>>>) -> result<_, string>;
+    /// Registers JSON provider data, queued until the host binds.
+    register-provider: func(name: string, config: string) -> result<_, string>;
+    /// Unregisters a provider, including its queued registrations.
+    unregister-provider: func(name: string) -> result<_, string>;
     /// Appends a custom entry to the session; `data` is JSON text.
     append-entry: func(custom-type: string, data: option<string>) -> result<_, string>;
 

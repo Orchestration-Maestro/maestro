@@ -57,6 +57,7 @@ mod parameter_schemas;
 mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;
+mod provider_catalog;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;
@@ -510,8 +511,20 @@ fn assert_catalog_imports(contract: &Contract) {
         .flat_map(|resource| context_methods.map(|method| format!("[method]{resource}.{method}")))
         .collect::<Vec<_>>();
     expected.extend(
-        ["get-all", "get-available", "find"]
-            .map(|method| format!("[method]model-registry.{method}")),
+        [
+            "get-all",
+            "get-available",
+            "find",
+            "refresh",
+            "get-error",
+            "has-configured-auth",
+            "get-provider-auth-status",
+            "get-provider-display-name",
+            "is-using-oauth",
+            "register-provider",
+            "unregister-provider",
+        ]
+        .map(|method| format!("[method]model-registry.{method}")),
     );
     expected.sort_unstable();
     let actual = names(&contract.imports, false)
@@ -578,6 +591,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]command-context.switch-session",
             "[method]command-context.wait-for-idle",
             "[method]model-registry.get-api-key-and-headers",
+            "[method]model-registry.get-api-key-for-provider",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
             "callback-emit",
@@ -737,6 +751,8 @@ fn assert_action_contract(contract: &Contract) {
         "get-commands",
         "get-thinking-level",
         "set-thinking-level",
+        "register-provider",
+        "unregister-provider",
         "[method]context.compact",
         "[method]command-context.compact",
     ] {
