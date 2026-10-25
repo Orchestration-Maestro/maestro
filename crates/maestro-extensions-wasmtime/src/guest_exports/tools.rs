@@ -16,24 +16,24 @@ use wasmtime_wasi::WasiView;
 /// Exact owned canonical tool invocation record.
 #[derive(ComponentType, Lower)]
 #[component(record)]
-struct Invocation {
+pub(crate) struct Invocation {
     /// Literal invocation identity.
     #[component(name = "tool-call-id")]
-    tool_call_id: String,
+    pub(crate) tool_call_id: String,
     /// Serialized native arguments.
-    params: String,
+    pub(crate) params: String,
 }
 
 /// Independently retained original execution resources.
 #[derive(ComponentType, Lower)]
 #[component(record)]
-struct Capabilities {
+pub(crate) struct Capabilities {
     /// Original wrapper-created context.
-    ctx: Resource<Context>,
+    pub(crate) ctx: Resource<Context>,
     /// Independently optional native cancellation.
-    signal: Option<Resource<SignalEndpoint>>,
+    pub(crate) signal: Option<Resource<SignalEndpoint>>,
     /// Independently optional progress observer.
-    update: Option<Resource<ToolUpdate>>,
+    pub(crate) update: Option<Resource<ToolUpdate>>,
 }
 
 /// Exact canonical preparation signature, returning an argument document.

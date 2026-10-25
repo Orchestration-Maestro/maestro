@@ -53,7 +53,7 @@ pub(super) async fn retained(with_healthy: bool) {
         .unwrap()
         .command
         .handler;
-    let (retired, (), ()) = futures_util::join!(
+    let (retired, (), ()) = futures_util::future::join3(
         command("retain-suspended".into(), runner.create_command_context()),
         async {
             if with_healthy {
@@ -69,7 +69,8 @@ pub(super) async fn retained(with_healthy: bool) {
             }
             retire(&runner, &history, &original_ui, resumes, caught_error).await;
         },
-    );
+    )
+    .await;
     let observed: Value = serde_json::from_str(&retired.unwrap_err().to_string()).unwrap();
     assert_eq!(
         observed,

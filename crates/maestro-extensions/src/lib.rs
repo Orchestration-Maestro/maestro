@@ -49,7 +49,9 @@ mod loader;
 /// Owned registration records and callback types.
 pub mod types;
 pub use maestro_catalog::{ConfigValueOperations, ModelRegistry, ResolvedRequestAuth};
-pub use maestro_models::{ParameterSchema, schema_transport};
+pub use maestro_models::{
+    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode, schema_transport,
+};
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
 pub use maestro_session::session_manager::{
@@ -57,16 +59,25 @@ pub use maestro_session::session_manager::{
     ReadonlySessionManager, SessionTreeNode,
 };
 pub use maestro_session::{CompactionResult, Presence, SessionManager};
+/// Terminal color conversion mode used by extension themes.
+pub use maestro_theme::ColorMode;
 pub use maestro_theme::LiveTheme;
+/// Prepared terminal colors and text decorations supplied to extension renderers.
+pub use maestro_theme::Theme;
+/// Background color key, including authored names.
+pub use maestro_theme::ThemeBg;
+/// Foreground color key, including authored names.
+pub use maestro_theme::ThemeColor;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
     ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionExecution,
-    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, ForkHandler, MessageRenderOptions, MessageRenderer,
-    MessageRendererCall, NavigateTreeHandler, NewSessionHandler, RegisteredCommand,
-    ReplacedSessionContext, ResolvedCommand, ShutdownHandler, SwitchSessionHandler,
-    TerminalInputHandler, UIHostCall, WidgetPlacement, WorkingIndicatorOptions,
+    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIContextBinding,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler, MessageRenderOptions,
+    MessageRenderer, MessageRendererCall, NavigateTreeHandler, NewSessionHandler,
+    RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
+    SwitchSessionHandler, TerminalInputHandler, UIHostCall, WidgetPlacement,
+    WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
 pub mod runner;
@@ -110,7 +121,7 @@ pub use maestro_agent::{AgentToolResult, AgentToolUpdateCallback, ToolExecutionM
 /// Shared extension event inventory for concrete native adapters.
 pub use maestro_models::extension_event_table;
 /// Native declaration and diagnostic records used by extension adapters.
-pub use maestro_models::{DiagnosticErrorInfo, Tool};
+pub use maestro_models::{DiagnosticCode, DiagnosticErrorInfo, Tool};
 pub use maestro_resources::{SlashCommandInfo, SlashCommandSource};
 pub use maestro_tools::ToolRenderResultOptions;
 /// Native tool framing retained by extension registrations.

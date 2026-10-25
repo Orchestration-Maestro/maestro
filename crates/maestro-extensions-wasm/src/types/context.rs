@@ -75,6 +75,12 @@ port! {
         ) -> ();
         /// Sets the terminal title.
         fn set_title(title: &str) -> ();
+        /// Pastes literal text into the host editor through its paste handling.
+        fn paste_to_editor(text: &str) -> ();
+        /// Replaces the host editor's text.
+        fn set_editor_text(text: &str) -> ();
+        /// Reads the host editor's current text.
+        fn get_editor_text() -> String;
     }
 }
 use std::fmt;

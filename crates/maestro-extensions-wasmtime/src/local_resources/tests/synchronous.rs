@@ -17,28 +17,28 @@ fn synchronous_native_callbacks_service_nested_original_context_reads() {
         .context(Owner::Base(runner.create_context()))
         .unwrap();
     let (first, first_calls) = mpsc::channel::<Completion>();
-    let (second, second_calls) = mpsc::channel::<Completion>();
     let second_registry = registry.clone();
     let second_callback: AgentToolUpdateCallback<serde_json::Value, Local> = Rc::new(move |_| {
-        assert_eq!(
-            second_registry
-                .invoke_sync(|completion| second
-                    .send(completion)
-                    .map_err(|error| error.to_string()))
-                .unwrap_err(),
-            "extension cannot be re-entered while it waits for a synchronous host call"
-        );
+        let nested = second_registry.invoke_sync(None, |completion, _| {
+            completion.complete(Ok(()));
+            Ok(())
+        });
+        assert_eq!(nested, Ok(()));
     });
     let second_update = registry.tool_update(second_callback).unwrap();
     let guest = std::thread::spawn(move || {
         let completion = first_calls.recv().unwrap();
         assert_eq!(context.read(Request::Cwd).unwrap(), "/synchronous-original");
-        second_update.update(r#"{"content":[]}"#.into()).unwrap();
-        assert!(second_calls.try_recv().is_err());
+        second_update
+            .update(r#"{"content":[]}"#.into())
+            .result()
+            .unwrap();
         completion.complete(Ok(()));
     });
     registry
-        .invoke_sync(|completion| first.send(completion).map_err(|error| error.to_string()))
+        .invoke_sync(None, |completion, _| {
+            first.send(completion).map_err(|error| error.to_string())
+        })
         .unwrap();
     guest.join().unwrap();
     drop((registry, admission, pump));
@@ -50,7 +50,7 @@ fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
     let registry = pump.registry();
     assert_eq!(
         registry
-            .invoke_sync(|completion| {
+            .invoke_sync(None, |completion, _| {
                 drop(completion);
                 Ok(())
             })
@@ -58,7 +58,7 @@ fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
         "extension guest reply ended"
     );
     registry
-        .invoke_sync(|completion| {
+        .invoke_sync(None, |completion, _| {
             completion.complete(Ok(()));
             Ok(())
         })
@@ -66,9 +66,29 @@ fn abandoned_synchronous_reply_is_catchable_and_does_not_close_the_pump() {
     drop(pump);
     drop(admission);
     assert_eq!(
-        registry.invoke_sync(|_| Ok(())).unwrap_err(),
+        registry.invoke_sync(None, |_, _| Ok(())).unwrap_err(),
         "extension resource owner ended"
     );
+}
+
+#[test]
+fn consecutive_synchronous_invocations_return_without_the_caller_task_yielding() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let (pump, admission) = Pump::new();
+            let registry = pump.registry();
+            for _ in 0..1000 {
+                registry
+                    .invoke_sync(None, |completion, _| {
+                        completion.complete(Ok(()));
+                        Ok(())
+                    })
+                    .unwrap();
+            }
+            drop((registry, admission, pump));
+        });
 }
 
 /// Observes whether the original asynchronous owner is made runnable again.
@@ -105,11 +125,13 @@ fn synchronous_wait_returns_receiver_wakeups_to_the_suspended_async_owner() {
     let (calls, incoming) = mpsc::channel::<Completion>();
     let guest = std::thread::spawn(move || {
         let completion = incoming.recv().unwrap();
-        update.update(r#"{"content":[]}"#.into()).unwrap();
+        update.update(r#"{"content":[]}"#.into()).result().unwrap();
         completion.complete(Ok(()));
     });
     registry
-        .invoke_sync(|completion| calls.send(completion).map_err(|error| error.to_string()))
+        .invoke_sync(None, |completion, _| {
+            calls.send(completion).map_err(|error| error.to_string())
+        })
         .unwrap();
     guest.join().unwrap();
     assert!(
@@ -117,30 +139,6 @@ fn synchronous_wait_returns_receiver_wakeups_to_the_suspended_async_owner() {
         "async owner was not scheduled after synchronous receiver ownership ended"
     );
     drop((pending_owner, registry, admission));
-}
-
-#[test]
-fn same_store_invocation_during_a_blocking_request_reports_instead_of_waiting() {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let (mut pump, admission) = Pump::new();
-            let registry = pump.registry();
-            let (started, starts) = mpsc::channel::<Completion>();
-            crate::tests::reports_reentry(&mut pump, move || {
-                registry.invoke_sync(|completion| {
-                    started.send(completion).map_err(|error| error.to_string())
-                })
-            })
-            .await;
-            assert!(
-                starts.try_recv().is_err(),
-                "a blocked Store cannot enter its guest"
-            );
-            drop(admission);
-            pump.serve().await;
-        });
 }
 
 #[test]
@@ -154,11 +152,15 @@ fn other_store_invocation_during_a_blocking_request_completes() {
             let target = other.registry();
             let (started, starts) = mpsc::channel::<Completion>();
             let other_store = std::thread::spawn(move || starts.recv().unwrap().complete(Ok(())));
-            let invoked = crate::tests::during_blocking_request(&mut pump, move || {
-                target.invoke_sync(|completion| {
-                    started.send(completion).map_err(|error| error.to_string())
-                })
-            })
+            let invoked = crate::tests::during_routed_request(
+                &mut pump,
+                move || {
+                    target.invoke_sync(None, |completion, _| {
+                        started.send(completion).map_err(|error| error.to_string())
+                    })
+                },
+                |_| panic!("another Store's call reached this route"),
+            )
             .await;
             assert_eq!(invoked, Ok(()));
             other_store.join().unwrap();

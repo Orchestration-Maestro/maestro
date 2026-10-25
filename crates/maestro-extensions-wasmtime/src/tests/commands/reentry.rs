@@ -105,7 +105,7 @@ fn operations(
                 let child_started = child_started.clone();
                 Box::pin(async move {
                     started.await?;
-                    registry.invoke_sync(|completion| {
+                    registry.invoke_sync(None, |completion, _| {
                         calls.send(completion).map_err(|error| error.to_string())
                     })?;
                     assert!(

@@ -1,19 +1,18 @@
 //! Retained Local components expose guest failures through the existing fallible render path.
-use crate::lifecycle::GuestResource;
 use crate::{
     guest_calls::{
-        Call,
+        Call, Handle,
         renderers::{ComponentCall, ComponentMethod},
     },
     local_resources::{Registry, effects::EmitterEndpoint},
 };
 use maestro_extensions::{Component, EventBus, InputHandler, Local};
-use std::{cell::RefCell, sync::Arc};
+use std::cell::RefCell;
 
 /// A native view owns the actual guest component and its independent admission.
 pub(crate) struct GuestComponent {
     /// Final native release queues destruction on the original Store driver.
-    owner: Arc<GuestResource>,
+    owner: Handle,
     /// Original capability registry, not another receiver.
     registry: Registry,
     /// Each synchronous call gets the original bus's native invocation frame.
@@ -23,11 +22,7 @@ pub(crate) struct GuestComponent {
 }
 impl GuestComponent {
     /// Retains the resource returned by the actual authored renderer.
-    pub(crate) fn new(
-        owner: Arc<GuestResource>,
-        registry: Registry,
-        events: EventBus<Local>,
-    ) -> Self {
+    pub(crate) fn new(owner: Handle, registry: Registry, events: EventBus<Local>) -> Self {
         Self {
             owner,
             registry,
@@ -44,12 +39,9 @@ impl GuestComponent {
             .invoke_callback(|emitter| -> Result<T, maestro_extensions::EventError> {
                 let emitter = self.registry.emitter(emitter.frame())?;
                 self.owner
-                    .endpoint
-                    .replies
+                    .endpoint()
                     .synchronous(&self.registry, |reply| {
-                        self.owner
-                            .endpoint
-                            .send(Call::Component(call(emitter, reply)))
+                        Ok(Call::Component(call(emitter, reply)))
                     })
                     .map_err(Into::into)
             })

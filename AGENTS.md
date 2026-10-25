@@ -143,7 +143,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   no workspace dependencies. Text owns common text operations (whitespace,
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
-  boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and
+  boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
   pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
   interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
@@ -269,6 +269,8 @@ for its standard-stream child tests, the native-only, non-optional `maestro-chat
 to `maestro-models` edge for interactive-mode tests that drive a real session
 through the scripted provider, the native-only, non-optional `maestro-cli`
 to `maestro-listeners` development edge for the controlled print adapter,
+the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
+development edge for component tests of the native schema validator,
 and the native, non-optional dev-dependencies
 of the twenty-five declared callers on `maestro-test-process`, the owner of
 checked child tests (see
@@ -540,18 +542,18 @@ optional dependency feature. Macro aliases use the same file-wide scope and
 limits as timer aliases. Comments, literal contents and ordinary function calls
 are not macro invocations; no compiler expansion is performed.
 
-Crates whose `Cargo.toml` sets `autotests = false` build their integration
-tests as one program from `tests/integration.rs`. Add new `tests/*.rs` files as
-unconditional out-of-line modules in that root; support modules stay in their
-existing directories. The conventions check covers every crate whose
-`Cargo.toml` sets `autotests = false` or declares an `integration` test target.
-When such a crate has top-level integration-test sources, the check requires
-`autotests = false` and exactly one test target: the runnable `integration`
-target at `tests/integration.rs`.
+Every crate builds its integration tests as one program from
+`tests/integration.rs`. Add new `tests/*.rs` files as unconditional out-of-line
+modules in that root; support modules stay in their existing directories. The
+conventions check covers every workspace member, new crates included: a member
+with top-level integration-test sources needs `autotests = false` and exactly
+one test target, the runnable `integration` target at `tests/integration.rs`.
 
-Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`,
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema<C = ()>`,
 which keeps the supplied JSON Schema value beside the kinds its author declared for
-individual nodes. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
+individual nodes and an optional executable payload. Shared Base/refinement records
+keep native callbacks local; the guest specializes the same records with borrowed
+JSON views and its existing callback resources. Ordinary serialization omits code. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
 re-exports it, and the model argument-validation owner is its only converter.
 Serialization writes the supplied JSON alone; provider payloads and saved JSON never
 carry the declared kinds.

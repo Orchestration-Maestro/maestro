@@ -5,7 +5,10 @@ use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
 use crate::{AgentToolUpdateCallback, ExtensionResult, PrepareArguments, ToolExecute};
 use std::rc::Rc;
 
-pub(super) use maestro_request::parameter_schema::transport::decode_tools;
+/// Restore the shared schema owner with the guest callback representation.
+pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {
+    maestro_request::parameter_schema::transport::decode_tools(text)
+}
 
 /// Encode authored metadata through the shared parameter-schema transport.
 pub(super) fn encode_metadata(metadata: &crate::ToolMetadata) -> ExtensionResult<String> {
@@ -95,7 +98,7 @@ mod tests {
             let listed =
                 super::decode_tools(&text).unwrap_or_else(|error| panic!("depth {depth}: {error}"));
             assert_eq!(listed.len(), 1);
-            assert_eq!(listed[0].parameters, parameters);
+            assert_eq!(listed[0].parameters.data(), parameters);
         }
     }
 }

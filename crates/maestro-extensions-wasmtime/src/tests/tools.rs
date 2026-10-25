@@ -33,6 +33,7 @@ async fn tool() {
     let worker = std::thread::spawn(move || {
         endpoint
             .registration(|reply| Request::Tool {
+                schemas: vec![],
                 metadata: json!({"name":" exact ","label":" Label ","description":" desc ",
                 "parameters":{"type":"object"},"promptSnippet":"",
                 "promptGuidelines":[],"executionMode":"parallel","renderShell":"self"})
@@ -50,7 +51,7 @@ async fn tool() {
     let runner = Rc::new(super::runner("/native-tool"));
     let wrapped = maestro_extensions::wrap_registered_tool(&definition, runner);
     let prepare = wrapped.prepare_arguments.clone().unwrap();
-    super::reports_reentry(&mut pump, move || prepare(&mut json!({"before":true}))).await;
+    routed_preparation(&mut pump, move || prepare(&mut json!({"nested":true}))).await;
     let worker = std::thread::spawn(move || invoke(incoming));
     let mut args = json!({"before":true});
     args = wrapped.prepare_arguments.as_ref().unwrap()(&mut args).unwrap();
@@ -74,6 +75,22 @@ async fn tool() {
     worker.join().unwrap();
     drop((owner, wrapped, definition, admission, calls));
     pump.serve().await;
+}
+
+/// Answers a preparation made while the Store waits in a routed request, through that route.
+async fn routed_preparation<E: std::fmt::Debug + 'static>(
+    pump: &mut Pump,
+    prepare: impl FnOnce() -> Result<serde_json::Value, E> + 'static,
+) {
+    let nested = super::during_routed_request(pump, prepare, |call| {
+        let Call::Tool(ToolCall::Prepare { args, reply, .. }) = call else {
+            panic!("missing nested preparation")
+        };
+        assert_eq!(args, r#"{"nested":true}"#);
+        reply.send(Ok(r#"{"nested":"prepared"}"#.into())).unwrap();
+    })
+    .await;
+    assert_eq!(nested.unwrap(), json!({"nested":"prepared"}));
 }
 
 /// Observes typed Store messages and exercises the original capability endpoints.
@@ -121,6 +138,7 @@ fn invoke(mut incoming: tokio::sync::mpsc::UnboundedReceiver<Call>) {
     update
         .unwrap()
         .update(r#"{"content":[],"details":{"part":1}}"#.into())
+        .result()
         .unwrap();
     reply
         .send(Ok(
@@ -176,7 +194,7 @@ fn malformed_tool_documents_never_register_a_native_definition() {
                 json!({"name":"bad","label":"bad","description":"bad","parameters":{},"renderShell":"unknown"}).to_string(),
                 json!({"name":"bad","label":"bad","description":"bad","parameters":{},"executionMode":"unknown"}).to_string(),
             ] {
-                assert!(endpoint.registration(|reply| Request::Tool {
+                assert!(endpoint.registration(|reply| Request::Tool { schemas: vec![],
                     metadata, prepare: None, execute: handler.clone(), reply,
                 }).is_err());
             }

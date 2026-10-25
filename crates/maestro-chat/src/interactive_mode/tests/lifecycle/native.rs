@@ -109,7 +109,7 @@ fn child(directory: &Path, case: &str) {
             ..Setup::default()
         }
         .build(directory);
-        world.mode.init().unwrap();
+        world.mode.init().await.unwrap();
         tracked(&world, directory).await;
         ready(directory, case);
         if matches!(case, "stdout" | "stderr") {

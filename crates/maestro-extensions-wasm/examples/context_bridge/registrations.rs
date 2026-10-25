@@ -42,7 +42,7 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
 }
 
 /// Uses the original update callback, cancellation and per-call context capabilities.
-fn tool(api: &ExtensionAPI) -> ExtensionResult<()> {
+pub(super) fn tool(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
         metadata: serde_json::from_value(json!({"name":"canonical-tool", "label":" Literal tool ", "description":" Literal tool description ", "parameters":{"type":"object"}})).map_err(|error| error.to_string())?,
         prepare_arguments: Some(Rc::new(|args, emitter| {
@@ -80,7 +80,7 @@ fn shell_exec(
 }
 
 /// Returns an authored executor without launching a process or adding timeout policy.
-fn shell(api: &ExtensionAPI) -> ExtensionResult<()> {
+pub(super) fn shell(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.on(
         "user_bash",
         Rc::new(|event, _| {

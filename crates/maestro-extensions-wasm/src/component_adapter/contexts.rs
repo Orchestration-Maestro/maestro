@@ -54,6 +54,15 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
     fn set_title(&self, title: &str) -> ExtensionResult<()> {
         self.imports.ui_set_title(&self.resource, title)
     }
+    fn paste_to_editor(&self, text: &str) -> ExtensionResult<()> {
+        self.imports.ui_paste_to_editor(&self.resource, text)
+    }
+    fn set_editor_text(&self, text: &str) -> ExtensionResult<()> {
+        self.imports.ui_set_editor_text(&self.resource, text)
+    }
+    fn get_editor_text(&self) -> ExtensionResult<String> {
+        self.imports.ui_get_editor_text(&self.resource)
+    }
 }
 use crate::bindings::maestro::extension::session::SessionChangeResult;
 use crate::types::{

@@ -448,14 +448,12 @@ selector tokens. This bounded rule does not expand macros, resolve constructed
 strings, interpret data files or infer process launches; review still checks
 those cases.
 
-Crates whose `Cargo.toml` sets `autotests = false` build their integration
-tests as one program from `tests/integration.rs`. Add new `tests/*.rs` files as
-unconditional out-of-line modules in that root; support modules stay in their
-existing directories. The conventions check covers every crate whose
-`Cargo.toml` sets `autotests = false` or declares an `integration` test target.
-When such a crate has top-level integration-test sources, the check requires
-`autotests = false` and exactly one test target: the runnable `integration`
-target at `tests/integration.rs`.
+Every crate builds its integration tests as one program from
+`tests/integration.rs`. Add new `tests/*.rs` files as unconditional out-of-line
+modules in that root; support modules stay in their existing directories. The
+conventions check covers every workspace member, new crates included: a member
+with top-level integration-test sources needs `autotests = false` and exactly
+one test target, the runnable `integration` target at `tests/integration.rs`.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring

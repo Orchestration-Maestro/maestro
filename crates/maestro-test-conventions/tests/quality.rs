@@ -689,6 +689,8 @@ fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
     }
     std::fs::create_dir(root.join("tests")).unwrap();
     write("tests/helper.rs", "");
+    workspace.integration("maestro-extensions-wasm");
+    write("tests/integration.rs", &format!("{FORBID}mod helper;\n"));
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
         error.contains("tests/helper.rs") && error.contains("must forbid"),

@@ -50,3 +50,41 @@ fn verify<B: Binding>(
     let owner = owner.read().unwrap();
     assert!(Local::recover_handler::<B::Event, B::Result>(&owner.handlers[&name][0]).is_some());
 }
+
+#[test]
+fn provider_response_headers_cross_as_ordered_pairs() {
+    use super::EventData;
+    let mut event = maestro_extensions::AfterProviderResponseEvent {
+        status: 200.0,
+        headers: [("b", "2"), ("a", "1")]
+            .map(|(name, value)| (name.to_owned(), value.to_owned()))
+            .into(),
+    };
+    let encoded: serde_json::Value =
+        serde_json::from_str(&event.encode("after_provider_response").unwrap()).unwrap();
+    assert_eq!(
+        encoded,
+        serde_json::json!({"status":200.0,"headers":[["a","1"],["b","2"]],"type":"after_provider_response"})
+    );
+    let pairs: maestro_extensions::AfterProviderResponseEvent<Vec<(String, String)>> =
+        serde_json::from_value(encoded).unwrap();
+    assert_eq!(
+        pairs.headers,
+        [
+            ("a".to_owned(), "1".to_owned()),
+            ("b".to_owned(), "2".to_owned())
+        ]
+    );
+    event
+        .apply(
+            r#"{"type":"after_provider_response","status":201.0,"headers":[["z","26"],["a","1"]]}"#,
+        )
+        .unwrap();
+    assert_eq!(event.status.to_bits(), 201_f64.to_bits());
+    let headers: Vec<_> = event
+        .headers
+        .iter()
+        .map(|(name, value)| (name.as_str(), value.as_str()))
+        .collect();
+    assert_eq!(headers, [("a", "1"), ("z", "26")]);
+}

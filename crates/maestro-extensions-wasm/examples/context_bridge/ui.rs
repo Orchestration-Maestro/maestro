@@ -10,7 +10,11 @@ use maestro_extensions_wasm::{
 };
 
 /// Supplies distinguishable operands, then separately exercises host defaults and clearing.
-pub(super) fn observe(context: &ExtensionContext, clear: bool) -> ExtensionResult<()> {
+pub(super) fn observe(context: &ExtensionContext, args: &str) -> ExtensionResult<String> {
+    if let Some(operation) = args.strip_prefix("editor ") {
+        return editor(context, operation);
+    }
+    let clear = args == "ui clear";
     let ui = context.ui()?;
     ui.notify(
         " literal notification ",
@@ -36,5 +40,19 @@ pub(super) fn observe(context: &ExtensionContext, clear: bool) -> ExtensionResul
             placement: Some(WidgetPlacement::BelowEditor),
         }),
     )?;
-    ui.set_title(if clear { "" } else { " literal title " })
+    ui.set_title(if clear { "" } else { " literal title " })?;
+    Ok("UI forwarded".into())
+}
+
+/// Reads and edits the originally acquired UI without interpreting the supplied text.
+fn editor(context: &ExtensionContext, operation: &str) -> ExtensionResult<String> {
+    let ui = context.ui()?;
+    if let Some(text) = operation.strip_prefix("paste:") {
+        ui.paste_to_editor(text)?;
+    } else if let Some(text) = operation.strip_prefix("set:") {
+        ui.set_editor_text(text)?;
+    } else {
+        return ui.get_editor_text();
+    }
+    Ok("editor forwarded".into())
 }

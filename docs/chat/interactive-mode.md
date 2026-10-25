@@ -3,7 +3,7 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, the export, share, copy and changelog commands, the prompt loop, session replay, the
+input, queued input, the export, import, share, copy and changelog commands, the prompt loop, session replay, the
 session events with the working row and the streamed transcript rows, the window
 title, the extension controls of that row and of the hidden-thinking label, the
 expansion and thinking shortcuts, thinking and model cycling, model selection and
@@ -33,22 +33,29 @@ fallback theme is returned.
 
 ## Startup
 
-`init` does nothing while the mode is initialized. After `stop`, it runs again.
-Before building the header, it installs termination and output-error handlers. Unix
-initialization runs on a caller-driven Tokio local executor with signal delivery
-enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
+`init` is asynchronous. It installs termination and output-error handlers, selects
+startup history, then prepares both search programs before building the presentation.
+It does nothing while the mode is initialized. After `stop`, it runs again.
+Unix initialization runs on a caller-driven Tokio local executor with signal
+delivery enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
 upper widget, editor and lower widget containers and the footer, in that order. The upper widget container starts with
 one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
 editor submission and the global debug key, and starts the terminal. A terminal
 start failure is returned and leaves the mode uninitialized. Once started, it
-subscribes to the session events and sets the window title. A theme change then
+[binds the current session](#session-binding), so the loaded resources are listed
+before it replays the session (see below). A theme change then
 invalidates the presentation, recolours the editor border and requests a frame,
 and a branch change requests a frame. Neither callback keeps the mode alive. Last,
-it lists the loaded resources and their diagnostics in the transcript, shows the
-[startup history](startup.md#startup-history) once, and replays the session (see
-below). The history selection and version recording happen before building the
-header, even if starting the terminal later fails.
+the footer learns how many providers the model candidates cover. The history
+selection and version recording happen before building the header, even if
+starting the terminal later fails.
+
+The search programs are `fd` and `rg`. Both start before either finishes, so a missing
+program does not delay the other. `fd` stays selected for file completion. The managed
+directory is the application's agent directory under `bin`, never the session's
+working directory. The search owner writes its own progress and advice lines, before
+the terminal takes the screen.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the
@@ -57,6 +64,53 @@ application name and version, the compact key hints and two onboarding lines. In
 verbose mode it shows the full list of key hints instead. Hints follow the loaded
 bindings: several keys keep their order, and an unbound action shows no key.
 Header text keeps the colours of the theme in effect when it was built.
+
+## Session binding
+
+Binding the current session runs these phases in order:
+
+1. Remove the session subscription, if there is one.
+2. Apply the runtime settings.
+3. Bind the session's extensions, with the mode as their
+   [user interface](#extension-ui-host), and wait for their `session_start`
+   handlers and resource discovery. A `session_start` handler can already open a
+   dialog, because the terminal has started.
+4. Register the loaded themes, rebuild [completion](extension-ui.md#completion) and
+   install the [extension shortcut interceptor](extension-ui.md#shortcuts) from the
+   current runner.
+5. List the loaded resources, with their diagnostics even when startup is quiet,
+   and show the [startup history](startup.md#startup-history) once.
+6. Subscribe to the session events, refresh the footer's provider count, recolour
+   the editor border and set the window title.
+
+Binding returns the first failing phase's error. The phases before it stay
+applied, nothing is rolled back and no later phase runs.
+
+The mode registers this binding with the runtime when it is built. Each time the
+runtime replaces its session (new session, resume, fork or import), it binds the
+mode to the new session before the operation's continuation runs. The continuation
+therefore sees the new session's UI, resources, footer and window title. The next
+shortcut reads the new runner, and events from the replaced session no longer reach
+the mode. The runtime holds the mode weakly: once the mode is gone, replacement skips
+the binding. A binding failure is returned to the caller of the runtime operation.
+
+The runtime settings give the footer the current session, its automatic-compaction
+marker and its working directory. They then set the thinking visibility, the hardware
+cursor, clear-on-shrink, and the editor's padding and visible completion rows, in
+that order. Hiding the hardware cursor writes to the terminal; a failed write is
+returned, and the settings before it stay applied.
+
+The binding also installs the mode's shutdown and error handlers. An extension's
+shutdown request records the request; while the session is idle it starts
+[graceful shutdown](#native-shutdown) at once, and while a response streams the
+agent's end starts it. A shortcut's context reaches the same handler.
+
+Each attributed extension failure the runner reports is appended to the transcript
+as `Extension "<path>" error: <message>` in the error colour. When the failure
+carries a non-empty stack, every stack line after the first follows as one dim
+block. Each line is trimmed of white space and indented by two spaces, and empty
+lines are kept. The mode requests one frame. A colour failure is returned to the
+runner.
 
 ## Stopping the presentation
 
@@ -99,8 +153,8 @@ hangup signal takes its native default action. Windows console-close integration
 is not provided by this mode.
 
 At agent end, a requested shutdown follows transient-row cleanup through this
-same graceful owner instead of requesting a final frame. Extension request
-producers are not connected yet.
+same graceful owner instead of requesting a final frame. Extension requests reach
+it through the [session binding](#session-binding).
 
 ## Loaded resources
 
@@ -187,7 +241,11 @@ frame; the editor's history is kept.
 
 ## Extension UI host
 
-The mode implements the extension UI port. A host retains it with
+The mode implements the extension UI port, and `init` installs it as the
+session's extension UI. The session and its runner only borrow the mode, which
+owns them, so they do not keep it alive; a UI context an extension
+holds keeps the mode alive until it is dropped, and afterwards the session's
+contexts report no UI. Another host retains it with
 `ExtensionUIContext::new(mode.clone())`; the [extension UI page](extension-ui.md)
 lists the operations it answers today, which are dialogs, editor access, theme
 queries and selection, the terminal title, tool expansion, status text and keyed
@@ -215,19 +273,23 @@ polled, and the replaced future stays pending.
 The waiting input receives the text before the editor's history records it, so
 code that runs when the input completes can already wait for the next one. Every
 submission delivered as prompt text enters the history, whether or not an input
-was waiting. Submission does not keep the mode alive.
+was waiting. A prompt submission does not keep the mode alive. An admitted
+asynchronous command retains it until that operation settles.
 
 Submission offers the text to the mode's commands first. Text recognized as one of
 the commands runs that command instead of becoming prompt text: the command reports
-on the transcript, completes no waiting input and enters no history. `/export` and `/changelog`
-answer before the editor hands the text back; `/share` and `/copy` are admitted on
-the terminal runtime and clear the editor once they settle. Near spellings are
-prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`
-and `/copyx` reach the input. See [interactive commands](commands.md).
+on the transcript, completes no waiting input and enters no history. `/export`,
+`/changelog` and `/hotkeys` answer before the editor hands the text back; `/import`,
+`/share` and `/copy` are admitted on the terminal runtime. Import clears the editor
+only on normal completion, leaving text written during a rejected operation intact.
+Import confirmation and directory retry reuse the native dialogs, and its
+replacement is [bound](#session-binding) before the replay. Near spellings are
+prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`,
+`/important`, `/import` followed by a tab and `/copyx` reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
-`run` initializes the mode and starts the [independent startup checks](startup.md#independent-startup-checks),
+`run` awaits initialization before starting the [independent startup checks](startup.md#independent-startup-checks),
 then shows the startup warnings, sends the startup prompts and keeps sending typed prompts. It never finishes on its own. It returns only an
 initialization failure or a failure to show a notice.
 
@@ -256,8 +318,7 @@ fails after the prompt was accepted stays a session event; the mode adds no noti
 for it.
 
 Still to come: rendering the session's events in the transcript, queued input,
-commands, rebinding the presentation to a replaced session, update
-notices and the startup check of subscription-based credentials.
+commands, update notices and the startup check of subscription-based credentials.
 
 ## Session replay
 
@@ -340,13 +401,14 @@ in them goes to the terminal runtime's error route.
 
 One listener carries the session's events into the mode. It is the session's own
 subscription, so the removal operation the session returns is kept for the
-lifecycle that ends it. Delivery is synchronous and borrowed: the mode handles
-each event before the producer returns, keeps no reference to itself through the
-listener, and enqueues no copy of the event. A failure goes to the terminal
-runtime's error route.
+lifecycle that ends it. The listener keeps only a weak mode handle. Events arriving
+before initialization completes wait in arrival order for one continuation on the
+supplied runtime. Once that queue is drained, delivery is synchronous and borrowed:
+the mode handles each event before the producer returns. A failure goes to the
+terminal runtime's error route; a failed event does not discard later events. A
+failed initialization releases its queued batch, and a later event tries again.
 
-An event that arrives before the presentation has started starts it first. Every
-event then invalidates the footer, which the footer does not cache. The events
+Every event then invalidates the footer, which the footer does not cache. The events
 that carry session metadata read the session's live state rather than the values
 the event carries:
 
@@ -474,6 +536,25 @@ compaction that ends with nothing captured delivers nothing.
 A status is a dim line in the transcript. When the previous status line is still
 the last row, a new status replaces its text; otherwise it starts a new line.
 
+## Session replacement and fatal errors
+
+`render_current_session_state` clears the transcript and the pending-message rows,
+discards queued compaction input and the active streamed message, then replays the
+current session with the initial replay's effects: it refreshes the
+footer and the editor border, adds each user text to the editor history and shows the
+compaction notice. A transcript row or pending tool row left by the replaced session
+does not survive the call, so the presentation shows only the session it now reads.
+
+`handle_fatal_runtime_error` takes a prefix and the error that ended a session
+operation. It appends `Error: <prefix>: <message>` to the transcript, where the message
+is the error's own text, draws that frame at once, then closes the theme watch and
+stops the terminal, so no theme reload or further frame repaints once the notice is
+drawn. It then ends the process with status 1. A failure while appending or drawing
+the notice, or while stopping the terminal, is ignored, because the process is ending
+either way. The notice is drawn before the terminal stops, because a stop cancels a
+queued frame and the final frame is not deferred while the terminal's output is backed
+up.
+
 ## Shortcuts
 
 The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of
@@ -484,6 +565,9 @@ a row a renderer appends during the walk is reached, and a row it removes is not
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
 replays the transcript, puts a streaming row back after it with the new visibility
 and shows `Thinking blocks: hidden` or `Thinking blocks: visible`. A shortcut's failure goes to the terminal runtime's error route.
+
+Extension shortcuts run before these actions; [extension UI](extension-ui.md#shortcuts)
+covers their selection, dispatch and failure notice.
 
 ## Thinking and model cycling
 
@@ -506,7 +590,7 @@ session error is shown as an error notice instead of the switch message. A faile
 credential lookup leaves the selection as it was; a recording or listener failure
 happens after the new model is selected, so that model stays selected.
 
-`/model`, `/scoped-models`, `/logout` and the model-select key are described in
+`/model`, `/scoped-models`, `/login`, `/logout` and the model-select key are described in
 [interactive commands](commands.md).
 
 ## Editor border

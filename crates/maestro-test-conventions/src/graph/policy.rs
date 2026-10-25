@@ -318,6 +318,7 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
 
 /// Permitted development edges that only a native, non-optional declaration may use.
 pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-extensions-wasm", "maestro-models"),
     ("maestro-detection", "maestro-text"),
     ("maestro-cli", "maestro-listeners"),
     ("maestro-chat", "maestro-models"),

@@ -155,7 +155,7 @@ impl Connection {
     ) -> ExtensionBindings {
         let (weak, writer) = (Rc::downgrade(self), Rc::downgrade(self));
         ExtensionBindings {
-            ui_context: Some(ExtensionUIContext::new(Rc::clone(&session.ui) as Rc<_>)),
+            ui_context: Some(ExtensionUIContext::new(Rc::clone(&session.ui) as Rc<_>).into()),
             command_context_actions: Some(session.options.runtime.command_context_actions()),
             shutdown_handler: Some(Rc::new(move || {
                 if let Some(connection) = weak.upgrade() {

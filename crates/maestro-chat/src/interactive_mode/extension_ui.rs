@@ -1,9 +1,9 @@
 //! The extension UI host over the retained interactive mode.
 use super::InteractiveMode;
 use maestro_app::{
-    EventError, ExtensionUIContextPort, ExtensionUIDialogOptions, ExtensionUIFuture,
-    NotificationType, TerminalInputHandler, ThemeSelection, ThemeSetResult, UIUnsubscribe,
-    WorkingIndicatorOptions,
+    AutocompleteProviderFactory, EventError, ExtensionUIContextPort, ExtensionUIDialogOptions,
+    ExtensionUIFuture, NotificationType, TerminalInputHandler, ThemeSelection, ThemeSetResult,
+    UIUnsubscribe, WorkingIndicatorOptions,
 };
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
 use maestro_tui::tui::InputHandler;
@@ -132,6 +132,20 @@ impl ExtensionUIContextPort for InteractiveMode {
     /// Returns the host's failure; reading the editor cannot fail here.
     fn get_editor_text(&self) -> Result<String, EventError> {
         Ok(self.editor.get_expanded_text())
+    }
+
+    /// Retains the bound factory and rebuilds completion before returning.
+    ///
+    /// # Errors
+    /// Returns the original factory failure; the registration remains for later rebuilds.
+    fn add_autocomplete_provider(
+        &self,
+        factory: AutocompleteProviderFactory,
+    ) -> Result<(), EventError> {
+        self.autocomplete_provider_wrappers
+            .borrow_mut()
+            .push(factory);
+        self.setup_autocomplete_provider()
     }
 
     /// Returns the live view of the published theme.

@@ -13,9 +13,11 @@ mod print_output;
 mod startup_bootstrap;
 mod startup_config;
 mod startup_dispatch;
+mod startup_entry;
 mod startup_options;
 mod startup_runtime;
 mod startup_sessions;
+mod startup_stdout;
 mod support;
 
 mod startup_mode_dispatch;

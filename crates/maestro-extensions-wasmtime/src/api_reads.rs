@@ -32,8 +32,6 @@ pub(crate) enum Request {
     Label(String, Option<String>, Reply<()>),
     /// Reads active tool identities in their native order.
     ActiveTools(Reply<Vec<String>>),
-    /// Reads owned tool metadata.
-    AllTools(Reply<String>),
     /// Selects the authored tool identities without normalization.
     SetActiveTools(Vec<String>, Reply<()>),
     /// Reads current command metadata with provenance.
@@ -77,13 +75,6 @@ impl Request {
             Self::SessionName(reply) => send(&reply, api.get_session_name()),
             Self::Label(id, label, reply) => send(&reply, api.set_label(id, label)),
             Self::ActiveTools(reply) => send(&reply, api.get_active_tools()),
-            Self::AllTools(reply) => {
-                let result = api
-                    .get_all_tools()
-                    .map_err(|error| error.to_string())
-                    .and_then(|tools| maestro_extensions::schema_transport::encode_tools(&tools));
-                let _ = reply.send(result);
-            }
             Self::SetActiveTools(names, reply) => send(&reply, api.set_active_tools(names)),
             Self::Commands(reply) => send_json(&reply, api.get_commands()),
             Self::Thinking(reply) => send_json(&reply, api.get_thinking_level()),
@@ -117,7 +108,7 @@ impl Request {
             Self::ActiveTools(reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
-            Self::AllTools(reply) | Self::Commands(reply) | Self::Thinking(reply) => {
+            Self::Commands(reply) | Self::Thinking(reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
         }
@@ -160,6 +151,10 @@ fn send_json<T: serde::Serialize>(
 pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
+    /// Select live schema origins through the actual native declarations.
+    pub(crate) fn schema_listing(&self) -> Result<crate::schema_registration::ToolListing, String> {
+        self.0.request(Message::SchemaListing)
+    }
     /// Retains the same local pump while a native callback remains callable.
     pub(crate) fn admission(&self) -> crate::local_resources::Admission {
         self.0.admission()

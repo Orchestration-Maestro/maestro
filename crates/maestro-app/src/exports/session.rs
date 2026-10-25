@@ -8,6 +8,8 @@ pub use maestro_session::session_manager::{
 
 pub use maestro_session::{Presence, SessionInfo, SessionManager};
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_session::session_cwd::get_missing_session_cwd_issue;
 pub use maestro_session::session_cwd::{
     MissingSessionCwdError, SessionCwdIssue, format_missing_session_cwd_prompt,
 };
@@ -35,6 +37,7 @@ pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
     ExtensionBindings, ModelCycleResult, NavigateTreeResult, PromptOptions, SessionStats,
+    delivery_mode,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -52,7 +55,7 @@ pub use crate::runtime::agent_session_services::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use crate::sdk::{
     CreateAgentSessionOptions, CreateAgentSessionResult, NoTools, SessionResources,
-    create_agent_session,
+    create_agent_session, queue_mode,
 };
 
 pub use maestro_session::compaction::{

@@ -46,11 +46,11 @@ fn tool_updates_decode_before_calling_the_original_observer() {
         let (pump, admission) = Pump::new();
         let update = pump.registry().tool_update(callback).unwrap();
         let worker = std::thread::spawn(move || {
-            assert!(update.update("not JSON".into()).is_err());
-            update.update(r#"{"content":[{"type":"text","text":" exact "}],"details":{"part":0},"terminate":false}"#.into()).unwrap();
+            assert!(update.update("not JSON".into()).result().is_err());
+            update.update(r#"{"content":[{"type":"text","text":" exact "}],"details":{"part":0},"terminate":false}"#.into()).result().unwrap();
             let copy = update.clone();
             drop(update);
-            copy.update(r#"{"content":[]}"#.into()).unwrap();
+            copy.update(r#"{"content":[]}"#.into()).result().unwrap();
         });
         drop(admission);
         pump.serve().await;
@@ -160,7 +160,7 @@ fn drive_emitter(
     let endpoint = registry.emitter(frame).unwrap();
     let mut worker = None;
     registry
-        .invoke_sync(|completion| {
+        .invoke_sync(None, |completion, _| {
             worker = Some(std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()
                     .build()
@@ -174,7 +174,7 @@ fn drive_emitter(
                         let (snapshot, tags) =
                             endpoint.snapshot(" exact ".into(), "2".into()).unwrap();
                         assert_eq!(tags, [None]);
-                        endpoint.segment(snapshot, 0, 1).unwrap();
+                        endpoint.segment(snapshot, 0, 1).result().unwrap();
                         endpoint.end_snapshot(snapshot).unwrap();
                     });
                 completion.complete(Ok(()));

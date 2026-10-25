@@ -334,7 +334,7 @@ async fn faulted_calls(queue_release: bool) {
         .unwrap()
         .command
         .handler;
-    let (first, second, pending) = futures_util::join!(
+    let (first, second, pending) = futures_util::future::join3(
         command("trap".into(), trap_runner.create_command_context()),
         command("pending".into(), pending_runner.create_command_context()),
         async {
@@ -349,7 +349,8 @@ async fn faulted_calls(queue_release: bool) {
             trap.send(()).unwrap();
             pending
         },
-    );
+    )
+    .await;
     let first = first.unwrap_err().to_string();
     assert!(
         first.contains("component fault") && first.contains("wasm trap"),

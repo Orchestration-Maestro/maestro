@@ -4,14 +4,17 @@
 use super::super::queues::CompactionQueuedMessage;
 use super::queues::{Kept, Mode};
 use super::session;
-use super::{CommandHandler, Setup, World, answer, cases, isolated, painted, started};
-use maestro_app::agent_session::CompactionReason;
+use super::transcript::{append, recorded, user_record};
+use super::{
+    CommandHandler, Setup, World, answer, cases, held_response, isolated, painted, started,
+};
+use maestro_app::agent_session::{CompactionReason, PromptOptions};
 use maestro_app::messages::{CustomAgentMessages, UserMessageDelivery};
 use maestro_app::{
     AgentSession, AgentSessionEvent, AssistantMessageEventStream, CompactionResult,
     DiagnosticErrorInfo, Extension, ExtensionBindings, ExtensionCommandContext, ExtensionFactory,
     InputEvent, InputEventResult, Local, RegisteredCommand, ResourceLoader, Skill, SourceInfo,
-    SourceOrigin, SourceScope,
+    SourceOrigin, SourceScope, StopReason,
 };
 use maestro_tui::Component;
 use maestro_tui::tui::InputHandler;
@@ -25,7 +28,7 @@ use std::{
     time::Duration,
 };
 
-/// The recorded progress cases every witness drives.
+/// The recorded progress cases the fixture-driven witnesses read.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_progress.json");
 
 /// One presentation the progress events leave behind.
@@ -45,7 +48,7 @@ struct Snapshot {
 }
 
 impl Snapshot {
-    /// Asserts the presentation and returns the progress requests it recorded.
+    /// Asserts the presentation, including the progress requests `effects` recorded.
     fn assert(&self, world: &World, effects: &Effects) {
         let theme = world.themes.theme().get().unwrap();
         assert_eq!(
@@ -97,9 +100,6 @@ struct StartEnd {
 struct Outcome {
     /// The transcript's rows at width 100.
     chat: Vec<String>,
-    /// Text the transcript must contain.
-    #[serde(rename = "chatContains")]
-    chat_contains: Option<String>,
     /// The terminal's progress requests.
     progress: Vec<bool>,
     /// The scheduled intervals in milliseconds.
@@ -179,7 +179,7 @@ fn result(summary: &str, tokens_before: f64) -> CompactionResult {
     .unwrap()
 }
 
-/// Starts one compaction, runs `during` before its end, and ends it as aborted.
+/// Starts one compaction of `reason`.
 fn start_compaction(world: &World, reason: CompactionReason) {
     world
         .mode
@@ -276,15 +276,15 @@ struct LiveProgress {
 #[test]
 fn compaction_labels_keep_reason_live_keys_and_editor() {
     const TEST: &str = "compaction_labels_keep_reason_live_keys_and_editor";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<CompactionInput, Value>(FIXTURES, TEST) {
-            label_case(directory, input, expected);
+            label_case(directory, input, expected).await;
         }
     });
 }
 
 /// Drives one recorded label case.
-fn label_case(directory: &Path, input: CompactionInput, expected: Value) {
+async fn label_case(directory: &Path, input: CompactionInput, expected: Value) {
     match input {
         CompactionInput::StartEnd {
             reason,
@@ -297,7 +297,7 @@ fn label_case(directory: &Path, input: CompactionInput, expected: Value) {
                 previous,
                 keys: None,
             };
-            start_end_case(directory, &reason, &flags, &expected);
+            start_end_case(directory, &reason, &flags, &expected).await;
         }
         CompactionInput::ConfiguredCancelHint { keys } => {
             let expected: StartEnd = serde_json::from_value(expected).unwrap();
@@ -306,12 +306,12 @@ fn label_case(directory: &Path, input: CompactionInput, expected: Value) {
                 previous: true,
                 keys: Some(keys),
             };
-            start_end_case(directory, "manual", &flags, &expected);
+            start_end_case(directory, "manual", &flags, &expected).await;
             bind_interrupt(&[], true);
         }
         CompactionInput::LiveProgressSetting { before, after } => {
             let expected: LiveProgress = serde_json::from_value(expected).unwrap();
-            live_progress_case(directory, (before, after), &expected);
+            live_progress_case(directory, (before, after), &expected).await;
         }
     }
 }
@@ -345,8 +345,8 @@ fn bind_interrupt(keys: &[String], restore: bool) {
 
 /// Starts a compaction of `reason`, ends it as aborted, and checks both presentations and
 /// that the replaced interrupt callback is back.
-fn start_end_case(directory: &Path, reason_name: &str, flags: &Flags, expected: &StartEnd) {
-    let world = started(directory);
+async fn start_end_case(directory: &Path, reason_name: &str, flags: &Flags, expected: &StartEnd) {
+    let world = started(directory).await;
     draft(&world);
     if let Some(keys) = &flags.keys {
         bind_interrupt(keys, false);
@@ -395,9 +395,9 @@ fn set_progress_setting(world: &World, shown: bool) {
 
 /// Starts with the setting `before`, changes it to `after` and ends the compaction, proving
 /// each event reads the current value.
-fn live_progress_case(directory: &Path, settings: (bool, bool), expected: &LiveProgress) {
+async fn live_progress_case(directory: &Path, settings: (bool, bool), expected: &LiveProgress) {
     let (before, after) = settings;
-    let world = started(directory);
+    let world = started(directory).await;
     draft(&world);
     set_progress_setting(&world, before);
     let effects = tap(&world);
@@ -431,20 +431,55 @@ enum CompletionInput {
     CompactionEmptySummaryZeroTokens,
 }
 
+impl CompletionInput {
+    /// Whether the compaction ends with a stored result, which replays the history.
+    fn succeeds(&self) -> bool {
+        match self {
+            Self::CompactionOutcome { outcome, .. } => outcome == "result",
+            Self::CompactionEmptySummaryZeroTokens => true,
+        }
+    }
+}
+
+/// The first user record of the seeded history.
+const HISTORY_ALPHA: &str = "HISTORY_ALPHA";
+/// The second user record of the seeded history.
+const HISTORY_BETA: &str = "HISTORY_BETA";
+/// A displayed row the session's history lacks, which the replay removes.
+const STALE_TRANSCRIPT: &str = "STALE_TRANSCRIPT";
+
+/// Seeds the session's history with two distinct user records, shows a row the history
+/// lacks and expands summaries, so the replay and the whole summary are observable.
+fn seed_history(world: &World) {
+    append(
+        world,
+        vec![user_record(HISTORY_ALPHA), user_record(HISTORY_BETA)],
+    );
+    world.mode.show_status(STALE_TRANSCRIPT).unwrap();
+    let rows = world.mode.chat_container.render(100);
+    assert!(rows.iter().any(|row| row.contains(STALE_TRANSCRIPT)));
+    world.mode.tool_output_expanded.set(true);
+}
+
 #[test]
-fn compaction_completion_replays_then_appends_summary() {
-    const TEST: &str = "compaction_completion_replays_then_appends_summary";
-    isolated(TEST, |directory| {
+fn compaction_completion_keeps_seeded_replay_and_one_summary() {
+    const TEST: &str = "compaction_completion_keeps_seeded_replay_and_one_summary";
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<CompletionInput, Outcome>(FIXTURES, TEST) {
-            completion_case(directory, input, &expected);
+            completion_case(directory, input, &expected).await;
         }
     });
 }
 
 /// Drives one recorded compaction end and asserts what it left.
-fn completion_case(directory: &Path, input: CompletionInput, expected: &Outcome) {
-    let world = started(directory);
+async fn completion_case(directory: &Path, input: CompletionInput, expected: &Outcome) {
+    let world = recorded(directory, Setup::default());
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
     draft(&world);
+    if input.succeeds() {
+        seed_history(&world);
+    }
     let effects = tap(&world);
     match input {
         CompletionInput::CompactionOutcome {
@@ -459,14 +494,10 @@ fn completion_case(directory: &Path, input: CompletionInput, expected: &Outcome)
     }
     world.runtime.settle().unwrap();
     let theme = world.themes.theme().get().unwrap();
-    let rows = world.mode.chat_container.render(100);
-    match &expected.chat_contains {
-        Some(text) => {
-            let joined = rows.join("\n");
-            assert!(joined.contains(text.as_str()), "{joined:?} lacks {text:?}");
-        }
-        None => assert_eq!(rows, painted(&theme, &expected.chat)),
-    }
+    assert_eq!(
+        world.mode.chat_container.render(100),
+        painted(&theme, &expected.chat)
+    );
     assert_eq!(progress(&effects), expected.progress);
     assert_eq!(timers(&world), expected.timers);
     assert_eq!(world.mode.editor.get_text(), expected.editor);
@@ -514,6 +545,52 @@ fn spinner_frames(rows: &[String]) -> Vec<String> {
                 .fold(row.clone(), |row, frame| row.replace(frame, "⠋"))
         })
         .collect()
+}
+
+/// The default interrupt key.
+const INTERRUPT: &str = "\x1b";
+
+/// An interrupt callback installed before a progress state, counting its own runs.
+struct PreviousAction {
+    /// The installed callback.
+    action: Rc<dyn Fn()>,
+    /// How many times the callback ran.
+    runs: Rc<Cell<usize>>,
+}
+
+impl PreviousAction {
+    /// Installs a counting callback as the editor's interrupt action.
+    fn install(world: &World) -> Self {
+        let runs = Rc::new(Cell::new(0));
+        let count = Rc::clone(&runs);
+        let action: Rc<dyn Fn()> = Rc::new(move || count.set(count.get() + 1));
+        world.mode.editor.set_on_escape(Some(Rc::clone(&action)));
+        Self { action, runs }
+    }
+
+    /// Presses the interrupt key `key` and checks that it did not reach this callback.
+    fn assert_replaced(&self, world: &World, key: &str) {
+        let runs = self.runs.get();
+        world.mode.editor.handle_input(key);
+        assert_eq!(
+            self.runs.get(),
+            runs,
+            "the interrupt reached the replaced callback"
+        );
+    }
+
+    /// Checks that the editor's interrupt action is this callback again and that the
+    /// interrupt key `key` runs it.
+    fn assert_restored(&self, world: &World, key: &str) {
+        let restored = world.mode.editor.on_escape().unwrap();
+        assert!(
+            Rc::ptr_eq(&restored, &self.action),
+            "another interrupt action"
+        );
+        let runs = self.runs.get();
+        world.mode.editor.handle_input(key);
+        assert_eq!(self.runs.get(), runs + 1);
+    }
 }
 
 /// Starts a retry with the recorded numbers.
@@ -600,27 +677,30 @@ struct RetryStartEnd {
 }
 
 #[test]
-fn retry_countdown_uses_ceiling_and_live_cancel_keys() {
-    const TEST: &str = "retry_countdown_uses_ceiling_and_live_cancel_keys";
-    isolated(TEST, |directory| {
+fn retry_countdown_interrupts_then_restores_previous_action() {
+    const TEST: &str = "retry_countdown_interrupts_then_restores_previous_action";
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<RetryInput, Value>(FIXTURES, TEST) {
             match input {
                 RetryInput::RetryCountdown { delay_ms, success } => {
                     let expected: Countdown = serde_json::from_value(expected).unwrap();
-                    countdown_case(directory, delay_ms, success, &expected);
+                    countdown_case(directory, delay_ms, success, &expected).await;
                 }
                 RetryInput::RetryFractionalLimit {
                     max_attempts,
                     delay_ms,
                 } => {
                     let expected: RetryStartEnd = serde_json::from_value(expected).unwrap();
-                    let world = started(directory);
+                    let world = started(directory).await;
                     draft(&world);
+                    let previous = PreviousAction::install(&world);
                     let effects = tap(&world);
                     start_retry(&world, 1, max_attempts, delay_ms);
                     expected.start.assert(&world, &effects);
+                    previous.assert_replaced(&world, INTERRUPT);
                     end_retry(&world, true, 1, None);
                     expected.end.assert(&world, &effects);
+                    previous.assert_restored(&world, INTERRUPT);
                 }
             }
         }
@@ -628,9 +708,10 @@ fn retry_countdown_uses_ceiling_and_live_cancel_keys() {
 }
 
 /// Shows the initial frame and one per second tick, then ends the retry.
-fn countdown_case(directory: &Path, delay_ms: f64, success: bool, recorded: &Countdown) {
-    let world = started(directory);
+async fn countdown_case(directory: &Path, delay_ms: f64, success: bool, recorded: &Countdown) {
+    let world = started(directory).await;
     draft(&world);
+    let previous = PreviousAction::install(&world);
     let effects = tap(&world);
     start_retry(&world, 2, 3.0, delay_ms);
     let mut frames = vec![describe(&world, &effects)];
@@ -662,8 +743,10 @@ fn countdown_case(directory: &Path, delay_ms: f64, success: bool, recorded: &Cou
         })
         .collect();
     assert_eq!(frames, expected, "{delay_ms} ms");
+    previous.assert_replaced(&world, INTERRUPT);
     end_retry(&world, success, 2, Some("last failure"));
     recorded.end.assert(&world, &effects);
+    previous.assert_restored(&world, INTERRUPT);
 }
 
 /// Reads the presentation as a comparable snapshot.
@@ -692,30 +775,163 @@ enum RetryEndInput {
 }
 
 #[test]
-fn retry_completion_disposes_progress_and_selects_failure_text() {
-    const TEST: &str = "retry_completion_disposes_progress_and_selects_failure_text";
-    isolated(TEST, |directory| {
+fn retry_completion_cancels_wait_and_restores_previous_action() {
+    const TEST: &str = "retry_completion_cancels_wait_and_restores_previous_action";
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<RetryEndInput, Snapshot>(FIXTURES, TEST) {
             let RetryEndInput::RetryEnd {
                 success,
                 final_error,
             } = input;
-            let world = started(directory);
+            let world = started(directory).await;
             draft(&world);
+            let previous = PreviousAction::install(&world);
             let effects = tap(&world);
+            start_retry(&world, 3, 3.0, 1000.0);
+            previous.assert_replaced(&world, INTERRUPT);
             end_retry(&world, success, 3, final_error.as_deref());
             expected.assert(&world, &effects);
             assert!(world.mode.status_container.render(100).is_empty());
+            previous.assert_restored(&world, INTERRUPT);
         }
+        interrupted_wait_case(directory).await;
     });
+}
+
+/// The notice an interrupted first retry leaves at the end of the transcript.
+const RETRY_CANCELLED: [&str; 2] = [
+    "",
+    " @error@Error: Retry failed after 1 attempts: Retry cancelled\u{1b}[39m                                              ",
+];
+
+/// Makes every provider request of `world`'s session count itself before the installed
+/// provider answers it.
+fn count_requests(world: &World) -> Rc<Cell<usize>> {
+    let session = world.mode.runtime_host.session();
+    let provider = session.agent().stream_fn.read().unwrap().clone().unwrap();
+    let requests = Rc::new(Cell::new(0));
+    let count = Rc::clone(&requests);
+    *session.agent().stream_fn.write().unwrap() =
+        Some(Rc::new(move |model, context, options, extra| {
+            count.set(count.get() + 1);
+            provider(model, context, options, extra)
+        }));
+    requests
+}
+
+/// The retry events a session publishes, in order with their payloads, and a notification
+/// for each start and each end.
+struct RetryWatch {
+    /// Each start and end with its payload.
+    events: Rc<RefCell<Vec<String>>>,
+    /// Notified once a retry's start listeners have returned.
+    started: Rc<tokio::sync::Notify>,
+    /// Notified once a retry's end listeners have returned.
+    ended: Rc<tokio::sync::Notify>,
+    /// Ends the subscription.
+    removal: Box<dyn Fn()>,
+}
+
+impl RetryWatch {
+    /// Subscribes to the retry events of `session`.
+    fn subscribe(session: &AgentSession) -> Self {
+        let events: Rc<RefCell<Vec<String>>> = Rc::default();
+        let (started, ended): (Rc<tokio::sync::Notify>, Rc<tokio::sync::Notify>) =
+            Default::default();
+        let (log, start, end) = (Rc::clone(&events), Rc::clone(&started), Rc::clone(&ended));
+        let removal = session.subscribe(Rc::new(move |event| match event {
+            AgentSessionEvent::AutoRetryStart {
+                attempt,
+                max_attempts,
+                delay_ms,
+                error_message,
+            } => {
+                let text = format!("start {attempt}/{max_attempts} {delay_ms} {error_message}");
+                log.borrow_mut().push(text);
+                start.notify_one();
+            }
+            AgentSessionEvent::AutoRetryEnd {
+                success,
+                attempt,
+                final_error,
+            } => {
+                let text = format!("end {success} {attempt} {final_error:?}");
+                log.borrow_mut().push(text);
+                end.notify_one();
+            }
+            _ => {}
+        }));
+        Self {
+            events,
+            started,
+            ended,
+            removal: Box::new(removal),
+        }
+    }
+}
+
+/// Fails the held response of a real prompt with a retryable error, presses the interrupt
+/// key while the retry waits under a paused clock, and checks that the wait ends cancelled
+/// without another request and restores the replaced callback.
+async fn interrupted_wait_case(directory: &Path) {
+    let world = started(directory).await;
+    draft(&world);
+    let session = world.mode.runtime_host.session();
+    session
+        .settings_manager()
+        .borrow_mut()
+        .set_global_key("retry", "baseDelayMs", 100);
+    let previous = PreviousAction::install(&world);
+    let held = held_response(&world);
+    let requests = count_requests(&world);
+    let watch = RetryWatch::subscribe(&session);
+    tokio::time::pause();
+    let prompted = Rc::clone(&session);
+    let run =
+        tokio::task::spawn_local(
+            async move { prompted.prompt("run", PromptOptions::default()).await },
+        );
+    let failure = answer();
+    {
+        let mut message = failure.write().unwrap();
+        message.stop_reason = StopReason::Error;
+        message.error_message = Some("overloaded_error".to_owned());
+    }
+    held.await.unwrap().stream.end(Some(failure));
+    // The start's listener has returned and the producer now waits out its backoff.
+    watch.started.notified().await;
+    previous.assert_replaced(&world, INTERRUPT);
+    assert!(
+        !session.is_retrying(),
+        "the interrupt left the retry waiting"
+    );
+    watch.ended.notified().await;
+    run.await.unwrap().unwrap();
+    tokio::time::resume();
+    (watch.removal)();
+    assert_eq!(requests.get(), 1);
+    assert_eq!(
+        *watch.events.borrow(),
+        [
+            "start 1/3 100 overloaded_error",
+            "end false 1 Some(\"Retry cancelled\")"
+        ]
+    );
+    let theme = world.themes.theme().get().unwrap();
+    let rows = world.mode.chat_container.render(100);
+    let notice = painted(&theme, &RETRY_CANCELLED.map(str::to_owned));
+    assert!(rows.ends_with(&notice), "{rows:?}");
+    let failures = rows.iter().filter(|row| row.contains("Retry failed"));
+    assert_eq!(failures.count(), 1);
+    previous.assert_restored(&world, INTERRUPT);
 }
 
 #[test]
 fn response_progress_pairs_each_start_with_an_end() {
     isolated(
         "response_progress_pairs_each_start_with_an_end",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             draft(&world);
             set_progress_setting(&world, true);
             let effects = tap(&world);
@@ -745,44 +961,56 @@ enum ReplaceInput {
     RetryReplaceAndLiveKeys,
 }
 
-/// The three presentations the replacement case compares.
+/// The four presentations the replacement case compares.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Replacement {
     /// The retry after its first tick with the keys rebound.
     changed: Snapshot,
+    /// The working row the response shows in place of the retry.
+    working: Snapshot,
     /// The second retry's first presentation.
     after: Snapshot,
     /// The presentation after the second retry ends.
     end: Snapshot,
 }
 
+/// The rebound interrupt key `ctrl+q`.
+const CTRL_Q: &str = "\x11";
+
 #[test]
-fn progress_replacement_stops_old_countdown_and_restores_escape() {
-    const TEST: &str = "progress_replacement_stops_old_countdown_and_restores_escape";
-    isolated(TEST, |directory| {
+fn retry_replacement_preserves_working_row_and_previous_action() {
+    const TEST: &str = "retry_replacement_preserves_working_row_and_previous_action";
+    isolated(TEST, async |directory| {
         let (input, expected) = cases::<ReplaceInput, Replacement>(FIXTURES, TEST).remove(0);
         let ReplaceInput::RetryReplaceAndLiveKeys = input;
-        let world = started(directory);
+        let world = started(directory).await;
         draft(&world);
+        let previous = PreviousAction::install(&world);
         let effects = tap(&world);
         start_retry(&world, 1, 4.0, 2500.0);
         let first_tick = world.runtime.millis() + 1000;
         bind_interrupt(&["ctrl+q".to_owned(), "alt+x".to_owned()], false);
         let _ = world.runtime.advance_to(Duration::from_millis(first_tick));
         expected.changed.assert_animated(&world, &effects);
-        // A response starts: the retry's countdown and row go before the working row does.
+        previous.assert_replaced(&world, CTRL_Q);
+        // A response starts: the retry's countdown, row and callback go before the working
+        // row starts.
         agent_event(&world, maestro_app::AgentEvent::AgentStart);
-        assert_eq!(timers(&world), [80]);
-        let status = world.mode.status_container.render(100);
-        assert_eq!(status.len(), 2);
-        assert!(status[0].is_empty());
-        assert!(status[1].contains("Working..."));
-        assert!(!status[1].contains("Retrying"));
+        let restored = world.mode.editor.on_escape().unwrap();
+        assert!(Rc::ptr_eq(&restored, &previous.action));
+        expected.working.assert(&world, &effects);
+        // A late successful end of the replaced retry leaves the working row alone.
+        end_retry(&world, true, 1, None);
+        expected.working.assert(&world, &effects);
+        let kept = world.mode.editor.on_escape().unwrap();
+        assert!(Rc::ptr_eq(&kept, &previous.action));
         start_retry(&world, 2, 4.0, 1000.0);
         expected.after.assert_animated(&world, &effects);
+        previous.assert_replaced(&world, CTRL_Q);
         end_retry(&world, true, 2, None);
         expected.end.assert(&world, &effects);
+        previous.assert_restored(&world, CTRL_Q);
         bind_interrupt(&[], true);
     });
 }
@@ -791,8 +1019,8 @@ fn progress_replacement_stops_old_countdown_and_restores_escape() {
 fn compaction_escape_restores_main_action_and_admits_editor_input() {
     isolated(
         "compaction_escape_restores_main_action_and_admits_editor_input",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let calls: Rc<RefCell<Vec<&'static str>>> = Rc::default();
             let probe: Rc<dyn Fn()> = {
                 let calls = Rc::clone(&calls);
@@ -821,11 +1049,7 @@ fn compaction_escape_restores_main_action_and_admits_editor_input() {
                 .services()
                 .auth_storage
                 .set_runtime_api_key("unknown", "key");
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .build()
-                .unwrap();
-            let tasks = tokio::task::LocalSet::new();
-            drop(tasks.block_on(&runtime, session.compact(None)));
+            drop(session.compact(None).await);
             interrupt();
             observer();
             assert_eq!(*aborted.borrow(), [true], "{:?}", aborted.borrow());
@@ -857,8 +1081,8 @@ fn compaction_escape_restores_main_action_and_admits_editor_input() {
 fn progress_callbacks_release_mode_and_cancel_timers() {
     isolated(
         "progress_callbacks_release_mode_and_cancel_timers",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             start_compaction(&world, CompactionReason::Manual);
             start_retry(&world, 1, 3.0, 2500.0);
             let writes = world.terminal.writes().len();
@@ -1123,7 +1347,7 @@ async fn flush_world(
     let loader: LoaderSlot = Rc::default();
     setup.create = Some(flush_factory(directory, captured, &loader));
     let world = setup.build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world.mode.chat_container.clear();
     let session = world.mode.runtime_host.session();
@@ -1275,7 +1499,7 @@ fn broken_skill(directory: &Path) -> Skill {
 
 /// Answers every prompt of `session` with an empty finished message, and configures the
 /// credentials the session's own refusal check reads.
-fn answer_session(session: &Rc<AgentSession>) {
+pub(super) fn answer_session(session: &Rc<AgentSession>) {
     *session.agent().stream_fn.write().unwrap() = Some(Rc::new(|_, _, _, _| {
         let stream = AssistantMessageEventStream::new();
         stream.end(Some(answer()));
@@ -1487,63 +1711,57 @@ fn assert_flush(world: &World, captured: &Captured, expected: &FlushExpected) {
 }
 
 /// Delivers one recorded captured batch inside a Tokio set and checks what it left.
-fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpected) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    let tasks = tokio::task::LocalSet::new();
-    tasks.block_on(&runtime, async {
-        let captured = Captured::default();
-        if input.faults.delayed {
-            captured.delay();
-        }
-        let (world, _removal) = flush_world(directory, input, &captured).await;
-        world.mode.editor.set_text("draft");
-        if input.faults.refuses() && !input.replace {
-            seed_session(&world, &captured);
-        }
-        run_flush(&world, &input.local, input.will_retry);
-        if input.faults.delayed {
-            until(&world, &captured, || {
-                captured
-                    .log
-                    .borrow()
-                    .iter()
-                    .any(|entry| entry.contains("command"))
-            })
-            .await;
+async fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpected) {
+    let captured = Captured::default();
+    if input.faults.delayed {
+        captured.delay();
+    }
+    let (world, _removal) = flush_world(directory, input, &captured).await;
+    world.mode.editor.set_text("draft");
+    if input.faults.refuses() && !input.replace {
+        seed_session(&world, &captured);
+    }
+    run_flush(&world, &input.local, input.will_retry);
+    if input.faults.delayed {
+        until(&world, &captured, || {
+            captured
+                .log
+                .borrow()
+                .iter()
+                .any(|entry| entry.contains("command"))
+        })
+        .await;
+        world
+            .mode
+            .compaction_queued_messages
+            .borrow_mut()
+            .push(CompactionQueuedMessage {
+                text: "newer".to_owned(),
+                mode: UserMessageDelivery::Steer,
+            });
+        let _ = captured.release_prompt().send(());
+        // The first prompt's failure is noticed while the tail's command still waits.
+        until(&world, &captured, || {
             world
                 .mode
-                .compaction_queued_messages
-                .borrow_mut()
-                .push(CompactionQueuedMessage {
-                    text: "newer".to_owned(),
-                    mode: UserMessageDelivery::Steer,
-                });
-            let _ = captured.release_prompt().send(());
-            // The first prompt's failure is noticed while the tail's command still waits.
-            until(&world, &captured, || {
-                world
-                    .mode
-                    .chat_container
-                    .render(100)
-                    .join("\n")
-                    .contains("Failed to send queued message")
-            })
-            .await;
-            let _ = captured.release_command().send(());
-        }
-        until(&world, &captured, || world.runtime.futures() == 0).await;
-        assert_flush(&world, &captured, expected);
-    });
+                .chat_container
+                .render(100)
+                .join("\n")
+                .contains("Failed to send queued message")
+        })
+        .await;
+        let _ = captured.release_command().send(());
+    }
+    until(&world, &captured, || world.runtime.futures() == 0).await;
+    assert_flush(&world, &captured, expected);
 }
 
 #[test]
 fn compaction_flush_selects_first_prompt_and_retains_tail_modes() {
     const TEST: &str = "compaction_flush_selects_first_prompt_and_retains_tail_modes";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
-            flush_case(directory, &input, &expected);
+            flush_case(directory, &input, &expected).await;
         }
     });
 }
@@ -1551,9 +1769,9 @@ fn compaction_flush_selects_first_prompt_and_retains_tail_modes() {
 #[test]
 fn compaction_flush_failures_restore_the_snapshot_and_clear_session_queue() {
     const TEST: &str = "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
-            flush_case(directory, &input, &expected);
+            flush_case(directory, &input, &expected).await;
         }
     });
 }
@@ -1561,9 +1779,9 @@ fn compaction_flush_failures_restore_the_snapshot_and_clear_session_queue() {
 #[test]
 fn compaction_flush_failure_uses_singular_error_line() {
     const TEST: &str = "compaction_flush_failure_uses_singular_error_line";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
-            flush_case(directory, &input, &expected);
+            flush_case(directory, &input, &expected).await;
         }
     });
 }
@@ -1571,9 +1789,9 @@ fn compaction_flush_failure_uses_singular_error_line() {
 #[test]
 fn compaction_flush_delayed_failure_stops_admission_and_restores_once() {
     const TEST: &str = "compaction_flush_delayed_failure_stops_admission_and_restores_once";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
-            flush_case(directory, &input, &expected);
+            flush_case(directory, &input, &expected).await;
         }
     });
 }
@@ -1581,9 +1799,9 @@ fn compaction_flush_delayed_failure_stops_admission_and_restores_once() {
 #[test]
 fn compaction_flush_real_commands_and_modes_reach_provider() {
     const TEST: &str = "compaction_flush_real_commands_and_modes_reach_provider";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
-            flush_case(directory, &input, &expected);
+            flush_case(directory, &input, &expected).await;
         }
     });
 }
@@ -1591,9 +1809,9 @@ fn compaction_flush_real_commands_and_modes_reach_provider() {
 #[test]
 fn compaction_flush_selected_commands_still_prompt_after_removal() {
     const TEST: &str = "compaction_flush_selected_commands_still_prompt_after_removal";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
-            flush_case(directory, &input, &expected);
+            flush_case(directory, &input, &expected).await;
         }
     });
 }
@@ -1601,9 +1819,9 @@ fn compaction_flush_selected_commands_still_prompt_after_removal() {
 #[test]
 fn compaction_flush_selected_prefix_still_prompts_after_removal() {
     const TEST: &str = "compaction_flush_selected_prefix_still_prompts_after_removal";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
-            flush_case(directory, &input, &expected);
+            flush_case(directory, &input, &expected).await;
         }
     });
 }
@@ -1611,9 +1829,9 @@ fn compaction_flush_selected_prefix_still_prompts_after_removal() {
 #[test]
 fn compaction_flush_follows_current_session_after_command() {
     const TEST: &str = "compaction_flush_follows_current_session_after_command";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
-            flush_case(directory, &input, &expected);
+            flush_case(directory, &input, &expected).await;
         }
     });
 }
@@ -1655,131 +1873,117 @@ fn hold_answer(world: &World) -> HeldAnswer {
     held
 }
 
-/// Runs `body` inside a Tokio set, where the session's own tasks can run.
-fn in_tasks(body: impl std::future::Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, body);
-}
-
 #[test]
 fn compaction_flush_capture_precedes_async_handoff() {
     const TEST: &str = "compaction_flush_capture_precedes_async_handoff";
-    isolated(TEST, |directory| {
-        in_tasks(async {
-            let captured = Captured::default();
-            let input = FlushInput {
-                will_retry: false,
-                local: vec![kept("first", Mode::Steer), kept("tail", Mode::FollowUp)],
-                faults: Faults::default(),
-                edit: Edit::None,
-                replace: false,
-            };
-            let (world, _removal) = flush_world(directory, &input, &captured).await;
-            let held = hold_answer(&world);
-            run_flush(&world, &input.local, false);
-            // The batch is captured and its rows are gone before the host runs any of it.
-            assert!(world.mode.compaction_queued_messages.borrow().is_empty());
-            assert_eq!(
-                world
-                    .mode
-                    .pending_messages_container
-                    .children()
-                    .borrow()
-                    .len(),
-                0
-            );
-            assert!(captured.log.borrow().is_empty());
-            assert_eq!(world.runtime.futures(), 1, "the delivery is handed over");
-            round(&world).await;
-            assert_eq!(
-                *captured.log.borrow(),
-                ["a prompt first", "a follow-up tail"]
-            );
-            // A second flush finds nothing captured and adds no work.
-            end_quietly(&world, false);
-            round(&world).await;
-            assert_eq!(
-                *captured.log.borrow(),
-                ["a prompt first", "a follow-up tail"]
-            );
-            held.end();
-            until(&world, &captured, || world.runtime.futures() == 0).await;
-            assert_eq!(
-                *captured.log.borrow(),
-                ["a prompt first", "a follow-up tail"]
-            );
-        });
+    isolated(TEST, async |directory| {
+        let captured = Captured::default();
+        let input = FlushInput {
+            will_retry: false,
+            local: vec![kept("first", Mode::Steer), kept("tail", Mode::FollowUp)],
+            faults: Faults::default(),
+            edit: Edit::None,
+            replace: false,
+        };
+        let (world, _removal) = flush_world(directory, &input, &captured).await;
+        let held = hold_answer(&world);
+        run_flush(&world, &input.local, false);
+        // The batch is captured and its rows are gone before the host runs any of it.
+        assert!(world.mode.compaction_queued_messages.borrow().is_empty());
+        assert_eq!(
+            world
+                .mode
+                .pending_messages_container
+                .children()
+                .borrow()
+                .len(),
+            0
+        );
+        assert!(captured.log.borrow().is_empty());
+        assert_eq!(world.runtime.futures(), 1, "the delivery is handed over");
+        round(&world).await;
+        assert_eq!(
+            *captured.log.borrow(),
+            ["a prompt first", "a follow-up tail"]
+        );
+        // A second flush finds nothing captured and adds no work.
+        end_quietly(&world, false);
+        round(&world).await;
+        assert_eq!(
+            *captured.log.borrow(),
+            ["a prompt first", "a follow-up tail"]
+        );
+        held.end();
+        until(&world, &captured, || world.runtime.futures() == 0).await;
+        assert_eq!(
+            *captured.log.borrow(),
+            ["a prompt first", "a follow-up tail"]
+        );
     });
 }
 
 #[test]
 fn compaction_flush_real_session_rejects_without_duplicate_tail() {
     const TEST: &str = "compaction_flush_real_session_rejects_without_duplicate_tail";
-    isolated(TEST, |directory| {
-        in_tasks(async {
-            let captured = Captured::default();
-            let input = FlushInput {
-                will_retry: false,
-                local: vec![kept("first", Mode::Steer), kept("tail-f", Mode::FollowUp)],
-                faults: Faults::default(),
-                edit: Edit::None,
-                replace: false,
-            };
-            let (world, _removal) = flush_world(directory, &input, &captured).await;
-            world
-                .host
-                .services()
-                .auth_storage
-                .remove_runtime_api_key("unknown");
-            seed_session(&world, &captured);
-            run_flush(&world, &input.local, false);
-            until(&world, &captured, || world.runtime.futures() == 0).await;
-            // The refused prompt stops the tail, so no duplicate reaches the session queue.
-            assert_eq!(*captured.log.borrow(), ["a prompt first"]);
-            let session = world.mode.runtime_host.session();
-            assert!(session.get_follow_up_messages().is_empty());
-            assert!(session.get_steering_messages().is_empty());
-            let transcript = world.mode.chat_container.render(100).join("\n");
-            assert_eq!(
-                transcript.matches("Failed to send queued message").count(),
-                1,
-                "{transcript:?}"
-            );
-            let local = world.mode.compaction_queued_messages.borrow();
-            assert_eq!(local.len(), 2);
-            assert_eq!(local[1].text, "tail-f");
-        });
+    isolated(TEST, async |directory| {
+        let captured = Captured::default();
+        let input = FlushInput {
+            will_retry: false,
+            local: vec![kept("first", Mode::Steer), kept("tail-f", Mode::FollowUp)],
+            faults: Faults::default(),
+            edit: Edit::None,
+            replace: false,
+        };
+        let (world, _removal) = flush_world(directory, &input, &captured).await;
+        world
+            .host
+            .services()
+            .auth_storage
+            .remove_runtime_api_key("unknown");
+        seed_session(&world, &captured);
+        run_flush(&world, &input.local, false);
+        until(&world, &captured, || world.runtime.futures() == 0).await;
+        // The refused prompt stops the tail, so no duplicate reaches the session queue.
+        assert_eq!(*captured.log.borrow(), ["a prompt first"]);
+        let session = world.mode.runtime_host.session();
+        assert!(session.get_follow_up_messages().is_empty());
+        assert!(session.get_steering_messages().is_empty());
+        let transcript = world.mode.chat_container.render(100).join("\n");
+        assert_eq!(
+            transcript.matches("Failed to send queued message").count(),
+            1,
+            "{transcript:?}"
+        );
+        let local = world.mode.compaction_queued_messages.borrow();
+        assert_eq!(local.len(), 2);
+        assert_eq!(local[1].text, "tail-f");
     });
 }
 
 #[test]
 fn compaction_flush_work_is_linear() {
     const TEST: &str = "compaction_flush_work_is_linear";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for count in [32, 64, 128] {
-            in_tasks(async {
-                let captured = Captured::default();
-                let local: Vec<Kept> = (0..count)
-                    .map(|index| kept(&format!("queued {index}"), Mode::Steer))
-                    .collect();
-                let input = FlushInput {
-                    will_retry: true,
-                    local,
-                    faults: Faults::default(),
-                    edit: Edit::None,
-                    replace: false,
-                };
-                let (world, _removal) = flush_world(directory, &input, &captured).await;
-                run_flush(&world, &input.local, true);
-                until(&world, &captured, || world.runtime.futures() == 0).await;
-                // Every message reaches the session once, and nothing is walked twice.
-                let log = captured.log.borrow().clone();
-                assert_eq!(log.len(), count);
-                let unique: std::collections::BTreeSet<&String> = log.iter().collect();
-                assert_eq!(unique.len(), count);
-            });
+            let captured = Captured::default();
+            let local: Vec<Kept> = (0..count)
+                .map(|index| kept(&format!("queued {index}"), Mode::Steer))
+                .collect();
+            let input = FlushInput {
+                will_retry: true,
+                local,
+                faults: Faults::default(),
+                edit: Edit::None,
+                replace: false,
+            };
+            let (world, _removal) = flush_world(directory, &input, &captured).await;
+            run_flush(&world, &input.local, true);
+            until(&world, &captured, || world.runtime.futures() == 0).await;
+            // Every message reaches the session once, and nothing is walked twice.
+            let log = captured.log.borrow().clone();
+            assert_eq!(log.len(), count);
+            let unique: std::collections::BTreeSet<&String> = log.iter().collect();
+            assert_eq!(unique.len(), count);
         }
     });
 }

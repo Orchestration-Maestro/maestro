@@ -4,16 +4,17 @@ use wasmtime::{
     Store,
     component::{
         Accessor, ComponentExportIndex, ComponentNamedList, Instance, Lift, Lower, Resource,
-        ResourceAny, TypedFunc,
+        TypedFunc,
     },
 };
 use wasmtime_wasi::WasiView;
 
-mod bash;
-mod events;
-mod registrations;
+pub(crate) mod bash;
+pub(crate) mod events;
+pub(crate) mod registrations;
 mod renderers;
-mod tools;
+pub(crate) mod schema;
+pub(crate) mod tools;
 
 /// Typed session callback with the actual domain capability resource.
 type Session<V> = TypedFunc<(Resource<Callback>, Resource<V>), (Result<(), String>,)>;
@@ -44,6 +45,8 @@ type Abort = TypedFunc<
 pub(crate) struct Exports {
     /// Original authored factory entry point.
     start: TypedFunc<(), (Result<(), String>,)>,
+    /// The original retained pub.
+    pub(crate) schema: schema::Exports,
     /// Actual renderer and retained component methods.
     renderers: renderers::Exports,
     /// Actual returned shell operation method.
@@ -105,6 +108,7 @@ impl Exports {
         let renderers = renderers::Exports::new(store, instance, &guest)?;
         Ok(Self {
             renderers,
+            schema: schema::Exports::new(store, instance, &guest)?,
             start: typed(store, instance, &guest, "start")?,
             events,
             bash,
@@ -121,26 +125,30 @@ impl Exports {
         })
     }
 
-    /// Enters actual callbacks or returns a release for the Store's quiescent drop queue.
+    /// Enters the actual authored callback export.
     pub(crate) async fn invoke<T: crate::callback_imports::CallbackView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: Call<Callback, ResourceAny>,
-    ) -> wasmtime::Result<Option<ResourceAny>> {
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
         match call {
             Call::Start(reply) => {
                 let result = self.start.call_concurrent(accessor, ()).await?.0;
-                result.map_err(wasmtime::Error::msg)?;
+                // The authored message answers the load before the failed Store is torn down.
+                if let Err(message) = result {
+                    let _ = reply.send(Err(message.clone()));
+                    return Err(wasmtime::Error::msg(message));
+                }
                 let _ = reply.send(Ok(()));
             }
             Call::Finished => {
                 return Err(wasmtime::format_err!("completion is not a guest export"));
             }
-            Call::ReleaseResource(resource) => return Ok(Some(resource)),
             Call::Renderer(call) => self.renderers.create(accessor, call).await?,
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
             Call::Bash(call) => self.bash.invoke(accessor, call).await?,
+            Call::Schema(call) => self.schema.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
@@ -164,25 +172,31 @@ impl Exports {
                 let result = session(accessor, self.with_session, handler, context).await?;
                 let _ = reply.send(result);
             }
-            Call::Release(release) => {
-                let retired =
-                    accessor.with(|mut access| access.get().callbacks().release(&release));
-                if let Some(id) = retired {
-                    let handler = accessor
-                        .with(|mut access| access.get().ctx().table.push(Callback { id }))?;
-                    let result = self
-                        .release
-                        .call_concurrent(accessor, (Resource::new_borrow(handler.rep()),))
-                        .await;
-                    accessor.with(|mut access| access.get().ctx().table.delete(handler))?;
-                    result?;
-                }
-                if let Some(reply) = release.completion {
-                    let _ = reply.send(Ok(()));
-                }
-            }
+            Call::Release(release) => self.release(accessor, release).await?,
         }
-        Ok(None)
+        Ok(())
+    }
+    /// Retires a callback identity, entering the guest's release export once it is unused.
+    async fn release<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        release: crate::guest_calls::Release,
+    ) -> wasmtime::Result<()> {
+        let retired = accessor.with(|mut access| access.get().callbacks().release(&release));
+        if let Some(id) = retired {
+            let handler =
+                accessor.with(|mut access| access.get().ctx().table.push(Callback { id }))?;
+            let result = self
+                .release
+                .call_concurrent(accessor, (Resource::new_borrow(handler.rep()),))
+                .await;
+            accessor.with(|mut access| access.get().ctx().table.delete(handler))?;
+            result?;
+        }
+        if let Some(reply) = release.completion {
+            let _ = reply.send(Ok(()));
+        }
+        Ok(())
     }
     /// Keeps the original native frame alive only through its actual guest prefix.
     async fn prefix<T: crate::callback_imports::CallbackView + 'static>(

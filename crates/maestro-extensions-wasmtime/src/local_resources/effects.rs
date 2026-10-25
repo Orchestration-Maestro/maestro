@@ -4,7 +4,7 @@ use maestro_extensions::callbacks::CallbackFrame;
 use maestro_extensions::{AgentToolUpdateCallback, LiveTheme, Local, Subscription};
 use std::sync::{Arc, mpsc};
 
-mod emission;
+pub(crate) mod emission;
 
 /// Catchable results returned to the waiting Store thread.
 type Reply = mpsc::Sender<Result<(), String>>;
@@ -27,9 +27,9 @@ pub(crate) struct ToolUpdate(Arc<Lease>);
 
 impl ToolUpdate {
     /// Validates a native result before invoking its observer on the local owner.
-    pub(crate) fn update(&self, partial: String) -> Result<(), String> {
+    pub(crate) fn update(&self, partial: String) -> crate::import_route::Route {
         self.0
-            .request(|id, reply| Message::Effect(id, Request::Update(partial, reply)))
+            .route(|id, reply| Message::Effect(id, Request::Update(partial, reply)))
     }
 }
 
@@ -45,12 +45,8 @@ impl SubscriptionEndpoint {
     }
 }
 
-/// Opaque theme ownership crossing the boundary independently of its renderer.
-#[derive(Clone)]
-pub(crate) struct ThemeEndpoint {
-    /// Releases the original live theme only after the final copied capability.
-    _lease: Arc<Lease>,
-}
+/// Live theme endpoint retained independently of its renderer.
+pub(crate) use crate::theme_reads::Endpoint as ThemeEndpoint;
 
 /// Store-safe endpoint of the original native callback frame, not a second event bus.
 #[derive(Clone)]
@@ -107,8 +103,7 @@ impl Registry {
 
     /// Retains the native theme supplied to one renderer invocation.
     pub(crate) fn theme(&self, theme: LiveTheme) -> Result<ThemeEndpoint, String> {
-        self.insert(Capability::Theme { _owner: theme })
-            .map(|lease| ThemeEndpoint { _lease: lease })
+        self.insert(Capability::Theme(theme)).map(ThemeEndpoint)
     }
 }
 
@@ -120,7 +115,9 @@ impl State {
             Request::Emission(request) => self.emission(capability.as_deref(), request),
             Request::Tail(tail, reply) => {
                 let result = match capability.as_deref() {
-                    Some(Capability::CallbackFrame(frame)) => frame.start_tail(tail),
+                    Some(Capability::CallbackFrame(frame)) => {
+                        frame.start_tail(tail, self.registry.clone())
+                    }
                     _ => Err("extension callback-emitter resource ended".to_owned()),
                 };
                 let _ = reply.send(result);
@@ -174,13 +171,17 @@ enum Tail {
 
 impl Frame {
     /// Retains the guest continuation for the native bus, without polling it early.
-    fn start_tail(&self, tail: crate::guest_calls::Handle) -> Result<(), String> {
+    fn start_tail(
+        &self,
+        tail: crate::guest_calls::Handle,
+        registry: Registry,
+    ) -> Result<(), String> {
         let mut slot = self.tail.borrow_mut();
         match &mut *slot {
             Tail::Open(slot) if slot.is_none() => {
-                *slot = Some(Box::pin(
-                    async move { tail.tail().await.map_err(Into::into) },
-                ));
+                *slot = Some(Box::pin(async move {
+                    tail.tail(&registry).await.map_err(Into::into)
+                }));
                 Ok(())
             }
             Tail::Open(_) => Err("extension listener already announced a tail".to_owned()),

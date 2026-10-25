@@ -148,6 +148,36 @@ intact. Metadata transport does not validate invocation arguments; argument prep
 and validation remain with the model argument validator. Model-server JSON limits do
 not apply to these author-supplied declarations.
 
+### Executable schema nodes
+
+Use `ParameterSchema::with_code` to retain a `schema_code::SchemaCode` beside a
+schema's JSON and declared kinds. Each pointer maps to the shared `SchemaNode`:
+an optional `Base` and refinements in registration order. `Base::default()` leaves
+values unchanged, accepts them and returns no guard errors. Its conversion can
+return a replacement separately from edits to the supplied value. `None` keeps the
+operand; `Some(Value::Null)` replaces a nested member with JSON null.
+
+Guest `SchemaCallback` closures receive a borrowed `JsonView` and a
+`CallbackEmitter`. `kind` and `read` distinguish a missing member from JSON null.
+`read` and removed `splice` values admit the same nesting as tool metadata.
+`member` borrows a child; `keys`, `set`, `delete` and `splice` expose ordered object
+and array operations. An explicit `read` copies only the value the author asks
+for. Starting a callback never serializes its subtree. Dropping a child view,
+including on an error path, leaves it attached to its parent. Reassigning a local
+view does not replace an argument slot.
+
+Schema callbacks return the shared `DiagnosticErrorInfo`, preserving name,
+message, stack and code. Ordinary extension operations still use `ExtensionResult`
+and string errors. Schema code stays out of serialized metadata and provider
+JSON; decoding ordinary JSON produces no callbacks.
+
+Enumerating and re-registering a guest's own schemas keeps their callbacks and
+author captures. Bindings follow each tool, not the first tool in a listing.
+Independent identities release separately; the last holder releases the capture.
+Foreign entries remain data-only. Live foreign schema enumeration, retention,
+re-registration and invocation are tracked together in
+[the foreign schema capability work](https://github.com/Orchestration-Maestro/maestro/issues/2625).
+
 ## Event channels
 
 `api.events()` returns the supplied host's `EventBus`. Ordinary code awaits
@@ -337,7 +367,7 @@ usage whose two estimates are unknown.
 
 ## Retained UI requests
 
-`ExtensionUIContext` sends eight synchronous requests to the installed host and
+`ExtensionUIContext` sends these synchronous requests to the installed host and
 returns its rejection as a recoverable `ExtensionResult` error:
 
 | Method | Request |
@@ -350,6 +380,9 @@ returns its rejection as a recoverable `ExtensionResult` error:
 | `set_hidden_thinking_label` | Literal collapsed-thinking text, or the host default. |
 | `set_widget` | Fixed ordered lines for one key with optional `WidgetPlacement`, or that widget's removal. |
 | `set_title` | A literal terminal title. |
+| `paste_to_editor` | Literal text the host editor receives as a paste, through its paste handling. |
+| `set_editor_text` | Literal replacement text for the host editor. |
+| `get_editor_text` | Reads the host editor's current text, returned unchanged. |
 
 The four option types are generated from the same interface file and re-exported at
 the author root. `None` and a present empty value stay different requests. The text
@@ -902,4 +935,18 @@ input defaults to a no-op and the release preference defaults to false. Renderin
 the supplied width; successful rendering returns the author's ordered lines. Returned errors remain errors.
 
 Cloned themes retain the supplied host owner independently of renderer registration.
-Theme is currently opaque: styling methods and widget composition are not exposed here.
+Each `Theme` method sends one synchronous request to that owner. The owner keeps the palette
+and the style algorithms, so every call reads its current state:
+
+| Method | Answer |
+| --- | --- |
+| `name`, `source_path` | The theme name and file path, or `None`. |
+| `source_info`, `set_source_info` | Reads, replaces or clears the theme's `SourceInfo`. |
+| `fg`, `bg` | Text wrapped in a named foreground or background color that restores only that color. |
+| `bold`, `italic`, `underline`, `inverse`, `strikethrough` | Text with that one style and its own closing escape. |
+| `get_fg_ansi`, `get_bg_ansi` | The escape that selects a named color. |
+| `get_color_mode` | The `ColorMode`: `Truecolor` or `Color256`. |
+
+The styled text is the owner's bytes, unchanged. An unknown color name is an error carrying the
+owner's message. A theme kept past its renderer call observes later theme changes and provenance
+edits made through any of its clones. Widget composition is not exposed here.

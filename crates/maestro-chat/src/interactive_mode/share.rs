@@ -179,10 +179,7 @@ impl InteractiveMode {
             BorderedLoaderOptions::default(),
             &live,
         )?);
-        self.editor_container.clear();
-        self.editor_container.add_child(loader.clone());
-        self.ui.set_focus(Some(loader.clone()));
-        self.ui.request_render(false);
+        self.show_panel(loader.clone(), loader.clone());
         let mode = Rc::downgrade(self);
         let retained = Rc::downgrade(&loader);
         loader.set_on_abort(Some(Rc::new(move || {
@@ -206,9 +203,7 @@ impl InteractiveMode {
     /// Stops the loader and puts the same editor back in focus.
     fn restore_share_editor(&self, loader: &BorderedLoader) {
         loader.dispose();
-        self.editor_container.clear();
-        self.editor_container.add_child(self.editor.clone());
-        self.ui.set_focus(Some(self.editor.clone()));
+        self.restore_editor();
     }
 
     /// Runs `gh gist create --public=false` for the artifact, collecting both streams as

@@ -174,10 +174,7 @@ impl InteractiveMode {
         if let Some(open) = open.borrow_mut().as_mut() {
             open.dispose = dispose;
         }
-        self.editor_container.clear();
-        self.editor_container.add_child(Rc::clone(&component));
-        self.ui.set_focus(Some(component));
-        self.ui.request_render(false);
+        self.show_panel(Rc::clone(&component), component);
         if let Some(signal) = signal {
             let cancelled = signal.cancelled();
             self.tool_environment
@@ -219,9 +216,7 @@ impl InteractiveMode {
     /// Returns the current editor to the editor container with focus and requests a
     /// frame.
     fn hide_extension_dialog(&self) {
-        self.editor_container.clear();
-        self.editor_container.add_child(self.editor.clone());
-        self.ui.set_focus(Some(self.editor.clone()));
+        self.restore_editor();
         self.ui.request_render(false);
     }
 }

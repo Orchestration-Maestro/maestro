@@ -1,6 +1,6 @@
 //! Canonical primitive imports sharing the original local context endpoint.
 use crate::read_imports::ReadEndpoint;
-use crate::read_imports::add_read;
+use crate::read_imports::{add_read, add_routed};
 use crate::{
     context_reads::{Endpoint, Request},
     local_resources::{SignalEndpoint, UiEndpoint},
@@ -171,13 +171,13 @@ fn add_primitives<T: WasiView + 'static, R: ContextResource>(
         Request::HasPendingMessages,
         endpoint::<T, R>,
     )?;
-    add_read(
+    add_routed(
         host,
         &format!("[method]{name}.abort"),
         Request::Abort,
         endpoint::<T, R>,
     )?;
-    add_read(
+    add_routed(
         host,
         &format!("[method]{name}.shutdown"),
         Request::Shutdown,
@@ -278,7 +278,8 @@ fn add_compact<T: crate::callback_imports::CallbackView + 'static, R: ContextRes
                 on_error: crate::callback_imports::optional(store.data_mut(), error.as_ref())?,
                 api: store.data().api().clone(),
             };
-            Ok((endpoint.read(|reply| Request::Compact(options, reply)),))
+            let route = endpoint.route(|reply| Request::Compact(options, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
     Ok(())

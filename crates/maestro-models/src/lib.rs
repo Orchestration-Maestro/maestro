@@ -137,5 +137,6 @@ pub use maestro_request::{extension_events, system_prompt};
 
 /// Shared parameter-schema records and their declared node kinds.
 pub use maestro_request::parameter_schema::{
-    ParameterSchema, SchemaKind, transport as schema_transport,
+    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaKind,
+    SchemaNode, transport as schema_transport,
 };

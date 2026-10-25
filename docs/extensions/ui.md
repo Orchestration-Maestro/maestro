@@ -9,6 +9,20 @@ that supplies the live theme given to `ExtensionRunner::new`;
 the fallback. `has_ui` reports whether an installed host, rather than a
 fallback, is current. It never inspects which operations a host supports.
 
+`set_ui_context_binding` takes an `ExtensionUIContextBinding`, which says how
+the runner keeps the host. `Owned`, built by `From<ExtensionUIContext>` and used
+by `set_ui_context`, keeps the host alive. `ExtensionUIContextBinding::borrowed`
+keeps only a weak reference, for a host that itself owns the session and its
+runner. A context obtained through a borrowed binding is an owned handle that
+keeps the host alive. Once the host is gone, the runner answers with its
+headless fallback and `has_ui` is false.
+
+Event and command contexts read the runner's current host each time `ui()` is
+called, so they follow later installs. A replacement-session context reads the
+replacement runner's host, not its creator's. Each handle that `ui()` returns
+keeps its own host. When the last handle to a borrowed host is dropped and
+nothing else holds that host, the borrowed binding no longer reaches it.
+
 ```rust
 use maestro_extensions::types::{ExtensionUIContextPort};
 use maestro_extensions::{EventError, ExtensionRunner, ExtensionUIContext};
