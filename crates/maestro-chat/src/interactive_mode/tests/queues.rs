@@ -47,7 +47,7 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
 /// A recorded delivery.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq)]
 #[serde(rename_all = "camelCase")]
-enum Mode {
+pub(super) enum Mode {
     /// Steering.
     Steer,
     /// Follow-up.
@@ -56,7 +56,7 @@ enum Mode {
 
 impl Mode {
     /// The session delivery this mode records.
-    fn delivery(self) -> UserMessageDelivery {
+    pub(super) fn delivery(self) -> UserMessageDelivery {
         match self {
             Self::Steer => UserMessageDelivery::Steer,
             Self::FollowUp => UserMessageDelivery::FollowUp,
@@ -67,11 +67,11 @@ impl Mode {
 /// A recorded message kept during compaction.
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-struct Kept {
+pub(super) struct Kept {
     /// The kept text.
-    text: String,
+    pub(super) text: String,
     /// Its delivery.
-    mode: Mode,
+    pub(super) mode: Mode,
 }
 
 /// The queues a case starts with.
@@ -131,7 +131,11 @@ impl Observed {
     /// The recorded observation `expected` as the mode paints and stores it: role markers
     /// become the published theme's escapes, and the history keeps each entry the way the
     /// editor's history does, trimmed, nonempty and without an immediate repeat.
-    fn expected(world: &World, expected: Value) -> Self {
+    fn expected(world: &World, mut expected: Value) -> Self {
+        // The pending-row sample a delivered compaction case keeps is not an observation.
+        if let Some(object) = expected.as_object_mut() {
+            object.shift_remove("pendingSample");
+        }
         let mut expected: Self = serde_json::from_value(expected).unwrap();
         let theme = world.themes.theme().get().unwrap();
         expected.pending = painted(&theme, &expected.pending);
@@ -997,8 +1001,16 @@ fn with_notice(mut observed: Observed, world: &World, text: &str) -> Observed {
 /// Appends the notice the harness's failing compaction ends with, which the mode shows for a
 /// manual compaction.
 fn with_compaction_notice(observed: Observed, world: &World) -> Observed {
+    let mut observed = observed;
+    let delivered = observed
+        .chat
+        .iter()
+        .position(|row| row.starts_with("\x1b]133;A"))
+        .map(|start| observed.chat.split_off(start - 1))
+        .unwrap_or_default();
     let named = format!("Error: {COMPACTION_FAILURE}");
     let mut observed = with_notice(observed, world, &named);
+    observed.chat.extend(delivered);
     observed
         .errors
         .push(format!("{COMPACTION_FAILURE}\x1b[39m"));
@@ -1030,11 +1042,15 @@ fn during_compaction(world: &World, action: impl Fn(&Rc<InteractiveMode>) + 'sta
         .build()
         .unwrap();
     let tasks = tokio::task::LocalSet::new();
-    let ended = tasks.block_on(&runtime, session.compact(None));
-    assert_eq!(
-        ended.unwrap_err().message,
-        "Nothing to compact (session too small)"
-    );
+    tasks.block_on(&runtime, async {
+        let ended = session.compact(None).await;
+        assert_eq!(
+            ended.unwrap_err().message,
+            "Nothing to compact (session too small)"
+        );
+        // The compaction's end delivers the input it captured, on the terminal host.
+        super::progress::settle_host(world).await;
+    });
     unsubscribe();
 }
 
@@ -1068,6 +1084,12 @@ fn single_rows(test: &str) -> SingleRows {
     cases::<Value, Value>(test)
         .into_iter()
         .filter_map(|(_, expected)| {
+            if let Some(sample) = expected.get("pendingSample") {
+                let mode: Mode = serde_json::from_value(sample["mode"].clone()).ok()?;
+                let queued = sample["text"].as_str()?.to_owned();
+                let rows: Vec<String> = serde_json::from_value(sample["rows"].clone()).ok()?;
+                return Some(((mode, queued), rows));
+            }
             let snapshot: Snapshot =
                 serde_json::from_value(expected.get("session")?.clone()).ok()?;
             let pending: Vec<String> = serde_json::from_value(expected["pending"].clone()).ok()?;
@@ -2333,6 +2355,28 @@ fn child_counts(world: &World) -> (usize, usize) {
     )
 }
 
+/// Checks an ordinary input's admission before the compaction's end captures it.
+fn observe_compaction_admission(
+    world: World,
+    heard: Heard,
+    waiter: Waiting,
+    text: &'static str,
+    baseline: (usize, usize),
+) {
+    let world = Rc::new(world);
+    let observed_world = Rc::clone(&world);
+    let waiter = RefCell::new(waiter);
+    during_compaction(&world, move |mode| {
+        mode.editor.on_submit().unwrap()(text);
+        let expected = Expected {
+            route: Route::Compacted,
+            text,
+            baseline,
+        };
+        assert_route(&observed_world, &heard, &mut waiter.borrow_mut(), &expected);
+    });
+}
+
 /// Submits `text` in `producer`'s state and checks the route it took.
 fn admission_case(
     directory: &Path,
@@ -2342,11 +2386,14 @@ fn admission_case(
     let (world, heard) = controlled(directory, false);
     let mut waiter: Waiting = super::typed::waiting(&world.mode);
     let baseline = child_counts(&world);
+    let route = producer.route(text, exclusion);
+    if producer == Producer::Compacting && route == Route::Compacted {
+        return observe_compaction_admission(world, heard, waiter, text, baseline);
+    }
     let submitted = text.to_owned();
     let press = move |mode: &Rc<InteractiveMode>| {
         mode.editor.on_submit().unwrap()(&submitted);
     };
-    let route = producer.route(text, exclusion);
     let mut expected = Expected {
         route,
         text,

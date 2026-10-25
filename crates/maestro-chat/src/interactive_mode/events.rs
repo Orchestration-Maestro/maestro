@@ -64,18 +64,18 @@ impl InteractiveMode {
             }
             AgentSessionEvent::ThinkingLevelChanged { .. } => self.update_editor_border_color()?,
             AgentSessionEvent::CompactionStart { reason } => self.start_compaction(*reason)?,
-            // The captured input and the end's retry choice arrive with their own owner.
             AgentSessionEvent::CompactionEnd {
                 reason,
                 result,
                 aborted,
                 error_message,
-                ..
+                will_retry,
             } => self.end_compaction(&CompactionOutcome {
                 reason: *reason,
                 result: result.as_ref(),
                 aborted: *aborted,
                 error_message: error_message.as_deref(),
+                will_retry: *will_retry,
             })?,
             AgentSessionEvent::AutoRetryStart {
                 attempt,

@@ -660,6 +660,7 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@border@", ThemeColor::Border),
         ("@borderMuted@", ThemeColor::BorderMuted),
         ("@text@", ThemeColor::Text),
+        ("@userMessageText@", ThemeColor::UserMessageText),
         ("@dim@", ThemeColor::Dim),
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),

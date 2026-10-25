@@ -1,16 +1,24 @@
 //! Compaction and retry progress through the mode's own interface: the labels, the
 //! completion rows, the countdown, the interrupt callbacks and the captured queue.
 
-use super::{World, cases, isolated, painted, started};
+use super::super::queues::CompactionQueuedMessage;
+use super::queues::{Kept, Mode};
+use super::session;
+use super::{CommandHandler, Setup, World, answer, cases, isolated, painted, started};
 use maestro_app::agent_session::CompactionReason;
-use maestro_app::messages::CustomAgentMessages;
-use maestro_app::{AgentSessionEvent, CompactionResult};
+use maestro_app::messages::{CustomAgentMessages, UserMessageDelivery};
+use maestro_app::{
+    AgentSession, AgentSessionEvent, AssistantMessageEventStream, CompactionResult,
+    DiagnosticErrorInfo, Extension, ExtensionBindings, ExtensionCommandContext, ExtensionFactory,
+    InputEvent, InputEventResult, Local, RegisteredCommand, ResourceLoader, Skill, SourceInfo,
+    SourceOrigin, SourceScope,
+};
 use maestro_tui::Component;
 use maestro_tui::tui::InputHandler;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     path::Path,
     rc::Rc,
     sync::{Arc, RwLock},
@@ -864,4 +872,914 @@ fn progress_callbacks_release_mode_and_cancel_timers() {
             assert_eq!(world.terminal.writes().len(), writes);
         },
     );
+}
+
+// ---- the captured compaction queue -----------------------------------------
+
+/// The phase a flush case refuses.
+#[derive(Clone, Copy, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+enum Fault {
+    /// The registered command's handler fails, which the refused message reports.
+    Command,
+    /// The queued `/skill:broken` text fails to expand.
+    Queue,
+}
+
+/// The controlled session's refusal for one flush case, and how its error reads.
+#[derive(Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct Faults {
+    /// The plain prompt text whose prompt the input handler refuses.
+    #[serde(default)]
+    prompt: Option<String>,
+    /// The phase that refuses, when the case refuses one.
+    #[serde(default)]
+    fault: Option<Fault>,
+    /// The refusal message every failing producer reports.
+    #[serde(default)]
+    message: String,
+    /// Whether the refused prompt and the command wait for their releases first.
+    #[serde(default)]
+    delayed: bool,
+    /// Whether a released command fails instead of returning.
+    #[serde(default)]
+    held_fails: bool,
+}
+
+impl Faults {
+    /// Whether any producer refuses, which needs the failing error listener.
+    fn refuses(&self) -> bool {
+        self.prompt.is_some() || self.fault.is_some()
+    }
+
+    /// Whether the queued skill text refuses the expansion.
+    fn queues(&self) -> bool {
+        self.fault == Some(Fault::Queue)
+    }
+
+    /// Whether the registered command's handler refuses.
+    fn commands(&self) -> bool {
+        self.fault == Some(Fault::Command) || self.held_fails
+    }
+}
+
+/// What a flush case's first command changes before the rest of the batch is sent.
+#[derive(Clone, Copy, Default, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+enum Edit {
+    /// Nothing.
+    #[default]
+    None,
+    /// The editor's text.
+    Editor,
+    /// The command `late` is registered.
+    AddCommand,
+    /// The command `late` is removed.
+    RemoveCommand,
+}
+
+/// The release a held phase waits for.
+type Wait = tokio::sync::oneshot::Receiver<()>;
+
+/// The removals keeping the harness's subscriptions alive.
+type Removals = Rc<RefCell<Vec<Box<dyn Fn()>>>>;
+
+/// What the controlled producers delivered, in order, and the releases the cases drive.
+#[derive(Clone, Default)]
+struct Captured {
+    /// Every operation the captured batch reached, in order: `a prompt <text>`,
+    /// `a command /<name> <arguments>`, `a steer <text>`, `a follow-up <text>` or `a clear`.
+    log: Rc<RefCell<Vec<String>>>,
+    /// The steering and follow-up texts the last queue update reported.
+    queued: Rc<RefCell<(Vec<String>, Vec<String>)>>,
+    /// The plain prompt text the input handler refuses.
+    refused: Rc<RefCell<Option<String>>>,
+    /// The refusal message every failing producer reports.
+    message: Rc<RefCell<String>>,
+    /// Whether a refusal is configured, which registers the failing error listener.
+    refuses: Rc<Cell<bool>>,
+    /// Whether the refused prompt waits for its release before it fails.
+    delayed: Rc<Cell<bool>>,
+    /// Whether a command handler waits for its release.
+    held: Rc<Cell<bool>>,
+    /// Whether a command fails instead of returning.
+    command_fails: Rc<Cell<bool>>,
+    /// The release the test sends to the refused prompt.
+    prompt_gate: Rc<RefCell<Option<tokio::sync::oneshot::Sender<()>>>>,
+    /// The release the refused prompt waits for.
+    prompt_wait: Rc<RefCell<Option<tokio::sync::oneshot::Receiver<()>>>>,
+    /// The release the test sends to a waiting command.
+    command_gate: Rc<RefCell<Option<tokio::sync::oneshot::Sender<()>>>>,
+    /// The release a waiting command handler waits for.
+    command_wait: Rc<RefCell<Option<tokio::sync::oneshot::Receiver<()>>>>,
+    /// The change the first command makes.
+    edit: Rc<Cell<Edit>>,
+    /// Whether the first command replaces the session.
+    replace: Rc<Cell<bool>>,
+    /// Whether the session was replaced.
+    replaced: Rc<Cell<bool>>,
+    /// The subscriptions recording the sessions' queue updates.
+    subscriptions: Removals,
+}
+
+impl Captured {
+    /// The session an operation reached, `a` for the one the mode started with and `b` for
+    /// its replacement.
+    fn session(&self) -> &'static str {
+        if self.replaced.get() { "b" } else { "a" }
+    }
+
+    /// Records `kind` and `text` against the session they reached.
+    fn record(&self, kind: &str, text: &str) {
+        self.log
+            .borrow_mut()
+            .push(format!("{} {kind} {text}", self.session()));
+    }
+
+    /// Records what one queue update changed: a grown steering or follow-up queue.
+    fn record_queue(&self, steering: &[String], follow_up: &[String]) {
+        let (was_steering, was_follow_up) = self.queued.borrow().clone();
+        if let Some(text) = grown(&was_steering, steering) {
+            self.record("steer", &text);
+        } else if let Some(text) = grown(&was_follow_up, follow_up) {
+            self.record("follow-up", &text);
+        }
+        *self.queued.borrow_mut() = (steering.to_vec(), follow_up.to_vec());
+    }
+
+    /// Creates the two releases a delayed case waits for.
+    fn delay(&self) {
+        let (release, wait) = tokio::sync::oneshot::channel();
+        *self.prompt_gate.borrow_mut() = Some(release);
+        *self.prompt_wait.borrow_mut() = Some(wait);
+        let (release, wait) = tokio::sync::oneshot::channel();
+        *self.command_gate.borrow_mut() = Some(release);
+        *self.command_wait.borrow_mut() = Some(wait);
+    }
+
+    /// The release and message of a refused prompt, absent when `text` is not refused.
+    fn refusal(&self, text: &str) -> Option<(Option<Wait>, String)> {
+        if self.refused.borrow().as_deref() != Some(text) {
+            return None;
+        }
+        let wait = self
+            .delayed
+            .get()
+            .then(|| self.prompt_wait.borrow_mut().take())
+            .flatten();
+        Some((wait, self.message.borrow().clone()))
+    }
+
+    /// The release a waiting command handler waits for, absent when the case holds none.
+    fn command_release_wait(&self) -> Option<Wait> {
+        self.command_wait.borrow_mut().take()
+    }
+
+    /// The release the refused prompt waits for.
+    fn release_prompt(&self) -> tokio::sync::oneshot::Sender<()> {
+        self.prompt_gate
+            .borrow_mut()
+            .take()
+            .expect("a delayed refusal holds a release")
+    }
+
+    /// The release a waiting command handler waits for.
+    fn release_command(&self) -> tokio::sync::oneshot::Sender<()> {
+        self.command_gate
+            .borrow_mut()
+            .take()
+            .expect("a held command holds a release")
+    }
+}
+
+/// The text that appeared at the end of `queue` since `was`, if any.
+fn grown(was: &[String], queue: &[String]) -> Option<String> {
+    (queue.len() > was.len()).then(|| queue[queue.len() - 1].clone())
+}
+
+/// The recorded input of one flush case.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct FlushInput {
+    /// Whether the compaction retries, which queues the batch behind the retry.
+    will_retry: bool,
+    /// The messages the compaction captured, in order.
+    local: Vec<Kept>,
+    /// What the controlled session refuses.
+    #[serde(default)]
+    faults: Faults,
+    /// The change the first command makes.
+    #[serde(default)]
+    edit: Edit,
+    /// Whether the first command replaces the session.
+    #[serde(default)]
+    replace: bool,
+}
+
+/// The recorded observation of one flush case.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct FlushExpected {
+    /// The operations the captured batch reached, in order.
+    log: Vec<String>,
+    /// The messages still kept for after a compaction.
+    local: Vec<Kept>,
+    /// The failure notices the transcript shows.
+    errors: Vec<String>,
+    /// The pending container's rows.
+    pending: usize,
+    /// The editor's text.
+    editor: String,
+}
+
+/// The loader the replacement sessions share with the session the mode starts with.
+type LoaderSlot = Rc<RefCell<Option<Rc<dyn ResourceLoader<Local>>>>>;
+
+/// Builds a started mode whose session delivers a captured batch through controlled
+/// producers: its input handler records every prompt and refuses the case's text, the
+/// commands `cmd` and `late` record their runs and make the case's edit, a broken skill
+/// fails the queued text's expansion, and every streamed answer is empty.
+async fn flush_world(
+    directory: &Path,
+    input: &FlushInput,
+    captured: &Captured,
+) -> (World, Box<dyn Fn()>) {
+    *captured.refused.borrow_mut() = input.faults.prompt.clone();
+    *captured.message.borrow_mut() = input.faults.message.clone();
+    captured.refuses.set(input.faults.refuses());
+    captured.delayed.set(input.faults.delayed);
+    captured.held.set(input.faults.delayed);
+    captured.command_fails.set(input.faults.commands());
+    captured.edit.set(input.edit);
+    captured.replace.set(input.replace);
+    let mut setup = Setup {
+        extension: Some(captured_extension(captured)),
+        ..Setup::default()
+    };
+    if input.faults.queues() {
+        setup.skills = vec![broken_skill(directory)];
+    }
+    let loader: LoaderSlot = Rc::default();
+    setup.create = Some(flush_factory(directory, captured, &loader));
+    let world = setup.build(directory);
+    world.mode.init().unwrap();
+    world.runtime.settle().unwrap();
+    world.mode.chat_container.clear();
+    let session = world.mode.runtime_host.session();
+    answer_session(&session);
+    session
+        .settings_manager()
+        .borrow_mut()
+        .set_compaction_enabled(false);
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("unknown", "key");
+    *loader.borrow_mut() = Some(Rc::clone(session.resource_loader()));
+    if input.replace {
+        let bindings = ExtensionBindings {
+            command_context_actions: Some(world.host.command_context_actions()),
+            ..ExtensionBindings::default()
+        };
+        session.bind_extensions(bindings).await.unwrap();
+    }
+    refuse_on(&session, captured);
+    let extension = Rc::clone(&session.resource_loader().get_extensions().extensions[0]);
+    register_command(
+        &extension,
+        "cmd",
+        command_handler(&extension, &world, captured),
+    );
+    if matches!(input.edit, Edit::Editor | Edit::RemoveCommand) {
+        register_command(&extension, "late", recording_handler(captured, "late"));
+    }
+    let removal = subscribe_queue(&session, captured);
+    (world, removal)
+}
+
+/// Creates the session each replacement starts, over the loader the mode's own session
+/// reads its resources from.
+fn flush_factory(
+    directory: &Path,
+    captured: &Captured,
+    loader: &LoaderSlot,
+) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    let loader = Rc::clone(loader);
+    let captured = captured.clone();
+    let cwd = directory.to_str().unwrap().to_owned();
+    Rc::new(move |_| {
+        let loader = loader.borrow().clone();
+        let cwd = cwd.clone();
+        let captured = captured.clone();
+        Box::pin(async move {
+            let result = session::session(&cwd, None, move |inner| loader.unwrap_or(inner));
+            answer_session(&result.session);
+            result
+                .services
+                .auth_storage
+                .set_runtime_api_key("unknown", "key");
+            result
+                .session
+                .settings_manager()
+                .borrow_mut()
+                .set_compaction_enabled(false);
+            captured
+                .subscriptions
+                .borrow_mut()
+                .push(subscribe_queue(&result.session, &captured));
+            refuse_on(&result.session, &captured);
+            Ok(result)
+        })
+    })
+}
+
+/// Subscribes the harness to `session`'s queue updates, keeping the removal alive.
+fn subscribe_queue(session: &Rc<AgentSession>, captured: &Captured) -> Box<dyn Fn()> {
+    let log = captured.clone();
+    Box::new(session.subscribe(Rc::new(move |event: &AgentSessionEvent| {
+        if let AgentSessionEvent::QueueUpdate {
+            steering,
+            follow_up,
+        } = event
+        {
+            log.record_queue(steering, follow_up);
+        }
+    })))
+}
+
+/// Makes every failure listener of `session` fail with the case's message, so a refused
+/// phase ends the operation instead of only being reported.
+fn refuse_on(session: &Rc<AgentSession>, captured: &Captured) {
+    if !captured.refuses.get() {
+        return;
+    }
+    let message = captured.message.borrow().clone();
+    drop(session.extension_runner().on_error(Rc::new(move |_| {
+        Err(Box::new(DiagnosticErrorInfo::new(None, message.clone())))
+    })));
+}
+
+/// The inline extension whose input handler records every prompt and refuses the case's text,
+/// waiting for its release when the case delays it.
+fn captured_extension(captured: &Captured) -> ExtensionFactory<Local> {
+    let captured = captured.clone();
+    Rc::new(move |api| {
+        let captured = captured.clone();
+        let registered = api.on::<InputEvent, InputEventResult>(
+            "input".into(),
+            Rc::new(move |event, _| {
+                captured.record("prompt", &event.text);
+                Box::pin(refused(captured.refusal(&event.text)))
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
+}
+
+/// Refuses the prompt `refusal` describes once its release opens, and continues otherwise.
+async fn refused(
+    refusal: Option<(Option<Wait>, String)>,
+) -> Result<Option<InputEventResult>, Box<dyn std::error::Error + Send + Sync>> {
+    let Some((wait, message)) = refusal else {
+        return Ok(None);
+    };
+    if let Some(wait) = wait {
+        let _ = wait.await;
+    }
+    Err(message.into())
+}
+
+/// The skill whose instruction file is missing, so expanding its command reports an error.
+fn broken_skill(directory: &Path) -> Skill {
+    Skill {
+        name: "broken".to_owned(),
+        description: "A skill whose instructions are missing".to_owned(),
+        file_path: directory
+            .join("missing-skill.md")
+            .to_str()
+            .unwrap()
+            .to_owned(),
+        base_dir: directory.to_str().unwrap().to_owned(),
+        source_info: SourceInfo {
+            path: directory.join("skill").to_str().unwrap().to_owned(),
+            source: "local".to_owned(),
+            scope: SourceScope::Project,
+            origin: SourceOrigin::TopLevel,
+            base_dir: None,
+        },
+        disable_model_invocation: false,
+    }
+}
+
+/// Answers every prompt of `session` with an empty finished message, and configures the
+/// credentials the session's own refusal check reads.
+fn answer_session(session: &Rc<AgentSession>) {
+    *session.agent().stream_fn.write().unwrap() = Some(Rc::new(|_, _, _, _| {
+        let stream = AssistantMessageEventStream::new();
+        stream.end(Some(answer()));
+        Box::pin(std::future::ready(Ok(stream)))
+    }));
+}
+
+/// Registers `name` in the loaded extension with a handler that records its own run.
+fn register_command(extension: &Rc<RwLock<Extension<Local>>>, name: &str, handler: CommandHandler) {
+    let source_info = Arc::clone(&extension.read().unwrap().source_info);
+    let command = RegisteredCommand::<Local> {
+        name: name.to_owned(),
+        source_info,
+        description: None,
+        get_argument_completions: None,
+        handler,
+    };
+    extension
+        .write()
+        .unwrap()
+        .commands
+        .insert(name.to_owned(), Rc::new(RwLock::new(command)));
+}
+
+/// A handler for `name` that only records its run.
+fn recording_handler(captured: &Captured, name: &'static str) -> CommandHandler {
+    let captured = captured.clone();
+    let text = format!("/{name} ");
+    Rc::new(move |arguments, _| {
+        let captured = captured.clone();
+        let text = format!("{text}{arguments}");
+        Box::pin(async move {
+            captured.record("command", &text);
+            Ok(())
+        })
+    })
+}
+
+/// The handler of `cmd`: it records its text, makes the case's edit, replaces the session
+/// when the case asks, and waits or fails as the case configures.
+fn command_handler(
+    extension: &Rc<RwLock<Extension<Local>>>,
+    world: &World,
+    captured: &Captured,
+) -> CommandHandler {
+    let captured = captured.clone();
+    let extension = Rc::clone(extension);
+    let mode = Rc::downgrade(&world.mode);
+    Rc::new(move |arguments: String, context: ExtensionCommandContext| {
+        captured.record("command", &format!("/cmd {arguments}"));
+        match captured.edit.get() {
+            Edit::Editor => {
+                if let Some(mode) = mode.upgrade() {
+                    mode.editor.set_text("replaced draft");
+                }
+            }
+            Edit::AddCommand => {
+                register_command(&extension, "late", recording_handler(&captured, "late"));
+            }
+            Edit::RemoveCommand => drop(extension.write().unwrap().commands.shift_remove("late")),
+            Edit::None => {}
+        }
+        let captured = captured.clone();
+        Box::pin(async move {
+            if captured.replace.get() {
+                context.new_session(None).await?;
+                captured.replaced.set(true);
+            }
+            let wait = captured.command_release_wait();
+            if let Some(wait) = wait {
+                let _ = wait.await;
+            }
+            if captured.command_fails.get() {
+                return Err("the command failed".into());
+            }
+            Ok(())
+        })
+    })
+}
+
+/// Queues one steering text in the session, so a recovery's clearing is observable, and
+/// starts the recorded log after it.
+fn seed_session(world: &World, captured: &Captured) {
+    world
+        .mode
+        .runtime_host
+        .session()
+        .steer("earlier", &[])
+        .unwrap();
+    captured.log.borrow_mut().clear();
+    *captured.queued.borrow_mut() = (vec!["earlier".to_owned()], Vec::new());
+}
+
+/// The delivery a message records, named as the fixture reads it.
+fn delivery(mode: &UserMessageDelivery) -> &'static str {
+    match mode {
+        UserMessageDelivery::Steer => "steer",
+        UserMessageDelivery::FollowUp => "follow-up",
+    }
+}
+
+/// The messages a recorded case starts with.
+fn captured(local: &[Kept]) -> Vec<CompactionQueuedMessage> {
+    local
+        .iter()
+        .map(|kept| CompactionQueuedMessage {
+            text: kept.text.clone(),
+            mode: kept.mode.delivery(),
+        })
+        .collect()
+}
+
+/// Captures `local` for a compaction that just ended and delivers it.
+fn run_flush(world: &World, local: &[Kept], will_retry: bool) {
+    *world.mode.compaction_queued_messages.borrow_mut() = captured(local);
+    start_compaction(world, CompactionReason::Manual);
+    end_quietly(world, will_retry);
+}
+
+/// Ends the running compaction with neither a result nor a failure.
+fn end_quietly(world: &World, will_retry: bool) {
+    world
+        .mode
+        .handle_event(&AgentSessionEvent::CompactionEnd {
+            reason: CompactionReason::Manual,
+            result: None,
+            aborted: false,
+            will_retry,
+            error_message: None,
+        })
+        .unwrap();
+}
+
+/// Hands the terminal host one round of work and lets the session's own tasks run.
+async fn round(world: &World) {
+    tokio::task::yield_now().await;
+    let _ = world.runtime.drain_futures();
+}
+
+/// Rounds until `done` holds, failing the case when the delivery never reaches it.
+async fn until(world: &World, captured: &Captured, done: impl Fn() -> bool) {
+    for _ in 0..200 {
+        if done() {
+            return;
+        }
+        round(world).await;
+    }
+    panic!(
+        "the captured batch did not reach the recorded state: {:?}",
+        captured.log.borrow()
+    );
+}
+
+/// Rounds until the terminal host holds no work.
+pub(super) async fn settle_host(world: &World) {
+    for _ in 0..200 {
+        if world.runtime.futures() == 0 {
+            return;
+        }
+        round(world).await;
+    }
+    panic!("the terminal host still holds work");
+}
+
+/// Checks what one delivered batch left.
+fn assert_flush(world: &World, captured: &Captured, expected: &FlushExpected) {
+    assert_eq!(*captured.log.borrow(), expected.log);
+    if !expected.errors.is_empty() {
+        // A recovery empties the session's queues, including the harness's own seed.
+        let session = world.mode.runtime_host.session();
+        assert_eq!(session.get_steering_messages(), Vec::<String>::new());
+        assert_eq!(session.get_follow_up_messages(), Vec::<String>::new());
+    }
+    let local = world.mode.compaction_queued_messages.borrow();
+    let local: Vec<(String, &'static str)> = local
+        .iter()
+        .map(|message| (message.text.clone(), delivery(&message.mode)))
+        .collect();
+    let wanted: Vec<(String, &'static str)> = expected
+        .local
+        .iter()
+        .map(|kept| (kept.text.clone(), delivery(&kept.mode.delivery())))
+        .collect();
+    assert_eq!(local, wanted);
+    drop(local);
+    let transcript = world.mode.chat_container.render(100).join("\n");
+    for notice in &expected.errors {
+        assert!(
+            transcript.contains(notice.as_str()),
+            "{transcript:?} lacks {notice:?}"
+        );
+    }
+    if expected.errors.is_empty() {
+        assert!(
+            !transcript.contains("Failed to send queued message"),
+            "{transcript:?} shows a failure"
+        );
+    }
+    assert_eq!(
+        world
+            .mode
+            .pending_messages_container
+            .children()
+            .borrow()
+            .len(),
+        expected.pending
+    );
+    assert_eq!(world.mode.editor.get_text(), expected.editor);
+}
+
+/// Delivers one recorded captured batch inside a Tokio set and checks what it left.
+fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpected) {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let tasks = tokio::task::LocalSet::new();
+    tasks.block_on(&runtime, async {
+        let captured = Captured::default();
+        if input.faults.delayed {
+            captured.delay();
+        }
+        let (world, _removal) = flush_world(directory, input, &captured).await;
+        world.mode.editor.set_text("draft");
+        if input.faults.refuses() && !input.replace {
+            seed_session(&world, &captured);
+        }
+        run_flush(&world, &input.local, input.will_retry);
+        if input.faults.delayed {
+            until(&world, &captured, || {
+                captured
+                    .log
+                    .borrow()
+                    .iter()
+                    .any(|entry| entry.contains("command"))
+            })
+            .await;
+            world
+                .mode
+                .compaction_queued_messages
+                .borrow_mut()
+                .push(CompactionQueuedMessage {
+                    text: "newer".to_owned(),
+                    mode: UserMessageDelivery::Steer,
+                });
+            let _ = captured.release_prompt().send(());
+            // The first prompt's failure is noticed while the tail's command still waits.
+            until(&world, &captured, || {
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("Failed to send queued message")
+            })
+            .await;
+            let _ = captured.release_command().send(());
+        }
+        until(&world, &captured, || world.runtime.futures() == 0).await;
+        assert_flush(&world, &captured, expected);
+    });
+}
+
+#[test]
+fn compaction_flush_selects_first_prompt_and_retains_tail_modes() {
+    const TEST: &str = "compaction_flush_selects_first_prompt_and_retains_tail_modes";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_failures_restore_the_snapshot_and_clear_session_queue() {
+    const TEST: &str = "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_failure_uses_singular_error_line() {
+    const TEST: &str = "compaction_flush_failure_uses_singular_error_line";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_delayed_failure_stops_admission_and_restores_once() {
+    const TEST: &str = "compaction_flush_delayed_failure_stops_admission_and_restores_once";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_real_commands_and_modes_reach_provider() {
+    const TEST: &str = "compaction_flush_real_commands_and_modes_reach_provider";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_selected_commands_still_prompt_after_removal() {
+    const TEST: &str = "compaction_flush_selected_commands_still_prompt_after_removal";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_selected_prefix_still_prompts_after_removal() {
+    const TEST: &str = "compaction_flush_selected_prefix_still_prompts_after_removal";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_follows_current_session_after_command() {
+    const TEST: &str = "compaction_flush_follows_current_session_after_command";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+/// One captured message of a native case.
+fn kept(text: &str, mode: Mode) -> Kept {
+    Kept {
+        text: text.to_owned(),
+        mode,
+    }
+}
+
+/// The stream a held answer keeps open.
+struct HeldAnswer(Rc<RefCell<Option<AssistantMessageEventStream>>>);
+
+impl HeldAnswer {
+    /// Ends the open response with a finished answer.
+    fn end(&self) {
+        let stream = self.0.borrow_mut().take().expect("a held answer");
+        stream.end(Some(answer()));
+    }
+}
+
+/// Replaces the provider with one whose answer the case ends itself.
+fn hold_answer(world: &World) -> HeldAnswer {
+    let open: Rc<RefCell<Option<AssistantMessageEventStream>>> = Rc::default();
+    let first = Rc::new(Cell::new(true));
+    let held = HeldAnswer(Rc::clone(&open));
+    let session = world.mode.runtime_host.session();
+    *session.agent().stream_fn.write().unwrap() = Some(Rc::new(move |_, _, _, _| {
+        let stream = AssistantMessageEventStream::new();
+        if first.replace(false) {
+            *open.borrow_mut() = Some(stream.clone());
+        } else {
+            stream.end(Some(answer()));
+        }
+        Box::pin(std::future::ready(Ok(stream)))
+    }));
+    held
+}
+
+/// Runs `body` inside a Tokio set, where the session's own tasks can run.
+fn in_tasks(body: impl std::future::Future<Output = ()>) {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, body);
+}
+
+#[test]
+fn compaction_flush_capture_precedes_async_handoff() {
+    const TEST: &str = "compaction_flush_capture_precedes_async_handoff";
+    isolated(TEST, |directory| {
+        in_tasks(async {
+            let captured = Captured::default();
+            let input = FlushInput {
+                will_retry: false,
+                local: vec![kept("first", Mode::Steer), kept("tail", Mode::FollowUp)],
+                faults: Faults::default(),
+                edit: Edit::None,
+                replace: false,
+            };
+            let (world, _removal) = flush_world(directory, &input, &captured).await;
+            let held = hold_answer(&world);
+            run_flush(&world, &input.local, false);
+            // The batch is captured and its rows are gone before the host runs any of it.
+            assert!(world.mode.compaction_queued_messages.borrow().is_empty());
+            assert_eq!(
+                world
+                    .mode
+                    .pending_messages_container
+                    .children()
+                    .borrow()
+                    .len(),
+                0
+            );
+            assert!(captured.log.borrow().is_empty());
+            assert_eq!(world.runtime.futures(), 1, "the delivery is handed over");
+            round(&world).await;
+            assert_eq!(
+                *captured.log.borrow(),
+                ["a prompt first", "a follow-up tail"]
+            );
+            // A second flush finds nothing captured and adds no work.
+            end_quietly(&world, false);
+            round(&world).await;
+            assert_eq!(
+                *captured.log.borrow(),
+                ["a prompt first", "a follow-up tail"]
+            );
+            held.end();
+            until(&world, &captured, || world.runtime.futures() == 0).await;
+            assert_eq!(
+                *captured.log.borrow(),
+                ["a prompt first", "a follow-up tail"]
+            );
+        });
+    });
+}
+
+#[test]
+fn compaction_flush_real_session_rejects_without_duplicate_tail() {
+    const TEST: &str = "compaction_flush_real_session_rejects_without_duplicate_tail";
+    isolated(TEST, |directory| {
+        in_tasks(async {
+            let captured = Captured::default();
+            let input = FlushInput {
+                will_retry: false,
+                local: vec![kept("first", Mode::Steer), kept("tail-f", Mode::FollowUp)],
+                faults: Faults::default(),
+                edit: Edit::None,
+                replace: false,
+            };
+            let (world, _removal) = flush_world(directory, &input, &captured).await;
+            world
+                .host
+                .services()
+                .auth_storage
+                .remove_runtime_api_key("unknown");
+            seed_session(&world, &captured);
+            run_flush(&world, &input.local, false);
+            until(&world, &captured, || world.runtime.futures() == 0).await;
+            // The refused prompt stops the tail, so no duplicate reaches the session queue.
+            assert_eq!(*captured.log.borrow(), ["a prompt first"]);
+            let session = world.mode.runtime_host.session();
+            assert!(session.get_follow_up_messages().is_empty());
+            assert!(session.get_steering_messages().is_empty());
+            let transcript = world.mode.chat_container.render(100).join("\n");
+            assert_eq!(
+                transcript.matches("Failed to send queued message").count(),
+                1,
+                "{transcript:?}"
+            );
+            let local = world.mode.compaction_queued_messages.borrow();
+            assert_eq!(local.len(), 2);
+            assert_eq!(local[1].text, "tail-f");
+        });
+    });
+}
+
+#[test]
+fn compaction_flush_work_is_linear() {
+    const TEST: &str = "compaction_flush_work_is_linear";
+    isolated(TEST, |directory| {
+        for count in [32, 64, 128] {
+            in_tasks(async {
+                let captured = Captured::default();
+                let local: Vec<Kept> = (0..count)
+                    .map(|index| kept(&format!("queued {index}"), Mode::Steer))
+                    .collect();
+                let input = FlushInput {
+                    will_retry: true,
+                    local,
+                    faults: Faults::default(),
+                    edit: Edit::None,
+                    replace: false,
+                };
+                let (world, _removal) = flush_world(directory, &input, &captured).await;
+                run_flush(&world, &input.local, true);
+                until(&world, &captured, || world.runtime.futures() == 0).await;
+                // Every message reaches the session once, and nothing is walked twice.
+                let log = captured.log.borrow().clone();
+                assert_eq!(log.len(), count);
+                let unique: std::collections::BTreeSet<&String> = log.iter().collect();
+                assert_eq!(unique.len(), count);
+            });
+        }
+    });
 }

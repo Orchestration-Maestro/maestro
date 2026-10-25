@@ -1734,5 +1734,1116 @@
       "timers": [],
       "editor": "draft"
     }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": false,
+      "local": []
+    },
+    "expected": {
+      "log": [],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a command /cmd b"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "first",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a prompt first"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a prompt first",
+        "a steer tail-s",
+        "a command /cmd b",
+        "a follow-up tail-f"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": true,
+      "local": []
+    },
+    "expected": {
+      "log": [],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a command /cmd b"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "first",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a follow-up first"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 3,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a follow-up first",
+        "a steer tail-s",
+        "a command /cmd b",
+        "a follow-up tail-f"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 5,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "command"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "prompt": "first"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a prompt first"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a prompt first"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a prompt first",
+        "a steer tail-s",
+        "a command /cmd b"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "command"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a follow-up first"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a follow-up first",
+        "a steer tail-s",
+        "a command /cmd b"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failure_uses_singular_error_line",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        }
+      ],
+      "faults": {
+        "prompt": "first",
+        "message": "one failed"
+      }
+    },
+    "expected": {
+      "log": [
+        "a prompt first"
+      ],
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        }
+      ],
+      "errors": [
+        "Failed to send queued message: one failed"
+      ],
+      "pending": 3,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_delayed_failure_stops_admission_and_restores_once",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd pending",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "prompt": "first",
+        "message": "first failure",
+        "delayed": true,
+        "heldFails": false
+      }
+    },
+    "expected": {
+      "log": [
+        "a prompt first",
+        "a command /cmd pending"
+      ],
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd pending",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "newer",
+          "mode": "steer"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: first failure"
+      ],
+      "pending": 6,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_delayed_failure_stops_admission_and_restores_once",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd pending",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "prompt": "first",
+        "message": "first failure",
+        "delayed": true,
+        "heldFails": true
+      }
+    },
+    "expected": {
+      "log": [
+        "a prompt first",
+        "a command /cmd pending"
+      ],
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd pending",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "newer",
+          "mode": "steer"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: first failure"
+      ],
+      "pending": 6,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_real_commands_and_modes_reach_provider",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd prefix",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/late tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "steer"
+        }
+      ],
+      "edit": "editor"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd prefix",
+        "a prompt first",
+        "a command /late tail",
+        "a steer tail"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "replaced draft"
+    }
+  },
+  {
+    "test": "compaction_flush_real_commands_and_modes_reach_provider",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd prefix",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/late tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "steer"
+        }
+      ],
+      "edit": "add-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd prefix",
+        "a prompt first",
+        "a command /late tail",
+        "a steer tail"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_real_commands_and_modes_reach_provider",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd prefix",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/late tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "steer"
+        }
+      ],
+      "edit": "remove-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd prefix",
+        "a prompt first",
+        "a follow-up /late tail",
+        "a steer tail"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_follows_current_session_after_command",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd change",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "steer"
+        }
+      ],
+      "replace": true
+    },
+    "expected": {
+      "log": [
+        "a command /cmd change",
+        "b prompt first",
+        "b steer tail"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 3,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_follows_current_session_after_command",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd change",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        }
+      ],
+      "replace": true,
+      "faults": {
+        "prompt": "first",
+        "message": "controlled switch failure"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd change",
+        "b prompt first"
+      ],
+      "local": [
+        {
+          "text": "/cmd change",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled switch failure"
+      ],
+      "pending": 4,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selected_commands_still_prompt_after_removal",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd remove",
+          "mode": "steer"
+        },
+        {
+          "text": "/late selected",
+          "mode": "followUp"
+        }
+      ],
+      "edit": "remove-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd remove",
+        "a prompt /late selected"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selected_prefix_still_prompts_after_removal",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd remove",
+          "mode": "steer"
+        },
+        {
+          "text": "/late selected",
+          "mode": "followUp"
+        },
+        {
+          "text": "first",
+          "mode": "steer"
+        }
+      ],
+      "edit": "remove-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd remove",
+        "a prompt /late selected",
+        "a prompt first"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
   }
 ]

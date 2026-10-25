@@ -20,6 +20,7 @@ use std::{
 mod actions;
 mod authentication;
 mod bash;
+mod compaction_queue;
 mod debug;
 mod events;
 mod info;
