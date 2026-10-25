@@ -21,7 +21,7 @@ pub type ToolDescription<E = super::Threaded> =
 /// An executable tool retained in conversation state.
 pub struct AgentToolRecord<E: super::AgentExecution = super::Threaded> {
     /// Model-facing tool declaration.
-    pub definition: Tool,
+    pub definition: Tool<E::SchemaCode>,
     /// Optional live description, resolved outside tool locks.
     pub description: Option<ToolDescription<E>>,
     /// Display label.
@@ -43,9 +43,9 @@ impl<E: super::AgentExecution> AgentToolRecord<E> {
     /// # Errors
     /// Returns the description callback's original diagnostic.
     pub fn resolve_definition(
-        mut definition: Tool,
+        mut definition: Tool<E::SchemaCode>,
         description: Option<ToolDescription<E>>,
-    ) -> Result<Tool, DiagnosticErrorInfo> {
+    ) -> Result<Tool<E::SchemaCode>, DiagnosticErrorInfo> {
         if let Some(description) = description {
             definition.description = description()?;
         }
@@ -59,7 +59,7 @@ impl<E: super::AgentExecution> AgentToolRecord<E> {
     /// present detail that encodes as JSON null stays an explicit null.
     #[must_use]
     pub fn typed<P: serde::de::DeserializeOwned + 'static, D: serde::Serialize + 'static>(
-        definition: Tool,
+        definition: Tool<E::SchemaCode>,
         label: String,
         execute: ExecuteTool<P, D, E>,
     ) -> Self {

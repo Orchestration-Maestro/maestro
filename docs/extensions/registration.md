@@ -638,3 +638,8 @@ belong to the shared request owner, re-exported by models and specialized with
 native domain handles or the guest's existing carriers. `BuildSystemPromptOptions`
 is also exported at the extension root for constructing prompt operands. The guest adapter alone
 snapshots stream observations and encodes capability resources.
+
+Local definitions retain executable parameter schemas (`ParameterSchema<SchemaCode>`).
+Registration, enumeration and re-registration keep their author callbacks alive;
+validation calls them after argument preparation and before typed execution decoding.
+Default threaded definitions and model request contexts remain data-only.

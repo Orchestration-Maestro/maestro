@@ -93,6 +93,7 @@ mod environment_children;
 mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
+mod executable_schemas;
 #[allow(
     dead_code,
     reason = "Each test binary uses part of the scripted FTP peer."

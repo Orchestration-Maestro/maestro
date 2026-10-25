@@ -101,6 +101,10 @@ pub struct Observed {
     pub live: usize,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
+    pub schemas: Vec<(String, String, u32)>,
+    pub schema_request_bytes: usize,
+    pub schema_response_bytes: usize,
+    pub schema_checks: usize,
     /// Delivered partial results in observation order.
     pub updates: Vec<String>,
     /// Partial result number to refuse, counted from zero, with the host's message.

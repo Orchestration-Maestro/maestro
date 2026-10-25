@@ -68,6 +68,7 @@ pub(crate) mod renderer_host;
 mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
+pub(crate) mod schema_host;
 mod selection_events;
 mod send_user_message_example;
 mod session_actions;
@@ -545,12 +546,15 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]component-view.invalidate",
             "[method]component-view.render",
             "[method]component-view.wants-key-release",
+            "describe-schema",
             "invoke-compaction-complete",
             "invoke-compaction-error",
             "invoke-listener",
             "invoke-prepare",
             "invoke-renderer",
-            "release"
+            "invoke-schema",
+            "release",
+            "retain-schema"
         ],
         "component methods, preparation and release stay synchronous"
     );
@@ -578,6 +582,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]replaced-session-context.send-user-message",
             "callback-emit",
             "event-emit",
+            "get-all-tools",
             "set-model",
         ]
     );
@@ -728,7 +733,6 @@ fn assert_action_contract(contract: &Contract) {
         "get-session-name",
         "set-label",
         "get-active-tools",
-        "get-all-tools",
         "set-active-tools",
         "get-commands",
         "get-thinking-level",

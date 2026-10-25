@@ -711,3 +711,41 @@ async fn cancel_after_entered(
     }
     open.send(()).expect("execution still pending");
 }
+
+/// The native adapter dispatches only the selected callback against its actual borrowed value.
+#[test]
+fn controlled_schema_resource_invokes_the_supplied_refinement() {
+    use crate::bindings::maestro::extension::host::SchemaOperation;
+    use serde_json::json;
+    use std::sync::{Arc, Mutex};
+    let mut driver = ControlledDriver::new();
+    super::block_on(driver.start()).unwrap();
+    let config = json!({"metadata":{"name":"original","label":"Original","description":"","parameters":{"type":"object"}},
+        "schemaProgram":"full","prepare":false,"result":{"content":[]}});
+    super::block_on(driver.run_plain_command("capture", &format!("tools {config}"))).unwrap();
+    let handler = driver
+        .host
+        .observe()
+        .schemas
+        .iter()
+        .find(|(name, _, _)| name == "original")
+        .unwrap()
+        .2;
+    let shape = Exports::<Controlled>::describe_schema(handler).unwrap();
+    assert!(shape.base);
+    assert_eq!(shape.refinements, 2);
+    let value = Arc::new(Mutex::new(json!({"original":1})));
+    let result = driver
+        .exports()
+        .invoke_schema(
+            handler,
+            SchemaOperation::Refine(1),
+            &super::schema_host::JsonNode(Arc::clone(&value)),
+            &super::bus_host::Emitter { key: 37 },
+        )
+        .unwrap();
+    assert_eq!(result, "false");
+    assert_eq!(*value.lock().unwrap(), json!({"original":1,"refine1":true}));
+    release(handler);
+    super::block_on(driver.release_all());
+}

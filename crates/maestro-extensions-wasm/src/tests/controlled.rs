@@ -572,8 +572,25 @@ impl Imports for Controlled {
         o.actions.check()?;
         serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
     }
-    fn get_all_tools(&self) -> ExtensionResult<String> {
-        self.observed.borrow().actions.record()
+    fn get_all_tools(
+        &self,
+    ) -> ExtensionResult<crate::component_adapter::ToolListing<Self::Callback>> {
+        let (metadata, bindings) = super::schema_host::listing(&self.observed.borrow())?;
+        let mut retained = Vec::new();
+        for (tool, pointer, id) in bindings {
+            let (new_id, handle) = self.new_callback();
+            Exports::new(self.clone())
+                .retain_schema(
+                    id,
+                    Callback {
+                        id: new_id,
+                        observed: Rc::clone(&self.observed),
+                    },
+                )
+                .map_err(|error| error.message)?;
+            retained.push((tool, pointer, handle));
+        }
+        Ok((metadata, retained))
     }
     fn get_commands(&self) -> ExtensionResult<String> {
         self.observed.borrow().actions.record()
@@ -610,6 +627,45 @@ impl Imports for Controlled {
 
     type Subscription = super::bus_host::Subscription;
     type Emitter = super::bus_host::Emitter;
+    type JsonNode = super::schema_host::JsonNode;
+    fn json_kind(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> ExtensionResult<Option<crate::schema_code::JsonKind>> {
+        node.kind(path)
+    }
+    fn json_read(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Option<String>> {
+        node.read(path)
+    }
+    fn json_keys(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Vec<String>> {
+        node.keys(path)
+    }
+    fn json_set(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        key: &str,
+        value: &str,
+    ) -> ExtensionResult<()> {
+        node.set(path, key, value)
+    }
+    fn json_delete(&self, node: &Self::JsonNode, path: &str, key: &str) -> ExtensionResult<()> {
+        node.delete(path, key)
+    }
+    fn json_splice(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        range: (u32, u32),
+        values: &[String],
+    ) -> ExtensionResult<Vec<String>> {
+        node.splice(path, range, values)
+    }
+    fn callback_id(&self, callback: &Self::Callback) -> u32 {
+        callback.id
+    }
+
     fn event_on(
         &self,
         channel: &str,
@@ -1370,7 +1426,18 @@ impl Imports for Controlled {
         metadata: &str,
         prepare: Option<&Callback>,
         execute: &Callback,
+        schemas: &[(String, &Callback)],
     ) -> ExtensionResult<()> {
+        let name = super::schema_host::tool_name(metadata).map_err(|error| error.to_string())?;
+        {
+            let mut observed = self.observed.borrow_mut();
+            observed.schemas.retain(|(tool, _, _)| tool != &name);
+            observed.schemas.extend(
+                schemas
+                    .iter()
+                    .map(|(pointer, callback)| (name.clone(), pointer.clone(), callback.id)),
+            );
+        }
         self.observed
             .borrow_mut()
             .register_tool(metadata, prepare.map(|p| p.id), execute.id)
