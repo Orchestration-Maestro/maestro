@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const deviceScaleFactor = 1.25;
 const launchArgs = ['--no-sandbox', `--force-device-scale-factor=${deviceScaleFactor}`, '--js-flags=--expose-gc'];
 const families = ['execution', 'loading', 'contributions'];
-const counts = {execution: 26, loading: 26, contributions: 81};
+const counts = {execution: 26, loading: 30, contributions: 81};
 const total = Object.values(counts).reduce((sum, count) => sum + count);
 // Runtime modules initialize without unsafe-eval; frames load their own document.
 const contributionPolicy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'";

@@ -26,7 +26,7 @@ const COMPACT_CLASS: &str = "maestro-button-compact";
 type Feedback = Rc<RefCell<Option<Timer>>>;
 /// Localization a copy control resolves its labels through, replaceable by its creator.
 pub(crate) type Localization = Rc<RefCell<Rc<I18n>>>;
-/// Operands [`create`] hands to the constructor, which has no argument channel.
+/// Operands [`create`] hands to the constructor through the shared construction channel.
 struct Creating {
     /// Labels' localization.
     i18n: Localization,
@@ -34,10 +34,6 @@ struct Creating {
     feedback: i32,
     /// Notification after each feedback change, which a creator's own view follows.
     changed: Option<Rc<dyn Fn()>>,
-}
-thread_local! {
-    /// Operands of the control under construction.
-    static CREATING: RefCell<Option<Creating>> = const { RefCell::new(None) };
 }
 /// One activation's retained operands, reached by the control's click subscription.
 struct Activation {
@@ -230,7 +226,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
     let observed = vec!["title".into(), "show-text".into(), COMPACT.into()];
     crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
-        let creating = CREATING.take();
+        let creating = crate::dom::take_creating::<Creating>();
         CopyElement {
             root: js_sys::WeakRef::new(&root),
             view: Rc::clone(&view),
@@ -257,12 +253,13 @@ pub(crate) fn create(
     feedback: i32,
     changed: Option<Rc<dyn Fn()>>,
 ) -> Result<web_sys::Element, JsValue> {
-    CREATING.set(Some(Creating {
-        i18n: Rc::clone(i18n),
-        feedback,
-        changed,
-    }));
-    let created = document.create_element(TAG);
-    CREATING.take();
-    created
+    crate::dom::create_with(
+        document,
+        TAG,
+        Creating {
+            i18n: Rc::clone(i18n),
+            feedback,
+            changed,
+        },
+    )
 }
