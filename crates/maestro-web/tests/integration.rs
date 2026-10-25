@@ -51,6 +51,8 @@ mod message_renderers_browser;
 mod message_tool_arguments;
 mod message_visuals_browser;
 mod messages_browser;
+mod native_artifact_console_browser;
+mod native_artifact_console_support;
 mod native_artifact_controls_browser;
 mod native_console_browser;
 mod native_document_artifacts_browser;

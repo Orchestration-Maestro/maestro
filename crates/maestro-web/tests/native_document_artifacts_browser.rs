@@ -1,6 +1,6 @@
 //! Word artifact bodies observed through the native document.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{body, view};
+use crate::contributions_support::{body, select, view};
 use crate::docx_preview_browser::fetch_bytes;
 use maestro_web::{
     dom::{DomContent, DomRoot, DomView},
@@ -45,12 +45,6 @@ struct Link {
 /// Read all seventeen document packages.
 fn packages() -> Vec<Package> {
     serde_json::from_str(include_str!("fixtures/native_document_artifacts.json")).unwrap()
-}
-/// One required descendant.
-fn select(root: &Element, selector: &str) -> Element {
-    root.query_selector(selector)
-        .unwrap()
-        .unwrap_or_else(|| panic!("missing {selector}"))
 }
 /// Apply source text to a fresh artifact.
 fn artifact(content: &str) -> DocxArtifact {

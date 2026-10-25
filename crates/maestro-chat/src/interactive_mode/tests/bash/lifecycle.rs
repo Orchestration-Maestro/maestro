@@ -1,7 +1,6 @@
 //! The shell row's lifecycle, acknowledged through the real caller's phases.
 use super::{
-    Answer, Interception, World, active, intercepting_world, on_tasks, painted, poll_once,
-    recorded, scripted,
+    Answer, Interception, World, active, intercepting_world, painted, poll_once, recorded, scripted,
 };
 use crate::{BashExecutionComponent, interactive_mode::tests::isolated};
 use maestro_app::{BashError, BashExecOptions, BashExecResult, BashOperations};
@@ -239,33 +238,37 @@ impl Running {
 
 #[test]
 fn acknowledged_shell_drain_before_completion() {
-    isolated("acknowledged_shell_drain_before_completion", |directory| {
-        let (parked, parked_reached) = oneshot::channel();
-        let (release, released) = oneshot::channel();
-        let script = Arc::new(Script {
-            before: vec!["first\n"],
-            after: vec!["last\n"],
-            parked: Mutex::new(Some(parked)),
-            release: Mutex::new(Some(released)),
-        });
-        let shell = scripted(directory, "shell", "printf 'unused\\n'");
-        let (world, _seen) = intercepting_world(directory, &shell, scripting(&script));
-        let caller = calling(&world, "echo lifecycle");
-        on_tasks(async move {
-            let mut running = Running::start(world, caller, Some(parked_reached)).await;
-            running.first_chunk_applied();
-            running.release_and_record(release).await;
-            running.drained().await;
-            running.completed();
-        });
-    });
+    isolated(
+        "acknowledged_shell_drain_before_completion",
+        async |directory| {
+            let (parked, parked_reached) = oneshot::channel();
+            let (release, released) = oneshot::channel();
+            let script = Arc::new(Script {
+                before: vec!["first\n"],
+                after: vec!["last\n"],
+                parked: Mutex::new(Some(parked)),
+                release: Mutex::new(Some(released)),
+            });
+            let shell = scripted(directory, "shell", "printf 'unused\\n'");
+            let (world, _seen) = intercepting_world(directory, &shell, scripting(&script)).await;
+            let caller = calling(&world, "echo lifecycle");
+            async {
+                let mut running = Running::start(world, caller, Some(parked_reached)).await;
+                running.first_chunk_applied();
+                running.release_and_record(release).await;
+                running.drained().await;
+                running.completed();
+            }
+            .await;
+        },
+    );
 }
 
 #[test]
 fn acknowledged_shell_pending_teardown_releases_row() {
     isolated(
         "acknowledged_shell_pending_teardown_releases_row",
-        |directory| {
+        async |directory| {
             let script = Arc::new(Script {
                 before: vec!["first\n", "last\n"],
                 after: Vec::new(),
@@ -273,9 +276,9 @@ fn acknowledged_shell_pending_teardown_releases_row() {
                 release: Mutex::default(),
             });
             let shell = scripted(directory, "shell", "printf 'unused\\n'");
-            let (world, _seen) = intercepting_world(directory, &shell, scripting(&script));
+            let (world, _seen) = intercepting_world(directory, &shell, scripting(&script)).await;
             let caller = calling(&world, "echo teardown");
-            on_tasks(async move {
+            async {
                 // Both chunks stay queued in the unrun receiver while the caller waits.
                 let running = Running::start(world, caller, None).await;
                 assert_eq!(
@@ -301,7 +304,8 @@ fn acknowledged_shell_pending_teardown_releases_row() {
                     released.upgrade().is_none(),
                     "receiver termination releases actual torn-down row"
                 );
-            });
+            }
+            .await;
         },
     );
 }

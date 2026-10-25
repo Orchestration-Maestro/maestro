@@ -59,7 +59,7 @@ fn compact_path_labels_keep_empty_root_and_separator_rules() {
 #[test]
 fn extension_and_theme_sections_keep_owned_content_across_theme_and_owner_changes() {
     let test = "extension_and_theme_sections_keep_owned_content_across_theme_and_owner_changes";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             let (
                 Input::ThemeToggle {
@@ -114,7 +114,7 @@ fn extension_and_theme_sections_keep_owned_content_across_theme_and_owner_change
 #[test]
 fn resource_home_queries_follow_the_reached_formatting_branch() {
     let test = "resource_home_queries_follow_the_reached_formatting_branch";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             let (Input::HomeRoutes(listing), Expected::Home { needs_home, before }) =
                 (input, expected)
@@ -200,7 +200,7 @@ const RECORDED_HOME: &HomeLookup<'static> = &|| Ok(HOME.to_owned());
 #[test]
 fn extension_labels_keep_package_identity() {
     let test = "extension_labels_keep_package_identity";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             match (input, expected) {
                 (Input::Listing(listing), expected) => {
@@ -349,7 +349,7 @@ fn extension_label_work_stays_linear_in_total_path_segments() {
 #[test]
 fn extension_listing_work_stays_linear_through_the_listing() {
     let test = "extension_listing_work_stays_linear_through_the_listing";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         let mut previous = None;
         for count in [32, 64, 128] {
             let paths = equal_suffixes(count);
@@ -488,7 +488,7 @@ fn resource_diagnostics_keep_path_presence_kind_and_exact_lines() {
 #[test]
 fn resource_diagnostics_remain_visible_when_quiet() {
     let test = "resource_diagnostics_remain_visible_when_quiet";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         let mut startup = None;
         for (input, expected) in cases(test) {
             let Input::Listing(listing) = input else {
@@ -510,10 +510,18 @@ fn resource_diagnostics_remain_visible_when_quiet() {
         };
         listing.diagnostics = false;
         let (world, _) = world(directory, listing);
-        world.mode.init().unwrap();
+        world.mode.init().await.unwrap();
         assert_eq!(
             *world.loader.calls.borrow(),
-            ["skills", "prompts", "themes", "extensions", "extensions"]
+            [
+                "prompts",
+                "skills",
+                "skills",
+                "prompts",
+                "themes",
+                "extensions",
+                "extensions"
+            ]
         );
         let theme = world.themes.theme().get().unwrap();
         assert_eq!(
@@ -541,7 +549,7 @@ fn resource_source_index_keeps_snapshot_precedence() {
 #[test]
 fn diagnostic_sections_keep_static_styles_spacing_and_order() {
     let test = "diagnostic_sections_keep_static_styles_spacing_and_order";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             let Input::Listing(listing) = input else {
                 panic!("a listing case");
@@ -608,7 +616,7 @@ fn same_diagnostics(
 #[test]
 fn extension_issues_follow_registration_and_builtin_conflicts() {
     let test = "extension_issues_follow_registration_and_builtin_conflicts";
-    in_home(test, |directory| {
+    in_home(test, async |directory| {
         for (input, expected) in cases(test) {
             match (input, expected) {
                 (

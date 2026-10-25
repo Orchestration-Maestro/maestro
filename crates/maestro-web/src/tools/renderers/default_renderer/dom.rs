@@ -100,7 +100,7 @@ impl DomContent for DefaultDomContent {
 /// The root's section named `name`, if shown.
 fn find(root: &Element, name: &str) -> Result<Option<Element>, ToolUiError> {
     root.query_selector(&format!(":scope > [data-section={name}]"))
-        .map_err(|error| ToolUiError::Host(host_error(&error)))
+        .map_err(|error| ToolUiError::native(&error))
 }
 /// Point a section's listing at `listing`, encoded so its text always shows literally.
 fn show_listing(section: &Element, listing: &Listing) -> Result<(), ToolUiError> {

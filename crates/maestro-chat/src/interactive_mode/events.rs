@@ -21,8 +21,8 @@ use std::{
 };
 
 impl InteractiveMode {
-    /// Registers the one listener that delivers session events synchronously and keeps no
-    /// reference to the mode; its removal operation stays here for the session lifecycle.
+    /// Registers the one session listener with a weak mode handle; its removal operation
+    /// stays here for the session lifecycle.
     pub(super) fn subscribe_to_agent(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         let removal =
@@ -43,15 +43,46 @@ impl InteractiveMode {
     /// metadata the event names from the session's live state or following the agent.
     ///
     /// # Errors
-    /// Returns the failure of the initialization, of the terminal title or progress, of the
-    /// published theme or of a row's rendering.
+    /// Returns a synchronous presentation failure. Deferred initialization and event
+    /// failures go to the supplied runtime's error route.
     pub(super) fn handle_event(
         self: &Rc<Self>,
         event: &AgentSessionEvent,
     ) -> Result<(), Box<dyn Error>> {
-        if !self.is_initialized.get() {
-            self.init()?;
+        if self.is_initialized.get() && !self.event_initialization_pending.get() {
+            return self.handle_initialized_event(event);
         }
+        self.pending_events.borrow_mut().push_back(event.clone());
+        if self.event_initialization_pending.replace(true) {
+            return Ok(());
+        }
+        let mode = Rc::clone(self);
+        self.tool_environment
+            .runtime
+            .spawn_local(Box::pin(async move {
+                let result = mode.initialize_pending_events().await;
+                mode.event_initialization_pending.set(false);
+                mode.pending_events.borrow_mut().clear();
+                result
+            }));
+        Ok(())
+    }
+
+    /// Initializes the presentation before delivering the events waiting for it.
+    async fn initialize_pending_events(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+        self.init().await?;
+        loop {
+            let event = self.pending_events.borrow_mut().pop_front();
+            let Some(event) = event else { return Ok(()) };
+            self.report(self.handle_initialized_event(&event));
+        }
+    }
+
+    /// Presents one event after initialization has completed.
+    fn handle_initialized_event(
+        self: &Rc<Self>,
+        event: &AgentSessionEvent,
+    ) -> Result<(), Box<dyn Error>> {
         self.footer.invalidate();
         match event {
             AgentSessionEvent::QueueUpdate { .. } => {
@@ -399,7 +430,9 @@ impl InteractiveMode {
             self.chat_container.remove_child(&component);
         }
         drop(self.pending_tools.take());
-        self.ui.request_render(false);
+        if !self.check_shutdown_requested() {
+            self.ui.request_render(false);
+        }
         Ok(())
     }
 

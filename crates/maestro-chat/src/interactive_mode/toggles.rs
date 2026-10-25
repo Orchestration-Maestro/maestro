@@ -19,6 +19,14 @@ impl InteractiveMode {
     /// Binds the transcript shortcuts and editor actions on the editor, in the order the
     /// editor consults them, then installs its change and image-paste callbacks.
     pub(super) fn setup_key_handlers(self: &Rc<Self>) {
+        self.on_action("app.clear", |mode| {
+            mode.handle_ctrl_c();
+            Ok(())
+        });
+        self.on_action("app.exit", |mode| {
+            mode.handle_ctrl_d();
+            Ok(())
+        });
         #[cfg(unix)]
         self.on_action("app.suspend", |mode| mode.handle_ctrl_z());
         #[cfg(windows)]

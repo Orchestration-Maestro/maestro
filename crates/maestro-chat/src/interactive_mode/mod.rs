@@ -13,15 +13,18 @@ use maestro_tui::tui::{TerminalHandle, TuiRuntime};
 use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
 use std::{
     cell::{Cell, RefCell},
+    collections::VecDeque,
     error::Error,
     rc::{Rc, Weak},
 };
 
 mod actions;
 mod authentication;
+mod autocomplete;
 mod bash;
 mod compaction_queue;
 mod debug;
+mod dispatch;
 mod events;
 mod info;
 mod key_display;
@@ -53,25 +56,14 @@ type StatusLine = (Rc<dyn Component>, Rc<Text>);
 /// The assistant row a response streams into and the message it shows.
 type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
-/// How the interactive mode starts.
-#[derive(Default)]
-pub struct InteractiveModeOptions {
-    /// Forces the expanded startup help, even when startup is quiet.
-    pub verbose: bool,
-    /// Providers whose credentials were migrated at startup, warned about in order.
-    pub migrated_providers: Vec<String>,
-    /// The warning shown when the session model could not be restored.
-    pub model_fallback_message: Option<String>,
-    /// The first prompt sent at startup.
-    pub initial_message: Option<String>,
-    /// Images attached to the first startup prompt.
-    pub initial_images: Option<Vec<maestro_app::ImageContent>>,
-    /// Prompts sent after the first startup prompt, in order.
-    pub initial_messages: Vec<String>,
-}
+pub use maestro_app::presentation_data::mode_dispatch::InteractiveModeOptions;
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {
+    /// Whether an extension requested graceful shutdown after the agent finishes.
+    pub(crate) shutdown_requested: Cell<bool>,
+    /// Retained exit state and native registration ownership.
+    lifecycle: lifecycle::LifecycleState,
     /// Bound extension input registrations and their cleanup operations.
     extension_input: extension_ui::input::ExtensionInput,
     /// Live keyed widgets above the editor.
@@ -110,8 +102,16 @@ pub struct InteractiveMode {
     footer_data_provider: FooterDataProvider,
     /// The supplied watch, timer and Git process effects, reused for named theme watching.
     operations: Rc<dyn FooterOperations>,
+    /// Selected release history for this startup.
+    changelog_markdown: RefCell<Option<String>>,
+    /// Whether this mode has handled its startup notice.
+    startup_notices_shown: Cell<bool>,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
+    /// Events waiting for the presentation to initialize, in arrival order.
+    pending_events: RefCell<VecDeque<maestro_app::AgentSessionEvent>>,
+    /// Whether the one initialization continuation is still delivering events.
+    event_initialization_pending: Cell<bool>,
     /// The expandable startup help, absent when startup is quiet.
     built_in_header: RefCell<Option<Rc<startup::ExpandableText>>>,
     /// The runtime, theme, highlighter and image support shared by transcript rows.
@@ -132,6 +132,8 @@ pub struct InteractiveMode {
     pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// The selected search program for file completion, absent until startup prepares it.
+    fd_path: RefCell<Option<String>>,
     /// Whether this mode has shown the subscription billing notice.
     anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
@@ -174,12 +176,11 @@ impl InteractiveMode {
             operations.clone(),
         );
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
-        footer.set_auto_compact_enabled(session.auto_compaction_enabled());
-        themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = settings.borrow().get_theme();
-        themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
+        let hide_thinking = init_theme(&session, &themes, &operations)?;
         Ok(Rc::new_cyclic(|this| Self {
+            shutdown_requested: Cell::new(false),
             this: this.clone(),
+            lifecycle: lifecycle::LifecycleState::default(),
             extension_input: extension_ui::input::ExtensionInput::default(),
             extension_widgets_above: maestro_app::Live::new(),
             extension_widgets_below: maestro_app::Live::new(),
@@ -198,11 +199,16 @@ impl InteractiveMode {
             footer,
             footer_data_provider,
             operations,
+            changelog_markdown: RefCell::default(),
+            startup_notices_shown: Cell::new(false),
             is_initialized: Cell::new(false),
+            pending_events: RefCell::default(),
+            event_initialization_pending: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
+            fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(settings.borrow().get_hide_thinking_block()),
+            hide_thinking_block: Cell::new(hide_thinking),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
@@ -218,21 +224,29 @@ impl InteractiveMode {
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, binds the
+    /// Installs lifecycle handlers, selects unseen release history, prepares search
+    /// programs and completion, then builds the header,
+    /// adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission and the global debug key, starts
-    /// the terminal, lists the loaded resources with their diagnostics and replays the
-    /// session; theme changes then refresh the editor border, and theme and branch
+    /// the terminal, lists the loaded resources with their diagnostics, shows selected
+    /// history once and replays the session; theme changes then refresh the editor
+    /// border, and theme and branch
     /// changes request fresh frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.
+    /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start, of the
-    /// resource listing, of the replay or of the catalog refresh.
-    pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+    /// Returns a failure of lifecycle registration, the managed binary directory, the
+    /// header's theme colours, terminal start, resource listing, replay or catalog refresh.
+    pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
+        self.register_signal_handlers()?;
+        *self.changelog_markdown.borrow_mut() = self.get_changelog_for_display()?;
+        self.prepare_search_tools().await?;
+        self.setup_autocomplete_provider();
         self.build_header()?;
         self.render_widgets();
         for child in [
@@ -274,8 +288,39 @@ impl InteractiveMode {
             show_diagnostics_when_quiet: true,
             ..resources::ShowLoadedResourcesOptions::default()
         })?;
+        self.show_startup_notices_if_needed()?;
         self.render_initial_messages()?;
         self.update_available_provider_count()
+    }
+
+    /// Clears the transcript and the pending-message rows, then replays the current session
+    /// with the initial replay's footer, history and compaction effects.
+    ///
+    /// # Errors
+    /// Returns the failure of reading the session context, of a stored record, of a row's
+    /// rendering or of the published theme.
+    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+        self.chat_container.clear();
+        self.pending_messages_container.clear();
+        self.compaction_queued_messages.borrow_mut().clear();
+        drop(self.streaming.take());
+        self.render_initial_messages()
+    }
+
+    /// Reports a fatal runtime failure as its transcript notice, draws that frame before
+    /// the stop that would cancel it, closes the theme watch and stops the terminal, so
+    /// nothing repaints while the process ends.
+    fn report_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) {
+        let _ = self.show_error(&format!("{prefix}: {error}"));
+        let _ = self.ui.render_pending_frame();
+        self.themes.stop_theme_watcher();
+        let _ = self.ui.stop();
+    }
+
+    /// Reports a fatal runtime failure and ends the process with status one.
+    pub fn handle_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) -> ! {
+        self.report_fatal_runtime_error(prefix, error);
+        std::process::exit(1);
     }
 }
 
@@ -347,11 +392,30 @@ fn create_footer(
     data: &FooterDataProvider,
     theme: LiveTheme,
 ) -> Result<Rc<FooterComponent>, Box<dyn Error>> {
-    Ok(Rc::new(FooterComponent::new(
+    let auto_compact = session.auto_compaction_enabled();
+    let footer = Rc::new(FooterComponent::new(
         session,
         Rc::new(data.clone()),
         theme,
         Rc::new(Collator::new(&|key| std::env::var(key).ok())?),
         Rc::new(|key| std::env::var(key).ok()),
-    )))
+    ));
+    footer.set_auto_compact_enabled(auto_compact);
+    Ok(footer)
+}
+
+/// Registers loaded themes, selects the configured theme, then reads thinking visibility.
+///
+/// # Errors
+/// Returns the theme selection failure.
+fn init_theme(
+    session: &AgentSession,
+    themes: &Rc<ThemeState>,
+    operations: &Rc<dyn FooterOperations>,
+) -> Result<bool, Box<dyn Error>> {
+    themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
+    let settings = session.settings_manager();
+    let selected = settings.borrow().get_theme();
+    themes.init_theme(selected.as_deref(), Some(operations.clone()))?;
+    Ok(settings.borrow().get_hide_thinking_block())
 }

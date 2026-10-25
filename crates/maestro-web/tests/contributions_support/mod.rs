@@ -253,3 +253,11 @@ pub(crate) async fn selection(page: &JsValue, root: &Element) -> (String, bool) 
         pair.get(1).as_bool().unwrap(),
     )
 }
+
+/// One required descendant, reporting the missing selector.
+pub(crate) fn select(node: &Node, selector: &str) -> Element {
+    node.unchecked_ref::<Element>()
+        .query_selector(selector)
+        .unwrap()
+        .unwrap_or_else(|| panic!("missing {selector}"))
+}

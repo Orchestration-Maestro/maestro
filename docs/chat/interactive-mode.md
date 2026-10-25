@@ -8,7 +8,7 @@ session events with the working row and the streamed transcript rows, the window
 title, the extension controls of that row and of the hidden-thinking label, the
 expansion and thinking shortcuts, thinking and model cycling, model selection and
 scopes, the editor border, external editing, image paste, compaction and retry
-progress. Installed custom headers, a requested shutdown and the other integrations
+progress and native shutdown. Installed custom headers and the other integrations
 are still to come.
 [Interactive commands](commands.md) describes the session command methods.
 
@@ -33,8 +33,12 @@ fallback theme is returned.
 
 ## Startup
 
-`init` does nothing while the mode is initialized. After `stop`, it runs again.
-It builds the header, then adds the header, transcript, pending-messages, status,
+`init` is asynchronous. It installs termination and output-error handlers, selects
+startup history, then prepares both search programs and installs
+[completion](extension-ui.md#completion) before building the presentation.
+It does nothing while the mode is initialized. After `stop`, it runs again.
+Unix initialization runs on a caller-driven Tokio local executor with signal
+delivery enabled. Registration failure leaves the UI unstarted. It then adds the header, transcript, pending-messages, status,
 upper widget, editor and lower widget containers and the footer, in that order. The upper widget container starts with
 one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
@@ -43,8 +47,16 @@ start failure is returned and leaves the mode uninitialized. Once started, it
 subscribes to the session events and sets the window title. A theme change then
 invalidates the presentation, recolours the editor border and requests a frame,
 and a branch change requests a frame. Neither callback keeps the mode alive. Last,
-it lists the loaded resources and their diagnostics in the transcript and then
-replays the session (see below).
+it lists the loaded resources and their diagnostics in the transcript, shows the
+[startup history](startup.md#startup-history) once, and replays the session (see
+below). The history selection and version recording happen before building the
+header, even if starting the terminal later fails.
+
+The search programs are `fd` and `rg`. Both start before either finishes, so a missing
+program does not delay the other. `fd` stays selected for file completion. The managed
+directory is the application's agent directory under `bin`, never the session's
+working directory. The search owner writes its own progress and advice lines, before
+the terminal takes the screen.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the
@@ -56,10 +68,11 @@ Header text keeps the colours of the theme in effect when it was built.
 
 ## Stopping the presentation
 
-`stop` clears terminal progress when enabled, stops and releases the working
-loader, clears extension terminal input listeners, disposes the footer and its
-repository watch, removes the session subscription, and stops the UI if initialized.
-Unrelated terminal listeners stay registered. The status container keeps its
+`stop` removes lifecycle handlers, clears terminal progress when enabled, stops
+and releases the working loader, clears extension terminal input listeners,
+disposes the footer and its repository watch, removes the session subscription,
+and stops the UI if initialized. Unrelated terminal listeners stay registered.
+The status container keeps its
 rows. A later session event no longer restarts this presentation, and the shared
 theme watch stays active.
 
@@ -69,8 +82,33 @@ initialized; only a successful UI stop clears that flag. Reinitialization does
 not restore cleared extension callbacks. The original I/O error is returned.
 Repeating a successful stop does not stop the
 absent loader or UI again. This operation does not dispose the application
-runtime, terminate the process or kill detached children. Signal handling and
-key-triggered shutdown are not connected yet.
+runtime, terminate the process or kill detached children. The registered `app.clear` action clears the editor and requests a frame. A second
+press less than 500 ms after the last clear starts graceful shutdown; exactly
+500 ms clears again. Only the clear branch updates that wall-clock timestamp.
+`app.exit` starts the same shutdown only when the editor is empty. Both actions
+honor configured bindings (by default Ctrl+C and Ctrl+D), preserve editor history
+and do not add signal-only detached-child cleanup.
+
+## Native shutdown
+
+On Unix, TERM kills tracked detached children, then starts graceful shutdown. The
+mode removes its handlers and drains terminal input with the existing 1,000 ms
+maximum and default 50 ms idle period. It stops the presentation, awaits application
+disposal and exits 0. Admission happens before asynchronous work is scheduled;
+repeated requests do not repeat shutdown. A drain, progress, UI-stop or disposal
+failure ends that sequence without a successful exit.
+
+HUP and native stdout/stderr disconnection errors take the emergency route:
+remove handlers, kill tracked children and exit 129, without draining, restoring
+the terminal or disposing the application runtime. EIO, broken-pipe and
+not-connected errors select this route; input errors and other output errors
+keep their existing handling. During graceful disposal, a second termination or
+hangup signal takes its native default action. Windows console-close integration
+is not provided by this mode.
+
+At agent end, a requested shutdown follows transient-row cleanup through this
+same graceful owner instead of requesting a final frame. Extension request
+producers are not connected yet.
 
 ## Loaded resources
 
@@ -197,11 +235,11 @@ and `/copyx` reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
-`run` initializes the mode, shows the startup notices, sends the startup prompts and
-then keeps sending typed prompts. It never finishes on its own. It returns only an
+`run` awaits initialization before starting the [independent startup checks](startup.md#independent-startup-checks),
+then shows the startup warnings, sends the startup prompts and keeps sending typed prompts. It never finishes on its own. It returns only an
 initialization failure or a failure to show a notice.
 
-The startup notices come in this order, before any prompt:
+The synchronous startup warnings come in this order, before any prompt:
 
 - a warning `Migrated credentials to auth.json: ` followed by
   `migrated_providers` joined with `", "`, when the list is not empty. Names keep
@@ -226,7 +264,7 @@ fails after the prompt was accepted stays a session event; the mode adds no noti
 for it.
 
 Still to come: rendering the session's events in the transcript, queued input,
-commands, rebinding the presentation to a replaced session, shutdown, update
+commands, rebinding the presentation to a replaced session, update
 notices and the startup check of subscription-based credentials.
 
 ## Session replay
@@ -310,13 +348,14 @@ in them goes to the terminal runtime's error route.
 
 One listener carries the session's events into the mode. It is the session's own
 subscription, so the removal operation the session returns is kept for the
-lifecycle that ends it. Delivery is synchronous and borrowed: the mode handles
-each event before the producer returns, keeps no reference to itself through the
-listener, and enqueues no copy of the event. A failure goes to the terminal
-runtime's error route.
+lifecycle that ends it. The listener keeps only a weak mode handle. Events arriving
+before initialization completes wait in arrival order for one continuation on the
+supplied runtime. Once that queue is drained, delivery is synchronous and borrowed:
+the mode handles each event before the producer returns. A failure goes to the
+terminal runtime's error route; a failed event does not discard later events. A
+failed initialization releases its queued batch, and a later event tries again.
 
-An event that arrives before the presentation has started starts it first. Every
-event then invalidates the footer, which the footer does not cache. The events
+Every event then invalidates the footer, which the footer does not cache. The events
 that carry session metadata read the session's live state rather than the values
 the event carries:
 
@@ -355,7 +394,8 @@ The agent's events drive the working row and the transcript:
   null;
 - an agent end clears terminal progress when `terminal.showTerminalProgress` is set,
   stops the working row and empties the status rows, removes an unfinished
-  streaming row and forgets the registered calls; completed rows stay.
+  streaming row and forgets the registered calls; completed rows stay. A requested
+  shutdown then runs through the graceful owner; otherwise the mode requests a frame.
 
 Rows change in place, so each frame rewrites only from its first changed row.
 
@@ -442,6 +482,25 @@ compaction that ends with nothing captured delivers nothing.
 
 A status is a dim line in the transcript. When the previous status line is still
 the last row, a new status replaces its text; otherwise it starts a new line.
+
+## Session replacement and fatal errors
+
+`render_current_session_state` clears the transcript and the pending-message rows,
+discards queued compaction input and the active streamed message, then replays the
+current session with the initial replay's effects: it refreshes the
+footer and the editor border, adds each user text to the editor history and shows the
+compaction notice. A transcript row or pending tool row left by the replaced session
+does not survive the call, so the presentation shows only the session it now reads.
+
+`handle_fatal_runtime_error` takes a prefix and the error that ended a session
+operation. It appends `Error: <prefix>: <message>` to the transcript, where the message
+is the error's own text, draws that frame at once, then closes the theme watch and
+stops the terminal, so no theme reload or further frame repaints once the notice is
+drawn. It then ends the process with status 1. A failure while appending or drawing
+the notice, or while stopping the terminal, is ignored, because the process is ending
+either way. The notice is drawn before the terminal stops, because a stop cancels a
+queued frame and the final frame is not deferred while the terminal's output is backed
+up.
 
 ## Shortcuts
 
@@ -535,3 +594,11 @@ a later continue signal does nothing, and the failure is handed to the terminal'
 runtime host. The continue signal is observed on the terminal's Tokio runtime,
 which must have I/O enabled. On Windows the key only shows
 `Suspend to background is not supported on Windows`.
+
+## Startup dispatch contract
+
+`InteractiveMode` implements the application-owned
+`presentation_data::mode_dispatch::InteractiveModeRunner`: initialization, run
+and stop delegate to the same retained mode. `InteractiveModeOptions` is defined
+at that application seam and remains available from both existing chat paths.
+This contract does not add another lifecycle or wire an executable.

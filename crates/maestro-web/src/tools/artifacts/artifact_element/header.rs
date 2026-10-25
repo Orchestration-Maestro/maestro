@@ -1,6 +1,5 @@
 //! Native control rows shared by every artifact header.
 use crate::{
-    browser::attachment_content::browser::host_error,
     components::download_button::dom::{DownloadButtonProps, DownloadContent, download_button},
     dom::{DomRoot, DomView},
     tools::types::ToolUiError,
@@ -22,7 +21,7 @@ pub(crate) fn download(
     let row = view
         .document
         .create_element("div")
-        .map_err(|error| ToolUiError::Host(host_error(&error)))?;
+        .map_err(|error| ToolUiError::native(&error))?;
     row.set_class_name(ROW);
     let mut control = download_button(
         view,
@@ -35,7 +34,7 @@ pub(crate) fn download(
         },
     )?;
     row.append_child(&control.node)
-        .map_err(|error| ToolUiError::Host(host_error(&error)))?;
+        .map_err(|error| ToolUiError::native(&error))?;
     Ok(DomRoot {
         node: row.into(),
         owner: control.owner.take(),

@@ -38,7 +38,8 @@ impl InteractiveMode {
     /// response and otherwise moves the pending shell rows into the transcript, goes to
     /// the waiting input, if any, then into the editor's history.
     ///
-    /// The editor empties itself before calling back, so a command needs no clearing step.
+    /// The editor empties itself before calling back. Quit also clears explicitly before
+    /// admitting shutdown, without requesting another frame.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_submit(Some(Rc::new(move |text| {
@@ -46,6 +47,11 @@ impl InteractiveMode {
             let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
                 return;
             };
+            if text == "/quit" {
+                mode.editor.set_text("");
+                mode.spawn_shutdown();
+                return;
+            }
             if let Some((command, exclude_from_context)) = selected_shell_command(text) {
                 mode.submit_shell_command(text, command, exclude_from_context);
                 return;
@@ -132,7 +138,8 @@ impl InteractiveMode {
 }
 
 impl InteractiveMode {
-    /// Initializes the presentation, shows the startup notices, sends the startup prompts,
+    /// Initializes the presentation, starts independent checks, shows startup warnings,
+    /// sends the startup prompts,
     /// then keeps sending typed prompts to the current session.
     ///
     /// A prompt the session refuses is shown as an error and the loop continues.
@@ -140,7 +147,8 @@ impl InteractiveMode {
     /// # Errors
     /// Returns an initialization or notice-presentation failure.
     pub async fn run(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
-        self.init()?;
+        self.init().await?;
+        self.start_startup_checks();
         if !self.options.migrated_providers.is_empty() {
             self.show_warning(&format!(
                 "Migrated credentials to auth.json: {}",

@@ -63,7 +63,7 @@ fn paint(world: &World) -> (Vec<String>, Vec<String>) {
     )
 }
 /// Loads real bound callbacks with the existing session and terminal fixture.
-pub(super) fn with_factories<T: 'static>(
+pub(super) async fn with_factories<T: 'static>(
     directory: &Path,
     build: impl Fn(&ExtensionAPI<Local>) -> Vec<T> + 'static,
 ) -> (World, Vec<T>) {
@@ -78,15 +78,15 @@ pub(super) fn with_factories<T: 'static>(
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     let callbacks = stored.take();
     (world, callbacks)
 }
 
 #[test]
 fn widgets_bound_text_rows_and_placement() {
-    isolated("widgets_bound_text_rows_and_placement", |directory| {
-        let world = started(directory);
+    isolated("widgets_bound_text_rows_and_placement", async |directory| {
+        let world = started(directory).await;
         let ui = port(&world.mode);
         for (input, expected) in super::cases::<Placement, Placed>(
             include_str!("../../../tests/fixtures/interactive_extension_widgets.json"),
@@ -136,8 +136,8 @@ fn widgets_bound_text_rows_and_placement() {
 fn status_updates_retain_live_order_and_request_render() {
     isolated(
         "status_updates_retain_live_order_and_request_render",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let ui = port(&world.mode);
             let live = world.mode.footer_data_provider.get_extension_statuses();
             for (key, text, next) in [
@@ -170,8 +170,8 @@ fn status_updates_retain_live_order_and_request_render() {
 fn widgets_keep_empty_unicode_multiline_and_visible_styles() {
     isolated(
         "widgets_keep_empty_unicode_multiline_and_visible_styles",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             let ui = port(&world.mode);
             for (input, expected) in super::cases::<Lines, Paint>(
                 include_str!("../../../tests/fixtures/interactive_extension_widgets.json"),
@@ -216,7 +216,7 @@ fn traced(
 fn widgets_replacement_reorders_moves_and_disposes() {
     isolated(
         "widgets_replacement_reorders_moves_and_disposes",
-        |directory| {
+        async |directory| {
             let trace = Rc::new(RefCell::new(Vec::new()));
             let recorded = trace.clone();
             let (world, callbacks) = with_factories(directory, move |api| {
@@ -224,7 +224,8 @@ fn widgets_replacement_reorders_moves_and_disposes() {
                     .into_iter()
                     .map(|label| traced(api, label, &recorded))
                     .collect()
-            });
+            })
+            .await;
             let ui = port(&world.mode);
             let mut callbacks = callbacks.into_iter();
             ui.set_widget("b".into(), callbacks.next(), None).unwrap();
@@ -315,7 +316,7 @@ fn failing_factories(
 fn widget_failures_preserve_original_error_and_prior_effects() {
     isolated(
         "widget_failures_preserve_original_error_and_prior_effects",
-        |directory| {
+        async |directory| {
             for dispose_fails in [false, true] {
                 let identity = std::sync::Arc::new(());
                 let returned = identity.clone();
@@ -323,7 +324,8 @@ fn widget_failures_preserve_original_error_and_prior_effects() {
                 let recorded = trace.clone();
                 let (world, callbacks) = with_factories(directory, move |api| {
                     failing_factories(api, dispose_fails, &returned, &recorded)
-                });
+                })
+                .await;
                 let ui = port(&world.mode);
                 let mut callbacks = callbacks.into_iter();
                 ui.set_widget("a".into(), callbacks.next(), None).unwrap();
@@ -419,7 +421,7 @@ fn origin_factory(
 fn widget_factory_callbacks_retain_origin_and_release_the_last_owner() {
     isolated(
         "widget_factory_callbacks_retain_origin_and_release_the_last_owner",
-        |directory| {
+        async |directory| {
             let trace = Rc::new(RefCell::new(Vec::<String>::new()));
             let controller =
                 maestro_app::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
@@ -439,7 +441,7 @@ fn widget_factory_callbacks_retain_origin_and_release_the_last_owner() {
             drop(loaded);
             drop(foreign);
             drop(controller);
-            let world = started(directory);
+            let world = started(directory).await;
             let ui = port(&world.mode);
             ui.set_widget("bound".into(), Some(callback), None).unwrap();
             assert_eq!(*trace.borrow(), ["before", "same", "after", "foreign"]);

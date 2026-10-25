@@ -3886,6 +3886,7 @@ name = "maestro-chat"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "futures-util",
  "indexmap 2.14.2",
  "maestro-app",
  "maestro-dependencies",
@@ -3895,7 +3896,9 @@ dependencies = [
  "maestro-test-process",
  "maestro-theme",
  "maestro-tui",
+ "maestro-tui-crossterm",
  "regress",
+ "rustix",
  "ryu-js",
  "serde",
  "serde_json",

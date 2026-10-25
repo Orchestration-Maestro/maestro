@@ -35,7 +35,7 @@ pub enum CompactionReason {
 }
 
 /// An agent event or a session event, written as one record with its snake-case `type`.
-#[derive(serde::Serialize)]
+#[derive(Clone, serde::Serialize)]
 #[serde(
     tag = "type",
     rename_all = "snake_case",

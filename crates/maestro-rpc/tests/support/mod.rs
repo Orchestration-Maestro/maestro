@@ -179,9 +179,14 @@ pub fn serve(served: Served) -> ! {
         .unwrap();
     let failure = executor.block_on(local.run_until(async {
         let runtime = runtime(&local, served.factories).await;
-        let options = options(Rc::clone(&local), Rc::new(runtime), served.workspace);
-        let Err(failure) = run_rpc_mode(options).await;
-        failure
+        let runtime = Rc::new(runtime);
+        let running = Rc::clone(&local);
+        let runner: maestro_app::presentation_data::mode_dispatch::RpcModeRunner =
+            Rc::new(move |runtime| {
+                let options = options(Rc::clone(&running), runtime, Rc::clone(&served.workspace));
+                Box::pin(async move { match run_rpc_mode(options).await? {} })
+            });
+        runner(runtime).await.unwrap_err()
     }));
     panic!("the server failed: {failure}");
 }

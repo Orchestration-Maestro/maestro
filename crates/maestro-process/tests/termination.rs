@@ -90,3 +90,129 @@ fn termination_subscription_delivers_and_removes_for_both_callers() {
         (interactive.remove)();
     });
 }
+
+/// Removing the final delivery during the first signal must not apply that signal's
+/// default action while its native handler is still running on another thread.
+#[test]
+fn first_signal_removal_does_not_terminate_in_flight_delivery() {
+    use maestro_test_process::{TestProcess, selection};
+    if !selection().is_child() {
+        let output =
+            TestProcess::current("first_signal_removal_does_not_terminate_in_flight_delivery")
+                .unwrap()
+                .case("child")
+                .nocapture()
+                .output()
+                .unwrap();
+        assert!(output.status.success(), "{}", output.status);
+        return;
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        for _ in 0..1000 {
+            let mut registration = caller().await.unwrap();
+            let sender = std::thread::spawn(|| {
+                signal_hook::low_level::raise(15).unwrap();
+            });
+            assert_eq!(
+                registration.received.recv().await,
+                Some(TerminationSignal::Terminate)
+            );
+            (registration.remove)();
+            sender.join().unwrap();
+        }
+    });
+}
+
+#[test]
+fn last_removal_restores_native_termination() {
+    use maestro_test_process::{TestProcess, selection};
+    use std::os::unix::process::ExitStatusExt;
+    if selection().is_child() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        tokio::task::LocalSet::new().block_on(&runtime, async {
+            let registration = caller().await.unwrap();
+            (registration.remove)();
+            (registration.remove)();
+            let signal = if selection().runs_case("term") {
+                TerminationSignal::Terminate
+            } else {
+                TerminationSignal::Hangup
+            };
+            raise(signal);
+        });
+        return;
+    }
+    for (case, expected) in [("term", 15), ("hup", 1)] {
+        let output = TestProcess::current("last_removal_restores_native_termination")
+            .unwrap()
+            .case(case)
+            .nocapture()
+            .output()
+            .unwrap();
+        assert_eq!(
+            output.status.signal(),
+            Some(expected),
+            "final removal restores the native action for {case}"
+        );
+    }
+}
+
+#[test]
+fn reopen_and_independent_registrations_remain_live() {
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
+            "reopen_and_independent_registrations_remain_live",
+        )
+        .unwrap()
+        .case("child")
+        .nocapture()
+        .output()
+        .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let old = caller().await.unwrap();
+        (old.remove)();
+        let mut first = caller().await.unwrap();
+        let mut second = caller().await.unwrap();
+        (old.remove)();
+        for signal in signals_for_host() {
+            raise(signal);
+            assert_eq!(first.received.recv().await, Some(signal));
+            assert_eq!(second.received.recv().await, Some(signal));
+        }
+        raise(TerminationSignal::Terminate);
+        (first.remove)();
+        (first.remove)();
+        assert_eq!(
+            second.received.recv().await,
+            Some(TerminationSignal::Terminate)
+        );
+        assert!(
+            first.received.try_recv().is_err(),
+            "removal cancels already-ready delivery"
+        );
+        for signal in signals_for_host() {
+            raise(signal);
+            assert_eq!(second.received.recv().await, Some(signal));
+            assert!(first.received.try_recv().is_err());
+        }
+        (second.remove)();
+    });
+}

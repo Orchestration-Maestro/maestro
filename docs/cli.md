@@ -61,6 +61,26 @@ re-exports `ConfigSelectorOptions` from there and imports the rest from that
 application path, so the interactive frontend and this library name one owner.
 See [selectors](chat/selectors.md) for the widgets.
 
+## Final mode dispatch
+
+`startup::main::dispatch::dispatch_mode` hands a prepared session runtime to the
+supplied interactive or RPC presentation, or to the existing print runner. It
+reports the captured model scope in startup order and passes prepared prompts,
+images and transport options unchanged. The caller retains the streams and
+startup timing state.
+
+`MAESTRO_STARTUP_BENCHMARK` selects interactive initialization only for `1`,
+`true` or `yes` (ASCII case-insensitive for the words, without trimming). Other
+modes reject that request. A benchmark initializes and stops the retained
+presentation, closes the supplied theme watcher, then flushes stdout before
+stderr. Ordinary interactive and RPC runs add no outer cleanup. After a print
+run returns successfully, dispatch closes the watcher, restores managed stdout
+and returns the print status, including nonzero statuses. Errors stop at their
+original phase.
+
+The startup entry, production native extension loader and executable wiring are
+not delivered by this operation.
+
 ## Print mode
 
 `run_print_mode` runs one session to completion over a caller-owned runtime and

@@ -10,7 +10,7 @@ is ordinary input.
 
 The mode handles shell input and the slash commands `/export`, `/changelog`,
 `/model`, `/scoped-models`, `/logout`, `/name`, `/session`, `/debug`, `/share` and
-`/copy`. Import, the offline viewer and packaged asset injection are not delivered
+`/copy` and `/quit`. Import, the offline viewer and packaged asset injection are not delivered
 yet (see
 [what is missing](#what-is-missing)).
 
@@ -21,6 +21,13 @@ follows a session switch.
 Editor submission routes `/name` or `/name ` followed by a name, `/session` and
 `/debug` to those methods. Other text, such as `/names` or `/session extra`, is
 ordinary input. When a command fails, the failure goes to the terminal host.
+
+## `/quit`
+
+After the shared trim, exact `/quit` clears the editor and starts graceful
+shutdown before input, queue or history delivery, without requesting an extra
+frame. It also works while a response streams or the session compacts. `/QUIT`,
+`/quit extra` and `/quit` followed by U+0085 remain ordinary input.
 
 ## Shell input
 

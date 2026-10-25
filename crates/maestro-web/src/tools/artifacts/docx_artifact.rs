@@ -55,7 +55,7 @@ impl DomContent for DocxArtifact {
         let node = view
             .document
             .create_element("section")
-            .map_err(|error| browser::failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         node.set_class_name("maestro-docx-artifact");
         let root = DomRoot {
             node: node.into(),
