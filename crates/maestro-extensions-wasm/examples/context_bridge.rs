@@ -22,6 +22,9 @@ mod commands;
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/listeners.rs"]
+mod listeners;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/ordering.rs"]
 mod ordering;
 #[cfg(target_arch = "wasm32")]
@@ -151,6 +154,9 @@ fn command(
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
+        }
+        if let Some(ops) = args.strip_prefix("listen:") {
+            return listeners::run(api, ops, context).await;
         }
         if args == "retain-suspended" {
             return retained::observe(api, context).await;

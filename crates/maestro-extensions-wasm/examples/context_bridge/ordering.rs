@@ -73,7 +73,7 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
 }
 
 /// Reads the label the native caller assigned to this instance.
-fn label(api: &ExtensionAPI) -> ExtensionResult<String> {
+pub(super) fn label(api: &ExtensionAPI) -> ExtensionResult<String> {
     match api.get_flag(LABEL)? {
         Some(FlagValue::String(label)) => Ok(label),
         _ => Err("missing instance label".into()),
