@@ -302,6 +302,8 @@ impl InteractiveMode {
     pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
         self.chat_container.clear();
         self.pending_messages_container.clear();
+        self.compaction_queued_messages.borrow_mut().clear();
+        drop(self.streaming.take());
         self.render_initial_messages()
     }
 

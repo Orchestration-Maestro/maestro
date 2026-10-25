@@ -485,8 +485,9 @@ the last row, a new status replaces its text; otherwise it starts a new line.
 
 ## Session replacement and fatal errors
 
-`render_current_session_state` clears the transcript and the pending-message rows and
-then replays the current session with the initial replay's effects: it refreshes the
+`render_current_session_state` clears the transcript and the pending-message rows,
+discards queued compaction input and the active streamed message, then replays the
+current session with the initial replay's effects: it refreshes the
 footer and the editor border, adds each user text to the editor history and shows the
 compaction notice. A transcript row or pending tool row left by the replaced session
 does not survive the call, so the presentation shows only the session it now reads.

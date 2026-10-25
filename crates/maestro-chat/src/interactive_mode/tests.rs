@@ -1662,6 +1662,42 @@ fn fatal_runtime_error_ends_the_process_with_failure_status() {
     assert_eq!(output.status.code(), Some(1));
 }
 
+/// Seeds retained rows, queued text and an active stream from the replaced session.
+fn seed_replaced_session(world: &World) {
+    let stale =
+        crate::ToolExecutionComponent::new(transcript::tool_params(world, "stale")).unwrap();
+    world
+        .mode
+        .pending_tools
+        .borrow_mut()
+        .insert("stale".to_owned(), Rc::new(stale));
+    world
+        .mode
+        .chat_container
+        .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+    world
+        .mode
+        .pending_messages_container
+        .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+    world.mode.compaction_queued_messages.borrow_mut().push(
+        super::queues::CompactionQueuedMessage {
+            text: "STALE QUEUE".to_owned(),
+            mode: maestro_app::messages::UserMessageDelivery::FollowUp,
+        },
+    );
+    events::dispatch(
+        world,
+        maestro_app::AgentEvent::MessageStart {
+            message: transcript::message(transcript::assistant(
+                &json!([{"type": "text", "text": "STALE STREAM"}]),
+                "stop",
+                None,
+            )),
+        },
+    );
+    assert!(world.mode.streaming.borrow().is_some());
+}
+
 #[test]
 fn current_session_state_rendering_clears_stale_rows_and_replays_the_session() {
     isolated(
@@ -1681,23 +1717,16 @@ fn current_session_state_rendering_clears_stale_rows_and_replays_the_session() {
                 ))
                 .unwrap();
             drop(manager);
-            let stale =
-                crate::ToolExecutionComponent::new(transcript::tool_params(&world, "stale"))
-                    .unwrap();
-            world
-                .mode
-                .pending_tools
-                .borrow_mut()
-                .insert("stale".to_owned(), Rc::new(stale));
-            world
-                .mode
-                .chat_container
-                .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
-            world
-                .mode
-                .pending_messages_container
-                .add_child(Rc::new(Text::new("STALE".to_owned(), 0, 0, None)));
+            seed_replaced_session(&world);
             world.mode.render_current_session_state().unwrap();
+            assert_eq!(
+                (
+                    world.mode.compaction_queued_messages.borrow().is_empty(),
+                    world.mode.streaming.borrow().is_none(),
+                ),
+                (true, true),
+                "the replaced session's queued input and active stream are discarded"
+            );
             let rows = world.mode.chat_container.render(100);
             assert!(!rows.iter().any(|row| row.contains("STALE")), "{rows:?}");
             assert!(rows.iter().any(|row| row.contains("REPLAYED")), "{rows:?}");
