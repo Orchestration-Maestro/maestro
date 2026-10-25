@@ -252,7 +252,8 @@ The mode's own text, history, insertion, completion, border, padding and
 completion-height operations reach the current editor. Application actions and
 callbacks stay on the default editor. Settings, the settings panel and completion
 rebuilds update the default editor first and then a distinct current editor once;
-when the default editor is current it is updated once.
+when the default editor is current it is updated once. If a callable replaces the
+editor, the next settings operation reaches the newly current editor.
 
 A failure stops at its own phase and returns, or reports, the original error.
 The factory stays set. A failing factory or new editor leaves the editor
@@ -393,6 +394,10 @@ and stops the replacement before the session is disposed. Clearing the widgets
 calls each disposer while walking the live maps, so widgets a disposer adds are
 disposed too and widgets it removes are skipped; a disposer failure stops before
 either map is emptied.
+
+Each dialog kind retains its component until settlement. Opening another of the
+same kind cancels the previous one. A hidden dialog's answer, cancellation or
+countdown cannot replace the panel currently shown.
 
 Working messages, visibility, indicators and hidden-thinking labels an extension
 sets stay in effect across prompt turns until the extension changes them or the

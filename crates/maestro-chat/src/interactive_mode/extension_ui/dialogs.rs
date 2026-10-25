@@ -12,7 +12,10 @@ use maestro_app::{
 };
 use maestro_theme::ThemeError;
 use maestro_tui::{Component, EditorOptions, TUI, get_keybindings};
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
 use tokio::sync::oneshot;
 
 /// Delivers a dialog's answer, or `None`; only the first delivery counts.
@@ -21,15 +24,23 @@ type Settle = Rc<dyn Fn(Option<String>)>;
 /// Stops a dialog component's countdown before the editor returns.
 type Dispose = Box<dyn Fn()>;
 
-/// The settlement of the latest selector, text input and multi-line editor dialog.
+/// A dialog retained until it settles, even while another panel hides it.
+struct Dialog {
+    /// The component whose settlement this is.
+    component: Rc<dyn Component>,
+    /// Cancels or answers the component once.
+    settle: Settle,
+}
+
+/// The latest selector, text input and multi-line editor dialog.
 #[derive(Default)]
 pub(in super::super) struct DialogSlots {
     /// The latest selector, including confirmations.
-    selector: RefCell<Option<Settle>>,
+    selector: RefCell<Option<Dialog>>,
     /// The latest text input.
-    input: RefCell<Option<Settle>>,
+    input: RefCell<Option<Dialog>>,
     /// The latest multi-line editor.
-    editor: RefCell<Option<Settle>>,
+    editor: RefCell<Option<Dialog>>,
 }
 
 impl DialogSlots {
@@ -37,8 +48,21 @@ impl DialogSlots {
     /// answers `None`.
     pub(in super::super) fn cancel_all(&self) {
         for slot in [&self.selector, &self.input, &self.editor] {
-            if let Some(settle) = slot.take() {
-                settle(None);
+            if let Some(dialog) = slot.take() {
+                (dialog.settle)(None);
+            }
+        }
+    }
+
+    /// Releases only the slot belonging to `component`, outside the slot's borrow.
+    fn release(&self, component: &Rc<dyn Component>) {
+        for slot in [&self.selector, &self.input, &self.editor] {
+            let matches = slot
+                .borrow()
+                .as_ref()
+                .is_some_and(|dialog| Rc::ptr_eq(&dialog.component, component));
+            if matches {
+                drop(slot.take());
             }
         }
     }
@@ -52,6 +76,8 @@ struct Open {
     observed: oneshot::Sender<()>,
     /// Stops the component's countdown, when it has one.
     dispose: Option<Dispose>,
+    /// Identifies this dialog without a component-to-settlement ownership cycle.
+    component: Option<Weak<dyn Component>>,
 }
 
 impl InteractiveMode {
@@ -171,13 +197,13 @@ impl InteractiveMode {
     /// returning and, given a signal, settles it with `None` on abort.
     ///
     /// An already-aborted signal settles at once without showing anything. Settling
-    /// stops the countdown, restores the current editor and ends the abort observer;
-    /// the shown component keeps the settlement, so dropping the returned future
-    /// leaves the dialog working. `slot` keeps the settlement for the reset.
+    /// stops the countdown and abort observer, restoring the editor only when this
+    /// dialog is still shown. The slot retains the component independently of the
+    /// returned future; replacing the same kind cancels its previous dialog.
     fn show_dialog(
         &self,
         signal: Option<Cancellation>,
-        slot: &RefCell<Option<Settle>>,
+        slot: &RefCell<Option<Dialog>>,
         build: impl FnOnce(Settle) -> Result<(Rc<dyn Component>, Option<Dispose>), ThemeError>,
     ) -> ExtensionUIFuture<Option<String>> {
         if signal.as_ref().is_some_and(Cancellation::is_aborted) {
@@ -189,15 +215,23 @@ impl InteractiveMode {
             answer,
             observed,
             dispose: None,
+            component: None,
         })));
         let settle = self.settlement(Rc::clone(&open));
-        drop(slot.replace(Some(Rc::clone(&settle))));
         let (component, dispose) = match build(Rc::clone(&settle)) {
             Ok(shown) => shown,
             Err(error) => return Box::pin(std::future::ready(Err(error.into()))),
         };
         if let Some(open) = open.borrow_mut().as_mut() {
             open.dispose = dispose;
+            open.component = Some(Rc::downgrade(&component));
+        }
+        let previous = slot.replace(Some(Dialog {
+            component: Rc::clone(&component),
+            settle: Rc::clone(&settle),
+        }));
+        if let Some(previous) = previous {
+            (previous.settle)(None);
         }
         self.show_panel(Rc::clone(&component), component);
         if let Some(signal) = signal {
@@ -223,6 +257,7 @@ impl InteractiveMode {
                 answer,
                 observed,
                 dispose,
+                component,
             }) = open.borrow_mut().take()
             else {
                 return;
@@ -230,17 +265,28 @@ impl InteractiveMode {
             if let Some(dispose) = dispose {
                 dispose();
             }
-            if let Some(mode) = mode.upgrade() {
-                mode.hide_extension_dialog();
+            if let Some(mode) = mode.upgrade()
+                && let Some(component) = component.and_then(|component| component.upgrade())
+            {
+                mode.hide_extension_dialog(&component);
             }
             drop(observed);
             drop(answer.send(value));
         })
     }
 
-    /// Returns the current editor to the editor container with focus and requests a
-    /// frame.
-    fn hide_extension_dialog(&self) {
+    /// Releases this dialog's slot, restoring the editor only if this component is shown.
+    fn hide_extension_dialog(&self, component: &Rc<dyn Component>) {
+        self.dialogs.release(component);
+        let shown = self
+            .editor_container
+            .children()
+            .borrow()
+            .iter()
+            .any(|child| Rc::ptr_eq(child, component));
+        if !shown {
+            return;
+        }
         self.restore_editor();
         self.ui.request_render(false);
     }

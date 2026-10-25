@@ -378,6 +378,10 @@ impl Component for StatusFooter {
             "providers:{}",
             self.0.get_available_provider_count()
         ));
+        rows.push(format!(
+            "branch:{}",
+            self.0.get_git_branch().unwrap_or_default()
+        ));
         rows
     }
 }
@@ -404,13 +408,37 @@ fn custom_footer_retains_the_live_status_provider() {
                 .mode
                 .footer_data_provider
                 .get_available_provider_count();
-            let painted = |status: &str| vec![status.to_owned(), format!("providers:{count}")];
-            assert_eq!(footer_text(&world), painted("z:one"));
-            super::with_held_response(&world, async |_| {}).await;
-            ui.set_status("z".into(), Some("two".into())).unwrap();
-            assert_eq!(footer_text(&world), painted("z:two"));
-            super::with_held_response(&world, async |_| {}).await;
-            assert_eq!(footer_text(&world), painted("z:two"));
+            let painted = |status: &str, providers: f64, branch: &str| {
+                vec![
+                    status.to_owned(),
+                    format!("providers:{providers}"),
+                    format!("branch:{branch}"),
+                ]
+            };
+            assert_eq!(footer_text(&world), painted("z:one", count, ""));
+            for branch in ["first", "second"] {
+                super::with_held_response(&world, async |_| {}).await;
+                let repo = directory.join(branch);
+                std::fs::create_dir_all(repo.join(".git")).unwrap();
+                std::fs::write(
+                    repo.join(".git/HEAD"),
+                    format!("ref: refs/heads/{branch}\n"),
+                )
+                .unwrap();
+                world
+                    .mode
+                    .footer_data_provider
+                    .set_cwd(repo.to_str().unwrap().to_owned());
+                world
+                    .mode
+                    .footer_data_provider
+                    .set_available_provider_count(7.0);
+                ui.set_status("z".into(), Some(branch.into())).unwrap();
+                assert_eq!(
+                    footer_text(&world),
+                    painted(&format!("z:{branch}"), 7.0, branch)
+                );
+            }
         },
     );
 }

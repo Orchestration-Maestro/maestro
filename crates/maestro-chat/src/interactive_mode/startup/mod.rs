@@ -11,9 +11,11 @@ use std::{error::Error, rc::Rc};
 mod tests;
 
 impl InteractiveMode {
-    /// Empties the editor and schedules a frame.
+    /// Empties the editor and schedules a frame, or reports its original write failure.
     pub fn clear_editor(&self) {
-        self.current_editor().set_text("");
+        if let Err(error) = self.current_editor().try_set_text("") {
+            return self.report(Err(error));
+        }
         self.ui.request_render(false);
     }
 

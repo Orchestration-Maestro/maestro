@@ -73,6 +73,8 @@ pub(super) enum Flow {
     FailAsync,
     /// Calls `done` with `first`, then returns the component at once.
     DoneFirst,
+    /// Calls `done` inside the delayed build, before returning its component.
+    AsyncDone,
 }
 
 /// How a witness's factory builds its view.
@@ -126,6 +128,8 @@ pub(super) struct Views {
     options: Rc<RefCell<OverlayOptions>>,
     /// The handles the handle callback received.
     handles: RefCell<Vec<Handle>>,
+    /// Original close failures caught inside a delayed build.
+    close_failures: RefCell<Vec<EventError>>,
 }
 
 /// The callbacks one witness binds to its extension.
@@ -161,6 +165,7 @@ impl Views {
             on_handle: Cell::new(Setup::Normal),
             options: width_options(21),
             handles: RefCell::default(),
+            close_failures: RefCell::default(),
         })
     }
     /// Records `effect`.
@@ -236,7 +241,19 @@ impl Views {
                 let (gate, opened) = oneshot::channel();
                 views.gates.borrow_mut().push(gate);
                 let failure = (build.flow == Flow::FailAsync).then(|| views.failure());
-                Ok(building(component, opened, failure))
+                let views = views.clone();
+                Ok(CustomFactoryOutcome::Async(Box::pin(async move {
+                    opened.await.unwrap();
+                    let close = (build.flow == Flow::AsyncDone).then(|| done("first".into()));
+                    views
+                        .close_failures
+                        .borrow_mut()
+                        .extend(close.into_iter().filter_map(Result::err));
+                    match failure {
+                        Some(failure) => Err(failure),
+                        None => Ok(component),
+                    }
+                })))
             },
         )
     }
@@ -281,26 +298,11 @@ impl Views {
         }
     }
     /// Releases the next asynchronous build and runs the host's admitted work.
-    pub(super) async fn release(&self, world: &World) {
+    pub(super) fn release(&self, world: &World) {
         let gate = self.gates.borrow_mut().remove(0);
         gate.send(()).unwrap();
-        settle_work(world).await;
+        assert!(world.runtime.drain_futures().is_empty());
     }
-}
-
-/// A build that settles once `opened` is released, with `component` or `failure`.
-fn building(
-    component: ExtensionComponent,
-    opened: oneshot::Receiver<()>,
-    failure: Option<EventError>,
-) -> CustomFactoryOutcome {
-    CustomFactoryOutcome::Async(Box::pin(async move {
-        opened.await.unwrap();
-        match failure {
-            Some(failure) => Err(failure),
-            None => Ok(component),
-        }
-    }))
 }
 
 /// Starts a world whose extension binds `builds` on `views`.
@@ -314,22 +316,6 @@ async fn started(
         with_factories(directory, move |api| vec![witness.bind(api, builds)]).await;
     world.mode.editor.set_text("saved");
     (world, bound.pop().unwrap())
-}
-
-/// Runs the work the mode handed its terminal runtime until none is left.
-async fn settle_work(world: &World) {
-    loop {
-        let futures = world.runtime.take_futures();
-        if futures.is_empty() {
-            return;
-        }
-        for future in futures {
-            tokio::task::spawn_local(async move { drop(future.await) });
-        }
-        for _ in 0..8 {
-            tokio::task::yield_now().await;
-        }
-    }
 }
 
 /// Options showing the view as an overlay with `source` and `on_handle`.
@@ -402,7 +388,7 @@ async fn installs_and_closes(
     });
     let result = port(&world.mode).custom(bound.views[index].clone(), options);
     if index == 1 {
-        views.release(&world).await;
+        views.release(&world);
     }
     world.runtime.settle().unwrap();
     let view = views.view(0);
@@ -490,7 +476,7 @@ fn custom_factory_failures_keep_original_error() {
                 let options = overlaid.then(|| overlay(None, None));
                 let result = port(&world.mode).custom(bound.views[index].clone(), options);
                 if index == 1 {
-                    views.release(&world).await;
+                    views.release(&world);
                 }
                 let error = result.await.map(drop).unwrap_err();
                 assert!(views.is_original(error.as_ref()));
@@ -519,7 +505,7 @@ fn custom_inline_restore_failure_keeps_its_original_error() {
             ui.set_editor_component(Some(editor)).unwrap();
             knobs.fail.set(Some("set_text"));
             let result = ui.custom(bound.views[1].clone(), None);
-            views.release(&world).await;
+            views.release(&world);
             let error = result.await.map(drop).unwrap_err();
             assert!(knobs.is_original(error.as_ref()));
         },
@@ -527,7 +513,7 @@ fn custom_inline_restore_failure_keeps_its_original_error() {
 }
 
 /// Views completing before their build returns.
-const EARLY: &[(&str, Build)] = &[("C", plain(Flow::DoneFirst)), ("C", plain(Flow::Async))];
+const EARLY: &[(&str, Build)] = &[("C", plain(Flow::DoneFirst)), ("C", plain(Flow::AsyncDone))];
 
 #[test]
 fn custom_done_before_factory_completion_does_not_install() {
@@ -539,8 +525,7 @@ fn custom_done_before_factory_completion_does_not_install() {
                 let (world, bound) = started(directory, &views, EARLY).await;
                 let result = port(&world.mode).custom(bound.views[index].clone(), None);
                 if index == 1 {
-                    views.complete(0, "first").unwrap();
-                    views.release(&world).await;
+                    views.release(&world);
                 }
                 assert_eq!(result.await.unwrap().as_deref(), Some("first"));
                 assert!(restored(&world, "saved"));
@@ -560,19 +545,22 @@ fn custom_async_restore_failure_settles_with_original_error() {
             let (witness, captured) = (views.clone(), knobs.clone());
             let (world, mut bound) = with_factories(directory, move |api| {
                 let editor: EditorFactory = probe_factory(api, &captured, true, None);
-                vec![(witness.bind(api, BOTH), editor)]
+                vec![(witness.bind(api, EARLY), editor)]
             })
             .await;
             let (bound, editor) = bound.pop().unwrap();
             let ui = port(&world.mode);
             ui.set_editor_component(Some(editor)).unwrap();
-            let result = ui.custom(bound.views[1].clone(), None);
-            views.release(&world).await;
+            let mut result = ui.custom(bound.views[1].clone(), None);
             knobs.calls.take();
             knobs.fail.set(Some("set_text"));
-            let first = views.complete(0, "first").unwrap_err();
+            views.release(&world);
+            let first = views.close_failures.borrow_mut().pop().unwrap();
             let repeated = views.complete(0, "again").unwrap_err();
-            let observed = result.await.map(drop).unwrap_err();
+            let observed = super::typed::poll(&mut result)
+                .expect("a failed restoration settles the observation")
+                .map(drop)
+                .unwrap_err();
             let sources = [&first, &repeated, &observed].map(|error| error.source().unwrap());
             assert!(sources.iter().all(|source| knobs.is_original(*source)));
             let original = sources.map(|source| std::ptr::from_ref(source).cast::<()>());
@@ -732,7 +720,7 @@ fn custom_disposal_failure_never_replaces_a_committed_result() {
                 let (world, bound) = started(directory, &views, DISPOSE_FAILS).await;
                 let result = port(&world.mode).custom(bound.views[index].clone(), None);
                 if index == 1 {
-                    views.release(&world).await;
+                    views.release(&world);
                 }
                 views.complete(0, "kept").unwrap();
                 world.mode.editor.set_text("later");
@@ -753,7 +741,7 @@ fn custom_view_observer_drop_keeps_admitted_work_alive() {
             let views = Views::new();
             let (world, bound) = started(directory, &views, BOTH).await;
             drop(port(&world.mode).custom(bound.views[1].clone(), None));
-            views.release(&world).await;
+            views.release(&world);
             let view = views.view(0);
             assert!(view.focus.get());
             let shown = world.mode.editor_container.children().borrow()[0].clone();

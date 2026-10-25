@@ -43,6 +43,8 @@ pub(super) struct Knobs {
     pub(super) error: Arc<()>,
     /// The last editor built, kept weakly.
     built: RefCell<Weak<Probe>>,
+    /// A one-shot callback invoked by the padding operation.
+    on_padding: RefCell<Option<Box<dyn Fn()>>>,
 }
 
 impl Knobs {
@@ -159,6 +161,9 @@ impl EditorComponent for Probe {
     }
     fn try_set_padding_x(&self, padding: f64) -> Result<Option<()>, EditorError> {
         self.enter("padding")?;
+        if let Some(callback) = self.knobs.on_padding.take() {
+            callback();
+        }
         self.inner.try_set_padding_x(padding)
     }
     fn try_set_autocomplete_max_visible(
@@ -200,7 +205,7 @@ impl CustomEditorComponent for Probe {
 }
 
 /// An editor factory building a probe; `custom` selects the application capability and
-/// `own` supplies the probe's own escape callback before the host sees it.
+/// `own` supplies the probe's own special callbacks before the host sees it.
 pub(super) fn probe_factory(
     api: &ExtensionAPI<Local>,
     knobs: &Rc<Knobs>,
@@ -218,6 +223,16 @@ pub(super) fn probe_factory(
             knobs: knobs.clone(),
         });
         probe.inner.set_on_escape(own.clone());
+        probe.inner.set_on_ctrl_d(own.clone());
+        probe.inner.set_on_paste_image(own.clone());
+        probe
+            .inner
+            .set_on_extension_shortcut(own.clone().map(|own| {
+                Rc::new(move |data: &str| {
+                    own();
+                    data == "owned"
+                }) as ExtensionShortcutCallback
+            }));
         knobs.built.replace(Rc::downgrade(&probe));
         Ok(if custom {
             EditorFactoryOutcome::CustomEditor(probe)
@@ -270,7 +285,9 @@ fn editor_replacement_preserves_settings_and_callbacks() {
         "editor_replacement_preserves_settings_and_callbacks",
         async |directory| {
             let knobs = Rc::new(Knobs::default());
-            let own: Rc<dyn Fn()> = Rc::new(|| {});
+            let own_calls = Rc::new(Cell::new(0));
+            let recorded = own_calls.clone();
+            let own: Rc<dyn Fn()> = Rc::new(move || recorded.set(recorded.get() + 1));
             let (captured, supplied) = (knobs.clone(), own.clone());
             let (world, factories) = editors(directory, move |api| {
                 vec![
@@ -291,6 +308,17 @@ fn editor_replacement_preserves_settings_and_callbacks() {
             ui.set_editor_component(Some(factories[2].clone())).unwrap();
             let probe = knobs.editor();
             assert!(same(&probe.on_escape().unwrap(), &own));
+            probe.on_escape().unwrap()();
+            probe.on_ctrl_d().unwrap()();
+            probe.on_paste_image().unwrap()();
+            assert!(probe.on_extension_shortcut().unwrap()("owned"));
+            assert_eq!(
+                own_calls.get(),
+                4,
+                "all supplied special callbacks survive installation"
+            );
+            ui.set_editor_component(Some(factories[1].clone())).unwrap();
+            let probe = knobs.editor();
             let calls = Rc::new(Cell::new(0));
             let counted = calls.clone();
             default.set_on_ctrl_d(Some(Rc::new(move || counted.set(counted.get() + 1))));
@@ -615,6 +643,197 @@ fn custom_editor_factory_retains_optional_application_capabilities() {
             let weak = Rc::downgrade(&probe);
             drop((probe, map, factories));
             assert!(weak.upgrade().is_none());
+        },
+    );
+}
+
+/// Returns the exact failure from the selected current-editor text consumer.
+async fn text_call_failure(world: &World, operation: &str) -> Box<dyn std::error::Error> {
+    match operation {
+        "clear" => {
+            world.mode.clear_editor();
+            let mut reported = world.runtime.take_futures();
+            assert_eq!(reported.len(), 1, "the original write failure is reported");
+            reported.pop().unwrap().await.unwrap_err()
+        }
+        "follow-up" => world.mode.handle_follow_up().unwrap_err(),
+        "queue" => world
+            .mode
+            .queue_compaction_message("queued".into(), UserMessageDelivery::Steer)
+            .unwrap_err(),
+        _ => world
+            .mode
+            .restore_queued_messages_to_editor(
+                super::super::queues::RestoreQueuedMessagesOptions::default(),
+            )
+            .unwrap_err(),
+    }
+}
+
+#[test]
+fn session_commands_clear_the_current_editor_before_admission() {
+    isolated(
+        "session_commands_clear_the_current_editor_before_admission",
+        async |directory| {
+            for (command, fails) in [
+                ("/new", false),
+                ("/new", true),
+                ("/compact", false),
+                ("/compact", true),
+            ] {
+                let knobs = Rc::new(Knobs::default());
+                let captured = knobs.clone();
+                let (world, factories) = editors(directory, move |api| {
+                    vec![probe_factory(api, &captured, true, None)]
+                })
+                .await;
+                port(&world.mode)
+                    .set_editor_component(factories.into_iter().next())
+                    .unwrap();
+                let probe = knobs.editor();
+                world.mode.editor.set_text("default draft");
+                probe.inner.set_text("current draft");
+                knobs.fail.set(fails.then_some("set_text"));
+                let session = world.host.session();
+                probe.on_submit().unwrap()(command);
+                assert_eq!(
+                    world.mode.editor.get_text(),
+                    "default draft",
+                    "the inactive editor is not cleared"
+                );
+                assert_eq!(
+                    probe.inner.get_text(),
+                    if fails { "current draft" } else { "" }
+                );
+                let mut work = world.runtime.take_futures();
+                assert_eq!(
+                    work.len(),
+                    1,
+                    "one command or one original error is admitted"
+                );
+                let result = work.pop().unwrap().await;
+                if fails {
+                    assert!(knobs.is_original(result.unwrap_err().as_ref()));
+                    assert!(Rc::ptr_eq(&session, &world.host.session()));
+                } else {
+                    result.unwrap();
+                    assert_eq!(
+                        Rc::ptr_eq(&session, &world.host.session()),
+                        command != "/new"
+                    );
+                }
+            }
+        },
+    );
+}
+
+#[test]
+fn current_editor_text_calls_preserve_original_failures() {
+    isolated(
+        "current_editor_text_calls_preserve_original_failures",
+        async |directory| {
+            for operation in [
+                "clear",
+                "follow-up",
+                "queue",
+                "restore-read",
+                "restore-write",
+            ] {
+                let knobs = Rc::new(Knobs::default());
+                let captured = knobs.clone();
+                let (world, factories) = editors(directory, move |api| {
+                    vec![probe_factory(api, &captured, true, None)]
+                })
+                .await;
+                port(&world.mode)
+                    .set_editor_component(factories.into_iter().next())
+                    .unwrap();
+                let probe = knobs.editor();
+                if operation.starts_with("restore-") {
+                    world
+                        .mode
+                        .queue_compaction_message("queued".into(), UserMessageDelivery::Steer)
+                        .unwrap();
+                }
+                probe.inner.set_text("draft");
+                let submitted = Rc::new(Cell::new(false));
+                let seen = submitted.clone();
+                probe.set_on_submit(Some(Rc::new(move |_| seen.set(true))));
+                knobs.fail.set(Some(if operation == "restore-read" {
+                    "text"
+                } else {
+                    "set_text"
+                }));
+                world.runtime.settle().unwrap();
+                let error = text_call_failure(&world, operation).await;
+                assert!(knobs.is_original(error.as_ref()), "{operation}");
+                assert_eq!(probe.inner.get_text(), "draft", "{operation}");
+                assert!(
+                    !submitted.get(),
+                    "submission does not follow a failed clear"
+                );
+                if operation == "clear" {
+                    assert_eq!(
+                        world.runtime.pending(),
+                        0,
+                        "no redraw follows a failed clear"
+                    );
+                }
+            }
+        },
+    );
+}
+
+#[test]
+fn runtime_settings_follow_editor_replacement_between_callable_phases() {
+    isolated(
+        "runtime_settings_follow_editor_replacement_between_callable_phases",
+        async |directory| {
+            for replace_with_custom in [true, false] {
+                let (first, second) = (Rc::new(Knobs::default()), Rc::new(Knobs::default()));
+                let (a, b) = (first.clone(), second.clone());
+                let (world, factories) = editors(directory, move |api| {
+                    vec![
+                        probe_factory(api, &a, true, None),
+                        probe_factory(api, &b, true, None),
+                    ]
+                })
+                .await;
+                let ui = port(&world.mode);
+                ui.set_editor_component(Some(factories[0].clone())).unwrap();
+                let next = replace_with_custom.then(|| factories[1].clone());
+                let context = ui.clone();
+                first.on_padding.replace(Some(Box::new(move || {
+                    context.set_editor_component(next.clone()).unwrap();
+                })));
+                first.take();
+                second.take();
+                let session = world.host.session();
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .set_autocomplete_max_visible(9.0);
+                world.mode.apply_runtime_settings().unwrap();
+                assert!(
+                    !first.take().iter().any(|call| call == "height"),
+                    "the retired editor gets no later phase"
+                );
+                assert_eq!(world.mode.editor.get_autocomplete_max_visible(), 9);
+                if replace_with_custom {
+                    assert_eq!(second.editor().inner.get_autocomplete_max_visible(), 9);
+                    assert_eq!(
+                        second
+                            .take()
+                            .iter()
+                            .filter(|call| *call == "height")
+                            .count(),
+                        1
+                    );
+                } else {
+                    assert!(!world.mode.custom_editor_current());
+                    assert!(second.take().is_empty());
+                }
+            }
         },
     );
 }

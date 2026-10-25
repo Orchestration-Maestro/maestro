@@ -50,9 +50,12 @@ impl InteractiveMode {
         self.editor.set_padding_x(padding);
         self.editor.set_autocomplete_max_visible(max_visible);
         if self.custom_editor_current() {
-            let editor = self.current_editor();
-            editor.try_set_padding_x(padding).map_err(erase)?;
-            editor
+            self.current_editor()
+                .try_set_padding_x(padding)
+                .map_err(erase)?;
+        }
+        if self.custom_editor_current() {
+            self.current_editor()
                 .try_set_autocomplete_max_visible(max_visible)
                 .map_err(erase)?;
         }

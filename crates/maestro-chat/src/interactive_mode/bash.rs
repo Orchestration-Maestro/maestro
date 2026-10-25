@@ -212,7 +212,9 @@ impl InteractiveMode {
         exclude_from_context: bool,
     ) {
         if self.runtime_host.session().is_bash_running() {
-            self.current_editor().set_text(text);
+            if let Err(error) = self.current_editor().try_set_text(text) {
+                return self.report(Err(error));
+            }
             self.report(
                 self.show_warning(
                     "A bash command is already running. Press Esc to cancel it first.",

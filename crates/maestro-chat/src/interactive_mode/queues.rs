@@ -45,14 +45,20 @@ impl InteractiveMode {
                     abort: true,
                     current_text: None,
                 };
-                mode.report(mode.restore_queued_messages_to_editor(options).map(drop));
-            } else if session.is_bash_running() {
-                session.abort_bash();
-            } else if mode.is_bash_mode.get() {
-                mode.current_editor().set_text("");
-                mode.is_bash_mode.set(false);
-                mode.report(mode.update_editor_border_color().map_err(Into::into));
+                return mode.report(mode.restore_queued_messages_to_editor(options).map(drop));
             }
+            if session.is_bash_running() {
+                session.abort_bash();
+                return;
+            }
+            if !mode.is_bash_mode.get() {
+                return;
+            }
+            if let Err(error) = mode.current_editor().try_set_text("") {
+                return mode.report(Err(error));
+            }
+            mode.is_bash_mode.set(false);
+            mode.report(mode.update_editor_border_color().map_err(Into::into));
         })));
         let mode = Rc::downgrade(self);
         self.editor.on_action(
@@ -79,7 +85,7 @@ impl InteractiveMode {
     /// is emptied and the text goes to the installed submission. Blank text is ignored.
     ///
     /// # Errors
-    /// Returns the failure of the published theme's dim colour.
+    /// Returns the editor's original failure or the published theme's dim-colour failure.
     pub(super) fn handle_follow_up(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         let text = self
             .expanded_editor_text()
@@ -90,7 +96,9 @@ impl InteractiveMode {
         }
         let editor = self.current_editor();
         if let Some(submit) = editor.on_submit() {
-            editor.set_text("");
+            editor
+                .try_set_text("")
+                .map_err(|error| -> Box<dyn Error> { error })?;
             submit(text);
         }
         Ok(())
@@ -102,7 +110,7 @@ impl InteractiveMode {
     /// `mode` and the pending rows are refreshed once it is queued.
     ///
     /// # Errors
-    /// Returns the failure of the published theme's dim colour.
+    /// Returns the editor's original failure or the published theme's dim-colour failure.
     pub(super) fn submit_queued_input(
         self: &Rc<Self>,
         text: &str,
@@ -131,7 +139,9 @@ impl InteractiveMode {
         if let Err(error) = self.current_editor().try_add_to_history(text) {
             return self.report(Err(error));
         }
-        self.current_editor().set_text("");
+        if let Err(error) = self.current_editor().try_set_text("") {
+            return self.report(Err(error));
+        }
         let refresh = streaming_behavior.is_some();
         let options = PromptOptions {
             streaming_behavior,
@@ -155,7 +165,7 @@ impl InteractiveMode {
     /// empties the editor, refreshes the pending rows and says so on the status line.
     ///
     /// # Errors
-    /// Returns the failure of the published theme's dim colour.
+    /// Returns the editor's original failure or the published theme's dim-colour failure.
     pub(super) fn queue_compaction_message(
         &self,
         text: String,
@@ -167,7 +177,9 @@ impl InteractiveMode {
         self.compaction_queued_messages
             .borrow_mut()
             .push(CompactionQueuedMessage { text, mode });
-        self.current_editor().set_text("");
+        self.current_editor()
+            .try_set_text("")
+            .map_err(|error| -> Box<dyn Error> { error })?;
         self.update_pending_messages_display()?;
         self.show_status("Queued message for after compaction")
             .map_err(Into::into)
@@ -186,7 +198,7 @@ impl InteractiveMode {
     /// Restores every queued message to the editor and says how many were restored.
     ///
     /// # Errors
-    /// Returns the failure of the published theme's dim colour.
+    /// Returns the editor's original failure or the published theme's dim-colour failure.
     pub(super) fn handle_dequeue(&self) -> Result<(), Box<dyn Error>> {
         let restored =
             self.restore_queued_messages_to_editor(RestoreQueuedMessagesOptions::default())?;
@@ -269,7 +281,8 @@ impl InteractiveMode {
     /// with none the editor is left unchanged.
     ///
     /// # Errors
-    /// Returns the failure of the published theme's dim colour, after the turn is stopped.
+    /// Returns the editor's original failure before refreshing or stopping the turn,
+    /// or the theme failure after the turn is stopped.
     pub(super) fn restore_queued_messages_to_editor(
         &self,
         options: RestoreQueuedMessagesOptions<'_>,
@@ -281,14 +294,20 @@ impl InteractiveMode {
         let queued: Vec<String> = steering.into_iter().chain(follow_up).collect();
         if !queued.is_empty() {
             let queued_text = queued.join("\n\n");
-            let current_text = options
-                .current_text
-                .map_or_else(|| self.current_editor().get_text(), str::to_owned);
+            let current_text = match options.current_text {
+                Some(text) => text.to_owned(),
+                None => self
+                    .current_editor()
+                    .try_get_text()
+                    .map_err(|error| -> Box<dyn Error> { error })?,
+            };
             let combined: Vec<&str> = [queued_text.as_str(), current_text.as_str()]
                 .into_iter()
                 .filter(|text| !text.trim_matches(is_whitespace_scalar).is_empty())
                 .collect();
-            self.current_editor().set_text(&combined.join("\n\n"));
+            self.current_editor()
+                .try_set_text(&combined.join("\n\n"))
+                .map_err(|error| -> Box<dyn Error> { error })?;
         }
         let shown = self.update_pending_messages_display();
         if options.abort {

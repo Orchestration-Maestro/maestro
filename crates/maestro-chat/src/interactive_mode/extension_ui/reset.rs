@@ -1,5 +1,4 @@
-//! The reset of what extensions changed of the presentation, before the session they
-//! changed it for is invalidated.
+//! Extension presentation cleanup before session invalidation.
 use super::super::InteractiveMode;
 use maestro_app::EventError;
 use maestro_tui::Component;
