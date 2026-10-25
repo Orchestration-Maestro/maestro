@@ -145,6 +145,10 @@ visits each refinement and requests error text only for failures. Equal messages
 from separate refinements remain separate lines. At most eight lines are retained,
 but later error factories still run and their errors propagate unchanged.
 Ordinary schema JSON never reconstructs these callbacks.
+Compiled checking still checks a required property after a dependency callback
+removes it. Optional properties and interpreted candidate checking skip missing
+members. Author callbacks accept JSON values, so a deleted member does not invoke
+its own Base guard or refinement.
 
 The checker supports object, array, string, number and composition constraints,
 offline schema resources, anchors, recursive and dynamic references, and evaluated

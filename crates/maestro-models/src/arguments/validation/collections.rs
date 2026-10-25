@@ -46,7 +46,7 @@ pub(super) fn phase<'a>(
             Phase::Dependencies => dependencies(job, "dependencies", instructions),
             Phase::DependentRequired => dependencies(job, "dependentRequired", instructions),
             Phase::DependentSchemas => dependencies(job, "dependentSchemas", instructions),
-            Phase::Properties => properties(job, value, instructions),
+            Phase::Properties => properties(job, value, false, instructions),
             Phase::PropertyNames => property_names(job, value, instructions),
             Phase::PropertyBounds => {
                 instructions.push(bounds(job, value.len(), "Properties", "properties"));
@@ -131,25 +131,41 @@ fn pattern_properties<'a>(
     }
 }
 
-/// Schedule present declared members with separate child locations.
-fn properties<'a>(
+/// Schedule declared members, retaining deleted required members in compiled checking.
+pub(super) fn properties<'a>(
     job: &Job<'a>,
     value: &Map<String, Value>,
+    compiled: bool,
     instructions: &mut Vec<Instruction<'a>>,
 ) {
-    if let Some(properties) = schema_map(job.schema().get("properties")) {
-        let members = diagnostics::entries(properties)
-            .into_iter()
-            .filter_map(|(key, schema)| {
-                value.get(key)?;
-                Some((
-                    Mark::Key(key.clone()),
-                    schema,
-                    format!("{}/{key}", job.path),
-                ))
-            });
-        instructions.push(Instruction::Children(members_batch(job, members)));
+    let Some(properties) = schema_map(job.schema().get("properties")) else {
+        return;
+    };
+    let names = scalars::required_names(job.schema());
+    let required = |key: &str| names.iter().any(|name| name.as_str() == Some(key));
+    let members = diagnostics::entries(properties)
+        .into_iter()
+        .filter_map(|(key, schema)| {
+            if !(value.contains_key(key) || compiled && required(key)) {
+                return None;
+            }
+            Some((
+                Mark::Key(key.clone()),
+                schema,
+                format!("{}/{key}", job.path),
+            ))
+        });
+    let mut batch = members_batch(job, members);
+    if compiled {
+        for child in &mut batch.jobs {
+            if let Instance::Key(key) = &child.value
+                && required(key)
+            {
+                child.value = Instance::RequiredKey(key.clone());
+            }
+        }
     }
+    instructions.push(Instruction::Children(batch));
 }
 
 /// Queue dependency declarations without admitting their current triggers early.

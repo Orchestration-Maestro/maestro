@@ -59,8 +59,12 @@ fn configure_schema(
                 base: Some(maestro_extensions_wasm::schema_code::Base::default()),
                 refinements: Vec::new(),
             }
+        } else if program == "null-conversion" {
+            super::schema_author::null_conversion_node()
         } else if program == "emitting" {
             super::schema_author::emitting_node(api)?
+        } else if matches!(program, "deep-read" | "deep-splice") {
+            super::schema_author::deep_node(program == "deep-splice")
         } else if program == "operand" {
             super::schema_author::operand_node()
         } else {
@@ -78,7 +82,10 @@ fn configure_schema(
         };
         metadata.parameters = metadata
             .parameters
-            .with_code(std::collections::HashMap::from([(String::new(), node)]));
+            .with_code(std::collections::HashMap::from([(
+                config["schemaPointer"].as_str().unwrap_or("").to_owned(),
+                node,
+            )]));
     }
     Ok(metadata)
 }

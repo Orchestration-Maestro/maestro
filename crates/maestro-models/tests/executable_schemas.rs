@@ -275,3 +275,28 @@ fn refinement_argument_edits_reach_execution() {
 fn union_selection_checks_custom_code() {
     callback_cases("union_selection_checks_custom_code");
 }
+
+#[test]
+fn required_member_deleted_by_dependency_is_rejected() {
+    let schema = serde_json::json!({"type":"object", "properties":{"n":{"type":"string"}}, "required":["n"],
+        "dependentSchemas":{"go":{"x-effect":{"label":"delete","put":{},"remove":["n"]}}}});
+    let code = schema_effects::code(&schema);
+    let tool = Tool {
+        name: "custom".into(),
+        description: String::new(),
+        parameters: ParameterSchema::<()>::from(schema).with_code(code),
+    };
+    let call = ToolCall {
+        id: "call".into(),
+        name: tool.name.clone(),
+        arguments: serde_json::json!({"go":true,"n":"x"}),
+        thought_signature: None,
+    };
+    let error = validate_tool_arguments(&tool, &call).unwrap_err();
+    assert!(
+        error.message.contains("n: must have required properties n"),
+        "{}",
+        error.message
+    );
+    assert_eq!(call.arguments, serde_json::json!({"go":true,"n":"x"}));
+}

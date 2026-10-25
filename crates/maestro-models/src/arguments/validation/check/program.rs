@@ -116,7 +116,7 @@ pub(super) fn instructions<'a>(job: &Job<'a>) -> Vec<Instruction<'a>> {
 pub(super) fn phase_instructions<'a>(
     phase: Phase,
     job: &Job<'a>,
-    value: &Value,
+    value: Option<&Value>,
     root: &Root<'_, 'a>,
     patterns: &Patterns<'_>,
 ) -> Vec<Instruction<'a>> {
@@ -127,17 +127,16 @@ pub(super) fn phase_instructions<'a>(
             value,
             &job.path,
         ))),
-        Phase::String => work.push(Instruction::Errors(scalars::string_errors(
-            job.schema(),
-            value,
-            &job.path,
-            patterns,
-        ))),
-        Phase::Number => work.push(Instruction::Errors(scalars::number_errors(
-            job.schema(),
-            value,
-            &job.path,
-        ))),
+        Phase::String | Phase::Number => {
+            if let Some(value) = value {
+                let errors = if matches!(phase, Phase::String) {
+                    scalars::string_errors(job.schema(), value, &job.path, patterns)
+                } else {
+                    scalars::number_errors(job.schema(), value, &job.path)
+                };
+                work.push(Instruction::Errors(errors));
+            }
+        }
         Phase::References => work.extend(references::instructions(root, job)),
         Phase::Literal => work.push(Instruction::Errors(scalars::literal_errors(
             job.schema(),
@@ -166,7 +165,11 @@ pub(super) fn phase_instructions<'a>(
                 )));
             }
         }
-        _ => collections::phase(phase, job, value, patterns, &mut work),
+        _ => {
+            if let Some(value) = value {
+                collections::phase(phase, job, value, patterns, &mut work);
+            }
+        }
     }
     work
 }

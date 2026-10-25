@@ -5,7 +5,6 @@ use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
 use crate::{
     AgentToolUpdateCallback, ExtensionResult, ParameterSchema, PrepareArguments, ToolExecute,
 };
-use serde::Deserialize;
 use std::rc::Rc;
 
 /// Member carrying the declared schema kinds beside the plain payload.
@@ -41,11 +40,7 @@ struct CarriedKinds {
 /// Kinds travel only in the object form this adapter encodes; a record the host supplies in
 /// another admitted shape carries none and stays plain.
 pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {
-    let mut deserializer = serde_json::Deserializer::from_str(text);
-    deserializer.disable_recursion_limit();
-    let tools = Vec::<crate::ToolInfo>::deserialize(&mut deserializer)
-        .map_err(|error| error.to_string())?;
-    deserializer.end().map_err(|error| error.to_string())?;
+    let tools = super::decode_json::<Vec<crate::ToolInfo>>(text)?;
     let carried = serde_json::from_str::<Vec<CarriedKinds>>(text).unwrap_or_default();
     if carried.len() != tools.len() {
         return Ok(tools);

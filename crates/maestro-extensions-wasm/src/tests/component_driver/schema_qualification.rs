@@ -154,7 +154,7 @@ fn callback(
         .and_then(std::convert::identity)
         .map_err(|error| DiagnosticErrorInfo::error(format!("{error:#}")))?;
     let result = result.map_err(crate::schema_error::from_wire)?;
-    serde_json::from_str(&result).map_err(|error| DiagnosticErrorInfo::error(error.to_string()))
+    crate::component_adapter::decode_json(&result).map_err(DiagnosticErrorInfo::error)
 }
 /// Release through the originating capability, independently of the active recipient.
 fn release(driver: &mut ComponentDriver, handle: u32) {
@@ -178,7 +178,7 @@ pub(crate) fn base_methods() {
     let mut value = json!({});
     assert_eq!(
         callback(&mut driver, retained, SchemaOperation::Convert, &mut value).unwrap(),
-        json!({"replacement":true})
+        json!([{"replacement":true}])
     );
     assert_eq!(value, json!({"converted":true}));
     assert_eq!(
@@ -525,7 +525,13 @@ fn native_node(owner: &SchemaDriver, handler: u32) -> maestro_models::SchemaNode
     let shape = with_driver(owner, |driver| shape(driver, handler));
     maestro_models::SchemaNode {
         base: shape.base.then(|| maestro_models::Base {
-            convert: native_callback(owner, handler, SchemaOperation::Convert),
+            convert: {
+                let convert =
+                    native_callback::<Option<(Value,)>>(owner, handler, SchemaOperation::Convert);
+                maestro_models::SchemaCallback::new(move |value| {
+                    Ok(convert.call(value)?.map(|(value,)| value))
+                })
+            },
             check: native_callback(owner, handler, SchemaOperation::Check),
             errors: native_callback(owner, handler, SchemaOperation::Errors),
         }),
@@ -538,11 +544,11 @@ fn native_node(owner: &SchemaDriver, handler: u32) -> maestro_models::SchemaNode
     }
 }
 /// Register, enumerate and re-register a real guest declaration, then release the originals.
-fn checker_driver(schema: &Value, kinds: &Value) -> SchemaDriver {
+fn checker_driver(schema: &Value, kinds: &Value, program: Option<&str>) -> SchemaDriver {
     let mut driver = start();
     register(
         &mut driver,
-        &json!({"metadata":{"name":"original","label":"Original","description":"","parameters":schema,"schemaKinds":kinds},"schemaCode":true,"prepare":false,"result":{"content":[]}}),
+        &json!({"metadata":{"name":"original","label":"Original","description":"","parameters":schema,"schemaKinds":kinds},"schemaCode":true,"schemaProgram":program,"schemaPointer":"/properties/n","prepare":false,"result":{"content":[]}}),
     );
     let handles = driver
         .harness
@@ -650,7 +656,7 @@ fn schema_actual_route_accounts_for_setup_payload_and_invocations() {
             .map(|index| ("/properties/next".repeat(index), json!("Object")))
             .collect::<serde_json::Map<_, _>>()
             .into();
-        let driver = checker_driver(&schema, &kinds);
+        let driver = checker_driver(&schema, &kinds, None);
         let first = checker_validate(&driver, &args);
         assert_eq!(first.to_string(), row.result);
         let second = checker_validate(&driver, &args);
@@ -685,7 +691,7 @@ fn schema_actual_route_accounts_for_setup_payload_and_invocations() {
 fn checker_case(row: &CheckerCase, kinds: &Value) {
     let schema = recorded_value(&row.schema);
     let args = recorded_value(&row.input);
-    let driver = checker_driver(&schema, kinds);
+    let driver = checker_driver(&schema, kinds, None);
     let result = checker_validate(&driver, &args);
     assert_eq!(result, row.result);
     assert_eq!(args, recorded_value(&row.input));
@@ -713,5 +719,51 @@ fn schema_actual_route_stops_contains_after_the_first_accepted_member() {
 fn schema_actual_route_contains_keeps_later_match_and_disabled_controls() {
     for row in &checker_cases().contains[1..] {
         checker_case(row, &json!({"":"Array","/contains":"Object"}));
+    }
+}
+
+/// The generated route can read, write and return values beyond default decoder depth.
+fn deep_operand(program: &str) {
+    let mut driver = author(program, None, "");
+    let handler = schema_handle(&driver, "original");
+    let mut nested = json!("leaf");
+    for _ in 0..160 {
+        nested = json!([nested]);
+    }
+    let mut value = json!({"nested":nested,"array":[nested]});
+    assert_eq!(
+        callback(&mut driver, handler, SchemaOperation::Refine(0), &mut value).unwrap(),
+        json!(true)
+    );
+    assert_eq!(value["written"], nested);
+    assert_eq!(value["array"], json!([nested]));
+    release(&mut driver, handler);
+}
+
+#[test]
+fn guest_json_read_keeps_admitted_nesting() {
+    deep_operand("deep-read");
+}
+#[test]
+fn guest_json_splice_keeps_admitted_nesting() {
+    deep_operand("deep-splice");
+}
+
+/// Generated conversion results retain presence until the native member assignment.
+#[test]
+fn guest_conversion_distinguishes_null_replacement_from_no_replacement() {
+    let schema = json!({"type":"object","properties":{"n":{}},"required":["n"]});
+    let driver = checker_driver(
+        &schema,
+        &json!({"":"Object","/properties/n":"Base"}),
+        Some("null-conversion"),
+    );
+    for (input, expected) in [
+        (json!({"n":7}), json!({"n":7})),
+        (json!({"n":""}), json!({"n":null})),
+    ] {
+        let result = checker_validate(&driver, &input);
+        assert_eq!(result, expected);
+        checker_execute(&driver, &result);
     }
 }

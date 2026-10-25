@@ -207,3 +207,47 @@ fn mark_object(
     value.set("seen", &json!(true))?;
     Ok(true)
 }
+
+/// Read and roundtrip a nested operand through each JSON resource operation.
+pub fn deep_node(splice: bool) -> SchemaNode {
+    SchemaNode {
+        base: None,
+        refinements: vec![Refinement {
+            check: SchemaCallback::new(move |value, _| {
+                if splice {
+                    let removed = value.member("array").splice(0, 1, &[])?;
+                    assert_eq!(removed.len(), 1);
+                    value.set("written", &removed[0])?;
+                    value.member("array").splice(0, 0, &removed)?;
+                    return Ok(true);
+                }
+                let nested = value
+                    .member("nested")
+                    .read()?
+                    .ok_or_else(|| DiagnosticErrorInfo::error("missing nested operand"))?;
+                value.set("written", &nested)?;
+                Ok(true)
+            }),
+            error: SchemaCallback::new(|_, _| Ok("nested access failed".into())),
+        }],
+    }
+}
+
+/// Distinguish a null replacement from keeping an existing number.
+pub fn null_conversion_node() -> SchemaNode {
+    SchemaNode {
+        base: Some(Base {
+            convert: SchemaCallback::new(|value, _| {
+                Ok((value.read()? == Some(json!(""))).then_some(serde_json::Value::Null))
+            }),
+            check: SchemaCallback::new(|value, _| {
+                Ok(matches!(
+                    value.kind()?,
+                    Some(JsonKind::Null | JsonKind::Number)
+                ))
+            }),
+            ..Base::default()
+        }),
+        refinements: Vec::new(),
+    }
+}

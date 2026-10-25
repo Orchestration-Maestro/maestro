@@ -148,10 +148,12 @@ Use `ParameterSchema::with_code` to retain a `schema_code::SchemaCode` beside a
 schema's JSON and declared kinds. Each pointer maps to the shared `SchemaNode`:
 an optional `Base` and refinements in registration order. `Base::default()` leaves
 values unchanged, accepts them and returns no guard errors. Its conversion can
-return a replacement separately from edits to the supplied value.
+return a replacement separately from edits to the supplied value. `None` keeps the
+operand; `Some(Value::Null)` replaces a nested member with JSON null.
 
 Guest `SchemaCallback` closures receive a borrowed `JsonView` and a
 `CallbackEmitter`. `kind` and `read` distinguish a missing member from JSON null.
+`read` and removed `splice` values admit the same nesting as tool metadata.
 `member` borrows a child; `keys`, `set`, `delete` and `splice` expose ordered object
 and array operations. An explicit `read` copies only the value the author asks
 for. Starting a callback never serializes its subtree. Dropping a child view,

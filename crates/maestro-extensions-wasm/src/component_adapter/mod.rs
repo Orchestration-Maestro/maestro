@@ -37,3 +37,12 @@ pub use generated::Glue;
 pub(crate) use imports::Imports;
 
 pub(crate) use imports::ToolListing;
+
+/// Decode a complete JSON payload with the nesting admitted by authored schemas.
+pub(crate) fn decode_json<T: serde::de::DeserializeOwned>(text: &str) -> crate::ExtensionResult<T> {
+    let mut decoder = serde_json::Deserializer::from_str(text);
+    decoder.disable_recursion_limit();
+    let value = T::deserialize(&mut decoder).map_err(|error| error.to_string())?;
+    decoder.end().map_err(|error| error.to_string())?;
+    Ok(value)
+}

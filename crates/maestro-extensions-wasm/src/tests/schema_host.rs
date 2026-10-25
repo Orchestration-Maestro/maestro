@@ -45,7 +45,7 @@ impl JsonNode {
     }
     /// Write a parsed value to an object member or array position.
     pub fn set(&self, path: &str, key: &str, value: &str) -> Result<(), String> {
-        let value = serde_json::from_str(value).map_err(|error| error.to_string())?;
+        let value = crate::component_adapter::decode_json(value)?;
         let mut root = self.0.lock().map_err(|error| error.to_string())?;
         match root.pointer_mut(path).ok_or("JSON operand is absent")? {
             Value::Object(object) => {
@@ -91,9 +91,8 @@ impl JsonNode {
     ) -> Result<Vec<String>, String> {
         let values = values
             .iter()
-            .map(|text| serde_json::from_str(text))
-            .collect::<Result<Vec<Value>, _>>()
-            .map_err(|error| error.to_string())?;
+            .map(|text| crate::component_adapter::decode_json(text))
+            .collect::<Result<Vec<Value>, _>>()?;
         let removed: Vec<Value> = {
             let mut root = self.0.lock().map_err(|error| error.to_string())?;
             let array = root

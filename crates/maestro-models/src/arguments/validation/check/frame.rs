@@ -147,15 +147,27 @@ impl<'s, 'v> Frame<'s, 'v> {
                     value: Instance::Same,
                     path: self.path.clone(),
                 };
-                work = phase_instructions(phase, &job, self.instance.value(), root, patterns);
+                if matches!(
+                    (phase, self.pass),
+                    (super::Phase::Properties, Pass::Compiled { .. })
+                ) && let Some(Value::Object(value)) = self.instance.value()
+                {
+                    collections::properties(&job, value, true, &mut work);
+                } else {
+                    work = phase_instructions(phase, &job, self.instance.value(), root, patterns);
+                }
             }
             Instruction::Dependency(job, keyword, key) => {
-                collections::dependency(&job, self.instance.value(), keyword, &key, &mut work);
+                if let Some(value) = self.instance.value() {
+                    collections::dependency(&job, value, keyword, &key, &mut work);
+                }
             }
             Instruction::Errors(errors) => self.result.add_errors(errors),
             Instruction::Children(batch) => self.pending = Some(batch),
             Instruction::Unevaluated(job) => {
-                work = collections::unevaluated(&job, &self.result.marks, self.instance.value());
+                if let Some(value) = self.instance.value() {
+                    work = collections::unevaluated(&job, &self.result.marks, value);
+                }
             }
         }
         for instruction in work.into_iter().rev() {
@@ -236,7 +248,12 @@ pub(in super::super) fn check_owned(
     code: &Code<'_>,
 ) -> Result<(Value, Vec<String>), DiagnosticErrorInfo> {
     let (value, errors) = evaluate(schema, &[], Operand::Write(value), code)?;
-    Ok((value.into_owned(), errors))
+    Ok((
+        value
+            .into_owned()
+            .ok_or_else(|| super::super::diagnostic("root operand is absent".into()))?,
+        errors,
+    ))
 }
 
 /// Check once, then collect corrective diagnostics only when checking rejected the value.

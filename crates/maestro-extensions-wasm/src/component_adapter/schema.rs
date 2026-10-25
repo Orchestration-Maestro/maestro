@@ -31,7 +31,7 @@ impl<I: Imports> JsonPort for Port<'_, I> {
     fn read(&self, path: &str) -> ExtensionResult<Option<Value>> {
         self.imports
             .json_read(self.handle, path)?
-            .map(|text| serde_json::from_str(&text).map_err(|error| error.to_string()))
+            .map(|text| super::decode_json(&text))
             .transpose()
     }
     fn keys(&self, path: &str) -> ExtensionResult<Vec<String>> {
@@ -63,7 +63,7 @@ impl<I: Imports> JsonPort for Port<'_, I> {
         self.imports
             .json_splice(self.handle, path, (start, delete), &values)?
             .into_iter()
-            .map(|text| serde_json::from_str(&text).map_err(|error| error.to_string()))
+            .map(|text| super::decode_json(&text))
             .collect()
     }
 }
@@ -127,7 +127,10 @@ fn run(
             .ok_or_else(|| DiagnosticErrorInfo::error("schema has no refinement at this index"))
     };
     match operation {
-        SchemaOperation::Convert => serde_json::to_value(base()?.convert.call(value, emitter)?),
+        // The tuple keeps a null replacement distinct from no replacement.
+        SchemaOperation::Convert => {
+            serde_json::to_value(base()?.convert.call(value, emitter)?.map(|value| (value,)))
+        }
         SchemaOperation::Check => serde_json::to_value(base()?.check.call(value, emitter)?),
         SchemaOperation::Errors => serde_json::to_value(base()?.errors.call(value, emitter)?),
         SchemaOperation::Refine(index) => {
