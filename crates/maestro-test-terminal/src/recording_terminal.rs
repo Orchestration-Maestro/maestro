@@ -288,7 +288,12 @@ impl Terminal for RecordingTerminal {
         Ok(())
     }
 
-    fn set_progress(&mut self, _active: bool) -> io::Result<()> {
+    fn set_progress(&mut self, active: bool) -> io::Result<()> {
+        self.emulate(if active {
+            "\x1b]9;4;3\x07"
+        } else {
+            "\x1b]9;4;0;\x07"
+        });
         Ok(())
     }
 }

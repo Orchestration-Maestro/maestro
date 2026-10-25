@@ -7,7 +7,7 @@ pub use maestro_process::{
 };
 
 #[cfg(unix)]
-pub use maestro_process::DefaultSignalActions;
+pub use maestro_process::{DefaultSignalActions, continued, stop_process_group};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_process::{register_signals, signals_for_host};

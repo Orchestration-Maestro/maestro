@@ -1,5 +1,5 @@
-//! Native termination signals, their delivery to a mode that shuts down on them, and the
-//! default action a second one takes once graceful shutdown has started.
+//! Native termination signals and the default action a prepared one takes once its
+//! handling ends. Delivery to a shutting-down mode is shared with native callers.
 use std::io;
 use std::rc::Rc;
 #[cfg(unix)]
@@ -15,6 +15,8 @@ pub enum TerminationSignal {
     Terminate,
     /// The controlling connection hung up.
     Hangup,
+    /// An interrupt from the keyboard.
+    Interrupt,
 }
 
 impl TerminationSignal {
@@ -24,6 +26,7 @@ impl TerminationSignal {
         match self {
             Self::Terminate => 15,
             Self::Hangup => 1,
+            Self::Interrupt => 2,
         }
     }
 }
@@ -71,7 +74,8 @@ fn deliver_on(
     signal: TerminationSignal,
     callback: Rc<dyn Fn(TerminationSignal)>,
 ) -> io::Result<tokio::task::JoinHandle<()>> {
-    let stream = tokio::signal::unix::signal(kind(signal))?;
+    let stream =
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::from_raw(signal.as_raw()))?;
     Ok(tokio::task::spawn_local(deliver(stream, signal, callback)))
 }
 
@@ -97,15 +101,6 @@ async fn deliver(
     }
 }
 
-/// The native stream of `signal`.
-#[cfg(unix)]
-fn kind(signal: TerminationSignal) -> tokio::signal::unix::SignalKind {
-    match signal {
-        TerminationSignal::Terminate => tokio::signal::unix::SignalKind::terminate(),
-        TerminationSignal::Hangup => tokio::signal::unix::SignalKind::hangup(),
-    }
-}
-
 /// The native default action of each prepared signal, taken once [`restore`] is called.
 ///
 /// A process that handles termination signals itself keeps their delivery registered for
@@ -114,6 +109,7 @@ fn kind(signal: TerminationSignal) -> tokio::signal::unix::SignalKind {
 ///
 /// [`restore`]: DefaultSignalActions::restore
 #[cfg(unix)]
+#[derive(Clone)]
 pub struct DefaultSignalActions {
     /// Set once default termination is restored.
     restored: Arc<AtomicBool>,
@@ -121,7 +117,10 @@ pub struct DefaultSignalActions {
 
 #[cfg(unix)]
 impl DefaultSignalActions {
-    /// Prepares `signals` without changing their current delivery.
+    /// Prepares `signals`; until [`restore`] is called, the prepared handler does nothing,
+    /// so a signal no other handler receives is ignored.
+    ///
+    /// [`restore`]: DefaultSignalActions::restore
     ///
     /// # Errors
     /// Returns the native handler registration failure.
@@ -139,5 +138,12 @@ impl DefaultSignalActions {
     /// Makes every later prepared signal take its native default action.
     pub fn restore(&self) {
         self.restored.store(true, Ordering::SeqCst);
+    }
+
+    /// Makes every later prepared signal do nothing again, until the next [`restore`].
+    ///
+    /// [`restore`]: DefaultSignalActions::restore
+    pub fn defer(&self) {
+        self.restored.store(false, Ordering::SeqCst);
     }
 }

@@ -301,6 +301,14 @@ explicit null is retained for supported thinking/routing fields and open tool
 details. Signature
 strings remain opaque; the separate signature metadata record accepts version 1.
 
+`Usage::total_tokens` keeps the presence of the saved count. An omitted total
+decodes, is never computed from the categories and is omitted again when the record
+is written; an explicit null stays null, and a supplied number, including its sign
+and fractional part, survives unchanged. `Usage::default` reports an explicit zero.
+Readers keep their own rules: current context falls back to the category counts when
+the total is missing or falsy, session statistics always sum the categories, and
+file reports add a missing total as zero.
+
 Model compatibility is one ordered open object, independent of the protocol identifier.
 `ModelCompat` retains mixed-family and custom members and allows ordinary map edits.
 The typed completion, response and message compatibility records convert into it with

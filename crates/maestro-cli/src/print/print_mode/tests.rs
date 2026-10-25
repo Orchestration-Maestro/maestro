@@ -9,6 +9,7 @@ use maestro_app::{
     ExtensionCommandContextActions, FileEntry, ImageContent, PromptOptions, SessionChangeResult,
     StopReason, TerminationSignal, TextContent, Usage, output_guard,
 };
+use maestro_listeners::Listeners;
 use serde_json::json;
 use std::{
     cell::{Cell, RefCell},
@@ -67,11 +68,9 @@ struct Recorder {
     /// Whom to tell when a runtime disposal starts.
     dispose_announced: RefCell<Option<oneshot::Sender<()>>>,
     /// Each installed signal callback.
-    signal_callbacks: RefCell<Vec<SignalCallback>>,
+    signal_callbacks: RefCell<Listeners<Rc<SignalCallback>>>,
     /// The live event subscriptions, by identity.
-    listeners: RefCell<Vec<(usize, AgentSessionEventListener)>>,
-    /// The next subscription identity.
-    next_listener: Cell<usize>,
+    listeners: Rc<RefCell<Listeners<AgentSessionEventListener>>>,
     /// The pending settlement of a disposal; absent means it settles at once.
     dispose_settles: RefCell<Option<oneshot::Receiver<()>>>,
     /// The disposal failure.
@@ -125,14 +124,16 @@ impl Recorder {
 
     /// Delivers `event` to every live listener.
     fn emit(&self, event: &AgentSessionEvent) {
-        for (_, listener) in self.listeners.borrow().clone() {
+        let snapshot = self.listeners.borrow_mut().snapshot();
+        for listener in snapshot {
             listener(event);
         }
     }
 
     /// Delivers `signal` to every installed signal callback.
     fn signal(&self, signal: TerminationSignal) {
-        for callback in self.signal_callbacks.borrow().clone() {
+        let snapshot = self.signal_callbacks.borrow_mut().snapshot();
+        for callback in snapshot {
             callback(signal);
         }
     }
@@ -205,19 +206,14 @@ impl PrintSession for TestSession {
 
     fn subscribe(&self, listener: AgentSessionEventListener) -> Box<dyn Fn()> {
         self.recorder.push("subscribe");
-        let identity = self.recorder.next_listener.get();
-        self.recorder.next_listener.set(identity + 1);
-        self.recorder
-            .listeners
-            .borrow_mut()
-            .push((identity, listener));
+        let remove = Listeners::subscribe(
+            &self.recorder.listeners,
+            Rc::new(move |event| listener(event)),
+        );
         let recorder = Rc::clone(&self.recorder);
         Box::new(move || {
             recorder.push("unsubscribe");
-            recorder
-                .listeners
-                .borrow_mut()
-                .retain(|(other, _)| *other != identity);
+            remove();
         })
     }
 
@@ -331,7 +327,10 @@ struct TestSignals {
 impl SignalPort for TestSignals {
     fn register(&self, callback: Rc<dyn Fn(TerminationSignal)>) -> io::Result<Box<dyn Fn()>> {
         self.recorder.push("register_signals");
-        self.recorder.signal_callbacks.borrow_mut().push(callback);
+        self.recorder
+            .signal_callbacks
+            .borrow_mut()
+            .add(Rc::new(callback));
         let recorder = Rc::clone(&self.recorder);
         Ok(Box::new(move || recorder.push("remove_signals")))
     }
@@ -1235,4 +1234,107 @@ fn prompt_and_text_traversals_stay_linear() {
             );
         }
     });
+}
+
+#[test]
+fn print_session_fixture_keeps_subscription_semantics() {
+    let recorder = recorder();
+    let session = recorder.current();
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let listener: AgentSessionEventListener = {
+        let seen = Rc::clone(&seen);
+        Rc::new(move |_| seen.borrow_mut().push(1))
+    };
+    let remove = session.subscribe(Rc::clone(&listener));
+    let sibling = session.subscribe(listener);
+    let event = AgentSessionEvent::SessionInfoChanged { name: None };
+    recorder.emit(&event);
+    assert_eq!(*seen.borrow(), [1, 1]);
+    remove();
+    remove();
+    seen.borrow_mut().clear();
+    recorder.emit(&event);
+    assert_eq!(*seen.borrow(), [1]);
+    sibling();
+    print_fixture_snapshot_edits(&recorder, &seen, &event);
+    print_fixture_signal_snapshot(&recorder, &seen);
+}
+
+/// Exercises edits through the session subscription route while a snapshot runs.
+fn print_fixture_snapshot_edits(
+    recorder: &Rc<Recorder>,
+    seen: &Rc<RefCell<Vec<usize>>>,
+    event: &AgentSessionEvent,
+) {
+    let remove_next = Rc::new(RefCell::new(None::<Box<dyn Fn()>>));
+    let first: AgentSessionEventListener = {
+        let (weak, seen, remove_next) = (
+            Rc::downgrade(recorder),
+            Rc::clone(seen),
+            Rc::clone(&remove_next),
+        );
+        let once = Cell::new(false);
+        Rc::new(move |_| {
+            seen.borrow_mut().push(2);
+            if !once.replace(true) {
+                remove_next.borrow().as_ref().unwrap()();
+                let seen = Rc::clone(&seen);
+                drop(
+                    weak.upgrade()
+                        .unwrap()
+                        .current()
+                        .subscribe(Rc::new(move |_| seen.borrow_mut().push(4))),
+                );
+            }
+        })
+    };
+    let remove_first = recorder.current().subscribe(first);
+    let last: AgentSessionEventListener = {
+        let seen = Rc::clone(seen);
+        Rc::new(move |_| seen.borrow_mut().push(3))
+    };
+    *remove_next.borrow_mut() = Some(recorder.current().subscribe(last));
+    seen.borrow_mut().clear();
+    recorder.emit(event);
+    assert_eq!(*seen.borrow(), [2, 3]);
+    seen.borrow_mut().clear();
+    recorder.emit(event);
+    assert_eq!(*seen.borrow(), [2, 4]);
+    remove_first();
+}
+
+/// A signal registered during delivery waits for the next snapshot; cleanup logs only.
+fn print_fixture_signal_snapshot(recorder: &Rc<Recorder>, seen: &Rc<RefCell<Vec<usize>>>) {
+    let signals = TestSignals {
+        recorder: Rc::clone(recorder),
+    };
+    let callback: SignalCallback = {
+        let (weak, seen) = (Rc::downgrade(recorder), Rc::clone(seen));
+        let once = Cell::new(false);
+        Rc::new(move |_| {
+            seen.borrow_mut().push(5);
+            if !once.replace(true) {
+                let signals = TestSignals {
+                    recorder: weak.upgrade().unwrap(),
+                };
+                let seen = Rc::clone(&seen);
+                drop(
+                    signals
+                        .register(Rc::new(move |_| seen.borrow_mut().push(6)))
+                        .unwrap(),
+                );
+            }
+        })
+    };
+    let cleanup = signals.register(Rc::clone(&callback)).unwrap();
+    let other = signals.register(callback).unwrap();
+    seen.borrow_mut().clear();
+    recorder.signal(TerminationSignal::Terminate);
+    assert_eq!(*seen.borrow(), [5, 5]);
+    cleanup();
+    other();
+    assert_eq!(recorder.count("remove_signals"), 2);
+    seen.borrow_mut().clear();
+    recorder.signal(TerminationSignal::Terminate);
+    assert_eq!(*seen.borrow(), [5, 5, 6]);
 }

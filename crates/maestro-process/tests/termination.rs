@@ -13,6 +13,7 @@ fn raise(signal: TerminationSignal) {
     let native = match signal {
         TerminationSignal::Terminate => Signal::TERM,
         TerminationSignal::Hangup => Signal::HUP,
+        TerminationSignal::Interrupt => Signal::INT,
     };
     let own = Pid::from_raw(i32::try_from(std::process::id()).expect("a native process id"))
         .expect("a valid process id");

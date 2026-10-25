@@ -3,17 +3,24 @@
 use crate::support::rpc_connection::{
     Client, connect, of_type, replacement_watch, response_to, user_entry,
 };
-use crate::support::runtime_fixtures::{RuntimeOptions, runtime_for, runtime_with, stored_in};
+use crate::support::runtime_fixtures::{
+    Recorded, Resources, RuntimeOptions, factory, runtime_for, runtime_with, stored_in,
+};
 use crate::support::session_harness::{
-    Auth, Harness, ScriptedShell, answer, command_extension, hold_first_answer, input_extension,
-    on_task_set, script_responses, template,
+    Auth, Harness, HarnessOptions, ScriptedShell, answer, assistant, command_extension,
+    create_test_extensions_result, harness, hold_first_answer, input_extension, on_task_set,
+    script_responses, template, usage,
 };
 use maestro_app::agent_session::BashRunOptions;
-use maestro_app::{AgentSessionRuntime, RpcConnectionOutcome};
+use maestro_app::{
+    AgentSessionRuntime, CreateAgentSessionRuntimeOptions, RpcConnectionOutcome,
+    create_agent_session_runtime,
+};
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionFactory, InputEventResult,
 };
 use maestro_models::Local;
+use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};
 use std::{
@@ -963,6 +970,78 @@ fn messages_keep_roles_details_and_order() {
             .map(|message| &message["role"])
             .collect();
         assert_eq!(roles, [&json!("user"), &json!("assistant")]);
+    });
+}
+
+/// A runtime over a stored history holding one answer without a reported total.
+async fn runtime_over_saved_history(h: &Harness) -> Rc<AgentSessionRuntime> {
+    let root = h.scratch.path().display().to_string();
+    let cwd = format!("{root}/history");
+    std::fs::create_dir_all(&cwd).unwrap();
+    let file = {
+        let mut manager =
+            SessionManager::create(&cwd, Some(&format!("{cwd}/sessions")), &root).unwrap();
+        manager
+            .append_message(json!({"role": "user", "content": "saved", "timestamp": 0}))
+            .unwrap();
+        manager
+            .append_message(assistant(
+                "saved answer",
+                0,
+                &json!({"usage": usage([7, 3, 2, 1], 1.0, None)}),
+            ))
+            .unwrap();
+        manager
+            .get_session_file()
+            .expect("a stored session file")
+            .to_owned()
+    };
+    let manager = SessionManager::open(&file, None, None).unwrap();
+    let recorded = Recorded::default();
+    let extensions = Rc::new(create_test_extensions_result(Vec::new(), &cwd).await);
+    Rc::new(
+        create_agent_session_runtime(
+            factory(h, &Resources::of(&extensions), &recorded),
+            CreateAgentSessionRuntimeOptions {
+                cwd,
+                agent_dir: root,
+                session_manager: Rc::new(RefCell::new(manager)),
+                session_start_event: None,
+            },
+        )
+        .await
+        .expect("the stored session opens"),
+    )
+}
+
+/// Messages restored from a history without a reported total keep that member absent.
+#[test]
+fn rpc_history_keeps_missing_total_omitted() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            models: vec![("faux-1", true)],
+            ..HarnessOptions::default()
+        })
+        .await;
+        let mut client = connect(runtime_over_saved_history(&h).await);
+        let reply = client.ask(r#"{"id":"m","type":"get_messages"}"#).await;
+        assert_eq!(reply["success"], true, "{reply}");
+        let messages = reply["data"]["messages"].as_array().expect("messages");
+        assert_eq!(messages.len(), 2);
+        let saved = &messages[1];
+        assert_eq!(saved["role"], "assistant");
+        assert_eq!(saved["usage"].get("totalTokens"), None, "{saved}");
+        for (member, expected) in [
+            (&saved["usage"]["input"], 7.0),
+            (&saved["usage"]["output"], 3.0),
+            (&saved["usage"]["cacheRead"], 2.0),
+            (&saved["usage"]["cacheWrite"], 1.0),
+            (&saved["usage"]["cost"]["total"], 1.0),
+        ] {
+            assert_eq!(member.as_f64(), Some(expected), "{member}");
+        }
+        client.end(None);
+        assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
     });
 }
 

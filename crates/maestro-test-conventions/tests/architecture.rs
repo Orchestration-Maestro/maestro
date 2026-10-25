@@ -3256,6 +3256,49 @@ fn explicit_instruction_paths_share_their_resolver() {
     assert_forwarding_controls();
     assert_tracked_delegation(&sources);
 }
+
+#[test]
+fn print_recorder_listener_edge_stays_native_and_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-cli", "maestro-listeners"]);
+    let production = "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n";
+    let native = "target.'cfg(not(target_arch = \"wasm32\"))'";
+    let declaration = "maestro-listeners = { path = \"../maestro-listeners\" }";
+    workspace.member(
+        "maestro-cli",
+        "maestro-cli",
+        &format!("{production}[{native}.dev-dependencies]\n{declaration}"),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for table in [
+        "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies",
+        "target.'cfg(not(target_arch = \"wasm32\"))'.build-dependencies",
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        workspace.member(
+            "maestro-cli",
+            "maestro-cli",
+            &format!("{production}[{table}]\n{declaration}"),
+        );
+        let expected = if table.ends_with("dev-dependencies") {
+            "maestro-cli: maestro-listeners test support must be a native, non-optional development dependency"
+        } else {
+            "forbidden production dependency: maestro-cli -> maestro-listeners"
+        };
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err(expected.into()),
+            "{table}"
+        );
+    }
+    workspace.member("maestro-cli", "maestro-cli", &format!("{production}[{native}.dev-dependencies]\nmaestro-listeners = {{ path = \"../maestro-listeners\", optional = true }}"));
+    assert!(
+        check_workspace(workspace.root.path()).is_err(),
+        "optional development dependencies are invalid Cargo declarations"
+    );
+}
+
 /// The target table the interactive frontend declares its native witness in.
 const WITNESS_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
 
