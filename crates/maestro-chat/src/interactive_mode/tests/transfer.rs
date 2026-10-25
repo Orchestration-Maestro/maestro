@@ -175,7 +175,7 @@ pub(super) const WIDTH: usize = 200;
 pub(super) fn assert_last_row(world: &World, role: &ThemeColor, message: &str, label: &str) {
     let theme = world.themes.theme().get().unwrap();
     let painted = format!(" {}{message}\u{1b}[39m", theme.get_fg_ansi(role).unwrap());
-    let padding = WIDTH.saturating_sub(1 + message.chars().count());
+    let padding = WIDTH.saturating_sub(1 + maestro_tui::visible_width(message));
     let expected = format!("{painted}{}", " ".repeat(padding));
     assert_eq!(rows(world).last().cloned(), Some(expected), "{label}");
 }
@@ -590,6 +590,382 @@ fn transfer_notice_failure_uses_existing_runtime_error_route() {
             let errors = world.runtime.drain_futures();
             assert_eq!(errors.len(), 1, "the runtime route reports once");
             assert_eq!(errors[0].to_string(), "Unknown theme color: dim");
+        },
+    );
+}
+
+/// Runs queued command futures up to the next real dialog or completion.
+fn import_settle(world: &World) {
+    let errors = world.runtime.drain_futures();
+    assert!(errors.is_empty(), "{errors:?}");
+}
+
+/// Confirms the visible dialog through the terminal's installed input handler.
+fn import_answer(world: &World, key: &str) {
+    if key == "\x1b[B\r" {
+        world.terminal.send_input("\x1b[B");
+        world.terminal.send_input("\r");
+    } else {
+        world.terminal.send_input(key);
+    }
+    import_settle(world);
+}
+
+/// Writes a real session with a distinguishable user history under the authored name.
+fn import_file(directory: &Path, name: &str, cwd: &Path) -> std::path::PathBuf {
+    let storage = directory.join("source");
+    let mut manager = SessionManager::create(
+        cwd.to_str().unwrap(),
+        Some(storage.to_str().unwrap()),
+        directory.to_str().unwrap(),
+    )
+    .unwrap();
+    manager
+        .append_message(json!({"role":"user", "content":"IMPORTED_HISTORY", "timestamp":1}))
+        .unwrap();
+    manager.append_message(json!({"role":"assistant", "content":[{"type":"text", "text":"IMPORTED_ANSWER"}], "api":"controlled", "provider":"controlled", "model":"controlled", "stopReason":"stop", "timestamp":2})).unwrap();
+    let path = directory.join(name);
+    std::fs::copy(manager.get_session_file().unwrap(), &path).unwrap();
+    path
+}
+
+/// Starts a mode with the supplied extension and a real persistent destination.
+async fn import_world(
+    directory: &Path,
+    extension: Option<maestro_app::ExtensionFactory<maestro_app::Local>>,
+) -> World {
+    let world = Setup {
+        extension,
+        session_history: Some(directory.join("destination")),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    world
+}
+
+/// An actual before-switch hook that vetoes exactly the selected attempt.
+fn import_veto(
+    attempt: usize,
+    calls: Rc<std::cell::Cell<usize>>,
+) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+    Rc::new(move |api| {
+        let calls = Rc::clone(&calls);
+        let registered = api
+            .on::<maestro_app::SessionBeforeSwitchEvent, maestro_app::SessionBeforeSwitchResult>(
+                "session_before_switch".to_owned(),
+                Rc::new(move |_, _| {
+                    calls.set(calls.get() + 1);
+                    Box::pin(std::future::ready(Ok(Some(
+                        maestro_app::SessionBeforeSwitchResult {
+                            cancel: maestro_app::Presence::Present(calls.get() == attempt),
+                        },
+                    ))))
+                }),
+            );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+#[test]
+fn transfer_import_missing_argument_shows_usage_without_confirmation() {
+    super::isolated(
+        "transfer_import_missing_argument_shows_usage_without_confirmation",
+        async |directory| {
+            let world = started(directory).await;
+            let old = world.host.session();
+            world.mode.show_working_loader();
+            for text in [
+                "/import",
+                "/import ",
+                "/import \u{feff}",
+                "/import ''",
+                "/import \"\"",
+                "/import 'open",
+                "/import \"open",
+            ] {
+                submit(&world.mode, text);
+                import_settle(&world);
+                assert_last_row(
+                    &world,
+                    &ThemeColor::Error,
+                    "Error: Usage: /import <path.jsonl>",
+                    text,
+                );
+                assert!(world.mode.working.loading_animation.borrow().is_some());
+                assert!(Rc::ptr_eq(&old, &world.host.session()));
+                assert!(
+                    !world
+                        .mode
+                        .editor_container
+                        .render(WIDTH)
+                        .join("\n")
+                        .contains("Import session")
+                );
+            }
+        },
+    );
+}
+
+#[test]
+fn transfer_import_decline_preserves_progress_and_the_current_session() {
+    super::isolated(
+        "transfer_import_decline_preserves_progress_and_the_current_session",
+        async |directory| {
+            for key in ["\x1b", "\x1b[B\r"] {
+                let world = import_world(directory, None).await;
+                let old = world.host.session();
+                let mut waiter = waiting(&world.mode);
+                world.mode.show_working_loader();
+                submit(&world.mode, "/import absent.jsonl");
+                import_settle(&world);
+                let dialog = world.mode.editor_container.render(WIDTH).join("\n");
+                assert!(dialog.contains("Import session"), "{dialog}");
+                assert!(
+                    dialog.contains("Replace current session with absent.jsonl?"),
+                    "{dialog}"
+                );
+                import_answer(&world, key);
+                assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", key);
+                assert!(world.mode.working.loading_animation.borrow().is_some());
+                assert!(Rc::ptr_eq(&old, &world.host.session()));
+                assert_eq!(poll(&mut waiter), None);
+                assert!(recalled(&world.mode.editor).is_empty());
+            }
+        },
+    );
+}
+
+#[test]
+fn transfer_import_success_stops_progress_then_rebuilds_the_replacement() {
+    super::isolated(
+        "transfer_import_success_stops_progress_then_rebuilds_the_replacement",
+        async |directory| {
+            for (name, quote, loader) in [
+                ("bare.jsonl", "", false),
+                ("with space.jsonl", "\"", true),
+                ("single.jsonl", "'", false),
+                ("it's.jsonl", "", true),
+                ("ü.jsonl", "", false),
+                ("\u{85}", "\"", true),
+                (" ", "\"", false),
+                ("\u{feff}", "\"", true),
+            ] {
+                let path = import_file(directory, name, directory);
+                let world = import_world(directory, None).await;
+                let old = world.host.session();
+                if loader {
+                    world.mode.show_working_loader();
+                }
+                let mut waiter = waiting(&world.mode);
+                submit(
+                    &world.mode,
+                    &format!("/import {quote}{}{quote} ignored", path.display()),
+                );
+                import_settle(&world);
+                assert!(
+                    world
+                        .mode
+                        .editor_container
+                        .render(WIDTH)
+                        .join("\n")
+                        .contains(&format!("Replace current session with {}?", path.display()))
+                );
+                import_answer(&world, "\r");
+                assert!(!Rc::ptr_eq(&old, &world.host.session()));
+                assert_eq!(
+                    world.host.session().session_manager().borrow().get_cwd(),
+                    directory.to_str().unwrap()
+                );
+                assert!(world.host.session().session_file().unwrap().ends_with(name));
+                assert_last_row(
+                    &world,
+                    &ThemeColor::Dim,
+                    &format!("Session imported from: {}", path.display()),
+                    name,
+                );
+                assert!(rows(&world).join("\n").contains("IMPORTED_HISTORY"));
+                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.status_container.render(WIDTH).is_empty());
+                assert_eq!(poll(&mut waiter), None);
+                assert_eq!(recalled(&world.mode.editor), ["IMPORTED_HISTORY"]);
+            }
+        },
+    );
+}
+
+#[test]
+fn transfer_import_veto_is_distinct_from_confirmation_cancellation() {
+    super::isolated(
+        "transfer_import_veto_is_distinct_from_confirmation_cancellation",
+        async |directory| {
+            let path = import_file(directory, "veto.jsonl", directory);
+            for loader in [false, true] {
+                let calls = Rc::new(std::cell::Cell::new(0));
+                let world = import_world(directory, Some(import_veto(1, Rc::clone(&calls)))).await;
+                let old = world.host.session();
+                if loader {
+                    world.mode.show_working_loader();
+                }
+                submit(&world.mode, &format!("/import {}", path.display()));
+                import_settle(&world);
+                import_answer(&world, "\r");
+                assert_eq!(calls.get(), 1);
+                assert!(Rc::ptr_eq(&old, &world.host.session()));
+                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.status_container.render(WIDTH).is_empty());
+                assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", "veto");
+                assert!(!rows(&world).join("\n").contains("IMPORTED_HISTORY"));
+            }
+        },
+    );
+}
+
+#[test]
+fn transfer_import_missing_file_is_recoverable() {
+    super::isolated(
+        "transfer_import_missing_file_is_recoverable",
+        async |directory| {
+            for name in ["absent.jsonl", "absent space.jsonl"] {
+                let world = import_world(directory, None).await;
+                let old = world.host.session();
+                world.mode.show_working_loader();
+                let mut waiter = waiting(&world.mode);
+                submit(&world.mode, &format!("/import \"{name}\""));
+                import_settle(&world);
+                import_answer(&world, "\r");
+                assert_last_row(
+                    &world,
+                    &ThemeColor::Error,
+                    &format!(
+                        "Error: Failed to import session: File not found: {}",
+                        directory.join(name).display()
+                    ),
+                    name,
+                );
+                assert!(Rc::ptr_eq(&old, &world.host.session()));
+                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert_eq!(poll(&mut waiter), None);
+                submit(&world.mode, "later input");
+                assert_eq!(poll(&mut waiter).as_deref(), Some("later input"));
+            }
+        },
+    );
+}
+
+#[test]
+fn transfer_import_missing_directory_decline_preserves_the_failed_replacement() {
+    super::isolated(
+        "transfer_import_missing_directory_decline_preserves_the_failed_replacement",
+        async |directory| {
+            let path = import_file(directory, "missing-cwd.jsonl", &directory.join("gone"));
+            for key in ["\x1b", "\x1b[B\r"] {
+                let world = import_world(directory, None).await;
+                let old = world.host.session();
+                submit(&world.mode, &format!("/import {}", path.display()));
+                import_settle(&world);
+                import_answer(&world, "\r");
+                assert!(
+                    world
+                        .mode
+                        .editor_container
+                        .render(WIDTH)
+                        .join("\n")
+                        .contains("Session cwd not found")
+                );
+                assert!(directory.join("destination/missing-cwd.jsonl").exists());
+                import_answer(&world, key);
+                assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", key);
+                assert!(Rc::ptr_eq(&old, &world.host.session()));
+                assert!(!rows(&world).join("\n").contains("IMPORTED_HISTORY"));
+            }
+        },
+    );
+}
+
+#[test]
+fn transfer_import_missing_directory_retries_with_only_the_selected_override() {
+    super::isolated(
+        "transfer_import_missing_directory_retries_with_only_the_selected_override",
+        async |directory| {
+            let missing = directory.join("gone");
+            let path = import_file(directory, "retry.jsonl", &missing);
+            for veto in [false, true] {
+                let calls = Rc::new(std::cell::Cell::new(0));
+                let extension = veto.then(|| import_veto(2, Rc::clone(&calls)));
+                let world = import_world(directory, extension).await;
+                let old = world.host.session();
+                submit(&world.mode, &format!("/import {}", path.display()));
+                import_settle(&world);
+                import_answer(&world, "\r");
+                assert!(
+                    world
+                        .mode
+                        .editor_container
+                        .render(WIDTH)
+                        .join("\n")
+                        .contains("Session cwd not found")
+                );
+                import_answer(&world, "\r");
+                if veto {
+                    assert_eq!(calls.get(), 2);
+                    assert!(Rc::ptr_eq(&old, &world.host.session()));
+                    assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", "retry veto");
+                } else {
+                    assert!(!Rc::ptr_eq(&old, &world.host.session()));
+                    assert_eq!(
+                        world.host.session().session_manager().borrow().get_cwd(),
+                        directory.to_str().unwrap()
+                    );
+                    assert_last_row(
+                        &world,
+                        &ThemeColor::Dim,
+                        &format!("Session imported from: {}", path.display()),
+                        "retry",
+                    );
+                    assert!(rows(&world).join("\n").contains("IMPORTED_HISTORY"));
+                }
+                let copied =
+                    std::fs::read_to_string(directory.join("destination/retry.jsonl")).unwrap();
+                let header: Value = serde_json::from_str(copied.lines().next().unwrap()).unwrap();
+                assert_eq!(header["cwd"], missing.to_str().unwrap());
+            }
+        },
+    );
+}
+
+#[test]
+fn transfer_installed_submit_consumes_only_import_commands() {
+    super::isolated(
+        "transfer_installed_submit_consumes_only_import_commands",
+        async |directory| {
+            for (text, command) in [
+                ("/import", true),
+                ("/import absent.jsonl", true),
+                ("\u{feff}/import\u{feff}", true),
+                ("/important", false),
+                ("/import\tabsent.jsonl", false),
+                ("/IMPORT", false),
+                ("ordinary", false),
+                (" ", false),
+            ] {
+                let world = started(directory).await;
+                let mut waiter = waiting(&world.mode);
+                submit(&world.mode, text);
+                import_settle(&world);
+                if text == "/import absent.jsonl" {
+                    import_answer(&world, "\x1b");
+                }
+                let trimmed = text.trim_matches(maestro_app::is_whitespace_scalar);
+                if command || trimmed.is_empty() {
+                    assert_eq!(poll(&mut waiter), None, "{text}");
+                    assert!(recalled(&world.mode.editor).is_empty());
+                } else {
+                    assert_eq!(poll(&mut waiter).as_deref(), Some(trimmed), "{text}");
+                    assert_eq!(recalled(&world.mode.editor), [trimmed]);
+                }
+            }
         },
     );
 }
