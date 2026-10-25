@@ -5,12 +5,12 @@ input. Submitted text is trimmed with the shared whitespace rule first: BOM and
 no-break space count as whitespace, while U+0085 and zero-width space do not. The
 editor empties itself before calling back, so a command needs no clearing step; a
 slash command never answers the waiting input and never enters the editor history. Any
-other text, including `/Model`, `/models`, `/model<Tab>term` and
-`/scoped-models extra`, is ordinary input.
+other text, including `/Model`, `/models`, `/model<Tab>term`,
+`/scoped-models extra` and `/logout extra`, is ordinary input.
 
 The mode handles shell input and the slash commands `/export`, `/changelog`,
-`/model`, `/scoped-models`, `/name`, `/session` and `/debug`. Import, the offline
-viewer and packaged asset injection are not delivered yet (see
+`/model`, `/scoped-models`, `/logout`, `/name`, `/session` and `/debug`. Import, the
+offline viewer and packaged asset injection are not delivered yet (see
 [what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
@@ -235,6 +235,35 @@ and shows `Model selection saved to settings`; the panel stays open. Saving with
 every model enabled, or as many as the panel opened with, removes the setting.
 An empty or other explicit selection is saved as it is. Escape closes the panel,
 keeping the session's edits and leaving the setting as it was.
+
+## Removing stored credentials
+
+`/logout` lists the credentials saved by `/login` in the panel that replaces the
+editor. It lists none of the authentication configured elsewhere: environment
+variables, runtime keys and `models.json` are not choices and are never touched.
+With nothing saved it shows
+`No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.`
+
+Choices are ordered by the catalog's display name for each provider under the
+current locale, and providers whose display names compare equal keep the order
+they are stored in. A record that does not decode as a complete subscription or
+API key is listed by the store but is not offered, because the picker reads
+typed credentials only.
+
+Selecting puts the editor back and then removes that one credential from the
+current session, refreshes the catalog, updates the footer's provider count and
+shows `Logged out of <name>` for a subscription or
+`Removed stored API key for <name>. Environment variables and models.json config are unchanged.`
+for a key. The name and the kind are the ones the picker listed, so a record that
+changes while the panel is open still reports what was chosen. Escape closes the
+panel and changes nothing.
+
+A catalog refresh failure shows `Error: Logout failed: <error>` and keeps the
+removal already made; nothing is put back. When the catalog cannot say which
+providers are available, the footer count becomes zero and the removal still
+reports its success. A credential file that cannot be written keeps the removal
+in memory, leaves the file as it was and stays a store diagnostic for its own
+readers instead of becoming a logout failure.
 
 ## Subscription billing notice
 
