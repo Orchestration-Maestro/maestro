@@ -8,11 +8,14 @@ use super::{
 };
 use crate::{BashExecutionComponent, InteractiveMode};
 use maestro_app::{
-    CreateAgentSessionRuntimeFactory, DiagnosticErrorInfo, ExtensionFactory, Local, Presence,
-    SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SettingsManager, strip_ansi,
+    AgentSession, AgentSessionEvent, CompactionResult, CreateAgentSessionRuntimeFactory,
+    DiagnosticErrorInfo, ExtensionFactory, Local, Presence, ReadonlySessionManager,
+    SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeSwitchEvent,
+    SessionBeforeSwitchResult, SessionManager, SettingsManager, strip_ansi,
 };
 use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
+use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
     error::Error,
@@ -39,6 +42,22 @@ struct Guard {
     mode: Rc<RefCell<Weak<InteractiveMode>>>,
     /// What each request observed.
     requests: Requests,
+    /// How the next compaction is answered.
+    compaction: Rc<Cell<Compaction>>,
+    /// The instructions each compaction received.
+    instructions: Rc<RefCell<Vec<Option<String>>>>,
+}
+
+/// How the extension answers a compaction.
+#[derive(Clone, Copy, Default)]
+enum Compaction {
+    /// It cancels the compaction.
+    #[default]
+    Cancel,
+    /// It supplies the summary `summary`.
+    Supply,
+    /// It lets the session summarize, which fails without a registered provider.
+    Continue,
 }
 
 impl Guard {
@@ -46,12 +65,18 @@ impl Guard {
     fn extension(&self) -> ExtensionFactory<Local> {
         let guard = self.clone();
         Rc::new(move |api| {
-            let guard = guard.clone();
+            let (switching, compacting) = (guard.clone(), guard.clone());
             let registered = api.on::<SessionBeforeSwitchEvent, SessionBeforeSwitchResult>(
                 "session_before_switch".into(),
-                Rc::new(move |_, _| Box::pin(std::future::ready(Ok(Some(guard.decide()))))),
+                Rc::new(move |_, _| Box::pin(std::future::ready(Ok(Some(switching.decide()))))),
             );
-            Box::pin(std::future::ready(registered))
+            let compacted = api.on::<SessionBeforeCompactEvent, SessionBeforeCompactResult>(
+                "session_before_compact".into(),
+                Rc::new(move |event, _| {
+                    Box::pin(std::future::ready(Ok(compacting.compact(event))))
+                }),
+            );
+            Box::pin(std::future::ready(registered.and(compacted)))
         })
     }
 
@@ -70,6 +95,29 @@ impl Guard {
             Presence::Missing
         };
         SessionBeforeSwitchResult { cancel }
+    }
+
+    /// Records the compaction's instructions and answers it as `compaction` selects.
+    fn compact(&self, event: &SessionBeforeCompactEvent) -> Option<SessionBeforeCompactResult> {
+        let instructions = match &event.custom_instructions {
+            Presence::Present(text) => Some(text.clone()),
+            Presence::Missing | Presence::Null => None,
+        };
+        self.instructions.borrow_mut().push(instructions);
+        let (cancel, compaction) = match self.compaction.get() {
+            Compaction::Continue => return None,
+            Compaction::Cancel => (Presence::Present(true), Presence::Missing),
+            Compaction::Supply => (
+                Presence::Missing,
+                Presence::Present(CompactionResult {
+                    summary: "controlled summary".to_owned(),
+                    first_kept_entry_id: event.preparation.first_kept_entry_id.clone(),
+                    tokens_before: 123.0,
+                    details: Presence::Missing,
+                }),
+            ),
+        };
+        Some(SessionBeforeCompactResult { cancel, compaction })
     }
 }
 
@@ -172,6 +220,30 @@ enum Route {
     },
     /// The new-session command ran.
     New,
+    /// The compaction command ran with `instructions`.
+    Compact {
+        /// The instructions the compaction received, absent when none were given.
+        #[serde(default)]
+        instructions: Option<String>,
+    },
+}
+
+/// Gives the current session two messages and a key for the controlled provider, so a
+/// compaction reaches the extension.
+fn compactable(world: &World) {
+    let session = world.host.session();
+    let mut manager = session.session_manager().borrow_mut();
+    manager
+        .append_message(super::transcript::user_record("question"))
+        .unwrap();
+    manager
+        .append_message(super::transcript::assistant(&json!([]), "stop", None))
+        .unwrap();
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("unknown", "key");
 }
 
 #[test]
@@ -181,8 +253,10 @@ fn command_submission_selects_new_and_compact_with_exact_whitespace() {
         let guard = Guard::default();
         guard.veto.set(true);
         let world = commanding(directory, None, &guard, None).await;
+        compactable(&world);
         for (Submission { text }, route) in cases::<Submission, Route>(FIXTURES, TEST) {
             let requests = guard.requests.borrow().len();
+            let compactions = guard.instructions.borrow().len();
             world.mode.editor.set_text("draft");
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, &text);
@@ -195,6 +269,14 @@ fn command_submission_selects_new_and_compact_with_exact_whitespace() {
                     assert_eq!(received.as_ref(), Some(&delivered), "{text:?}");
                     assert_eq!(history.first(), Some(&delivered), "{text:?}");
                     assert_eq!(guard.requests.borrow().len(), requests, "{text:?}");
+                    assert_eq!(guard.instructions.borrow().len(), compactions, "{text:?}");
+                }
+                Route::Compact { instructions } => {
+                    assert_eq!(received, None, "{text:?}");
+                    assert_ne!(history.first().map(String::as_str), Some(text.trim()));
+                    let seen = guard.instructions.borrow();
+                    assert_eq!(seen[compactions..], [instructions], "{text:?}");
+                    assert_eq!(world.mode.editor.get_text(), "", "{text:?}");
                 }
                 Route::New => {
                     assert_eq!(received, None, "{text:?}");
@@ -513,5 +595,280 @@ fn command_callbacks_release_mode_after_completion() {
             &world.mode.chat_container.render(80),
             "✓ New session started"
         ));
+        // An admitted compaction keeps the mode and its instructions through its refusal.
+        let third = Guard::default();
+        let world = commanding(directory, None, &third, None).await;
+        compactable(&world);
+        submit(&world.mode, "/compact keep");
+        let admitted = world.runtime.take_futures();
+        let World { mode, runtime, .. } = world;
+        let weak = Rc::downgrade(&mode);
+        drop(mode);
+        assert!(weak.upgrade().is_some(), "admitted work keeps the mode");
+        for work in admitted {
+            work.await.unwrap();
+        }
+        drop(runtime.drain_futures());
+        assert_eq!(*third.instructions.borrow(), [Some("keep".to_owned())]);
+        assert!(weak.upgrade().is_none(), "settled work releases the mode");
     });
+}
+
+/// One recorded manual compaction request.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompactInput {
+    /// The stored entries, each shown by its recorded `type` field only.
+    entries: Vec<Value>,
+    /// The instructions passed to the command, absent when none are.
+    #[serde(default)]
+    instructions: Option<String>,
+    /// Whether the compaction is refused.
+    reject: bool,
+    /// Whether working progress is shown when the command starts.
+    loader: bool,
+}
+
+/// What a recorded manual compaction request does.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompactExpected {
+    /// Whether the session compacts.
+    compacts: bool,
+}
+
+/// Completes each recorded entry into a record of its type, chained to the one before.
+fn completed(entries: &[Value]) -> Vec<Value> {
+    let mut parent = Value::Null;
+    let mut records = Vec::new();
+    for (index, entry) in entries.iter().enumerate() {
+        let mut record = entry.as_object().unwrap().clone();
+        let id = format!("e{index:07}");
+        let filled = match entry.get("type").and_then(Value::as_str) {
+            Some("message") => json!({"message": super::transcript::user_record(&id)}),
+            Some("custom_message") => {
+                json!({"customType": "note", "content": "c", "display": true})
+            }
+            Some("label") => json!({"targetId": "e0000000", "label": "kept"}),
+            _ => json!({}),
+        };
+        record.extend(filled.as_object().unwrap().clone());
+        record.extend(
+            json!({"id": id, "parentId": parent, "timestamp": "2026-01-02T03:04:05.006Z"})
+                .as_object()
+                .unwrap()
+                .clone(),
+        );
+        parent = Value::String(id);
+        records.push(Value::Object(record));
+    }
+    records
+}
+
+/// Replaces the current session's history with the completed `entries`.
+fn store(world: &World, directory: &Path, entries: &[Value]) {
+    let header = json!({"type": "session", "version": 3, "id": "stored",
+        "timestamp": "2026-01-02T03:04:05.006Z", "cwd": directory.to_str().unwrap()});
+    let lines: Vec<String> = std::iter::once(header)
+        .chain(completed(entries))
+        .map(|record| record.to_string())
+        .collect();
+    let path = directory.join("stored.jsonl");
+    std::fs::write(&path, lines.join("\n") + "\n").unwrap();
+    let opened = SessionManager::open(path.to_str().unwrap(), None, None).unwrap();
+    *world.host.session().session_manager().borrow_mut() = opened;
+}
+
+/// One flag per compaction start: whether the working row was already released.
+type Starts = Rc<RefCell<Vec<bool>>>;
+
+/// Counts the compaction starts of the current session, recording at each whether the
+/// working row was already released.
+fn starts(world: &World) -> (Starts, Box<dyn Fn()>) {
+    let seen: Starts = Rc::default();
+    let mode = Rc::downgrade(&world.mode);
+    let recorded = Rc::clone(&seen);
+    let unsubscribe = world.host.session().subscribe(Rc::new(move |event| {
+        if let (AgentSessionEvent::CompactionStart { .. }, Some(mode)) = (event, mode.upgrade()) {
+            let released = mode.working.loading_animation.borrow().is_none();
+            recorded.borrow_mut().push(released);
+        }
+    }));
+    (seen, Box::new(unsubscribe))
+}
+
+/// Runs one recorded manual compaction request through the command and checks it.
+async fn compaction_case(directory: &Path, input: CompactInput, expected: &CompactExpected) {
+    let guard = Guard::default();
+    guard.compaction.set(if input.reject {
+        Compaction::Cancel
+    } else {
+        Compaction::Supply
+    });
+    let world = commanding(directory, None, &guard, None).await;
+    compactable(&world);
+    store(&world, directory, &input.entries);
+    if input.loader {
+        world.mode.show_working_loader();
+    }
+    let status = world.mode.status_container.render(80);
+    let (seen, unsubscribe) = starts(&world);
+    let chat = world.mode.chat_container.children().borrow().len();
+    let instructions = input.instructions.clone();
+    let outcome = Rc::clone(&world.mode)
+        .handle_compact_command(input.instructions)
+        .await;
+    assert!(outcome.is_ok(), "the command reports no outcome itself");
+    assert!(settled(&world).await.is_empty());
+    unsubscribe();
+    if expected.compacts {
+        assert_eq!(*seen.borrow(), [true], "one compaction after the release");
+        assert_eq!(*guard.instructions.borrow(), [instructions]);
+        return;
+    }
+    assert!(seen.borrow().is_empty() && guard.instructions.borrow().is_empty());
+    assert_eq!(world.mode.status_container.render(80), status);
+    assert_eq!(
+        world.mode.working.loading_animation.borrow().is_some(),
+        input.loader
+    );
+    warned(&world, chat);
+}
+
+/// Checks that the transcript gained only the spaced compaction warning past its first
+/// `chat` children.
+fn warned(world: &World, chat: usize) {
+    let rows = world.mode.chat_container.render(80);
+    let theme = world.themes.theme().get().unwrap();
+    let warning = painted(
+        &theme,
+        &[" @warning@Warning: Nothing to compact (no messages yet)\u{1b}[39m".to_owned()],
+    );
+    assert_eq!(
+        world.mode.chat_container.children().borrow().len(),
+        chat + 2
+    );
+    assert!(
+        rows.iter().any(|row| row.starts_with(&warning[0])),
+        "{rows:?}"
+    );
+}
+
+#[test]
+fn manual_compaction_counts_only_messages_and_leaves_outcomes_to_events() {
+    const TEST: &str = "manual_compaction_counts_only_messages_and_leaves_outcomes_to_events";
+    isolated(TEST, async |directory| {
+        for (input, expected) in cases::<CompactInput, CompactExpected>(FIXTURES, TEST) {
+            compaction_case(directory, input, &expected).await;
+        }
+        // A message outside the selected branch still counts.
+        let guard = Guard::default();
+        let world = commanding(directory, None, &guard, None).await;
+        let message = json!({"type": "message"});
+        store(&world, directory, &[message.clone(), message]);
+        let session = world.host.session();
+        session
+            .session_manager()
+            .borrow_mut()
+            .branch("e0000000")
+            .unwrap();
+        let (seen, unsubscribe) = starts(&world);
+        Rc::clone(&world.mode)
+            .handle_compact_command(None)
+            .await
+            .unwrap();
+        unsubscribe();
+        assert_eq!(*seen.borrow(), [true], "two stored messages compact");
+    });
+}
+
+/// One compaction typed in the editor while input is queued during it: how the extension
+/// answers, the error its end event carries and the notice it shows instead of a summary.
+async fn subscriber_case(
+    directory: &Path,
+    compaction: Compaction,
+    error: Option<&str>,
+    notice: Option<&str>,
+) {
+    let guard = Guard::default();
+    guard.compaction.set(compaction);
+    let world = commanding(directory, None, &guard, None).await;
+    compactable(&world);
+    let session = world.host.session();
+    super::progress::answer_session(&session);
+    session
+        .settings_manager()
+        .borrow_mut()
+        .set_compaction_enabled(false);
+    let events: Rc<RefCell<Vec<String>>> = Rc::default();
+    let mode = Rc::downgrade(&world.mode);
+    let recorded = Rc::clone(&events);
+    let unsubscribe = session.subscribe(Rc::new(move |event| match event {
+        AgentSessionEvent::CompactionStart { reason } => {
+            recorded.borrow_mut().push(format!("start {reason:?}"));
+            submit(&mode.upgrade().unwrap(), "queued during compaction");
+        }
+        AgentSessionEvent::CompactionEnd {
+            will_retry,
+            error_message,
+            ..
+        } => {
+            assert!(!will_retry);
+            recorded.borrow_mut().push(format!("end {error_message:?}"));
+        }
+        _ => {}
+    }));
+    submit(&world.mode, "/compact");
+    assert!(settled(&world).await.is_empty());
+    unsubscribe();
+    let ended = format!("end {error:?}");
+    assert_eq!(*events.borrow(), ["start Manual".to_owned(), ended]);
+    assert!(world.mode.compaction_queued_messages.borrow().is_empty());
+    let rows = world.mode.chat_container.render(80);
+    match notice {
+        Some(text) => {
+            let shown = rows
+                .iter()
+                .filter(|row| strip_ansi(row).unwrap().contains(text));
+            assert_eq!(shown.count(), 1, "one event-owned notice: {rows:?}");
+        }
+        None => assert!(shown(&rows, "Compacted from 123 tokens"), "{rows:?}"),
+    }
+    let status = world.mode.status_container.render(80);
+    assert!(
+        !shown(&status, "ompact"),
+        "the compaction row is gone: {status:?}"
+    );
+    assert_eq!(
+        delivered(&session, "queued during compaction"),
+        1,
+        "the queued input reaches the current session once"
+    );
+}
+
+/// Counts the user messages holding `text` that `session` stored.
+fn delivered(session: &AgentSession, text: &str) -> usize {
+    session
+        .session_manager()
+        .borrow()
+        .get_entries()
+        .iter()
+        .filter(|entry| entry["message"]["role"] == "user")
+        .filter(|entry| entry.to_string().contains(text))
+        .count()
+}
+
+#[test]
+fn manual_compaction_flows_through_one_progress_subscriber() {
+    isolated(
+        "manual_compaction_flows_through_one_progress_subscriber",
+        async |directory| {
+            subscriber_case(directory, Compaction::Supply, None, None).await;
+            let cancelled = Some("Error: Compaction cancelled");
+            subscriber_case(directory, Compaction::Cancel, None, cancelled).await;
+            let failed = "Compaction failed: No API provider registered for api: unknown";
+            let notice = format!("Error: {failed}");
+            subscriber_case(directory, Compaction::Continue, Some(failed), Some(&notice)).await;
+        },
+    );
 }

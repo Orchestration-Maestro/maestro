@@ -10,8 +10,8 @@ waiting input and never enters the editor history. Any other text, including
 
 The mode handles shell input and the slash commands `/export`, `/changelog`,
 `/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
-`/debug`, `/hotkeys`, `/share`, `/copy`, `/new` and `/quit`. Import, the offline
-viewer and packaged asset injection are not delivered yet (see
+`/debug`, `/hotkeys`, `/share`, `/copy`, `/new`, `/compact` and `/quit`. Import,
+the offline viewer and packaged asset injection are not delivered yet (see
 [what is missing](#what-is-missing)).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
@@ -50,6 +50,26 @@ colour. A shell command from the old session never reappears later.
 If the session cannot be created or replayed, the mode shows
 `Error: Failed to create session: <failure>`, stops the terminal and exits with
 status 1.
+
+## `/compact`
+
+After the shared trim, `/compact` alone or followed by a space and instructions
+compacts the session. The instructions are trimmed with the same whitespace rule
+and passed to the compaction as written, inner spaces included; a command with
+nothing after the space passes none. `/COMPACT`, `/compactx` and `/compact`
+followed by a tab, a newline or a no-break space remain ordinary input.
+
+The command counts the stored message entries of the whole session, including
+those outside the selected branch; other entries, such as custom messages and
+labels, do not count. With fewer than two, it shows
+`Warning: Nothing to compact (no messages yet)` and leaves working progress
+alone. Otherwise it stops working progress, empties the status rows and starts
+the compaction.
+
+The compaction's own events show what happened: a summary row on success,
+`Error: Compaction cancelled` when an extension cancels it, or
+`Error: Compaction failed: <failure>`. Input submitted while it runs is delivered
+to the session once it ends. The command adds no message of its own.
 
 ## Shell input
 

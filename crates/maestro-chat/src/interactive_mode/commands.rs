@@ -1,8 +1,9 @@
 //! The session commands the editor starts: a new session and a manual compaction.
 
 use super::InteractiveMode;
-use maestro_app::NewSessionCommandOptions;
+use maestro_app::{NewSessionCommandOptions, ReadonlySessionManager};
 use maestro_theme::ThemeColor;
+use serde_json::Value;
 use std::{error::Error, rc::Rc};
 
 impl InteractiveMode {
@@ -32,6 +33,30 @@ impl InteractiveMode {
         self.render_current_session_state()?;
         let notice = self.themes.theme().get()?;
         self.add_text(notice.fg(&ThemeColor::Accent, "✓ New session started")?, 1);
+        Ok(())
+    }
+
+    /// Warns when the session holds fewer than two message entries; otherwise stops working
+    /// progress and compacts with `custom_instructions`. The compaction's events show its
+    /// outcome, a failure included, and deliver the input queued meanwhile.
+    pub(super) async fn handle_compact_command(
+        self: Rc<Self>,
+        custom_instructions: Option<String>,
+    ) -> Result<(), Box<dyn Error>> {
+        let session = self.runtime_host.session();
+        let messages = session
+            .session_manager()
+            .borrow()
+            .get_entries()
+            .into_iter()
+            .filter(|entry| entry.get("type").and_then(Value::as_str) == Some("message"))
+            .count();
+        if messages < 2 {
+            self.show_warning("Nothing to compact (no messages yet)")?;
+            return Ok(());
+        }
+        self.stop_working_loader();
+        drop(session.compact(custom_instructions.as_deref()).await);
         Ok(())
     }
 }

@@ -5,6 +5,7 @@ use super::bash::selected_shell_command;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{ImageContent, PromptOptions, is_whitespace_scalar};
 use maestro_tui::EditorComponent;
+use maestro_tui::tui::LocalFuture;
 use std::{
     error::Error,
     future::{Future, pending},
@@ -87,9 +88,20 @@ impl InteractiveMode {
     /// the terminal runtime, and says whether `text` was handled as a command.
     fn runs_command(self: &Rc<Self>, text: &str) -> bool {
         let share = text == "/share";
-        if text == "/new" {
+        let session_command: Option<LocalFuture> = if text == "/new" {
+            Some(Box::pin(Rc::clone(self).handle_clear_command()))
+        } else if text == "/compact" || text.starts_with("/compact ") {
+            let instructions = text
+                .strip_prefix("/compact ")
+                .map(|rest| rest.trim_matches(is_whitespace_scalar).to_owned());
+            Some(Box::pin(
+                Rc::clone(self).handle_compact_command(instructions),
+            ))
+        } else {
+            None
+        };
+        if let Some(work) = session_command {
             self.editor.set_text("");
-            let work = Box::pin(Rc::clone(self).handle_clear_command());
             self.tool_environment.runtime.spawn_local(work);
             return true;
         }
