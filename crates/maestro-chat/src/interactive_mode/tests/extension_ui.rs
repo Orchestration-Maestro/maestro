@@ -1,6 +1,8 @@
 //! The extension UI host over the retained mode: theme, editor, title, expansion and
 //! typed errors through the installed port.
 mod dialogs;
+mod input;
+mod notifications;
 
 use super::transcript::tool_params;
 use super::{Setup, World, dark, isolated, light, roles, started};
@@ -749,9 +751,20 @@ fn ui_notice_and_tool_failures_keep_their_original_error_types() {
             let empty =
                 Rc::new(Theme::new([], [], ColorMode::Truecolor, ThemeOptions::default()).unwrap());
             world.themes.set_theme_instance(empty).unwrap();
-            let error: maestro_theme::ThemeError = world.mode.show_error("refused").unwrap_err();
-            assert!(!error.to_string().is_empty(), "{error}");
             let host = port(&world.mode);
+            let children = world.mode.chat_container.children().borrow().len();
+            for kind in [
+                None,
+                Some(maestro_app::NotificationType::Warning),
+                Some(maestro_app::NotificationType::Error),
+            ] {
+                let error = host.notify("refused".to_owned(), kind).unwrap_err();
+                assert!(error.downcast_ref::<maestro_theme::ThemeError>().is_some());
+                assert_eq!(
+                    world.mode.chat_container.children().borrow().len(),
+                    children
+                );
+            }
             let error = host.set_tools_expanded(true).unwrap_err();
             let diagnostic = error
                 .downcast_ref::<DiagnosticErrorInfo>()

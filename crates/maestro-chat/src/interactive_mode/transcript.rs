@@ -11,7 +11,7 @@ use maestro_app::{
     AgentMessage, Local, LocaleNumberFormat, NativeAgentMessage, Presence, SharedAssistantMessage,
     TruncationOptions, UserBlock, UserContent, parse_skill_block, truncate_tail,
 };
-use maestro_theme::ThemeColor;
+use maestro_theme::{ThemeColor, ThemeError};
 use maestro_tui::{Component, EditorComponent, MarkdownTheme, Spacer, TUI, Text};
 use std::{error::Error, rc::Rc, sync::PoisonError};
 
@@ -51,7 +51,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the published theme's dim colour.
-    pub(super) fn show_status(&self, message: &str) -> Result<(), Box<dyn Error>> {
+    pub(super) fn show_status(&self, message: &str) -> Result<(), ThemeError> {
         let text = self.themes.theme().get()?.fg(&ThemeColor::Dim, message)?;
         let last = self.last_status.borrow().clone();
         if let Some((spacer, status)) = last

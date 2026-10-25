@@ -2,16 +2,42 @@
 use super::InteractiveMode;
 use maestro_app::{
     EventError, ExtensionUIContextPort, ExtensionUIDialogOptions, ExtensionUIFuture,
-    ThemeSelection, ThemeSetResult, WorkingIndicatorOptions,
+    NotificationType, TerminalInputHandler, ThemeSelection, ThemeSetResult, UIUnsubscribe,
+    WorkingIndicatorOptions,
 };
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
 use maestro_tui::tui::InputHandler;
 use std::rc::Rc;
 
 mod dialogs;
+pub(super) mod input;
 mod widgets;
 
 impl ExtensionUIContextPort for InteractiveMode {
+    /// Shows an info status or a labelled warning or error notice.
+    ///
+    /// # Errors
+    /// Returns the original theme failure of the selected notice owner.
+    fn notify(&self, message: String, kind: Option<NotificationType>) -> Result<(), EventError> {
+        match kind {
+            Some(NotificationType::Error) => self.show_error(&message)?,
+            Some(NotificationType::Warning) => self.show_warning(&message)?,
+            None | Some(NotificationType::Info) => self.show_status(&message)?,
+        }
+        Ok(())
+    }
+
+    /// Registers a bound input handler without changing its callback identity.
+    ///
+    /// # Errors
+    /// Registration itself cannot fail; callback failures reach the terminal runtime.
+    fn on_terminal_input(
+        &self,
+        handler: TerminalInputHandler,
+    ) -> Result<UIUnsubscribe, EventError> {
+        Ok(self.extension_input.register(self, handler))
+    }
+
     /// Shows a selector in place of the editor until it is answered, cancelled, timed
     /// out or aborted.
     fn select(

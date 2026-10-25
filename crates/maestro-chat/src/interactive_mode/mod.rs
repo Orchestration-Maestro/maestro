@@ -70,6 +70,8 @@ pub struct InteractiveModeOptions {
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {
+    /// Bound extension input registrations and their cleanup operations.
+    extension_input: extension_ui::input::ExtensionInput,
     /// Live keyed widgets above the editor.
     extension_widgets_above: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
     /// Live keyed widgets below the editor.
@@ -181,6 +183,7 @@ impl InteractiveMode {
         themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
         Ok(Rc::new_cyclic(|this| Self {
             this: this.clone(),
+            extension_input: extension_ui::input::ExtensionInput::default(),
             extension_widgets_above: maestro_app::Live::new(),
             extension_widgets_below: maestro_app::Live::new(),
             runtime_host,
