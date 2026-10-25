@@ -11,9 +11,8 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterFileStats, FooterOperations, FsWatcher, WatchOperations, WatchTimer,
 };
 use maestro_app::{
-    DiagnosticErrorInfo, ExtensionUIContext, ExtensionUIContextPort, SettingsManager,
-    SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate, TextContent,
-    ThemeSelection, UserBlock,
+    DiagnosticErrorInfo, ExtensionUIContext, SettingsManager, SettingsScope, SettingsStorage,
+    SettingsStorageError, SettingsUpdate, TextContent, ThemeSelection, UserBlock,
 };
 use maestro_theme::{
     ColorMode, LiveTheme, Theme, ThemeColor, ThemeDirectories, ThemeInfo, ThemeOptions,
@@ -63,11 +62,15 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
     super::cases(FIXTURES, test)
 }
 
-/// The installed extension UI host of `mode`.
+/// The current runner's UI context after the mode's native binding.
 pub(super) fn port(mode: &Rc<InteractiveMode>) -> ExtensionUIContext {
-    let shared = Rc::clone(mode);
-    let host: Rc<dyn ExtensionUIContextPort> = shared;
-    ExtensionUIContext::new(host)
+    let context = mode
+        .runtime_host
+        .session()
+        .extension_runner()
+        .create_context();
+    assert!(context.has_ui().unwrap(), "startup installed the native UI");
+    context.ui().unwrap()
 }
 
 /// Copies the shipped theme documents into `root` and names the registry directories.
