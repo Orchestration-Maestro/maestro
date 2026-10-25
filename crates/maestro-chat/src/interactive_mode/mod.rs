@@ -227,17 +227,19 @@ impl InteractiveMode {
     /// programs and completion, then builds the header,
     /// adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission and the global debug key, starts
-    /// the terminal, lists the loaded resources with their diagnostics, shows selected
-    /// history once and replays the session; theme changes then refresh the editor
-    /// border, and theme and branch
-    /// changes request fresh frames.
+    /// the terminal, binds the session's extensions to this mode as their user interface
+    /// and waits for their start and resource discovery, lists the loaded resources with
+    /// their diagnostics, shows selected history once and replays the session; theme
+    /// changes then refresh the editor border, and theme and branch changes request fresh
+    /// frames.
     /// Finally the footer learns how many providers the model candidates cover.
     /// Calls while initialized do nothing; after `stop`, initialization runs again.
     /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
     /// Returns a failure of lifecycle registration, the managed binary directory, the
-    /// header's theme colours, terminal start, resource listing, replay or catalog refresh.
+    /// header's theme colours, terminal start, extension binding, resource listing, replay or
+    /// catalog refresh.
     pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -267,6 +269,7 @@ impl InteractiveMode {
         self.setup_debug_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
+        self.bind_current_session_extensions().await?;
         self.subscribe_to_agent();
         self.update_terminal_title()?;
         let runner = self.runtime_host.session().extension_runner();

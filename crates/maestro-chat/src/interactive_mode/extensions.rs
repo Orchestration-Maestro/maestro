@@ -1,4 +1,5 @@
-//! Extension shortcut dispatch through the editor's first input interceptor.
+//! The current session's extension binding, and extension shortcut dispatch through the
+//! editor's first input interceptor.
 
 use super::InteractiveMode;
 use indexmap::IndexMap;
@@ -23,6 +24,27 @@ impl InteractiveMode {
             self.editor
                 .set_on_extension_shortcut(Some(shortcut_interceptor(self, selected)));
         }
+    }
+    /// Installs this mode as the current session's extension user interface, then waits
+    /// for the session start and the resources its extensions discover.
+    ///
+    /// The session and its runner only borrow the mode, which already owns them; a UI
+    /// context an extension obtains keeps the mode alive.
+    ///
+    /// # Errors
+    /// Returns the session start or resource discovery failure.
+    pub(super) async fn bind_current_session_extensions(
+        self: &Rc<Self>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let host = maestro_app::ExtensionUIContext::new(self.clone());
+        self.runtime_host
+            .session()
+            .bind_extensions(maestro_app::ExtensionBindings {
+                ui_context: Some(maestro_app::ExtensionUIContextBinding::borrowed(&host)),
+                ..maestro_app::ExtensionBindings::default()
+            })
+            .await?;
+        Ok(())
     }
 }
 

@@ -53,11 +53,12 @@ pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
     ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionExecution,
-    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, ForkHandler, MessageRenderOptions, MessageRenderer,
-    MessageRendererCall, NavigateTreeHandler, NewSessionHandler, RegisteredCommand,
-    ReplacedSessionContext, ResolvedCommand, ShutdownHandler, SwitchSessionHandler,
-    TerminalInputHandler, UIHostCall, WidgetPlacement, WorkingIndicatorOptions,
+    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIContextBinding,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler, MessageRenderOptions,
+    MessageRenderer, MessageRendererCall, NavigateTreeHandler, NewSessionHandler,
+    RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
+    SwitchSessionHandler, TerminalInputHandler, UIHostCall, WidgetPlacement,
+    WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
 pub mod runner;

@@ -176,9 +176,13 @@ completion with no candidates instead of falling back to another search.
 
 # Extension UI host in the interactive mode
 
-`maestro_chat::InteractiveMode` implements the extension UI port, so a host
-retains it with the existing `ExtensionUIContext::new(mode.clone())` and gives it
-to the session's extension bindings. The bindings carry the originating event
+`maestro_chat::InteractiveMode` implements the extension UI port. Its `init`
+gives the mode to the session's extension bindings through
+`ExtensionUIContextBinding::borrowed`, because the mode already owns the session.
+A UI context an extension obtains keeps the mode alive while it is held; once the
+mode is released, the session's contexts answer with the headless results. Another
+host retains it with the existing `ExtensionUIContext::new(mode.clone())`. The
+bindings carry the originating event
 capability, so the host only calls the bound handles it receives; it never
 obtains an event bus.
 
