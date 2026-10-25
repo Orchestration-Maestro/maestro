@@ -59,6 +59,11 @@ enum Op {
         /// Authored answer.
         mode: String,
     },
+    /// Replaces renderer `swap-view` with views named after `version`.
+    Swap {
+        /// Version in later view names.
+        version: String,
+    },
     /// Requests compaction with `absent`, `empty` or `full` options.
     Compact {
         /// Options presence.
@@ -198,6 +203,7 @@ async fn step(api: &ExtensionAPI, programs: &Rc<Programs>, op: Op) -> ExtensionR
         Op::Tool => tool(api),
         Op::Typed { channel } => typed(api, channel),
         Op::Echo { prepare } => super::results::echo(api, prepare),
+        Op::Swap { version } => super::components::swap(api, version),
         Op::PrepareMode { mode } => {
             super::results::set_mode(mode);
             Ok(())
