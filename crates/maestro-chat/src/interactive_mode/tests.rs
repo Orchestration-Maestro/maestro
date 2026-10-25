@@ -4,6 +4,7 @@ mod bash;
 mod events;
 mod extension_ui;
 mod extension_widgets;
+mod models;
 #[allow(
     dead_code,
     unused_imports,
@@ -33,11 +34,12 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, Extension, ExtensionCommandContext,
-    ExtensionFactory, ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, RegisteredCommand,
-    ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
-    SourceOrigin, SourceScope, create_extension_runtime, load_extension_from_factory,
+    AgentSessionRuntime, ContextFile, CreateAgentSessionRuntimeFactory, DefaultEventBus, Extension,
+    ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
+    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
+    RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager,
+    Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
+    load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -432,6 +434,8 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// Overrides the default replacement-session factory when supplied.
+    pub(super) create: Option<CreateAgentSessionRuntimeFactory>,
     /// Starts each replacement with fresh services instead of reusing the current ones.
     pub(super) replacing: bool,
     /// Creates the session history under a file in this directory when supplied.
@@ -465,6 +469,7 @@ impl Default for Setup {
             prompts: Vec::new(),
             directories: None,
             extension: None,
+            create: None,
             replacing: false,
             session_history: None,
             themes: Vec::new(),
@@ -546,10 +551,10 @@ impl Setup {
         prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
         let services = Rc::clone(&result.services);
-        let host = Rc::new(AgentSessionRuntime::new(
-            result,
-            create(services, self.replacing),
-        ));
+        let create = self
+            .create
+            .unwrap_or_else(|| create(services, self.replacing));
+        let host = Rc::new(AgentSessionRuntime::new(result, create));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
         let themes = registry(self.directories);
