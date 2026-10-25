@@ -1563,7 +1563,7 @@ async fn replace_once(world: &World, generation: usize, log: &Rc<RefCell<Vec<Val
             "ui": true,
             "editor": "continued",
             "installed": {"footer": true, "subscribed": true, "shortcut": true},
-            "titled": 1,
+            "titled": 2,
             "listed": generation + 1,
         })],
         "the continuation sees the completed binding"

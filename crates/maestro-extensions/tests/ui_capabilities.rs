@@ -16,10 +16,11 @@ use local_support::{
 use maestro_extensions::footer_data_provider::{ExtensionStatuses, ReadonlyFooterDataProvider};
 use maestro_extensions::types::{
     ComponentDisposer, ComponentFactory, CustomClose, CustomComponentFactory, CustomDone,
-    CustomFactory, CustomFactoryOutcome, CustomUIOptions, ExtensionCollection, ExtensionComponent,
-    ExtensionShortcutOptions, ExtensionUIContextPort, ExtensionUIFuture, FooterFactory,
-    NotificationType, OverlayHandleCallback, OverlayOptionsResolver, OverlayOptionsSource,
-    RegisteredCommandOptions, ThemeSelection, ThemeSetResult, WidgetContent,
+    CustomFactory, CustomFactoryOutcome, CustomUIOptions, EditorFactoryOutcome,
+    ExtensionCollection, ExtensionComponent, ExtensionShortcutOptions, ExtensionUIContextPort,
+    ExtensionUIFuture, FooterFactory, NotificationType, OverlayHandleCallback,
+    OverlayOptionsResolver, OverlayOptionsSource, RegisteredCommandOptions, ThemeSelection,
+    ThemeSetResult, WidgetContent,
 };
 use maestro_extensions::{
     AutocompleteProviderFactory, CallbackEmitter, EditorFactory, EventError, ExtensionAPI,
@@ -688,6 +689,8 @@ fn input_factory(
         Ok(ExtensionComponent {
             component: input,
             dispose: Some(dispose),
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -1312,7 +1315,7 @@ impl Editors {
         let theme = get_editor_theme(LiveTheme::default());
         factory
             .call((self.tui.clone(), theme, self.keys.clone()))
-            .map(Some)
+            .map(|built| Some(built.editor()))
     }
 }
 impl ExtensionUIContextPort for Editors {
@@ -1356,7 +1359,7 @@ fn vim_factory(
             let editor: Rc<dyn EditorComponent<Signal = Cancellation>> =
                 Rc::new(Editor::new(&tui, theme, EditorOptions::default()));
             *captured.borrow_mut() = Some(keys);
-            Ok(editor)
+            Ok(EditorFactoryOutcome::Editor(editor))
         },
     )
 }
@@ -1465,6 +1468,8 @@ fn branch_footer(api: &ExtensionAPI<Local>, trace: &Trace, kept: &Rc<Kept>) -> F
             Ok(ExtensionComponent {
                 component: Rc::new(Input::new()),
                 dispose: None,
+                set_expanded: None,
+                width: None,
             })
         },
     )
@@ -1757,6 +1762,8 @@ fn traced_component(
             mark(&trace, "disposed");
             Ok(())
         })),
+        set_expanded: None,
+        width: None,
     }
 }
 
@@ -1853,6 +1860,8 @@ async fn completed<T: 'static>(api: &ExtensionAPI<Local>, ui: &Ui, value: T) -> 
             Ok(CustomFactoryOutcome::Ready(ExtensionComponent {
                 component: Rc::new(Input::new()),
                 dispose: None,
+                set_expanded: None,
+                width: None,
             }))
         },
     );

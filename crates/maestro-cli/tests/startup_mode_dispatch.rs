@@ -525,6 +525,7 @@ async fn print_child(local: std::rc::Rc<tokio::task::LocalSet>) {
         .set_before_session_invalidate(Some(std::rc::Rc::new(move || {
             assert!(maestro_app::output_guard::is_stdout_taken_over());
             recorder.call("dispose").unwrap();
+            Ok(())
         })));
     maestro_app::output_guard::take_over_stdout();
     let input = print_request();

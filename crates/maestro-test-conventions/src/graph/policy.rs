@@ -303,21 +303,19 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
 ];
 
 /// Internal development edges permitted beyond the production table on any target.
-pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
-    ("maestro-tui-crossterm", "maestro-brand"),
-    ("maestro-extensions", "maestro-credentials"),
+pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[("maestro-tui-crossterm", "maestro-brand")];
+
+/// Permitted development edges that only a native, non-optional declaration may use.
+pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-extensions-wasmtime", "maestro-catalog"),
     ("maestro-extensions-wasmtime", "maestro-credentials"),
     ("maestro-extensions-wasmtime", "maestro-models"),
     ("maestro-extensions-wasmtime", "maestro-session"),
     ("maestro-extensions-wasmtime", "maestro-theme"),
     ("maestro-extensions-wasmtime", "maestro-tui"),
+    ("maestro-extensions", "maestro-credentials"),
     ("maestro-rpc", "maestro-theme"),
     ("maestro-rpc", "maestro-tui-crossterm"),
-];
-
-/// Permitted development edges that only a native, non-optional declaration may use.
-pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-extensions-wasm", "maestro-models"),
     ("maestro-detection", "maestro-text"),
     ("maestro-cli", "maestro-listeners"),

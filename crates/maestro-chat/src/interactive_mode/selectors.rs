@@ -40,8 +40,9 @@ impl InteractiveMode {
     /// Puts the editor back in place of whatever the editor container shows and focuses it,
     /// without requesting a frame.
     pub(super) fn restore_editor(&self) {
+        let editor = self.current_editor();
         self.editor_container.clear();
-        self.editor_container.add_child(self.editor.clone());
-        self.ui.set_focus(Some(self.editor.clone()));
+        self.editor_container.add_child(editor.clone());
+        self.ui.set_focus(Some(editor as Rc<dyn Component>));
     }
 }
