@@ -46,7 +46,11 @@
     "inline_programs_preserve_text_policies_and_order",
     "effective_links_follow_native_hyperlink_state",
     "html_artifacts_keep_head_policies_at_each_insertion_point",
-    "marker_looking_payloads_survive_preparation_and_completion"
+    "marker_looking_payloads_survive_preparation_and_completion",
+    "docx_artifact_dom_uses_full_document_options",
+    "docx_artifact_dom_styles_and_safe_targets",
+    "docx_artifact_dom_errors_retry_and_keep_download",
+    "docx_artifact_dom_retains_and_releases_resources"
   ],
   "contributions": [
     "mounted_content_keeps_one_root_while_its_content_type_stays",
