@@ -11,10 +11,12 @@ mod extension_widgets;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod notices;
 mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod suspend;
 mod transcript;
 mod transfer;
 mod typed;
@@ -25,7 +27,7 @@ use crate::components::session_selector::list::tests::session_picker::{
     manual_runtime::ManualRuntime, native_child as child, published,
     recording_terminal::RecordingTerminal,
 };
-use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
+use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
@@ -52,11 +54,44 @@ use std::{
     path::Path,
     pin::Pin,
     rc::Rc,
-    sync::{Arc, RwLock},
+    sync::{Arc, LazyLock, RwLock},
 };
+
+/// The package-directory environment key the installation reads.
+pub(super) static ENV_PACKAGE_DIR: LazyLock<String> =
+    LazyLock::new(|| format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase()));
 
 /// Every recorded presentation case.
 pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
+
+/// Runs `body` in a fresh single-test child whose working directory is a disposable root
+/// and whose package directory is `package` inside it, returning its standard error.
+pub(super) fn isolated_package(test: &str, body: impl FnOnce(&Path, &Path)) -> Vec<u8> {
+    if maestro_test_process::selection().is_child() {
+        let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
+        let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
+        body(Path::new(&directory), Path::new(&package));
+        return Vec::new();
+    }
+    let scratch = child::Scratch::new();
+    let directory = scratch.0.path();
+    let package = directory.join("package");
+    std::fs::create_dir(&package).unwrap();
+    let output = TestProcess::current(test)
+        .unwrap()
+        .case("child")
+        .nocapture()
+        .single_threaded()
+        .current_dir(directory)
+        .envs([
+            (ENV_AGENT_DIR.as_str(), directory.to_str().unwrap()),
+            (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
+        ])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    output.stderr
+}
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
@@ -76,13 +111,32 @@ pub(super) fn isolated_case(
     envs: &[(&str, &str)],
     body: impl FnOnce(&Path),
 ) {
+    if let Some(output) = isolated_output(test, case, envs, "trap '' XFSZ", body) {
+        assert!(
+            output.status.success(),
+            "child probe failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+/// Runs `body` as `case` of `test` in the child [`isolated_case`] describes, after `setup`
+/// runs in the child's shell, and returns that child's output to the parent; the child
+/// itself returns nothing.
+pub(super) fn isolated_output(
+    test: &str,
+    case: &str,
+    envs: &[(&str, &str)],
+    setup: &str,
+    body: impl FnOnce(&Path),
+) -> Option<std::process::Output> {
     let selection = maestro_test_process::selection();
     if selection.is_child() {
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
             body(Path::new(&directory));
         }
-        return;
+        return None;
     }
     let scratch = child::Scratch::new();
     let root = scratch.0.path();
@@ -100,17 +154,19 @@ pub(super) fn isolated_case(
         ("WAYLAND_DISPLAY", "maestro-test"),
     ];
     all.extend_from_slice(envs);
-    child::probe(
-        TestProcess::current(test)
-            .unwrap()
-            .env_clear()
-            .case(case)
-            .shell_setup("trap '' XFSZ")
-            .temp_dir(root.join("tmp")),
-        root,
-        &all,
-        &[],
-    );
+    let output = TestProcess::current(test)
+        .unwrap()
+        .env_clear()
+        .case(case)
+        .shell_setup(setup)
+        .temp_dir(root.join("tmp"))
+        .nocapture()
+        .single_threaded()
+        .current_dir(root)
+        .envs(all)
+        .output()
+        .expect("child starts");
+    Some(output)
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
@@ -567,6 +623,7 @@ fn started(directory: &Path) -> World {
 pub(super) fn roles(theme: &Theme, text: &str) -> String {
     let mut text = text.replace("<version>", VERSION);
     for (marker, role) in [
+        ("@border@", ThemeColor::Border),
         ("@accent@", ThemeColor::Accent),
         ("@border@", ThemeColor::Border),
         ("@borderMuted@", ThemeColor::BorderMuted),
@@ -583,6 +640,8 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@thinkingXhigh@", ThemeColor::ThinkingXhigh),
         ("@bashMode@", ThemeColor::BashMode),
         ("@mdHeading@", ThemeColor::MdHeading),
+        ("@mdCodeBlock@", ThemeColor::MdCodeBlock),
+        ("@mdCodeBlockBorder@", ThemeColor::MdCodeBlockBorder),
         ("@mdLink@", ThemeColor::MdLink),
         ("@success@", ThemeColor::Success),
     ] {

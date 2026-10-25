@@ -4,10 +4,11 @@
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
 input, queued input, the export command, the prompt loop, session replay, the
-session events, the expansion and thinking shortcuts, thinking and model
-cycling, the editor border, external editing and image paste. Streaming messages,
-installed custom headers, the terminal title and the other integrations are
-still to come.
+session events with the working row and the streamed transcript rows, the window
+title, the extension controls of that row and of the hidden-thinking label, the
+expansion and thinking shortcuts, thinking and model cycling, the editor border,
+external editing and image paste. Installed custom headers, compaction and retry
+progress, a requested shutdown and the other integrations are still to come.
 
 ## Construction
 
@@ -164,8 +165,8 @@ submission delivered as prompt text enters the history, whether or not an input
 was waiting. Submission does not keep the mode alive.
 
 Submission offers the text to the mode's commands first. Text recognized as
-`/export` runs that command instead: it reports on the transcript, completes no
-waiting input and enters no history. Near spellings are prompt text, so
+`/export` or `/changelog` runs that command instead: it reports on the
+transcript, completes no waiting input and enters no history. Near spellings are prompt text, so
 `/exporter notes.jsonl` and `/export` followed by a tab reach the input. See
 [interactive commands](commands.md).
 
@@ -286,7 +287,55 @@ the event carries:
 
 - a changed session name writes the window title;
 - a changed thinking level recolours the editor border for the shell colour or
-  the new level, as the shortcut section describes.
+  the new level, as the shortcut section describes;
+- a queue update rebuilds the pending rows from the session's queues and the
+  messages kept during a compaction, whatever the event lists.
+
+The agent's events drive the working row and the transcript:
+
+- an agent start forgets the registered tool calls, shows terminal progress when
+  `terminal.showTerminalProgress` is set, and replaces the working row in the status
+  rows, unless an extension hid it: the indicator in the accent colour beside the
+  muted working message, painted by the theme in effect when it is drawn;
+- a message start adds a custom or user message to the transcript, the user one
+  also rebuilding the pending rows; an assistant message starts one streaming row
+  that keeps the message it shows; a tool result adds nothing;
+- an assistant update shows the new message in the streaming row and gives each of
+  its tool calls a row registered by call id, in the order the calls appear; a call
+  that already has a row gets the new arguments in that row. Without a streaming
+  row the update is ignored;
+- an assistant end shows the ended message. An aborted message gets
+  `Operation aborted`, `Aborted after 1 retry attempt` or `Aborted after N retry
+  attempts` as its error, written into the message itself, and its registered calls
+  complete with that text as an error; a failed message's calls complete with its
+  error text, or `Error`. Otherwise the registered calls are marked as having their
+  full arguments. The streaming row is then released. A user message's end
+  changes nothing and requests no frame;
+- a tool start marks its row started, adding a registered row first when the call
+  has none; a row the replay or an update made keeps its arguments. A tool update
+  shows its output as partial and never as a failure; a tool end shows the final
+  output with the event's failure flag and forgets the call. An update or end of an
+  unknown call adds no row and requests no frame. The result details reach the
+  row's renderer as the tool returned them, with a missing value kept apart from
+  null;
+- an agent end clears terminal progress when `terminal.showTerminalProgress` is set,
+  stops the working row and empties the status rows, removes an unfinished
+  streaming row and forgets the registered calls; completed rows stay.
+
+Rows change in place, so each frame rewrites only from its first changed row.
+
+Extensions control the working row and the thinking label through the extension UI
+host:
+
+- the working message replaces `Working...`, also in a running row; clearing it
+  restores the default, while an empty message stays empty;
+- hiding the working row stops and removes it, and showing it again while a
+  response streams starts a new one; the setting holds for later responses;
+- a working indicator replaces the toolkit's own in the running row and in later
+  ones: its frames are shown as given, an empty list hides the indicator, and one
+  frame stays still; clearing it restores the toolkit's indicator;
+- the hidden-thinking label replaces `Thinking...` on every assistant row of the
+  transcript, the streaming row and later rows; clearing it restores the default.
 
 The window title is `Maestro - <name> - <directory>` when the session has a name
 and `Maestro - <directory>` when it has none. The directory is the last segment of
@@ -310,8 +359,8 @@ summaries, skill rows and custom messages. The walk uses the transcript's rows a
 a row a renderer appends during the walk is reached, and a row it removes is not.
 
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
-replays the transcript and shows `Thinking blocks: hidden` or `Thinking blocks:
-visible`. A shortcut's failure goes to the terminal runtime's error route.
+replays the transcript, puts a streaming row back after it with the new visibility
+and shows `Thinking blocks: hidden` or `Thinking blocks: visible`. A shortcut's failure goes to the terminal runtime's error route.
 
 ## Thinking and model cycling
 
@@ -378,4 +427,15 @@ Unix: an existing file or symbolic link of the same name is left untouched, and 
 edit stops with an error before the editor runs. Neither action keeps the mode
 alive; a clipboard read in progress keeps the mode until it completes.
 
-Suspending to the background is not part of the mode yet.
+## Suspend
+
+The key bound to `app.suspend` (Ctrl+Z by default) sends the mode to the
+background. From the key press until the process continues, interrupts are
+ignored. The mode stops the terminal and sends the stop signal to its process
+group. When the shell continues the process, interrupts take their default action
+again and the mode restarts the terminal once, with a full redraw. If stopping the
+terminal or signalling the group fails, interrupts take their default action again,
+a later continue signal does nothing, and the failure is handed to the terminal's
+runtime host. The continue signal is observed on the terminal's Tokio runtime,
+which must have I/O enabled. On Windows the key only shows
+`Suspend to background is not supported on Windows`.

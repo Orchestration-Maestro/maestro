@@ -85,6 +85,20 @@ impl Fixture {
                 .unwrap(),
         }
     }
+    /// Activate `control` and observe one complete native download of `bytes`.
+    pub async fn saved(
+        &self,
+        control: &web_sys::HtmlElement,
+        bytes: &[u8],
+        mime: &str,
+        name: &str,
+    ) {
+        self.begin("success");
+        control.click();
+        wasm_bindgen_futures::JsFuture::from(self.finish(bytes, mime, name, true))
+            .await
+            .unwrap();
+    }
     /// Start one controlled native DOM transaction.
     pub fn begin(&self, mode: &str) {
         self.module0
@@ -103,6 +117,13 @@ impl Fixture {
                     &success.into(),
                 ),
             )
+            .unwrap()
+            .unchecked_into()
+    }
+    /// Observe that an activation left the platform's download effects untouched.
+    pub fn finish_none(&self) -> js_sys::Promise {
+        self.module0
+            .call("finishNone", &js_sys::Array::new())
             .unwrap()
             .unchecked_into()
     }

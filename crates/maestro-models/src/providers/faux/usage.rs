@@ -3,6 +3,7 @@ use crate::{
     AssistantContent, AssistantMessage, CacheRetention, Context, DiagnosticErrorInfo, Message,
     ProviderExecution, StreamOptions, UserBlock, UserContent,
 };
+use maestro_request::presence::Presence;
 use std::{borrow::Cow, sync::Mutex};
 
 /// Estimate tokens from Unicode scalar count in groups of four.
@@ -88,7 +89,7 @@ pub(super) fn estimate<E: ProviderExecution>(
     let mut usage = crate::Usage {
         input: prompt_tokens,
         output,
-        total_tokens: prompt_tokens + output,
+        total_tokens: Presence::Present(prompt_tokens + output),
         ..Default::default()
     };
     if let Some(session) = options

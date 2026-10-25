@@ -202,6 +202,8 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(&maestro_theme::highlight_css().map_err(|error| failure(&error))?);
     css.push_str(include_str!("components/markdown_block/markdown.css"));
     css.push_str(include_str!("components/messages.css"));
+    css.push_str(include_str!("tools/artifacts/artifact_element.css"));
+    css.push_str(include_str!("tools/artifacts/generic_artifact.css"));
     css.push_str(include_str!("dom.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))

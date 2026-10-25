@@ -1051,7 +1051,7 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
         json!([
             run.message.usage.input,
             run.message.usage.output,
-            run.message.usage.total_tokens,
+            run.message.usage.total_tokens.present().copied().unwrap(),
             run.message.usage.cache_read
         ]),
         json!([0.0, 0.0, 0.0, 0.0])
@@ -1084,7 +1084,10 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
             let (actual, expected) = match key {
                 "input_tokens" => (json!(counts.input), json!(expected)),
                 "output_tokens" => (json!(counts.output), json!(expected)),
-                "total_tokens" => (json!(counts.total_tokens), json!(expected)),
+                "total_tokens" => (
+                    json!(counts.total_tokens.present().copied().unwrap()),
+                    json!(expected),
+                ),
                 _ => (
                     json!([counts.input, counts.cache_read]),
                     json!([-expected, expected]),
