@@ -22,7 +22,7 @@ fn native_selector_terminal_drives_the_supplied_local_set() {
 mod entry {
     use crate::startup_runtime::run;
     use crate::support::entry::{Entry, Provider, cases, user_texts};
-    use crate::support::startup::stored_history;
+    use crate::support::startup::{set_modified, stored_history};
     use maestro_app::output_guard::is_stdout_taken_over;
     use maestro_app::{ExtensionFactory, Local, ReadonlySessionManager};
     use maestro_cli::startup::main::MainOptions;
@@ -36,7 +36,7 @@ mod entry {
         format!("{}\n", maestro_app::VERSION)
     }
 
-    /// An inline factory recording the working directory of every load.
+    /// An inline factory recording each load and registering one boolean flag.
     fn recording_factory(log: &Rc<RefCell<Vec<String>>>) -> ExtensionFactory<Local> {
         let log = Rc::clone(log);
         Rc::new(move |api| {
@@ -82,7 +82,7 @@ mod entry {
         (stored_history(&directory, "foreign", id, &project), project)
     }
 
-    /// The session files of the current project's default directory.
+    /// Count the stored session files in every session directory except the foreign one.
     fn local_sessions(e: &Entry) -> usize {
         let root = Path::new(&e.commands.agent_dir).join("sessions");
         std::fs::read_dir(root).map_or(0, |entries| {
@@ -464,7 +464,7 @@ mod entry {
         );
     }
 
-    /// A stored history whose working directory no longer exists.
+    /// A stored history whose working directory does not exist.
     fn missing_directory_session(e: &Entry) -> String {
         let directory = Path::new(&e.commands.agent_dir).join("sessions/--root--");
         stored_history(
@@ -558,7 +558,8 @@ mod entry {
         .unwrap();
     }
 
-    /// Every authored resource and the registered flag survived directory replacement.
+    /// The authored skill, prompt and theme, and the registered flag, survived directory
+    /// replacement.
     fn assert_authored_resources(loader: &dyn maestro_app::ResourceLoader<Local>) {
         let skills = loader.get_skills();
         assert_eq!(skills.skills.len(), 1);
@@ -1127,6 +1128,41 @@ mod entry {
         );
     }
 
+    /// Record, at the third clock reading of a run (its parser sample), whether output was
+    /// taken over and how many queued terminal observations remain.
+    fn observed_at_parse_sample(e: &mut Entry) -> Rc<RefCell<Vec<(bool, usize)>>> {
+        let observed = Rc::new(RefCell::new(Vec::new()));
+        let (seen, tty) = (Rc::clone(&observed), Rc::clone(&e.tty));
+        e.clock_hook = Rc::new(move |sample| {
+            if sample.total_cmp(&3.0).is_eq() {
+                seen.borrow_mut()
+                    .push((is_stdout_taken_over(), tty.borrow().len()));
+            }
+        });
+        observed
+    }
+
+    #[test]
+    fn parse_timing_precedes_mode_selection_and_early_exits() {
+        cases(
+            "entry::parse_timing_precedes_mode_selection_and_early_exits",
+            &[("parse", &[("MAESTRO_TIMING", "1")])],
+            |local, _| async move {
+                let mut e = Entry::new();
+                let observed = observed_at_parse_sample(&mut e);
+                for args in [&["--version"][..], &["--mode", "rpc"]] {
+                    e.clock.set(0.0);
+                    *e.tty.borrow_mut() = [true, true].into();
+                    assert_eq!(
+                        e.run(&local, args, MainOptions::default()).await.unwrap(),
+                        0
+                    );
+                }
+                assert_eq!(*observed.borrow(), [(false, 2), (false, 2)]);
+            },
+        );
+    }
+
     #[test]
     fn timing_markers_keep_order_and_mode_positions() {
         let modes: &[(&str, &[(&str, &str)])] = &[
@@ -1294,14 +1330,6 @@ mod entry {
                 );
             },
         );
-    }
-
-    /// Give continuation an unambiguous file modification order.
-    fn set_modified(path: &str, seconds: u64) {
-        std::fs::File::open(path)
-            .unwrap()
-            .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds))
-            .unwrap();
     }
 
     /// Observe the actual selected session without interpreting the argument flags again.

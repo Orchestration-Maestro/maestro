@@ -92,16 +92,8 @@ impl Dialog {
             *captured.borrow_mut() = Some(request);
             Ok(view(&frames))
         });
-        let (terminal, runtime) = (self.harness.terminal.clone(), self.harness.runtime.clone());
         MissingSessionCwdPresentation {
-            create_ui: Rc::new(move |cursor| {
-                Ok(maestro_tui::TUI::new(
-                    terminal.handle(),
-                    runtime.handle(),
-                    maestro_tui::TerminalImage::default(),
-                    Some(cursor),
-                ))
-            }),
+            create_ui: self.harness.create_ui(),
             theme: theme(self.scratch.path()),
             presenter,
         }

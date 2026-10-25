@@ -9,6 +9,7 @@ use super::sessions::{
 use super::writers::SharedWriter;
 use crate::input::args::Args;
 use crate::input::session_picker::{SessionPresentation, select_session};
+use crate::packages::package_manager_cli::presentation::line;
 use maestro_app::presentation_data::input_selectors::{SessionListProgress, SessionsLoader};
 use maestro_app::{
     MissingSessionCwdError, SessionManager, SettingsManager, get_missing_session_cwd_issue,
@@ -54,11 +55,6 @@ pub(super) struct SessionPresentations {
     pub(super) sessions: SessionPresentation,
     /// The missing-directory confirmation.
     pub(super) missing_cwd: MissingSessionCwdPresentation,
-}
-
-/// Write one already-styled line.
-fn line(stream: &RefCell<dyn Write>, text: &str) -> io::Result<()> {
-    writeln!(stream.borrow_mut(), "{text}")
 }
 
 /// Open the selected session, settling a stored directory that no longer exists.

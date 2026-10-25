@@ -17,6 +17,7 @@ use crate::input::file_processor::FileArgumentOperations;
 use crate::input::initial_message::InitialMessageResult;
 use crate::input::list_models::{ListModelsOptions, list_models};
 use crate::input::session_picker::SessionPresentation;
+use crate::packages::package_manager_cli::presentation::line;
 use crate::packages::{PackageCommandContext, handle_config_command, handle_package_command};
 use maestro_app::configuration::migrations::{
     MigrationResult, MigrationStyle, run_migrations, show_deprecation_warnings,
@@ -167,11 +168,10 @@ async fn run_entry(
     if handle_config_command(&args, &host.package, config).await? {
         return Ok(0);
     }
-    let startup = match parse_startup(&args, &host)? {
+    let startup = match parse_startup(&args, &host, &mut timings)? {
         ControlFlow::Continue(startup) => startup,
         ControlFlow::Break(status) => return Ok(status),
     };
-    timings.time("parseArgs", host.now);
     let migrations = migrate(&host)?;
     timings.time("runMigrations", host.now);
     let (manager, dirs) = match select_session(&startup, &mut host).await? {
@@ -194,8 +194,13 @@ async fn run_entry(
     finish(prepared, host, (startup.app_mode, migrations), &mut timings).await
 }
 
-/// Parse the arguments and run the exits that need no session.
-fn parse_startup(args: &[String], host: &MainHost<'_, '_>) -> Phase<Startup> {
+/// Parse the arguments, sample the parse once its diagnostics pass, select the mode, then
+/// run the exits that need no session.
+fn parse_startup(
+    args: &[String],
+    host: &MainHost<'_, '_>,
+    timings: &mut Timings,
+) -> Phase<Startup> {
     let parsed = parse_args(args);
     let styles = host.package.styles_enabled;
     let stderr = &host.package.stderr;
@@ -204,20 +209,21 @@ fn parse_startup(args: &[String], host: &MainHost<'_, '_>) -> Phase<Startup> {
     {
         return Ok(ControlFlow::Break(status));
     }
+    timings.time("parseArgs", host.now);
     let app_mode = resolve_app_mode(&parsed, (host.stdin_is_tty)());
     if takes_over_stdout(app_mode) {
         output_guard::take_over_stdout();
     }
     if parsed.version == Some(true) {
-        writeln!(host.package.stdout.borrow_mut(), "{}", maestro_app::VERSION)?;
+        line(&host.package.stdout, maestro_app::VERSION)?;
         return Ok(ControlFlow::Break(0));
     }
     if let Some(source) = &parsed.export {
         return Ok(ControlFlow::Break(export(source, &parsed, host)?));
     }
     if app_mode == AppMode::Rpc && !parsed.file_args.is_empty() {
-        let line = "Error: @file arguments are not supported in RPC mode";
-        writeln!(stderr.borrow_mut(), "{}", Theme::red(line, styles))?;
+        let message = "Error: @file arguments are not supported in RPC mode";
+        line(stderr, &Theme::red(message, styles))?;
         return Ok(ControlFlow::Break(1));
     }
     if let Some(status) = validate_fork_flags(&parsed, &mut *stderr.borrow_mut(), styles)? {
@@ -231,12 +237,12 @@ fn export(source: &str, parsed: &Args, host: &MainHost<'_, '_>) -> io::Result<i3
     let destination = parsed.messages.front().map(String::as_str);
     match (host.export_from_file)(source, destination) {
         Ok(path) => {
-            writeln!(host.package.stdout.borrow_mut(), "Exported to: {path}")?;
+            line(&host.package.stdout, &format!("Exported to: {path}"))?;
             Ok(0)
         }
         Err(error) => {
-            let line = Theme::red(&format!("Error: {error}"), host.package.styles_enabled);
-            writeln!(host.package.stderr.borrow_mut(), "{line}")?;
+            let message = Theme::red(&format!("Error: {error}"), host.package.styles_enabled);
+            line(&host.package.stderr, &message)?;
             Ok(1)
         }
     }
@@ -254,13 +260,13 @@ fn migration_output<'a>(
 ) -> impl FnMut(MigrationStyle, &str) -> io::Result<()> + 'a {
     let styles = host.package.styles_enabled;
     move |style, text| {
-        let line = match style {
+        let notice = match style {
             MigrationStyle::Success => Theme::green(text, styles),
             MigrationStyle::Warning => Theme::yellow(text, styles),
             MigrationStyle::Dim => Theme::dim(text, styles),
             MigrationStyle::Plain => text.to_owned(),
         };
-        writeln!(host.package.stdout.borrow_mut(), "{line}")
+        line(&host.package.stdout, &notice)
     }
 }
 

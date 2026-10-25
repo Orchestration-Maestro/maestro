@@ -66,7 +66,7 @@ pub struct Entry {
     /// Standard input bytes.
     pub stdin: RefCell<Vec<u8>>,
     /// Terminal observations of standard input in order; the last one repeats.
-    pub tty: RefCell<VecDeque<bool>>,
+    pub tty: Rc<RefCell<VecDeque<bool>>>,
     /// The export operation's result.
     pub export: RefCell<Result<String, String>>,
     /// The theme owner shared by every presentation.
@@ -103,7 +103,7 @@ impl Entry {
             commands,
             recorder: Rc::new(Recorder::default()),
             stdin: RefCell::default(),
-            tty: RefCell::new(VecDeque::from([true])),
+            tty: Rc::new(RefCell::new(VecDeque::from([true]))),
             export: RefCell::new(Ok("exported.html".into())),
             themes,
             screen: presenters::Harness::new(),
@@ -274,16 +274,8 @@ impl Entry {
             });
             Ok(presenters::view(&Rc::default()))
         });
-        let (terminal, runtime) = (self.screen.terminal.clone(), self.screen.runtime.clone());
         MissingSessionCwdPresentation {
-            create_ui: Rc::new(move |cursor| {
-                Ok(maestro_tui::TUI::new(
-                    terminal.handle(),
-                    runtime.handle(),
-                    maestro_tui::TerminalImage::default(),
-                    Some(cursor),
-                ))
-            }),
+            create_ui: self.screen.create_ui(),
             theme: Rc::clone(&self.themes),
             presenter,
         }
@@ -321,7 +313,7 @@ impl Provider {
                 .into_iter()
                 .map(|status| {
                     let (mut stream, _) = listener.accept().unwrap();
-                    let body = read_request(&mut stream);
+                    let body = read_request(&mut stream).unwrap();
                     let reply = response(status);
                     stream.write_all(reply.as_bytes()).unwrap();
                     body
@@ -353,12 +345,15 @@ fn response(status: u16) -> String {
     )
 }
 
-/// Read one request's headers and its declared body.
-fn read_request(stream: &mut std::net::TcpStream) -> Value {
+/// Read one request's headers and its declared body, failing when the peer closes first.
+fn read_request(mut stream: impl Read) -> std::io::Result<Value> {
     let mut received = Vec::new();
     let mut chunk = [0; 4096];
     let (head, length) = loop {
-        let read = stream.read(&mut chunk).unwrap();
+        let read = stream.read(&mut chunk)?;
+        if read == 0 {
+            return Err(std::io::ErrorKind::UnexpectedEof.into());
+        }
         received.extend_from_slice(&chunk[..read]);
         if let Some(end) = received.windows(4).position(|window| window == b"\r\n\r\n") {
             let head = String::from_utf8_lossy(&received[..end]).to_lowercase();
@@ -369,11 +364,43 @@ fn read_request(stream: &mut std::net::TcpStream) -> Value {
             break (end + 4, length);
         }
     };
-    while received.len() < head + length {
-        let read = stream.read(&mut chunk).unwrap();
-        received.extend_from_slice(&chunk[..read]);
+    let mut body = received.split_off(head);
+    let have = body.len().min(length);
+    body.resize(length, 0);
+    stream.read_exact(&mut body[have..])?;
+    Ok(serde_json::from_slice(&body)?)
+}
+
+/// A peer that sends `sent`, then closes; reading on after the close fails the test.
+struct ClosingPeer {
+    /// The bytes not yet read.
+    sent: &'static [u8],
+    /// Whether a read already reported the close.
+    closed: bool,
+}
+
+impl Read for ClosingPeer {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        assert!(!self.closed, "read again after the peer closed");
+        let read = self.sent.read(buffer)?;
+        self.closed = read == 0;
+        Ok(read)
     }
-    serde_json::from_slice(&received[head..head + length]).unwrap()
+}
+
+#[test]
+fn request_reader_fails_when_the_peer_closes_early() {
+    for sent in [
+        &b"POST /v1/chat/completions HTTP/1.1\r\ncontent-len"[..],
+        b"POST /v1/chat/completions HTTP/1.1\r\ncontent-length: 9\r\n\r\n{}",
+    ] {
+        let error = read_request(ClosingPeer {
+            sent,
+            closed: false,
+        })
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::UnexpectedEof);
+    }
 }
 
 /// Every user text of one chat-completions request body, in order.
@@ -395,7 +422,7 @@ pub fn user_texts(body: &Value) -> Vec<String> {
 }
 
 impl Entry {
-    /// Configure provider `startup` over `base_url`, selected as the saved default model.
+    /// Write provider `startup` over `base_url` with the supplied model identifiers.
     pub fn served_models(&self, base_url: &str, ids: &[&str]) {
         let models: Vec<Value> = ids.iter().map(|id| json!({"id": id})).collect();
         let document = json!({"providers": {"startup": {
