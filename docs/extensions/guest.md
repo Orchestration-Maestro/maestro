@@ -136,6 +136,12 @@ owners may outlive the event or execution that supplied them. Callback errors
 return to the author/caller without undoing prior output. For the signal's live
 `aborted()` state, see [live context capabilities](#live-context-and-catalog-capabilities).
 
+Registration and enumeration preserve nested parameter schemas and the kinds declared
+for their nodes. An enumerated declaration can be registered again with those kinds
+intact. Metadata transport does not validate invocation arguments; argument preparation
+and validation remain with the model argument validator. Model-server JSON limits do
+not apply to these author-supplied declarations.
+
 ## Event channels
 
 `api.events()` returns the supplied host's `EventBus`. Ordinary code awaits

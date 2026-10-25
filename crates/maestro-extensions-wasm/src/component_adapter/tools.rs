@@ -5,6 +5,7 @@ use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
 use crate::{
     AgentToolUpdateCallback, ExtensionResult, ParameterSchema, PrepareArguments, ToolExecute,
 };
+use serde::Deserialize;
 use std::rc::Rc;
 
 /// Member carrying the declared schema kinds beside the plain payload.
@@ -40,8 +41,11 @@ struct CarriedKinds {
 /// Kinds travel only in the object form this adapter encodes; a record the host supplies in
 /// another admitted shape carries none and stays plain.
 pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {
-    let tools: Vec<crate::ToolInfo> =
-        serde_json::from_str(text).map_err(|error| error.to_string())?;
+    let mut deserializer = serde_json::Deserializer::from_str(text);
+    deserializer.disable_recursion_limit();
+    let tools = Vec::<crate::ToolInfo>::deserialize(&mut deserializer)
+        .map_err(|error| error.to_string())?;
+    deserializer.end().map_err(|error| error.to_string())?;
     let carried = serde_json::from_str::<Vec<CarriedKinds>>(text).unwrap_or_default();
     if carried.len() != tools.len() {
         return Ok(tools);
@@ -108,5 +112,39 @@ impl<I: Imports> Exports<I> {
         )
         .await?;
         encode_value(&result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// Empty inventories and native trailing-input rejection keep their outcomes.
+    #[test]
+    fn metadata_enumeration_preserves_native_admission() {
+        assert!(super::decode_tools("[]").unwrap().is_empty());
+        assert!(super::decode_tools("[] \n\t").unwrap().is_empty());
+        assert_eq!(
+            super::decode_tools("[] {}").unwrap_err(),
+            "trailing characters at line 1 column 4"
+        );
+    }
+
+    /// Complete metadata retains the supplied schema and all of its declared kinds.
+    #[test]
+    fn metadata_enumeration_admits_nested_parameters() {
+        for depth in [16, 32, 62, 63, 64] {
+            let parameters = crate::tests::author::nested_schema_fixture::parameters(&format!(
+                "authored-{depth}"
+            ))
+            .unwrap();
+            let text = serde_json::json!([{
+                "name": "nested", "description": "", "parameters": parameters,
+                "sourceInfo": {"path":"/author","source":"custom","scope":"temporary","origin":"top-level"},
+                "schemaKinds": parameters.conversions(),
+            }]).to_string();
+            let listed =
+                super::decode_tools(&text).unwrap_or_else(|error| panic!("depth {depth}: {error}"));
+            assert_eq!(listed.len(), 1);
+            assert_eq!(listed[0].parameters, parameters);
+        }
     }
 }

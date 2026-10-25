@@ -25,6 +25,12 @@ pub fn register(
             kinds,
         );
     }
+    if let Some(id) = config["corpusCase"].as_str() {
+        metadata.parameters = super::nested_schema_fixture::parameters(id)?;
+    }
+    if config["relay"] == true {
+        metadata.parameters = api.get_all_tools()?.remove(0).parameters;
+    }
     let kept: Rc<RefCell<Kept>> = Rc::default();
     let prepare_arguments = preparation(api, config.clone(), Rc::clone(&kept));
     let execute = execution(api, config, captured, kept);
