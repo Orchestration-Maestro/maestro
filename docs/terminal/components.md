@@ -124,10 +124,17 @@ for placement, focus, visibility and terminal error ordering.
 ## Terminals
 
 `Terminal` covers starting with input and resize callbacks, writing, dimensions,
-cursor movement and visibility, clearing, the window title, the progress indicator
-and draining stale input. Effects return `io::Result` and carry the device's error
-unchanged. `drain_input` takes optional limits and returns a future; an adapter
-applies its own defaults, 1000 ms at most and 50 ms idle, when they are omitted.
+cursor movement and visibility, clearing, the window title, the progress indicator,
+draining stale input and registering a handler for native output failures. Effects
+return `io::Result` and carry the device's error unchanged. `drain_input` takes
+optional limits and returns a future that owns its state, so a scheduled frame may
+borrow and render to the same terminal while the drain is pending; an adapter applies
+its own defaults, 1000 ms at most and 50 ms idle, when they are omitted.
+`on_output_error` returns the operation that removes the handler, and an adapter
+without native output failures returns one that does nothing.
+
+`TuiRuntime` carries the same registration for the host's own output, so a terminal
+writer and the host that reports its failures each name their own producers.
 
 ## Editors and completion
 

@@ -57,7 +57,8 @@ Tokio runtime with the time driver enabled.
 - `spawn_local` queues a future on the set; it is not polled before the call returns.
 - A callback or future that returns an error has the `Display` text of the error and then of
   each source error written to standard error, each followed by a newline; the host then
-  keeps running. A failure to write to standard error is ignored.
+  keeps running. A failure to write there releases the lock on standard error and then
+  reaches the registered output-error handlers once.
 - `environment` returns the value as the platform holds it, with invalid text converted
   lossily; it does not trim or interpret the value.
 - `log_context` reports the home directory (empty when the platform has none), the current
@@ -149,8 +150,9 @@ Input still goes to the shared buffer under the [Input](https://github.com/Orche
 While the drain runs, every event the buffer releases is discarded, whatever released it.
 The drain does not reset framing state.
 
-The future checks the elapsed quiet time and the maximum, then waits the shorter of the idle
-time and the time left, so the idle exit is noticed on that cadence. Only complete decoded
+The future owns its state, so the terminal it came from stays usable while the drain
+is pending. It checks the elapsed quiet time and the maximum, then waits the shorter
+of the idle time and the time left, so the idle exit is noticed on that cadence. Only complete decoded
 text counts as activity, not the bytes of an unfinished character. When the future ends, or
 is dropped, input delivery resumes with the original callback. A drain also closes keyboard
 negotiation for the current generation: no later reply and no pending fallback decision
@@ -182,6 +184,14 @@ refuses, stay synchronous; commands while stopped also write synchronously and
 return the original write error. Stopping or dropping a started terminal cancels
 the writer and drains its retained partial buffer before restoring modes. This final
 drain has no deadline and can wait indefinitely for a live reader that never resumes.
+
+`on_output_error` registers a handler for a failure to write, and returns the operation
+that removes it; removing it twice does nothing and a stale removal leaves a later
+registration in place. Each failure is passed to the registered handlers once, with the
+original error: a synchronous write, an asynchronous writer failure, a keepalive write and
+a failure to report on standard error. A read error from standard input is retained for
+`stop` and is never passed to them. The handlers run with no borrow held, so one may remove
+or replace itself.
 
 `move_by` writes nothing for zero. The title is written unchanged between `ESC ] 0 ;` and a
 bell. `set_progress(true)` writes the indeterminate-progress sequence to the same queue and, when no

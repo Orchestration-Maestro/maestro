@@ -156,7 +156,12 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     (
         "maestro-tui-crossterm",
-        &["maestro-tui", "maestro-text", "maestro-process"],
+        &[
+            "maestro-tui",
+            "maestro-text",
+            "maestro-process",
+            "maestro-listeners",
+        ],
     ),
     (
         "maestro-catalog",
@@ -310,6 +315,7 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-detection", "maestro-text"),
     ("maestro-cli", "maestro-listeners"),
     ("maestro-chat", "maestro-models"),
+    ("maestro-chat", "maestro-tui-crossterm"),
 ];
 
 /// Whether the policy permits this internal development edge between the two crates.

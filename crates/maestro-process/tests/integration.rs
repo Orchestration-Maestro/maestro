@@ -9,3 +9,4 @@ mod pty_children;
 mod startup_environment;
 mod streamed_capture;
 mod synchronous_capture;
+mod termination;
