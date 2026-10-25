@@ -44,11 +44,12 @@ pub(super) struct Value {
     /// Native constructor selector.
     pub(super) kind: String,
     /// Tagged constructor operands, never a product format.
+    #[serde(default)]
     pub(super) operand: serde_json::Value,
     /// Expected rendered line.
-    pub(super) paint: String,
+    pub(super) paint: Option<String>,
     /// Expected whole-value clipboard line.
-    pub(super) copy: String,
+    pub(super) copy: Option<String>,
 }
 /// Read the strictly consumed corpus.
 pub(super) fn cases() -> Cases {

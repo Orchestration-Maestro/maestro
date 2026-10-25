@@ -1,7 +1,7 @@
 //! Artifact-console bodies retain literal ordered rows and independent controls.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    Clipboard, Recorded, call, computed, container, driver, frames, host, page_module, rgb,
+    Clipboard, Recorded, call, computed, container, driver, frames, host, page_module, rgb, select,
     selection, text, until, view,
 };
 use crate::native_artifact_console_support::{cases, factory, localized, native};
@@ -21,17 +21,11 @@ fn log(value: impl Into<JsValue>) -> LogEntry {
         text: BrowserSandboxValue(value.into()),
     }
 }
-/// A descendant required by the mounted console contract.
-fn part(root: &DomRoot, selector: &str) -> Element {
-    root.node
-        .unchecked_ref::<Element>()
-        .query_selector(selector)
-        .unwrap()
-        .unwrap()
-}
 /// Activate a native console control.
 fn click(root: &DomRoot, selector: &str) {
-    part(root, selector).unchecked_ref::<HtmlElement>().click();
+    select(&root.node, selector)
+        .unchecked_ref::<HtmlElement>()
+        .click();
 }
 /// Summary localization, literal positional rows and independent initialization.
 #[wasm_bindgen]
@@ -45,10 +39,10 @@ pub async fn artifact_console_dom_summaries_and_literal_lines(import_module: js_
     let parent = container();
     parent.append_child(&root.node).unwrap();
     assert_eq!(
-        text(&part(&root, ".maestro-artifact-summary")),
+        text(&select(&root.node, ".maestro-artifact-summary")),
         "console (0)"
     );
-    assert!(part(&root, ".maestro-artifact-logs").has_attribute("hidden"));
+    assert!(select(&root.node, ".maestro-artifact-logs").has_attribute("hidden"));
     console.logs.borrow_mut().extend([
         log("literal <&> 雪"),
         LogEntry {
@@ -60,11 +54,11 @@ pub async fn artifact_console_dom_summaries_and_literal_lines(import_module: js_
     console.update(&root, &view).unwrap();
     assert!(neighbour.logs.borrow().is_empty());
     assert_eq!(
-        text(&part(&root, ".maestro-artifact-summary")),
+        text(&select(&root.node, ".maestro-artifact-summary")),
         "console (1 error)"
     );
     click(&root, ".maestro-artifact-summary");
-    let rows = part(&root, ".maestro-artifact-logs");
+    let rows = select(&root.node, ".maestro-artifact-logs");
     assert_eq!(rows.child_nodes().length(), 3);
     assert_eq!(
         text(rows.first_child().as_ref().unwrap()),
@@ -99,7 +93,7 @@ fn assert_summaries(view: &maestro_web::dom::DomView) {
             }));
         let root = console.mount(&localized(view, &case.language)).unwrap();
         assert_eq!(
-            text(&part(&root, ".maestro-artifact-summary")),
+            text(&select(&root.node, ".maestro-artifact-summary")),
             case.summary
         );
     }
@@ -118,14 +112,16 @@ pub async fn artifact_console_dom_preserves_raw_value_domains(import_module: js_
     parent.append_child(&root.node).unwrap();
     click(&root, ".maestro-artifact-summary");
     assert_eq!(
-        part(&root, "copy-button").get_attribute("title").as_deref(),
+        select(&root.node, "copy-button")
+            .get_attribute("title")
+            .as_deref(),
         Some("Copy logs")
     );
     for case in cases().values {
         let (operand, expected, copied) = prepare(&factory, &case);
         *console.logs.borrow_mut() = vec![log(operand), log("later usable line")];
         console.update(&root, &view).unwrap();
-        let rows = part(&root, ".maestro-artifact-logs");
+        let rows = select(&root.node, ".maestro-artifact-logs");
         let row = rows.first_element_child().unwrap();
         assert_eq!(
             row.unchecked_ref::<HtmlElement>().inner_text(),
@@ -195,12 +191,12 @@ fn prepare(
                 .unwrap()
         )
     } else {
-        case.paint.clone()
+        case.paint.clone().unwrap()
     };
     let copied = if case.kind == "date" {
         paint.clone()
     } else {
-        case.copy.clone()
+        case.copy.clone().unwrap()
     };
     (operand, paint, copied)
 }
@@ -234,17 +230,19 @@ fn following_and_geometry(view: &DomView) {
         .extend((0..80).map(|i| log(format!("line {i}"))));
     console.update(&root, view).unwrap();
     assert_eq!(
-        part(&root, ".maestro-artifact-logs").child_nodes().length(),
+        select(&root.node, ".maestro-artifact-logs")
+            .child_nodes()
+            .length(),
         0
     );
     click(&root, ".maestro-artifact-summary");
-    let scroll = part(&root, ".maestro-artifact-logs");
+    let scroll = select(&root.node, ".maestro-artifact-logs");
     assert_disclosure(&root, true);
     let html = scroll.unchecked_ref::<HtmlElement>();
     viewport_sizes(&console, &root, view, &scroll);
     click(&root, ".maestro-artifact-follow");
     assert_eq!(
-        part(&root, ".maestro-artifact-follow")
+        select(&root.node, ".maestro-artifact-follow")
             .get_attribute("title")
             .as_deref(),
         Some("Autoscroll disabled")
@@ -281,7 +279,7 @@ async fn current_controller_and_copy(view: &DomView, page: &JsValue) {
     let first = Console::new();
     let (parent, root) = place(view, &first);
     click(&root, ".maestro-artifact-summary");
-    let summary = part(&root, ".maestro-artifact-summary");
+    let summary = select(&root.node, ".maestro-artifact-summary");
     let mut later = Console::new();
     let german = localized(view, "de");
     later.update(&root, &german).unwrap();
@@ -298,22 +296,22 @@ async fn current_controller_and_copy(view: &DomView, page: &JsValue) {
     ]));
     later.update(&root, &german).unwrap();
     click(&root, ".maestro-artifact-summary");
-    assert!(summary.is_same_node(Some(&part(&root, ".maestro-artifact-summary"))));
+    assert!(summary.is_same_node(Some(&select(&root.node, ".maestro-artifact-summary"))));
     assert_eq!(text(&summary), "Konsole (1 error)");
     assert_eq!(
-        part(&root, ".maestro-artifact-follow")
+        select(&root.node, ".maestro-artifact-follow")
             .get_attribute("title")
             .as_deref(),
         Some("Automatisches Scrollen aktiviert")
     );
     click(&root, ".maestro-artifact-follow");
     assert_eq!(
-        part(&root, ".maestro-artifact-follow")
+        select(&root.node, ".maestro-artifact-follow")
             .get_attribute("title")
             .as_deref(),
         Some("Automatisches Scrollen deaktiviert")
     );
-    let rows = part(&root, ".maestro-artifact-logs");
+    let rows = select(&root.node, ".maestro-artifact-logs");
     call(
         page,
         "select",
@@ -337,7 +335,7 @@ async fn current_controller_and_copy(view: &DomView, page: &JsValue) {
 /// The actual copy consumer uses icon-only feedback for the shared two-second interval.
 async fn assert_copy_feedback(page: &JsValue, root: &DomRoot, expected: &str) {
     let clipboard = Recorded::install(Clipboard::Accept);
-    let copy = part(root, "copy-button");
+    let copy = select(&root.node, "copy-button");
     assert_eq!(
         copy.get_attribute("title").as_deref(),
         Some("Logs kopieren")
@@ -370,7 +368,7 @@ async fn forms_and_keyboard(view: &DomView) {
     let console = Console::new();
     let root = console.mount(view).unwrap();
     form.append_child(&root.node).unwrap();
-    let summary = part(&root, ".maestro-artifact-summary");
+    let summary = select(&root.node, ".maestro-artifact-summary");
     summary.unchecked_ref::<HtmlElement>().focus().unwrap();
     driver("driverPress", "Space").await;
     assert_eq!(
@@ -378,7 +376,7 @@ async fn forms_and_keyboard(view: &DomView) {
         Some("true")
     );
     driver("driverPress", "Tab").await;
-    let follow = part(&root, ".maestro-artifact-follow");
+    let follow = select(&root.node, ".maestro-artifact-follow");
     assert_eq!(view.document.active_element(), Some(follow.clone()));
     driver("driverPress", "Enter").await;
     assert_eq!(
@@ -389,7 +387,7 @@ async fn forms_and_keyboard(view: &DomView) {
     driver("driverPress", "Tab").await;
     assert_eq!(
         view.document.active_element(),
-        Some(part(&root, "copy-button button"))
+        Some(select(&root.node, "copy-button button"))
     );
     let _clipboard = Recorded::install(Clipboard::Accept);
     driver("driverPress", "Enter").await;
@@ -438,7 +436,7 @@ async fn release_and_sibling(view: &DomView, page: &JsValue) {
     let weak = Rc::downgrade(&console.logs);
     let (parent, root) = place(view, &console);
     click(&root, ".maestro-artifact-summary");
-    let copy = part(&root, "copy-button");
+    let copy = select(&root.node, "copy-button");
     let deferred = Recorded::install(Clipboard::Defer);
     click(&root, "copy-button button");
     frames(page, 1).await;
@@ -458,7 +456,7 @@ async fn release_and_sibling(view: &DomView, page: &JsValue) {
     );
     click(&sibling_root, ".maestro-artifact-summary");
     assert_eq!(
-        part(&sibling_root, ".maestro-artifact-summary")
+        select(&sibling_root.node, ".maestro-artifact-summary")
             .get_attribute("aria-expanded")
             .as_deref(),
         Some("true")
@@ -472,7 +470,7 @@ async fn release_and_sibling(view: &DomView, page: &JsValue) {
         .unwrap();
     click(&sibling_root, ".maestro-artifact-summary");
     assert_eq!(
-        part(&sibling_root, ".maestro-artifact-summary")
+        select(&sibling_root.node, ".maestro-artifact-summary")
             .get_attribute("aria-expanded")
             .as_deref(),
         Some("false")
@@ -506,7 +504,7 @@ async fn assert_error_operands(
         }];
         console.update(root, view).unwrap();
         assert_eq!(
-            part(root, ".maestro-artifact-logs")
+            select(&root.node, ".maestro-artifact-logs")
                 .unchecked_ref::<HtmlElement>()
                 .inner_text(),
             paint
@@ -553,7 +551,7 @@ async fn growth(
         *console.logs.borrow_mut() = vec![log(iterable)];
         console.update(root, view).unwrap();
         assert_eq!(
-            part(root, ".maestro-artifact-logs")
+            select(&root.node, ".maestro-artifact-logs")
                 .unchecked_ref::<HtmlElement>()
                 .inner_text(),
             format!("[log] {}", "x".repeat(case.count as usize))
@@ -577,7 +575,7 @@ async fn assert_console_roles(
     page: &JsValue,
 ) {
     let presentation = view.pack.presentation(mode).unwrap();
-    let summary = part(root, ".maestro-artifact-summary");
+    let summary = select(&root.node, ".maestro-artifact-summary");
     driver("driverPointer", "[0,0,false]").await;
     call(page, "finish", &js_sys::Array::of1(&summary)).await;
     assert_eq!(
@@ -585,19 +583,19 @@ async fn assert_console_roles(
         rgb(presentation.colors["muted"])
     );
     assert_eq!(
-        computed(&part(root, ".maestro-artifact-log"), "color"),
+        computed(&select(&root.node, ".maestro-artifact-log"), "color"),
         rgb(presentation.colors["muted"])
     );
     assert_eq!(
-        computed(&part(root, ".maestro-artifact-error"), "color"),
+        computed(&select(&root.node, ".maestro-artifact-error"), "color"),
         rgb(presentation.colors["error"])
     );
     assert_eq!(
-        computed(&part(root, ".maestro-artifact-logs"), "overflow-y"),
+        computed(&select(&root.node, ".maestro-artifact-logs"), "overflow-y"),
         "auto"
     );
     assert_eq!(
-        computed(&part(root, ".maestro-artifact-logs"), "font-family"),
+        computed(&select(&root.node, ".maestro-artifact-logs"), "font-family"),
         presentation.css_properties()["--maestro-type-mono-font"]
     );
 
@@ -611,7 +609,7 @@ async fn console_interaction_roles(
     page: &JsValue,
 ) {
     let presentation = view.pack.presentation(mode).unwrap();
-    let summary = part(root, ".maestro-artifact-summary");
+    let summary = select(&root.node, ".maestro-artifact-summary");
     let rect = summary.get_bounding_client_rect();
     driver(
         "driverPointer",
@@ -629,7 +627,7 @@ async fn console_interaction_roles(
     );
     summary.unchecked_ref::<HtmlElement>().focus().unwrap();
     driver("driverPress", "Tab").await;
-    let follow = part(root, ".maestro-artifact-follow");
+    let follow = select(&root.node, ".maestro-artifact-follow");
     assert_eq!(
         computed(&follow, "background-color"),
         rgb(presentation.colors["accent"])
@@ -676,7 +674,7 @@ fn viewport_sizes(console: &Console, root: &DomRoot, view: &DomView, scroll: &El
 /// Glyph geometry and auxiliary-control admission track the actual disclosure state.
 fn assert_disclosure(root: &DomRoot, expanded: bool) {
     assert_eq!(
-        part(root, ".maestro-artifact-summary path")
+        select(&root.node, ".maestro-artifact-summary path")
             .get_attribute("d")
             .as_deref(),
         Some(if expanded {
@@ -686,14 +684,14 @@ fn assert_disclosure(root: &DomRoot, expanded: bool) {
         })
     );
     assert_eq!(
-        part(root, ".maestro-artifact-summary")
+        select(&root.node, ".maestro-artifact-summary")
             .get_attribute("aria-expanded")
             .as_deref(),
         Some(if expanded { "true" } else { "false" })
     );
     if expanded {
         assert_eq!(
-            part(root, ".maestro-artifact-follow")
+            select(&root.node, ".maestro-artifact-follow")
                 .get_attribute("title")
                 .as_deref(),
             Some("Autoscroll enabled")

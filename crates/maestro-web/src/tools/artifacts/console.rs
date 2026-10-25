@@ -17,7 +17,7 @@ use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::Element;
 
 mod values;
-use values::{failure, value_text};
+use values::value_text;
 
 /// Kind of a console line.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -114,16 +114,17 @@ impl DomContent for Console {
         let follow = element(document, "button", "maestro-artifact-follow")?;
         summary
             .append_child(&glyph)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         summary
             .append_child(&label)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         header
             .append_child(&summary)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         root.append_child(&header)
-            .map_err(|error| failure(&error))?;
-        root.append_child(&rows).map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
+        root.append_child(&rows)
+            .map_err(|error| ToolUiError::native(&error))?;
         let mounted = Rc::new(Mounted {
             binding: RefCell::new(self.binding(view)),
             summary,
@@ -164,7 +165,7 @@ impl Console {
                 Ok(format!(
                     "[{}] {}",
                     line.r#type.label(),
-                    native_string(&line.text.0).map_err(|error| failure(&error))?
+                    native_string(&line.text.0).map_err(|error| ToolUiError::native(&error))?
                 ))
             })
             .collect::<Result<Vec<_>, ToolUiError>>()
@@ -201,7 +202,7 @@ impl Mounted {
             let _ = owner.render();
         });
         let subscription = EventSubscription::new(button.clone().into(), "click", callback)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         self.clicks.borrow_mut().push(subscription);
         Ok(())
     }
@@ -225,10 +226,10 @@ impl Mounted {
         })?;
         self.follow
             .set_attribute("title", &title)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         self.follow
             .set_attribute("aria-pressed", if following { "true" } else { "false" })
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         icon(
             &self.follow,
             if following { "ChevronsDown" } else { "Lock" },
@@ -236,7 +237,7 @@ impl Mounted {
         if self.follow.parent_node().is_none() {
             self.header
                 .append_child(&self.follow)
-                .map_err(|error| failure(&error))?;
+                .map_err(|error| ToolUiError::native(&error))?;
         }
         let previous = self.copy.borrow().clone();
         let copy = if let Some(copy) = previous {
@@ -248,17 +249,17 @@ impl Mounted {
                 copy_button::FEEDBACK_MS,
                 None,
             )
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
             self.copy.replace(Some(copy.clone()));
             self.header
                 .append_child(&copy)
-                .map_err(|error| failure(&error))?;
+                .map_err(|error| ToolUiError::native(&error))?;
             copy
         };
         copy.set_attribute("text", &binding.console.get_logs_text()?)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         copy.set_attribute("title", &binding.view.i18n.text("Copy logs")?)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         Ok(())
     }
     /// Reconcile summary and positional literal rows without replacing unchanged text.
@@ -281,7 +282,7 @@ impl Mounted {
         let expanded = binding.console.expanded.get();
         self.summary
             .set_attribute("aria-expanded", if expanded { "true" } else { "false" })
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         icon(
             &self.glyph,
             if expanded {
@@ -316,7 +317,7 @@ impl Mounted {
                 let row = element(document, "div", "")?;
                 self.rows
                     .append_child(&row)
-                    .map_err(|error| failure(&error))?;
+                    .map_err(|error| ToolUiError::native(&error))?;
                 row
             };
             row.set_class_name(if line.r#type == LogType::Error {
@@ -333,7 +334,7 @@ impl Mounted {
             if let Some(row) = self.rows.last_child() {
                 self.rows
                     .remove_child(&row)
-                    .map_err(|error| failure(&error))?;
+                    .map_err(|error| ToolUiError::native(&error))?;
             }
         }
         Ok(())
@@ -344,11 +345,11 @@ fn icon(holder: &Element, name: &str) -> Result<(), ToolUiError> {
     if holder.get_attribute("data-icon").as_deref() != Some(name) {
         let glyph = crate::browser::attachment_content::glyph_node(name)?;
         let glyph = crate::icons::icon_dom(&glyph, crate::icons::IconSize::Sm, None)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
         holder.replace_children_with_node_1(&glyph);
         holder
             .set_attribute("data-icon", name)
-            .map_err(|error| failure(&error))?;
+            .map_err(|error| ToolUiError::native(&error))?;
     }
     Ok(())
 }

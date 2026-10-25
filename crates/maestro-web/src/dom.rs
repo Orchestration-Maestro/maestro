@@ -88,9 +88,7 @@ impl MountedContent {
             Some((.., old)) => parent.replace_child(&root.node, &old.node),
             None => parent.append_child(&root.node),
         }
-        .map_err(|e| {
-            ToolUiError::Host(crate::browser::attachment_content::browser::host_error(&e))
-        })?;
+        .map_err(|error| ToolUiError::native(&error))?;
         self.active = Some((kind, content.key().map(str::to_owned), root));
         Ok(())
     }

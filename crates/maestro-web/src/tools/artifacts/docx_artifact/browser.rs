@@ -1,14 +1,14 @@
 //! Native Word publication and document resource ownership.
 use super::DocxArtifact;
 use crate::{
-    browser::attachment_content::browser::{host_error, set_text_if_changed, sync_text},
+    browser::attachment_content::browser::{set_text_if_changed, sync_text},
     dialogs::attachment_overlay::error,
     docx_preview::{Options, PageSizeOptions, RenderedDocument, render_async},
     dom::{DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use std::rc::Rc;
-use wasm_bindgen::{JsCast as _, JsValue};
+use wasm_bindgen::JsCast as _;
 use web_sys::Element;
 
 /// Last processed operands and resources of one native body.
@@ -24,10 +24,6 @@ pub(super) struct Mounted {
     heading: Option<Element>,
     /// Live URLs and pending shape sizing of the successful document.
     rendered: Option<RenderedDocument>,
-}
-/// Preserve the native failure as a host error.
-pub(super) fn failure(error: &JsValue) -> ToolUiError {
-    ToolUiError::Host(host_error(error))
 }
 /// Reconcile a body, retaining successful equal-source nodes and retrying requested failures.
 pub(super) fn update(
@@ -83,10 +79,10 @@ fn render(
     let wrapper = view
         .document
         .create_element("div")
-        .map_err(|error| failure(&error))?;
+        .map_err(|error| ToolUiError::native(&error))?;
     wrapper.set_class_name("maestro-docx-container");
     node.append_child(&wrapper)
-        .map_err(|error| failure(&error))?;
+        .map_err(|error| ToolUiError::native(&error))?;
     let options = Options {
         page_size: PageSizeOptions {
             ignore_width: true,
@@ -106,7 +102,8 @@ fn show_error(node: &Element, error: &ToolUiError, view: &DomView) -> Result<Ele
         error::detail(&error.to_string(), &*view.i18n, "Failed to load document")?,
     ];
     sync_text(Some(&nodes), &values);
-    node.append_child(&panel).map_err(|error| failure(&error))?;
+    node.append_child(&panel)
+        .map_err(|error| ToolUiError::native(&error))?;
     let [heading, _] = nodes;
     Ok(heading)
 }
