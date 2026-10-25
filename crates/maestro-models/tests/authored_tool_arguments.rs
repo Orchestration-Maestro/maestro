@@ -1072,3 +1072,47 @@ fn sibling_definitions_keep_the_enclosing_scope() {
 fn composed_candidates_keep_declared_constraints() {
     run_scope("composed candidates", 6);
 }
+
+#[path = "../../maestro-extensions-wasm/src/tests/nested_schema_fixture.rs"]
+mod nested_schema_fixture;
+
+/// Nested declarations keep conversion provenance without changing the invocation.
+#[test]
+fn nested_declarations_keep_authored_and_plain_preparation() {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Invocation {
+        /// Declaration identity.
+        id: String,
+        /// Supplied invocation text.
+        arguments_json: String,
+        /// Complete prepared result.
+        expected_json: String,
+    }
+    let cases: Vec<Invocation> = serde_json::from_str(include_str!(
+        "../../maestro-extensions-wasm/src/tests/nested_schema_invocations.json"
+    ))
+    .unwrap();
+    for case in cases {
+        let tool = Tool {
+            name: "nested".into(),
+            description: String::new(),
+            parameters: nested_schema_fixture::parameters(&case.id).unwrap(),
+        };
+        let args: Value = serde_json::from_str(&case.arguments_json).unwrap();
+        let call = ToolCall {
+            id: "call".into(),
+            name: "nested".into(),
+            arguments: args.clone(),
+            thought_signature: None,
+        };
+        let expected: Value = serde_json::from_str(&case.expected_json).unwrap();
+        assert_eq!(
+            validate_tool_arguments(&tool, &call),
+            Ok(expected),
+            "{}",
+            case.id
+        );
+        assert_eq!(call.arguments, args, "{} invocation unchanged", case.id);
+    }
+}
