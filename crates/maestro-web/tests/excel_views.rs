@@ -205,8 +205,8 @@ fn excel_reading_transactions_keep_previous_publication() {
 fn excel_overlay_preserves_alias_mode_and_error_rules() {
     use attachment_support::{Content, Frame, Host, attachment, click, reading_factory};
     let record = attachment();
-    record.borrow_mut().mime_type = "application/vnd.ms-excel".into();
-    record.borrow_mut().content = encoded("two-sheets");
+    record.write().unwrap().mime_type = "application/vnd.ms-excel".into();
+    record.write().unwrap().content = encoded("two-sheets");
     let host = Rc::new(Host::default());
     let effects = host.clone();
     let mut overlay = maestro_web::AttachmentOverlay::open(
@@ -222,7 +222,7 @@ fn excel_overlay_preserves_alias_mode_and_error_rules() {
     frame.overlay(&mut overlay, vec![]).unwrap();
     let position = frame.label("Text").center();
     frame.overlay(&mut overlay, click(position)).unwrap();
-    record.borrow_mut().extracted_text = Some("live alias".into());
+    record.write().unwrap().extracted_text = Some("live alias".into());
     frame.overlay(&mut overlay, vec![]).unwrap();
     assert!(
         matches!(&host.surfaces.borrow().last().unwrap().content,Content::Text(t,_) if t == "live alias")
@@ -236,7 +236,7 @@ fn excel_overlay_preserves_alias_mode_and_error_rules() {
     frame.overlay(&mut overlay, vec![]).unwrap();
     frame.overlay(&mut overlay, vec![]).unwrap();
     let failure = reading_factory(&host);
-    record.borrow_mut().content = encoded("one-sheet");
+    record.write().unwrap().content = encoded("one-sheet");
     frame.overlay(&mut overlay, vec![]).unwrap();
     assert!(
         matches!(&host.surfaces.borrow().last().unwrap().content,Content::Reading(r,_) if Rc::ptr_eq(r,&failure))

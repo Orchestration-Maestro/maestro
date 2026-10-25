@@ -9,7 +9,6 @@ use crate::{
 };
 use maestro_app::browser::utils::attachment_utils::AttachmentType;
 use maestro_theme::BrandPresentation;
-use std::rc::Rc;
 /// Select the first matching document presentation.
 pub(super) fn file_type(a: &Attachment) -> FileType {
     if a.r#type == AttachmentType::Image {
@@ -96,7 +95,7 @@ impl AttachmentOverlay {
         } else {
             AttachmentContent::Preview {
                 file_type: kind,
-                attachment: Rc::clone(&self.attachment),
+                attachment: std::sync::Arc::clone(&self.attachment),
                 reload,
             }
         };
@@ -109,7 +108,7 @@ impl AttachmentOverlay {
         Ok({
             let a = self
                 .attachment
-                .try_borrow()
+                .try_read()
                 .map_err(|_| AttachmentUiError::BorrowConflict)?;
             let kind = file_type(&a);
             let changed = self
@@ -162,7 +161,7 @@ impl AttachmentOverlay {
             let bytes = {
                 let attachment = self
                     .attachment
-                    .try_borrow()
+                    .try_read()
                     .map_err(|_| AttachmentUiError::BorrowConflict)?;
                 crate::utils::base64::decode(&attachment.content).map_err(|e| e.to_string())
             };
@@ -207,7 +206,7 @@ impl AttachmentOverlay {
             let bytes = {
                 let attachment = self
                     .attachment
-                    .try_borrow()
+                    .try_read()
                     .map_err(|_| AttachmentUiError::BorrowConflict)?;
                 crate::utils::base64::decode(&attachment.content).map_err(|e| e.to_string())
             };

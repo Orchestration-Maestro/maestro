@@ -444,8 +444,8 @@ mod tests {
         opened
     }
     /// Construct an original mutable record with a valid thumbnail and inspectable text.
-    fn attachment(name: &str) -> Rc<RefCell<maestro_web::Attachment>> {
-        Rc::new(RefCell::new(serde_json::from_value(serde_json::json!({
+    fn attachment(name: &str) -> maestro_web::SharedAttachment {
+        std::sync::Arc::new(std::sync::RwLock::new(serde_json::from_value(serde_json::json!({
             "id":name,"type":"document","fileName":name,"mimeType":"text/plain","content":"YWJj","size":3,
             "extractedText":name,
             "preview":"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg=="
@@ -507,7 +507,7 @@ mod tests {
             egui::pos2(x, y),
         );
         assert_eq!(opened.len(), 1);
-        second.borrow_mut().extracted_text = Some("edited after opening".into());
+        second.write().unwrap().extracted_text = Some("edited after opening".into());
         // Ordinary records ignore attachment-looking extra fields.
         let ordinary=serde_json::from_value(serde_json::json!({"role":"user","content":"ordinary","timestamp":0,"attachments":[{}]})).unwrap();
         draw_user(&mut surface, &mut row, UserMessageInput::User(&ordinary));

@@ -15,13 +15,10 @@ use maestro_web::{
         },
     },
 };
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-};
+use std::{cell::Cell, rc::Rc};
 
 pub(super) struct TileRecipe {
-    pub(super) record: Rc<RefCell<maestro_web::Attachment>>,
+    pub(super) record: maestro_web::SharedAttachment,
     pub(super) fail: Rc<Cell<bool>>,
 }
 impl ToolContent for TileRecipe {

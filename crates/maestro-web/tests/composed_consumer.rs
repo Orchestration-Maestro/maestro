@@ -278,7 +278,7 @@ mod tests {
     fn draw_user(
         surface: &mut Surface,
         row: &mut maestro_web::UserMessage,
-        attachments: &[Rc<RefCell<maestro_web::Attachment>>],
+        attachments: &[maestro_web::SharedAttachment],
     ) {
         let host = surface.host();
         let content = maestro_app::UserContent::Text("**user**".into());
@@ -301,7 +301,7 @@ mod tests {
     #[wasm_bindgen]
     pub fn user_consumer_keeps_original_attachment_handle_without_byte_clones() {
         let mut surface = Surface::new();
-        let attachment = Rc::new(RefCell::new(serde_json::from_value::<maestro_web::Attachment>(serde_json::json!({
+        let attachment = std::sync::Arc::new(std::sync::RwLock::new(serde_json::from_value::<maestro_web::Attachment>(serde_json::json!({
             "id":"a","type":"image","fileName":"first.png","mimeType":"image/png","content":"","size":0,
             "preview":"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg=="
         })).unwrap()));
@@ -311,14 +311,14 @@ mod tests {
         check(
             "document.querySelector('.maestro-markdown strong').textContent==='user' && document.querySelector('img[alt=\"first.png\"]')!==null",
         );
-        attachment.borrow_mut().file_name = "second.png".into();
+        attachment.write().unwrap().file_name = "second.png".into();
         draw_user(&mut surface, &mut row, &attachments);
         check(
             "document.querySelector('img[alt=\"second.png\"]')!==null && document.querySelector('img[alt=\"first.png\"]')===null",
         );
         drop(row);
         check("document.querySelector('img[alt=\"second.png\"]')===null");
-        assert_eq!(attachment.borrow().file_name, "second.png");
+        assert_eq!(attachment.read().unwrap().file_name, "second.png");
     }
 
     /// Non-serializable detail handle passed directly to the registered callback.

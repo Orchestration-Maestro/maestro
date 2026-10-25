@@ -160,6 +160,16 @@ Provide the browser's named stores, metadata/indexes, settings/provider keys/cus
 
 Accept the established URL/File/Blob/buffer inputs and text/image/PDF/DOCX/PPTX/XLSX/XLS formats. Preserve original bytes, MIME/name/size, extraction wrappers/order/whitespace, previews, cancellation and errors. PDF attachments use owned text-show traversal with registry hayro-interpret 0.8.0 font decoding and hayro 0.8.0 page rendering for the first-page preview; PDF artifacts render all pages at the defined scale with cleanup. Keep application wrappers, fit-160px preview and 1.5 artifact/overlay scales, errors and cleanup exact. PDF extraction and rasterization retain the approved native engine’s text segmentation, Type3 text, bidirectional ordering and font-rendering differences; application wrapping, page order, scales, failure categories and owned cleanup remain exact. Do not use pdf-extract. DOCX preview preserves pagination, fonts, headers, footers and notes. Spreadsheet preview preserves sheets, formatted cells, styles and tab switching. HTML/SVG/image/Markdown/text/code artifacts preserve preview/source/download and safe rendering behavior. Browser Markdown also preserves inline and display math for dollar and backslash delimiters, HTML math layout/fonts, parse-error spans and fallback text. Use katex-rs 0.3.0 beside the Markdown consumer with output="html", throwOnError=false and delimiter-specific displayMode. Ship matching KaTeX 0.18.5 CSS/fonts as hashed data through the DOM. Reuse the reference math inputs for named checks of complete expressions, inline errors and browser layout. Formulas match the reference's glyphs, layout and tooltip content. Internal markup, class names, element structure and byte or pixel identity may differ only where not user-visible. A visible difference is a defect to fix in the owning Rust implementation, not an accepted result. Fix defects in the application wrapper before landing; do not add MathML, auto-render extensions or math behavior to terminal/export paths that never invoke it. Libraries must qualify these contracts; extraction-only substitutes do not satisfy document preview.
 
+The application owns browser attachment values and their live shared handles.
+User messages, runtime attachment lists, tiles, overlays, document previews and
+downloads retain the same `Arc<RwLock<Attachment>>` members. Removing a parent
+collection does not detach or freeze a retained member. Model projection and
+runtime publication snapshot values at their existing boundaries; release all
+collection and member guards before invoking caller-supplied value adapters.
+Serialization keeps plain attachment objects, optional fields, order and repeated
+members, without persisting pointer identity or introducing a second record schema.
+Assistant rows retain the application's existing shared assistant-message handle.
+
 Shared XLSX formula displacement belongs solely to the application's existing
 `browser::ssf::read::formulas` module. Classify maximal runs between operator
 characters, whitespace and operand punctuation; every other character belongs to

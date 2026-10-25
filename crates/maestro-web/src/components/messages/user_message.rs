@@ -1,7 +1,7 @@
 //! User text with caller-owned attachment handles.
 use super::reading_view;
 use crate::{
-    Attachment, AttachmentOverlay, AttachmentTile,
+    AttachmentOverlay, AttachmentTile,
     browser::attachment_content::{
         self, AttachmentContent, AttachmentHost, AttachmentSurface, ReadingContent, ReadingPhase,
         ReadingPlacement,
@@ -10,7 +10,7 @@ use crate::{
     tools::types::{ToolContentOutput, ToolRenderView, ToolUiError},
 };
 use maestro_app::{UserBlock, UserContent};
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 
 /// Borrow existing user content without creating another storage record.
 #[derive(Clone, Copy)]
@@ -22,7 +22,7 @@ pub enum UserMessageInput<'a> {
         /// Text or ordered text/image blocks.
         content: &'a UserContent,
         /// Independently owned attachments, in display order.
-        attachments: Option<&'a [Rc<RefCell<Attachment>>]>,
+        attachments: Option<&'a [crate::SharedAttachment]>,
     },
 }
 /// One retained user row, its Markdown and positional tiles.
@@ -92,7 +92,12 @@ impl UserMessage {
         self.text.content.push_str(source);
         self.tiles.truncate(attachments.len());
         for (index, attachment) in attachments.iter().enumerate() {
-            AttachmentTile::retain_at(&mut self.tiles, index, Rc::clone(attachment), &self.host);
+            AttachmentTile::retain_at(
+                &mut self.tiles,
+                index,
+                std::sync::Arc::clone(attachment),
+                &self.host,
+            );
         }
         self.place(
             ui,

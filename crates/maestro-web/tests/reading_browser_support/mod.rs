@@ -33,7 +33,7 @@ pub struct Host {
     /// Controlled save failure.
     pub fail_download: Cell<bool>,
     /// Original record handles reaching save.
-    pub downloads: RefCell<Vec<Rc<RefCell<maestro_web::Attachment>>>>,
+    pub downloads: RefCell<Vec<maestro_web::SharedAttachment>>,
 }
 impl Host {
     /// Bind the actual canvas document and retain per-test state.
@@ -147,7 +147,7 @@ impl AttachmentHost for Host {
     fn spawn_local(&self, f: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         self.native.spawn_local(f);
     }
-    fn download(&self, a: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, a: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         self.downloads.borrow_mut().push(a.clone());
         if self.fail_download.get() {
             return Err(AttachmentHostError::Host("save failure".into()));

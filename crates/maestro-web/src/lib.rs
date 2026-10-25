@@ -36,7 +36,9 @@ pub use maestro_app::browser::components::messages::{
     ArtifactMessage, UserMessageWithAttachments, convert_attachments, default_convert_to_llm,
     is_artifact_message, is_user_message_with_attachments,
 };
-pub use maestro_app::browser::utils::attachment_utils::{Attachment, load_attachment};
+pub use maestro_app::browser::utils::attachment_utils::{
+    Attachment, SharedAttachment, load_attachment,
+};
 pub use maestro_app::browser::utils::proxy_utils::{
     apply_proxy_if_needed, create_stream_fn, is_cors_error, should_use_proxy_for_provider,
 };

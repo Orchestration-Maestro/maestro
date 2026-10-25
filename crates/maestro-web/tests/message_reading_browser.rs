@@ -246,7 +246,7 @@ mod tests {
     fn independent_overlay_survives(surface: &mut Surface) {
         let host = surface.host();
         let mut row = maestro_web::UserMessage::new(host.clone());
-        let attachment = Rc::new(RefCell::new(serde_json::from_value::<maestro_web::Attachment>(serde_json::json!({
+        let attachment = std::sync::Arc::new(std::sync::RwLock::new(serde_json::from_value::<maestro_web::Attachment>(serde_json::json!({
             "id":"independent", "type":"document", "fileName":"independent.txt", "mimeType":"text/plain",
             "content":"YWJj", "size":3, "extractedText":"original independent text",
             "preview":"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg=="
@@ -286,7 +286,7 @@ mod tests {
         assert_eq!(opened.len(), 1);
         draw_user(surface, &mut row, &content);
         drop(row);
-        attachment.borrow_mut().extracted_text = Some("independent owner still live".into());
+        attachment.write().unwrap().extracted_text = Some("independent owner still live".into());
         surface.draw(|ui, frame| {
             opened[0]
                 .render(ui.ctx(), frame.i18n, frame.presentation)

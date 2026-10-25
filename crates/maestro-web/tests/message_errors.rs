@@ -75,7 +75,7 @@ fn attachment_failure(
     engine: &FailingEngine,
 ) {
     let attachments = [attachment_support::attachment()];
-    let borrow = attachments[0].borrow_mut();
+    let borrow = attachments[0].write().unwrap();
     let content = maestro_app::UserContent::Text("native text".into());
     let mut user = UserMessage::new(host.clone());
     let error = render(frame, host, engine, |ui, view| {

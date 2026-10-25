@@ -1,8 +1,11 @@
 # Attachment tiles and overlays
 
 `maestro_web::AttachmentTile` renders a thumbnail or document glyph with a clipped
-filename. Its public `attachment` is an `Rc<RefCell<Attachment>>`; replacing it or
-editing the shared record is observed on subsequent frames. `show_delete` defaults
+filename. Its public `attachment` is the application-owned `SharedAttachment` (`Arc<RwLock<Attachment>>`); replacing it or
+editing the shared record is observed on subsequent frames. Messages, tiles,
+overlays and downloads retain the same member even after its parent list is removed.
+Model input and runtime globals receive independent value snapshots; saved records
+remain plain attachment objects. `show_delete` defaults
 to false. When enabled, the remove target calls the optional `on_delete` without
 opening an overlay. Hover-capable platforms reveal its paint on hover; other
 platforms keep it visible. A PDF badge is not part of the image hover/click

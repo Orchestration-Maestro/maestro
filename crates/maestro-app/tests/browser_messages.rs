@@ -82,7 +82,7 @@ fn message(value: &Value) -> AgentMessage<CustomAgentMessages<Foreign>> {
                 attachments: attachments.map(|items| {
                     items
                         .into_iter()
-                        .map(AttachmentRecord::into_attachment)
+                        .map(|value| Arc::new(RwLock::new(value.into_attachment())))
                         .collect()
                 }),
             }),
@@ -170,7 +170,10 @@ fn attachment_blocks_keep_order_duplicates_and_document_text() {
         .filter(|row| row.suite == "attachment_blocks")
     {
         let input: Input = serde_json::from_value(row.input).unwrap();
-        let values = attachments(input.attachments.clone());
+        let values: Vec<_> = attachments(input.attachments.clone())
+            .into_iter()
+            .map(|value| Arc::new(RwLock::new(value)))
+            .collect();
         equal(&serde_json::to_value(&values).unwrap(), &input.attachments);
         equal(
             &serde_json::to_value(convert_attachments(&values)).unwrap(),
@@ -256,4 +259,104 @@ fn browser_projection_reads_retained_state_without_mutating_it() {
     drop(history);
     drop(retained);
     assert!(weak.upgrade().is_none());
+}
+
+#[test]
+fn browser_attachment_handles_survive_parent_removal_and_stay_live() {
+    use maestro_app::browser::utils::attachment_utils::Attachment;
+    let original = Arc::new(RwLock::new(Attachment {
+        id: "original".into(),
+        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Image,
+        file_name: "before.png".into(),
+        mime_type: "image/png".into(),
+        size: 3,
+        content: "YWJj".into(),
+        extracted_text: None,
+        preview: None,
+    }));
+    let mut user = UserMessageWithAttachments {
+        content: UserContent::Text(" untouched ".into()),
+        timestamp: 1.,
+        attachments: Some(vec![Arc::clone(&original), Arc::clone(&original)]),
+    };
+    let retained = user.attachments.as_ref().unwrap().clone();
+    user.attachments = None;
+    {
+        let mut value = original.write().unwrap();
+        value.file_name = "after.png".into();
+        value.content = "ZGVm".into();
+    }
+    for handle in &retained {
+        assert!(Arc::ptr_eq(handle, &original));
+        assert_eq!(handle.read().unwrap().file_name, "after.png");
+    }
+    assert_eq!(
+        serde_json::to_value(convert_attachments(&retained)).unwrap(),
+        json!([
+            {"type":"image", "data":"ZGVm", "mimeType":"image/png"},
+            {"type":"image", "data":"ZGVm", "mimeType":"image/png"}
+        ])
+    );
+}
+
+#[test]
+fn browser_shared_attachments_keep_plain_serialization_and_projection() {
+    /// Complete recorded conversion cases.
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Corpus {
+        /// Independently recorded cases.
+        rows: Vec<Row>,
+    }
+    /// One complete input and its observable outputs.
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Row {
+        /// Case name.
+        id: String,
+        /// Original browser record.
+        input: Value,
+        /// Serialized and projected results.
+        expected: Expected,
+    }
+    /// Boundary observations from the source.
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Expected {
+        /// Saved plain objects.
+        persisted: Value,
+        /// Ordered attachment blocks.
+        blocks: Value,
+        /// Complete model input.
+        projected: Value,
+    }
+    let corpus: Corpus =
+        serde_json::from_str(include_str!("fixtures/attachments/shared_records.json")).unwrap();
+    assert_eq!(corpus.rows.len(), 9);
+    for row in corpus.rows {
+        let _: RecordedMessage = serde_json::from_value(row.input.clone()).unwrap();
+        let input: UserMessageWithAttachments = serde_json::from_value(row.input).unwrap();
+        let expected = if row.id == "null" {
+            let decoded: UserMessageWithAttachments =
+                serde_json::from_value(row.expected.persisted).unwrap();
+            serde_json::to_value(decoded).unwrap()
+        } else {
+            row.expected.persisted
+        };
+        equal(&serde_json::to_value(&input).unwrap(), &expected);
+        equal(
+            &serde_json::to_value(convert_attachments(
+                input.attachments.as_deref().unwrap_or_default(),
+            ))
+            .unwrap(),
+            &row.expected.blocks,
+        );
+        let message: AgentMessage<CustomAgentMessages> = AgentMessage::Custom(Arc::new(
+            RwLock::new(CustomAgentMessages::UserWithAttachments(input)),
+        ));
+        equal(
+            &serde_json::to_value(default_convert_to_llm(&[message])).unwrap(),
+            &row.expected.projected,
+        );
+    }
 }

@@ -143,7 +143,7 @@ pub fn downloads(row: &Row) -> Vec<Attachment> {
     host.downloads
         .borrow()
         .iter()
-        .map(|a| a.borrow().clone())
+        .map(|a| a.read().unwrap().clone())
         .collect()
 }
 pub fn escape() -> egui::Event {
@@ -291,9 +291,9 @@ pub fn changed_file_keeps_opened_original() {
         frame.overlay(overlay, vec![escape()]).unwrap();
     }
     assert_eq!(
-        host.downloads.borrow()[0].borrow().content,
+        host.downloads.borrow()[0].read().unwrap().content,
         "6Zuq",
         "opened original was rewritten by a later tool render"
     );
-    assert_eq!(host.downloads.borrow()[1].borrow().content, "TmV3");
+    assert_eq!(host.downloads.borrow()[1].read().unwrap().content, "TmV3");
 }

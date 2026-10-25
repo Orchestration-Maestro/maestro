@@ -104,7 +104,7 @@ fn generic_and_custom() {
     drop(receiver);
     custom(record);
 }
-fn custom(record: Rc<std::cell::RefCell<maestro_web::Attachment>>) {
+fn custom(record: maestro_web::SharedAttachment) {
     use crate::message_renderer_support::{Renderer, message};
     let mut surface = Surface::new();
     let host = surface.host();
@@ -204,7 +204,7 @@ pub fn user_and_tool() {
     let host = surface.host();
     let mut user = UserMessage::new(host.clone());
     let record = crate::attachment_support::attachment();
-    record.borrow_mut().file_name = "user.txt".into();
+    record.write().unwrap().file_name = "user.txt".into();
     let records = [record];
     let content = maestro_app::UserContent::Text(String::new());
     let input = UserMessageInput::WithAttachments {

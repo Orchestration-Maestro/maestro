@@ -22,7 +22,7 @@ pub enum Content {
     /// Literal text operands.
     Text(String, TextView),
     /// Pending document preview.
-    Preview(FileType, Rc<RefCell<Attachment>>, bool),
+    Preview(FileType, maestro_web::SharedAttachment, bool),
 }
 /// Recorded surface and presentation.
 #[derive(Clone)]
@@ -52,7 +52,7 @@ pub struct Host {
     /// Ordered lifecycle effects.
     pub effects: RefCell<Vec<String>>,
     /// Downloaded original handles.
-    pub downloads: RefCell<Vec<Rc<RefCell<Attachment>>>>,
+    pub downloads: RefCell<Vec<maestro_web::SharedAttachment>>,
     /// Platform hover capability.
     pub hover: Cell<bool>,
     /// Controlled presentation failure.
@@ -172,7 +172,7 @@ impl AttachmentHost for Host {
     fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
-    fn download(&self, a: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, a: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         self.downloads.borrow_mut().push(a);
         if self.fail_download.get() {
             Err(AttachmentHostError::Host("download rejected".into()))
@@ -183,8 +183,8 @@ impl AttachmentHost for Host {
 }
 /// A literal original attachment independent of its preview.
 #[must_use]
-pub fn attachment() -> Rc<RefCell<Attachment>> {
-    Rc::new(RefCell::new(Attachment {
+pub fn attachment() -> maestro_web::SharedAttachment {
+    std::sync::Arc::new(std::sync::RwLock::new(Attachment {
         id: "same".into(),
         r#type: AttachmentType::Document,
         file_name: "note.txt".into(),
@@ -382,8 +382,8 @@ impl Input {
     /// # Panics
     /// Panics on an unknown fixture discriminant.
     #[must_use]
-    pub fn record(&self) -> Rc<RefCell<maestro_web::Attachment>> {
-        Rc::new(RefCell::new(maestro_web::Attachment {
+    pub fn record(&self) -> maestro_web::SharedAttachment {
+        std::sync::Arc::new(std::sync::RwLock::new(maestro_web::Attachment {
             id: self.id.clone(),
             r#type: match self.r#type.as_str() {
                 "image" => maestro_app::browser::utils::attachment_utils::AttachmentType::Image,

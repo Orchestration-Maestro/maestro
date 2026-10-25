@@ -42,7 +42,7 @@ fn cases() -> Vec<Case> {
 fn tile_preview_preserves_mime_badge_and_filename() {
     for c in cases().into_iter().filter(|c| c.expected.preview.is_some()) {
         let record = c.input.record();
-        let name = record.borrow().file_name.clone();
+        let name = record.read().unwrap().file_name.clone();
         let host = Rc::new(Host::default());
         let mut tile = AttachmentTile::new(record, host.clone());
         tile.show_delete = c.show_delete;
@@ -123,7 +123,7 @@ fn tile_filename_preserves_utf16_length_boundaries() {
 #[test]
 fn tile_hover_and_remove_keep_pointer_capabilities() {
     let record = attachment();
-    record.borrow_mut().preview = Some("thumb".into());
+    record.write().unwrap().preview = Some("thumb".into());
     let host = Rc::new(Host::default());
     host.hover.set(true);
     let mut tile = AttachmentTile::new(record, host.clone());
@@ -177,7 +177,7 @@ fn tile_click_opens_with_the_same_attachment_handle() {
         .tile(&mut tile, click(egui::pos2(32., 32.)))
         .unwrap()
         .expect("tile opens");
-    record.borrow_mut().extracted_text = Some("edited after opening".into());
+    record.write().unwrap().extracted_text = Some("edited after opening".into());
     drop(tile);
     frame.overlay(&mut overlay, vec![]).unwrap();
     assert!(
@@ -224,20 +224,20 @@ fn tile_delete_does_not_open_the_overlay() {
 #[test]
 fn tile_replacement_reuses_and_releases_dom_surfaces() {
     let record = attachment();
-    record.borrow_mut().preview = Some("first".into());
+    record.write().unwrap().preview = Some("first".into());
     let host = Rc::new(Host::default());
     let mut tile = AttachmentTile::new(record, host.clone());
     let mut frame = Frame::default();
     frame.tile(&mut tile, vec![]).unwrap();
     let id = host.surfaces.borrow()[0].id;
     let next = attachment();
-    next.borrow_mut().preview = Some("second".into());
+    next.write().unwrap().preview = Some("second".into());
     tile.attachment = next.clone();
     frame.tile(&mut tile, vec![]).unwrap();
     let second = host.surfaces.borrow().last().unwrap().clone();
     assert_eq!(second.id, id);
     assert!(matches!(second.content,Content::Image(s,_,_) if s.ends_with(",second")));
-    next.borrow_mut().preview = None;
+    next.write().unwrap().preview = None;
     let n = host.effects.borrow().len();
     frame.tile(&mut tile, vec![]).unwrap();
     assert_eq!(&host.effects.borrow()[n..], &[format!("remove:{id:?}")]);
@@ -248,7 +248,7 @@ fn tile_replacement_reuses_and_releases_dom_surfaces() {
 #[test]
 fn tile_wide_caption_is_elided_inside_padded_bounds() {
     let record = attachment();
-    record.borrow_mut().file_name = "WWWWWWWWWW".into();
+    record.write().unwrap().file_name = "WWWWWWWWWW".into();
     let mut tile = AttachmentTile::new(record, Rc::new(Host::default()));
     let mut frame = Frame::default();
     frame.tile(&mut tile, vec![]).unwrap();
@@ -269,8 +269,8 @@ fn tile_wide_caption_is_elided_inside_padded_bounds() {
 #[test]
 fn tile_remove_keeps_visible_brand_boundary() {
     let record = attachment();
-    record.borrow_mut().mime_type = "application/pdf".into();
-    record.borrow_mut().preview = Some("pdf".into());
+    record.write().unwrap().mime_type = "application/pdf".into();
+    record.write().unwrap().preview = Some("pdf".into());
     let mut tile = AttachmentTile::new(record, Rc::new(Host::default()));
     tile.show_delete = true;
     let mut frame = Frame::default();
@@ -283,8 +283,8 @@ fn tile_remove_keeps_visible_brand_boundary() {
 fn tile_badge_tessellation_shares_tile_contour_in_both_packs() {
     for pack in ["packs/signal.json", "brand.json"] {
         let record = attachment();
-        record.borrow_mut().mime_type = "application/pdf".into();
-        record.borrow_mut().preview = Some("pdf".into());
+        record.write().unwrap().mime_type = "application/pdf".into();
+        record.write().unwrap().preview = Some("pdf".into());
         let host = Rc::new(Host::default());
         let mut tile = AttachmentTile::new(record, host.clone());
         let mut frame = Frame {
@@ -346,8 +346,8 @@ fn user_attachment_tiles_wrap_as_single_fixed_items() {
     let records: Vec<_> = (0..14)
         .map(|index| {
             let record = attachment();
-            record.borrow_mut().file_name = format!("wrapped-{index}.png");
-            record.borrow_mut().preview = Some("AA==".into());
+            record.write().unwrap().file_name = format!("wrapped-{index}.png");
+            record.write().unwrap().preview = Some("AA==".into());
             record
         })
         .collect();

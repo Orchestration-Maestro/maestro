@@ -3,7 +3,7 @@
 use crate::presentation;
 use maestro_theme::BrandMode;
 use maestro_web::browser::attachment_content::AttachmentHost;
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::panel_browser_support;
@@ -328,7 +328,7 @@ pub fn artifact_panel_browser_attachment_modal_still_releases_children() {
     let unrelated = egui::Id::new("unrelated");
     ordinary(&view, unrelated);
     js("globalThis.unrelated=document.querySelector('pre').parentElement;");
-    let attachment = Rc::new(RefCell::new(maestro_web::Attachment {
+    let attachment = std::sync::Arc::new(std::sync::RwLock::new(maestro_web::Attachment {
         id: "original".into(),
         r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
         file_name: "note.txt".into(),

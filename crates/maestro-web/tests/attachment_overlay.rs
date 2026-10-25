@@ -10,7 +10,7 @@ use std::rc::Rc;
 fn overlay_images_use_original_bytes_and_contain_fit() {
     let record = attachment();
     {
-        let mut record = record.borrow_mut();
+        let mut record = record.write().unwrap();
         record.r#type = maestro_app::browser::utils::attachment_utils::AttachmentType::Image;
         record.mime_type = "image/svg+xml".into();
         record.preview = Some("thumbnail".into());
@@ -27,7 +27,7 @@ fn overlay_images_use_original_bytes_and_contain_fit() {
         .filter(|c| c.expected.kind == "image")
     {
         let record = valid_pdf(c.input.record());
-        let name = record.borrow().file_name.clone();
+        let name = record.read().unwrap().file_name.clone();
         let host = Rc::new(Host::default());
         let mut overlay = AttachmentOverlay::open(record, None, host.clone());
         let mut frame = Frame::default();
@@ -86,7 +86,7 @@ fn overlay_file_detection_preserves_priority_and_case() {
         let host = Rc::new(Host::default());
         let record = valid_pdf(c.input.record());
         if c.expected.r#type == "excel" {
-            record.borrow_mut().content = excel_bytes(false);
+            record.write().unwrap().content = excel_bytes(false);
         }
         let mut overlay = AttachmentOverlay::open(record, None, host.clone());
         let mut frame = Frame::default();
@@ -132,7 +132,7 @@ fn overlay_toggle_gates_and_labels_each_supported_view() {
     for c in cases {
         let host = Rc::new(Host::default());
         let record = valid_pdf(c.input.record());
-        let name = record.borrow().file_name.clone();
+        let name = record.read().unwrap().file_name.clone();
         let mut overlay = AttachmentOverlay::open(record, None, host);
         let mut frame = Frame::default();
         let lang = Rc::new(support::Host::default());
@@ -156,7 +156,7 @@ fn overlay_toggle_gates_and_labels_each_supported_view() {
 #[test]
 fn overlay_toggle_clears_errors_without_changing_attachment() {
     let record = attachment();
-    record.borrow_mut().mime_type = "application/pdf".into();
+    record.write().unwrap().mime_type = "application/pdf".into();
     valid_pdf(record.clone());
     let host = Rc::new(Host::default());
     *host.fail.borrow_mut() = Some("preview failure".into());
@@ -170,7 +170,7 @@ fn overlay_toggle_clears_errors_without_changing_attachment() {
     assert!(
         matches!(&host.surfaces.borrow().last().unwrap().content,Content::Text(s,TextView::Extracted) if s=="<literal>\n\ttext")
     );
-    record.borrow_mut().extracted_text = Some("retained alias".into());
+    record.write().unwrap().extracted_text = Some("retained alias".into());
     let before = host.surfaces.borrow().len();
     frame.overlay(&mut overlay, click(pos)).unwrap();
     assert!(
@@ -253,7 +253,7 @@ fn overlay_text_preserves_literal_whitespace_and_empty_messages() {
                 (Some(""), "No text content available"),
                 (Some(" \n"), " \n"),
             ] {
-                record.borrow_mut().extracted_text = text.map(str::to_owned);
+                record.write().unwrap().extracted_text = text.map(str::to_owned);
                 frame.overlay(&mut overlay, vec![]).unwrap();
                 assert!(
                     matches!(&host.surfaces.borrow().last().unwrap().content,Content::Text(s,TextView::Extracted) if s==expected)
@@ -277,7 +277,7 @@ fn overlay_presentation_shows_text_without_a_toggle() {
             (None, "No text content available"),
             (Some(""), "No text content available"),
         ] {
-            record.borrow_mut().extracted_text = input.map(str::to_owned);
+            record.write().unwrap().extracted_text = input.map(str::to_owned);
             frame.overlay(&mut overlay, vec![]).unwrap();
             assert!(
                 matches!(&host.surfaces.borrow().last().unwrap().content,Content::Text(s,TextView::Presentation) if s==expected),
@@ -311,7 +311,7 @@ fn overlay_preview_reload_obeys_state_changes() {
         let mut overlay = AttachmentOverlay::open(record.clone(), None, host.clone());
         let mut frame = Frame::default();
         if c.expected.kind == "excel" {
-            record.borrow_mut().content = excel_bytes(false);
+            record.write().unwrap().content = excel_bytes(false);
             assert_excel_reload(&mut frame, &mut overlay, &record, &host, &c);
             continue;
         }
@@ -319,7 +319,7 @@ fn overlay_preview_reload_obeys_state_changes() {
         assert_initial_preview(&host, &record, &c);
         frame.overlay(&mut overlay, vec![]).unwrap();
         assert!(!last_reload(&host));
-        record.borrow_mut().content = "changed bytes".into();
+        record.write().unwrap().content = "changed bytes".into();
         frame.overlay(&mut overlay, vec![]).unwrap();
         assert!(last_reload(&host));
         let pos = frame.label("Text").center();
@@ -345,7 +345,7 @@ fn overlay_preview_reload_obeys_state_changes() {
 fn overlay_errors_replace_content_without_hiding_controls() {
     for message in ["failure", ""] {
         let record = attachment();
-        record.borrow_mut().mime_type = "application/pdf".into();
+        record.write().unwrap().mime_type = "application/pdf".into();
         valid_pdf(record.clone());
         let host = Rc::new(Host::default());
         *host.fail.borrow_mut() = Some(message.into());
@@ -385,7 +385,7 @@ fn overlay_close_distinguishes_escape_backdrop_header_and_content() {
         let effects = host.clone();
         let alias = record.clone();
         let callback = Rc::new(move || {
-            alias.borrow_mut().file_name = "closed by callback".into();
+            alias.write().unwrap().file_name = "closed by callback".into();
             effects.effects.borrow_mut().push("callback".into());
         });
         let mut overlay = AttachmentOverlay::open(record, Some(callback), host.clone());
@@ -425,8 +425,9 @@ fn overlay_instances_keep_separate_surface_ownership() {
     let record = attachment();
     let host = Rc::new(Host::default());
     let callback_alias = record.clone();
-    let callback =
-        Rc::new(move || callback_alias.borrow_mut().extracted_text = Some("callback edit".into()));
+    let callback = Rc::new(move || {
+        callback_alias.write().unwrap().extracted_text = Some("callback edit".into());
+    });
     let mut one = AttachmentOverlay::open(record.clone(), Some(callback), host.clone());
     let mut two = AttachmentOverlay::open(record, None, host.clone());
     let mut frame = Frame::default();
@@ -451,13 +452,13 @@ fn overlay_instances_keep_separate_surface_ownership() {
 #[test]
 fn overlay_drop_cleans_up_without_calling_on_close() {
     let record = attachment();
-    let weak = Rc::downgrade(&record);
+    let weak = std::sync::Arc::downgrade(&record);
     let host = Rc::new(Host::default());
     let calls = Rc::new(std::cell::Cell::new(0));
     let count = calls.clone();
     let capture = record.clone();
     let callback = Rc::new(move || {
-        capture.borrow_mut().content.clear();
+        capture.write().unwrap().content.clear();
         count.set(count.get() + 1);
     });
     let mut overlay = AttachmentOverlay::open(record.clone(), Some(callback), host.clone());
@@ -478,9 +479,9 @@ fn overlay_drop_cleans_up_without_calling_on_close() {
 fn overlay_download_forwards_original_fields() {
     for state in 0..3 {
         let record = attachment();
-        record.borrow_mut().mime_type = "application/pdf".into();
+        record.write().unwrap().mime_type = "application/pdf".into();
         valid_pdf(record.clone());
-        record.borrow_mut().preview = Some("not original".into());
+        record.write().unwrap().preview = Some("not original".into());
         let host = Rc::new(Host::default());
         if state == 2 {
             *host.fail.borrow_mut() = Some("preview failure".into());
@@ -497,8 +498,8 @@ fn overlay_download_forwards_original_fields() {
         frame.overlay(&mut overlay, click(pos)).unwrap();
         let downloads = host.downloads.borrow();
         assert_eq!(downloads.len(), 1);
-        assert!(Rc::ptr_eq(&downloads[0], &record));
-        let original = downloads[0].borrow();
+        assert!(std::sync::Arc::ptr_eq(&downloads[0], &record));
+        let original = downloads[0].read().unwrap();
         assert_eq!(original.content, pdf_bytes());
         assert_eq!(original.file_name, "note.txt");
         assert_eq!(original.mime_type, "application/pdf");
@@ -507,7 +508,7 @@ fn overlay_download_forwards_original_fields() {
 #[test]
 fn overlay_download_propagates_host_failures_without_changing_mode() {
     let record = attachment();
-    record.borrow_mut().mime_type = "application/pdf".into();
+    record.write().unwrap().mime_type = "application/pdf".into();
     valid_pdf(record.clone());
     let host = Rc::new(Host::default());
     let mut overlay = AttachmentOverlay::open(record.clone(), None, host.clone());
@@ -523,7 +524,7 @@ fn overlay_download_propagates_host_failures_without_changing_mode() {
         frame.overlay(&mut overlay, click(pos)),
         Err(AttachmentUiError::Host(_))
     ));
-    assert!(Rc::ptr_eq(&host.downloads.borrow()[0], &record));
+    assert!(std::sync::Arc::ptr_eq(&host.downloads.borrow()[0], &record));
     host.fail_download.set(false);
     frame.overlay(&mut overlay, vec![]).unwrap();
     assert!(matches!(
@@ -545,15 +546,11 @@ fn last_reload(host: &Host) -> bool {
 }
 
 /// Observe initial container identity and its independent fixture projection.
-fn assert_initial_preview(
-    host: &Host,
-    record: &Rc<std::cell::RefCell<maestro_web::Attachment>>,
-    c: &ContentCase,
-) {
+fn assert_initial_preview(host: &Host, record: &maestro_web::SharedAttachment, c: &ContentCase) {
     let first = host.surfaces.borrow()[0].clone();
     assert_eq!(kind(&first.content), c.expected.kind, "{}", c.name);
     assert!(
-        matches!(first.content,Content::Preview(_,ref handle,true) if Rc::ptr_eq(handle,record))
+        matches!(first.content,Content::Preview(_,ref handle,true) if std::sync::Arc::ptr_eq(handle,record))
     );
     assert_eq!(first.rect.width().to_bits(), 800.0_f32.to_bits());
     assert!(!c.show_text);
@@ -565,7 +562,7 @@ fn assert_initial_preview(
 fn assert_retained_text_mode(
     frame: &mut Frame,
     overlay: &mut AttachmentOverlay,
-    record: &Rc<std::cell::RefCell<maestro_web::Attachment>>,
+    record: &maestro_web::SharedAttachment,
     host: &Host,
 ) {
     let pos = frame.label("Text").center();
@@ -576,7 +573,7 @@ fn assert_retained_text_mode(
         ("presentationml", false),
     ] {
         {
-            let mut original = record.borrow_mut();
+            let mut original = record.write().unwrap();
             original.mime_type = mime.into();
             original.r#type = if image {
                 maestro_app::browser::utils::attachment_utils::AttachmentType::Image
@@ -597,7 +594,7 @@ fn assert_retained_text_mode(
 fn assert_error_survives_record_edits(
     frame: &mut Frame,
     overlay: &mut AttachmentOverlay,
-    record: &Rc<std::cell::RefCell<maestro_web::Attachment>>,
+    record: &maestro_web::SharedAttachment,
     host: &Host,
     message: &str,
 ) {
@@ -611,7 +608,7 @@ fn assert_error_survives_record_edits(
         "ms-excel",
     ] {
         {
-            let mut original = record.borrow_mut();
+            let mut original = record.write().unwrap();
             original.mime_type = mime.into();
             original.r#type = if mime == "image/png" {
                 maestro_app::browser::utils::attachment_utils::AttachmentType::Image
@@ -629,7 +626,7 @@ fn overlay_tab_order_activates_preview_text_download_close() {
     for toggles in [true, false] {
         let record = attachment();
         if toggles {
-            record.borrow_mut().mime_type = "application/pdf".into();
+            record.write().unwrap().mime_type = "application/pdf".into();
             valid_pdf(record.clone());
         }
         let host = Rc::new(Host::default());
@@ -687,14 +684,12 @@ fn pdf_bytes() -> String {
     ))
 }
 /// Retain classification inputs while supplying a real PDF body.
-fn valid_pdf(
-    record: Rc<std::cell::RefCell<maestro_web::Attachment>>,
-) -> Rc<std::cell::RefCell<maestro_web::Attachment>> {
-    if record.borrow().mime_type == "application/pdf"
-        && record.borrow().r#type
+fn valid_pdf(record: maestro_web::SharedAttachment) -> maestro_web::SharedAttachment {
+    if record.read().unwrap().mime_type == "application/pdf"
+        && record.read().unwrap().r#type
             == maestro_app::browser::utils::attachment_utils::AttachmentType::Document
     {
-        record.borrow_mut().content = pdf_bytes();
+        record.write().unwrap().content = pdf_bytes();
     }
     record
 }
@@ -718,7 +713,7 @@ fn excel_bytes(replacement: bool) -> String {
 fn assert_excel_reload(
     frame: &mut Frame,
     overlay: &mut AttachmentOverlay,
-    record: &Rc<std::cell::RefCell<maestro_web::Attachment>>,
+    record: &maestro_web::SharedAttachment,
     host: &Host,
     case: &ContentCase,
 ) {
@@ -730,7 +725,7 @@ fn assert_excel_reload(
     assert!(case.expected.source.is_none() && case.expected.text.is_none());
     frame.overlay(overlay, vec![]).unwrap();
     assert!(Rc::ptr_eq(&factory, &reading_factory(host)));
-    record.borrow_mut().content = excel_bytes(true);
+    record.write().unwrap().content = excel_bytes(true);
     frame.overlay(overlay, vec![]).unwrap();
     assert!(!Rc::ptr_eq(&factory, &reading_factory(host)));
     let pos = frame.label("Text").center();

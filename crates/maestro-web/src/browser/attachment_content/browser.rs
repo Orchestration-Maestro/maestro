@@ -2,7 +2,6 @@
 use super::{
     AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface, ImageFit, TextView,
 };
-use crate::Attachment;
 use maestro_theme::BrandPresentation;
 use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};
@@ -451,7 +450,7 @@ impl AttachmentHost for BrowserAttachmentHost {
     ) -> Result<(), AttachmentHostError> {
         crate::utils::download::download_bytes(&self.document, bytes, name, mime)
     }
-    fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, attachment: crate::SharedAttachment) -> Result<(), AttachmentHostError> {
         crate::utils::download::download(&self.document, &attachment)
     }
 }

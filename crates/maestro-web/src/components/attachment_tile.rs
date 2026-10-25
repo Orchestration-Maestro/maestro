@@ -1,7 +1,7 @@
 //! Attachment thumbnails with optional removal.
 use crate::dialogs::attachment_overlay::AttachmentUiError;
 use crate::{
-    Attachment, AttachmentOverlay, I18n,
+    AttachmentOverlay, I18n,
     browser::attachment_content::{
         AttachmentContent, AttachmentHost, AttachmentSurface, ImageFit, color, glyph, identity,
         points, style,
@@ -9,11 +9,11 @@ use crate::{
 };
 use maestro_app::{browser::utils::attachment_utils::AttachmentType, truncate_utf16};
 use maestro_theme::BrandPresentation;
-use std::{cell::RefCell, rc::Rc};
+use std::{rc::Rc, sync::Arc};
 /// A caller-owned attachment tile.
 pub struct AttachmentTile {
     /// Original mutable record.
-    pub attachment: Rc<RefCell<Attachment>>,
+    pub attachment: crate::SharedAttachment,
     /// Whether to allocate a remove control.
     pub show_delete: bool,
     /// Optional removal notification.
@@ -26,7 +26,7 @@ pub struct AttachmentTile {
 impl AttachmentTile {
     /// Construct a tile with deletion disabled.
     #[must_use]
-    pub fn new(attachment: Rc<RefCell<Attachment>>, host: Rc<dyn AttachmentHost>) -> Self {
+    pub fn new(attachment: crate::SharedAttachment, host: Rc<dyn AttachmentHost>) -> Self {
         Self {
             attachment,
             host,
@@ -39,7 +39,7 @@ impl AttachmentTile {
     pub(crate) fn retain_at(
         tiles: &mut Vec<Self>,
         position: usize,
-        attachment: Rc<RefCell<Attachment>>,
+        attachment: crate::SharedAttachment,
         host: &Rc<dyn AttachmentHost>,
     ) {
         if let Some(tile) = tiles.get_mut(position) {
@@ -127,14 +127,14 @@ impl AttachmentTile {
             fallback(ui, rect, &name, excel, muted)?;
         }
         Ok((response.clicked() && !removed).then(|| {
-            AttachmentOverlay::open(Rc::clone(&self.attachment), None, Rc::clone(&self.host))
+            AttachmentOverlay::open(Arc::clone(&self.attachment), None, Rc::clone(&self.host))
         }))
     }
     /// Copy only operands needed outside the record borrow.
     fn thumbnail_data(&self) -> Result<(String, Option<String>, bool, bool), AttachmentUiError> {
         let a = self
             .attachment
-            .try_borrow()
+            .try_read()
             .map_err(|_| AttachmentUiError::BorrowConflict)?;
         let mime = if a.r#type == AttachmentType::Image {
             a.mime_type.as_str()

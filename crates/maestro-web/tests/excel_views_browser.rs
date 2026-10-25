@@ -5,7 +5,6 @@ use crate::reading_browser_support;
 use crate::support;
 use maestro_web::AttachmentOverlay;
 use reading_browser_support::{View, check, click, js, run};
-use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 /// Qualified original modern workbook bytes.
 fn bytes(name: &str) -> &'static [u8] {
@@ -61,8 +60,8 @@ fn encoded(name: &str) -> String {
     base64::engine::general_purpose::STANDARD.encode(bytes(name))
 }
 /// Original alias shared with the live overlay.
-fn record() -> Rc<RefCell<maestro_web::Attachment>> {
-    Rc::new(RefCell::new(maestro_web::Attachment {
+fn record() -> maestro_web::SharedAttachment {
+    std::sync::Arc::new(std::sync::RwLock::new(maestro_web::Attachment {
         id: "same".into(),
         r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
         file_name: "original.xlsx".into(),
@@ -267,11 +266,11 @@ pub fn excel_native_host_failures_preserve_error_controls_and_download() {
     check(
         "document.querySelector('.maestro-file-error h3').textContent==='Error loading file'&&document.querySelector('.maestro-file-error p').textContent==='<literal> failure'&&!document.querySelector('.maestro-file-error literal')",
     );
-    record.borrow_mut().content = encoded("one");
+    record.write().unwrap().content = encoded("one");
     view.overlay(&mut overlay, vec![]);
     check("document.querySelector('.maestro-file-error p').textContent==='<literal> failure'");
     view.overlay(&mut overlay, click(egui::pos2(728., 24.)));
-    assert!(Rc::ptr_eq(
+    assert!(std::sync::Arc::ptr_eq(
         view.host.downloads.borrow().last().unwrap(),
         &record
     ));
@@ -512,7 +511,7 @@ fn mixed_view(attachment: bool, name: &str) -> (View, Option<AttachmentOverlay>)
     let mut view = View::new("a.xlsx", "");
     let overlay = if attachment {
         let record = record();
-        record.borrow_mut().content = encoded(name);
+        record.write().unwrap().content = encoded(name);
         Some(AttachmentOverlay::open(record, None, view.host.clone()))
     } else {
         view.element.set_content(encoded(name));

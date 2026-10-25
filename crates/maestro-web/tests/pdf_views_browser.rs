@@ -5,7 +5,6 @@ use maestro_web::{
     AttachmentOverlay, browser::attachment_content::*, tools::artifacts::create_artifact_element,
 };
 use num_traits::ToPrimitive as _;
-use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::*};
 /// Original complete fixture bytes.
 fn bytes(multi: bool) -> &'static [u8] {
@@ -23,8 +22,8 @@ fn encoded(multi: bool) -> String {
 use crate::reading_browser_support;
 use reading_browser_support::{View, check, click, js, run};
 /// Original aliased PDF attachment.
-fn record() -> Rc<RefCell<maestro_web::Attachment>> {
-    Rc::new(RefCell::new(maestro_web::Attachment {
+fn record() -> maestro_web::SharedAttachment {
+    std::sync::Arc::new(std::sync::RwLock::new(maestro_web::Attachment {
         id: "same".into(),
         r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
         file_name: "original.pdf".into(),
@@ -342,15 +341,15 @@ pub fn overlay_native_errors_preserve_existing_behaviour() {
         "wordprocessingml",
         "ms-excel",
     ] {
-        record.borrow_mut().mime_type = mime.into();
-        record.borrow_mut().content = "record edits must not retry loading".into();
+        record.write().unwrap().mime_type = mime.into();
+        record.write().unwrap().content = "record edits must not retry loading".into();
         view.overlay(&mut overlay, vec![]);
         check(
             "errorRoot===document.querySelector('.maestro-file-error')&&getSelection().toString()==='preview failure'&&!document.querySelector('.maestro-pdf')&&errorRoot.querySelector('div').getBoundingClientRect().width<=672",
         );
     }
-    record.borrow_mut().mime_type = "application/pdf".into();
-    record.borrow_mut().content = encoded(true);
+    record.write().unwrap().mime_type = "application/pdf".into();
+    record.write().unwrap().content = encoded(true);
     view.overlay(&mut overlay, vec![]);
     assert_overlay_text_failure(&view, &mut overlay, &record);
     drop(overlay);
@@ -364,11 +363,11 @@ pub fn reading_content_switches_release_old_native_roots() {
     let view = View::new("current.pdf", &encoded(true));
     let record = record();
     // Warm up the overlay controls without consuming a PDF frame.
-    record.borrow_mut().mime_type = "text/plain".into();
+    record.write().unwrap().mime_type = "text/plain".into();
     let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
     view.overlay(&mut overlay, vec![]);
-    record.borrow_mut().mime_type = "application/pdf".into();
+    record.write().unwrap().mime_type = "application/pdf".into();
     view.overlay(&mut overlay, vec![]);
     check("document.querySelectorAll('.maestro-pdf img').length===1");
     run(
@@ -384,16 +383,16 @@ pub fn reading_content_switches_release_old_native_roots() {
     );
     for mime in ["text/plain", "image/png", "wordprocessingml"] {
         run("globalThis.oldRoot=document.querySelector('.maestro-pdf')");
-        record.borrow_mut().mime_type = mime.into();
-        record.borrow_mut().r#type = if mime == "image/png" {
+        record.write().unwrap().mime_type = mime.into();
+        record.write().unwrap().r#type = if mime == "image/png" {
             maestro_app::browser::utils::attachment_utils::AttachmentType::Image
         } else {
             maestro_app::browser::utils::attachment_utils::AttachmentType::Document
         };
         view.overlay(&mut overlay, vec![]);
         check("!oldRoot.isConnected&&!document.querySelector('.maestro-pdf')");
-        record.borrow_mut().mime_type = "application/pdf".into();
-        record.borrow_mut().r#type =
+        record.write().unwrap().mime_type = "application/pdf".into();
+        record.write().unwrap().r#type =
             maestro_app::browser::utils::attachment_utils::AttachmentType::Document;
         view.overlay(&mut overlay, vec![]);
         check(
@@ -480,13 +479,13 @@ fn assert_complete_pdf_encodings(view: &mut View) {
 fn assert_overlay_text_failure(
     view: &View,
     overlay: &mut AttachmentOverlay,
-    record: &Rc<RefCell<maestro_web::Attachment>>,
+    record: &maestro_web::SharedAttachment,
 ) {
     view.toggle(overlay, "Text");
     check(
         "!document.querySelector('.maestro-file-error')&&[...document.querySelectorAll('pre')].some(p=>p.textContent==='literal text')",
     );
-    record.borrow_mut().extracted_text = Some("retained alias".into());
+    record.write().unwrap().extracted_text = Some("retained alias".into());
     view.overlay(overlay, vec![]);
     check("[...document.querySelectorAll('pre')].some(p=>p.textContent==='retained alias')");
     *view.host.failure.borrow_mut() = Some("text failure".into());
@@ -498,7 +497,7 @@ fn assert_overlay_text_failure(
             .unwrap(),
         "text failure"
     );
-    record.borrow_mut().mime_type = "image/png".into();
+    record.write().unwrap().mime_type = "image/png".into();
     view.overlay(overlay, vec![]);
     assert_eq!(
         js("document.querySelector('.maestro-file-error p').textContent")
@@ -506,7 +505,7 @@ fn assert_overlay_text_failure(
             .unwrap(),
         "text failure"
     );
-    record.borrow_mut().mime_type = "application/pdf".into();
+    record.write().unwrap().mime_type = "application/pdf".into();
     view.overlay(overlay, vec![]);
     *view.host.failure.borrow_mut() = Some("publication rejected".into());
     assert!(matches!(
@@ -531,8 +530,8 @@ fn assert_overlay_text_failure(
 }
 
 /// Presentation text retains its established one-shot failure detail.
-fn assert_presentation_failure(view: &View, record: &Rc<RefCell<maestro_web::Attachment>>) {
-    record.borrow_mut().mime_type = "presentationml".into();
+fn assert_presentation_failure(view: &View, record: &maestro_web::SharedAttachment) {
+    record.write().unwrap().mime_type = "presentationml".into();
     *view.host.failure.borrow_mut() = Some("presentation failure".into());
     let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
@@ -547,8 +546,8 @@ fn assert_presentation_failure(view: &View, record: &Rc<RefCell<maestro_web::Att
 }
 
 /// Suppressed empty errors keep the body, save policy and close control live.
-fn assert_empty_error_and_save_failure(view: &View, record: &Rc<RefCell<maestro_web::Attachment>>) {
-    record.borrow_mut().mime_type = "application/pdf".into();
+fn assert_empty_error_and_save_failure(view: &View, record: &maestro_web::SharedAttachment) {
+    record.write().unwrap().mime_type = "application/pdf".into();
     *view.host.failure.borrow_mut() = Some(String::new());
     let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
@@ -567,7 +566,7 @@ fn assert_empty_error_and_save_failure(view: &View, record: &Rc<RefCell<maestro_
             )
         )
     ));
-    assert!(Rc::ptr_eq(
+    assert!(std::sync::Arc::ptr_eq(
         view.host.downloads.borrow().last().unwrap(),
         record
     ));
@@ -650,8 +649,8 @@ pub async fn reading_frame_neighbors_keep_existing_paint() {
     view.overlay(&mut overlay, vec![]);
     support::reading_paint::observe("neighbors-error").await;
     drop(overlay);
-    record.borrow_mut().mime_type = "text/plain".into();
-    record.borrow_mut().content = "literal text".into();
+    record.write().unwrap().mime_type = "text/plain".into();
+    record.write().unwrap().content = "literal text".into();
     let mut overlay = AttachmentOverlay::open(record, None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
     support::reading_paint::observe("neighbors-text").await;

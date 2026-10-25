@@ -17,10 +17,7 @@ use crate::{
     },
 };
 use maestro_app::ToolRendererState;
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-};
+use std::{cell::Cell, rc::Rc};
 
 /// Selected subtree identity: result arrival replaces the pending body.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -154,12 +151,17 @@ impl Download {
         record
     }
     /// Compare caller-visible input, excluding generated identity and derived text.
-    fn matches(&self, record: &Attachment) -> bool {
+    fn matches(&self, record: &crate::SharedAttachment) -> Result<bool, ToolUiError> {
+        let record = record.try_read().map_err(|_| {
+            ToolUiError::Attachment(
+                crate::dialogs::attachment_overlay::AttachmentUiError::BorrowConflict,
+            )
+        })?;
         let original = &self.attachment;
-        record.file_name == original.file_name
+        Ok(record.file_name == original.file_name
             && record.mime_type == original.mime_type
             && record.size == original.size
-            && record.content == original.content
+            && record.content == original.content)
     }
 }
 /// One row's retained header, disclosure and positional tiles.
@@ -259,17 +261,15 @@ impl CollapsibleCard {
     ) -> Result<(), ToolUiError> {
         retained.tiles.truncate(self.attachments.len());
         for (index, download) in self.attachments.iter().enumerate() {
-            if retained
-                .tiles
-                .get(index)
-                .is_some_and(|tile| download.matches(&tile.attachment.borrow()))
+            if let Some(tile) = retained.tiles.get(index)
+                && download.matches(&tile.attachment)?
             {
                 continue;
             }
             AttachmentTile::retain_at(
                 &mut retained.tiles,
                 index,
-                Rc::new(RefCell::new(download.record())),
+                std::sync::Arc::new(std::sync::RwLock::new(download.record())),
                 view.host,
             );
         }

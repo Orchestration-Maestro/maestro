@@ -9,7 +9,7 @@ use std::rc::Rc;
 fn attachment_surfaces_keep_fractional_rects_and_owned_content() {
     let host = Rc::new(Host::default());
     let record = attachment();
-    record.borrow_mut().preview = Some("owned bytes".into());
+    record.write().unwrap().preview = Some("owned bytes".into());
     let mut tile = AttachmentTile::new(record, host.clone());
     let mut frame = Frame {
         screen: egui::Rect::from_min_size(egui::pos2(5.25, 12.5), egui::vec2(800., 600.)),
@@ -31,7 +31,7 @@ fn attachment_surfaces_keep_fractional_rects_and_owned_content() {
 fn attachment_modal_hides_and_restores_existing_surfaces() {
     let host = Rc::new(Host::default());
     let record = attachment();
-    record.borrow_mut().preview = Some("animated-original".into());
+    record.write().unwrap().preview = Some("animated-original".into());
     let mut tile = AttachmentTile::new(record.clone(), host.clone());
     let mut frame = Frame::default();
     frame.tile(&mut tile, vec![]).unwrap();
@@ -79,7 +79,7 @@ fn attachment_styles_follow_caller_brand_pack() {
     ] {
         let host = Rc::new(Host::default());
         let record = attachment();
-        record.borrow_mut().preview = Some("unchanged-pixels".into());
+        record.write().unwrap().preview = Some("unchanged-pixels".into());
         let mut tile = AttachmentTile::new(record.clone(), host.clone());
         let mut frame = Frame {
             pack: crate::support::brand::pack(&format!("{}{path}", env!("CARGO_MANIFEST_DIR")))
@@ -96,12 +96,12 @@ fn attachment_styles_follow_caller_brand_pack() {
         );
         let panel = egui::Color32::from_hex(p.colors["panel"]).unwrap();
         assert!(frame.shapes.iter().any(|s|matches!(&s.shape,egui::Shape::Rect(r) if r.fill==panel&&f64::from(r.corner_radius.nw).to_bits()==p.radii["panel"].to_bits())));
-        record.borrow_mut().preview = None;
+        record.write().unwrap().preview = None;
         frame.tile(&mut tile, vec![]).unwrap();
         let p = frame.pack.presentation(mode).unwrap();
         let muted = egui::Color32::from_hex(p.colors["muted"]).unwrap();
         assert!(frame.shapes.iter().any(|s|matches!(&s.shape,egui::Shape::Text(text) if text.galley.job.text=="note.txt"&&text.galley.job.sections[0].format.color==muted)));
-        record.borrow_mut().mime_type = "application/pdf".into();
+        record.write().unwrap().mime_type = "application/pdf".into();
         let mut overlay = AttachmentOverlay::open(record, None, host);
         frame.overlay(&mut overlay, vec![]).unwrap();
         frame.overlay(&mut overlay, vec![]).unwrap();
@@ -123,7 +123,7 @@ fn attachment_widgets_keep_the_public_embedding_paths() {
     assert!(!tile.show_delete);
     assert!(tile.on_delete.is_none());
     let mut frame = Frame::default();
-    let guard = record.borrow_mut();
+    let guard = record.write().unwrap();
     assert!(matches!(
         frame.tile(&mut tile, vec![]),
         Err(maestro_web::dialogs::attachment_overlay::AttachmentUiError::BorrowConflict)
@@ -147,7 +147,7 @@ fn attachment_color_errors_use_shared_presentation_route() {
     use maestro_web::dialogs::attachment_overlay::AttachmentUiError;
     let host = Rc::new(Host::default());
     let record = attachment();
-    record.borrow_mut().preview = Some("preview".into());
+    record.write().unwrap().preview = Some("preview".into());
     let mut tile = AttachmentTile::new(record, host.clone());
     let mut overlay = AttachmentOverlay::open(attachment(), None, host.clone());
     let mut frame = Frame::default();

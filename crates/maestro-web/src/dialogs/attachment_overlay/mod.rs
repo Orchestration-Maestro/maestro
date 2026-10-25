@@ -1,13 +1,13 @@
 //! Retained full-screen attachment preview.
 mod ui_error;
 use crate::{
-    Attachment, I18n,
+    I18n,
     browser::attachment_content::{
         AttachmentHost, FileType, color, ghost, identity, points, style,
     },
 };
 use maestro_theme::BrandPresentation;
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 pub use ui_error::AttachmentUiError;
 mod content;
 pub(crate) mod error;
@@ -16,7 +16,7 @@ pub(crate) mod pdf;
 /// A separately owned attachment overlay.
 pub struct AttachmentOverlay {
     /// Live original record.
-    attachment: Rc<RefCell<Attachment>>,
+    attachment: crate::SharedAttachment,
     /// Platform effects.
     host: Rc<dyn AttachmentHost>,
     /// Per-instance surface identity.
@@ -44,7 +44,7 @@ impl AttachmentOverlay {
     /// Retain one independent overlay and its original record.
     #[must_use]
     pub fn open(
-        attachment: Rc<RefCell<Attachment>>,
+        attachment: crate::SharedAttachment,
         on_close: Option<Rc<dyn Fn()>>,
         host: Rc<dyn AttachmentHost>,
     ) -> Self {
@@ -158,7 +158,7 @@ impl AttachmentOverlay {
     ) -> Result<(), AttachmentUiError> {
         let name = self
             .attachment
-            .try_borrow()
+            .try_read()
             .map_err(|_| AttachmentUiError::BorrowConflict)?
             .file_name
             .clone();
@@ -176,7 +176,8 @@ impl AttachmentOverlay {
         self.toggle(ui, i)?;
         let mut download_ui = ui.new_child(egui::UiBuilder::new().max_rect(download_rect));
         if ghost(&mut download_ui, p, "Download")?.clicked() {
-            self.host.download(Rc::clone(&self.attachment))?;
+            self.host
+                .download(std::sync::Arc::clone(&self.attachment))?;
         }
         let mut close_ui = ui.new_child(egui::UiBuilder::new().max_rect(close_rect));
         *close |= ghost(&mut close_ui, p, "X")?.clicked();
@@ -202,7 +203,7 @@ impl AttachmentOverlay {
         let (kind, enabled) = {
             let a = self
                 .attachment
-                .try_borrow()
+                .try_read()
                 .map_err(|_| AttachmentUiError::BorrowConflict)?;
             (
                 content::file_type(&a),

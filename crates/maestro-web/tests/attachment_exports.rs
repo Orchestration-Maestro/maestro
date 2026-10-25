@@ -20,11 +20,13 @@ fn web_attachment_exports_use_application_records() {
         extracted_text: None,
         preview: Some(String::new()),
     };
-    let user = UserMessageWithAttachments {
+    let attachment = Arc::new(RwLock::new(attachment));
+    let mut user = UserMessageWithAttachments {
         content: maestro_app::UserContent::Text("hello".into()),
         timestamp: 1.0,
-        attachments: Some(vec![attachment.clone()]),
+        attachments: Some(vec![Arc::clone(&attachment)]),
     };
+    check_shared_attachment(&mut user, &attachment);
     let artifact = ArtifactMessage {
         action: ArtifactAction::Create,
         filename: "made.txt".into(),
@@ -65,6 +67,23 @@ fn web_attachment_exports_use_application_records() {
     let _: maestro_app::Fetch = maestro_app::default_fetch();
     let error: maestro_app::FetchError = maestro_app::FetchError::Aborted;
     assert_eq!(error.to_string(), "Request was aborted.");
+}
+
+/// Prove that application admission reaches the same view and download owner.
+fn check_shared_attachment(
+    user: &mut UserMessageWithAttachments,
+    attachment: &maestro_web::SharedAttachment,
+) {
+    let retained = Arc::clone(&user.attachments.take().unwrap()[0]);
+    let host = std::rc::Rc::new(crate::attachment_support::Host::default());
+    let tile = maestro_web::AttachmentTile::new(Arc::clone(&retained), host.clone());
+    assert!(Arc::ptr_eq(&tile.attachment, attachment));
+    let overlay = maestro_web::AttachmentOverlay::open(Arc::clone(&retained), None, host.clone());
+    maestro_web::browser::attachment_content::AttachmentHost::download(host.as_ref(), retained)
+        .unwrap();
+    assert!(Arc::ptr_eq(&host.downloads.borrow()[0], attachment));
+    drop((tile, overlay));
+    user.attachments = Some(vec![Arc::clone(attachment)]);
 }
 
 #[test]
