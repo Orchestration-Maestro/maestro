@@ -64,11 +64,14 @@ impl InteractiveMode {
     /// Returns the session's recording failure or the published theme's failure.
     pub(super) fn cycle_thinking_level(&self) -> Result<(), Box<dyn Error>> {
         let Some(level) = self.runtime_host.session().cycle_thinking_level()? else {
-            return self.show_status("Current model does not support thinking");
+            return self
+                .show_status("Current model does not support thinking")
+                .map_err(Into::into);
         };
         self.footer.invalidate();
         self.update_editor_border_color()?;
         self.show_status(&format!("Thinking level: {}", thinking_text(&level).0))
+            .map_err(Into::into)
     }
 
     /// Selects the session's next or previous model, shows the outcome and checks the
@@ -105,9 +108,15 @@ impl InteractiveMode {
         let result = match result {
             Ok(Some(result)) => result,
             Ok(None) if self.runtime_host.session().scoped_models().is_empty() => {
-                return self.show_status("Only one model available");
+                return self
+                    .show_status("Only one model available")
+                    .map_err(Into::into);
             }
-            Ok(None) => return self.show_status("Only one model in scope"),
+            Ok(None) => {
+                return self
+                    .show_status("Only one model in scope")
+                    .map_err(Into::into);
+            }
             Err(error) => return Ok(self.show_error(&error.message)?),
         };
         self.footer.invalidate();
@@ -124,6 +133,7 @@ impl InteractiveMode {
             String::new()
         };
         self.show_status(&format!("Switched to {name}{thinking}"))
+            .map_err(Into::into)
     }
 
     /// Edits the expanded editor text in the configured external editor, or warns when
@@ -200,6 +210,7 @@ impl InteractiveMode {
     #[cfg(any(windows, all(test, target_os = "linux")))]
     pub(super) fn show_suspend_unsupported(&self) -> Result<(), Box<dyn Error>> {
         self.show_status("Suspend to background is not supported on Windows")
+            .map_err(Into::into)
     }
 
     /// Reads the clipboard image on the host, keeping the mode until the read completes,

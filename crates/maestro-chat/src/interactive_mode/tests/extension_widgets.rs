@@ -63,10 +63,10 @@ fn paint(world: &World) -> (Vec<String>, Vec<String>) {
     )
 }
 /// Loads real bound callbacks with the existing session and terminal fixture.
-fn with_factories(
+pub(super) fn with_factories<T: 'static>(
     directory: &Path,
-    build: impl Fn(&ExtensionAPI<Local>) -> Vec<WidgetContent> + 'static,
-) -> (World, Vec<WidgetContent>) {
+    build: impl Fn(&ExtensionAPI<Local>) -> Vec<T> + 'static,
+) -> (World, Vec<T>) {
     let stored = Rc::new(RefCell::new(Vec::new()));
     let output = stored.clone();
     let factory: ExtensionFactory<Local> = Rc::new(move |api| {

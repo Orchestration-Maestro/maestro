@@ -164,6 +164,7 @@ impl InteractiveMode {
         self.editor.set_text("");
         self.update_pending_messages_display()?;
         self.show_status("Queued message for after compaction")
+            .map_err(Into::into)
     }
 
     /// Whether `text` starts with `/` and names a registered command, up to its first space.
@@ -188,6 +189,7 @@ impl InteractiveMode {
             1 => "Restored 1 queued message to editor".to_owned(),
             count => format!("Restored {count} queued messages to editor"),
         })
+        .map_err(Into::into)
     }
 
     /// The session's queued steering and follow-up texts, each followed by the messages

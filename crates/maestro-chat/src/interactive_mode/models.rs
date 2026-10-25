@@ -244,7 +244,7 @@ impl InteractiveMode {
         session.model_registry().refresh()?;
         let all_models = session.model_registry().get_available()?;
         if all_models.is_empty() {
-            return self.show_status("No models available");
+            return self.show_status("No models available").map_err(Into::into);
         }
         let enabled_model_ids = self.initial_enabled_model_ids(session.scoped_models())?;
         let available_count = all_models.len();
@@ -371,7 +371,9 @@ impl InteractiveMode {
                     .settings_manager()
                     .borrow_mut()
                     .set_enabled_models(patterns);
-                let shown = mode.show_status("Model selection saved to settings");
+                let shown = mode
+                    .show_status("Model selection saved to settings")
+                    .map_err(Into::into);
                 Some(Box::pin(std::future::ready(shown)))
             }),
             on_cancel: Rc::new(move || {

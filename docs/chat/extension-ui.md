@@ -116,8 +116,8 @@ capability, so the host only calls the bound handles it receives; it never
 obtains an event bus.
 
 This section covers the operations that exist today: dialogs, editor access,
-theme queries and selection, the terminal title, tool expansion, status text and
-widgets. Notifications, terminal input listeners and custom headers, footers and
+theme queries and selection, the terminal title, tool expansion, notifications,
+terminal input listeners, status text and widgets. Custom headers, footers and
 editors keep their own owners and their published components.
 
 ## Dialogs
@@ -182,6 +182,27 @@ name.
 formatter. `get_tools_expanded` reads the mode's own flag, and
 `set_tools_expanded` applies the value to the startup help and every expandable
 transcript row through the existing walk, then requests a frame.
+
+## Notifications and terminal input
+
+`notify` sends absent or `Info` severity to the transcript's dim status line.
+Adjacent status notices reuse the last spacer and text; a warning, error or
+other intervening transcript row makes the next status append a new pair.
+`Warning` and `Error` use the existing labelled notice helpers. Each successful
+notice requests a frame.
+
+`on_terminal_input` adapts a bound handler to the toolkit's input dispatcher.
+Registering the same handle twice invokes it once per chunk. Either remover
+removes that registration; an old remover also removes a later registration
+of the same handle. Dropping a remover alone leaves the registration active.
+The callback may pass, replace or consume a chunk. An empty replacement reaches
+later listeners but not the editor unless a later listener replaces it again.
+A callback failure consumes the chunk and sends the original error to the
+terminal runtime; later listeners and the editor do not receive that chunk.
+
+The mode tracks only extension registrations for cleanup, leaving unrelated
+terminal listeners intact. Cleanup is repeatable, and retained removers remain
+safe to call afterwards. Releasing the mode also clears its registrations.
 
 ## Failures
 

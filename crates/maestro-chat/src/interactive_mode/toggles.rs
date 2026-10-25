@@ -120,6 +120,7 @@ impl InteractiveMode {
         }
         let state = if hide { "hidden" } else { "visible" };
         self.show_status(&format!("Thinking blocks: {state}"))
+            .map_err(Into::into)
     }
 }
 

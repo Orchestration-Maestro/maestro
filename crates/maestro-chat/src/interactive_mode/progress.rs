@@ -116,6 +116,7 @@ impl InteractiveMode {
                 Ok(self.show_error("Compaction cancelled")?)
             } else {
                 self.show_status("Auto-compaction cancelled")
+                    .map_err(Into::into)
             };
         }
         if let Some(result) = outcome.result {

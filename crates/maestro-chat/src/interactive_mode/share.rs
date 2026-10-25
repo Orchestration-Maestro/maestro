@@ -89,7 +89,9 @@ impl InteractiveMode {
             return Ok(self.show_error("No agent messages to copy yet.")?);
         };
         match maestro_app::copy_to_clipboard(&text).await {
-            Ok(()) => self.show_status("Copied last agent message to clipboard"),
+            Ok(()) => self
+                .show_status("Copied last agent message to clipboard")
+                .map_err(Into::into),
             Err(error) => Ok(self.show_error(&error.to_string())?),
         }
     }
@@ -197,7 +199,7 @@ impl InteractiveMode {
         self.restore_share_editor(loader);
         artifact.remove();
         if let Err(error) = self.show_status("Share cancelled") {
-            self.report(Err(error));
+            self.report(Err(error.into()));
         }
     }
 
@@ -259,6 +261,6 @@ impl InteractiveMode {
             || format!("Gist: {gist}"),
             |viewer| format!("Share URL: {viewer}\nGist: {gist}"),
         );
-        self.show_status(&message)
+        self.show_status(&message).map_err(Into::into)
     }
 }

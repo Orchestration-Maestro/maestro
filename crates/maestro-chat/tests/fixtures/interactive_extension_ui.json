@@ -2098,5 +2098,90 @@
       "restored": true,
       "activeTimers": 0
     }
+  },
+  {
+    "test": "notifications_choose_status_warning_or_error",
+    "input": {
+      "op": "notify",
+      "kind": null
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@first                                                                          ",
+        " @dim@界\u001b[39m                                                                             "
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "notifications_choose_status_warning_or_error",
+    "input": {
+      "op": "notify",
+      "kind": "info"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@first                                                                          ",
+        " @dim@界\u001b[39m                                                                             "
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "notifications_choose_status_warning_or_error",
+    "input": {
+      "op": "notify",
+      "kind": "warning"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @warning@Warning: first                                                                 ",
+        " @warning@界\u001b[39m                                                                             "
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "notifications_choose_status_warning_or_error",
+    "input": {
+      "op": "notify",
+      "kind": "error"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @error@Error: first                                                                   ",
+        " @error@界\u001b[39m                                                                             "
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "notification_status_reuses_only_the_adjacent_pair",
+    "input": {
+      "op": "notify-sequence"
+    },
+    "expected": {
+      "adjacent": [
+        "",
+        " @dim@second\u001b[39m                                                                         "
+      ],
+      "final": [
+        "",
+        " @dim@second\u001b[39m                                                                         ",
+        "",
+        " @warning@Warning: break\u001b[39m                                                                 ",
+        "",
+        " @dim@third\u001b[39m                                                                          "
+      ],
+      "renderRequested": true
+    }
   }
 ]
