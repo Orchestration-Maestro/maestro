@@ -1,6 +1,6 @@
 //! Retained guest callbacks submit actual exports to their original Store.
 use crate::lifecycle::{
-    GuestResource, StoreEndpoint,
+    StoreEndpoint,
     replies::{Replies, Reply},
 };
 use crate::{
@@ -16,7 +16,7 @@ use wasmtime::component::{ComponentType, Lower};
 
 pub(crate) mod bash;
 pub(crate) mod events;
-pub(crate) use events::{EventCall, Outcome};
+pub(crate) use events::EventCall;
 pub(crate) mod registrations;
 pub(crate) mod renderers;
 pub(crate) mod tools;
@@ -31,7 +31,7 @@ pub(crate) struct Callback {
 }
 
 /// Invocations consumed by the single Store driver, not by a replacement executor.
-pub(crate) enum Call<H = Handle, R = Arc<GuestResource>> {
+pub(crate) enum Call<H = Handle> {
     /// Invokes the actual Local message renderer.
     Renderer(renderers::RendererCall<H>),
     /// Calls a retained guest component through the same Store.
@@ -43,9 +43,7 @@ pub(crate) enum Call<H = Handle, R = Arc<GuestResource>> {
     /// Invokes a concrete native event callback.
     Event(EventCall<H>),
     /// Executes one independently retained guest shell operation.
-    Bash(BashCall<R>),
-    /// Queues guest destruction on the Store driver, never the native request pump.
-    ReleaseResource(wasmtime::component::ResourceAny),
+    Bash(BashCall<H>),
     /// Invokes setup with the original writable session.
     Setup(H, writer_reads::Endpoint, Reply<()>),
     /// Invokes a continuation with the actual replacement context.
@@ -195,17 +193,6 @@ impl Drop for Retained {
 pub(crate) struct Handle(Arc<Retained>);
 
 impl Handle {
-    /// Retains an actual guest resource independently of its creating callback.
-    pub(crate) fn resource(
-        &self,
-        resource: wasmtime::component::ResourceAny,
-    ) -> Arc<GuestResource> {
-        Arc::new(GuestResource {
-            resource,
-            endpoint: self.0.endpoint.clone(),
-        })
-    }
-
     /// Returns the original authored identity for a temporary canonical borrow.
     pub(crate) fn id(&self) -> u32 {
         self.0.id
@@ -217,21 +204,28 @@ impl Handle {
     }
 
     /// Calls the actual setup export with the original writable owner.
-    pub(crate) async fn setup(&self, session: writer_reads::Endpoint) -> Result<(), String> {
+    pub(crate) async fn setup(
+        &self,
+        registry: &Registry,
+        session: writer_reads::Endpoint,
+    ) -> Result<(), String> {
         self.0
             .endpoint
-            .submit(|reply| Call::Setup(self.clone(), session, reply))
+            .call(registry, |reply| Call::Setup(self.clone(), session, reply))
             .await
     }
 
     /// Calls the actual continuation export with its original replacement owner.
     pub(crate) async fn with_session(
         &self,
+        registry: &Registry,
         context: replaced_reads::Endpoint,
     ) -> Result<(), String> {
         self.0
             .endpoint
-            .submit(|reply| Call::WithSession(self.clone(), context, reply))
+            .call(registry, |reply| {
+                Call::WithSession(self.clone(), context, reply)
+            })
             .await
     }
 
@@ -240,8 +234,13 @@ impl Handle {
         let callback = self.clone();
         std::rc::Rc::new(move |session| {
             let endpoint = registry.writable(session);
-            let callback = callback.clone();
-            Box::pin(async move { callback.setup(endpoint?).await.map_err(Into::into) })
+            let (callback, registry) = (callback.clone(), registry.clone());
+            Box::pin(async move {
+                callback
+                    .setup(&registry, endpoint?)
+                    .await
+                    .map_err(Into::into)
+            })
         })
     }
 
@@ -250,8 +249,13 @@ impl Handle {
         let callback = self.clone();
         std::rc::Rc::new(move |context| {
             let endpoint = registry.replaced(context);
-            let callback = callback.clone();
-            Box::pin(async move { callback.with_session(endpoint?).await.map_err(Into::into) })
+            let (callback, registry) = (callback.clone(), registry.clone());
+            Box::pin(async move {
+                callback
+                    .with_session(&registry, endpoint?)
+                    .await
+                    .map_err(Into::into)
+            })
         })
     }
 }
@@ -336,10 +340,10 @@ impl Handle {
     }
 
     /// Runs the tail only when the native bus polls its original queued work.
-    pub(crate) async fn tail(&self) -> Result<(), String> {
+    pub(crate) async fn tail(&self, registry: &Registry) -> Result<(), String> {
         self.0
             .endpoint
-            .submit(|reply| Call::Tail(self.clone(), reply))
+            .call(registry, |reply| Call::Tail(self.clone(), reply))
             .await
     }
 }

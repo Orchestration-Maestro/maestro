@@ -44,8 +44,7 @@ pub(super) fn runner(cwd: &str) -> ExtensionRunner<Local> {
 }
 
 /// A nested same-instance call as the Store receives it.
-pub(super) type NestedCall =
-    crate::guest_calls::Call<crate::guest_calls::Callback, wasmtime::component::ResourceAny>;
+pub(super) type NestedCall = crate::guest_calls::Call<crate::guest_calls::Callback>;
 
 /// Runs `invoke` in a native observer while a simulated Store thread waits in its routed
 /// update import, answering each nested same-instance call the observer makes with `answer`.
@@ -69,7 +68,7 @@ pub(super) async fn during_routed_request<T: 'static>(
         let mut route = update.update(r#"{"content":[]}"#.into());
         loop {
             match route.next() {
-                Ok((call, _completion)) => answer(call),
+                Ok(nested) => answer(nested.call),
                 Err(result) => break result.unwrap(),
             }
         }

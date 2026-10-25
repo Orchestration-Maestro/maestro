@@ -97,6 +97,7 @@ kinds! {
         Prepare(crate::PrepareArguments),
         Tool(crate::ToolExecute),
         Component(crate::Component),
+        Bash(crate::BashOperations),
     }
     once {
         WithSession(WithSession),

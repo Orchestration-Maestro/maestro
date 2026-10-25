@@ -439,7 +439,7 @@ fn assert_typed_event_export(contract: &Contract) {
         contract.event_results,
         [concat!(
             "result<record {event: result<option<string>, string>, ",
-            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<bash-operations>>}, string>"
+            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<callback>>}, string>"
         )],
         "the event export answers with independent event, decision and operations channels or a refusal"
     );
@@ -1020,13 +1020,10 @@ fn shell_signatures(
 ) -> Result<Vec<Signature>, String> {
     let mut declared = resources(engine, host);
     declared.extend(resources(engine, guest));
-    [
-        (guest, "[method]bash-operations.exec"),
-        (host, "[method]bash-output.on-data"),
-    ]
-    .into_iter()
-    .map(|(interface, name)| signature(engine, interface, name, &declared))
-    .collect()
+    [(guest, "bash-exec"), (host, "[method]bash-output.on-data")]
+        .into_iter()
+        .map(|(interface, name)| signature(engine, interface, name, &declared))
+        .collect()
 }
 /// Owned output and optional signal coexist with literal numeric/environment operands.
 fn assert_shell_contract(contract: &Contract) {
@@ -1036,7 +1033,7 @@ fn assert_shell_contract(contract: &Contract) {
             .contains(&("[method]bash-output.on-data".into(), false))
     );
     let expected = [
-        (vec!["self: borrow<bash-operations>", "request: record {command: string, cwd: string, timeout: option<f64>, env: option<list<tuple<string, option<string>>>>}", "resources: record {output: own<bash-output>, signal: option<own<abort-signal>>}"],vec!["result<option<f64>, string>"]),
+        (vec!["handler: borrow<callback>", "request: record {command: string, cwd: string, timeout: option<f64>, env: option<list<tuple<string, option<string>>>>}", "resources: record {output: own<bash-output>, signal: option<own<abort-signal>>}"],vec!["result<option<f64>, string>"]),
         (vec!["self: borrow<bash-output>","data: list<u8>"],vec!["result<_, string>"])
     ].map(|(params,results)| (params.into_iter().map(str::to_owned).collect::<Vec<_>>(),results.into_iter().map(str::to_owned).collect::<Vec<_>>()));
     assert_eq!(contract.shell_signatures, expected);
@@ -1047,7 +1044,7 @@ fn assert_async_exports(contract: &Contract) {
     assert_eq!(
         names(&contract.exports, true),
         [
-            "[method]bash-operations.exec",
+            "bash-exec",
             "component-handle-input",
             "component-invalidate",
             "component-render",

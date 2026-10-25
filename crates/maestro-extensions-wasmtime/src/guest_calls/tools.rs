@@ -90,7 +90,13 @@ impl Handle {
         Rc::new(move |id, params, signal, update, context| {
             let resources = execution_resources(&registry, context, signal, update);
             let params = serde_json::to_string(&params).map_err(|error| error.to_string());
-            Box::pin(invoke_tool(self.clone(), id, params, resources))
+            Box::pin(invoke_tool(
+                self.clone(),
+                registry.clone(),
+                id,
+                params,
+                resources,
+            ))
         })
     }
 }
@@ -117,6 +123,7 @@ fn execution_resources(
 /// Awaits the original authored tool under the shared lifecycle submission owner.
 async fn invoke_tool(
     handler: Handle,
+    registry: Registry,
     id: String,
     params: Result<String, String>,
     resources: Result<Resources, String>,
@@ -126,7 +133,7 @@ async fn invoke_tool(
     let result = handler
         .0
         .endpoint
-        .submit(|reply| {
+        .call(&registry, |reply| {
             Call::Tool(ToolCall::Execute {
                 handler: handler.clone(),
                 id,

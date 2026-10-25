@@ -120,26 +120,3 @@ impl State {
         }
     }
 }
-
-impl Registry {
-    /// Hands a synchronous target to the native operation that currently owns this instance,
-    /// or submits it to the Store when no operation does.
-    pub(crate) fn dispatch(
-        &self,
-        endpoint: &crate::lifecycle::StoreEndpoint,
-        call: crate::guest_calls::Call,
-    ) -> Result<(), String> {
-        let route = self
-            .pump
-            .upgrade()
-            .and_then(|pump| pump.routes.borrow().last().cloned());
-        let Some(route) = route else {
-            return endpoint.send(call);
-        };
-        let completion = crate::lifecycle::completion::Completion::local();
-        call.before(&completion);
-        route
-            .send((call.admitted(&completion), completion))
-            .map_err(|_| "extension native operation ended".to_owned())
-    }
-}

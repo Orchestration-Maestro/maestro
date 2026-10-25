@@ -296,7 +296,6 @@ fn walk_snapshot(
 pub struct Glue<E>(PhantomData<E>);
 
 impl<E: Extension> Guest for Glue<E> {
-    type BashOperations = ReturnedBashOperations;
     fn invoke_renderer(
         handler: &host::Callback,
         request: guest::RenderRequest,
@@ -471,38 +470,15 @@ impl<E: Extension> Guest for Glue<E> {
     async fn invoke_event(
         handler: &host::Callback,
         event: String,
-        resources: guest::Capabilities,
-    ) -> Result<guest::EventOutcome, String> {
-        let guest::Capabilities { ctx, signal } = resources;
-        let outcome = Exports::new(Generated)
-            .invoke_event(handler.id(), event, Capabilities { ctx, signal })
-            .await?;
-        Ok(guest::EventOutcome {
-            event: outcome.event,
-            decision: outcome.decision,
-            operations: outcome
-                .operations
-                .map(|ops| guest::BashOperations::new(ReturnedBashOperations(ops))),
-        })
+        resources: host::Capabilities,
+    ) -> Result<host::EventOutcome, String> {
+        route::event(handler.id(), event, resources).await
     }
-}
-
-/// Guest-owned resource retaining authored execution operations.
-#[doc(hidden)]
-pub struct ReturnedBashOperations(crate::BashOperations);
-impl guest::GuestBashOperations for ReturnedBashOperations {
-    async fn exec(
-        &self,
-        request: guest::BashRequest,
-        resources: guest::BashCapabilities,
+    async fn bash_exec(
+        handler: &host::Callback,
+        request: host::BashRequest,
+        resources: host::BashCapabilities,
     ) -> ExtensionResult<Option<f64>> {
-        let resources = super::bash::BashCapabilities {
-            output: resources.output,
-            signal: resources.signal,
-        };
-        Ok(Exports::new(Generated)
-            .invoke_bash(&self.0, request, resources)
-            .await?
-            .exit_code)
+        route::bash(handler.id(), request, resources).await
     }
 }

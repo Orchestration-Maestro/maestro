@@ -6,15 +6,13 @@ use crate::guest_calls::{
     renderers::{ComponentCall, RendererCall},
     tools::ToolCall,
 };
-use wasmtime::component::ResourceAny;
 
 impl Call {
     /// Transfers every admitting operand before Wasmtime can retain the task.
-    pub(crate) fn admitted(self, completion: &Completion) -> Call<Callback, ResourceAny> {
+    pub(crate) fn admitted(self, completion: &Completion) -> Call<Callback> {
         match self {
             Self::Start(reply) => Call::Start(reply),
             Self::Finished => Call::Finished,
-            Self::ReleaseResource(resource) => Call::ReleaseResource(resource),
             Self::Setup(handler, writer, reply) => {
                 Call::Setup(completion.callback(handler), writer, reply)
             }
@@ -45,7 +43,7 @@ impl Call {
                 reply: call.reply,
             }),
             Self::Bash(call) => Call::Bash(crate::guest_calls::BashCall {
-                owner: completion.resource(call.owner),
+                owner: completion.callback(call.owner),
                 request: call.request,
                 output: call.output,
                 signal: call.signal,

@@ -120,7 +120,9 @@ impl State {
             Request::Emission(request) => self.emission(capability.as_deref(), request),
             Request::Tail(tail, reply) => {
                 let result = match capability.as_deref() {
-                    Some(Capability::CallbackFrame(frame)) => frame.start_tail(tail),
+                    Some(Capability::CallbackFrame(frame)) => {
+                        frame.start_tail(tail, self.registry.clone())
+                    }
                     _ => Err("extension callback-emitter resource ended".to_owned()),
                 };
                 let _ = reply.send(result);
@@ -170,13 +172,17 @@ enum Tail {
 
 impl Frame {
     /// Retains the guest continuation for the native bus, without polling it early.
-    fn start_tail(&self, tail: crate::guest_calls::Handle) -> Result<(), String> {
+    fn start_tail(
+        &self,
+        tail: crate::guest_calls::Handle,
+        registry: Registry,
+    ) -> Result<(), String> {
         let mut slot = self.tail.borrow_mut();
         match &mut *slot {
             Tail::Open(slot) if slot.is_none() => {
-                *slot = Some(Box::pin(
-                    async move { tail.tail().await.map_err(Into::into) },
-                ));
+                *slot = Some(Box::pin(async move {
+                    tail.tail(&registry).await.map_err(Into::into)
+                }));
                 Ok(())
             }
             Tail::Open(_) => Err("extension listener already announced a tail".to_owned()),

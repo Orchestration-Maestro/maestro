@@ -1,11 +1,7 @@
 //! Once-only completion releases invocation admissions before native settlement.
-use crate::{
-    guest_calls::{Call, Callback, Handle},
-    lifecycle::GuestResource,
-};
+use crate::guest_calls::{Call, Callback, Handle};
 use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::mpsc::UnboundedSender;
-use wasmtime::component::ResourceAny;
 
 /// One active Store invocation, shared only with its lifecycle reply token.
 #[derive(Clone)]
@@ -43,12 +39,6 @@ impl Completion {
         let callback = Callback { id: handle.id() };
         self.retain(handle);
         callback
-    }
-    /// Moves resource strength out of the task's actual invocation operands.
-    pub(super) fn resource(&self, resource: Arc<GuestResource>) -> ResourceAny {
-        let operand = resource.resource;
-        self.retain(resource);
-        operand
     }
     /// Retains a live call operand in the same once-only release set.
     pub(super) fn retain(&self, operand: impl Send + 'static) {

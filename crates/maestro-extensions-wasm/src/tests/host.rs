@@ -514,6 +514,18 @@ impl host::HostCallbackEmitter for State {
 /// A host operation the test host completed before returning it; it makes no nested call.
 pub struct Route(Option<Result<(), String>>);
 
+/// A deferred nested call; the test host never makes one.
+pub struct Settlement;
+
+impl host::HostLocalSettlement for State {
+    fn finish(&mut self, _: Resource<Settlement>, _: host::LocalResult) -> wasmtime::Result<()> {
+        Ok(())
+    }
+    fn drop(&mut self, this: Resource<Settlement>) -> wasmtime::Result<()> {
+        self.release(this)
+    }
+}
+
 impl State {
     /// Returns a routed import's result through its completed route.
     pub(super) fn routed(
@@ -531,6 +543,9 @@ impl host::HostImportRoute for State {
     }
     fn resume(&mut self, _: Resource<Route>, _: host::LocalResult) -> wasmtime::Result<()> {
         Ok(())
+    }
+    fn defer(&mut self, _: Resource<Route>) -> wasmtime::Result<Resource<Settlement>> {
+        self.push(Settlement)
     }
     fn drop(&mut self, this: Resource<Route>) -> wasmtime::Result<()> {
         self.release(this)

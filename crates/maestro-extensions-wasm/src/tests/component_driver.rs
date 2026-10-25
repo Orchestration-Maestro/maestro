@@ -16,7 +16,7 @@ pub struct ComponentDriver {
     /// The running component, once started.
     harness: Option<Harness>,
     /// Independently returned shell resources.
-    bash: Vec<Option<wasmtime::component::ResourceAny>>,
+    bash: Vec<Option<Resource<super::host::Identity>>>,
     /// Last returned shell resource slot.
     last_bash: Option<usize>,
     /// Next invocation-local emitter identity.
@@ -37,6 +37,26 @@ fn started(harness: &mut Option<Harness>) -> wasmtime::Result<&mut Harness> {
 }
 
 impl ComponentDriver {
+    /// Releases an authored object the extension returned, then drops its host identity.
+    async fn drop_object(
+        &mut self,
+        object: Option<Resource<super::host::Identity>>,
+    ) -> Result<(), String> {
+        let Some(object) = object else {
+            return Ok(());
+        };
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        harness
+            .release(object.rep())
+            .await
+            .map_err(|e| e.to_string())?;
+        crate::bindings::host_side::maestro::extension::host::HostCallback::drop(
+            harness.store.data_mut(),
+            object,
+        )
+        .map_err(|e| e.to_string())
+    }
+
     /// A driver for the component at `path`.
     pub fn new(path: PathBuf) -> Self {
         Self {
@@ -199,7 +219,12 @@ impl Driver for ComponentDriver {
         self.observed(|o| o.shell.outputs[id].drops)
     }
     async fn shell_exec(&mut self, run: super::shell_host::Run) -> Result<Option<f64>, String> {
-        let operation = self.bash[run.operation].ok_or("operation absent")?;
+        let operation = {
+            let stored = self.bash[run.operation]
+                .as_ref()
+                .ok_or("operation absent")?;
+            Resource::<super::host::Identity>::new_borrow(stored.rep())
+        };
         let key = run
             .signal
             .map(|id| self.key(id))
@@ -234,9 +259,7 @@ impl Driver for ComponentDriver {
                     (pending, proceed),
                 );
                 super::join::alongside(
-                    exports
-                        .bash_operations()
-                        .call_exec(accessor, operation, request, resources),
+                    exports.call_bash_exec(accessor, operation, request, resources),
                     helper,
                 )
                 .await
@@ -246,15 +269,8 @@ impl Driver for ComponentDriver {
             .map_err(|e| e.to_string())?
     }
     async fn drop_bash(&mut self, id: usize) -> Result<(), String> {
-        if let Some(operation) = self.bash[id].take() {
-            operation
-                .resource_drop_async(
-                    &mut started(&mut self.harness).map_err(|e| e.to_string())?.store,
-                )
-                .await
-                .map_err(|e| e.to_string())?;
-        }
-        Ok(())
+        let operation = self.bash[id].take();
+        self.drop_object(operation).await
     }
 
     fn renderer_emissions(&self) -> Vec<(usize, String, serde_json::Value)> {
@@ -341,19 +357,8 @@ impl Driver for ComponentDriver {
         result
     }
     async fn drop_component(&mut self, id: usize) -> Result<(), String> {
-        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
-        if let Some(component) = self.components[id].take() {
-            harness
-                .release(component.rep())
-                .await
-                .map_err(|e| e.to_string())?;
-            crate::bindings::host_side::maestro::extension::host::HostCallback::drop(
-                harness.store.data_mut(),
-                component,
-            )
-            .map_err(|e| e.to_string())?;
-        }
-        Ok(())
+        let component = self.components[id].take();
+        self.drop_object(component).await
     }
 
     async fn repeat_release(&mut self, handler: u32) -> Result<(), String> {
@@ -977,6 +982,9 @@ impl Driver for ComponentDriver {
     async fn release_all(&mut self) {
         for id in 0..self.components.len() {
             let _ = self.drop_component(id).await;
+        }
+        for id in 0..self.bash.len() {
+            let _ = self.drop_bash(id).await;
         }
         let Ok(harness) = started(&mut self.harness) else {
             return;

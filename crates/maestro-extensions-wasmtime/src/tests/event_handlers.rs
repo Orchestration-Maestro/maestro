@@ -4,7 +4,7 @@ use crate::read_imports::ReadEndpoint;
 use crate::{
     event_registration,
     guest_calls::{
-        Call, Callbacks,
+        Call, Callbacks, Handle,
         events::{Decision, Outcome},
     },
     local_resources::Pump,
@@ -13,11 +13,7 @@ use maestro_extensions::{ExtensionExecution, Local, ToolCallEvent, ToolCallEvent
 
 #[test]
 fn edited_event_failure_discards_a_valid_decision() {
-    let (pump, admission) = Pump::new();
-    let (calls, _incoming) = tokio::sync::mpsc::unbounded_channel();
-    let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
-    let callback = callbacks.allocate().unwrap();
-    let handler = callbacks.retain(callback.id, admission).unwrap();
+    let (pump, _admission) = Pump::new();
     for edit in [Err("bad edit".into()), Ok(Some("{\"toolName\":7}".into()))] {
         let mut event = tool_event();
         let outcome = Outcome {
@@ -26,7 +22,7 @@ fn edited_event_failure_discards_a_valid_decision() {
             operations: None,
         };
         let result =
-            handler.apply_outcome::<_, ToolCallEventResult>(&mut event, outcome, pump.registry());
+            Handle::apply_outcome::<_, ToolCallEventResult>(&mut event, outcome, pump.registry());
         assert!(result.is_err());
         assert_eq!(event.tool_name, "original");
     }
@@ -34,11 +30,7 @@ fn edited_event_failure_discards_a_valid_decision() {
 
 #[test]
 fn valid_edits_survive_failed_decisions_and_valid_decisions_are_retained() {
-    let (pump, admission) = Pump::new();
-    let (calls, _incoming) = tokio::sync::mpsc::unbounded_channel();
-    let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
-    let callback = callbacks.allocate().unwrap();
-    let handler = callbacks.retain(callback.id, admission).unwrap();
+    let (pump, _admission) = Pump::new();
     for (decision, expected) in [
         (Decision::Failed("handler failed".into()), None),
         (Decision::Returned(Err("bad decision".into())), None),
@@ -56,7 +48,7 @@ fn valid_edits_survive_failed_decisions_and_valid_decisions_are_retained() {
             operations: None,
         };
         let result =
-            handler.apply_outcome::<_, ToolCallEventResult>(&mut event, outcome, pump.registry());
+            Handle::apply_outcome::<_, ToolCallEventResult>(&mut event, outcome, pump.registry());
         assert_eq!(event.tool_name, "edited");
         match expected {
             None => assert!(result.is_err()),
@@ -128,23 +120,24 @@ fn failed_edit_releases_returned_operations_through_the_original_store_queue() {
     let (pump, admission) = Pump::new();
     let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
     let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
-    let callback = callbacks.allocate().unwrap();
-    let handler = callbacks.retain(callback.id, admission).unwrap();
-    let (_store, resource) = super::returned_bash::resource();
+    let (_, operations) = super::returned_bash::operations(&mut callbacks, admission);
     let outcome = Outcome {
         event: Err("bad edit".into()),
         decision: Decision::Returned(Ok(Some("{\"block\":true}".into()))),
-        operations: Some(resource),
+        operations: Some(operations),
     };
     assert!(
-        handler
-            .apply_outcome::<_, ToolCallEventResult>(&mut tool_event(), outcome, pump.registry())
-            .is_err()
+        Handle::apply_outcome::<_, ToolCallEventResult>(
+            &mut tool_event(),
+            outcome,
+            pump.registry()
+        )
+        .is_err()
     );
-    let Call::ReleaseResource(released) = incoming.try_recv().unwrap() else {
-        panic!("resource release expected")
+    let Call::Release(released) = incoming.try_recv().unwrap() else {
+        panic!("operations release expected")
     };
-    assert_eq!(released, resource);
+    assert!(released.object);
     assert!(incoming.try_recv().is_err());
 }
 

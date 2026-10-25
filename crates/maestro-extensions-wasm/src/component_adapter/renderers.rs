@@ -65,10 +65,13 @@ impl<I: Imports> Exports<I> {
     }
 }
 
-/// Transfers an authored component to the host through the shared identity table.
+/// Transfers an authored object to the host through the shared identity table.
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn retain<I: Imports>(imports: &I, view: Option<Component>) -> Option<I::Callback> {
-    view.map(|view| callbacks::Identity::<I>::new(imports).transfer(view))
+pub(super) fn retain<I: Imports, O: callbacks::Stored>(
+    imports: &I,
+    object: Option<O>,
+) -> Option<I::Callback> {
+    object.map(|object| callbacks::Identity::<I>::new(imports).transfer(object))
 }
 
 /// Lends the existing callback emission port for one synchronous call.

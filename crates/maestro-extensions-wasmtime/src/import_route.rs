@@ -4,22 +4,67 @@
 //! import, so a call raised from that import's native code travels back through the import as
 //! a typed step and runs the same guest body the ordinary export runs.
 use crate::{
-    guest_calls::{
-        Call, Callback, SynchronousKind,
-        renderers::{ComponentCall, ComponentMethod},
-        tools::ToolCall,
-    },
+    guest_calls::{Call, Callback},
     lifecycle::completion::Completion,
-    local_resources::effects::{EmitterEndpoint, ThemeEndpoint},
 };
 use std::sync::mpsc::{Receiver, Sender};
 use wasmtime::{
     StoreContextMut,
-    component::{ComponentType, Lift, LinkerInstance, Lower, Resource, ResourceAny, ResourceTable},
+    component::{ComponentType, LinkerInstance, Lower, Resource},
 };
 
+mod calls;
+use calls::LocalResult;
+
 /// A nested same-instance call; its strong ownership travels in its completion.
-pub(crate) type Nested = (Call<Callback, ResourceAny>, Completion);
+pub(crate) struct Nested {
+    /// The call, its operands and its native reply.
+    pub(crate) call: Call<Callback>,
+    /// Releases the call's admitted operands once it settles.
+    _completion: Completion,
+    /// Releases an asynchronous caller once the call's prefix ran.
+    prefix: Option<crate::local_resources::Completion>,
+}
+
+impl Nested {
+    /// Admits a call's operands and hands it to the native operation's route.
+    pub(crate) fn send(
+        route: &Sender<Self>,
+        call: crate::guest_calls::Call,
+        prefix: Option<crate::local_resources::Completion>,
+    ) -> Result<(), String> {
+        let completion = Completion::local();
+        call.before(&completion);
+        let nested = Self {
+            call: call.admitted(&completion),
+            _completion: completion,
+            prefix,
+        };
+        route
+            .send(nested)
+            .map_err(|_| "extension native operation ended".to_owned())
+    }
+
+    /// Lets an asynchronous caller continue now that the call's prefix ran.
+    fn started(&mut self) {
+        if let Some(prefix) = self.prefix.take() {
+            prefix.complete(Ok(()));
+        }
+    }
+
+    /// Delivers the call's result, then releases a caller still waiting for its prefix.
+    fn settle<T: crate::callback_imports::CallbackView>(
+        mut self,
+        store: &mut T,
+        value: LocalResult,
+    ) -> wasmtime::Result<()> {
+        let settled = calls::settle(store, self.call, value);
+        if let Some(prefix) = self.prefix.take() {
+            prefix.complete(Ok(()));
+        }
+        settled
+    }
+}
 
 /// Store-side ticket for one native operation in progress.
 pub(crate) struct Route {
@@ -51,6 +96,13 @@ impl Route {
                 .unwrap_or_else(|_| Err("extension resource reply ended".to_owned()))
         })
     }
+
+    /// Takes the nested call the guest is running.
+    fn take(&mut self) -> wasmtime::Result<Nested> {
+        self.pending
+            .take()
+            .ok_or_else(|| wasmtime::format_err!("extension route has no invocation"))
+    }
 }
 
 #[cfg(test)]
@@ -64,129 +116,8 @@ impl Route {
     }
 }
 
-/// Owned operands of one nested renderer call.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-struct LocalRenderer {
-    /// Authored identity in the shared callback inventory.
-    target: u32,
-    /// Complete custom-message document.
-    message: String,
-    /// Actual caller expansion choice.
-    expanded: bool,
-    /// Transferred theme capability.
-    theme: Resource<ThemeEndpoint>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested component render.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-struct LocalRender {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Actual caller viewport width.
-    width: u32,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested input or invalidation.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-struct LocalUnit {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Literal input, or absence for invalidation.
-    data: Option<String>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested key-release query.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-struct LocalKey {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested argument preparation.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-struct LocalPrepare {
-    /// Authored identity of the tool preparation callback.
-    target: u32,
-    /// Complete argument document.
-    args: String,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested synchronous callback prefix.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-struct LocalSynchronous {
-    /// Authored identity of the callback.
-    target: u32,
-    /// Authored callback export.
-    kind: SynchronousKind,
-    /// Exact data document.
-    data: String,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// The nested same-instance target and its owned operands.
-#[derive(ComponentType, Lower)]
-#[component(variant)]
-enum LocalCall {
-    /// A message renderer.
-    #[component(name = "renderer")]
-    Renderer(LocalRenderer),
-    /// A retained component render.
-    #[component(name = "render")]
-    Render(LocalRender),
-    /// A retained component input or invalidation.
-    #[component(name = "unit")]
-    Unit(LocalUnit),
-    /// A retained component key-release query.
-    #[component(name = "key")]
-    Key(LocalKey),
-    /// Tool argument preparation.
-    #[component(name = "prepare")]
-    Prepare(LocalPrepare),
-    /// A synchronous callback prefix.
-    #[component(name = "synchronous")]
-    Synchronous(LocalSynchronous),
-}
-
-/// The nested call's own result, returned to the native caller that asked for it.
-#[derive(ComponentType, Lower, Lift)]
-#[component(variant)]
-enum LocalResult {
-    /// Optional retained component identity, or the authored error.
-    #[component(name = "renderer")]
-    Renderer(Result<Option<Resource<Callback>>, String>),
-    /// Exact rendering lines or the authored error.
-    #[component(name = "render")]
-    Render(Result<Vec<String>, String>),
-    /// Unit result or the authored error.
-    #[component(name = "unit")]
-    Unit(Result<(), String>),
-    /// Key-release preference or the authored error.
-    #[component(name = "key")]
-    Key(Result<bool, String>),
-    /// Prepared argument document or the authored error.
-    #[component(name = "prepared")]
-    Prepared(Result<String, String>),
-    /// Unit result of a synchronous prefix, or the authored error.
-    #[component(name = "synchronous")]
-    Synchronous(Result<(), String>),
-}
+/// A nested asynchronous call whose prefix ran and whose result the guest delivers later.
+pub(crate) struct Settlement(Option<Nested>);
 
 /// One step of a native operation, as the guest receives it.
 #[derive(ComponentType, Lower)]
@@ -194,17 +125,18 @@ enum LocalResult {
 enum RouteStep {
     /// A nested same-instance call to run now.
     #[component(name = "invoke")]
-    Invoke(LocalCall),
+    Invoke(calls::LocalCall),
     /// The operation's own final result.
     #[component(name = "done")]
     Done(Result<(), String>),
 }
 
-/// Installs the progress ticket on the original host interface.
+/// Installs the progress ticket and the later settlement on the original host interface.
 pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, Route>(host, "import-route")?;
+    crate::context_imports::add_resource::<T, Settlement>(host, "local-settlement")?;
     host.func_wrap(
         "[method]import-route.next",
         |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Route>,)| {
@@ -212,7 +144,7 @@ pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
             let step = match next {
                 Ok(nested) => {
                     let table = store.data_mut().ctx().table;
-                    let local = local_call(table, &nested.0)?;
+                    let local = calls::lower(table, &nested.call)?;
                     table.get_mut(&resource)?.pending = Some(nested);
                     RouteStep::Invoke(local)
                 }
@@ -224,7 +156,30 @@ pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
     host.func_wrap(
         "[method]import-route.resume",
         |mut store: StoreContextMut<'_, T>, (resource, value): (Resource<Route>, LocalResult)| {
-            resume(&mut store, &resource, value)
+            let nested = store.data_mut().ctx().table.get_mut(&resource)?.take()?;
+            nested.settle(store.data_mut(), value)
+        },
+    )?;
+    host.func_wrap(
+        "[method]import-route.defer",
+        |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Route>,)| {
+            let mut nested = store.data_mut().ctx().table.get_mut(&resource)?.take()?;
+            nested.started();
+            Ok((store
+                .data_mut()
+                .ctx()
+                .table
+                .push(Settlement(Some(nested)))?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]local-settlement.finish",
+        |mut store: StoreContextMut<'_, T>,
+         (resource, value): (Resource<Settlement>, LocalResult)| {
+            let nested = store.data_mut().ctx().table.get_mut(&resource)?.0.take();
+            let nested =
+                nested.ok_or_else(|| wasmtime::format_err!("extension call already settled"))?;
+            nested.settle(store.data_mut(), value)
         },
     )?;
     Ok(())
@@ -236,115 +191,4 @@ pub(crate) fn push<T: wasmtime_wasi::WasiView>(
     route: Route,
 ) -> wasmtime::Result<Resource<Route>> {
     Ok(store.ctx().table.push(route)?)
-}
-
-/// Settles exactly the native call this route is waiting for.
-fn resume<T: crate::callback_imports::CallbackView>(
-    store: &mut StoreContextMut<'_, T>,
-    resource: &Resource<Route>,
-    value: LocalResult,
-) -> wasmtime::Result<()> {
-    let pending = store
-        .data_mut()
-        .ctx()
-        .table
-        .get_mut(resource)?
-        .pending
-        .take();
-    let (call, _completion) =
-        pending.ok_or_else(|| wasmtime::format_err!("extension route has no invocation"))?;
-    match (call, value) {
-        (Call::Renderer(call), LocalResult::Renderer(value)) => {
-            let value = match value {
-                Ok(component) => Ok(component
-                    .map(|component| {
-                        crate::callback_imports::transferred(store.data_mut(), component)
-                    })
-                    .transpose()?),
-                Err(error) => Err(error),
-            };
-            let _ = call.reply.send(value);
-        }
-        (Call::Component(ComponentCall::Render(_, _, _, reply)), LocalResult::Render(value)) => {
-            let _ = reply.send(value);
-        }
-        (Call::Component(ComponentCall::Unit(_, _, _, reply)), LocalResult::Unit(value)) => {
-            let _ = reply.send(value);
-        }
-        (Call::Component(ComponentCall::WantsKeyRelease(_, _, reply)), LocalResult::Key(value)) => {
-            let _ = reply.send(value);
-        }
-        (Call::Tool(ToolCall::Prepare { reply, .. }), LocalResult::Prepared(value)) => {
-            let _ = reply.send(value);
-        }
-        (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
-            let _ = call.completion.send(value);
-        }
-        _ => {
-            return Err(wasmtime::format_err!(
-                "extension route result kind mismatch"
-            ));
-        }
-    }
-    Ok(())
-}
-
-/// Marshals owned operands without entering a new canonical guest activation.
-fn local_call(
-    table: &mut ResourceTable,
-    call: &Call<Callback, ResourceAny>,
-) -> wasmtime::Result<LocalCall> {
-    Ok(match call {
-        Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
-            target: call.handler.id,
-            message: call.message.clone(),
-            expanded: call.expanded,
-            theme: table.push(call.theme.clone())?,
-            emitter: table.push(call.emitter.clone())?,
-        }),
-        Call::Component(ComponentCall::Render(owner, width, emitter, _)) => {
-            LocalCall::Render(LocalRender {
-                target: owner.id,
-                width: *width,
-                emitter: table.push(emitter.clone())?,
-            })
-        }
-        Call::Component(ComponentCall::Unit(owner, method, emitter, _)) => {
-            LocalCall::Unit(LocalUnit {
-                target: owner.id,
-                data: match method {
-                    ComponentMethod::Input(data) => Some(data.clone()),
-                    ComponentMethod::Invalidate => None,
-                },
-                emitter: table.push(emitter.clone())?,
-            })
-        }
-        Call::Component(ComponentCall::WantsKeyRelease(owner, emitter, _)) => {
-            LocalCall::Key(LocalKey {
-                target: owner.id,
-                emitter: table.push(emitter.clone())?,
-            })
-        }
-        Call::Tool(ToolCall::Prepare {
-            handler,
-            args,
-            emitter,
-            ..
-        }) => LocalCall::Prepare(LocalPrepare {
-            target: handler.id,
-            args: args.clone(),
-            emitter: table.push(emitter.clone())?,
-        }),
-        Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
-            target: call.handler.id,
-            kind: call.kind,
-            data: call.data.clone(),
-            emitter: table.push(call.emitter.clone())?,
-        }),
-        _ => {
-            return Err(wasmtime::format_err!(
-                "extension nested target is not synchronous"
-            ));
-        }
-    })
 }

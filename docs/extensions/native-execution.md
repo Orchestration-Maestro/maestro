@@ -16,7 +16,10 @@ tool argument preparation, a compaction notification or a listener. The callback
 runs inside the waiting component, and its result reaches the native caller
 before the host call returns, as it would for an idle component. Host calls whose
 native code may call back return a route that the component drives until the
-call's own result arrives. Calls into other components are unaffected.
+call's own result arrives. Asynchronous callbacks run through their first suspension
+before the native caller continues; their tails settle afterward without blocking
+that caller. A callback that does not suspend returns its result immediately.
+Calls into other components are unaffected.
 
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,

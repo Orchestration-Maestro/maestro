@@ -98,7 +98,8 @@ impl Request {
             } => {
                 let options = RegisteredCommandOptions {
                     description,
-                    get_argument_completions: completions.map(|handler| handler.completions()),
+                    get_argument_completions: completions
+                        .map(|handler| handler.completions(registry.clone())),
                     handler: handler.command(registry.clone()),
                 };
                 (api.register_command(name, options), reply)

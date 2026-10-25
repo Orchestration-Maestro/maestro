@@ -14,7 +14,7 @@ use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
 pub(crate) mod completion;
 mod endpoint;
-pub(crate) use endpoint::{Endpoint as StoreEndpoint, GuestResource};
+pub(crate) use endpoint::Endpoint as StoreEndpoint;
 mod invocation;
 mod operands;
 pub(crate) mod replies;
@@ -81,7 +81,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::import_route::link(&mut host)
 }
 
-/// Drives admitted exports; only this owner may leave concurrency to destroy resources.
+/// Drives admitted exports until every native owner of this Store has ended.
 pub(crate) async fn drive(
     store: &mut Store<State>,
     exports: Arc<Exports>,
@@ -89,53 +89,39 @@ pub(crate) async fn drive(
     calls: WeakUnboundedSender<Call>,
 ) -> wasmtime::Result<()> {
     let mut activity = Activity::default();
-    loop {
-        let ended = store
-            .run_concurrent(async |accessor| {
-                turn(accessor, &exports, incoming, &calls, &mut activity).await
-            })
-            .await??;
-        for resource in activity.releases.drain(..) {
-            resource.resource_drop_async(&mut *store).await?;
-        }
-        if ended {
-            return Ok(());
-        }
-    }
+    store
+        .run_concurrent(async |accessor| {
+            turn(accessor, &exports, incoming, &calls, &mut activity).await
+        })
+        .await?
 }
 
-/// Quiescence bookkeeping and the single guest-resource destruction queue.
+/// Quiescence bookkeeping and the queue of deferred object destruction.
 #[derive(Default)]
 struct Activity {
     /// Includes nested calls until their completion-before-reply notification.
     active: usize,
-    /// Only the owning Store may destroy these resources, outside concurrency.
-    releases: Vec<wasmtime::component::ResourceAny>,
     /// Released authored objects, destroyed once no other call is active.
     objects: Vec<crate::guest_calls::Release>,
 }
-/// Runs one concurrent turn, ending only on unload or healthy quiescence.
+/// Admits every call in order until the last native owner of this Store ends.
 async fn turn(
     accessor: &wasmtime::component::Accessor<State>,
     exports: &Arc<Exports>,
     incoming: &mut UnboundedReceiver<Call>,
     calls: &WeakUnboundedSender<Call>,
     activity: &mut Activity,
-) -> wasmtime::Result<bool> {
+) -> wasmtime::Result<()> {
     while let Some(call) = incoming.recv().await {
         match call {
             Call::Finished => finished(accessor, exports, calls, activity)?,
-            Call::ReleaseResource(resource) => activity.releases.push(resource),
             Call::Release(release) if release.object && activity.active > 0 => {
                 activity.objects.push(release);
             }
             call => start(accessor, exports, calls, activity, call)?,
         }
-        if activity.active == 0 && !activity.releases.is_empty() {
-            return Ok(false);
-        }
     }
-    Ok(true)
+    Ok(())
 }
 
 /// Counts one completed call and, at quiescence, starts the deferred object releases.

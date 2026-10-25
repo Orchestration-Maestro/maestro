@@ -22,6 +22,9 @@ mod commands;
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/prefixes.rs"]
+mod prefixes;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
 #[cfg(target_arch = "wasm32")]
@@ -160,6 +163,9 @@ fn command(
         }
         if args == "register-tool" {
             return registrations::tool(&api);
+        }
+        if args == "register-prefixes" {
+            return prefixes::register(&api, context);
         }
         if args == "compact" {
             return compact(&context);

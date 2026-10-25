@@ -4,16 +4,16 @@ use wasmtime::{
     Store,
     component::{
         Accessor, ComponentExportIndex, ComponentNamedList, Instance, Lift, Lower, Resource,
-        ResourceAny, TypedFunc,
+        TypedFunc,
     },
 };
 use wasmtime_wasi::WasiView;
 
-mod bash;
-mod events;
-mod registrations;
+pub(crate) mod bash;
+pub(crate) mod events;
+pub(crate) mod registrations;
 mod renderers;
-mod tools;
+pub(crate) mod tools;
 
 /// Typed session callback with the actual domain capability resource.
 type Session<V> = TypedFunc<(Resource<Callback>, Resource<V>), (Result<(), String>,)>;
@@ -110,12 +110,12 @@ impl Exports {
         })
     }
 
-    /// Enters actual callbacks or returns a release for the Store's quiescent drop queue.
+    /// Enters the actual authored callback export.
     pub(crate) async fn invoke<T: crate::callback_imports::CallbackView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: Call<Callback, ResourceAny>,
-    ) -> wasmtime::Result<Option<ResourceAny>> {
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
         match call {
             Call::Start(reply) => {
                 let result = self.start.call_concurrent(accessor, ()).await?.0;
@@ -125,7 +125,6 @@ impl Exports {
             Call::Finished => {
                 return Err(wasmtime::format_err!("completion is not a guest export"));
             }
-            Call::ReleaseResource(resource) => return Ok(Some(resource)),
             Call::Renderer(call) => self.renderers.create(accessor, call).await?,
             Call::Component(call) => self.renderers.component(accessor, call).await?,
             Call::Event(call) => self.events.invoke(accessor, call).await?,
@@ -171,7 +170,7 @@ impl Exports {
                 }
             }
         }
-        Ok(None)
+        Ok(())
     }
     /// Keeps the original native frame alive only through its actual guest prefix.
     async fn prefix<T: crate::callback_imports::CallbackView + 'static>(

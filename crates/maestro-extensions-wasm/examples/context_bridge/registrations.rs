@@ -80,7 +80,7 @@ fn shell_exec(
 }
 
 /// Returns an authored executor without launching a process or adding timeout policy.
-fn shell(api: &ExtensionAPI) -> ExtensionResult<()> {
+pub(super) fn shell(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.on(
         "user_bash",
         Rc::new(|event, _| {

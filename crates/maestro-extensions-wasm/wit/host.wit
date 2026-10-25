@@ -68,6 +68,42 @@ interface host {
     enum local-kind { listener, compaction-complete, compaction-error }
     /// One nested same-instance synchronous callback prefix.
     record local-synchronous { target: u32, kind: local-kind, data: string, emitter: callback-emitter }
+    /// Host resources lent to one event callback; the signal accompanies a compaction.
+    record capabilities { ctx: context, signal: option<abort-signal> }
+    /// Invocation identifier and opaque parameter document.
+    record tool-invocation { tool-call-id: string, params: string }
+    /// Owned resources received by tool execution.
+    record tool-capabilities { ctx: context, signal: option<abort-signal>, update: option<tool-update> }
+    /// Owned operands of one asynchronous execution.
+    record bash-request {
+        command: string, cwd: string, timeout: option<f64>,
+        env: option<list<tuple<string, option<string>>>>,
+    }
+    /// Owned callback and cancellation resources for execution.
+    record bash-capabilities { output: bash-output, signal: option<abort-signal> }
+    /// A JSON document, no document, or the message that explains why encoding failed.
+    type encoded = result<option<string>, string>;
+    /// How an event callback ended: with an encoded result, or with the message it failed with.
+    variant decision { returned(encoded), failed(string) }
+    /// Independent edited-event encoding, decision encoding and the identity of returned
+    /// operations. Replacing the event kind leaves the edited document absent.
+    record event-outcome { event: encoded, decision: decision, operations: option<callback> }
+    /// One nested same-instance event callback.
+    record local-event { target: u32, event: string, resources: capabilities }
+    /// One nested same-instance command.
+    record local-command { target: u32, args: string, ctx: command-context }
+    /// One nested same-instance argument completion.
+    record local-completion { target: u32, prefix: string }
+    /// One nested same-instance shortcut.
+    record local-shortcut { target: u32, ctx: context }
+    /// One nested same-instance tool execution.
+    record local-tool { target: u32, invocation: tool-invocation, resources: tool-capabilities }
+    /// One nested same-instance session setup.
+    record local-setup { target: u32, writer: session-manager }
+    /// One nested same-instance session continuation.
+    record local-continuation { target: u32, ctx: replaced-session-context }
+    /// One nested same-instance execution of returned shell operations.
+    record local-bash { target: u32, request: bash-request, resources: bash-capabilities }
     /// The nested same-instance target and its owned operands.
     variant local-call {
         renderer(local-renderer),
@@ -76,6 +112,15 @@ interface host {
         key(local-key),
         prepare(local-prepare),
         synchronous(local-synchronous),
+        event(local-event),
+        command(local-command),
+        completion(local-completion),
+        shortcut(local-shortcut),
+        tool(local-tool),
+        setup(local-setup),
+        with-session(local-continuation),
+        tail(u32),
+        bash(local-bash),
     }
     /// The nested call's own result, returned to the native caller that asked for it.
     variant local-result {
@@ -85,6 +130,10 @@ interface host {
         key(result<bool, string>),
         prepared(result<string, string>),
         synchronous(result<_, string>),
+        event(result<event-outcome, string>),
+        completion(result<option<list<autocomplete-item>>, string>),
+        tool(result<string, string>),
+        bash(result<option<f64>, string>),
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-step { invoke(local-call), done(result<_, string>) }
@@ -92,7 +141,11 @@ interface host {
     resource import-route {
         next: func() -> route-step;
         resume: func(value: local-result);
+        /// Releases the native caller once the nested call's prefix ran; its result follows.
+        defer: func() -> local-settlement;
     }
+    /// A nested call whose prefix ran and whose result the guest delivers later.
+    resource local-settlement { finish: func(value: local-result); }
     /// Runs a consecutive host segment before continuing the guest-local walk.
     callback-segment: func(emitter: borrow<callback-emitter>, snapshot: u32, start: u32, end: u32) -> import-route;
     /// Releases a snapshot after traversal, including a failed traversal.

@@ -10,7 +10,6 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 pub(crate) mod bash_output;
 pub(crate) mod effects;
 mod synchronous;
-#[cfg(test)]
 pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
@@ -321,6 +320,41 @@ impl Registry {
     ) -> Result<crate::tree_reads::Endpoint, String> {
         self.insert(Capability::Node(node))
             .map(crate::tree_reads::Endpoint)
+    }
+
+    /// Returns the innermost native operation that currently owns this instance's route.
+    fn route(&self) -> Option<std::sync::mpsc::Sender<crate::import_route::Nested>> {
+        self.pump
+            .upgrade()
+            .and_then(|pump| pump.routes.borrow().last().cloned())
+    }
+
+    /// Hands a synchronous target to the native operation that currently owns this instance,
+    /// or submits it to the Store when no operation does.
+    pub(crate) fn dispatch(
+        &self,
+        endpoint: &crate::lifecycle::StoreEndpoint,
+        call: crate::guest_calls::Call,
+    ) -> Result<(), String> {
+        match self.route() {
+            Some(route) => crate::import_route::Nested::send(&route, call, None),
+            None => endpoint.send(call),
+        }
+    }
+
+    /// Hands an asynchronous target to the native operation that owns this instance and
+    /// waits until its prefix ran, or submits it to the Store when no operation does.
+    pub(crate) fn admit(
+        &self,
+        endpoint: &crate::lifecycle::StoreEndpoint,
+        call: crate::guest_calls::Call,
+    ) -> Result<(), String> {
+        match self.route() {
+            Some(route) => self.invoke_sync(|prefix| {
+                crate::import_route::Nested::send(&route, call, Some(prefix))
+            }),
+            None => endpoint.send(call),
+        }
     }
 
     /// Allocates one independent identity while an existing admission is live.
