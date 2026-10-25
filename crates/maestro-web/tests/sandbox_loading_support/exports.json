@@ -119,6 +119,7 @@
     "preview_toggle_dom_emits_only_changed_bubbling_modes",
     "preview_toggle_dom_reconnects_without_duplicate_handlers",
     "artifact_controls_dom_paint_tokens_and_keyboard_actions",
+    "native_mode_group_updates_labels_selection_and_reentrant_events",
     "generic_artifact_dom_guidance_is_literal_and_localized",
     "generic_artifact_dom_header_preserves_complete_binary",
     "generic_artifact_dom_roots_release_their_own_resources",

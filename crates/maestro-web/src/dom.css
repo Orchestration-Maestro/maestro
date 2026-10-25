@@ -188,6 +188,9 @@ code-block, markdown-block, thinking-block {
   border-radius: var(--maestro-radii-control);
   background: color-mix(in srgb, var(--maestro-color-panel) 60%, transparent);
 }
+.maestro-toggle[hidden] {
+  display: none;
+}
 .maestro-toggle-button {
   display: inline-flex;
   align-items: center;
@@ -197,6 +200,11 @@ code-block, markdown-block, thinking-block {
   background: transparent;
   color: var(--maestro-color-muted);
   cursor: pointer;
+}
+.maestro-toggle-button[data-mode-label] {
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 .maestro-toggle-button:hover {
   color: var(--maestro-color-text);

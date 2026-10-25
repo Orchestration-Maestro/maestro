@@ -54,6 +54,7 @@ mod messages_browser;
 mod native_artifact_console_browser;
 mod native_artifact_console_support;
 mod native_artifact_controls_browser;
+mod native_attachment_browser;
 mod native_console_browser;
 mod native_document_artifacts_browser;
 mod native_markdown_browser;

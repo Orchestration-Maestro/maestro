@@ -33,6 +33,9 @@ pub mod markdown_block;
 pub mod console_block;
 /// Native custom-provider summary and current actions.
 pub mod custom_provider_card;
+/// Shared native mode selection.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod mode_toggle;
 /// Retained preview/source selection.
 pub mod preview_code_toggle;
 
