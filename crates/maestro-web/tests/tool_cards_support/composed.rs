@@ -34,7 +34,7 @@ impl Case {
         let call = ToolCall {
             id: "call".into(),
             name: "bash".into(),
-            arguments: input.params.unwrap(),
+            arguments: serde_json::Value::Object(input.params.unwrap()),
             thought_signature: None,
         };
         let result = input.result.unwrap();

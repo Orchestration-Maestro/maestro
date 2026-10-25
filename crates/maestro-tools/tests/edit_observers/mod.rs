@@ -46,7 +46,7 @@ pub fn observe(mode: ToolExecutionMode) {
                 progress
                     .lock()
                     .unwrap()
-                    .push(("progress", Value::Object(tool_call.arguments)));
+                    .push(("progress", tool_call.arguments));
             }
             Box::pin(async { Ok(()) })
         });
@@ -75,7 +75,7 @@ fn observer_config(
         before
             .lock()
             .unwrap()
-            .push(("before", Value::Object(context.tool_call.arguments.clone())));
+            .push(("before", context.tool_call.arguments.clone()));
         Box::pin(async { Ok(None) })
     }));
     let after = Arc::clone(observations);
@@ -83,7 +83,7 @@ fn observer_config(
         after
             .lock()
             .unwrap()
-            .push(("after", Value::Object(context.tool_call.arguments.clone())));
+            .push(("after", context.tool_call.arguments.clone()));
         Box::pin(async { Ok(None) })
     }));
     config
@@ -118,5 +118,5 @@ fn run(
     let maestro_models::AssistantContent::ToolCall(call) = &message.content[1] else {
         panic!("missing retained call");
     };
-    assert_eq!(Value::Object(call.arguments.clone()), *normalized);
+    assert_eq!(call.arguments, *normalized);
 }

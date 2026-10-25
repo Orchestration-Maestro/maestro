@@ -7,7 +7,7 @@ use serde_json::{Map, Value, json};
 
 use super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, native};
 use crate::projection::IMAGE_PLACEHOLDER;
-use crate::providers::json_text::{compact_object, json_value, member, raw_json, raw_number};
+use crate::providers::json_text::{compact_json, json_value, member, raw_json, raw_number};
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, Message, Model, ModelInput,
     TextContent, TextPhase, Tool, ToolCall, ToolResultMessage, UserBlock, UserContent, UserMessage,
@@ -244,7 +244,7 @@ fn function_call(call: &ToolCall, other_model: bool) -> Result<Value, Diagnostic
     }
     item.insert("call_id".to_owned(), json!(call_id));
     item.insert("name".to_owned(), json!(call.name));
-    let arguments = compact_object(&call.arguments).map_err(|error| native(&error))?;
+    let arguments = compact_json(&call.arguments).map_err(|error| native(&error))?;
     item.insert("arguments".to_owned(), json!(arguments));
     Ok(Value::Object(item))
 }

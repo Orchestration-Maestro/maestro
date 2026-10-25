@@ -3772,6 +3772,7 @@ version = "0.1.0"
 dependencies = [
  "futures-util",
  "maestro-dependencies",
+ "maestro-json",
  "maestro-listeners",
  "maestro-models",
  "maestro-test-process",

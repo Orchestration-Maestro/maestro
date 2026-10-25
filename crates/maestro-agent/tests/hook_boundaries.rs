@@ -51,7 +51,10 @@ async fn mutation_case() {
         let call = tool_call();
         if let maestro_models::AssistantContent::ToolCall(c) = &mut call.write().unwrap().content[0]
         {
-            c.arguments.insert("value".into(), raw);
+            c.arguments
+                .as_object_mut()
+                .expect("object root")
+                .insert("value".into(), raw);
         }
         let returned = run_agent_loop(
             vec![],
