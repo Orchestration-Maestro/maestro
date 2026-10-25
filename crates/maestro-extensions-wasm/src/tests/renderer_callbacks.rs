@@ -6,7 +6,7 @@ use super::{
 use serde_json::{Value, json};
 
 /// A complete message whose fields differ from defaults.
-fn message() -> String {
+pub(super) fn message() -> String {
     json!({"role":"custom", "customType":"雪", "content":[{"type":"text", "text":"z", "textSignature":"署名"},{"type":"image", "data":"literal", "mimeType":"image/custom"},{"type":"text", "text":"z"}], "display":true, "details":"{\"n\":7}", "timestamp":1.25}).to_string()
 }
 /// Registers selected authored behavior through the shared capture command.
