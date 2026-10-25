@@ -101,6 +101,14 @@ scope, and the tool policy from the argument. A local resource path is resolved
 once against the original working directory; a package or URL source keeps its
 spelling.
 
+`inputs::read_piped_stdin` reads non-terminal input through EOF with replacement
+for malformed UTF-8, then removes authored whitespace at the edges.
+`prepare_initial_message` forwards file processing and image resizing to the
+existing file owner before consuming the first queued prompt. `prompt_confirm`
+flushes its question before reading an untrimmed answer; an unterminated answer
+at EOF supplies no decision. These operations accept caller-owned streams and
+file effects; the startup entry and executable wiring remain separate work.
+
 ## Print mode
 
 `run_print_mode` runs one session to completion over a caller-owned runtime and
