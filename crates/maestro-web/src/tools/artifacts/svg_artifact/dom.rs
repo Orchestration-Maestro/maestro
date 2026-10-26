@@ -48,6 +48,7 @@ impl State {
         let regions = Regions::mount(view, &image, &source, &artifact.toggle)?;
         regions.show(artifact.toggle.mode())?;
         preview::publish(&artifact.body, &regions);
+        regions.bind(&artifact.toggle, view)?;
         Ok(Rc::new(Self {
             source: RefCell::new(source),
             image: RefCell::new(image),

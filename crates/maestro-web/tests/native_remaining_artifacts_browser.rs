@@ -1131,7 +1131,7 @@ pub async fn artifacts_panel_dom_placements_switch_the_application_owner(import:
 /// A retained header selects the currently bound document controller, not a discarded controller's mode.
 #[wasm_bindgen]
 pub fn artifact_dom_mode_changes_follow_the_bound_controller(import: &js_sys::Function) {
-    use maestro_web::tools::artifacts::MarkdownArtifact;
+    use maestro_web::tools::artifacts::{MarkdownArtifact, SvgArtifact};
     let view = view();
     let _host = host(&view, import);
     for header_first in [false, true] {
@@ -1141,16 +1141,31 @@ pub fn artifact_dom_mode_changes_follow_the_bound_controller(import: &js_sys::Fu
         let early_header = header_first.then(|| first.get_header_buttons(&view).unwrap());
         let root = first.mount(&view).unwrap();
         let header = early_header.unwrap_or_else(|| first.get_header_buttons(&view).unwrap());
-        assert_rebound_modes(&root, &header, &view);
+        assert_rebound_modes::<MarkdownArtifact>(&root, &header, &view);
+        drop(root);
+        assert_remounted_modes(&first, &header, &view);
+
+        let mut first = SvgArtifact::default();
+        first.set_filename("first.svg".into());
+        first.set_content("<svg xmlns=\"http://www.w3.org/2000/svg\"/>".into());
+        let early_header = header_first.then(|| first.get_header_buttons(&view).unwrap());
+        let root = first.mount(&view).unwrap();
+        let header = early_header.unwrap_or_else(|| first.get_header_buttons(&view).unwrap());
+        assert_rebound_modes::<SvgArtifact>(&root, &header, &view);
+        drop(root);
+        assert_remounted_modes(&first, &header, &view);
     }
 }
 
 /// Headers made before or after their body follow both preview and code selections.
-fn assert_rebound_modes(root: &DomRoot, header: &DomRoot, view: &DomView) {
-    use maestro_web::tools::artifacts::MarkdownArtifact;
+fn assert_rebound_modes<T: ArtifactElement + DomContent + Default>(
+    root: &DomRoot,
+    header: &DomRoot,
+    view: &DomView,
+) {
     body().append_child(&root.node).unwrap();
     body().append_child(&header.node).unwrap();
-    let mut current = MarkdownArtifact::default();
+    let mut current = T::default();
     current.set_filename("current.md".into());
     current.set_content("# current".into());
     current.update(root, view).unwrap();
@@ -1170,7 +1185,7 @@ fn assert_rebound_modes(root: &DomRoot, header: &DomRoot, view: &DomView) {
         !source.has_attribute("hidden"),
         "an unchanged update must preserve the current controller's user selection"
     );
-    let mut rebound = MarkdownArtifact::default();
+    let mut rebound = T::default();
     rebound.set_content("# rebound".into());
     rebound.update(root, view).unwrap();
     assert!(source.has_attribute("hidden"));
@@ -1188,6 +1203,27 @@ fn assert_rebound_modes(root: &DomRoot, header: &DomRoot, view: &DomView) {
     );
     rebound.update(root, view).unwrap();
     assert!(!source.has_attribute("hidden"));
+    root.node.unchecked_ref::<web_sys::Element>().remove();
+    header.node.unchecked_ref::<web_sys::Element>().remove();
+}
+
+/// Reusing a header after releasing its rebound body restores the original controller's selection.
+fn assert_remounted_modes(first: &dyn DomContent, header: &DomRoot, view: &DomView) {
+    let root = first.mount(view).unwrap();
+    body().append_child(&root.node).unwrap();
+    body().append_child(&header.node).unwrap();
+    let source = select(&root.node, ".maestro-artifact-source");
+    assert!(source.has_attribute("hidden"));
+    let code = select(&header.node, "button[title='Code']");
+    assert!(
+        !code.class_name().contains("maestro-toggle-selected"),
+        "a retained header must show the remounted controller's preview selection"
+    );
+    code.unchecked_into::<web_sys::HtmlElement>().click();
+    assert!(
+        !source.has_attribute("hidden"),
+        "a retained Code button must select the remounted controller"
+    );
     root.node.unchecked_ref::<web_sys::Element>().remove();
     header.node.unchecked_ref::<web_sys::Element>().remove();
 }

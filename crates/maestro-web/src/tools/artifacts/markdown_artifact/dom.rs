@@ -27,6 +27,7 @@ impl DomContent for MarkdownArtifact {
         let body = Regions::mount(view, &self.preview, &self.source, &self.toggle)?;
         body.show(self.toggle.mode())?;
         preview::publish(&self.body, &body);
+        body.bind(&self.toggle, view)?;
         Ok(DomRoot {
             node: body.node.clone().into(),
             owner: Some(Box::new(body)),
