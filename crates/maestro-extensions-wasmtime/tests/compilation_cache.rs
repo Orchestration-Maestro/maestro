@@ -4,20 +4,20 @@
 use super::components::{TracedBus, loader, local};
 use maestro_extensions::load_extensions;
 use maestro_test_directory::Scratch;
-use maestro_test_process::TestProcess;
+use maestro_test_process::{TestProcess, selection};
 use std::path::Path;
 use wasmtime::{Cache, Config, Engine, component::Component};
 
 /// Runs this test in a separate process with an isolated user cache and configuration.
 fn isolated(test: &str) -> bool {
-    if std::env::var_os("MAESTRO_CACHE_CHILD").is_some() {
+    if selection().is_child() {
         return false;
     }
     let scratch = Scratch::new().unwrap();
     for mode in ["available", "unavailable"] {
         let output = TestProcess::current(test)
             .unwrap()
-            .env("MAESTRO_CACHE_CHILD", mode)
+            .case(mode)
             .env("XDG_CACHE_HOME", scratch.path().join(mode).join("cache"))
             .env("XDG_CONFIG_HOME", scratch.path().join(mode).join("config"))
             .output()
@@ -48,8 +48,8 @@ fn component_load_populates_the_user_compilation_cache() {
     if isolated("component_load_populates_the_user_compilation_cache") {
         return;
     }
-    let mode = std::env::var("MAESTRO_CACHE_CHILD").unwrap();
-    if mode == "unavailable" {
+    let selected = selection();
+    if selected.runs_case("unavailable") {
         let root = std::path::PathBuf::from(std::env::var_os("XDG_CACHE_HOME").unwrap());
         std::fs::create_dir_all(root.parent().unwrap()).unwrap();
         std::fs::write(root, "not a directory").unwrap();
@@ -70,7 +70,7 @@ fn component_load_populates_the_user_compilation_cache() {
                 .flags
                 .contains_key("location")
         );
-        if mode == "available" {
+        if selected.runs_case("available") {
             assert!(
                 cached_compile(Path::new(&path)) > 0,
                 "load did not cache compiled bytes"
