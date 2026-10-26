@@ -196,3 +196,8 @@ fn remote(api: &ExtensionAPI, capture: Rc<super::signals::Released>) -> BashExec
         })
     })
 }
+
+/// Supply the same arbitrary caller port to model invocation and explicit execution.
+pub(super) fn preaborted() -> AbortSignal {
+    AbortSignal::new(Rc::new(AlreadyAborted))
+}

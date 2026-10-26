@@ -15,7 +15,8 @@ Serialization carries only data, never a signal, hook, fetch operation or opaque
 returns the selected payload and signal. Returning the input keeps them; returning
 null, false or zero selects that value rather than restoring an earlier payload.
 `OnResponse` receives copied status and headers with the retained model.
-These callback types describe owned operations; the records alone do not invoke them.
+The records alone do not invoke these operations. Model invocation forwards them to
+the native provider, which decides when to await each hook.
 
 `ProviderObjects` retains an arbitrary local Rust value without serialization.
 Cloning shares its owner. It does not turn that value into a native HTTP client.
@@ -80,4 +81,35 @@ aborted events select the supplied error message. Repeated `result()` calls retu
 the same shared message owner without draining queued events. All supplied content,
 usage, costs, tool arguments, diagnostics and optional fields remain intact.
 
-These operations do not yet provide model invocation or awaited provider hooks.
+## Invoking registered models
+
+`stream(model, context, options)` invokes the registered raw adapter immediately.
+`stream_simple` selects its simple adapter instead. Both accept an owned descriptor
+without requiring catalog membership. Absent options stay absent; supplied empty
+options stay supplied. Raw open fields and simple reasoning/budgets remain distinct,
+even when their names resemble common timeout or retry settings.
+
+`complete` and `complete_simple` start invocation when called, before their returned
+futures are polled. They observe the native final result without draining events.
+Stream `result()` observations share one decoded final-message owner, including
+when they overlap, and remain independent of `next()` readers.
+
+Unknown APIs fail with `No API provider registered for api: {api}`. Stream setup
+failures return from the call; completion reports them through its returned future.
+A provider that has already started retains its own terminal-error event protocol.
+Authored nonfinite option fields fail before native dispatch.
+
+Payload and response hooks run through their original component callback identities.
+The native producer awaits their results. Payload selection preserves every JSON
+kind, including null, false, zero and empty strings, rather than restoring the
+previous payload. Returning a signal keeps cancellation; returning a different
+signal replaces it, and returning no signal removes it. Opaque author controls
+stay retained values, not native HTTP clients.
+
+Invoked model events use the existing shared-record JSON codec. A decoded event
+is an observation, not a live cross-component object reference; later native
+partial-message edits do not modify an earlier decoded event. Authored streams
+created inside the component still retain their original local message handles.
+
+Registering a guest provider for native callers is a separate capability. These
+invocation functions do not add a second provider registry or transport client.

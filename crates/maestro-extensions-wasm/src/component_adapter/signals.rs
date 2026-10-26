@@ -50,3 +50,38 @@ impl<I: Imports> Exports<I> {
         listener(CallbackEmitter::new(&port))
     }
 }
+
+/// A caller's arbitrary signal forwarded to one native cancellation.
+pub(super) struct Binding<I: Imports> {
+    /// Independently owned native flag retained by its caller and abort observer.
+    pub(super) native: Rc<I::Signal>,
+    /// Removed when the containing invocation releases its controls.
+    listening: Option<crate::Subscription>,
+}
+impl<I: Imports> Binding<I> {
+    /// Subscribe before testing abortion, so an intervening abort is not lost.
+    pub(super) fn new(imports: &I, caller: &AbortSignal) -> ExtensionResult<Self> {
+        let native = Rc::new(imports.new_signal()?);
+        let (notify, target) = (imports.clone(), Rc::clone(&native));
+        let binding = Self {
+            native,
+            listening: Some(caller.subscribe(Rc::new(move |_| notify.signal_abort(&target)))?),
+        };
+        if caller.aborted() {
+            imports.signal_abort(&binding.native)?;
+        }
+        Ok(binding)
+    }
+
+    /// Remove the original caller's listener once, preserving explicit removal errors.
+    pub(super) fn remove(&mut self) -> ExtensionResult<()> {
+        self.listening
+            .take()
+            .map_or(Ok(()), |listening| listening.unsubscribe())
+    }
+}
+impl<I: Imports> Drop for Binding<I> {
+    fn drop(&mut self) {
+        let _ = self.remove();
+    }
+}

@@ -100,6 +100,8 @@ kinds! {
         Bash(crate::BashOperations),
         Schema(crate::schema_code::Handler),
         StreamValue(super::streams::Value),
+        ModelPayload(crate::OnPayload),
+        ModelResponse(crate::OnResponse),
         StreamClassifier(super::streams::Classifier),
         StreamExtractor(super::streams::Extractor),
     }

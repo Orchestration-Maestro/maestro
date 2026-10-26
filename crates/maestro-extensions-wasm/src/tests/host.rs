@@ -262,6 +262,11 @@ impl host::HostToolUpdate for State {
 }
 
 impl host::HostAbortSignal for State {
+    fn retain(&mut self, this: Resource<Flag>) -> wasmtime::Result<Resource<Flag>> {
+        let signal = self.table.get(&this)?.0.clone();
+        self.push(Flag(signal))
+    }
+
     fn abort(&mut self, this: Resource<Flag>) -> wasmtime::Result<Result<(), String>> {
         Ok(self.abort(this.rep()).map_err(|error| error.to_string()))
     }
@@ -557,6 +562,15 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn model_stream(
+        &mut self,
+        _: bool,
+        _: String,
+        _: host::ModelControls,
+    ) -> wasmtime::Result<Result<Resource<super::stream_host::Assistant>, String>> {
+        Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
+    }
+
     fn new_event_stream(
         &mut self,
         _: Resource<Identity>,

@@ -9,6 +9,7 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
 pub(crate) mod effects;
+pub(crate) mod model_streams;
 mod signals;
 pub(crate) mod stream_reads;
 mod synchronous;
@@ -28,6 +29,10 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::schema_registration::ToolListing, String>>,
     ),
+    /// Immediately resolve and invoke the registered native model adapter.
+    ModelStart(model_streams::Creation),
+    /// Operate on its original assistant FIFO and independent result.
+    ModelStream(u64, model_streams::Request),
     /// Construct the models-owned buffer with retained local callbacks.
     NewStream(stream_reads::Creation),
     /// Operate on the original native event buffer.
@@ -182,6 +187,8 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// Original native model invocation buffer.
+    AssistantStream(maestro_extensions::AssistantMessageEventStream),
     /// Native event buffer with caller-local completion callbacks.
     Stream(crate::local_resources::stream_reads::Owner),
     /// Original guarded base or command context.

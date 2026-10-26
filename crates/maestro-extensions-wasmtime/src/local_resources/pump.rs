@@ -181,6 +181,8 @@ impl State {
     /// Answers one request with the native owner it names.
     fn dispatch(&self, message: Message) {
         match message {
+            Message::ModelStart(request) => request.answer(&self.registry),
+            Message::ModelStream(id, request) => self.model_stream_request(id, request),
             Message::NewStream(request) => request.answer(&self.registry),
             Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
@@ -210,14 +212,7 @@ impl State {
             Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
-            Message::Catalog(id, request) => {
-                let capability = self.registry.capability(id);
-                if let Some(Capability::Catalog(catalog)) = capability.as_deref() {
-                    request.answer(catalog);
-                } else {
-                    request.reject("extension catalog resource ended");
-                }
-            }
+            Message::Catalog(id, request) => self.catalog(id, request),
             Message::Node(id, request) => {
                 let capability = self.registry.capability(id);
                 if let Some(Capability::Node(node)) = capability.as_deref() {
@@ -238,6 +233,16 @@ impl State {
                 let removed = self.registry.resources.borrow_mut().entries.remove(&id);
                 drop(removed);
             }
+        }
+    }
+
+    /// Read the original catalog outside its capability-table borrow.
+    fn catalog(&self, id: u64, request: crate::catalog_reads::Request) {
+        let capability = self.registry.capability(id);
+        if let Some(Capability::Catalog(catalog)) = capability.as_deref() {
+            request.answer(catalog);
+        } else {
+            request.reject("extension catalog resource ended");
         }
     }
 

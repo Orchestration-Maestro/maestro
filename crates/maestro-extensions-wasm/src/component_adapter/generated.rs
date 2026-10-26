@@ -18,6 +18,9 @@ pub use exports::Glue;
 mod streams;
 pub(crate) use streams::new_event_stream;
 
+#[path = "generated_model_streams.rs"]
+pub(crate) mod model_streams;
+
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
 struct Generated;

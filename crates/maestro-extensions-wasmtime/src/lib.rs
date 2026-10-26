@@ -25,6 +25,8 @@ mod history_reads;
 mod import_route;
 mod lifecycle;
 mod local_resources;
+mod model_calls;
+mod model_imports;
 mod read_imports;
 mod registration_imports;
 mod registration_reads;
