@@ -42,7 +42,7 @@ mod tests;
 mod tui;
 mod types;
 pub use tui::*;
-pub use utils::visible_width;
+pub use utils::{truncate_to_width, visible_width, wrap_text_with_ansi};
 mod theme;
 pub use theme::*;
 

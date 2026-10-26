@@ -371,5 +371,463 @@
       "whitespace": true,
       "punctuation": true
     }
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "abcdef",
+      3
+    ],
+    "context": {},
+    "ok": [
+      "abc",
+      "def"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "ab cd",
+      4
+    ],
+    "context": {},
+    "ok": [
+      "ab",
+      "cd"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "中a",
+      3
+    ],
+    "context": {},
+    "ok": [
+      "中a"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "\u001b[7m  x y\u001b[0m",
+      4
+    ],
+    "context": {},
+    "ok": [
+      "\u001b[7m  x",
+      "\u001b[7my\u001b[0m"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "a\nb",
+      4
+    ],
+    "context": {},
+    "ok": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "",
+      3
+    ],
+    "context": {},
+    "ok": [
+      ""
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "- \u001b[4m \u001b[24m",
+      1
+    ],
+    "ok": [
+      "-",
+      "\u001b[4m \u001b[24m"
+    ]
+  },
+  {
+    "test": "helper_background_callback_receives_padded_line_once",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "x",
+      4
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44mx   \u001b[0m",
+      "calls": [
+        "x   "
+      ]
+    }
+  },
+  {
+    "test": "helper_background_callback_receives_padded_line_once",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "中",
+      2
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44m中\u001b[0m",
+      "calls": [
+        "中"
+      ]
+    }
+  },
+  {
+    "test": "helper_background_callback_receives_padded_line_once",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "long",
+      2
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44mlong\u001b[0m",
+      "calls": [
+        "long"
+      ]
+    }
+  },
+  {
+    "test": "helper_background_callback_receives_padded_line_once",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "",
+      3
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44m   \u001b[0m",
+      "calls": [
+        "   "
+      ]
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "abcdef",
+      5
+    ],
+    "context": {},
+    "ok": {
+      "text": "ab\u001b[0m...\u001b[0m",
+      "width": 5
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "中a",
+      1
+    ],
+    "context": {},
+    "ok": {
+      "text": "\u001b[0m.\u001b[0m",
+      "width": 1
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "",
+      3,
+      "...",
+      true
+    ],
+    "context": {},
+    "ok": {
+      "text": "   ",
+      "width": 3
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "ab",
+      4,
+      "...",
+      true
+    ],
+    "context": {},
+    "ok": {
+      "text": "ab  ",
+      "width": 4
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "abcdef",
+      4,
+      "→",
+      false
+    ],
+    "context": {},
+    "ok": {
+      "text": "abc\u001b[0m→\u001b[0m",
+      "width": 4
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "x",
+      0
+    ],
+    "context": {},
+    "ok": {
+      "text": "",
+      "width": 0
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "\u001b[4m abc def\u001b[0m",
+      6
+    ],
+    "context": {},
+    "ok": {
+      "text": "\u001b[4m ab\u001b[0m...\u001b[0m",
+      "width": 6
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceWithWidth",
+    "args": [
+      "a中bc",
+      1,
+      1,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "text": "中",
+      "width": 2
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceByColumn",
+    "args": [
+      "a中bc",
+      1,
+      1,
+      false
+    ],
+    "context": {},
+    "ok": "中"
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceWithWidth",
+    "args": [
+      "a中bc",
+      1,
+      1,
+      true
+    ],
+    "context": {},
+    "ok": {
+      "text": "",
+      "width": 0
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceByColumn",
+    "args": [
+      "a中bc",
+      1,
+      1,
+      true
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceWithWidth",
+    "args": [
+      "\u001b[31ma中b\u001b[0m",
+      1,
+      2,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "text": "\u001b[31m中",
+      "width": 2
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceByColumn",
+    "args": [
+      "\u001b[31ma中b\u001b[0m",
+      1,
+      2,
+      false
+    ],
+    "context": {},
+    "ok": "\u001b[31m中"
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceWithWidth",
+    "args": [
+      "abc",
+      0,
+      0,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "text": "",
+      "width": 0
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceByColumn",
+    "args": [
+      "abc",
+      0,
+      0,
+      false
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "\u001b[7ma中bcd\u001b[0m",
+      1,
+      3,
+      2,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "before": "\u001b[7ma",
+      "beforeWidth": 1,
+      "after": "\u001b[7mbc",
+      "afterWidth": 2
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "abc",
+      0,
+      3,
+      2,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "before": "",
+      "beforeWidth": 0,
+      "after": "",
+      "afterWidth": 0
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "a中b",
+      1,
+      1,
+      1,
+      true
+    ],
+    "context": {},
+    "ok": {
+      "before": "a",
+      "beforeWidth": 1,
+      "after": "",
+      "afterWidth": 0
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "\u001b[7m  x",
+      1,
+      1,
+      1,
+      false
+    ],
+    "ok": {
+      "before": "\u001b[7m ",
+      "beforeWidth": 1,
+      "after": "\u001b[7m ",
+      "afterWidth": 1
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "\u001b[44m  x",
+      1,
+      1,
+      1,
+      false
+    ],
+    "ok": {
+      "before": "\u001b[44m ",
+      "beforeWidth": 1,
+      "after": "\u001b[44m ",
+      "afterWidth": 1
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "\u001b[4m  x",
+      1,
+      1,
+      1,
+      false
+    ],
+    "ok": {
+      "before": "\u001b[4m ",
+      "beforeWidth": 1,
+      "after": "\u001b[4m ",
+      "afterWidth": 1
+    }
   }
 ]

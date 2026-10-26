@@ -32,6 +32,31 @@ fn helper_compiled_guest_calls_production_owners() {
     check("helper_compiled_guest_calls_production_owners");
 }
 
+#[test]
+fn helper_wrap_preserves_styled_spaces() {
+    check("helper_wrap_preserves_styled_spaces");
+}
+
+#[test]
+fn helper_background_callback_receives_padded_line_once() {
+    check("helper_background_callback_receives_padded_line_once");
+}
+
+#[test]
+fn helper_width_truncation_keeps_options() {
+    check("helper_width_truncation_keeps_options");
+}
+
+#[test]
+fn helper_column_slice_keeps_strict_and_width() {
+    check("helper_column_slice_keeps_strict_and_width");
+}
+
+#[test]
+fn helper_segments_keep_both_widths_and_style() {
+    check("helper_segments_keep_both_widths_and_style");
+}
+
 /// Executes every recorded row of one behavior through the unchanged author fixture.
 fn check(name: &str) {
     super::components::local(async {

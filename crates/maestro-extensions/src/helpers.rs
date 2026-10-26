@@ -30,7 +30,7 @@ pub fn call(operation: &str, data: &str) -> Result<String, String> {
             let (text,): (String,) = decode(data)?;
             encode(&maestro_tui::is_punctuation_char(&text))
         }
-        _ => Err(format!("Unknown native helper: {operation}")),
+        _ => columns(operation, data),
     }
 }
 
@@ -42,4 +42,53 @@ fn decode<T: DeserializeOwned>(data: &str) -> Result<T, String> {
 /// Encodes ordinary helper results; complete metadata uses its typed value boundary.
 fn encode<T: Serialize>(value: &T) -> Result<String, String> {
     serde_json::to_string(value).map_err(|error| error.to_string())
+}
+
+/// Delegates column operations to the same native terminal owner.
+fn columns(operation: &str, data: &str) -> Result<String, String> {
+    match operation {
+        "wrap_text_with_ansi" => {
+            let (text, width): (String, usize) = decode(data)?;
+            encode(&maestro_tui::wrap_text_with_ansi(&text, width))
+        }
+        "apply_background_to_line" => {
+            let (line, width): (String, usize) = decode(data)?;
+            encode(&maestro_tui::apply_background_to_line(
+                &line,
+                width,
+                str::to_owned,
+            ))
+        }
+        "truncate_to_width" => {
+            let (text, width, ellipsis, pad): (String, usize, String, bool) = decode(data)?;
+            encode(&maestro_tui::truncate_to_width(
+                &text,
+                width,
+                maestro_tui::TruncateOptions {
+                    ellipsis: &ellipsis,
+                    pad,
+                },
+            ))
+        }
+        "slice_with_width" => {
+            let (line, start, length, strict): (String, usize, usize, bool) = decode(data)?;
+            let slice = maestro_tui::slice_with_width(&line, start, length, strict);
+            encode(&serde_json::json!({"text":slice.text,"width":slice.width}))
+        }
+        "extract_segments" => {
+            let (line, before_end, after_start, after_len, strict): (
+                String,
+                usize,
+                usize,
+                usize,
+                bool,
+            ) = decode(data)?;
+            let segments =
+                maestro_tui::extract_segments(&line, before_end, after_start, after_len, strict);
+            encode(
+                &serde_json::json!({"before":segments.before,"beforeWidth":segments.before_width,"after":segments.after,"afterWidth":segments.after_width}),
+            )
+        }
+        _ => Err(format!("Unknown native helper: {operation}")),
+    }
 }
