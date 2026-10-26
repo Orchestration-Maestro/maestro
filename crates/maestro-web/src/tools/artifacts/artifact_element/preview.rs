@@ -15,16 +15,48 @@ use std::{
 use wasm_bindgen::closure::Closure;
 use web_sys::Element;
 
-/// Non-owning link to the most recently published body.
-pub(crate) type LastBody = Rc<RefCell<Weak<Regions>>>;
+/// Non-owning body and header registrations retained across native placements.
+pub(crate) type LastBody = Rc<RefCell<BodyLink>>;
+/// A controller's latest body and its independently mounted headers.
+#[derive(Default)]
+pub(crate) struct BodyLink {
+    /// Most recently mounted or updated regions.
+    body: Weak<Regions>,
+    /// Independent controls, which may be mounted before the body.
+    headers: Vec<Weak<DomRoot>>,
+}
+impl BodyLink {
+    /// Read the currently published regions without retaining a native placement.
+    fn upgrade(&self) -> Option<Rc<Regions>> {
+        self.body.upgrade()
+    }
+    /// Read live headers only while this link still targets the supplied body.
+    fn live_headers(&mut self, body: &Regions) -> Vec<Rc<DomRoot>> {
+        if !std::ptr::eq(self.body.as_ptr(), body) {
+            return Vec::new();
+        }
+        self.headers.retain(|header| header.strong_count() > 0);
+        self.headers.iter().filter_map(Weak::upgrade).collect()
+    }
+}
+/// Publish a placement without losing headers constructed before it or an earlier placement.
+pub(crate) fn publish(last: &LastBody, body: &Rc<Regions>) {
+    last.borrow_mut().body = Rc::downgrade(body);
+    let link = Rc::downgrade(last);
+    let mut links = body.links.borrow_mut();
+    links.retain(|link| link.strong_count() > 0);
+    if !links.iter().any(|existing| existing.ptr_eq(&link)) {
+        links.push(link);
+    }
+}
 /// Two retained placements, neither replaced by selecting the other.
 pub(crate) struct Regions {
     /// Scrollable containing root.
     pub(crate) node: Element,
     /// Selection of the controller that last updated this body.
     selection: RefCell<PreviewCodeToggle>,
-    /// Live independent mode controls, retained by their header roots rather than the body.
-    headers: RefCell<Vec<Weak<DomRoot>>>,
+    /// Weak controller links published for this body.
+    links: RefCell<Vec<Weak<RefCell<BodyLink>>>>,
     /// Preview placement.
     preview: DomRoot,
     /// Source placement.
@@ -58,7 +90,7 @@ impl Regions {
         Ok(Rc::new(Self {
             node,
             selection: RefCell::new(toggle.shared()),
-            headers: RefCell::default(),
+            links: RefCell::default(),
             preview,
             source,
             preview_region,
@@ -83,17 +115,17 @@ impl Regions {
     ) -> Result<(), ToolUiError> {
         let previous = self.selection.replace(toggle.shared());
         drop(previous);
-        self.headers
-            .borrow_mut()
-            .retain(|header| header.strong_count() > 0);
-        let headers: Vec<_> = self
-            .headers
+        let links: Vec<_> = self
+            .links
             .borrow()
             .iter()
             .filter_map(Weak::upgrade)
             .collect();
-        for header in headers {
-            toggle.update(&header, view)?;
+        for link in links {
+            let headers = link.borrow_mut().live_headers(self);
+            for header in headers {
+                toggle.update(&header, view)?;
+            }
         }
         Ok(())
     }
@@ -125,9 +157,7 @@ pub(crate) fn header(
         .add_1("maestro-artifact-preview-header")
         .map_err(|error| ToolUiError::native(&error))?;
     let control = Rc::new(toggle.mount(view)?);
-    if let Some(mounted) = body.borrow().upgrade() {
-        mounted.headers.borrow_mut().push(Rc::downgrade(&control));
-    }
+    body.borrow_mut().headers.push(Rc::downgrade(&control));
     let body = Rc::clone(body);
     let changed =
         Closure::<dyn Fn(web_sys::CustomEvent)>::new(move |event: web_sys::CustomEvent| {

@@ -1134,17 +1134,26 @@ pub fn artifact_dom_mode_changes_follow_the_bound_controller(import: &js_sys::Fu
     use maestro_web::tools::artifacts::MarkdownArtifact;
     let view = view();
     let _host = host(&view, import);
-    let mut first = MarkdownArtifact::default();
-    first.set_filename("first.md".into());
-    first.set_content("# first".into());
-    let root = first.mount(&view).unwrap();
-    let header = first.get_header_buttons(&view).unwrap();
+    for header_first in [false, true] {
+        let mut first = MarkdownArtifact::default();
+        first.set_filename("first.md".into());
+        first.set_content("# first".into());
+        let early_header = header_first.then(|| first.get_header_buttons(&view).unwrap());
+        let root = first.mount(&view).unwrap();
+        let header = early_header.unwrap_or_else(|| first.get_header_buttons(&view).unwrap());
+        assert_rebound_modes(&root, &header, &view);
+    }
+}
+
+/// Headers made before or after their body follow both preview and code selections.
+fn assert_rebound_modes(root: &DomRoot, header: &DomRoot, view: &DomView) {
+    use maestro_web::tools::artifacts::MarkdownArtifact;
     body().append_child(&root.node).unwrap();
     body().append_child(&header.node).unwrap();
     let mut current = MarkdownArtifact::default();
     current.set_filename("current.md".into());
     current.set_content("# current".into());
-    current.update(&root, &view).unwrap();
+    current.update(root, view).unwrap();
     select(&header.node, "button[title='Code']")
         .unchecked_into::<web_sys::HtmlElement>()
         .click();
@@ -1156,14 +1165,14 @@ pub fn artifact_dom_mode_changes_follow_the_bound_controller(import: &js_sys::Fu
             .as_deref(),
         Some("# current")
     );
-    current.update(&root, &view).unwrap();
+    current.update(root, view).unwrap();
     assert!(
         !source.has_attribute("hidden"),
         "an unchanged update must preserve the current controller's user selection"
     );
     let mut rebound = MarkdownArtifact::default();
     rebound.set_content("# rebound".into());
-    rebound.update(&root, &view).unwrap();
+    rebound.update(root, view).unwrap();
     assert!(source.has_attribute("hidden"));
     assert!(
         !select(&header.node, "button[title='Code']")
@@ -1177,7 +1186,7 @@ pub fn artifact_dom_mode_changes_follow_the_bound_controller(import: &js_sys::Fu
         !source.has_attribute("hidden"),
         "a formerly selected Code button must select the rebound controller"
     );
-    rebound.update(&root, &view).unwrap();
+    rebound.update(root, view).unwrap();
     assert!(!source.has_attribute("hidden"));
     root.node.unchecked_ref::<web_sys::Element>().remove();
     header.node.unchecked_ref::<web_sys::Element>().remove();
