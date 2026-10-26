@@ -97,6 +97,13 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
             runtime,
         }
     }
+    /// Check that this facade's original registration owner is still active.
+    ///
+    /// # Errors
+    /// Returns the original stale error after invalidation or owner release.
+    pub fn assert_active(&self) -> Result<(), EventError> {
+        self.owner().map(drop)
+    }
     /// Upgrades the live registration owner after checking invalidation.
     pub(super) fn owner(&self) -> Result<ExtensionHandle<E>, EventError> {
         self.runtime.assert_active()?;

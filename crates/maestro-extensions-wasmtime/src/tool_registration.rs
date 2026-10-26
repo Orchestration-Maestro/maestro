@@ -1,7 +1,7 @@
 //! Authored metadata becomes the real native local tool definition.
 use crate::{guest_calls::Handle, local_resources::Registry};
 use maestro_extensions::{
-    EventBus, Local, Presence, Tool, ToolExecutionMode, ToolRenderShell, local::ToolDefinition,
+    ExtensionAPI, Local, Presence, Tool, ToolExecutionMode, ToolRenderShell, local::ToolDefinition,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -55,14 +55,14 @@ pub(crate) fn definition(
     callbacks: crate::schema_registration::ToolCallbacks,
     (render_call, render_result): (Option<Handle>, Option<Handle>),
     registry: Registry,
-    events: EventBus<Local>,
+    api: ExtensionAPI<Local>,
 ) -> Result<ToolDefinition<maestro_extensions::ExtensionContext, Value, Value>, String> {
     let (prepare, execute, schemas) = callbacks;
     let (metadata, parameters): (Metadata, _) =
         maestro_extensions::schema_transport::decode_metadata::<Metadata, ()>(metadata)?;
-    let parameters = parameters.with_code(crate::schema_registration::code(
-        schemas, &registry, &events,
-    ));
+    let parameters =
+        parameters.with_code(crate::schema_registration::code(schemas, &registry, &api));
+    let events = api.events;
     let prepare_arguments =
         prepare.map(|prepare| prepare.prepare(registry.clone(), events.clone()));
     let render_call =

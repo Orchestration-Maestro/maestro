@@ -57,7 +57,7 @@ fn start(route: &host::ImportRoute, mut running: Running) {
 fn dispatch(call: host::LocalCall) -> Running {
     let exports = Exports::new(Generated);
     let result = match call {
-        host::LocalCall::AuthFallback(call) => fallback(&call),
+        host::LocalCall::AuthFallback(call) => auth_fallback(&call),
         host::LocalCall::AuthBackend(call) => return backend(call),
         host::LocalCall::Renderer(call) => host::LocalResult::Renderer(
             exports
@@ -116,8 +116,8 @@ fn dispatch(call: host::LocalCall) -> Running {
     Box::pin(std::future::ready(result))
 }
 
-/// Returns the exact optional key from a nested credential lookup.
-fn fallback(call: &host::LocalAuthFallback) -> host::LocalResult {
+/// Invoke the retained credential fallback through its original author adapter.
+fn auth_fallback(call: &host::LocalAuthFallback) -> host::LocalResult {
     host::LocalResult::AuthFallback(super::super::auth_storage::invoke_fallback(
         call.target,
         &call.provider,

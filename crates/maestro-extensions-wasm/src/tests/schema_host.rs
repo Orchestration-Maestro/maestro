@@ -317,10 +317,27 @@ pub(super) async fn get_all_tools(
             Ok(handler) => handler,
             Err(error) => return Ok(Err(error.message)),
         };
+        let guest = accessor.with(|mut access| {
+            access
+                .get()
+                .schema_origin
+                .as_ref()
+                .unwrap()
+                .get()
+                .unwrap()
+                .clone()
+        });
+        let function = accessor.with(|access| guest.func_describe_schema().func().typed::<(Resource<Identity>,), (Result<host::SchemaShape, host::DiagnosticErrorInfo>,)>(access))?;
+        let (shape,) = function
+            .call_concurrent(accessor, (borrow(callback),))
+            .await?;
+        let shape = shape.map_err(|error| wasmtime::format_err!("{}", error.message))?;
         schemas.push(host::SchemaBinding {
             tool,
             pointer,
             handler,
+            shape,
+            local: true,
         });
     }
     Ok(Ok(host::ToolListing { metadata, schemas }))

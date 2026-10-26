@@ -13,6 +13,7 @@ mod dialogs;
 pub(crate) mod effects;
 mod footer;
 pub(crate) mod model_streams;
+pub(crate) mod schema;
 mod signals;
 pub(crate) mod stream_reads;
 pub(crate) mod synchronous;
@@ -242,6 +243,8 @@ pub(crate) use signals::SignalEndpoint;
 enum Capability {
     /// Independently retained OAuth implementation.
     OAuthProvider(maestro_extensions::OAuthProviderHandle),
+    /// An independently retained enumerated schema node.
+    Schema(maestro_extensions::SchemaNode),
     /// Original native model invocation buffer.
     AssistantStream(maestro_extensions::AssistantMessageEventStream),
     /// Native event buffer with caller-local completion callbacks.

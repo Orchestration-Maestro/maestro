@@ -101,6 +101,10 @@ pub(crate) struct Binding {
     pub(crate) pointer: String,
     /// The original retained callback identity.
     pub(crate) handler: Resource<crate::guest_calls::Callback>,
+    /// The original callable shape.
+    pub(crate) shape: Shape,
+    /// Whether the author lives in the receiving instance.
+    pub(crate) local: bool,
 }
 /// Live declaration metadata with independently retained schema code.
 #[derive(ComponentType, Lower)]
@@ -110,4 +114,19 @@ pub(crate) struct Listing {
     pub(crate) metadata: String,
     /// The schema bindings admitted for this declaration.
     pub(crate) schemas: Vec<Binding>,
+}
+
+impl From<maestro_extensions::DiagnosticErrorInfo> for Error {
+    /// Preserve every authored diagnostic field across schema mediation.
+    fn from(error: maestro_extensions::DiagnosticErrorInfo) -> Self {
+        Self {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            code: error.code.map(|code| match code {
+                maestro_extensions::DiagnosticCode::Text(value) => Code::Text(value),
+                maestro_extensions::DiagnosticCode::Number(value) => Code::Number(value),
+            }),
+        }
+    }
 }
