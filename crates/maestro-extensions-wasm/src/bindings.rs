@@ -59,3 +59,13 @@ pub(crate) mod host_side {
         },
     });
 }
+
+/// Standard native asynchronous operating-system capabilities supplied by the component host.
+pub mod standard {
+    wit_bindgen::generate!({
+        inline: "package maestro:standard; world standards { include wasi:cli/imports@0.3.0; }",
+        path: "wit/standard",
+        world: "maestro:standard/standards",
+        generate_all,
+    });
+}

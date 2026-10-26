@@ -19,6 +19,7 @@ fn main() -> Result<(), String> {
     let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
     build::compile(&context).map_err(|error| error.to_string())?;
     let location = build::component("module_location_component", "MAESTRO_LOCATION_COMPONENT")?;
+    let wasi = build::component("wasi_capabilities", "MAESTRO_WASI_COMPONENT")?;
     let hooks = build::component("hook_component", "MAESTRO_HOOK_COMPONENT")?;
     let resources = build::component("resource_component", "MAESTRO_RESOURCE_COMPONENT")?;
     let reloaded = build::component(
@@ -30,10 +31,11 @@ fn main() -> Result<(), String> {
             environment,
             format!(
                 "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCATION_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\n",
+                 MAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\n",
                 path.display(),
                 context.display(),
                 location.display(),
+                wasi.display(),
                 hooks.display(),
                 resources.display(),
                 reloaded.display()

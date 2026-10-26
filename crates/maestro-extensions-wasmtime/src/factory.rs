@@ -31,7 +31,8 @@ pub fn artifact_factory(path: String) -> ExtensionFactory<Local> {
             let callbacks = Callbacks::new(calls.downgrade(), replies.clone());
             let weak = calls.downgrade();
             let startup = lifecycle::StoreEndpoint::new(calls, admission, replies.clone());
-            let state = lifecycle::State::new(endpoint, callbacks, &path);
+            let state = lifecycle::State::new(endpoint, callbacks, &path)
+                .map_err(|error| error.to_string())?;
             let worker = std::thread::Builder::new()
                 .name("maestro-extension".into())
                 .spawn(move || {
@@ -53,8 +54,9 @@ fn worker(
     calls: mpsc::WeakUnboundedSender<Call>,
     replies: &Replies,
 ) {
-    // WASI clock waits sleep on this runtime's timer.
+    // Standard I/O uses this Store thread's existing reactor and timer.
     let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_io()
         .enable_time()
         .build();
     match runtime {

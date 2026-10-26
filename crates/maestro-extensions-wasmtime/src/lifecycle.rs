@@ -86,16 +86,14 @@ impl State {
     /// Constructs the one instance state before canonical linking.
     ///
     /// The instance reads `path`, the artifact it is loaded from, as `MAESTRO_EXTENSION_PATH`.
-    pub(crate) fn new(api: Endpoint, callbacks: Callbacks, path: &str) -> Self {
-        Self {
-            wasi: wasmtime_wasi::WasiCtxBuilder::new()
-                .env("MAESTRO_EXTENSION_PATH", path)
-                .build(),
+    pub(crate) fn new(api: Endpoint, callbacks: Callbacks, path: &str) -> wasmtime::Result<Self> {
+        Ok(Self {
+            wasi: crate::wasi::build(path)?,
             table: ResourceTable::new(),
             api,
             callbacks,
             exports: None,
-        }
+        })
     }
 }
 impl WasiView for State {
@@ -125,6 +123,7 @@ impl crate::callback_imports::CallbackView for State {
 /// Installs each canonical import once against its existing domain owner.
 pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut *linker)?;
     let mut host = linker.instance("maestro:extension/host@0.1.0")?;
     crate::api_imports::add_to_linker(&mut host)?;
     crate::exec_imports::add_to_linker(&mut host)?;
