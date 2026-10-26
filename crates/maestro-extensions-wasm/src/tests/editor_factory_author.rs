@@ -137,9 +137,17 @@ impl CustomEditorComponent for Modal {
     }
 }
 
-/// A factory building the editor `kind` names.
-fn factory(kind: &str) -> ExtensionResult<EditorFactory> {
+/// A factory building the editor `kind` names; `wrap` builds with the current factory.
+fn factory(ui: &ExtensionUIContext, kind: &str) -> ExtensionResult<EditorFactory> {
     Ok(match kind {
+        "wrap" => {
+            let current = ui
+                .get_editor_component()?
+                .ok_or("no editor factory to wrap")?;
+            Rc::new(move |tui, theme, keybindings, emitter| {
+                current(tui, theme, keybindings, emitter)
+            })
+        }
         "plain" => {
             Rc::new(|_, _, _, _| Ok(EditorFactoryOutcome::Editor(Rc::new(Plain::default()))))
         }
@@ -167,7 +175,7 @@ pub fn install(ui: &ExtensionUIContext, kind: &str) -> ExtensionResult<Value> {
         ui.set_editor_component(None)?;
         return Ok(json!({ "current": ui.get_editor_component()?.is_some() }));
     }
-    let factory = factory(kind)?;
+    let factory = factory(ui, kind)?;
     ui.set_editor_component(Some(Rc::clone(&factory)))?;
     let current = ui.get_editor_component()?;
     Ok(json!({ "same": current.is_some_and(|current| Rc::ptr_eq(&current, &factory)) }))

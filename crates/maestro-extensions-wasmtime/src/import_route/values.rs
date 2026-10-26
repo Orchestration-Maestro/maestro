@@ -15,6 +15,10 @@ pub(crate) enum Value {
     Completion(crate::guest_calls::providers::Completed),
     /// A file-completion decision, absent without one.
     Trigger(Option<bool>),
+    /// An editor another extension's factory built, and whether it extends the custom editor.
+    Editor((crate::widget_reads::WidgetEndpoint, bool)),
+    /// What such an editor answered.
+    EditorAnswer(crate::widget_foreign::ForeignAnswered),
     /// Independently retained credentials.
     Credentials(crate::credential_reads::Endpoint),
     /// Independently retained catalog.
@@ -42,6 +46,12 @@ pub(super) enum Transferred {
     /// A file-completion decision, absent without one.
     #[component(name = "trigger")]
     Trigger(Option<bool>),
+    /// An editor another extension's factory built.
+    #[component(name = "editor")]
+    Editor(Built),
+    /// What such an editor answered.
+    #[component(name = "editor-answer")]
+    EditorAnswer(Answer),
     /// Independently retained credentials.
     #[component(name = "credentials")]
     Credentials(Resource<crate::credential_reads::Endpoint>),
@@ -59,6 +69,11 @@ impl Value {
             Self::Lines(value) => Transferred::Lines(value),
             Self::Completion(value) => Transferred::Completion(value),
             Self::Trigger(value) => Transferred::Trigger(value),
+            Self::Editor((widget, custom)) => Transferred::Editor(Built {
+                widget: table.push(widget)?,
+                custom,
+            }),
+            Self::EditorAnswer(answer) => Transferred::EditorAnswer(answer.transfer(table)?),
             Self::Credentials(value) => Transferred::Credentials(table.push(value)?),
             Self::Catalog(value) => Transferred::Catalog(table.push(value)?),
         })
@@ -72,9 +87,55 @@ macro_rules! returns {
         }
     )*};
 }
-returns! { bool => Boolean, String => Text, Vec<String> => Lines, crate::guest_calls::providers::Completed => Completion, Option<bool> => Trigger, crate::credential_reads::Endpoint => Credentials, crate::catalog_reads::Endpoint => Catalog }
+returns! { bool => Boolean, String => Text, Vec<String> => Lines, crate::guest_calls::providers::Completed => Completion, Option<bool> => Trigger, (crate::widget_reads::WidgetEndpoint, bool) => Editor, crate::widget_foreign::ForeignAnswered => EditorAnswer, crate::credential_reads::Endpoint => Credentials, crate::catalog_reads::Endpoint => Catalog }
 impl From<()> for Value {
     fn from((): ()) -> Self {
         Self::Unit
+    }
+}
+
+/// An editor another extension's factory built, transferred.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct Built {
+    /// The editor's widget.
+    widget: Resource<crate::widget_reads::WidgetEndpoint>,
+    /// Whether the editor extends the custom editor.
+    custom: bool,
+}
+
+/// What an editor another extension's factory built answered, with lent resources transferred.
+#[derive(ComponentType, Lower)]
+#[component(variant)]
+pub(super) enum Answer {
+    /// The operation ran.
+    #[component(name = "done")]
+    Done,
+    /// The editor lacks the operation.
+    #[component(name = "absent")]
+    Absent,
+    /// Text.
+    #[component(name = "text")]
+    Text(String),
+    /// The change handler, lent, when one is installed.
+    #[component(name = "handler")]
+    Handler(Option<Resource<crate::guest_calls::editors::TextCallbackEndpoint>>),
+    /// The border style, lent.
+    #[component(name = "style")]
+    Style(Resource<crate::widget_reads::StyleEndpoint>),
+}
+
+impl crate::widget_foreign::ForeignAnswered {
+    /// Transfers the lent resources into `table`.
+    fn transfer(self, table: &mut ResourceTable) -> wasmtime::Result<Answer> {
+        Ok(match self {
+            Self::Done => Answer::Done,
+            Self::Absent => Answer::Absent,
+            Self::Text(text) => Answer::Text(text),
+            Self::Handler(handler) => {
+                Answer::Handler(handler.map(|handler| table.push(handler)).transpose()?)
+            }
+            Self::Style(style) => Answer::Style(table.push(style)?),
+        })
     }
 }

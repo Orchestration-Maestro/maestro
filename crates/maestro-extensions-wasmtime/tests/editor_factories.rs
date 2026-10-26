@@ -350,3 +350,109 @@ fn canonical_editor_factories_keep_callbacks_text_and_custom_actions() {
         fixture.bus.clear();
     });
 }
+
+/// An editor factory another extension sets: the toolkit editor, or the witnesses' custom
+/// editor, which has none of the optional operations.
+async fn native_factory(fixture: &Fixture, custom: bool) -> EditorFactory {
+    let made = Rc::new(RefCell::new(None));
+    let slot = made.clone();
+    let factory: maestro_extensions::ExtensionFactory<Local> = Rc::new(move |api| {
+        let factory: EditorFactory = api.ui_callback(move |(tui, theme, keys), _| {
+            let options = maestro_tui::EditorOptions::default();
+            Ok(if custom {
+                let widgets = super::support::widgets();
+                EditorFactoryOutcome::CustomEditor(
+                    widgets.custom_editor(&tui, theme, keys, options),
+                )
+            } else {
+                EditorFactoryOutcome::Editor(Rc::new(maestro_tui::Editor::new(
+                    &tui, theme, options,
+                )))
+            })
+        });
+        slot.replace(Some(factory));
+        Box::pin(async { Ok(()) })
+    });
+    maestro_extensions::load_extension_from_factory(
+        factory,
+        "/other".into(),
+        fixture.bus.for_extension(),
+        maestro_extensions::create_extension_runtime::<Local>(),
+        Some("<other>".into()),
+    )
+    .await
+    .unwrap();
+    made.take().unwrap()
+}
+
+/// What each optional operation of an editor answers, in order.
+fn optional(editor: &dyn EditorComponent<Signal = maestro_tui::Cancellation>) -> Vec<bool> {
+    vec![
+        editor.try_insert_text_at_cursor("!").unwrap().is_some(),
+        editor.try_get_expanded_text().unwrap().is_some(),
+        editor.border_color().is_some(),
+        editor
+            .set_border_color(Rc::new(|text: &str| format!("<{text}>")))
+            .is_some(),
+        editor.try_set_padding_x(2.0).unwrap().is_some(),
+        editor.try_add_to_history("past").unwrap().is_some(),
+        editor
+            .try_set_autocomplete_max_visible(4.0)
+            .unwrap()
+            .is_some(),
+        editor
+            .try_set_autocomplete_provider(Rc::new(Silent))
+            .unwrap()
+            .is_some(),
+    ]
+}
+
+/// An authored factory wrapping another extension's builds that extension's editor through the
+/// host, keeping its text, callbacks, custom actions and absent optional operations.
+async fn foreign(fixture: &Fixture, custom: bool) {
+    let native = native_factory(fixture, custom).await;
+    fixture.ui.set_editor_component(Some(native)).unwrap();
+    assert_eq!(
+        fixture.install("wrap").await,
+        json!({ "same": true }).to_string()
+    );
+    let built = fixture.built();
+    assert_eq!(built.as_custom().is_some(), custom);
+    let editor = built.editor();
+    editor.set_on_change(Some(fixture.recorder("change")));
+    editor.try_set_text("a").unwrap();
+    assert_eq!(optional(editor.as_ref()), [!custom; 8]);
+    input(editor.as_ref(), "q");
+    let typed = if custom { "aq" } else { "a!q" };
+    assert_eq!(editor.try_get_text().unwrap(), typed);
+    editor.on_change().unwrap()("probe");
+    let mut calls = vec![r#"change "a""#.to_owned()];
+    calls.extend((!custom).then(|| r#"change "a!""#.to_owned()));
+    calls.extend([
+        format!("change {}", json!(typed)),
+        r#"change "probe""#.to_owned(),
+    ]);
+    assert_eq!(fixture.take(), calls);
+    if let Some(custom) = built.as_custom() {
+        assert!(custom.on_escape().is_none());
+        custom.set_on_escape(Some(Rc::new(|| {})));
+        assert!(custom.on_escape().is_some());
+    }
+    let none: Value = serde_json::from_str(&fixture.install("none").await).unwrap();
+    assert_eq!(none, json!({ "current": false }));
+}
+
+#[test]
+fn canonical_editor_factories_wrap_another_extensions_factory() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let fixture = Fixture::new().await;
+        assert_eq!(fixture.install("wrap").await, "no editor factory to wrap");
+        foreign(&fixture, false).await;
+        foreign(&fixture, true).await;
+        drop(fixture.runner);
+        fixture.bus.clear();
+    });
+}

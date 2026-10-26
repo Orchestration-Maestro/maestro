@@ -793,24 +793,9 @@ enum Operation {
         /// Payload to emit.
         input: Value,
     },
-    /// Supplies the host rejection of the next request, or the host's next UI binding.
-    Control {
-        /// Message the next request is rejected with.
-        #[serde(default)]
-        error: Option<String>,
-        /// Identity of the binding later acquisitions resolve.
-        #[serde(default)]
-        binding: Option<usize>,
-        /// Decision the host's next dialog answers with.
-        #[serde(default)]
-        answer: Option<Value>,
-        /// How the host builds its built-in header.
-        #[serde(default)]
-        header: Option<String>,
-        /// Footer metadata the host now reports.
-        #[serde(default)]
-        footer: Option<Value>,
-    },
+    /// Supplies the host rejection of the next request, the host's next UI binding or other
+    /// host state, forwarded as given.
+    Control(serde_json::Map<String, Value>),
 }
 
 /// Runs one request through the supplied handle, returning what a read request answered.
@@ -961,16 +946,8 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
             api.events().emit(&channel, input).await?;
             json!("emitted")
         }
-        Operation::Control {
-            error,
-            binding,
-            answer,
-            header,
-            footer,
-        } => {
-            let control = json!({ "error": error, "binding": binding, "answer": answer,
-                "header": header, "footer": footer });
-            api.append_entry("ui-control", Some(control))?;
+        Operation::Control(control) => {
+            api.append_entry("ui-control", Some(Value::Object(control)))?;
             json!("controlled")
         }
     };

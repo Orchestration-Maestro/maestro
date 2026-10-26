@@ -305,6 +305,13 @@ impl host::HostWidget for State {
         self.observed.log(line);
         Ok(Ok(()))
     }
+    fn foreign_editor(
+        &mut self,
+        this: Resource<WidgetResource>,
+        request: host::ForeignEditorRequest,
+    ) -> wasmtime::Result<Resource<Route>> {
+        self.foreign_route(&this, request)
+    }
     fn share(
         &mut self,
         this: Resource<WidgetResource>,

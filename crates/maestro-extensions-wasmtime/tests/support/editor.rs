@@ -31,6 +31,9 @@ impl Component for CustomEditor {
     fn input_handler(&self) -> Option<&dyn InputHandler> {
         Some(self)
     }
+    fn focusable(&self) -> Option<&dyn maestro_extensions::widgets::Focusable> {
+        self.editor.focusable()
+    }
 }
 
 impl InputHandler for CustomEditor {

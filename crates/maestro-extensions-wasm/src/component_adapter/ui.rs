@@ -145,8 +145,13 @@ impl<I: Imports> ExtensionUIContextPort for Ui<I> {
         result
     }
     fn get_editor_component(&self) -> ExtensionResult<Option<crate::EditorFactory>> {
-        let current = self.imports.ui_get_editor_component(&self.resource)?;
-        current.map(super::callbacks::find).transpose()
+        Ok(
+            match self.imports.ui_get_editor_component(&self.resource)? {
+                None => None,
+                Some(Ok(id)) => Some(super::callbacks::find(id)?),
+                Some(Err(factory)) => Some(super::foreign_editors::factory(factory)),
+            },
+        )
     }
     fn theme(&self) -> ExtensionResult<Theme> {
         let theme = self.imports.ui_theme(&self.resource)?;

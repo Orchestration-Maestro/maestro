@@ -623,8 +623,8 @@ pub trait Imports: Clone + 'static {
         resource: &Self::Ui,
         factory: Option<&Self::Callback>,
     ) -> ExtensionResult<()>;
-    /// Reads the identity of the current editor factory.
-    fn ui_get_editor_component(&self, resource: &Self::Ui) -> ExtensionResult<Option<u32>>;
+    /// Reads the current editor factory.
+    fn ui_get_editor_component(&self, ui: &Self::Ui) -> ExtensionResult<super::CurrentFactory>;
     /// Forwards a provider factory, which the host runs before answering.
     fn ui_add_autocomplete_provider(
         &self,

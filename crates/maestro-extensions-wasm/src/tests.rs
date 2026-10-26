@@ -53,10 +53,11 @@ pub(crate) mod stream_host;
 mod tui_ui;
 #[macro_use]
 mod fixtures;
-mod editor_component;
+pub(crate) mod editor_component;
 mod editor_driver;
 pub(crate) mod editor_host;
 mod editor_ui;
+mod foreign_host;
 mod guest_family;
 mod hello_example;
 mod hidden_thinking_label_example;

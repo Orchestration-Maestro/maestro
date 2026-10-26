@@ -172,6 +172,8 @@ pub struct Bank {
     pub editor: Option<EditorSlot>,
     /// The authored completion providers stacked on the host's own.
     pub providers: super::provider_host::Stack,
+    /// The editor factory another extension set.
+    pub foreign: super::foreign_host::Foreign,
 }
 
 /// The themes the host lists, in its order; one has no file.
@@ -240,6 +242,8 @@ struct Control {
     header: Option<String>,
     /// Replaces the footer metadata.
     footer: Option<Footer>,
+    /// Makes another extension's editor factory current, `custom` or `plain`.
+    foreign: Option<String>,
 }
 
 impl Bank {
@@ -248,6 +252,9 @@ impl Bank {
         let control: Control = serde_json::from_str(text).unwrap();
         if let Some(binding) = control.binding {
             self.binding = binding;
+        }
+        if control.foreign.is_some() {
+            self.foreign.kind = control.foreign;
         }
         self.answer = control.answer;
         if let Some(footer) = control.footer {
@@ -328,6 +335,7 @@ pub fn set_editor_component(
         "setEditorComponent",
         &json!([factory.is_some()]),
     )?;
+    observed.ui.foreign.kind = None;
     Ok(observed.ui.editor.take())
 }
 
@@ -347,10 +355,17 @@ pub fn show_editor(observed: &mut Observed, slot: EditorSlot) {
     observed.ui.editor = Some(slot);
 }
 
-/// Records a factory read against the acquisition `key` and answers the current factory.
-pub fn get_editor_component(observed: &mut Observed, key: usize) -> Result<Option<u32>, String> {
+/// Records a factory read against the acquisition `key` and answers the current factory: an
+/// authored one by identity, or another extension's with whether it builds a custom editor.
+pub fn get_editor_component(
+    observed: &mut Observed,
+    key: usize,
+) -> Result<Option<Result<u32, bool>>, String> {
     call(observed, key, "getEditorComponent", &json!([]))?;
-    Ok(observed.ui.editor.as_ref().map(|slot| slot.factory))
+    let authored = observed.ui.editor.as_ref().map(|slot| slot.factory);
+    Ok(authored
+        .map(Ok)
+        .or_else(|| super::foreign_host::current(observed).map(Err)))
 }
 
 /// Records one read against the acquisition `key` and answers the text its binding keeps.
@@ -1124,9 +1139,19 @@ impl host::HostExtensionUiContext for State {
     fn get_editor_component(
         &mut self,
         this: Resource<Ui>,
-    ) -> wasmtime::Result<Result<Option<u32>, String>> {
+    ) -> wasmtime::Result<Result<Option<host::CurrentEditorFactory>, String>> {
         let key = self.table.get(&this)?.0;
-        Ok(get_editor_component(&mut self.observed, key))
+        let current = match get_editor_component(&mut self.observed, key) {
+            Ok(current) => current,
+            Err(error) => return Ok(Err(error)),
+        };
+        Ok(Ok(match current {
+            None => None,
+            Some(Ok(id)) => Some(host::CurrentEditorFactory::Authored(id)),
+            Some(Err(custom)) => Some(host::CurrentEditorFactory::Host(
+                self.push(super::editor_component::ForeignFactory(custom))?,
+            )),
+        }))
     }
 
     fn drop(&mut self, this: Resource<Ui>) -> wasmtime::Result<()> {

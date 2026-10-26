@@ -135,6 +135,18 @@ impl Imports for Generated {
         ))
     }
 
+    fn ui_get_editor_component(
+        &self,
+        ui: &host::ExtensionUiContext,
+    ) -> ExtensionResult<super::CurrentFactory> {
+        Ok(ui.get_editor_component()?.map(|current| match current {
+            host::CurrentEditorFactory::Authored(id) => Ok(id),
+            host::CurrentEditorFactory::Host(factory) => {
+                Err(std::rc::Rc::new(factory) as std::rc::Rc<dyn std::any::Any>)
+            }
+        }))
+    }
+
     fn callback_emit(
         &self,
         emitter: &Self::Emitter,
@@ -265,7 +277,6 @@ impl Imports for Generated {
         ui_set_theme_name(resource: &Self::Ui, name: &str) -> ExtensionResult<crate::ThemeSetResult> => set_theme_name(name);
         ui_set_theme(resource: &Self::Ui, theme: &Self::Theme) -> ExtensionResult<crate::ThemeSetResult> => set_theme(theme);
         ui_get_tools_expanded(resource: &Self::Ui) -> ExtensionResult<bool> => get_tools_expanded();
-        ui_get_editor_component(resource: &Self::Ui) -> ExtensionResult<Option<u32>> => get_editor_component();
         invalidate(invalidator: &Self::Invalidator) -> ExtensionResult<()> => invalidate();
         footer_get_git_branch(footer: &Self::FooterData) -> ExtensionResult<Option<String>> => get_git_branch();
         footer_get_extension_statuses(footer: &Self::FooterData) -> ExtensionResult<Vec<(String, String)>> => get_extension_statuses();

@@ -8,8 +8,7 @@ use crate::guest_component::GuestComponent;
 use crate::local_resources::Registry;
 use maestro_extensions::types::{ActionHandlers, CustomEditorComponent, ExtensionShortcutCallback};
 use maestro_extensions::widgets::{
-    AutocompleteProvider, BorderColor, EditorComponent, EditorError, ExtensionEditor, Focusable,
-    TextCallback,
+    AutocompleteProvider, BorderColor, EditorComponent, EditorError, Focusable, TextCallback,
 };
 use maestro_extensions::{Cancellation, Component, EventBus, EventError, InputHandler, Local};
 use std::{cell::RefCell, rc::Rc};
@@ -29,8 +28,8 @@ pub(crate) struct GuestEditor {
     failure: Failure,
     /// The submission callback the host last installed.
     submit: RefCell<Option<TextCallback>>,
-    /// The application's custom editor the authored editor extends.
-    custom: Option<Rc<dyn ExtensionEditor>>,
+    /// The application's actions and callbacks of the custom editor the authored editor extends.
+    custom: Option<Rc<dyn CustomEditorComponent>>,
 }
 
 impl GuestEditor {
@@ -39,7 +38,7 @@ impl GuestEditor {
         built: RetainedEditor,
         registry: Registry,
         events: EventBus<Local>,
-        custom: Option<Rc<dyn ExtensionEditor>>,
+        custom: Option<Rc<dyn CustomEditorComponent>>,
     ) -> Self {
         Self {
             view: GuestComponent::new(built.component, registry.clone(), events.clone()),
@@ -133,9 +132,7 @@ impl Component for GuestEditor {
         self.view.wants_key_release()
     }
     fn focusable(&self) -> Option<&dyn Focusable> {
-        self.custom
-            .as_ref()
-            .map(|custom| custom.editor() as &dyn Focusable)
+        self.custom.as_ref().and_then(|custom| custom.focusable())
     }
 }
 

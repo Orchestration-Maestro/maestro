@@ -80,12 +80,6 @@ fn editor<T: crate::callback_imports::CallbackView + 'static>(
         Request::GetEditorText,
         crate::read_imports::resource::<T, Endpoint>,
     )?;
-    crate::read_imports::add_read(
-        host,
-        "[method]extension-ui-context.get-editor-component",
-        |reply| Request::Factory(FactoryRequest::GetEditorComponent(reply)),
-        crate::read_imports::resource::<T, Endpoint>,
-    )?;
     host.func_wrap(
         "[method]extension-ui-context.on-terminal-input",
         |mut store: StoreContextMut<'_, T>,

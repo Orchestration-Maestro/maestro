@@ -287,7 +287,8 @@ interface host {
     /// One step of a native operation that may call back into this same instance.
     variant route-value {
         unit, boolean(bool), text(string), lines(list<string>), completion(completion-result),
-        trigger(option<bool>), credentials(auth-storage), catalog(model-registry),
+        trigger(option<bool>), editor(built-editor), editor-answer(foreign-editor-answer),
+        credentials(auth-storage), catalog(model-registry),
     }
     variant route-step { invoke(local-call), done(result<route-value, string>) }
     /// A native operation in progress on this instance, advanced by the guest.
@@ -525,6 +526,9 @@ interface host {
         share: func() -> widget;
         /// Replaces an editor's completion provider with an authored one.
         set-autocomplete-provider: func(provider: borrow<callback>) -> result<_, string>;
+        /// One editor operation on an editor another extension's factory built; the editor may
+        /// call back into this instance first.
+        foreign-editor: func(request: foreign-editor-request) -> import-route;
     }
     /// The toolkit editor on a lent terminal.
     new-editor: func(tui: borrow<tui>, theme: editor-styles, options: editor-options) -> result<widget, string>;
@@ -606,6 +610,26 @@ interface host {
     /// An editor a factory built: its component, its editor operations and, for an editor on the
     /// application's custom editor, that custom editor.
     record editor-built { component: callback, editor: callback, custom: option<widget> }
+    /// An editor another extension's factory built, and whether it extends the custom editor.
+    record built-editor { widget: widget, custom: bool }
+    /// One editor operation on an editor another extension's factory built.
+    variant foreign-editor-request {
+        get-text, set-text(string), set-on-submit(option<borrow<callback>>), on-change,
+        set-on-change(option<borrow<callback>>), add-to-history(string),
+        insert-text-at-cursor(string), get-expanded-text, border-color,
+        set-border-color(style-source), set-padding-x(f64), set-autocomplete-max-visible(f64),
+        set-autocomplete-provider(borrow<callback>),
+    }
+    /// What an editor another extension's factory built answered; `absent` means it lacks the
+    /// operation.
+    variant foreign-editor-answer { done, absent, text(string), handler(option<text-callback>), style(style) }
+    /// An editor factory another extension set.
+    resource editor-factory {
+        /// Builds the editor; the factory may call back into this instance first.
+        build: func(tui: borrow<tui>, theme: editor-styles, keybindings: borrow<keybindings-manager>) -> import-route;
+    }
+    /// The current editor factory: one this extension set, by identity, or another's.
+    variant current-editor-factory { authored(u32), host(editor-factory) }
     /// Candidates together with the text they replace.
     record autocomplete-suggestions { items: list<autocomplete-item>, prefix: string }
     /// A line index and a UTF-8 byte offset within that line.
@@ -688,8 +712,8 @@ interface host {
         get-editor-text: func() -> result<string, string>;
         /// Replaces the editor with the one a factory builds, or restores the host editor.
         set-editor-component: func(factory: option<borrow<callback>>) -> import-route;
-        /// The identity of the current editor factory, absent while the host editor is in use.
-        get-editor-component: func() -> result<option<u32>, string>;
+        /// The current editor factory, absent while the host editor is in use.
+        get-editor-component: func() -> result<option<current-editor-factory>, string>;
         /// Stacks an authored provider factory on the current completion provider.
         add-autocomplete-provider: func(factory: borrow<callback>) -> import-route;
         /// Adds a raw terminal input listener; dropping the subscription keeps it.

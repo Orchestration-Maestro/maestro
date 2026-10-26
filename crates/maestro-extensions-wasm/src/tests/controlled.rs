@@ -1671,8 +1671,18 @@ impl Imports for Controlled {
         super::provider_host::push(&mut self.observed.borrow_mut(), id);
         Ok(())
     }
-    fn ui_get_editor_component(&self, resource: &Ui) -> ExtensionResult<Option<u32>> {
-        super::ui_host::get_editor_component(&mut self.observed.borrow_mut(), resource.key)
+    fn ui_get_editor_component(
+        &self,
+        resource: &Ui,
+    ) -> ExtensionResult<crate::component_adapter::CurrentFactory> {
+        let current =
+            super::ui_host::get_editor_component(&mut self.observed.borrow_mut(), resource.key)?;
+        Ok(current.map(|current| {
+            current.map_err(|custom| {
+                std::rc::Rc::new(super::widget_controlled::ForeignFactory(custom))
+                    as std::rc::Rc<dyn std::any::Any>
+            })
+        }))
     }
     fn ui_theme(&self, resource: &Ui) -> ExtensionResult<Theme> {
         let key = self.ui_themed(resource, "theme", &serde_json::Value::Null)?;
