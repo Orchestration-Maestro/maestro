@@ -4,9 +4,11 @@ use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
 use chrono::{DateTime, Local, TimeZone};
+use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
 use tokio::time::{Instant, MissedTickBehavior, interval_at};
 
@@ -20,20 +22,48 @@ use crate::output_errors::FailureSource;
 /// Retained handles return `BrokenPipe` once the terminal closes its writer.
 #[derive(Clone)]
 pub struct OutputWriter {
-    /// Admission ends when the owning terminal closes its receiver.
-    pub(super) sender: tokio::sync::mpsc::UnboundedSender<Vec<u8>>,
+    /// Tokio admits before publication, so sends and closure must share this gate.
+    sender: Arc<Mutex<Option<UnboundedSender<Vec<u8>>>>>,
+}
+impl OutputWriter {
+    /// Wraps the sole sender in the admission gate shared with stop.
+    #[cfg(unix)]
+    pub(super) fn new(sender: UnboundedSender<Vec<u8>>) -> Self {
+        Self {
+            sender: Arc::new(Mutex::new(Some(sender))),
+        }
+    }
+
+    /// Copies once before holding the gate through publication of the whole message.
+    pub(super) fn admit(&self, bytes: &[u8]) -> io::Result<()> {
+        let bytes = bytes.to_vec();
+        // Only sender presence is guarded; poison cannot invalidate that state.
+        let sender = self.sender.lock().unwrap_or_else(PoisonError::into_inner);
+        sender
+            .as_ref()
+            .ok_or(io::ErrorKind::BrokenPipe)?
+            .send(bytes)
+            .map_err(|_| io::ErrorKind::BrokenPipe.into())
+    }
+
+    /// Waits for any active send before excluding every later writer.
+    #[cfg(unix)]
+    pub(super) fn close(&self) {
+        let sender = self
+            .sender
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .take();
+        drop(sender);
+    }
 }
 impl Write for OutputWriter {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        self.sender
-            .send(bytes.to_vec())
-            .map_err(|_| io::ErrorKind::BrokenPipe)?;
+        self.admit(bytes)?;
         Ok(bytes.len())
     }
     fn flush(&mut self) -> io::Result<()> {
-        self.sender
-            .send(Vec::new())
-            .map_err(|_| io::ErrorKind::BrokenPipe.into())
+        self.admit(&[])
     }
 }
 

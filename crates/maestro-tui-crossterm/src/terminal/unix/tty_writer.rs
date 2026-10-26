@@ -17,7 +17,7 @@ use tokio::task::{JoinHandle, LocalSet};
 
 use super::descriptor::Source;
 use crate::output_errors::FailureSource;
-use crate::terminal::Shared;
+use crate::terminal::{Shared, output::OutputWriter};
 
 /// Largest request sent to a terminal in one syscall.
 const MAX_TTY_WRITE_CHUNK_BYTES: NonZeroUsize = NonZeroUsize::MIN.saturating_add(16_383);
@@ -92,7 +92,7 @@ pub(super) struct TtyWriter {
     /// The task to revoke before final drain.
     task: JoinHandle<()>,
     /// Every producer admits through the same ordered ingress.
-    sender: mpsc::UnboundedSender<Vec<u8>>,
+    sender: OutputWriter,
 }
 
 impl TtyWriter {
@@ -103,12 +103,18 @@ impl TtyWriter {
             return Ok(None);
         }
         let (sender, incoming) = mpsc::unbounded_channel();
+        let sender = OutputWriter::new(sender);
         let inner = Rc::new(Inner {
             queue: RefCell::default(),
             dead: Cell::new(false),
             incoming: RefCell::new(incoming),
         });
-        let task = local.spawn_local(pump(Rc::clone(&source), Rc::clone(&inner), shared));
+        let task = local.spawn_local(pump(
+            Rc::clone(&source),
+            Rc::clone(&inner),
+            shared,
+            sender.clone(),
+        ));
         Ok(Some(Self {
             source,
             inner,
@@ -118,18 +124,16 @@ impl TtyWriter {
     }
 
     /// Admits owned bytes before waking the writer; failed queues accept no more data.
-    pub(super) fn write(&self, data: &str) {
+    pub(super) fn write(&self, data: &str) -> io::Result<()> {
         if data.is_empty() || self.inner.dead.get() {
-            return;
+            return Ok(());
         }
-        let _ = self.sender.send(data.as_bytes().to_vec());
+        self.sender.admit(data.as_bytes())
     }
 
     /// Clones the sendable admission handle without sharing the local queue.
     pub(super) fn output_writer(&self) -> crate::terminal::output::OutputWriter {
-        crate::terminal::output::OutputWriter {
-            sender: self.sender.clone(),
-        }
+        self.sender.clone()
     }
 
     /// Accepted bytes not yet written, including a partially drained front.
@@ -141,6 +145,7 @@ impl TtyWriter {
     /// Revokes asynchronous delivery and drains before restoring descriptor flags.
     pub(super) fn finish(&self) -> io::Result<()> {
         self.task.abort();
+        self.sender.close();
         self.inner.incoming.borrow_mut().close();
         self.inner.receive();
         let drained = flush_sync(&self.inner, &self.source);
@@ -201,9 +206,10 @@ impl Drop for TtyWriter {
 }
 
 /// Waits without holding the queue borrow, leaving admission and input runnable.
-async fn pump(source: Rc<Source>, inner: Rc<Inner>, shared: Weak<Shared>) {
+async fn pump(source: Rc<Source>, inner: Rc<Inner>, shared: Weak<Shared>, sender: OutputWriter) {
     let result = drain(&source, &inner).await;
     if let Err(error) = result {
+        sender.close();
         inner.fail();
         if let Some(shared) = shared.upgrade() {
             shared.fail(FailureSource::Output, error);

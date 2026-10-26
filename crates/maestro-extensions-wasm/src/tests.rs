@@ -784,11 +784,24 @@ fn assert_interface_contract(contract: &Contract) {
         outside.is_empty(),
         "only the author world and WASI interfaces are imported: {outside:?}"
     );
-    let wasi = contract
+    let wasi: Vec<_> = contract
         .interfaces
         .iter()
-        .filter(|name| name.starts_with("wasi:"));
-    assert!(wasi.clone().count() > 0 && wasi.into_iter().all(|name| name.contains("@0.2.")));
+        .filter(|name| name.starts_with("wasi:"))
+        .collect();
+    assert!(
+        wasi.iter().any(|name| name.contains("@0.2.")),
+        "standard-library baseline remains available"
+    );
+    assert!(
+        wasi.iter().any(|name| name.contains("@0.3.")),
+        "native asynchronous standard imports are available"
+    );
+    assert!(
+        wasi.iter()
+            .all(|name| name.contains("@0.2.") || name.contains("@0.3.")),
+        "only supported standard generations: {wasi:?}"
+    );
 }
 
 /// Expected parameter/result sequences for the action wire.

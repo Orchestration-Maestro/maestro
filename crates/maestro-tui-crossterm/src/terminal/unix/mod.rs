@@ -153,8 +153,7 @@ impl OutputPort for Output {
     fn write(&self, text: &str) -> io::Result<()> {
         let writer = self.0.borrow().clone();
         if let Some(writer) = writer {
-            writer.write(text);
-            Ok(())
+            writer.write(text)
         } else {
             tty_writer::write_sync(text)
         }
