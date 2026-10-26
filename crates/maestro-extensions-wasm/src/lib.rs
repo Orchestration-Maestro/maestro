@@ -20,6 +20,8 @@ pub use tools::*;
 #[doc(hidden)]
 pub mod bindings;
 mod compaction;
+mod exec;
+pub use exec::{ExecOptions, ExecResult};
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;
 mod loader;
@@ -67,3 +69,10 @@ pub use types::*;
 
 #[cfg(test)]
 extern crate self as maestro_extensions_wasm;
+
+/// Guest schema code using the shared record owner.
+#[path = "types/schema_code.rs"]
+pub mod schema_code;
+
+#[cfg(any(test, target_arch = "wasm32"))]
+mod schema_error;

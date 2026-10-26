@@ -61,6 +61,26 @@ re-exports `ConfigSelectorOptions` from there and imports the rest from that
 application path, so the interactive frontend and this library name one owner.
 See [selectors](chat/selectors.md) for the widgets.
 
+## Final mode dispatch
+
+`startup::main::dispatch::dispatch_mode` hands a prepared session runtime to the
+supplied interactive or RPC presentation, or to the existing print runner. It
+reports the captured model scope in startup order and passes prepared prompts,
+images and transport options unchanged. The caller retains the streams and
+startup timing state.
+
+`MAESTRO_STARTUP_BENCHMARK` selects interactive initialization only for `1`,
+`true` or `yes` (ASCII case-insensitive for the words, without trimming). Other
+modes reject that request. A benchmark initializes and stops the retained
+presentation, closes the supplied theme watcher, then flushes stdout before
+stderr. Ordinary interactive and RPC runs add no outer cleanup. After a print
+run returns successfully, dispatch closes the watcher, restores managed stdout
+and returns the print status, including nonzero statuses. Errors stop at their
+original phase.
+
+The library startup entry composes this dispatch with parsing, session selection
+and runtime creation. Native executable wiring remains separate.
+
 ## Print mode
 
 `run_print_mode` runs one session to completion over a caller-owned runtime and
@@ -77,6 +97,29 @@ account file, not the session credential store. See
 [standalone account commands](model_login.md).
 
 ## Startup
+
+`maestro_cli::main(args, options, host)` runs startup through the application
+services and returns its requested exit status. `MainOptions` supplies ordered
+extra extension factories. `startup::main::MainHost` supplies package operations,
+selector presentations, mode launchers, streams, file preparation, the extension
+module loader and timing observations. Borrowed input and effects stay with the
+caller; only owned handles enter the retained runtime factory.
+
+Package commands run before configuration commands, parsing and stdout takeover.
+The caller's startup callback receives the raw offline selection before either
+command. Non-interactive ordinary output uses the application's managed stdout
+route; print and RPC protocol output keep their raw route. Help and model listing
+run after extension registration but before fatal runtime diagnostics.
+
+Text, JSON and RPC startup without a resolved model prints login guidance in red
+on stderr and returns status 1 before benchmark validation or mode launch.
+Runtime errors take precedence. Interactive startup still opens without a model;
+a selected saved/default model does not need credentials to pass this check.
+
+The retained factory rebuilds directory-bound settings, resources and providers
+when a session changes directory. Replacements share the original auth store,
+startup-relative resource paths, extra factories and stream handles. Each write
+or flush borrows its stream only for that call.
 
 `startup::main` selects what a run does before any frontend starts, in the
 order the authored arguments decide it. `bootstrap` picks the presentation mode
@@ -107,7 +150,8 @@ for malformed UTF-8, then removes authored whitespace at the edges.
 existing file owner before consuming the first queued prompt. `prompt_confirm`
 flushes its question before reading an untrimmed answer; an unterminated answer
 at EOF supplies no decision. These operations accept caller-owned streams and
-file effects; the startup entry and executable wiring remain separate work.
+file effects. The library entry composes them; native executable wiring remains
+separate.
 
 `presentation::prompt_for_missing_session_cwd` offers Continue and Cancel using
 an application-supplied selection component. It loads the theme and keybindings

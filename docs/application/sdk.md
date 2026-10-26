@@ -89,7 +89,10 @@ The session builds its extension runner when it is created and installs its tool
 hooks once. The hooks read the runner in effect when they run, so a rebuilt
 runtime needs no new hooks. Extensions receive `session_start` only when
 `bind_extensions` runs. Each field of `ExtensionBindings` that is present
-replaces the bound operation; an absent field leaves it as it was. Binding then
+replaces the bound operation; an absent field leaves it as it was. The UI field
+is an `ExtensionUIContextBinding`: an SDK host converted with `.into()` stays
+owned by the session, while a host that owns the session supplies
+`ExtensionUIContextBinding::borrowed`. Binding then
 sends the start event and hands the skill, prompt and theme paths extensions
 discover to the loader. An inline extension `<name>` labels them
 `extension:name`; a file extension labels them `extension:` and its file name
@@ -116,6 +119,11 @@ with the replacement's context. Setup, message reload and continuation stay boun
 to that replacement even if another operation changes the current session while
 a callback is suspended. The start event carries the previous session file.
 A failure after the teardown restores nothing.
+
+`set_before_session_invalidate` takes a `BeforeSessionInvalidate` callback that
+returns a `Result`. When it fails, the operation returns that failure through the
+runtime's error type and stops: the session is neither disposed nor replaced, and
+the callback's earlier effects stay in place.
 
 - `new_session` starts a history in the same directory, optionally recording a
   parent session, and runs `setup` on it before the agent reloads its messages.

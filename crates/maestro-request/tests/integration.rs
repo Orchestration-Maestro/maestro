@@ -3,6 +3,7 @@
 
 mod compatibility_records;
 mod fidelity;
+mod message_delivery;
 mod model_records;
 mod optional_fields;
 mod parameter_schemas;

@@ -52,6 +52,7 @@ fn record_steps(runtime: &AgentSessionRuntime, recorded: &Recorded) {
     let order = Rc::clone(&recorded.order);
     runtime.set_before_session_invalidate(Some(Rc::new(move || {
         order.borrow_mut().push("before_invalidate".into());
+        Ok(())
     })));
     let order = Rc::clone(&recorded.order);
     runtime.set_rebind_session(Some(Rc::new(move |_| {
@@ -689,6 +690,7 @@ fn shuts_down_with_quit_and_invalidates_before_dispose() {
         let order = Rc::clone(&recorded.order);
         runtime.set_before_session_invalidate(Some(Rc::new(move || {
             order.borrow_mut().push("before_invalidate".into());
+            Ok(())
         })));
         let context = runtime.session().extension_runner().create_context();
         runtime.dispose().await.unwrap();

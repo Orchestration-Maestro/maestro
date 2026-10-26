@@ -25,7 +25,7 @@ struct DeployParams {
 fn result(text: String, details: String) -> AgentToolResult {
     AgentToolResult {
         content: vec![UserBlock::Text(TextContent::new(text))],
-        details: Presence::Present(details),
+        details: Presence::Present(details.into()),
         terminate: Presence::Missing,
     }
 }

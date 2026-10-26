@@ -167,7 +167,7 @@ fn run_case(fixture: Fixture) {
             maestro_models::validate_tool_call(&[tool.clone(), second], &call)
         }
         FixtureMode::Missing if call.name == tool.name => {
-            maestro_models::validate_tool_call(&[], &call)
+            maestro_models::validate_tool_call::<()>(&[], &call)
         }
         FixtureMode::Missing => {
             maestro_models::validate_tool_call(std::slice::from_ref(&tool), &call)

@@ -128,7 +128,10 @@ impl ExtensionEditorComponent {
             &tui,
             #[cfg(windows)]
             self.runtime.as_ref(),
-            &self.editor,
+            |text| {
+                self.editor.set_text(text);
+                Ok::<_, io::Error>(())
+            },
             &file,
         )
     }

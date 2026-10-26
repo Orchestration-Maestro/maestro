@@ -24,6 +24,7 @@ fn maestro_tool_name_checks_are_exact() {
             } else {
                 "{}"
             }
+            .to_owned()
             .into(),
         };
         let result: CustomToolResultEvent = ToolResultEvent {
@@ -34,11 +35,12 @@ fn maestro_tool_name_checks_are_exact() {
             } else {
                 "{}"
             }
+            .to_owned()
             .into(),
             content: vec![],
             is_error: false,
             details: if row["decoy"] == true {
-                Presence::Present("irrelevant payload".into())
+                Presence::Present("irrelevant payload".to_owned().into())
             } else {
                 Presence::Missing
             },

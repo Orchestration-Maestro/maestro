@@ -1,4 +1,6 @@
-# Extension question dialogs
+# Extension UI
+
+## Extension question dialogs
 
 `maestro_chat::ExtensionSelectorComponent` and
 `maestro_chat::ExtensionInputComponent` compose reusable questions from the
@@ -47,7 +49,7 @@ its own flag and immediately forwards every setter to the retained editor,
 including after the editor is removed from the displayed children. The writer
 consumes the child's cursor marker to place the hardware cursor.
 
-# Extension editor dialog
+## Extension editor dialog
 
 Native callers construct `maestro_chat::ExtensionEditorComponent` with a shared
 `Rc<TUI>`, a live application keybinding manager, a title and
@@ -75,7 +77,7 @@ its own focus state. The inherited container child-array interface remains
 available; removing visible children does not replace the retained input target.
 Callbacks may reenter rendering and input.
 
-## External editing
+### External editing
 
 The runtime's nonempty `VISUAL` wins over nonempty `EDITOR`. Selection is sampled
 independently when preparing help and on each invocation. With neither configured,
@@ -107,18 +109,105 @@ restart requests a full redraw. External editing never submits or cancels.
 
 Interactive dialog presentation and settlement are separate from this component.
 
+## Shortcuts
+
+`InteractiveMode` installs one interceptor as the editor's first input handler once the
+terminal starts, over the shortcuts the session's extension runner selects from the
+bindings in effect. Selection belongs to the runner: a key a reserved application action
+claims is skipped with a warning, a key an ordinary application action also claims stays
+with the extension and warns, and a later claim on the same key replaces the earlier
+extension's callback in that key's original slot. The runner owns those messages;
+[the resource listing](interactive-mode.md#loaded-resources) shows them beside the other
+extension issues.
+
+Input is matched against the selected keys by their lowercased spelling, in selection
+order. The first match consumes the input and starts its callback, and every other input,
+including the same key with another modifier, reaches the editor unchanged. A callback
+runs on the terminal runtime after the input returns, so a handler never blocks typing,
+and its failure appears as `Error: Shortcut handler error: <message>` through the
+transcript's error notice.
+
+Each callback receives a context built when the key is pressed, from the runner the
+session has now. It reads the current session's working directory, model, idle state,
+pending messages, context usage and system prompt, and it asks that runner to abort,
+compact or shut down. Its UI is the mode itself. Shutting down while idle ends the mode at
+once; while a response streams, the agent's end does. A context kept from a runner the
+session has discarded fails as stale
+instead of answering with old state. The interceptor holds the mode weakly, so it never
+keeps the presentation alive; a callback that already started may keep it until it
+finishes.
+
+Rebinding, at startup and after each session replacement, replaces the whole set.
+An empty selection removes the interceptor, and the retired callbacks are released
+without being invoked.
+
+## Completion
+
+`InteractiveMode` installs one completion provider on its editor each time it
+[binds the current session](interactive-mode.md#session-binding). Each rebuild starts
+from a fresh base provider over the current session:
+
+1. the builtin commands, in the order the workspace's command inventory lists them;
+2. the loaded prompt templates, with their argument hints;
+3. the extension commands, under the name each is invoked by;
+4. when the `enableSkillCommands` setting is on, one `skill:<name>` command per
+   loaded skill.
+
+A description carries its provenance marker: `u`, `p` or `t` for the user, project
+and temporary scopes, `u:` followed by the trimmed source for a package, and
+`u:git:host/owner/repo` with `@ref` when the source names one. Source text is trimmed by the shared
+whitespace scalars, which removes a byte-order mark and keeps U+0085. An absent
+description yields the marker alone; a resource without provenance keeps its
+description unchanged. Prompt templates and extensions keep their input order and
+duplicates. An extension command whose raw name is a builtin name is skipped, so the
+builtin keeps that name. Disabling skill commands rebuilds the list without them.
+
+`/model` completes argument text against the session's scoped models, or the
+catalog's available ones when none are scoped. Candidates are matched on identity
+and provider together, so `opus anthropic` finds one, and are offered as
+`provider/id` with the identity as the label and the provider as the description.
+The callback reads the session when the request arrives, so it follows a replaced
+session.
+
+An extension command's argument callback receives exactly the typed prefix and keeps
+its own failure. An absent list, an empty list and a failed callback stay distinct:
+the first two offer nothing, the third reports the failure.
+
+`add_autocomplete_provider` retains the supplied bound factory and rebuilds completion
+before returning. Each rebuild folds all registered factories over a fresh base in
+registration order; the last wrapper receives requests first. Registering the same
+handle twice keeps both registrations. A factory may append another registration
+while rebuilding, and that rebuild sees the append. Factory calls retain their
+originating extension's event capability even when another host receives the handle.
+
+Only a successful rebuild replaces the retained provider and the default editor's
+provider, with the same handle. A failing factory returns its original error, skips
+later factories and leaves the installed provider unchanged. Its registration remains
+for later rebuilds. Settings changes that rebuild completion report failures through
+the terminal runtime after saving the setting. Custom-editor completion forwarding
+is separate from this default-editor behavior.
+
+Typing `@` completes attachments through the search program selected during startup.
+File completion keeps the candidate and applied text of the toolkit's provider. The
+provider asks the search owner for the paths, so removing the selected program leaves
+completion with no candidates instead of falling back to another search.
+
 # Extension UI host in the interactive mode
 
-`maestro_chat::InteractiveMode` implements the extension UI port, so a host
-retains it with the existing `ExtensionUIContext::new(mode.clone())` and gives it
-to the session's extension bindings. The bindings carry the originating event
+`maestro_chat::InteractiveMode` implements the extension UI port. Its `init`
+gives the mode to the session's extension bindings through
+`ExtensionUIContextBinding::borrowed`, because the mode already owns the session.
+A UI context an extension obtains keeps the mode alive while it is held; once the
+mode is released, the session's contexts answer with the headless results. Another
+host retains it with the existing `ExtensionUIContext::new(mode.clone())`. The
+bindings carry the originating event
 capability, so the host only calls the bound handles it receives; it never
 obtains an event bus.
 
 This section covers the operations that exist today: dialogs, editor access,
 theme queries and selection, the terminal title, tool expansion, notifications,
-terminal input listeners, status text and widgets. Custom headers, footers and
-editors keep their own owners and their published components.
+terminal input listeners, completion wrappers, status text and widgets. Custom headers,
+footers and editors keep their own owners and their published components.
 
 ## Dialogs
 
@@ -151,10 +240,39 @@ returns `None`.
 
 ## Editor access
 
-`set_editor_text` replaces the editor text unchanged, and `get_editor_text`
-returns the expanded text the editor renders. `paste_to_editor` delivers the
-text as a bracketed paste, so the editor applies its own paste rules. Nothing is
-trimmed and no history entry is written.
+`set_editor_text` replaces the current editor's text unchanged, and
+`get_editor_text` returns its expanded text, or its raw text when it does not
+expand. `paste_to_editor` delivers the text to the current editor as a bracketed
+paste, so the editor applies its own paste rules. Nothing is trimmed and no
+history entry is written. An editor's own failure is returned unchanged.
+
+## Custom editors
+
+`set_editor_component` keeps the factory, which `get_editor_component` returns,
+then replaces the current editor with the one the factory builds from the live
+terminal, the editor theme and the application keybindings. `None` restores the
+default editor. The current raw text moves to the new editor and the new editor
+takes focus.
+
+The new editor receives the default editor's submit and change callbacks, its
+border painter when the new editor has a border, its padding and the completion
+provider the mode last installed. An editor that implements the application
+capability also receives every application action in its order, in the map it
+already shares. Its own interrupt, empty-editor exit, image-paste and shortcut
+callbacks stay; each missing one calls the default editor's callback current at
+that moment. Optional operations the new editor lacks are skipped.
+
+The mode's own text, history, insertion, completion, border, padding and
+completion-height operations reach the current editor. Application actions and
+callbacks stay on the default editor. Settings, the settings panel and completion
+rebuilds update the default editor first and then a distinct current editor once;
+when the default editor is current it is updated once. If a callable replaces the
+editor, the next settings operation reaches the newly current editor.
+
+A failure stops at its own phase and returns, or reports, the original error.
+The factory stays set. A failing factory or new editor leaves the editor
+container empty and the previous editor current; a failing read of the current
+text changes nothing else.
 
 ## Themes
 
@@ -180,8 +298,34 @@ name.
 
 `set_title` forwards the supplied text to the terminal unchanged; there is no
 formatter. `get_tools_expanded` reads the mode's own flag, and
-`set_tools_expanded` applies the value to the startup help and every expandable
-transcript row through the existing walk, then requests a frame.
+`set_tools_expanded` applies the value to the active header and every expandable
+transcript row through the existing walk, then requests a frame. The active header
+is the extension header when one is installed, which follows the value only when it
+supplies `set_expanded`; otherwise it is the built-in startup help.
+
+## Headers and footers
+
+`set_header` and `set_footer` replace the built-in header and footer with a
+component an extension builds, and `None` restores the built-in one. Each call
+first calls the current extension component's disposer, then requests a frame
+once the replacement is in place.
+
+A header factory receives the live terminal and theme. The new header takes the
+active header's place in the header container; when that header is no longer
+there, a new extension header goes first and restoring the built-in one adds
+nothing. An extension header that supplies `set_expanded` receives the current
+tool expansion as soon as it is built, and the built-in header receives it when
+restored. Before the mode builds its own header, `set_header` does nothing and
+calls no factory.
+
+A footer factory also receives the live footer metadata, so a footer reads later
+status, branch and provider-count changes. The current footer is removed, and the
+new one is appended after construction.
+
+A failing disposer stops before anything is removed and leaves the current
+component in place. A failing factory leaves the old component disposed: the old
+header stays shown, and the old footer stays removed with no footer appended.
+Either failure returns the original error and requests no frame.
 
 ## Notifications and terminal input
 
@@ -240,5 +384,73 @@ failures return the original error and keep effects already performed. A
 failed disposer stops before removal; a failed factory leaves the old entry
 removed. Neither failure rebuilds the last painted containers.
 
-Headers, footers, custom editors and custom-view installation are separate
-operations; these setters do not implement session replacement or reset.
+## Session replacement
+
+Before each session replacement invalidates the current session, the mode resets
+what extensions changed, in this order:
+
+1. The latest selector, input and multi-line editor dialogs answer `None`, as
+   their own cancellation does, which stops their countdowns and signal watches.
+2. Every custom view that has not settled ends with no value: its own overlay is
+   removed and its component disposed once. A view still building disposes its
+   component when it arrives, without showing it. The editor is left to step 5.
+3. The extension terminal input listeners are removed.
+4. The built-in footer and header return, the widgets are disposed and removed,
+   and the status texts are cleared.
+5. The default editor returns with the current editor's raw text, a fresh
+   completion provider and no extension shortcuts.
+6. The title is rewritten, and the working message, visibility, indicator and
+   hidden-thinking label return to their defaults.
+
+The mode installs this reset on the runtime when it is constructed, reaching the
+mode weakly. A failing step returns its original error, keeps the steps before it,
+and stops the replacement before the session is disposed. Clearing the widgets
+calls each disposer while walking the live maps, so widgets a disposer adds are
+disposed too and widgets it removes are skipped; a disposer failure stops before
+either map is emptied.
+
+Each dialog kind retains its component until settlement. Opening another of the
+same kind cancels the previous one. A hidden dialog's answer, cancellation or
+countdown cannot replace the panel currently shown.
+
+Working messages, visibility, indicators and hidden-thinking labels an extension
+sets stay in effect across prompt turns until the extension changes them or the
+session is replaced.
+
+## Custom views
+
+`custom` shows the component an extension builds, at once or later, in place of
+the editor with focus, or as an overlay when `overlay` is `Some(true)`. The
+factory receives the live terminal, theme, application keybindings and the
+view's completion. The current editor's raw text is kept when the view starts.
+
+An overlay uses the supplied static options, keeping the same shared options so
+later edits reach the layout, or calls the resolver once when the view is shown.
+Without options, a nonzero component `width` becomes the overlay width in whole
+cells, at least one, as image widths count them; an empty options value still
+wins over the component width. `on_handle` receives the overlay's handle after
+it is shown.
+
+The first `done` closes the view: it removes the view's own overlay, or puts the
+current editor back with the kept text and focus, then settles the result and
+disposes the component. A disposal failure is ignored once the view has closed.
+Later calls do not close, restore or dispose again. When putting the editor back
+fails, that original failure is the view's result and every later `done` returns
+it again; no value is committed.
+
+A view completed before its component exists never shows that component and
+disposes it once. Completing while the overlay options resolve shows nothing.
+Completing in an admission visibility callback removes that view's overlay
+before setup returns; `on_handle` is not called.
+A failing factory, resolver or handle callback settles the view with the
+original error: an inline view puts the editor back, and an overlay already shown
+is removed and its component disposed. An overlay cleanup error does not replace
+the initiating failure. A terminal failure during admission removes the overlay
+and disposes its component. When putting the editor back fails too,
+that failure is the result. Closing one overlay leaves every other view shown,
+and focus returns to the overlay still shown.
+
+The mode keeps each view and its building work until the view settles, so
+dropping the returned future neither cancels the build nor closes the view.
+A settled view releases its setup callbacks, component, overlay handle and the
+mode's registration.

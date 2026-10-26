@@ -143,7 +143,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   no workspace dependencies. Text owns common text operations (whitespace,
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
-  boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and
+  boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
   pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
   interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
@@ -189,12 +189,13 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
   Removal returns ownership to the caller, and traversal sees the collection as it
-  is. Models, the toolkit, agent, application, extensions and the
-  terminal adapter may depend on it; they keep their own borrowing, locking and
-  settlement policy.
+  is. Models, the toolkit, agent, application, extensions, the
+  terminal adapter and cancellation may depend on it; they keep their own
+  borrowing, locking and settlement policy.
   Its storage reclaims retired registrations while no traversal runs.
-- `maestro-cancellation` owns cooperative cancellation below layer 0, with no
-  internal dependencies. Only models and the toolkit may depend directly on it.
+- `maestro-cancellation` owns cooperative cancellation below layer 0. Its only
+  internal dependency is `maestro-listeners`, for synchronous abort observers.
+  Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
@@ -259,13 +260,17 @@ engine. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic. The internal development
 edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
 the native-only `maestro-extensions` to `maestro-credentials`, for extension tests
-that build a real model catalog, the native-only, non-optional `maestro-detection`
+that build a real model catalog, the native-only `maestro-extensions-wasmtime`
+to catalog, credentials, models, session, theme and toolkit for reused native composition
+test support, including a real terminal for synchronous component factories, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
 the native `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges
 for its standard-stream child tests, the native-only, non-optional `maestro-chat`
 to `maestro-models` edge for interactive-mode tests that drive a real session
 through the scripted provider, the native-only, non-optional `maestro-cli`
 to `maestro-listeners` development edge for the controlled print adapter,
+the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
+development edge for component tests of the native schema validator,
 and the native, non-optional dev-dependencies
 of the twenty-five declared callers on `maestro-test-process`, the owner of
 checked child tests (see
@@ -537,18 +542,18 @@ optional dependency feature. Macro aliases use the same file-wide scope and
 limits as timer aliases. Comments, literal contents and ordinary function calls
 are not macro invocations; no compiler expansion is performed.
 
-Crates whose `Cargo.toml` sets `autotests = false` build their integration
-tests as one program from `tests/integration.rs`. Add new `tests/*.rs` files as
-unconditional out-of-line modules in that root; support modules stay in their
-existing directories. The conventions check covers every crate whose
-`Cargo.toml` sets `autotests = false` or declares an `integration` test target.
-When such a crate has top-level integration-test sources, the check requires
-`autotests = false` and exactly one test target: the runnable `integration`
-target at `tests/integration.rs`.
+Every crate builds its integration tests as one program from
+`tests/integration.rs`. Add new `tests/*.rs` files as unconditional out-of-line
+modules in that root; support modules stay in their existing directories. The
+conventions check covers every workspace member, new crates included: a member
+with top-level integration-test sources needs `autotests = false` and exactly
+one test target, the runnable `integration` target at `tests/integration.rs`.
 
-Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`,
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema<C = ()>`,
 which keeps the supplied JSON Schema value beside the kinds its author declared for
-individual nodes. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
+individual nodes and an optional executable payload. Shared Base/refinement records
+keep native callbacks local; the guest specializes the same records with borrowed
+JSON views and its existing callback resources. Ordinary serialization omits code. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
 re-exports it, and the model argument-validation owner is its only converter.
 Serialization writes the supplied JSON alone; provider payloads and saved JSON never
 carry the declared kinds.
@@ -580,3 +585,10 @@ The native extension `ToolDefinition<P,D,S>` alias specializes the tools-owned
 record with ExtensionContext and local invocation; the application keeps its
 standalone default alias. The declaration checker permits only this native alias
 at `maestro-extensions/src/types/registration.rs`, never a second struct or enum.
+
+The parameter-schema owner also owns the component metadata transport in
+`maestro-request::parameter_schema::transport`, re-exported through models and native extensions
+as `schema_transport`. Guest registration and enumeration use that same codec;
+ordinary provider and persisted JSON omit the carried schema kinds. This adds no
+crate dependency: both extension adapters already reach the request owner through
+their declared edges.

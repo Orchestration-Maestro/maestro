@@ -8,4 +8,4 @@ pub use maestro_request::messages::{
     BashExecutionMessage, BranchSummaryMessage, CompactionSummaryMessage,
 };
 /// An extension-injected conversation message with opaque details text.
-pub type CustomMessage = maestro_request::messages::CustomMessage<String>;
+pub type CustomMessage = maestro_request::messages::CustomMessage<crate::JsonText>;

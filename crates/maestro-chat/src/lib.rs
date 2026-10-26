@@ -84,6 +84,7 @@ pub use interactive_mode::{InteractiveMode, InteractiveModeOptions};
 
 #[cfg(not(target_arch = "wasm32"))]
 mod external_editor;
+mod whole_cell_width;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod temporary_file;

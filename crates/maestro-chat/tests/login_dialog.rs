@@ -187,6 +187,32 @@ fn input_futures_are_eager_owned_and_do_not_cycle() {
     assert!(weak_input.upgrade().is_none());
 }
 #[test]
+fn blank_manual_submission_keeps_input_and_cancellation_pending() {
+    let _bindings = keybindings::bindings_guard();
+    for cancel in [false, true] {
+        let (_, theme) = published::published(&login_support::colors(0));
+        let dialog = themed_panel(theme, Rc::new(|| {}), Rc::new(|_, _| {}));
+        let mut reply = dialog.show_manual_input("Paste redirect").unwrap();
+        dialog.handle_input("\r");
+        let mut context = Context::from_waker(Waker::noop());
+        assert_eq!(reply.as_mut().poll(&mut context), Poll::Pending);
+        if cancel {
+            dialog.handle_input("\x1b");
+            assert_eq!(
+                reply.as_mut().poll(&mut context),
+                Poll::Ready(Err(maestro_chat::LoginDialogError::Cancelled))
+            );
+        } else {
+            dialog.handle_input("redirect-code");
+            dialog.handle_input("\r");
+            assert_eq!(
+                reply.as_mut().poll(&mut context),
+                Poll::Ready(Ok("redirect-code".into()))
+            );
+        }
+    }
+}
+#[test]
 fn login_rows_fit_one_cell_viewport() {
     let _bindings = keybindings::bindings_guard();
     let (dialog, _) =

@@ -190,7 +190,9 @@
     "message_list_preserves_emitted_positions_and_current_actions",
     "streaming_container_snapshots_latest_nested_message",
     "streaming_container_clear_allows_next_response_first_frame",
-    "streaming_container_branches_keep_real_assistant_controls"
+    "streaming_container_branches_keep_real_assistant_controls",
+    "tool_rows_dispatch_borrowed_argument_root_values",
+    "tool_rows_keep_root_specific_default_input_sections"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

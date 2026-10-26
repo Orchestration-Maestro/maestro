@@ -437,7 +437,6 @@ fn forbidden_direct_edges_are_rejected() {
         ("maestro-app", "maestro-extensions-wasmtime"),
         ("maestro-tools", "maestro-extensions"),
         ("maestro-tools", "maestro-app"),
-        ("maestro-extensions-wasmtime", "maestro-models"),
         ("maestro", "maestro-agent"),
         ("maestro-agent", "maestro-app"),
         ("maestro-app", "maestro-pattern"),
@@ -1846,20 +1845,43 @@ fn terminal_example_brand_edge_is_development_only() {
 }
 
 #[test]
+fn native_component_fixture_edges_are_development_only() {
+    for dependency in [
+        "maestro-catalog",
+        "maestro-credentials",
+        "maestro-models",
+        "maestro-session",
+        "maestro-theme",
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-extensions-wasmtime", dependency]);
+        workspace.member("maestro-extensions-wasmtime", "maestro-extensions-wasmtime", &format!(
+            "[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\nalias = {{ package = {dependency:?}, path = \"../{dependency}\" }}"
+        ));
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Ok(()),
+            "{dependency}"
+        );
+        for (kind, extra) in DECLARATIONS {
+            workspace.member("maestro-extensions-wasmtime", "maestro-extensions-wasmtime", &format!(
+                "[{kind}]\nalias = {{ package = {dependency:?}, path = \"../{dependency}\"{extra} }}"
+            ));
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!(
+                    "forbidden production dependency: maestro-extensions-wasmtime -> {dependency}"
+                )),
+                "{dependency} {kind}{extra}"
+            );
+        }
+    }
+}
+
+#[test]
 fn extension_credentials_edge_is_development_only() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions", "maestro-credentials"]);
-    for kind in [
-        "dev-dependencies",
-        "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies",
-    ] {
-        workspace.member(
-            "maestro-extensions",
-            "maestro-extensions",
-            &format!("[{kind}]\nmaestro-credentials = {{ path = \"../maestro-credentials\" }}"),
-        );
-        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{kind}");
-    }
     for (kind, extra) in DECLARATIONS {
         workspace.member(
             "maestro-extensions",
@@ -1884,23 +1906,6 @@ fn rpc_child_rendering_edges_are_development_only() {
     workspace.foundation(&["maestro-rpc", "maestro-tui-crossterm"]);
     let application = "maestro-app = { path = \"../maestro-app\" }";
     for target in ["maestro-tui-crossterm"] {
-        for kind in [
-            "dev-dependencies",
-            "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies",
-        ] {
-            workspace.member(
-                "maestro-rpc",
-                "maestro-rpc",
-                &format!(
-                    "[dependencies]\n{application}\n[{kind}]\n{target} = {{ path = \"../{target}\" }}"
-                ),
-            );
-            assert_eq!(
-                check_workspace(workspace.root.path()),
-                Ok(()),
-                "{kind} {target}"
-            );
-        }
         for (kind, extra) in DECLARATIONS {
             let declared = format!("{target} = {{ path = \"../{target}\"{extra} }}");
             let manifest = if *kind == "dependencies" {
@@ -2464,6 +2469,45 @@ fn chat_models_test_edge_is_native() {
     }
     workspace.member("maestro-chat", "maestro-chat", &format!("{production}[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\nmaestro-models = {{ path = \"../maestro-models\" }}"));
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn extension_and_rpc_test_edges_are_native() {
+    for (owner, target) in [
+        ("maestro-extensions", "maestro-credentials"),
+        ("maestro-rpc", "maestro-theme"),
+        ("maestro-rpc", "maestro-tui-crossterm"),
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[owner, target]);
+        let manifest = |table: &str| {
+            let mut manifest = String::from("[dependencies]\n");
+            for required in required_targets(owner) {
+                writeln!(manifest, "{required} = {{ path = \"../{required}\" }}").unwrap();
+            }
+            writeln!(
+                manifest,
+                "[{table}]\n{target} = {{ path = \"../{target}\" }}"
+            )
+            .unwrap();
+            manifest
+        };
+        workspace.member(owner, owner, &manifest(WITNESS_DEV));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{target}");
+        for table in [
+            "dev-dependencies",
+            "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+        ] {
+            workspace.member(owner, owner, &manifest(table));
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!(
+                    "{owner}: {target} test support must be a native, non-optional development dependency"
+                )),
+                "{target} in {table}"
+            );
+        }
+    }
 }
 
 #[test]
@@ -3350,5 +3394,44 @@ fn interactive_native_witness_edge_is_native_development_only() {
         check_workspace(workspace.root.path())
             .is_err_and(|error| error.contains("dev-dependencies are not allowed to be optional")),
         "Cargo refuses an optional development declaration"
+    );
+}
+
+/// The guest's checker witness has one native development edge, never a product edge.
+#[test]
+fn guest_schema_validation_edge_is_native_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-models"]);
+    let declaration = "models = { package = \"maestro-models\", path = \"../maestro-models\" }";
+    assert_eq!(
+        caller_declares(
+            &workspace,
+            "maestro-extensions-wasm",
+            &format!("[{NATIVE_DEV}]\n{declaration}")
+        ),
+        Ok(())
+    );
+    for table in [
+        "dependencies",
+        "build-dependencies",
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        assert!(
+            caller_declares(
+                &workspace,
+                "maestro-extensions-wasm",
+                &format!("[{table}]\n{declaration}")
+            )
+            .is_err(),
+            "{table}"
+        );
+    }
+    assert!(caller_declares(&workspace, "maestro-extensions-wasm", &format!("[{NATIVE_DEV}]\nmodels = {{ package = \"maestro-models\", path = \"../maestro-models\", optional = true }}")).is_err());
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-request", "maestro-models"]);
+    assert_eq!(
+        caller_declares(&workspace, "maestro-request", &format!("[{NATIVE_DEV}]\n{declaration}")),
+        Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
     );
 }

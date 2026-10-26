@@ -126,6 +126,23 @@ impl InteractiveMode {
         self.ui.request_render(false);
     }
 
+    /// Restores the default working message, visibility and indicator, shows the default
+    /// message with the interrupt key on a running working row, then restores the default
+    /// hidden-thinking label.
+    pub(super) fn reset_working(&self) {
+        drop(self.working.working_message.take());
+        self.working.working_visible.set(true);
+        self.set_working_indicator(None);
+        let loader = self.working.loading_animation.borrow().clone();
+        if let Some(loader) = loader {
+            let interrupt = maestro_app::key_text("app.interrupt");
+            loader.set_message(format!(
+                "{DEFAULT_WORKING_MESSAGE} ({interrupt} to interrupt)"
+            ));
+        }
+        self.set_hidden_thinking_label(None);
+    }
+
     /// Sets the hidden-thinking label, `None` restoring the default, on every assistant row
     /// of the transcript and on the streaming row; later rows start with it.
     pub(super) fn set_hidden_thinking_label(&self, label: Option<String>) {

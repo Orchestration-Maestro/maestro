@@ -9,9 +9,10 @@ pub use maestro_extensions::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EventError, ExtensionActions, ExtensionCommandContext, ExtensionCommandContextActions,
     ExtensionContext, ExtensionContextActions, ExtensionError, ExtensionRuntime,
-    ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions,
-    MessageRenderer, ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo,
-    UIHostCall, WidgetPlacement, WorkingIndicatorOptions, create_extension_runtime,
+    ExtensionUIContext, ExtensionUIContextBinding, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ProviderConfig,
+    ProviderModelConfig, TerminalInputHandler, ToolInfo, UIHostCall, WidgetPlacement,
+    WorkingIndicatorOptions, create_extension_runtime,
 };
 
 pub use maestro_extensions::types::events::*;
@@ -19,7 +20,7 @@ pub use maestro_extensions::types::events::*;
 /// What a session-changing command reports back: whether it was cancelled.
 pub use maestro_extensions::types::SessionChangeResult;
 
-pub use maestro_extensions::types::{ExtensionFlag, FlagType};
+pub use maestro_extensions::types::{ExtensionFlag, ExtensionFlagOptions, FlagType};
 
 /// The option records of the session-changing command operations.
 pub use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
@@ -49,7 +50,11 @@ pub use maestro_extensions::{
 pub use maestro_extensions::discover_and_load_extensions;
 
 pub use maestro_extensions::footer_data_provider::live::Live;
-pub use maestro_extensions::types::{ExtensionComponent, WidgetContent};
+pub use maestro_extensions::types::{
+    ActionHandlers, ComponentFactory, CustomClose, CustomComponentFactory, CustomEditorComponent,
+    CustomFactoryOutcome, CustomUIOptions, EditorFactory, EditorFactoryOutcome, ExtensionComponent,
+    ExtensionShortcutCallback, FooterFactory, OverlayOptionsSource, WidgetContent,
+};
 
 /// Shared identity-preserving callback storage for application consumers.
 pub use maestro_listeners::Listeners;

@@ -2,11 +2,7 @@
 use super::{ExtensionExecution, ExtensionRuntimeState, PendingProviderRegistration};
 use crate::loader::runtime::ProviderRoute;
 use maestro_models::{Execution, Threaded};
-use std::{
-    ops::Deref,
-    rc::Rc,
-    sync::{Arc, RwLock},
-};
+use std::{ops::Deref, rc::Rc, sync::RwLock};
 /// Sends a custom message to the session.
 pub type SendMessageHandler<E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::SendMessage>;
@@ -84,8 +80,8 @@ pub struct ExtensionActions<E: ExtensionExecution = Threaded> {
 
 /// The shared runtime behind every extension API and its runner.
 pub struct ExtensionRuntime<E: ExtensionExecution = Threaded> {
-    /// Flag values and the activity guard, shared with the runner's contexts.
-    pub(crate) state: Arc<ExtensionRuntimeState>,
+    /// Flag values and the registration activity guard.
+    pub(crate) state: ExtensionRuntimeState,
     /// The bound operations; not-initialized until a runner binds.
     pub actions: RwLock<ExtensionActions<E>>,
     /// Registrations retained until binding; callers may inspect or edit them.

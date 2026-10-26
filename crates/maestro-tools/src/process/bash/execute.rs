@@ -1,16 +1,12 @@
 //! Per-call raw output and progress execution.
-use super::{BashExecOptions, BashExecution, BashOperations, BashSpawnContext, BashToolDetails};
+use super::{BashExecOptions, BashExecution, BashSpawnContext, BashToolDetails};
 use crate::{
     output::output_accumulator::{OutputAccumulator, OutputAccumulatorOptions, OutputSnapshot},
     utils::diagnostics::diagnostic,
 };
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Threaded};
-use std::{
-    io,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::{io, sync::Mutex, time::Duration};
 use tokio::{sync::Notify, time::Instant};
 
 /// Output state shared only with the borrowed data sink.
@@ -120,7 +116,7 @@ async fn wait(deadline: Option<Instant>) {
 macro_rules! execute { ($mode:ty) => {
 /// Run the supplied operation and close its output before classifying settlement.
 pub(crate) async fn run(
-    operations: Arc<dyn BashOperations<$mode>>,
+    operations: <$mode as maestro_models::Execution>::Shared<<$mode as BashExecution>::Operations>,
     context: BashSpawnContext,
     timeout: Option<f64>,
     signal: Option<Cancellation>,
@@ -179,9 +175,9 @@ execute!(Threaded);
 /// Local progress uses the same accumulator and selected deadlines.
 pub(super) mod local {
     use super::{
-        AgentToolResult, AgentToolUpdateCallback, Arc, BashExecOptions, BashOperations,
-        BashSpawnContext, BashToolDetails, Cancellation, DiagnosticErrorInfo, Local, Mutex, Notify,
-        Progress, diagnostic, wait,
+        AgentToolResult, AgentToolUpdateCallback, BashExecOptions, BashExecution, BashSpawnContext,
+        BashToolDetails, Cancellation, DiagnosticErrorInfo, Local, Mutex, Notify, Progress,
+        diagnostic, wait,
     };
     execute!(Local);
 }

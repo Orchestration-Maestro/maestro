@@ -9,6 +9,20 @@ that supplies the live theme given to `ExtensionRunner::new`;
 the fallback. `has_ui` reports whether an installed host, rather than a
 fallback, is current. It never inspects which operations a host supports.
 
+`set_ui_context_binding` takes an `ExtensionUIContextBinding`, which says how
+the runner keeps the host. `Owned`, built by `From<ExtensionUIContext>` and used
+by `set_ui_context`, keeps the host alive. `ExtensionUIContextBinding::borrowed`
+keeps only a weak reference, for a host that itself owns the session and its
+runner. A context obtained through a borrowed binding is an owned handle that
+keeps the host alive. Once the host is gone, the runner answers with its
+headless fallback and `has_ui` is false.
+
+Event and command contexts read the runner's current host each time `ui()` is
+called, so they follow later installs. A replacement-session context reads the
+replacement runner's host, not its creator's. Each handle that `ui()` returns
+keeps its own host. When the last handle to a borrowed host is dropped and
+nothing else holds that host, the borrowed binding no longer reaches it.
+
 ```rust
 use maestro_extensions::types::{ExtensionUIContextPort};
 use maestro_extensions::{EventError, ExtensionRunner, ExtensionUIContext};
@@ -148,6 +162,27 @@ handle does not dispose anything.
 and reading it before the first publication fails with the theme owner's error.
 `LiveTheme::from_theme` passes a prepared instance where a live view is
 expected; it stays that instance. `get_theme` returns a prepared instance.
+
+## Components and editors
+
+An `ExtensionComponent` carries the built component and three optional parts: the
+disposal the host calls when it removes the component, `set_expanded` for a header
+that follows tool expansion, and `width`, which an overlay uses when no overlay
+options are supplied. A plain component leaves them `None`.
+
+An editor factory returns an `EditorFactoryOutcome`: `Editor` for a plain
+`EditorComponent`, or `CustomEditor` for an editor that also implements
+`CustomEditorComponent`. That capability exposes the live `ActionHandlers` map and
+the interrupt, empty-editor exit, image-paste and shortcut callbacks, so a host can
+share its application actions with the replacement. `editor()` returns the editor
+through its editor operations either way, and `as_custom()` returns the capability
+only when it is there.
+
+`EditorComponent` keeps its optional operations; an unsupported one returns `None`.
+The `try_` forms of text, history, insertion, expanded text, completion provider,
+padding and completion height call the plain operation by default. An editor backed
+by an extension component overrides them to return its original failure, and a
+wrapping editor forwards them rather than calling the plain operations.
 
 ## Custom components
 

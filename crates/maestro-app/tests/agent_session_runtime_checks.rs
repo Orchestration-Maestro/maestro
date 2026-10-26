@@ -259,6 +259,7 @@ fn failed_replacement_keeps_the_torn_down_session_without_rollback() {
         let seen = std::rc::Rc::clone(&phases);
         runtime.set_before_session_invalidate(Some(std::rc::Rc::new(move || {
             seen.borrow_mut().push("before_invalidate");
+            Ok(())
         })));
         let continued = std::rc::Rc::new(std::cell::Cell::new(false));
         let bound = std::rc::Rc::clone(&continued);

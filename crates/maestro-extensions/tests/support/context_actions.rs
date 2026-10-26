@@ -1,11 +1,8 @@
 //! Shared context recorder and forwarding assertions.
 #![cfg(test)]
 use super::model_support::model;
-use maestro_extensions::{
-    CommandContextOperations, CompactOptions, ContextUsage, EventError, ExtensionContext,
-    ExtensionContextActions, types::SessionChangeResult,
-};
-use maestro_models::{BoxFuture, Cancellation, Model};
+use maestro_extensions::{CompactOptions, ContextUsage, ExtensionContext, ExtensionContextActions};
+use maestro_models::{Cancellation, Model};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -180,20 +177,4 @@ pub fn check_compaction_forwarding(ctx: &ExtensionContext, recorder: &Recorder) 
     assert!(!called.get());
 }
 
-/// Command operations that answer plainly without touching a session.
-#[must_use]
-pub fn silent_command_operations() -> CommandContextOperations {
-    let uncancelled = || -> BoxFuture<Result<SessionChangeResult, EventError>> {
-        Box::pin(std::future::ready(Ok(SessionChangeResult {
-            cancelled: false,
-        })))
-    };
-    CommandContextOperations {
-        wait_for_idle: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
-        new_session: Rc::new(move |_| uncancelled()),
-        fork: Rc::new(move |_, _| uncancelled()),
-        navigate_tree: Rc::new(move |_, _| uncancelled()),
-        switch_session: Rc::new(move |_, _| uncancelled()),
-        reload: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
-    }
-}
+pub use crate::support::command_operations::silent_command_operations;

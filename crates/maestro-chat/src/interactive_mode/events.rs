@@ -21,8 +21,8 @@ use std::{
 };
 
 impl InteractiveMode {
-    /// Registers the one listener that delivers session events synchronously and keeps no
-    /// reference to the mode; its removal operation stays here for the session lifecycle.
+    /// Registers the one session listener with a weak mode handle; its removal operation
+    /// stays here for the session lifecycle.
     pub(super) fn subscribe_to_agent(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         let removal =
@@ -43,15 +43,46 @@ impl InteractiveMode {
     /// metadata the event names from the session's live state or following the agent.
     ///
     /// # Errors
-    /// Returns the failure of the initialization, of the terminal title or progress, of the
-    /// published theme or of a row's rendering.
+    /// Returns a synchronous presentation failure. Deferred initialization and event
+    /// failures go to the supplied runtime's error route.
     pub(super) fn handle_event(
         self: &Rc<Self>,
         event: &AgentSessionEvent,
     ) -> Result<(), Box<dyn Error>> {
-        if !self.is_initialized.get() {
-            self.init()?;
+        if self.is_initialized.get() && !self.event_initialization_pending.get() {
+            return self.handle_initialized_event(event);
         }
+        self.pending_events.borrow_mut().push_back(event.clone());
+        if self.event_initialization_pending.replace(true) {
+            return Ok(());
+        }
+        let mode = Rc::clone(self);
+        self.tool_environment
+            .runtime
+            .spawn_local(Box::pin(async move {
+                let result = mode.initialize_pending_events().await;
+                mode.event_initialization_pending.set(false);
+                mode.pending_events.borrow_mut().clear();
+                result
+            }));
+        Ok(())
+    }
+
+    /// Initializes the presentation before delivering the events waiting for it.
+    async fn initialize_pending_events(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+        self.init().await?;
+        loop {
+            let event = self.pending_events.borrow_mut().pop_front();
+            let Some(event) = event else { return Ok(()) };
+            self.report(self.handle_initialized_event(&event));
+        }
+    }
+
+    /// Presents one event after initialization has completed.
+    fn handle_initialized_event(
+        self: &Rc<Self>,
+        event: &AgentSessionEvent,
+    ) -> Result<(), Box<dyn Error>> {
         self.footer.invalidate();
         match event {
             AgentSessionEvent::QueueUpdate { .. } => {
@@ -59,7 +90,8 @@ impl InteractiveMode {
                 self.ui.request_render(false);
             }
             AgentSessionEvent::SessionInfoChanged { .. } => {
-                self.update_terminal_title()?;
+                self.update_terminal_title()
+                    .map_err(|error| -> Box<dyn Error> { error })?;
                 self.ui.request_render(false);
             }
             AgentSessionEvent::ThinkingLevelChanged { .. } => self.update_editor_border_color()?,
@@ -217,9 +249,12 @@ impl InteractiveMode {
     /// Returns the failure of a row's rendering or of the published theme.
     fn handle_message_start(&self, message: &NativeAgentMessage) -> Result<(), Box<dyn Error>> {
         match message {
-            AgentMessage::Custom(_) => self.add_message_to_chat(message, false)?,
+            AgentMessage::Custom(_) => self
+                .add_message_to_chat(message, false)
+                .map_err(|error| -> Box<dyn Error> { error })?,
             AgentMessage::User(_) => {
-                self.add_message_to_chat(message, false)?;
+                self.add_message_to_chat(message, false)
+                    .map_err(|error| -> Box<dyn Error> { error })?;
                 self.update_pending_messages_display()?;
             }
             AgentMessage::Assistant(message) => {
@@ -413,7 +448,9 @@ impl InteractiveMode {
         &self,
         call: ToolCall,
     ) -> Result<Rc<ToolExecutionComponent>, Box<dyn Error>> {
-        let row = self.render_tool_call(&call.id, &call.name, Some(call.arguments))?;
+        let row = self
+            .render_tool_call(&call.id, &call.name, Some(call.arguments))
+            .map_err(|error| -> Box<dyn Error> { error })?;
         self.pending_tools
             .borrow_mut()
             .insert(call.id, Rc::clone(&row));
@@ -449,7 +486,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the invalid stored name or the terminal's title-writing failure.
-    pub(super) fn update_terminal_title(&self) -> Result<(), Box<dyn Error>> {
+    pub(super) fn update_terminal_title(&self) -> Result<(), maestro_app::EventError> {
         let title = {
             let session = self.runtime_host.session();
             let manager = session.session_manager().borrow();

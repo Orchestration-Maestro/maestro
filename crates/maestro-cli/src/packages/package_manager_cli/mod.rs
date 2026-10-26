@@ -2,7 +2,7 @@
 
 mod help;
 mod parse;
-mod presentation;
+pub(crate) mod presentation;
 
 pub use parse::PackageCommand;
 

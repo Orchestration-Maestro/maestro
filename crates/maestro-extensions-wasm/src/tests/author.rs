@@ -7,11 +7,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_extensions_wasm::{
-    AbortSignal, CommandOptions, CompactionResult, ExtensionAPI, ExtensionCommandContext,
-    ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionHandler,
-    ExtensionResult, InputEventResult, InputTransform, NewSessionCommandData,
-    NewSessionCommandOptions, Presence, SessionBeforeCompactEvent, SessionBeforeCompactResult,
-    SessionEvent, SignalPort,
+    AbortListener, AbortSignal, CommandOptions, CompactionResult, ExtensionAPI,
+    ExtensionCommandContext, ExtensionContext, ExtensionEvent, ExtensionEventResult,
+    ExtensionFuture, ExtensionHandler, ExtensionResult, InputEventResult, InputTransform,
+    NewSessionCommandData, NewSessionCommandOptions, Presence, SessionBeforeCompactEvent,
+    SessionBeforeCompactResult, SessionEvent, SignalPort, Subscription, SubscriptionPort,
 };
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
@@ -41,8 +41,12 @@ mod setup_author;
 use super::registration_fixture;
 #[path = "nested_schema_fixture.rs"]
 pub(crate) mod nested_schema_fixture;
+#[path = "schema_author.rs"]
+mod schema_author;
 #[path = "shell_author.rs"]
 mod shell_author;
+#[path = "theme_author.rs"]
+mod theme_author;
 #[path = "tool_author.rs"]
 mod tool_author;
 #[path = "ui_author.rs"]
@@ -364,6 +368,15 @@ impl SignalPort for Live {
     fn aborted(&self) -> bool {
         false
     }
+    fn subscribe(&self, _listener: AbortListener) -> ExtensionResult<Subscription> {
+        Ok(Subscription::new(Rc::new(Live)))
+    }
+}
+
+impl SubscriptionPort for Live {
+    fn unsubscribe(&self) -> ExtensionResult<()> {
+        Ok(())
+    }
 }
 
 /// What the probe handler and the command that feeds it share.
@@ -427,6 +440,7 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                     match args.as_str() {
                         "catalog" => return catalog_author::register(&api),
                         "reader" => return reader_author::register(&api),
+                        "theme" => return theme_author::register(&api),
                         "ui" => return ui_author::register(&api),
                         _ => {}
                     }
@@ -602,7 +616,9 @@ fn mark(event: &mut ExtensionEvent) -> ExtensionResult<()> {
         ExtensionEvent::Session(SessionEvent::Shutdown(shutdown)) => {
             shutdown.target_session_file = Presence::Present(changed());
         }
-        ExtensionEvent::BeforeProviderRequest(request) => request.payload = changed(),
+        ExtensionEvent::BeforeProviderRequest(request) => {
+            request.payload = json!(changed()).to_string().into();
+        }
         ExtensionEvent::AfterProviderResponse(response) => response.status = 201.0,
         ExtensionEvent::ToolCall(event) => {
             return tool_author::mark(&mut event.input, &event.tool_name);

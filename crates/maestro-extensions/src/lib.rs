@@ -48,23 +48,46 @@ pub mod footer_data_provider;
 mod loader;
 /// Owned registration records and callback types.
 pub mod types;
+pub use maestro_catalog::{ConfigValueOperations, ModelRegistry, ResolvedRequestAuth};
+pub use maestro_models::{
+    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaNode, schema_transport,
+};
 pub use maestro_resources::SourceInfo;
+pub use maestro_session::messages::CustomMessageInput;
+pub use maestro_session::session_manager::{
+    CompactionOptions, ForkPosition, NavigateTreeOptions, NewSessionOptions,
+    ReadonlySessionManager, SessionTreeNode,
+};
+pub use maestro_session::{CompactionResult, Presence, SessionManager};
+/// Terminal color conversion mode used by extension themes.
+pub use maestro_theme::ColorMode;
+pub use maestro_theme::LiveTheme;
+/// Prepared terminal colors and text decorations supplied to extension renderers.
+pub use maestro_theme::Theme;
+/// Background color key, including authored names.
+pub use maestro_theme::ThemeBg;
+/// Foreground color key, including authored names.
+pub use maestro_theme::ThemeColor;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
     ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionExecution,
-    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, ForkHandler, MessageRenderOptions, MessageRenderer,
-    MessageRendererCall, NavigateTreeHandler, NewSessionHandler, RegisteredCommand,
-    ReplacedSessionContext, ResolvedCommand, ShutdownHandler, SwitchSessionHandler,
-    TerminalInputHandler, UIHostCall, WidgetPlacement, WorkingIndicatorOptions,
+    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIContextBinding,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler, MessageRenderOptions,
+    MessageRenderer, MessageRendererCall, NavigateTreeHandler, NewSessionHandler,
+    RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
+    SwitchSessionHandler, TerminalInputHandler, UIHostCall, WidgetPlacement,
+    WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
 pub mod runner;
 pub use runner::ExtensionRunner;
 
 pub use loader::runtime::create_extension_runtime;
-pub use maestro_models::{ToolInfo, system_prompt::BuildSystemPromptOptions};
+pub use maestro_models::{
+    Cancellation, Local, Model, ModelThinkingLevel, SharedHandle, ToolInfo,
+    system_prompt::BuildSystemPromptOptions,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{ExecOptions, ExecResult};
 pub use types::{
@@ -92,7 +115,21 @@ pub use types::events::*;
 pub use maestro_tools::define_tool;
 pub use types::ToolDefinition;
 
+/// Native argument preparation retained by extension definitions.
+pub use maestro_agent::PrepareArguments;
 pub use maestro_agent::{AgentToolResult, AgentToolUpdateCallback, ToolExecutionMode};
+/// Shared extension event inventory for concrete native adapters.
+pub use maestro_models::extension_event_table;
+/// Native declaration and diagnostic records used by extension adapters.
+pub use maestro_models::{DiagnosticCode, DiagnosticErrorInfo, Tool};
 pub use maestro_resources::{SlashCommandInfo, SlashCommandSource};
 pub use maestro_tools::ToolRenderResultOptions;
-pub use maestro_tui::{Keybinding as AppKeybinding, KeybindingsManager};
+/// Native tool framing retained by extension registrations.
+pub use maestro_tools::ToolRenderShell;
+/// Caller-local tool definitions with their original tools-owned types.
+pub use maestro_tools::types::local;
+/// Native raw shell operands and execution family used by returned extension operations.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
+pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
+pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager};

@@ -192,13 +192,16 @@ fn painted(world: &World, role: &ThemeColor) -> String {
 }
 
 /// Drives one event before or after initialization and a second one after it.
-fn initialization(world: &World, initialized: bool) {
+async fn initialization(world: &World, initialized: bool) {
     if initialized {
-        world.mode.init().unwrap();
+        world.mode.init().await.unwrap();
         world.runtime.settle().unwrap();
     }
     let effects = tap(world);
     world.mode.handle_event(&session_info()).unwrap();
+    for work in world.runtime.take_futures() {
+        work.await.unwrap();
+    }
     world.runtime.settle().unwrap();
     assert!(world.mode.is_initialized.get());
     assert_eq!(
@@ -218,11 +221,11 @@ fn initialization(world: &World, initialized: bool) {
 }
 
 /// Drives the subscription, a second initialization, the removal operation and the release.
-fn subscription(world: World, unchanged_rows: &Presentation) {
+async fn subscription(world: World, unchanged_rows: &Presentation) {
     let session = world.host.session();
     let basename = maestro_path::basename(session.session_manager().borrow().get_cwd(), None);
-    world.mode.init().unwrap();
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     let effects = tap(&world);
     // A second initialization adds no listener: one event writes one title.
@@ -246,7 +249,7 @@ fn subscription(world: World, unchanged_rows: &Presentation) {
 #[test]
 fn events_subscription_initializes_once_and_releases() {
     let test = "events_subscription_initializes_once_and_releases";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let Expected::Shown(unchanged_rows) = expected else {
                 panic!("a metadata case");
@@ -254,10 +257,10 @@ fn events_subscription_initializes_once_and_releases() {
             let world = Setup::default().build(directory);
             match input {
                 Input::Init { initialized } => {
-                    initialization(&world, initialized);
+                    initialization(&world, initialized).await;
                     shown(&world, &unchanged_rows);
                 }
-                Input::Subscribe => subscription(world, &unchanged_rows),
+                Input::Subscribe => subscription(world, &unchanged_rows).await,
                 _ => panic!("a subscription case"),
             }
         }
@@ -267,7 +270,7 @@ fn events_subscription_initializes_once_and_releases() {
 #[test]
 fn events_title_uses_native_lexical_basename_and_optional_name() {
     let test = "events_title_uses_native_lexical_basename_and_optional_name";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let Input::Title { cwd, name } = input else {
                 panic!("a title case");
@@ -275,7 +278,7 @@ fn events_title_uses_native_lexical_basename_and_optional_name() {
             let Expected::Title { title } = expected else {
                 panic!("a written title");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             let stored = name.map(Value::String);
             install_name(&world, directory, &cwd, stored.as_ref());
             let effects = tap(&world);
@@ -289,12 +292,12 @@ fn events_title_uses_native_lexical_basename_and_optional_name() {
 #[test]
 fn events_title_keeps_the_session_name_producers_field_domain() {
     let test = "events_title_keeps_the_session_name_producers_field_domain";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let Input::TitleDomain { kind, name } = input else {
                 panic!("a stored-name case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             let stored = (kind != "missing").then_some(&name);
             install_name(&world, directory, "/work/project", stored);
             let effects = tap(&world);
@@ -322,7 +325,7 @@ fn events_title_keeps_the_session_name_producers_field_domain() {
 #[test]
 fn events_thinking_level_refreshes_footer_and_border() {
     let test = "events_thinking_level_refreshes_footer_and_border";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let Input::Level { bash } = input else {
                 panic!("a thinking-level case");
@@ -330,7 +333,7 @@ fn events_thinking_level_refreshes_footer_and_border() {
             let Expected::Shown(unchanged_rows) = expected else {
                 panic!("a metadata case");
             };
-            let world = started(directory);
+            let world = started(directory).await;
             let session = world.host.session();
             session.model().write().unwrap().reasoning = true;
             world.mode.is_bash_mode.set(bash);
@@ -511,7 +514,7 @@ fn progress(effects: &Effects) -> Vec<String> {
 
 /// A started mode over the recorded palette, with terminal progress shown when `progress`;
 /// startup is quiet, so the transcript starts empty, as recorded.
-fn streamed(directory: &Path, progress: bool, setup: Setup) -> World {
+async fn streamed(directory: &Path, progress: bool, setup: Setup) -> World {
     let configure = setup.configure;
     let world = recorded(
         directory,
@@ -524,7 +527,7 @@ fn streamed(directory: &Path, progress: bool, setup: Setup) -> World {
             ..setup
         },
     );
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
 }
@@ -543,7 +546,7 @@ fn drawn(world: &World) {
 }
 
 /// A shared assistant message with `content`, its stop reason and an optional error.
-fn shared(content: &Value, stop: &str, error: Option<&str>) -> SharedAssistantMessage {
+pub(super) fn shared(content: &Value, stop: &str, error: Option<&str>) -> SharedAssistantMessage {
     let AgentMessage::Assistant(shared) = message(assistant(content, stop, error)) else {
         panic!("an assistant record");
     };
@@ -612,7 +615,7 @@ fn role_record(role: &str, text: &str) -> Value {
 #[test]
 fn events_agent_start_selects_working_visibility_and_message() {
     let test = "events_agent_start_selects_working_visibility_and_message";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let StreamOp::Start {
                 visible,
@@ -625,7 +628,7 @@ fn events_agent_start_selects_working_visibility_and_message() {
             let Expected::Shown(expected) = expected else {
                 panic!("a presentation");
             };
-            let world = streamed(directory, shown_progress, Setup::default());
+            let world = streamed(directory, shown_progress, Setup::default()).await;
             if !visible || message.is_some() {
                 // The recorded extension controls use a one-frame indicator.
                 let ui = port(&world.mode);
@@ -664,13 +667,13 @@ fn events_agent_start_selects_working_visibility_and_message() {
 #[test]
 fn events_message_roles_use_one_retained_stream() {
     let test = "events_message_roles_use_one_retained_stream";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::MessageStart { role }, Expected::Shown(expected)) = (input, expected)
             else {
                 panic!("a message start");
             };
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             let started = message(role_record(&role, "PARTIAL"));
             dispatch(
                 &world,
@@ -689,7 +692,7 @@ fn events_message_roles_use_one_retained_stream() {
         }
         // Only a user start rebuilds the pending rows from the session's queues.
         for (role, refreshed) in [("user", true), ("custom", false)] {
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             world.host.session().steer("queued", &[]).unwrap();
             world.mode.pending_messages_container.clear();
             dispatch(
@@ -707,12 +710,12 @@ fn events_message_roles_use_one_retained_stream() {
 #[test]
 fn events_updates_reuse_assistant_and_tool_rows() {
     let test = "events_updates_reuse_assistant_and_tool_rows";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::Update { active }, Expected::Shown(expected)) = (input, expected) else {
                 panic!("an update case");
             };
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             if active {
                 let first = shared(&json!([{"type": "text", "text": "FIRST"}]), "stop", None);
                 dispatch(
@@ -771,18 +774,18 @@ fn end_streamed(world: &World, stop: &str, error: Option<&str>) -> SharedAssista
 #[test]
 fn events_message_end_preserves_failure_and_completion_branches() {
     let test = "events_message_end_preserves_failure_and_completion_branches";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::End { stop, retry, error }, Expected::Shown(expected)) =
                 (input, expected)
             else {
                 panic!("a message end");
             };
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             let ended = if retry == 0 {
                 end_streamed(&world, &stop, error.as_deref())
             } else {
-                retried(&world, retry)
+                retried(&world, retry).await
             };
             let rows = world.mode.chat_container.render(100);
             assert!(rows.ends_with(&expected.chat));
@@ -804,13 +807,13 @@ fn events_message_end_preserves_failure_and_completion_branches() {
 #[test]
 fn events_message_end_ignores_user_and_unstarted_assistant() {
     let test = "events_message_end_ignores_user_and_unstarted_assistant";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::UnstartedEnd { role }, Expected::Shown(expected)) = (input, expected)
             else {
                 panic!("an unstarted end");
             };
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             let record = if role == "assistant" {
                 assistant(&json!([]), "stop", None)
             } else {
@@ -833,14 +836,14 @@ fn events_message_end_ignores_user_and_unstarted_assistant() {
 #[test]
 fn events_tool_lifecycle_reuses_replayed_pending_rows() {
     let test = "events_tool_lifecycle_reuses_replayed_pending_rows";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::Tool { seeded, is_error }, Expected::Shown(expected)) =
                 (input, expected)
             else {
                 panic!("a tool lifecycle");
             };
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             if seeded {
                 let content = json!([call("z", "unknown_tool")]);
                 replay(&world, vec![assistant(&content, "toolUse", None)]);
@@ -878,12 +881,12 @@ fn events_tool_lifecycle_reuses_replayed_pending_rows() {
 #[test]
 fn events_unknown_tools_do_not_add_or_render_rows() {
     let test = "events_unknown_tools_do_not_add_or_render_rows";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::Unknown { phase }, Expected::Shown(expected)) = (input, expected) else {
                 panic!("an unknown call");
             };
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             let missing = tool_call("missing", "unknown_tool", &json!({}));
             let event = match phase.as_str() {
                 "update" => AgentEvent::ToolExecutionUpdate {
@@ -935,7 +938,7 @@ fn recording(received: Rc<RefCell<Vec<Value>>>) -> Definition {
 #[test]
 fn events_renderer_fields_survive_progress_and_completion() {
     let test = "events_renderer_fields_survive_progress_and_completion";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::Details { kind, failed }, Expected::Shown(expected)) = (input, expected)
             else {
@@ -946,7 +949,7 @@ fn events_renderer_fields_survive_progress_and_completion() {
                 extension: Some(registering(vec![recording(Rc::clone(&received))])),
                 ..Setup::default()
             };
-            let world = streamed(directory, false, setup);
+            let world = streamed(directory, false, setup).await;
             let started = tool_call("z", "fixture", &json!({"z": 1, "a": 2}));
             dispatch(
                 &world,
@@ -1004,7 +1007,10 @@ fn ended_messages(world: &World) -> Rc<RefCell<Vec<SharedAssistantMessage>>> {
 
 /// Prompts `run` through `world`'s real session, answering each provider request with
 /// `respond`, and waits for the prompt and every retry to settle under a paused clock.
-fn prompted(world: &World, respond: impl Fn(usize, &AssistantMessageEventStream) + 'static) {
+pub(super) async fn prompted(
+    world: &World,
+    respond: impl Fn(usize, &AssistantMessageEventStream) + 'static,
+) {
     let session = world.host.session();
     let services = world.host.services();
     services.auth_storage.set_runtime_api_key("unknown", "key");
@@ -1015,22 +1021,17 @@ fn prompted(world: &World, respond: impl Fn(usize, &AssistantMessageEventStream)
         requests.set(requests.get() + 1);
         Box::pin(std::future::ready(Ok(stream)))
     }));
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_time()
-        .start_paused(true)
-        .build()
-        .unwrap();
     // The prompt starts its work when called, so it is called inside the task set.
     let prompt = async { session.prompt("run", PromptOptions::default()).await };
-    tokio::task::LocalSet::new()
-        .block_on(&runtime, prompt)
-        .unwrap();
+    tokio::time::pause();
+    prompt.await.unwrap();
+    tokio::time::resume();
 }
 
 /// Prompts `world`'s session so that its first `retries` responses fail with a retryable
 /// error and the next one streams one call `z` and ends aborted; returns that message as
 /// its end delivered it.
-fn retried(world: &World, retries: u32) -> SharedAssistantMessage {
+async fn retried(world: &World, retries: u32) -> SharedAssistantMessage {
     let session = world.host.session();
     let settings = Rc::clone(session.settings_manager());
     settings
@@ -1053,7 +1054,8 @@ fn retried(world: &World, retries: u32) -> SharedAssistantMessage {
             partial: shared(&content, "toolUse", None),
         });
         stream.end(Some(shared(&content, "aborted", None)));
-    });
+    })
+    .await;
     let ended = ended.borrow();
     assert_eq!(ended.len(), retries + 1);
     Arc::clone(ended.last().unwrap())
@@ -1062,7 +1064,7 @@ fn retried(world: &World, retries: u32) -> SharedAssistantMessage {
 #[test]
 fn events_agent_end_clears_transient_rows_before_shutdown() {
     let test = "events_agent_end_clears_transient_rows_before_shutdown";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (loading, streaming, shown_progress) = match input {
                 StreamOp::AgentEnd {
@@ -1079,7 +1081,7 @@ fn events_agent_end_clears_transient_rows_before_shutdown() {
             let Expected::Shown(expected) = expected else {
                 panic!("a presentation");
             };
-            let world = streamed(directory, shown_progress, Setup::default());
+            let world = streamed(directory, shown_progress, Setup::default()).await;
             if loading {
                 dispatch(&world, AgentEvent::AgentStart);
             }
@@ -1109,14 +1111,14 @@ fn events_agent_end_clears_transient_rows_before_shutdown() {
             assert_eq!(world.runtime.pending(), 0);
             shown(&world, &expected);
         }
-        completed_rows_stay(directory);
+        completed_rows_stay(directory).await;
     });
 }
 
 /// Ends a run over replayed rows and an unfinished assistant row: only the unfinished row
 /// goes, and the replayed call's registration is forgotten.
-fn completed_rows_stay(directory: &Path) {
-    let world = streamed(directory, true, Setup::default());
+async fn completed_rows_stay(directory: &Path) {
+    let world = streamed(directory, true, Setup::default()).await;
     let content = json!([call("z", "unknown_tool")]);
     replay(&world, vec![assistant(&content, "toolUse", None)]);
     let completed = world.mode.chat_container.render(100);
@@ -1135,12 +1137,12 @@ fn completed_rows_stay(directory: &Path) {
 #[test]
 fn events_queue_update_reads_current_session_display() {
     let test = "events_queue_update_reads_current_session_display";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::Queue { q }, Expected::Shown(expected)) = (input, expected) else {
                 panic!("a queue update");
             };
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             // The recording had no binding for the dequeue action.
             let unbound = Some(KeybindingKeys::Multiple(Vec::new()));
             let bindings = [("app.message.dequeue".to_owned(), unbound)];
@@ -1168,7 +1170,7 @@ fn events_queue_update_reads_current_session_display() {
 #[test]
 fn events_thinking_toggle_keeps_the_default_streaming_tail() {
     let test = "events_thinking_toggle_keeps_the_default_streaming_tail";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::ThinkingDefault { hide }, Expected::Shown(expected)) = (input, expected)
             else {
@@ -1178,7 +1180,7 @@ fn events_thinking_toggle_keeps_the_default_streaming_tail() {
                 configure: Box::new(move |settings| settings.set_hide_thinking_block(hide)),
                 ..Setup::default()
             };
-            let world = streamed(directory, false, setup);
+            let world = streamed(directory, false, setup).await;
             let content = json!([{"type": "thinking", "thinking": "REASON"},
                 {"type": "text", "text": "ANSWER"}]);
             let started = shared(&content, "stop", None);
@@ -1225,14 +1227,14 @@ fn phased(name: &str, phases: Rc<RefCell<Vec<bool>>>) -> Definition {
 fn events_message_end_completes_arguments_only_without_failure() {
     isolated(
         "events_message_end_completes_arguments_only_without_failure",
-        |directory| {
+        async |directory| {
             for (stop, completed) in [("stop", true), ("toolUse", true), ("error", false)] {
                 let phases = Rc::new(RefCell::new(Vec::new()));
                 let setup = Setup {
                     extension: Some(registering(vec![phased("phased", Rc::clone(&phases))])),
                     ..Setup::default()
                 };
-                let world = streamed(directory, false, setup);
+                let world = streamed(directory, false, setup).await;
                 start(&world, &json!([]));
                 let content = json!([call("z", "phased")]);
                 dispatch(&world, update(&shared(&content, "toolUse", None)));
@@ -1337,14 +1339,14 @@ fn answer_with_progress(request: usize, stream: &AssistantMessageEventStream) {
 fn events_registered_session_orders_agent_message_and_tool_events() {
     isolated(
         "events_registered_session_orders_agent_message_and_tool_events",
-        |directory| {
+        async |directory| {
             let setup = Setup {
                 extension: Some(registering(vec![progressing()])),
                 ..Setup::default()
             };
-            let world = streamed(directory, false, setup);
+            let world = streamed(directory, false, setup).await;
             let records = seen(&world);
-            prompted(&world, answer_with_progress);
+            prompted(&world, answer_with_progress).await;
             let records = records.take();
             let at = |kind| &records[first(&records, kind)];
             assert!(at("agent_start").loading);
@@ -1372,7 +1374,7 @@ fn events_registered_session_orders_agent_message_and_tool_events() {
             assert!(shown_in_order.is_sorted());
             assert!(!chat.contains("HALFWAY"));
             assert!(world.mode.status_container.render(100).is_empty());
-            failed_response_completes_pending_rows(directory);
+            failed_response_completes_pending_rows(directory).await;
         },
     );
 }
@@ -1380,8 +1382,8 @@ fn events_registered_session_orders_agent_message_and_tool_events() {
 /// Prompts through a real session whose provider fails the response: the failure is an
 /// assistant error event, not a failed prompt, and its end completes the pending row with the
 /// provider's error.
-fn failed_response_completes_pending_rows(directory: &Path) {
-    let world = streamed(directory, false, Setup::default());
+async fn failed_response_completes_pending_rows(directory: &Path) {
+    let world = streamed(directory, false, Setup::default()).await;
     prompted(&world, |_, stream| {
         let content = json!([call("failed", "unknown_tool")]);
         stream.push(AssistantMessageEvent::Start {
@@ -1393,7 +1395,8 @@ fn failed_response_completes_pending_rows(directory: &Path) {
             partial: shared(&content, "toolUse", None),
         });
         stream.end(Some(shared(&content, "error", Some("PROVIDER_FAILED"))));
-    });
+    })
+    .await;
     let chat = world.mode.chat_container.render(100).join("\n");
     assert!(chat.contains("PROVIDER_FAILED"));
     assert!(pending(&world).is_empty());
@@ -1401,32 +1404,35 @@ fn failed_response_completes_pending_rows(directory: &Path) {
 
 #[test]
 fn events_incremental_frames_keep_one_writer() {
-    isolated("events_incremental_frames_keep_one_writer", |directory| {
-        let world = streamed(directory, false, Setup::default());
-        let redraws = world.mode.ui.full_redraws();
-        let text = |text: &str| json!([{"type": "text", "text": text}]);
-        start(&world, &text("one"));
-        world.runtime.settle().unwrap();
-        world.terminal.clear_writes();
-        dispatch(&world, update(&shared(&text("one\n\ntwo"), "stop", None)));
-        world.runtime.settle().unwrap();
-        let grown = world.terminal.writes().concat();
-        world.terminal.clear_writes();
-        dispatch(&world, update(&shared(&text("one\n\nthree"), "stop", None)));
-        world.runtime.settle().unwrap();
-        let changed = world.terminal.writes().concat();
-        // Each update rewrites from its first changed row in the same writer, never the
-        // whole screen: growing moves the message's end marker off the first row, and a
-        // later change keeps the unchanged first row.
-        assert_eq!(world.mode.ui.full_redraws(), redraws);
-        assert!(grown.contains("two"));
-        assert!(changed.contains("three") && !changed.contains("one"));
-    });
+    isolated(
+        "events_incremental_frames_keep_one_writer",
+        async |directory| {
+            let world = streamed(directory, false, Setup::default()).await;
+            let redraws = world.mode.ui.full_redraws();
+            let text = |text: &str| json!([{"type": "text", "text": text}]);
+            start(&world, &text("one"));
+            world.runtime.settle().unwrap();
+            world.terminal.clear_writes();
+            dispatch(&world, update(&shared(&text("one\n\ntwo"), "stop", None)));
+            world.runtime.settle().unwrap();
+            let grown = world.terminal.writes().concat();
+            world.terminal.clear_writes();
+            dispatch(&world, update(&shared(&text("one\n\nthree"), "stop", None)));
+            world.runtime.settle().unwrap();
+            let changed = world.terminal.writes().concat();
+            // Each update rewrites from its first changed row in the same writer, never the
+            // whole screen: growing moves the message's end marker off the first row, and a
+            // later change keeps the unchanged first row.
+            assert_eq!(world.mode.ui.full_redraws(), redraws);
+            assert!(grown.contains("two"));
+            assert!(changed.contains("three") && !changed.contains("one"));
+        },
+    );
 }
 
 #[test]
 fn events_stream_work_is_linear() {
-    isolated("events_stream_work_is_linear", |directory| {
+    isolated("events_stream_work_is_linear", async |directory| {
         let mut work = Vec::new();
         for calls in [16, 32, 64] {
             let rendered = Rc::new(RefCell::new(Vec::new()));
@@ -1434,7 +1440,7 @@ fn events_stream_work_is_linear() {
                 extension: Some(registering(vec![phased("counted", Rc::clone(&rendered))])),
                 ..Setup::default()
             };
-            let world = streamed(directory, false, setup);
+            let world = streamed(directory, false, setup).await;
             start(&world, &json!([]));
             let ids: Vec<String> = (0..calls).map(|id: usize| id.to_string()).collect();
             let content: Vec<Value> = ids.iter().map(|id| call(id, "counted")).collect();
@@ -1534,7 +1540,7 @@ fn retain_one_across_turns(world: &World, turns: usize) {
 /// Sets the working row's visibility while a response streams through `world`'s real
 /// session, after starting it hidden when it is to be shown; returns the status rows and
 /// whether a working row ran right after the change.
-fn visible_while_streaming(world: &World, visible: bool) -> (Vec<String>, bool) {
+async fn visible_while_streaming(world: &World, visible: bool) -> (Vec<String>, bool) {
     let ui = port(&world.mode);
     if visible {
         ui.set_working_visible(false).unwrap();
@@ -1547,19 +1553,20 @@ fn visible_while_streaming(world: &World, visible: bool) -> (Vec<String>, bool) 
         let running = mode.working.loading_animation.borrow().is_some();
         sink.replace(Some((mode.status_container.render(100), running)));
         stream.end(Some(shared(&json!([]), "stop", None)));
-    });
+    })
+    .await;
     seen.take().unwrap()
 }
 
 #[test]
 fn events_working_controls_update_retained_loader() {
     let test = "events_working_controls_update_retained_loader";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let Expected::Shown(expected) = expected else {
                 panic!("a presentation");
             };
-            let world = streamed(directory, false, Setup::default());
+            let world = streamed(directory, false, Setup::default()).await;
             let ui = port(&world.mode);
             match input {
                 StreamOp::Visible {
@@ -1568,7 +1575,7 @@ fn events_working_controls_update_retained_loader() {
                 } => {
                     // The recording hides the indicator, so no frame advances.
                     ui.set_working_indicator(Some(frames(&[]))).unwrap();
-                    let (status, running) = visible_while_streaming(&world, visible);
+                    let (status, running) = visible_while_streaming(&world, visible).await;
                     assert_eq!(status, expected.status);
                     assert_eq!(running, visible);
                     continue;
@@ -1595,14 +1602,14 @@ fn events_working_controls_update_retained_loader() {
             drawn(&world);
             shown(&world, &expected);
         }
-        hidden_row_releases_its_timer(directory);
+        hidden_row_releases_its_timer(directory).await;
     });
 }
 
 /// Hides a running working row with the toolkit's animated indicator: the row goes and its
 /// animation leaves nothing pending.
-fn hidden_row_releases_its_timer(directory: &Path) {
-    let world = streamed(directory, false, Setup::default());
+async fn hidden_row_releases_its_timer(directory: &Path) {
+    let world = streamed(directory, false, Setup::default()).await;
     let ui = port(&world.mode);
     ui.set_working_indicator(None).unwrap();
     dispatch(&world, AgentEvent::AgentStart);
@@ -1621,7 +1628,7 @@ fn hidden_row_releases_its_timer(directory: &Path) {
 #[test]
 fn events_thinking_toggle_and_label_keep_streaming_tail() {
     let test = "events_thinking_toggle_and_label_keep_streaming_tail";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases(FIXTURES, test) {
             let (StreamOp::Thinking { hide, label }, Expected::Shown(expected)) = (input, expected)
             else {
@@ -1631,7 +1638,7 @@ fn events_thinking_toggle_and_label_keep_streaming_tail() {
                 configure: Box::new(move |settings| settings.set_hide_thinking_block(hide)),
                 ..Setup::default()
             };
-            let world = streamed(directory, false, setup);
+            let world = streamed(directory, false, setup).await;
             let content = json!([{"type": "thinking", "thinking": "REASON"},
                 {"type": "text", "text": "ANSWER"}]);
             start(&world, &content);
@@ -1639,18 +1646,18 @@ fn events_thinking_toggle_and_label_keep_streaming_tail() {
             world.terminal.send_input("\x14");
             shown(&world, &expected);
         }
-        label_reaches_replayed_and_later_rows(directory);
+        label_reaches_replayed_and_later_rows(directory).await;
     });
 }
 
 /// Sets a label over a replayed assistant row: that row shows it, and so does a later
 /// streaming row.
-fn label_reaches_replayed_and_later_rows(directory: &Path) {
+async fn label_reaches_replayed_and_later_rows(directory: &Path) {
     let setup = Setup {
         configure: Box::new(|settings| settings.set_hide_thinking_block(true)),
         ..Setup::default()
     };
-    let world = streamed(directory, false, setup);
+    let world = streamed(directory, false, setup).await;
     let content = json!([{"type": "thinking", "thinking": "REASON"},
         {"type": "text", "text": "ANSWER"}]);
     replay(&world, vec![assistant(&content, "stop", None)]);
