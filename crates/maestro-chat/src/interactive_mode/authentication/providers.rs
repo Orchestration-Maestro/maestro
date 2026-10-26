@@ -40,8 +40,9 @@ impl InteractiveMode {
     /// The choices `/login` offers for `auth_type`, or for both kinds when absent, ordered
     /// by display name under the current locale.
     ///
-    /// Every registered subscription comes first, then each catalog provider, in its first
-    /// appearance, that may sign in with an API key.
+    /// Choices with equal names keep the order they were gathered in: every registered
+    /// subscription, then each catalog provider, in its first appearance, that may sign in
+    /// with an API key.
     ///
     /// # Errors
     /// Returns the collator's failure to read the locale environment.

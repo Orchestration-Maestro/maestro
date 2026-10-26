@@ -361,12 +361,26 @@ fn api_key_prompt_uses_ecmascript_whitespace_boundaries() {
     );
 }
 
+/// Asserts the store's backing file holds the saved key beside the untouched one.
+fn assert_backing_keys(directory: &Path) {
+    let file = std::fs::read_to_string(directory.join("store0/auth.json")).unwrap();
+    let saved: serde_json::Value = serde_json::from_str(&file).unwrap();
+    assert_eq!(
+        saved,
+        serde_json::json!({
+            "custom-key": { "type": "api_key", "key": "secret" },
+            "other": { "type": "api_key", "key": "kept" },
+        }),
+        "the backing file holds both keys"
+    );
+}
+
 #[test]
 fn api_key_save_restores_editor_before_catalog_completion() {
     isolated(
         "api_key_save_restores_editor_before_catalog_completion",
         async |directory| {
-            let world = started_with(directory, None).await;
+            let world = started_with(directory, Some(document_store(directory, 0, &[]))).await;
             keyed(&world, "custom-key", Some("Custom"), None);
             storage(&world).set(
                 "other",
@@ -378,6 +392,7 @@ fn api_key_save_restores_editor_before_catalog_completion() {
             answer(&world, "secret");
             assert_eq!(stored_key(&world, "custom-key").as_deref(), Some("secret"));
             assert_eq!(stored_key(&world, "other").as_deref(), Some("kept"));
+            assert_backing_keys(directory);
             assert!(editor_restored(&world));
             assert!(notes(
                 &world,

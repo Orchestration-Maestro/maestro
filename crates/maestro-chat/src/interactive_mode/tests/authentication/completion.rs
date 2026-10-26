@@ -212,9 +212,11 @@ fn authentication_completion_reports_default_selection_failure() {
                 complete(&world, "openai", kind, placeholder(&world))
                     .await
                     .unwrap();
-                let prefix = format!("Error: {label}, but selecting its default model failed: ");
-                assert!(notes(&world, &prefix), "the setter's failure is reported");
-                assert!(notes(&world, ". Use /model to select a model."));
+                let reported = format!(
+                    "Error: {label}, but selecting its default model failed: \
+                     No such file or directory (os error 2). Use /model to select a model."
+                );
+                assert!(notes(&world, &reported), "the setter's failure is reported");
                 assert!(notes(&world, &saved(label)));
                 assert!(!notes(&world, "Selected"), "no success is reported");
                 assert_eq!(
@@ -324,7 +326,7 @@ async fn count_failures(directory: &std::path::Path) {
     );
 }
 
-/// The count reads the scoped candidates instead of the available ones.
+/// The count reads the scoped candidates instead of the three available providers.
 async fn scoped_count(directory: &std::path::Path, scoped: &[&str], expected: f64) {
     let world = started_with(directory, None).await;
     for provider in ["a", "b", "c"] {
@@ -351,6 +353,12 @@ fn authentication_completion_preserves_refresh_and_count_failure_boundaries() {
             count_failures(directory).await;
             scoped_count(directory, &["a/one", "b/one"], 2.0).await;
             scoped_count(directory, &["a/one"], 1.0).await;
+            // Scoped built-in models without credentials count above the available providers.
+            let unavailable = ["openai", "anthropic", "google"]
+                .map(|provider| format!("{provider}/{}", default_of(provider)));
+            let mut wider = vec!["a/one", "b/one", "c/one"];
+            wider.extend(unavailable.iter().map(String::as_str));
+            scoped_count(directory, &wider, 6.0).await;
         },
     );
 }

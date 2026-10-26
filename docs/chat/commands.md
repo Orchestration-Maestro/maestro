@@ -584,15 +584,19 @@ and the provider receives the identifier of the first option with the chosen lab
 
 Each callback is shown before it returns, so a callback that cannot be shown
 returns that failure to the provider, which ends the sign-in before any credential
-is saved. Callbacks the provider keeps after its sign-in ends are refused. Escape
-cancels without a message; any other failure shows
+is saved. Once the sign-in ends, a callback the provider kept can no longer show
+anything and returns an error, but a kept request for the pasted redirect still
+reads the answer it already had. Escape cancels without a message; any other
+failure shows
 `Error: Failed to login to <name>: <error>` after the editor comes back.
 
 ### After signing in
 
-The catalog is refreshed. When the session still has no resolved model, the
-provider's configured default model is selected. The footer's provider count and
-the editor border are updated, then one status line reports
+The catalog is refreshed. When the model descriptor the session held as the sign-in
+began still names no resolved model, the provider's configured default model is
+selected; replacing the session's model in the meantime does not change that check.
+The footer's provider count and the editor border are updated, then one status
+line reports
 `<action>. Selected <id>. Credentials saved to <path>` or, without a selection,
 `<action>. Credentials saved to <path>`. The action is `Logged in to <name>` or
 `Saved API key for <name>`, and the path is `auth.json` in the agent directory. When
