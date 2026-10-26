@@ -11,6 +11,8 @@ use serde_json::{Value, json};
 use std::{cell::Cell, rc::Rc};
 
 use maestro_extensions_wasm::wasi;
+#[path = "filesystem.rs"]
+mod filesystem;
 #[path = "network.rs"]
 mod network;
 #[path = "stdio.rs"]
@@ -51,8 +53,12 @@ async fn dispatch(
     };
     let request: Value = serde_json::from_str(&request.cwd).map_err(|error| error.to_string())?;
     let mut value = match request["op"].as_str() {
-        Some("pending") => network::connect(&request, &reporter.events()).await?,
+        Some("pending" | "connect") => network::connect(&request, &reporter.events()).await?,
         Some("basics") => basics(&request)?,
+        Some("close-pending") => network::close_pending(&request, &reporter.events()).await?,
+        Some("listen") => network::listen(&request, &reporter.events()).await?,
+        Some("file") => filesystem::operate(&request).await?,
+        Some("cwd") => filesystem::cwd(),
         Some("stdio") => {
             stdio::inherited(request["generation"].as_str().ok_or("missing generation")?).await?
         }

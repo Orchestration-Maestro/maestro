@@ -25,6 +25,7 @@ mod retained_contexts;
 mod startup;
 mod synchronous_reentry;
 mod wasi_access;
+mod wasi_network;
 mod wasi_output;
 mod wasi_support;
 

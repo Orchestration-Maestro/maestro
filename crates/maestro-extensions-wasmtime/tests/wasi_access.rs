@@ -308,3 +308,157 @@ async fn stdio_host(generation: &str, input: &[u8]) {
         .await;
     assert_eq!(observed["input"], json!(input), "{generation} EOF");
 }
+
+#[cfg(unix)]
+#[test]
+fn component_root_access_reaches_sibling_paths() {
+    if maestro_test_process::run_alone("component_root_access_reaches_sibling_paths").unwrap() {
+        return;
+    }
+    let original = std::env::current_dir().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::create_dir(scratch.path().join("cwd")).unwrap();
+    std::fs::create_dir(scratch.path().join("sibling Ω space")).unwrap();
+    std::os::unix::fs::symlink(
+        "../sibling Ω space",
+        scratch.path().join("cwd/relative-link"),
+    )
+    .unwrap();
+    std::env::set_current_dir(scratch.path().join("cwd")).unwrap();
+    let target = scratch.path().join("sibling Ω space/file Ω name");
+    let paths = [
+        target.clone(),
+        "../sibling Ω space/file Ω name".into(),
+        "relative-link/file Ω name".into(),
+    ];
+    run(root_paths(&paths, &target));
+    std::env::set_current_dir(original).unwrap();
+}
+
+/// Each spelling independently writes and reads exact empty and binary file contents.
+#[cfg(unix)]
+async fn root_paths(paths: &[std::path::PathBuf], target: &Path) {
+    let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+    let cwd = host.request(json!({"op":"cwd"})).await;
+    assert_eq!(
+        cwd["p2"]["path"],
+        json!(std::env::current_dir().unwrap()),
+        "standard cwd: {cwd}"
+    );
+    for generation in ["p2", "p3"] {
+        for path in paths {
+            for bytes in [b"".as_slice(), b"file\0\xff\x1b\xce\xa9".as_slice()] {
+                let observed = host.request(json!({"op":"file","generation":generation,"path":path,"write":true,"bytes":bytes})).await;
+                assert_eq!(
+                    observed["bytes"],
+                    json!(bytes),
+                    "{generation} {path:?}: {observed}"
+                );
+                assert_eq!(
+                    std::fs::read(target).unwrap(),
+                    bytes,
+                    "{generation} {path:?} native control"
+                );
+            }
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn component_filesystem_failures_remain_os_failures() {
+    if maestro_test_process::run_alone("component_filesystem_failures_remain_os_failures").unwrap()
+    {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let healthy = scratch.path().join("healthy");
+    let denied = scratch.path().join("denied");
+    std::fs::write(&healthy, b"healthy\0\xff").unwrap();
+    std::fs::write(&denied, b"denied bytes").unwrap();
+    std::os::unix::fs::symlink("missing", scratch.path().join("dangling")).unwrap();
+    let permission = maestro_test_directory::deny(&denied, 0).unwrap();
+    let mut cases = vec![
+        (scratch.path().join("missing"), "not-found"),
+        (scratch.path().join("dangling"), "not-found"),
+    ];
+    if permission.is_some() {
+        assert_eq!(
+            std::fs::read(&denied).unwrap_err().kind(),
+            std::io::ErrorKind::PermissionDenied
+        );
+        cases.push((denied.clone(), "permission-denied"));
+    }
+    run(file_failures(&cases, &healthy));
+    if permission.is_some() {
+        assert_eq!(
+            std::fs::read(&denied).unwrap_err().kind(),
+            std::io::ErrorKind::PermissionDenied
+        );
+    }
+    unavailable_cwd(&scratch, &healthy, "removed");
+    unavailable_cwd(&scratch, &healthy, "unreadable");
+}
+
+/// Each failed operation leaves both its native permissions and later callbacks healthy.
+#[cfg(unix)]
+async fn file_failures(cases: &[(std::path::PathBuf, &str)], healthy: &Path) {
+    let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+    for generation in ["p2", "p3"] {
+        for (path, error) in cases {
+            let observed = host
+                .request(json!({"op":"file","generation":generation,"path":path,"bytes":[]}))
+                .await;
+            assert_eq!(
+                observed["error"], *error,
+                "{generation} {path:?}: {observed}"
+            );
+            let observed = host
+                .request(json!({"op":"file","generation":generation,"path":healthy,"bytes":[]}))
+                .await;
+            assert_eq!(
+                observed["bytes"],
+                json!(b"healthy\0\xff"),
+                "{generation} healthy continuation"
+            );
+        }
+    }
+}
+
+/// The host cannot observe cwd, but an otherwise accessible absolute artifact still loads.
+#[cfg(unix)]
+fn unavailable_cwd(scratch: &maestro_test_directory::Scratch, healthy: &Path, kind: &str) {
+    let original = std::env::current_dir().unwrap();
+    let permission = if kind == "removed" {
+        scratch.enter_removed("removed").unwrap();
+        None
+    } else {
+        let permission = scratch.enter_unreadable("unreadable").unwrap();
+        if permission.is_none() {
+            std::env::set_current_dir(&original).unwrap();
+            return;
+        }
+        permission.map(|(_, restore)| restore)
+    };
+    assert!(
+        std::env::current_dir().is_err(),
+        "native {kind} cwd control"
+    );
+    run(async {
+        let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
+        let observed = host.request(json!({"op":"cwd"})).await;
+        assert!(observed["p3"].is_null(), "{kind}: {observed}");
+        for generation in ["p2", "p3"] {
+            let observed = host
+                .request(json!({"op":"file","generation":generation,"path":healthy,"bytes":[]}))
+                .await;
+            assert_eq!(
+                observed["bytes"],
+                json!(b"healthy\0\xff"),
+                "{generation} {kind} absolute continuation"
+            );
+        }
+    });
+    drop(permission);
+    std::env::set_current_dir(original).unwrap();
+}

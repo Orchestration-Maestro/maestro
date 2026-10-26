@@ -17,8 +17,12 @@ use the user's network without an added address filter.
 
 On Unix the host preopens `/` for reading and writing, rather than restricting
 access to the extension directory. It supplies the native current directory
-when it can observe it. Failure to observe cwd does not prevent loading an
-accessible absolute artifact. Ordinary operating-system failures stay errors.
+when it can observe it. Guest export startup applies that observation once to
+Rust’s standard-library cwd before the author factory runs; its libc would
+otherwise start at `/`. Failure to observe cwd does not prevent loading an
+accessible absolute artifact: no initial directory is supplied, and the guest
+keeps its libc default. Filesystem operations still report ordinary
+operating-system failures.
 
 This is not complete native filesystem parity. Relative symbolic links can
 leave cwd, but the pinned filesystem implementation rejects absolute symbolic

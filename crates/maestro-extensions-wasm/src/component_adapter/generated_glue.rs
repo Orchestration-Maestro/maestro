@@ -228,6 +228,10 @@ impl<E: Extension> Guest for Glue<E> {
     }
 
     async fn start() -> ExtensionResult<()> {
+        // The standard-library libc otherwise starts its process cwd at `/`.
+        if let Some(cwd) = crate::wasi::cli::environment::get_initial_cwd() {
+            std::env::set_current_dir(cwd).map_err(|error| error.to_string())?;
+        }
         Exports::new(Generated).start::<E>().await
     }
 

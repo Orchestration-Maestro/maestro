@@ -92,11 +92,13 @@ pub(crate) fn build(path: &str, output: Option<Output>) -> wasmtime::Result<Wasi
         .allow_ip_name_lookup(true)
         .allow_tcp(true)
         .allow_udp(true);
-    if let Ok(cwd) = std::env::current_dir() {
-        builder.initial_cwd(cwd.to_string_lossy());
-    }
     #[cfg(unix)]
-    builder.preopened_dir("/", "/", wasmtime_wasi::FsPerms::ReadWrite)?;
+    {
+        if let Ok(cwd) = std::env::current_dir() {
+            builder.initial_cwd(cwd.to_string_lossy());
+        }
+        builder.preopened_dir("/", "/", wasmtime_wasi::FsPerms::ReadWrite)?;
+    }
     if let Some(output) = output {
         builder.stdout(output);
     }
