@@ -19,9 +19,14 @@ delivered yet (see
 methods. Each method reads the runtime's current session when it is called, so it
 follows a session switch.
 
-Editor submission routes `/name` or `/name ` followed by a name, `/session` and
-`/debug` to those methods. Other text, such as `/names` or `/session extra`, is
-ordinary input. When a command fails, the failure goes to the terminal host.
+Editor submission routes `/name` or `/name ` followed by a name, `/session`,
+`/hotkeys` and `/debug` to those methods. Other text, such as `/names` or
+`/session extra`, is ordinary input. When a command fails, the failure goes to
+the terminal host.
+
+Extensions use the same mode through the [extension UI](extension-ui.md): dialogs
+restore the current editor when they settle, completion wrappers rebuild at once,
+and notifications use the transcript's status, warning and error rows.
 
 ## Session tree
 
