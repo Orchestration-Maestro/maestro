@@ -1351,3 +1351,56 @@ async fn footer_factories(driver: &mut impl Driver) -> Result<(), String> {
 fn footer_factory_keeps_live_readonly_metadata() -> Result<(), String> {
     on_both_adapters!(footer_factories)
 }
+
+/// The number of transcript lines equal to `line`.
+fn count(driver: &impl Driver, line: &str) -> usize {
+    driver.transcript().iter().filter(|it| *it == line).count()
+}
+
+/// Disposal, the host's release of its component and the author's own alias are separate:
+/// removal disposes once, the alias keeps rendering after the host released its owner, and
+/// the captures release once, from their destructor, when the last alias drops.
+async fn component_release(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    let kept = json!({ "op": "keptWidget", "label": "K" });
+    assert_eq!(operate(driver, kept).await?, json!({ "ok": true }));
+    let remove = json!({ "op": "acquire", "call": { "op": "setWidget", "key": "w" } });
+    operate(driver, remove).await?;
+    driver.release("widget w").await;
+    assert_eq!(
+        count(driver, "entry widget-dispose \"K\""),
+        1,
+        "removal disposed once"
+    );
+    assert_eq!(
+        count(driver, "entry widget-released \"K\""),
+        0,
+        "the author's alias keeps the capture"
+    );
+    let rendered = operate(driver, json!({ "op": "renderKept", "width": 7 })).await?;
+    assert_eq!(
+        rendered,
+        json!({ "ok": [["K 7"]] }),
+        "the surviving alias still renders"
+    );
+    assert_eq!(
+        operate(driver, json!({ "op": "dropKept" })).await?,
+        json!("dropped")
+    );
+    assert_eq!(
+        count(driver, "entry widget-released \"K\""),
+        1,
+        "released once, from its destructor"
+    );
+    assert_eq!(
+        count(driver, "entry widget-dispose \"K\""),
+        1,
+        "release is not a second disposal"
+    );
+    Ok(())
+}
+
+#[test]
+fn component_release_is_not_dispose() -> Result<(), String> {
+    on_both_adapters!(component_release)
+}

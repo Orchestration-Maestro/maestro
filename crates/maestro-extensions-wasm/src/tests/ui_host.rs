@@ -487,8 +487,8 @@ impl State {
         self.observed.ui.widgets = kept;
         let mut steps = std::collections::VecDeque::new();
         for slot in removed {
-            let name = format!("widget {} {}", slot.key, slot.component);
-            self.observed.register(name, slot.component);
+            self.observed
+                .register(format!("widget {}", slot.key), slot.component);
             steps.extend(self.dispose_step(slot.dispose)?);
         }
         Ok(steps)

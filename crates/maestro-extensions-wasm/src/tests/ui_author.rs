@@ -231,6 +231,8 @@ impl ComponentView for FooterView {
 }
 
 thread_local! {
+    /// Component aliases the author keeps after their widgets were shown.
+    static ALIASES: RefCell<Vec<Component>> = RefCell::default();
     /// Branch change subscriptions by footer label.
     static BRANCHES: RefCell<HashMap<String, Subscription>> = RefCell::default();
 }
@@ -639,6 +641,18 @@ enum Operation {
         #[serde(default)]
         label: Option<String>,
     },
+    /// Shows a labelled factory widget whose component the author also keeps.
+    KeptWidget {
+        /// Label the widget renders.
+        label: String,
+    },
+    /// Renders every kept component alias at a width.
+    RenderKept {
+        /// Rendering width.
+        width: u32,
+    },
+    /// Drops every kept component alias.
+    DropKept,
     /// Unsubscribes the branch change listener of a footer.
     Unbranch {
         /// Footer label.
@@ -743,6 +757,16 @@ fn caught(result: ExtensionResult<Option<Value>>) -> Value {
     }
 }
 
+/// Renders every kept component alias with a silent emitter.
+fn render_kept(width: u32) -> ExtensionResult<Value> {
+    let aliases = ALIASES.with_borrow(Clone::clone);
+    let rendered = aliases
+        .iter()
+        .map(|alias| alias.render(width, CallbackEmitter::new(&Silent)))
+        .collect::<ExtensionResult<Vec<_>>>()?;
+    Ok(json!(rendered))
+}
+
 /// Shows a factory widget, header or footer, or unsubscribes a footer's branch listener.
 fn factories(
     api: &ExtensionAPI,
@@ -766,6 +790,15 @@ fn factories(
             let factory = label.map(|label| footer_factory(api, label));
             ctx.ui()?.set_footer(factory)
         }
+        Operation::KeptWidget { label } => {
+            let inner = label_factory(api, label, true);
+            let factory: ComponentFactory = Rc::new(move |tui, theme, emitter| {
+                let built = inner(tui, theme, emitter)?;
+                ALIASES.with_borrow_mut(|aliases| aliases.push(built.component.clone()));
+                Ok(built)
+            });
+            ctx.ui()?.set_widget_factory("w", factory, None)
+        }
         Operation::Unbranch { label } => {
             let subscription = BRANCHES.with_borrow_mut(|branches| branches.remove(&label));
             subscription.map_or(Ok(()), |subscription| subscription.unsubscribe())
@@ -786,7 +819,13 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
         Operation::Dialog { call } => caught(ask(&ctx.ui()?, call).await.map(Some)),
         Operation::AbortKept { index } => caught(abort_kept(index).map(Some)),
         Operation::Theme { call } => caught(themes(&ctx.ui()?, call).map(Some)),
+        Operation::RenderKept { width } => caught(render_kept(width).map(Some)),
+        Operation::DropKept => {
+            drop(ALIASES.take());
+            json!("dropped")
+        }
         operation @ (Operation::WidgetFactory { .. }
+        | Operation::KeptWidget { .. }
         | Operation::Footer { .. }
         | Operation::Unbranch { .. }
         | Operation::Header { .. }) => caught(factories(api, ctx, operation).map(|()| None)),
