@@ -1,12 +1,15 @@
 //! Terminal UI capabilities offered to extension callbacks.
 mod callbacks;
+mod editor;
 use crate::{EventError, footer_data_provider::ReadonlyFooterDataProvider};
 pub use callbacks::UIHostCall;
+pub use editor::{
+    ActionHandlers, CustomEditorComponent, EditorFactoryOutcome, ExtensionShortcutCallback,
+};
 use maestro_models::{Cancellation, Execution, Local};
 use maestro_theme::{LiveTheme, Theme, ThemeInfo};
 use maestro_tui::{
-    AutocompleteProvider, EditorComponent, EditorTheme, KeybindingsManager, OverlayHandle,
-    OverlayOptions, TUI,
+    AutocompleteProvider, EditorTheme, KeybindingsManager, OverlayHandle, OverlayOptions, TUI,
     tui::{ComponentHandle, InputListenerResult},
 };
 use std::{
@@ -91,12 +94,16 @@ pub type UIUnsubscribe = Rc<dyn Fn() -> Result<(), EventError>>;
 /// Explicit disposal of an extension component.
 pub type ComponentDisposer = UIHostCall<(), ()>;
 
-/// A component an extension built, with its optional disposal.
+/// A component an extension built, with its optional disposal, expansion and width.
 pub struct ExtensionComponent {
     /// The retained component.
     pub component: ComponentHandle,
     /// Called once by the host when it removes the component.
     pub dispose: Option<ComponentDisposer>,
+    /// Expands or collapses the component, when it is expandable.
+    pub set_expanded: Option<UIHostCall<bool, ()>>,
+    /// The width an overlay falls back to when no overlay options are supplied.
+    pub width: Option<f64>,
 }
 
 /// Builds a component from the terminal and the live theme.
@@ -120,10 +127,7 @@ pub type AutocompleteProviderFactory = UIHostCall<
     Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
 >;
 /// Builds a replacement editor.
-pub type EditorFactory = UIHostCall<
-    (TUI, EditorTheme, KeybindingsManager),
-    Rc<dyn EditorComponent<Signal = Cancellation>>,
->;
+pub type EditorFactory = UIHostCall<(TUI, EditorTheme, KeybindingsManager), EditorFactoryOutcome>;
 
 /// Resolves overlay options each time the host asks for them.
 pub type OverlayOptionsResolver = UIHostCall<(), Rc<RefCell<OverlayOptions>>>;

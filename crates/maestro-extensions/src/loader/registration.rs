@@ -4,9 +4,9 @@ use crate::types::{ExtensionHandler, RegisteredTool, RegisteredToolInput};
 use crate::{
     EventBus, EventError, ExtensionExecution, SourceInfo,
     types::{
-        Extension, ExtensionAPI, ExtensionFlag, ExtensionFlagOptions, ExtensionHandle,
-        ExtensionRuntimeState, ExtensionShortcut, ExtensionShortcutOptions, FlagValue,
-        MessageRenderer, RegisteredCommand, RegisteredCommandOptions, read, write,
+        ActivityGuard, Extension, ExtensionAPI, ExtensionFlag, ExtensionFlagOptions,
+        ExtensionHandle, ExtensionRuntimeState, ExtensionShortcut, ExtensionShortcutOptions,
+        FlagValue, MessageRenderer, RegisteredCommand, RegisteredCommandOptions, read, write,
     },
 };
 use indexmap::IndexMap;
@@ -34,13 +34,30 @@ impl<E: ExtensionExecution> Extension<E> {
         }
     }
 }
+impl ActivityGuard {
+    /// Returns the first invalidation error, including an empty message.
+    ///
+    /// # Errors
+    /// Returns the retained message once invalidated.
+    pub(crate) fn assert_active(&self) -> Result<(), EventError> {
+        match read(&self.stale_message).as_ref() {
+            Some(message) => Err(message.clone().into()),
+            None => Ok(()),
+        }
+    }
+    /// Retains the first invalidation message or the default stale guidance.
+    pub(crate) fn invalidate(&self, message: Option<String>) {
+        write(&self.stale_message)
+            .get_or_insert_with(|| message.unwrap_or_else(|| STALE_MESSAGE.into()));
+    }
+}
 impl ExtensionRuntimeState {
     /// Creates active registration state with no flag values.
     #[must_use]
     pub fn new() -> Self {
         Self {
             flag_values: RwLock::default(),
-            stale_message: RwLock::default(),
+            activity: ActivityGuard::default(),
         }
     }
     /// Returns the first invalidation error, including an empty message.
@@ -48,15 +65,11 @@ impl ExtensionRuntimeState {
     /// # Errors
     /// Returns the retained message when registration is stale.
     pub fn assert_active(&self) -> Result<(), EventError> {
-        match read(&self.stale_message).as_ref() {
-            Some(message) => Err(message.clone().into()),
-            None => Ok(()),
-        }
+        self.activity.assert_active()
     }
     /// Retains the first invalidation message or the default stale guidance.
     pub fn invalidate(&self, message: Option<String>) {
-        write(&self.stale_message)
-            .get_or_insert_with(|| message.unwrap_or_else(|| STALE_MESSAGE.into()));
+        self.activity.invalidate(message);
     }
 }
 impl Default for ExtensionRuntimeState {
