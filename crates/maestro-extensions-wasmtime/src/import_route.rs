@@ -70,6 +70,8 @@ impl Nested {
 
 /// Store-side ticket for one native operation in progress.
 pub(crate) struct Route {
+    /// Structured schema outcome, present only for a schema import.
+    pub(crate) schema: Option<Receiver<crate::local_resources::schema::Result>>,
     /// Nested calls of the operation, closed when the operation returns.
     nested: Receiver<Nested>,
     /// The operation's own result, sent before its nested calls close.
@@ -85,6 +87,7 @@ impl Route {
     ) -> (Sender<Nested>, Self) {
         let (send, nested) = std::sync::mpsc::channel();
         let route = Self {
+            schema: None,
             nested,
             result: Box::new(move || {
                 result
@@ -159,6 +162,7 @@ pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, Route>(host, "import-route")?;
     crate::context_imports::add_resource::<T, Settlement>(host, "local-settlement")?;
+    host.func_wrap("[method]import-route.schema-result", schema_result::<T>)?;
     host.func_wrap(
         "[method]import-route.next",
         |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Route>,)| {
@@ -216,4 +220,23 @@ pub(crate) fn push<T: wasmtime_wasi::WasiView>(
     route: Route,
 ) -> wasmtime::Result<Resource<Route>> {
     Ok(store.ctx().table.push(route)?)
+}
+
+/// Take the structured schema outcome only after its native import route completes.
+fn schema_result<T: crate::callback_imports::CallbackView>(
+    mut store: StoreContextMut<'_, T>,
+    (resource,): (Resource<Route>,),
+) -> wasmtime::Result<(crate::local_resources::schema::Result,)> {
+    let receiver = store
+        .data_mut()
+        .ctx()
+        .table
+        .get_mut(&resource)?
+        .schema
+        .take()
+        .ok_or_else(|| wasmtime::format_err!("extension route has no schema result"))?;
+    let result = receiver
+        .recv()
+        .map_err(|_| wasmtime::format_err!("extension schema reply ended"))?;
+    Ok((result,))
 }

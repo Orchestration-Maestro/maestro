@@ -188,12 +188,58 @@ message, stack and code. Ordinary extension operations still use `ExtensionResul
 and string errors. Schema code stays out of serialized metadata and provider
 JSON; decoding ordinary JSON produces no callbacks.
 
-Enumerating and re-registering a guest's own schemas keeps their callbacks and
-author captures. Bindings follow each tool, not the first tool in a listing.
-Independent identities release separately; the last holder releases the capture.
-Foreign entries remain data-only. Live foreign schema enumeration, retention,
-re-registration and invocation are tracked together in
-[the foreign schema capability work](https://github.com/Orchestration-Maestro/maestro/issues/2625).
+### Foreign schema calls
+
+Enumeration keeps executable schemas from this guest, other guests and native
+callers. Bindings follow each tool, not the first tool in a listing. Each listing
+retains independent identities; keeping the received schema or registering a new
+tool with it keeps its callbacks alive. Releasing one identity does not revoke
+another. The last holder releases the originating captures through the existing
+native request pump and Store release path, not from a resource destructor.
+
+`SchemaCallback::new` and `call` remain synchronous. Same-origin callbacks keep
+their original capture identity and run locally, without host mediation. A foreign
+call follows this path:
+
+```text
+SchemaCallback::call
+  callback.schema-invoke → existing native import route
+    scoped operand wait → retained native SchemaNode
+      originating native callback or guest callback
+  import-route.schema-result → original result or structured diagnostic
+```
+
+The native node lives in the receiving guest's existing capability registry. Its
+scoped wait borrows the checker's original mutable value, including a selected
+child, so edits remain visible on success and error without a subtree copy.
+Passing an absent child to a foreign callback returns `JSON operand is absent`;
+it never substitutes JSON null. A local guest callback can still observe absence
+through `kind` and `read`.
+
+The import route returns nested same-instance calls to the guest, which runs the
+same Rust callback bodies its exports use. This supports A→B→A without entering
+an instance while it is blocked inside an import. Only the dedicated Store thread
+waits on synchronous host imports; the original native request receiver continues
+servicing requests. No synchronous callback tries to suspend through an async
+canonical import, and no additional registry or work queue is involved.
+
+This relies on Wasmtime's blocking [`func_wrap` contract][schema-sync-import],
+not on suspending a synchronous component task. Wasmtime [rejects such
+suspension][schema-sync-task] and [prevents reentry into an active stackful
+instance][schema-reentry]. These links name the pinned runtime revision. The host
+continues to install [WASI 0.2 standard-library imports][schema-wasi] alongside its
+native-async component exports; the foreign-call route requires no WASI polling
+or new WASI interface.
+
+The original facade's activity guard runs before entering a guest-origin schema.
+Unload or reload leaves an already-admitted callback running to completion, but
+later calls return that origin's stale-runtime message without guest entry.
+Ordinary extension results and string-error APIs are unchanged.
+
+[schema-sync-import]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/linker.rs#L675-L683
+[schema-sync-task]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L2728-L2736
+[schema-reentry]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L784-L793
+[schema-wasi]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasi/src/p2/mod.rs#L314-L324
 
 ## Event channels
 

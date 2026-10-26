@@ -25,6 +25,10 @@ struct Port<'a, I: Imports> {
     handle: &'a I::JsonNode,
 }
 impl<I: Imports> JsonPort for Port<'_, I> {
+    fn resource(&self) -> &dyn std::any::Any {
+        self.handle
+    }
+
     fn kind(&self, path: &str) -> ExtensionResult<Option<JsonKind>> {
         self.imports.json_kind(self.handle, path)
     }
@@ -141,6 +145,65 @@ fn run(
         }
     }
     .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))
+}
+
+/// Rebuild a foreign node's shape while retaining the original capability.
+pub(super) fn foreign<I: Imports>(
+    imports: &I,
+    identity: callbacks::Scoped<I>,
+    shape: SchemaShape,
+) -> SchemaNode {
+    use crate::schema_code::{Base, Refinement};
+    let identity = Rc::new(identity);
+    let base = shape.base.then(|| Base {
+        convert: {
+            let callback = forwarded::<I, Option<(Value,)>>(
+                imports.clone(),
+                identity.clone(),
+                SchemaOperation::Convert,
+            );
+            crate::schema_code::SchemaCallback::new(move |value, emitter| {
+                callback
+                    .call(value, emitter)
+                    .map(|value| value.map(|(value,)| value))
+            })
+        },
+        check: forwarded(imports.clone(), identity.clone(), SchemaOperation::Check),
+        errors: forwarded(imports.clone(), identity.clone(), SchemaOperation::Errors),
+    });
+    let refinements = (0..shape.refinements)
+        .map(|index| Refinement {
+            check: forwarded(
+                imports.clone(),
+                identity.clone(),
+                SchemaOperation::Refine(index),
+            ),
+            error: forwarded(
+                imports.clone(),
+                identity.clone(),
+                SchemaOperation::Message(index),
+            ),
+        })
+        .collect();
+    SchemaNode { base, refinements }
+}
+/// Forward only the selected operation and borrowed view, never the complete operand.
+fn forwarded<I: Imports, R: serde::de::DeserializeOwned + 'static>(
+    imports: I,
+    identity: Rc<callbacks::Scoped<I>>,
+    operation: SchemaOperation,
+) -> crate::schema_code::SchemaCallback<R> {
+    crate::schema_code::SchemaCallback::new(move |value, _| {
+        let node = value
+            .port
+            .resource()
+            .downcast_ref::<I::JsonNode>()
+            .ok_or_else(|| {
+                DiagnosticErrorInfo::error("schema operand belongs to another runtime")
+            })?;
+        let text = imports.schema_invoke(&identity.handle, operation, node, &value.path)?;
+        super::decode_json(&text).map_err(DiagnosticErrorInfo::error)
+    })
 }
 
 #[cfg(test)]

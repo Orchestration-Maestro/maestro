@@ -299,19 +299,28 @@ fn context_command(
         if args == "imports" {
             return Err(reads::observe(&context)?.to_string());
         }
-        if args == "trap" || args == "pending" {
-            context.get_system_prompt()?;
-            context.wait_for_idle().await?;
-            if args == "trap" {
-                std::arch::wasm32::unreachable();
-            }
-        }
-        Err(format!(
-            "command:{args}|{}|{}",
-            context.cwd()?,
-            context.get_system_prompt()?
-        ))
+        context_result(&args, &context).await
     })
+}
+
+/// Finish the controlled trap, wait and default command observations.
+#[cfg(target_arch = "wasm32")]
+async fn context_result(
+    args: &str,
+    context: &maestro_extensions_wasm::ExtensionCommandContext,
+) -> Result<(), String> {
+    if args == "trap" || args == "pending" {
+        context.get_system_prompt()?;
+        context.wait_for_idle().await?;
+        if args == "trap" {
+            std::arch::wasm32::unreachable();
+        }
+    }
+    Err(format!(
+        "command:{args}|{}|{}",
+        context.cwd()?,
+        context.get_system_prompt()?
+    ))
 }
 
 /// Sends a displayed custom message whose rendering the host may run before returning.
