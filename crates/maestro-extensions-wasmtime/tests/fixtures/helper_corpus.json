@@ -4223,7 +4223,7 @@
       "${ROOT}"
     ],
     "context": {},
-    "ok": "${ROOT}/décran d'écran.png"
+    "ok": "${ROOT}/décran d’écran.png"
   },
   {
     "test": "helper_read_path_uses_existing_spelling",

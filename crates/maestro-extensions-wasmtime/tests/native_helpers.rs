@@ -259,7 +259,7 @@ fn path_fixture() -> maestro_test_directory::Scratch {
         "shot 10\u{202f}pm.png",
         "decompose\u{301}.png",
         "capture d’écran.png",
-        "de\u{301}cran d’écran.png",
+        "de\u{301}cran d’e\u{301}cran.png",
     ] {
         std::fs::write(scratch.path().join(name), b"fixture").unwrap();
     }
