@@ -8,7 +8,7 @@ use maestro_extensions::{ExtensionFactory, Local};
 use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use wasmtime::{
-    Config, Engine, Store,
+    Cache, Config, Engine, Store,
     component::{Component, Linker},
 };
 
@@ -102,6 +102,8 @@ async fn execute(
 ) -> wasmtime::Result<()> {
     let mut config = Config::new();
     config.wasm_component_model_async(true);
+    // The user cache is optional; unavailable storage must not prevent loading.
+    config.cache(Cache::from_file(None).ok());
     let engine = Engine::new(&config)?;
     let component = Component::from_file(&engine, path)?;
     let mut linker = Linker::new(&engine);

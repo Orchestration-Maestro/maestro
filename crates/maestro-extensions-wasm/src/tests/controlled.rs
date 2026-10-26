@@ -981,6 +981,17 @@ impl Imports for Controlled {
         o.actions.check()?;
         serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
     }
+    fn schema_invoke(
+        &self,
+        _: &Self::Callback,
+        _: crate::bindings::maestro::extension::host::SchemaOperation,
+        _: &Self::JsonNode,
+        _: &str,
+    ) -> crate::schema_code::SchemaResult<String> {
+        Err(crate::schema_code::DiagnosticErrorInfo::error(
+            "foreign schemas use the production runtime",
+        ))
+    }
     fn get_all_tools(
         &self,
     ) -> ExtensionResult<crate::component_adapter::ToolListing<Self::Callback>> {
@@ -997,7 +1008,8 @@ impl Imports for Controlled {
                     },
                 )
                 .map_err(|error| error.message)?;
-            retained.push((tool, pointer, handle));
+            let shape = Exports::<Self>::describe_schema(id).map_err(|error| error.message)?;
+            retained.push((tool, pointer, handle, shape, true));
         }
         Ok((metadata, retained))
     }
