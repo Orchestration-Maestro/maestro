@@ -143,6 +143,34 @@ Otherwise it explains the request and asks. Continue Anyway and closing return
 the result is the browser's answer; an unavailable platform request, a refusal
 and a failure each return `false` with their own console message.
 
+## Message editor
+
+[`MessageEditor::new`](../../crates/maestro-web/src/components/message_editor/browser.rs)
+builds the message composer from `MessageEditorProps` and focuses its text field on
+the first frame after the caller shows it. The editor owns its text and attachments:
+`value`, `set_value`, `attachments` and `set_attachments` read and replace them, and
+`update` changes the other operands without discarding an edit. The callbacks in
+effect are always the last ones supplied.
+
+Enter sends the untrimmed text with the attachments unless Shift is held; a draft
+needs some non-whitespace text or an attachment, and nothing is sent while files
+load or a response streams. Keys pressed during text composition do nothing.
+While streaming, Abort replaces Send and Escape aborts. The caller clears the
+draft after an accepted send.
+
+The attachment control opens the file chooser, whose accepted types are only a
+hint. Dropped files and pasted images are added too; other pasted content keeps
+its native behaviour. A batch that would exceed `max_files` (10 by default) is
+refused whole with an alert. Each file larger than `max_file_size` (20 MiB by
+default) or failing to load gets its own alert, and the rest load in order. A
+spinner replaces the attachment control while files load, and the chooser resets
+after each batch. Every tile can be removed; additions and removals report the
+complete list through `on_files_change`. The drop hint stays until the pointer
+leaves the editor's box. A reasoning model adds the level menu, Off to High. The
+model control focuses the text field first, so focus returns there, then calls
+`on_model_select` on the next frame. `EditorControls` hides the attachment, model
+or level control.
+
 ## Styles
 
 The page installs the dialog stylesheet with the other built-in element styles

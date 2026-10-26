@@ -4,6 +4,8 @@ pub mod diff;
 /// Native single-line input.
 #[cfg(target_arch = "wasm32")]
 pub mod input;
+/// Message composer with attachments, reasoning level and model choice.
+pub mod message_editor;
 /// Completed transcript history placed by emitted position.
 pub mod message_list;
 /// Open custom-message role callbacks.

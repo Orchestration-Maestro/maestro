@@ -38,6 +38,7 @@ mod markdown_blocks;
 mod markdown_blocks_browser;
 mod markdown_svg_artifacts;
 mod markdown_svg_artifacts_browser;
+mod message_editor_browser;
 mod message_errors;
 mod message_renderers;
 mod message_renderers_browser;

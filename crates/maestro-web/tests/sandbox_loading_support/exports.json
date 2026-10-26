@@ -220,7 +220,10 @@
     "session_list_deletes_after_confirmation_and_reports_on_close",
     "session_list_reports_deletion_when_closed_during_write",
     "persistent_storage_asks_then_reports_each_outcome",
-    "settings_dialogs_follow_both_brand_packs"
+    "settings_dialogs_follow_both_brand_packs",
+    "message_editor_send_abort_and_composition_routes",
+    "message_editor_files_keep_limits_order_failures_and_current_callbacks",
+    "message_editor_drop_paste_removal_and_focus_are_native"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

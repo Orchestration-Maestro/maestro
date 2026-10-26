@@ -10,6 +10,9 @@ pub use components::attachment_tile::AttachmentTile;
 pub use components::custom_provider_card::CustomProviderCard;
 #[cfg(target_arch = "wasm32")]
 pub use components::input::Input;
+#[cfg(target_arch = "wasm32")]
+pub use components::message_editor::MessageEditor;
+pub use components::message_editor::{EditorControls, MessageEditorProps};
 pub use components::message_list::MessageList;
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
