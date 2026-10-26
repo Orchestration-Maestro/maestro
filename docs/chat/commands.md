@@ -11,7 +11,7 @@ waiting input and never enters the editor history. Any other text, including
 The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
 `/model`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
 `/debug`, `/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume`, `/new`,
-`/compact` and `/quit`. The offline viewer and packaged asset injection are not
+`/compact`, `/reload` and `/quit`. The offline viewer and packaged asset injection are not
 delivered yet (see
 [what is missing](#what-is-missing)).
 
@@ -110,6 +110,24 @@ The compaction's own events show what happened: a summary row on success,
 `Error: Compaction cancelled` when an extension cancels it, or
 `Error: Compaction failed: <failure>`. Input submitted while it runs is delivered
 to the session once it ends. The command adds no message of its own.
+
+## `/reload`
+
+Exact `/reload` clears the editor and reloads keybindings, extensions, skills,
+prompts and themes. `/reload extra` is ordinary input. A streaming response or a
+compaction refuses reload with a warning; a running shell command does not.
+
+The command resets extension UI, cancels abandoned dialogs and paints a bordered
+loading box before awaiting the application reload. It then refreshes the header,
+themes, editor and terminal settings, completion, extension shortcuts and the
+transcript, before restoring the current editor with focus. Resource diagnostics
+and model-file errors appear even with quiet startup, followed by
+`Reloaded keybindings, extensions, skills, prompts, themes`.
+
+A failure after the box appears restores the editor captured after UI reset and
+shows `Reload failed: <reason>`. Changes made before the failure remain applied;
+the command does not roll them back. A reset failure goes to the terminal host
+instead, before application reload starts.
 
 ## Shell input
 
