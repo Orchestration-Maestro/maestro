@@ -76,6 +76,10 @@ mod stream_lifetimes;
 mod model_streams;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_registered.rs"]
+mod model_registered;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/model_completions.rs"]
 mod model_completions;
 
@@ -90,6 +94,14 @@ mod model_hook_gates;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/model_finite.rs"]
 mod model_finite;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_lifetimes.rs"]
+mod model_lifetimes;
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/model_protocol_routes.rs"]
+mod model_protocol_routes;
 
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
@@ -190,6 +202,13 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if args == "model-protocol-routes" {
+        return Box::pin(async { Err(model_protocol_routes::command().await?) });
+    }
+    if let Some(request) = args.strip_prefix("model-retained ") {
+        let result = model_lifetimes::start(&api, &context, request);
+        return Box::pin(async move { Err(result?) });
+    }
     if let Some(request) = args.strip_prefix("model-selected-signal ") {
         let request = request.to_owned();
         return Box::pin(async move { Err(model_hook_gates::signals(&request, context).await?) });
@@ -204,15 +223,18 @@ fn command(
     if args == "model-signals" {
         return Box::pin(async { Err(model_hooks::signals().await?) });
     }
-    if args == "model-hooks" {
-        return Box::pin(async { Err(model_hooks::command().await?) });
-    }
     if let Some(action) = args.strip_prefix("model-completions ") {
         let action = action.to_owned();
         return Box::pin(async move { Err(model_completions::command(&action).await?) });
     }
     if args == "model-errors" {
         return Box::pin(async { Err(model_streams::errors().await?) });
+    }
+    if let Some(request) = args.strip_prefix("model-registered ") {
+        let request = request.to_owned();
+        return Box::pin(
+            async move { Err(model_registered::command(&api, &context, &request).await?) },
+        );
     }
     if args == "model-streams" {
         return Box::pin(async { Err(model_streams::command().await?) });
@@ -227,6 +249,11 @@ fn command(
         let request = request.to_owned();
         return Box::pin(async move { Err(streams::command(&request).await?) });
     }
+    if args.starts_with("credential ") || args.starts_with("provider ") {
+        return Box::pin(async move {
+            Err(credential_command(&api, &context, &args).await?.to_string())
+        });
+    }
     context_command(args, context, api)
 }
 
@@ -238,9 +265,6 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        if args.starts_with("credential ") || args.starts_with("provider ") {
-            return Err(credential_command(&api, &context, &args).await?.to_string());
-        }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
@@ -450,6 +474,9 @@ async fn credential_command(
     context: &maestro_extensions_wasm::ExtensionContext,
     request: &str,
 ) -> Result<serde_json::Value, String> {
+    if let Some(request) = request.strip_prefix("credential callbacks") {
+        return credentials::composition(api, request.trim_start()).await;
+    }
     if let Some(text) = request.strip_prefix("provider control ") {
         return provider_controls::control(api, context, text).await;
     }

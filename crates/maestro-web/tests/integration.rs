@@ -17,6 +17,8 @@ mod browser_errors;
 mod browser_fixture_support;
 mod browser_fixtures;
 mod browser_formatting;
+mod chat_example_browser;
+mod chat_panel_browser;
 mod code_blocks;
 mod contributions;
 mod contributions_browser;
@@ -143,3 +145,5 @@ mod sample_sessions_browser;
 
 mod native_tool_browser;
 mod native_transcript_browser;
+
+mod native_remaining_artifacts_browser;

@@ -1,0 +1,77 @@
+name: Native I/O review green evidence
+"on":
+  push:
+    branches: [ci/659-fix-r1-green]
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Prepare isolated runner
+        run: |
+          mkdir -p ~/.local/bin proof-logs
+          printf '#!/bin/sh\nexec "$@"\n' > ~/.local/bin/capped
+          chmod +x ~/.local/bin/capped
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          curl --fail --retry 3 --location https://github.com/jdx/mise/releases/download/v2026.10.2/mise-v2026.10.2-linux-x64 --output ~/.local/bin/mise
+          echo '8f5f6660336f572830e33cd9b378d3131e529a0d4c4f0c553776be90a1ba302a' "$HOME/.local/bin/mise" | sha256sum --check
+          chmod +x ~/.local/bin/mise
+          export PATH="$HOME/.local/bin:$PATH"
+          mise trust
+          mise install just cargo-hakari aqua:nextest-rs/nextest/cargo-nextest
+          git rev-parse HEAD | tee proof-logs/source.log
+      - name: Full workspace check
+        run: |
+          set -o pipefail
+          capped mise exec -- just check 2>&1 | tee proof-logs/fix-r1-check.log
+          git diff --exit-code -- crates docs | tee proof-logs/fix-r1-format-diff.log
+      - name: Guest-target Clippy
+        run: |
+          set -o pipefail
+          capped mise exec -- cargo clippy --locked -p maestro-extensions-wasm --target wasm32-wasip2 --example native_io_component -- -D warnings 2>&1 | tee proof-logs/fix-r1-guest-clippy.log
+      - name: Selected package suites
+        run: |
+          set -o pipefail
+          capped mise exec -- cargo nextest run --locked -p maestro-app -p maestro-process -p maestro-extensions-wasm -p maestro-extensions-wasmtime -p maestro --no-fail-fast 2>&1 | tee proof-logs/fix-r1-packages-green.log
+          for name in cancelled_pending_body_read_retains_the_stream native_response_text_uses_the_existing_decoder native_watch_close_releases_its_registration native_watch_failures_do_not_leak_callbacks retained_front_reads_only_unwritten_bytes raw_read_failure_keeps_prefix_and_sibling_controls raw_child_output_close_is_independent_of_exit raw_child_pipes_survive_control_drop_and_reap_once native_child_read_failure_follows_the_real_prefix; do
+            grep -E "PASS.*$name" proof-logs/fix-r1-packages-green.log
+            cp proof-logs/fix-r1-packages-green.log "proof-logs/$name-green.log"
+          done
+          capped mise exec -- cargo test --locked -p maestro-app -p maestro-process -p maestro-extensions-wasm -p maestro-extensions-wasmtime -p maestro --doc 2>&1 | tee proof-logs/fix-r1-doctests.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: review-green-linux
+          path: proof-logs/
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Command boundary
+        run: |
+          mkdir -p ~/.local/bin proof-logs
+          printf '#!/bin/sh\nexec "$@"\n' > ~/.local/bin/capped
+          chmod +x ~/.local/bin/capped
+          git rev-parse HEAD > proof-logs/source.log
+      - name: Native Windows regressions
+        run: |
+          set -o pipefail
+          ~/.local/bin/capped cargo test --locked -p maestro-process --test integration windows_children:: -- --nocapture 2>&1 | tee proof-logs/windows_invalid_signal_leaves_the_child_running-green.log
+          ~/.local/bin/capped cargo clippy --locked -p maestro-process --all-targets -- -D warnings 2>&1 | tee proof-logs/fix-r1-windows-clippy.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: review-green-windows
+          path: proof-logs/

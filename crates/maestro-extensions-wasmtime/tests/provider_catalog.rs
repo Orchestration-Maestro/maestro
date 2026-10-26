@@ -41,20 +41,68 @@ async fn loaded() -> (ExtensionHandle<Local>, ExtensionRunner<Local>) {
 }
 
 #[test]
-fn provider_author_component_uses_native_catalog_without_adapter_changes() {
+fn provider_boundary_rejections_leave_other_resources_usable() {
     super::components::local(async {
         let (_owner, runner) = loaded().await;
+        let answer = observe(&runner, "provider boundary").await;
+        assert_eq!(answer["key"], json!("surviving-key"));
+        assert_eq!(answer["models"], json!([]));
+        assert_eq!(
+            answer["json"],
+            json!("EOF while parsing an object at line 1 column 1")
+        );
+        assert_eq!(answer["providerJson"], answer["json"]);
+        assert_eq!(
+            answer["nonfinite"],
+            json!("extension wrote a non-finite number (Infinity or NaN)")
+        );
+        assert_eq!(answer["errors"], json!([]));
+        runner.invalidate(Some("literal boundary rejection".into()));
+        assert_eq!(
+            observe(&runner, "provider stale").await,
+            json!({"error":"literal boundary rejection","key":"surviving-key"})
+        );
+    });
+}
+
+#[test]
+fn provider_author_component_uses_native_catalog_without_adapter_changes() {
+    super::components::local(async {
+        let bus = super::components::TracedBus::new();
+        let (session, _) = super::session::runner_session("/provider-aggregate");
+        let native = session.model_registry.clone();
+        let runtime = queued_runtime(&json!([
+            {"name":"author-provider","config":provider_config("factory")}
+        ]));
+        let (_owner, runner, _) = super::retained_components::loaded_with_runtime(
+            bus.controller.for_extension(),
+            session,
+            "/provider-aggregate",
+            runtime.clone(),
+        )
+        .await;
+        assert!(native.find("author-provider", "factory").is_some());
+        assert!(
+            runtime
+                .pending_provider_registrations
+                .read()
+                .unwrap()
+                .is_empty()
+        );
         let answer = observe(&runner, "provider catalog").await;
         assert_eq!(
             answer,
             json!({
                 "label":" Literal provider ", "key":"literal-key",
                 "configured":true, "status":{"configured":true,"source":"models_json_key"},
-                "oauth":false, "before":["first"], "replaced":["second"],
+                "oauth":false, "queued":["factory"], "before":["first"], "replaced":["second"],
                 "refreshed":["second"], "removed":true, "error":null,
                 "auth":{"ok":true,"apiKey":"literal-key","headers":{"x-test":"literal","Authorization":"Bearer literal-key"}}
             })
         );
+        assert!(native.find("author-provider", "factory").is_none());
+        assert!(native.find("author-provider", "first").is_none());
+        assert!(native.find("author-provider", "second").is_none());
     });
 }
 
@@ -78,6 +126,40 @@ fn credential_author_retains_callable_native_owner() {
             observe(&runner, "credential retained").await,
             json!("original effect key")
         );
+        assert_eq!(
+            observe(&runner, "credential constructors").await,
+            json!({"key":"changed-after-construction","alias":"changed-after-construction","errors":null,"stored":[]})
+        );
+        assert_eq!(
+            observe(&runner, "credential release").await,
+            json!("released")
+        );
+        assert_eq!(
+            observe(&runner, "credential callbacks").await,
+            json!({
+                "keys":["changed-after-construction","accepted","original"],"errors":["write-first"],"drained":[],
+                "raw":r#"{"shared":{"type":"api_key","key":"original"}}"#,
+                "fallback":{"has":true,"status":{"configured":false,"source":"fallback","label":"custom provider config"},"key":"fallback-key"}
+            })
+        );
+        assert_eq!(
+            observe(&runner, "credential callbacks retained").await,
+            json!("later-key")
+        );
+        assert_eq!(
+            observe(&runner, "credential callbacks pending").await,
+            json!({"key":"later-key","captures":[]})
+        );
+        assert_eq!(
+            observe(&runner, "credential callbacks release").await,
+            json!("released")
+        );
+        store_barrier(&runner).await;
+        assert_eq!(
+            observe(&runner, "credential callbacks counts").await,
+            json!(["backend", "fallback"])
+        );
+        pending_key_cases(&runner).await;
     });
 }
 
@@ -392,56 +474,7 @@ fn credential_value(value: &Value) -> maestro_extensions::AuthCredential {
 fn credential_pending_key_retains_owner_until_settlement() {
     super::components::local(async {
         let (_owner, runner) = loaded().await;
-        for outcome in [Ok(()), Err("literal refresh failure")] {
-            let (started, entered) = tokio::sync::oneshot::channel();
-            let (release, released) = tokio::sync::oneshot::channel();
-            maestro_models::register_oauth_provider(std::sync::Arc::new(PendingProvider {
-                started: std::sync::Mutex::new(Some(started)),
-                released: std::sync::Mutex::new(Some(released)),
-            }));
-            assert_eq!(
-                observe(&runner, "credential pending create").await,
-                json!("retained")
-            );
-            assert_eq!(
-                observe(&runner, "credential pending counts").await,
-                json!([])
-            );
-            let key = observe(&runner, "credential pending key");
-            let during = async {
-                entered.await.unwrap();
-                assert_eq!(
-                    observe(&runner, "credential pending release").await,
-                    json!("released")
-                );
-                assert_eq!(
-                    observe(&runner, "credential pending counts").await,
-                    json!([])
-                );
-                release.send(outcome).unwrap();
-            };
-            let (answer, ()) = tokio::join!(key, during);
-            if outcome.is_ok() {
-                assert_eq!(answer, json!({"key":"refreshed-key","errors":[]}));
-            } else {
-                assert_eq!(answer["key"], Value::Null);
-                assert_eq!(answer["errors"].as_array().unwrap().len(), 1);
-                assert_eq!(
-                    answer["errors"][0]["message"],
-                    json!("Failed to refresh OAuth token for author-pending")
-                );
-            }
-            store_barrier(&runner).await;
-            assert_eq!(
-                observe(&runner, "credential pending counts").await,
-                json!(["backend", "fallback"])
-            );
-            assert_eq!(
-                observe(&runner, "credential pending counts").await,
-                json!(["backend", "fallback"])
-            );
-            maestro_models::unregister_oauth_provider("author-pending");
-        }
+        pending_key_cases(&runner).await;
     });
 }
 
@@ -1695,4 +1728,68 @@ fn credentials_retained_owner_forwards_state_errors_and_key_precedence() {
             })
         );
     });
+}
+
+/// Both real native refresh settlements retain callbacks until their selected owner ends.
+async fn pending_key_cases(runner: &ExtensionRunner<Local>) {
+    for outcome in [Ok(()), Err("literal refresh failure")] {
+        pending_key_case(runner, outcome).await;
+    }
+}
+
+/// One admitted native refresh, with independent guest aliases released while it waits.
+async fn pending_key_case(runner: &ExtensionRunner<Local>, outcome: Result<(), &'static str>) {
+    let (started, entered) = tokio::sync::oneshot::channel();
+    let (release, released) = tokio::sync::oneshot::channel();
+    maestro_models::register_oauth_provider(std::sync::Arc::new(PendingProvider {
+        started: std::sync::Mutex::new(Some(started)),
+        released: std::sync::Mutex::new(Some(released)),
+    }));
+    assert_eq!(
+        observe(runner, "credential pending create").await,
+        json!("retained")
+    );
+    assert_eq!(
+        observe(runner, "credential pending counts").await,
+        json!([])
+    );
+    let key = observe(runner, "credential pending key");
+    let during = async {
+        entered.await.unwrap();
+        assert_eq!(
+            observe(runner, "credential pending release").await,
+            json!("released")
+        );
+        assert_eq!(
+            observe(runner, "credential pending counts").await,
+            json!([])
+        );
+        release.send(outcome).unwrap();
+    };
+    let (answer, ()) = tokio::join!(key, during);
+    assert_pending_answer(&answer, outcome.is_ok());
+    store_barrier(runner).await;
+    assert_eq!(
+        observe(runner, "credential pending counts").await,
+        json!(["backend", "fallback"])
+    );
+    assert_eq!(
+        observe(runner, "credential pending counts").await,
+        json!(["backend", "fallback"])
+    );
+    maestro_models::unregister_oauth_provider("author-pending");
+}
+
+/// Preserves the native refreshed key and its existing failure wrapper.
+fn assert_pending_answer(answer: &Value, succeeded: bool) {
+    if succeeded {
+        assert_eq!(*answer, json!({"key":"refreshed-key","errors":[]}));
+    } else {
+        assert_eq!(answer["key"], Value::Null);
+        assert_eq!(answer["errors"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            answer["errors"][0]["message"],
+            json!("Failed to refresh OAuth token for author-pending")
+        );
+    }
 }

@@ -1,11 +1,16 @@
 //! Browser-facing attachments, offline session documents, localization and SVG glyphs.
 
 pub mod browser;
+/// The chat screen composing the session view and the artifacts panel.
+#[cfg(target_arch = "wasm32")]
+pub mod chat_panel;
 pub mod components;
 pub mod contributions;
 pub mod dialogs;
 pub mod docx_preview;
 pub mod dom;
+#[cfg(target_arch = "wasm32")]
+pub use chat_panel::{ChatPanel, ChatPanelConfig, ToolsFactory};
 #[cfg(target_arch = "wasm32")]
 pub use components::agent_interface::AgentInterface;
 pub use components::agent_interface::{
@@ -95,14 +100,14 @@ pub use maestro_app::browser::components::sandbox::{
 };
 pub use maestro_app::browser::tools::prompts::ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW;
 pub mod tools;
-pub use tools::artifacts::artifact_element::ArtifactElement;
+pub use tools::artifacts::ArtifactElement;
 
 #[cfg(target_arch = "wasm32")]
 pub use components::sandboxed_iframe::{BrowserSandboxHost, SandboxIframe};
-/// Retained tabbed artifact views using the application-selected filename.
-pub use tools::artifacts::ArtifactsPanel;
 #[cfg(target_arch = "wasm32")]
-pub use tools::artifacts::html_artifact::HtmlArtifact;
+pub use tools::artifacts::HtmlArtifact;
+/// Artifact records and tabbed views using the application-selected filename.
+pub use tools::artifacts::{Artifact, ArtifactsPanel, ArtifactsParams};
 
 pub use maestro_app::{
     SandboxFile, SandboxResult, SandboxRuntimeProvider, SandboxUrlProvider,
@@ -111,10 +116,10 @@ pub use maestro_app::{
 #[cfg(target_arch = "wasm32")]
 pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;
 
-pub use tools::artifacts::{image_artifact::ImageArtifact, text_artifact::TextArtifact};
+pub use tools::artifacts::{TextArtifact, image_artifact::ImageArtifact};
 
 /// Editable document artifact views.
-pub use tools::artifacts::{markdown_artifact::MarkdownArtifact, svg_artifact::SvgArtifact};
+pub use tools::artifacts::{MarkdownArtifact, SvgArtifact};
 pub use tools::renderer_registry::{render_collapsible_header, render_header};
 pub use tools::renderers::default_renderer::DefaultRenderer;
 pub use tools::types::{ToolRenderResult, ToolRenderer};
@@ -127,8 +132,9 @@ pub use tools::renderers::bash_renderer::BashRenderer;
 pub use tools::renderers::calculate_renderer::CalculateRenderer;
 pub use tools::renderers::get_current_time_renderer::GetCurrentTimeRenderer;
 
-pub use tools::artifacts::{
-    artifact_pill::artifact_pill, artifacts_tool_renderer::ArtifactsToolRenderer,
-};
+pub use tools::artifacts::{ArtifactsToolRenderer, artifact_pill::artifact_pill};
 
 mod ui_error;
+
+#[cfg(target_arch = "wasm32")]
+pub use tools::artifacts::NativeArtifact;

@@ -66,7 +66,7 @@ impl<I: Imports> Binding<I> {
 }
 
 /// A caller's signal listener, removed when its host call settles or is dropped.
-struct Listening(Option<Subscription>);
+pub(super) struct Listening(pub(super) Option<Subscription>);
 
 impl Listening {
     /// Removes the listener once, returning the host's rejection.
@@ -89,6 +89,8 @@ pub(super) struct Mirror<I: Imports> {
     native: Option<Rc<I::Signal>>,
     /// The caller-signal listener that aborts it.
     listening: Listening,
+    /// Keep arbitrary caller-local signal storage alive until its listener is removed.
+    _caller: Option<AbortSignal>,
 }
 
 impl<I: Imports> Mirror<I> {
@@ -107,7 +109,11 @@ impl<I: Imports> Mirror<I> {
                 })
                 .transpose()?,
         );
-        let mirror = Self { native, listening };
+        let mirror = Self {
+            native,
+            listening,
+            _caller: caller.cloned(),
+        };
         if caller.is_some_and(AbortSignal::aborted)
             && let Some(native) = mirror.signal()
         {
