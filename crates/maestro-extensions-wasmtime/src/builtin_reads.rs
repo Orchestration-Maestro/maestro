@@ -56,7 +56,9 @@ impl Endpoint {
     pub(crate) async fn execute(&self, execution: Execution) -> Result<String, String> {
         self.0
             .request_async(|id, reply, admission| {
-                Message::BuiltinExecute(id, execution, reply, admission)
+                Message::BuiltinOperation(crate::local_resources::builtin::Operation::Execute(
+                    id, execution, reply, admission,
+                ))
             })
             .await
     }

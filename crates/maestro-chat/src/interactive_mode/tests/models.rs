@@ -1098,7 +1098,10 @@ pub(super) fn refuse_refresh(world: &World) {
             SharedHandle::new(RwLock::new(ProviderConfigInput {
                 base_url: Some("https://example.invalid".into()),
                 api: Some("openai-completions".into()),
-                oauth: Some(SharedHandle::new(RefusingCatalog)),
+                callbacks: maestro_app::ProviderCallbacks {
+                    oauth: Some(SharedHandle::new(RefusingCatalog)),
+                    ..Default::default()
+                },
                 models: Some(vec![model_input("refused")]),
                 ..ProviderConfigInput::default()
             })),

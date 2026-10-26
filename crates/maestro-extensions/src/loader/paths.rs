@@ -62,10 +62,31 @@ pub async fn load_extensions<E: ExtensionExecution>(
     event_bus: &EventBusController<E>,
     module_loader: &ModuleLoader<E>,
 ) -> io::Result<LoadExtensionsResult<E>> {
+    load_extensions_with_runtime(
+        paths,
+        cwd,
+        event_bus,
+        module_loader,
+        create_extension_runtime::<E>(),
+    )
+    .await
+}
+
+/// Loads paths on a supplied runtime whose constructor services are already available.
+///
+/// # Errors
+/// Returns a path resolution failure; individual extension failures remain in the result.
+pub async fn load_extensions_with_runtime<E: ExtensionExecution>(
+    paths: Vec<String>,
+    cwd: &str,
+    event_bus: &EventBusController<E>,
+    module_loader: &ModuleLoader<E>,
+    runtime: E::Shared<crate::types::ExtensionRuntime<E>>,
+) -> io::Result<LoadExtensionsResult<E>> {
     let mut result = LoadExtensionsResult {
         extensions: Vec::new(),
         errors: Vec::new(),
-        runtime: create_extension_runtime::<E>(),
+        runtime,
     };
     for path in paths {
         let resolved_path = resolve_path(&path, cwd)?;

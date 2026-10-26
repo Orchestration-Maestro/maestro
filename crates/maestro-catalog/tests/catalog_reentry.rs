@@ -22,7 +22,7 @@ fn registration_transform_can_reenter_catalog() {
         let observed = Arc::new(Mutex::new(None));
         let saved = observed.clone();
         let config = dynamic::config(&["outer-model"]);
-        config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+        config.write().unwrap().callbacks.oauth = Some(Arc::new(dynamic::OAuth {
             calls: None,
             id: "ignored",
             name: "Outer",
@@ -83,7 +83,7 @@ fn transforming(
     + 'static,
 ) -> Arc<std::sync::RwLock<maestro_catalog::ProviderConfigInput>> {
     let config = dynamic::config(ids);
-    config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(dynamic::OAuth {
         calls: None,
         id: "ignored",
         name: "Outer",
@@ -597,7 +597,7 @@ fn display_name_effect_can_reenter_catalog() {
     let registry = registry();
     let weak = Arc::downgrade(&registry);
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().oauth = Some(Arc::new(Account {
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(Account {
         inner: request_support::OAuth::new("p", "Retained"),
         name_effect: Box::new(move || {
             let registry = weak.upgrade().unwrap();
@@ -747,11 +747,11 @@ fn retired_catalog_callbacks_can_reenter_after_removal() {
         });
         let retained = (mode == "retained").then(|| account.clone());
         let config = dynamic::config(&["m"]);
-        config.write().unwrap().oauth = Some(account);
+        config.write().unwrap().callbacks.oauth = Some(account);
         registry.register_provider("p", config).unwrap();
         if mode == "replace" {
             let replacement = dynamic::config(&["new"]);
-            replacement.write().unwrap().oauth = Some(dynamic::oauth("Replacement"));
+            replacement.write().unwrap().callbacks.oauth = Some(dynamic::oauth("Replacement"));
             registry.register_provider("p", replacement).unwrap();
             assert_eq!(*events.lock().unwrap(), ["Replacement"]);
         } else {
@@ -893,7 +893,7 @@ fn extraction_reenters(registry: &Arc<ModelRegistry>) {
         }),
     };
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().oauth = Some(Arc::new(account));
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(account));
     registry.register_provider("p", config).unwrap();
     registry
         .auth_storage()
@@ -935,7 +935,12 @@ fn assert_retained_order(
             .auth_storage()
             .set(name, request_support::tokens(f64::MAX));
         if let Some(config) = handle.upgrade() {
-            config.write().unwrap().oauth = recording(&events, name).read().unwrap().oauth.clone();
+            config.write().unwrap().callbacks.oauth = recording(&events, name)
+                .read()
+                .unwrap()
+                .callbacks
+                .oauth
+                .clone();
         }
     }
     registry.refresh().unwrap();

@@ -1,7 +1,7 @@
 //! Original native rows and components share this registry and its release leases.
 use super::{Capability, Registry, pump::State};
 use crate::{
-    import_route::Outcome,
+    import_route::Value as Outcome,
     native_renders::{ComponentEndpoint, ComponentRequest, Render, Row, RowEndpoint, Slot},
 };
 use maestro_extensions::{ComponentHandle, ToolRenderContext, ToolRenderResultLike};

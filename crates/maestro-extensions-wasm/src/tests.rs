@@ -39,7 +39,7 @@ pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
 mod component_driver;
 mod context_catalog;
-mod controlled;
+pub(crate) mod controlled;
 mod controlled_driver;
 mod documents;
 mod event_transport;
@@ -63,6 +63,7 @@ mod parameter_schemas;
 mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;
+mod provider_catalog;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;
@@ -112,7 +113,7 @@ use controlled_driver::ControlledDriver;
 use scenario::{Decision, Driver, EXPECTED};
 
 /// Runs a future to completion on a current-thread runtime.
-fn block_on<T>(future: impl Future<Output = T>) -> T {
+pub(crate) fn block_on<T>(future: impl Future<Output = T>) -> T {
     match tokio::runtime::Builder::new_current_thread().build() {
         Ok(runtime) => runtime.block_on(future),
         Err(error) => panic!("cannot build a runtime: {error}"),
@@ -521,8 +522,20 @@ fn assert_catalog_imports(contract: &Contract) {
         .flat_map(|resource| context_methods.map(|method| format!("[method]{resource}.{method}")))
         .collect::<Vec<_>>();
     expected.extend(
-        ["get-all", "get-available", "find"]
-            .map(|method| format!("[method]model-registry.{method}")),
+        [
+            "get-all",
+            "get-available",
+            "find",
+            "refresh",
+            "get-error",
+            "has-configured-auth",
+            "get-provider-auth-status",
+            "get-provider-display-name",
+            "is-using-oauth",
+            "register-provider",
+            "unregister-provider",
+        ]
+        .map(|method| format!("[method]model-registry.{method}")),
     );
     expected.sort_unstable();
     let actual = names(&contract.imports, false)
@@ -569,6 +582,9 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_eq!(
         names(&contract.imports, true),
         [
+            "[method]auth-lock-update.update-async",
+            "[method]auth-storage.get-api-key",
+            "[method]builtin-tool.execute",
             "[method]command-context.fork",
             "[method]command-context.navigate-tree",
             "[method]command-context.new-session",
@@ -580,6 +596,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]extension-ui-context.input",
             "[method]extension-ui-context.select",
             "[method]model-registry.get-api-key-and-headers",
+            "[method]model-registry.get-api-key-for-provider",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
             "call",
@@ -740,6 +757,8 @@ fn assert_action_contract(contract: &Contract) {
         "get-commands",
         "get-thinking-level",
         "set-thinking-level",
+        "register-provider",
+        "unregister-provider",
         "[method]context.compact",
         "[method]command-context.compact",
     ] {
@@ -1068,6 +1087,8 @@ fn assert_async_exports(contract: &Contract) {
             "component-render",
             "component-wants-key-release",
             "invoke-abort",
+            "invoke-auth-backend",
+            "invoke-auth-fallback",
             "invoke-branch-change",
             "invoke-command",
             "invoke-compaction-complete",
@@ -1079,6 +1100,7 @@ fn assert_async_exports(contract: &Contract) {
             "invoke-listener",
             "invoke-model-hook",
             "invoke-prepare",
+            "invoke-read",
             "invoke-renderer",
             "invoke-schema",
             "invoke-setup",
@@ -1125,3 +1147,5 @@ fn assert_model_hook_contract(contract: &Contract) {
 }
 
 mod tool_record_views;
+
+mod credential_host;

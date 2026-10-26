@@ -24,13 +24,8 @@ impl Call {
             Self::Component(call) => Call::Component(component(call, completion)),
             Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
             Self::Stream(call) => Call::Stream(stream(call, completion)),
-            Self::Schema(call) => Call::Schema(crate::guest_calls::schema::Invocation {
-                handler: completion.callback(call.handler),
-                operation: call.operation,
-                node: call.node,
-                emitter: call.emitter,
-                reply: call.reply,
-            }),
+            Self::Schema(call) => Call::Schema(schema(call, completion)),
+            Self::Credential(call) => Call::Credential(credential(call, completion)),
             Self::Tool(call) => Call::Tool(tool(call, completion)),
             Self::Release(mut release) => {
                 completion.retain(release.calls.take());
@@ -181,6 +176,27 @@ fn tool(call: ToolCall, completion: &Completion) -> ToolCall<Callback> {
     }
 }
 
+/// Transfers credential admissions without extending the native operand borrow.
+fn credential(
+    call: crate::guest_calls::credentials::CredentialCall,
+    completion: &Completion,
+) -> crate::guest_calls::credentials::CredentialCall<Callback> {
+    use crate::guest_calls::credentials::{BackendCall, CredentialCall, FallbackCall};
+    match call {
+        CredentialCall::Backend(call) => CredentialCall::Backend(BackendCall {
+            handler: completion.callback(call.handler),
+            update: call.update,
+            asynchronous: call.asynchronous,
+            reply: call.reply,
+        }),
+        CredentialCall::Fallback(call) => CredentialCall::Fallback(FallbackCall {
+            handler: completion.callback(call.handler),
+            provider: call.provider,
+            reply: call.reply,
+        }),
+    }
+}
+
 /// Retain the hook's original callback independently of its owned data operands.
 fn model_hook(
     call: crate::model_calls::Invocation,
@@ -218,6 +234,20 @@ fn read(
         handler: completion.callback(call.handler),
         operation: call.operation,
         path: call.path,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the schema callback admission beside its original JSON operand.
+fn schema(
+    call: crate::guest_calls::schema::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::schema::Invocation<Callback> {
+    crate::guest_calls::schema::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        node: call.node,
+        emitter: call.emitter,
         reply: call.reply,
     }
 }

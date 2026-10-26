@@ -98,15 +98,21 @@ pub(crate) enum ComponentRequest {
 impl crate::builtin_reads::Endpoint {
     /// Enters a native renderer through the original nested-call route.
     pub(crate) fn render(&self, render: Render) -> crate::import_route::Route {
-        self.0
-            .route_value(|id, reply| Message::BuiltinRender(id, render, reply))
+        self.0.route(|id, reply| {
+            Message::BuiltinOperation(crate::local_resources::builtin::Operation::Render(
+                id, render, reply,
+            ))
+        })
     }
 }
 impl ComponentEndpoint {
     /// Uses the original component through the same route, permitting callback reentry.
     pub(crate) fn call(&self, request: ComponentRequest) -> crate::import_route::Route {
-        self.0
-            .route_value(|id, reply| Message::NativeComponent(id, request, reply))
+        self.0.route(|id, reply| {
+            Message::BuiltinOperation(crate::local_resources::builtin::Operation::Component(
+                id, request, reply,
+            ))
+        })
     }
 }
 

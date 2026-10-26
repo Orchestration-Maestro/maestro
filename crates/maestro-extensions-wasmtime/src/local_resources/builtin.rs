@@ -50,13 +50,17 @@ impl crate::api_reads::Endpoint {
         operations: Option<crate::guest_calls::Handle>,
     ) -> Result<Endpoint, String> {
         self.0.request(|_, reply| {
-            Message::CreateBuiltin(Factory::Read(cwd, resize, operations), reply)
+            Message::BuiltinOperation(Operation::Create(
+                Factory::Read(cwd, resize, operations),
+                reply,
+            ))
         })
     }
     /// Retains native edit preparation without requiring a context or accessing a file.
     pub(crate) fn create_edit(&self, cwd: String) -> Result<Endpoint, String> {
-        self.0
-            .request(|_, reply| Message::CreateBuiltin(Factory::Edit(cwd), reply))
+        self.0.request(|_, reply| {
+            Message::BuiltinOperation(Operation::Create(Factory::Edit(cwd), reply))
+        })
     }
 }
 impl State {
@@ -114,6 +118,53 @@ impl State {
             ),
             Err(error) => {
                 let _ = reply.send(Err(error));
+            }
+        }
+    }
+}
+
+/// Native built-in operations share the original pump's admission and result owners.
+pub(crate) enum Operation {
+    /// Creates and retains an original typed native definition.
+    Create(
+        Factory,
+        std::sync::mpsc::Sender<Result<crate::builtin_reads::Endpoint, String>>,
+    ),
+    /// Executes a retained native tool without blocking request consumption.
+    Execute(
+        u64,
+        crate::builtin_reads::Execution,
+        tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
+    /// Renders through an original typed native definition and lent native row.
+    Render(
+        u64,
+        crate::native_renders::Render,
+        std::sync::mpsc::Sender<Result<crate::import_route::Value, String>>,
+    ),
+    /// Uses one original retained native component.
+    Component(
+        u64,
+        crate::native_renders::ComponentRequest,
+        std::sync::mpsc::Sender<Result<crate::import_route::Value, String>>,
+    ),
+}
+impl State {
+    /// Dispatches one native built-in operation without adding another request receiver.
+    pub(super) fn builtin_operation(&self, operation: Operation) {
+        match operation {
+            Operation::Create(factory, reply) => {
+                let _ = reply.send(self.registry.create_builtin(factory));
+            }
+            Operation::Execute(id, execution, reply, admission) => {
+                self.builtin_execute(id, execution, reply, admission);
+            }
+            Operation::Render(id, render, reply) => {
+                let _ = reply.send(self.builtin_render(id, render));
+            }
+            Operation::Component(id, request, reply) => {
+                let _ = reply.send(self.native_component(id, request));
             }
         }
     }

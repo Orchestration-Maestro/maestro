@@ -70,7 +70,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         drop(self.binding.actions.replace(context_actions));
         let bound = BoundProviders {
             actions: provider_actions,
-            catalog: SharedHandle::clone(&self.binding.session.model_registry),
+            catalog: SharedHandle::downgrade(&self.binding.session.model_registry),
         };
         let mut cursor = 0;
         while let Some((id, pending)) = self.runtime.next_or_bind(cursor, &bound) {

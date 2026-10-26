@@ -10,6 +10,7 @@ use wasmtime::{
 use wasmtime_wasi::WasiView;
 
 pub(crate) mod bash;
+mod credentials;
 pub(crate) mod events;
 mod factories;
 mod model_hooks;
@@ -49,6 +50,8 @@ type Abort = TypedFunc<
 
 /// Exports resolved from the canonical guest interface, never substitute implementations.
 pub(crate) struct Exports {
+    /// Actual credential backend and fallback callbacks.
+    credentials: credentials::Exports,
     /// Original authored factory entry point.
     start: TypedFunc<(), (Result<(), String>,)>,
     /// The original retained pub.
@@ -129,6 +132,7 @@ impl Exports {
         let events = events::Exports::new(store, instance, &guest)?;
         let renderers = renderers::Exports::new(store, instance, &guest)?;
         Ok(Self {
+            credentials: credentials::Exports::new(store, instance, &guest)?,
             renderers,
             streams: streams::Exports::new(store, instance, &guest)?,
             model_hooks: model_hooks::Exports::new(store, instance, &guest)?,
@@ -172,6 +176,7 @@ impl Exports {
             call @ (Call::Stream(_) | Call::ModelHook(_) | Call::Schema(_)) => {
                 self.invoke_value_callback(accessor, call).await?;
             }
+            Call::Credential(call) => self.credentials.invoke(accessor, call).await?,
             Call::Tool(call) => self.tools.invoke(accessor, call).await?,
             Call::Registered(call) => self.registered.invoke(accessor, call).await?,
             call @ (Call::TerminalInput(_) | Call::Factory(_) | Call::ToolRender(_)) => {
@@ -180,6 +185,20 @@ impl Exports {
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
             Call::Tail(handler, reply) => self.tail(accessor, &handler, reply).await?,
 
+            call @ (Call::Setup(..) | Call::WithSession(..)) => {
+                self.session(accessor, call).await?;
+            }
+            Call::Release(release) => self.release(accessor, release).await?,
+        }
+        Ok(())
+    }
+    /// Enters one session setup callback with its retained session capability.
+    async fn session<T: crate::callback_imports::CallbackView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: Call<Callback>,
+    ) -> wasmtime::Result<()> {
+        match call {
             Call::Setup(handler, writer, reply) => {
                 let result = session(accessor, self.setup, handler, writer).await?;
                 let _ = reply.send(result);
@@ -188,7 +207,7 @@ impl Exports {
                 let result = session(accessor, self.with_session, handler, context).await?;
                 let _ = reply.send(result);
             }
-            Call::Release(release) => self.release(accessor, release).await?,
+            _ => return Err(wasmtime::format_err!("expected a session callback")),
         }
         Ok(())
     }

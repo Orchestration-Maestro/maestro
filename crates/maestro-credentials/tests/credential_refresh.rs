@@ -313,6 +313,35 @@ mod tests {
         });
     }
 
+    #[test]
+    fn credential_refresh_preserves_untyped_sibling_values() {
+        block_on(async {
+            let _provider = ControlledProvider::new("r16").register();
+            let _cleanup = Unregister("r16".into());
+            let mut document = json!({
+                "null": null, "text": "x", "r16": record("old", 1000.0), "number": 0.25,
+                "bool": false, "object": {"b": 1, "a": []}, "array": [2, 2, 1],
+            });
+            let (probe, storage) = setup(&document);
+            assert_eq!(
+                request(&storage, "r16").await.unwrap().as_deref(),
+                Some("new")
+            );
+            document["r16"] = json!({
+                "type": "oauth", "refresh": "refresh-new", "access": "new",
+                "expires": 4_102_444_800_000_i64, "extra": ["x", "x", "y"],
+            });
+            assert_eq!(
+                stored_text(&probe),
+                serde_json::to_string_pretty(&document).unwrap()
+            );
+            assert_eq!(
+                storage.list(),
+                ["null", "text", "r16", "number", "bool", "object", "array"]
+            );
+        });
+    }
+
     /// Provider `openai` whose refresh fails in the provider or in key extraction when `kind`
     /// names that phase, and otherwise succeeds with access token `new`.
     fn provider_failing_in(kind: &str) -> ControlledProvider {

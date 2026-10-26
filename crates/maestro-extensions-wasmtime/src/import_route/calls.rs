@@ -17,9 +17,10 @@ use crate::{
 };
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
 
+mod credentials;
+mod ui;
+use ui::{LocalFactory, LocalTerminalInput, LocalToolRender};
 mod tool;
-mod tool_renders;
-use tool_renders::LocalToolRender;
 
 /// Owned operands of one nested renderer call.
 #[derive(ComponentType, Lower)]
@@ -67,34 +68,6 @@ pub(super) struct LocalUnit {
 pub(super) struct LocalKey {
     /// Authored identity of the retained component.
     target: u32,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested component factory.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalFactory {
-    /// Authored identity of the factory.
-    target: u32,
-    /// Original terminal, transferred.
-    tui: Resource<crate::local_resources::effects::TuiEndpoint>,
-    /// Original live theme, transferred.
-    theme: Resource<crate::local_resources::effects::ThemeEndpoint>,
-    /// Original footer metadata of a footer factory, transferred.
-    footer: Option<Resource<crate::footer_data::Endpoint>>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested terminal input chunk.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalTerminalInput {
-    /// Authored identity of the terminal input listener.
-    target: u32,
-    /// The literal chunk.
-    data: String,
     /// Independent native invocation frame.
     emitter: Resource<EmitterEndpoint>,
 }
@@ -227,10 +200,36 @@ pub(super) struct LocalBash {
     resources: BashResources,
 }
 
+/// Owned operands of one nested credential backend method.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalBackend {
+    /// Authored backend identity.
+    target: u32,
+    /// Invocation-local native update.
+    update: Resource<crate::local_resources::credential_scope::Endpoint>,
+    /// Whether the author must await its update.
+    asynchronous: bool,
+}
+/// Owned operands of one nested fallback lookup.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+pub(super) struct LocalFallback {
+    /// Authored resolver identity.
+    target: u32,
+    /// Literal provider.
+    provider: String,
+}
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
+    /// Authored backend and still-borrowed native update.
+    #[component(name = "auth-backend")]
+    AuthBackend(LocalBackend),
+    /// Authored fallback with its original optional result.
+    #[component(name = "auth-fallback")]
+    AuthFallback(LocalFallback),
     /// A message renderer.
     #[component(name = "renderer")]
     Renderer(LocalRenderer),
@@ -300,6 +299,9 @@ pub(super) enum LocalCall {
 #[derive(ComponentType, Lift)]
 #[component(variant)]
 pub(super) enum LocalResult {
+    /// Exact optional fallback value or authored error.
+    #[component(name = "auth-fallback")]
+    AuthFallback(Result<Option<String>, String>),
     /// Optional retained component identity, or the authored error.
     #[component(name = "renderer")]
     Renderer(Result<Option<Resource<Callback>>, String>),
@@ -356,6 +358,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
             message: call.message.clone(),
@@ -381,23 +384,9 @@ pub(super) fn lower(
             node: table.push(call.node.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
-        Call::ToolRender(call) => LocalCall::ToolRender(tool_renders::lower(table, call)?),
-        Call::Factory(call) => LocalCall::Factory(LocalFactory {
-            target: call.handler.id,
-            tui: table.push(call.tui.clone())?,
-            theme: table.push(call.theme.clone())?,
-            footer: call
-                .footer
-                .clone()
-                .map(|footer| table.push(footer))
-                .transpose()?,
-            emitter: table.push(call.emitter.clone())?,
-        }),
-        Call::TerminalInput(call) => LocalCall::TerminalInput(LocalTerminalInput {
-            target: call.handler.id,
-            data: call.data.clone(),
-            emitter: table.push(call.emitter.clone())?,
-        }),
+        call @ (Call::ToolRender(_) | Call::Factory(_) | Call::TerminalInput(_)) => {
+            ui::lower(table, call)?
+        }
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
             kind: call.kind,
@@ -510,6 +499,7 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
+        (Call::Credential(call), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
                 Ok(component) => Ok(component
