@@ -11,7 +11,12 @@ use serde_json::json;
 use std::{path::Path, rc::Rc};
 
 /// Writes a saved session holding one user message and returns its path.
-pub(super) fn saved(directory: &Path, id: &str, cwd: &serde_json::Value, text: &str) -> String {
+pub(in crate::interactive_mode::tests) fn saved(
+    directory: &Path,
+    id: &str,
+    cwd: &serde_json::Value,
+    text: &str,
+) -> String {
     std::fs::create_dir_all(directory).unwrap();
     let header = json!({
         "type": "session", "version": 3, "id": id,

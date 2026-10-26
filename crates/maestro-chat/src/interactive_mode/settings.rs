@@ -288,6 +288,7 @@ impl InteractiveMode {
             }
         }
         self.rebuild_chat_from_messages()
+            .map_err(|error| -> Box<dyn Error> { error })
     }
 
     /// Saves the cursor preference before applying its immediate terminal effect.

@@ -134,6 +134,27 @@ shows `Reload failed: <reason>`. Changes made before the failure remain applied;
 the command does not roll them back. A reset failure goes to the terminal host
 instead, before application reload starts.
 
+## Extension command contexts
+
+Extension commands receive the interactive mode's session controls. Creating a
+session stops working progress and clears the status area; a successful creation
+replays the new session without the `/new` command's notice. Forking replays the
+new session, replaces the draft with the selected text (or empty text), and shows
+`Forked to new session`. An extension veto leaves the transcript and draft alone.
+A creation or fork failure uses the fatal runtime error route.
+
+Tree navigation forwards the supplied summary controls and label. On success it
+replays the selected branch, fills a still-blank editor with nonempty returned
+text, shows `Navigated to selected point`, and starts delivery of input captured
+during compaction without waiting for that delivery. Cancellation changes no
+presentation; a navigation failure returns its original error to the caller.
+
+Switching sessions uses the same resume operation and missing-directory prompt
+as `/resume`. Reload uses the same presentation and refusal conditions as
+`/reload`, but does not clear the draft first. Waiting for idle reads the current
+agent. These callbacks do not retain the mode when inactive; an admitted operation
+keeps it alive until it settles, and retired command contexts remain stale.
+
 ## Shell input
 
 Text starting with `!` runs a shell command instead of sending a prompt.
