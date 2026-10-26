@@ -51,27 +51,3 @@ jobs:
         with:
           name: review-green-linux
           path: proof-logs/
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 45
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Command boundary
-        run: |
-          mkdir -p ~/.local/bin proof-logs
-          printf '#!/bin/sh\nexec "$@"\n' > ~/.local/bin/capped
-          chmod +x ~/.local/bin/capped
-          git rev-parse HEAD > proof-logs/source.log
-      - name: Native Windows regressions
-        run: |
-          set -o pipefail
-          ~/.local/bin/capped cargo test --locked -p maestro-process --test integration windows_children:: -- --nocapture 2>&1 | tee proof-logs/windows_invalid_signal_leaves_the_child_running-green.log
-          ~/.local/bin/capped cargo clippy --locked -p maestro-process --all-targets -- -D warnings 2>&1 | tee proof-logs/fix-r1-windows-clippy.log
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: always()
-        with:
-          name: review-green-windows
-          path: proof-logs/

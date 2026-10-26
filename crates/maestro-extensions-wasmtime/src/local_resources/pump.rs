@@ -227,9 +227,7 @@ impl State {
             }
             Message::Catalog(id, request) => self.catalog(id, request),
             Message::Node(id, request) => self.node(id, request),
-            Message::Replaced(id, request, admission) => {
-                self.start_replaced(id, request, admission);
-            }
+            Message::Replaced(id, send, admission) => self.start_replaced(id, send, admission),
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
